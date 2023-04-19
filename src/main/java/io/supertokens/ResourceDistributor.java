@@ -88,7 +88,6 @@ public class ResourceDistributor {
         throw new TenantOrAppNotFoundException(tenantIdentifier);
     }
 
-    @Deprecated
     @TestOnly
     public synchronized SingletonResource getResource(@Nonnull String key) {
         return resources.get(new KeyClass(new TenantIdentifier(null, null, null), key));
@@ -133,7 +132,6 @@ public class ResourceDistributor {
         return result;
     }
 
-    @Deprecated
     @TestOnly
     public synchronized SingletonResource setResource(@Nonnull String key,
                                                       SingletonResource resource) {

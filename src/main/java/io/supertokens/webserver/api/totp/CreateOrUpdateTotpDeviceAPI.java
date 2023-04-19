@@ -1,8 +1,5 @@
 package io.supertokens.webserver.api.totp;
 
-import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
-
 import com.google.gson.JsonObject;
 import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
@@ -16,8 +13,6 @@ import io.supertokens.pluginInterface.totp.TOTPDevice;
 import io.supertokens.pluginInterface.totp.exception.DeviceAlreadyExistsException;
 import io.supertokens.pluginInterface.totp.exception.TotpNotEnabledException;
 import io.supertokens.pluginInterface.totp.exception.UnknownDeviceException;
-import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
-import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.totp.Totp;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
@@ -25,6 +20,9 @@ import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 
 public class CreateOrUpdateTotpDeviceAPI extends WebserverAPI {
     private static final long serialVersionUID = -4641988458637882374L;
@@ -73,8 +71,9 @@ public class CreateOrUpdateTotpDeviceAPI extends WebserverAPI {
                 // While sending the usage stats we do a join, so totp tables also must use internal user id.
 
                 // Try to find the appIdentifier with right storage based on the userId
-                AppIdentifierWithStorageAndUserIdMapping mappingAndStorage = getAppIdentifierWithStorageAndUserIdMappingFromRequest(
-                        req, userId, UserIdType.ANY);
+                AppIdentifierWithStorageAndUserIdMapping mappingAndStorage =
+                        getAppIdentifierWithStorageAndUserIdMappingFromRequest(
+                                req, userId, UserIdType.ANY);
 
                 if (mappingAndStorage.userIdMapping != null) {
                     userId = mappingAndStorage.userIdMapping.superTokensUserId;
@@ -94,7 +93,7 @@ public class CreateOrUpdateTotpDeviceAPI extends WebserverAPI {
             result.addProperty("status", "DEVICE_ALREADY_EXISTS_ERROR");
             super.sendJsonResponse(200, result, resp);
         } catch (StorageQueryException | NoSuchAlgorithmException | FeatureNotEnabledException |
-                 TenantOrAppNotFoundException e) {
+                TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }
@@ -127,7 +126,8 @@ public class CreateOrUpdateTotpDeviceAPI extends WebserverAPI {
                 // While sending the usage stats we do a join, so totp tables also must use internal user id.
 
                 // Try to find the appIdentifier with right storage based on the userId
-                AppIdentifierWithStorageAndUserIdMapping mappingAndStorage = getAppIdentifierWithStorageAndUserIdMappingFromRequest(
+                AppIdentifierWithStorageAndUserIdMapping mappingAndStorage =
+                        getAppIdentifierWithStorageAndUserIdMappingFromRequest(
                         req, userId, UserIdType.ANY);
 
                 if (mappingAndStorage.userIdMapping != null) {

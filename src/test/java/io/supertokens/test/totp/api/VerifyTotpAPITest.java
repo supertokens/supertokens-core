@@ -49,7 +49,7 @@ public class VerifyTotpAPITest {
                         1000,
                         1000,
                         null,
-                        Utils.getCdiVersionLatestForTests(),
+                        Utils.getCdiVersionStringLatestForTests(),
                         "totp"));
     }
 
@@ -101,7 +101,7 @@ public class VerifyTotpAPITest {
                 1000,
                 1000,
                 null,
-                Utils.getCdiVersionLatestForTests(),
+                Utils.getCdiVersionStringLatestForTests(),
                 "totp");
         assertEquals(createDeviceRes.get("status").getAsString(), "OK");
         String secretKey = createDeviceRes.get("secret").getAsString();
@@ -156,7 +156,7 @@ public class VerifyTotpAPITest {
                     1000,
                     1000,
                     null,
-                    Utils.getCdiVersionLatestForTests(),
+                    Utils.getCdiVersionStringLatestForTests(),
                     "totp");
             assert res0.get("status").getAsString().equals("INVALID_TOTP_ERROR");
 
@@ -169,7 +169,7 @@ public class VerifyTotpAPITest {
                     1000,
                     1000,
                     null,
-                    Utils.getCdiVersionLatestForTests(),
+                    Utils.getCdiVersionStringLatestForTests(),
                     "totp");
             assert res3.get("status").getAsString().equals("LIMIT_REACHED_ERROR");
             assert res3.get("retryAfterMs") != null;
@@ -188,7 +188,7 @@ public class VerifyTotpAPITest {
                     1000,
                     1000,
                     null,
-                    Utils.getCdiVersionLatestForTests(),
+                    Utils.getCdiVersionStringLatestForTests(),
                     "totp");
             assert res.get("status").getAsString().equals("OK");
 
@@ -202,7 +202,7 @@ public class VerifyTotpAPITest {
                     1000,
                     1000,
                     null,
-                    Utils.getCdiVersionLatestForTests(),
+                    Utils.getCdiVersionStringLatestForTests(),
                     "totp");
             assert res2.get("status").getAsString().equals("INVALID_TOTP_ERROR");
 
@@ -216,7 +216,7 @@ public class VerifyTotpAPITest {
                     1000,
                     1000,
                     null,
-                    Utils.getCdiVersionLatestForTests(),
+                    Utils.getCdiVersionStringLatestForTests(),
                     "totp");
             assert res5.get("status").getAsString().equals("TOTP_NOT_ENABLED_ERROR");
         }

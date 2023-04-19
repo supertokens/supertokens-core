@@ -16,6 +16,17 @@
 
 package io.supertokens.test.dashboard.apis;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+import io.supertokens.utils.SemVer;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestRule;
+
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.dashboard.Dashboard;
@@ -28,13 +39,6 @@ import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestRule;
-
-import static org.junit.Assert.*;
 
 public class UpdateUserAPITest {
 
@@ -67,7 +71,7 @@ public class UpdateUserAPITest {
             try {
                 HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/dashboard/user", new JsonObject(), 1000, 1000, null,
-                        Utils.getCdiVersion2_18ForTests(), "dashboard");
+                        SemVer.v2_18.get(), "dashboard");
                 throw new Exception("Should never come here");
 
             } catch (HttpResponseException e) {
@@ -84,7 +88,7 @@ public class UpdateUserAPITest {
             try {
                 HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/dashboard/user", requestObject, 1000, 1000, null,
-                        Utils.getCdiVersion2_18ForTests(), "dashboard");
+                        SemVer.v2_18.get(), "dashboard");
                 throw new Exception("Should never come here");
 
             } catch (HttpResponseException e) {
@@ -100,7 +104,7 @@ public class UpdateUserAPITest {
             try {
                 HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/dashboard/user", requestObject, 1000, 1000, null,
-                        Utils.getCdiVersion2_18ForTests(), "dashboard");
+                        SemVer.v2_18.get(), "dashboard");
                 throw new Exception("Should never come here");
 
             } catch (HttpResponseException e) {
@@ -116,7 +120,7 @@ public class UpdateUserAPITest {
             try {
                 HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/dashboard/user", requestObject, 1000, 1000, null,
-                        Utils.getCdiVersion2_18ForTests(), "dashboard");
+                        SemVer.v2_18.get(), "dashboard");
                 throw new Exception("Should never come here");
 
             } catch (HttpResponseException e) {
@@ -132,7 +136,7 @@ public class UpdateUserAPITest {
             try {
                 HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/dashboard/user", requestObject, 1000, 1000, null,
-                        Utils.getCdiVersion2_18ForTests(), "dashboard");
+                        SemVer.v2_18.get(), "dashboard");
                 throw new Exception("Should never come here");
 
             } catch (HttpResponseException e) {
@@ -148,7 +152,7 @@ public class UpdateUserAPITest {
             try {
                 HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/dashboard/user", requestObject, 1000, 1000, null,
-                        Utils.getCdiVersion2_18ForTests(), "dashboard");
+                        SemVer.v2_18.get(), "dashboard");
                 throw new Exception("Should never come here");
 
             } catch (HttpResponseException e) {
@@ -194,7 +198,7 @@ public class UpdateUserAPITest {
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/dashboard/user", requestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_18ForTests(), "dashboard");
+                SemVer.v2_18.get(), "dashboard");
 
         assertEquals(2, response.entrySet().size());
         assertEquals("OK", response.get("status").getAsString());
@@ -211,7 +215,7 @@ public class UpdateUserAPITest {
 
             JsonObject signInResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/dashboard/signin", signInResponseObject, 1000, 1000, null,
-                    Utils.getCdiVersion2_18ForTests(), "dashboard");
+                    SemVer.v2_18.get(), "dashboard");
             assertEquals(1, signInResponse.entrySet().size());
             assertEquals("INVALID_CREDENTIALS_ERROR", signInResponse.get("status").getAsString());
         }
@@ -224,7 +228,7 @@ public class UpdateUserAPITest {
 
             JsonObject signInResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/dashboard/signin", signInResponseObject, 1000, 1000, null,
-                    Utils.getCdiVersion2_18ForTests(), "dashboard");
+                    SemVer.v2_18.get(), "dashboard");
             assertEquals(2, signInResponse.entrySet().size());
             assertEquals("OK", signInResponse.get("status").getAsString());
             assertNotNull(signInResponse.get("sessionId").getAsString());

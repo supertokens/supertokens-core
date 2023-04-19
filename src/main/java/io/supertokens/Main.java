@@ -31,7 +31,6 @@ import io.supertokens.cronjobs.telemetry.Telemetry;
 import io.supertokens.emailpassword.PasswordHashing;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.featureflag.FeatureFlag;
-import io.supertokens.jwt.JWTSigningKey;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.multitenancy.MultitenancyHelper;
 import io.supertokens.output.Logging;
@@ -39,8 +38,10 @@ import io.supertokens.pluginInterface.exceptions.DbInitException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
-import io.supertokens.session.accessToken.AccessTokenSigningKey;
 import io.supertokens.session.refreshToken.RefreshTokenKey;
+import io.supertokens.signingkeys.AccessTokenSigningKey;
+import io.supertokens.signingkeys.JWTSigningKey;
+import io.supertokens.signingkeys.SigningKeys;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.version.Version;
 import io.supertokens.webserver.Webserver;
@@ -220,6 +221,7 @@ public class Main {
             AccessTokenSigningKey.initForBaseTenant(this);
             RefreshTokenKey.initForBaseTenant(this);
             JWTSigningKey.initForBaseTenant(this);
+            SigningKeys.initForBaseTenant(this);
             MultitenancyHelper.getInstance(this).loadSigningKeys();
         } catch (UnsupportedJWTSigningAlgorithmException e) {
             throw new QuitProgramException(e);

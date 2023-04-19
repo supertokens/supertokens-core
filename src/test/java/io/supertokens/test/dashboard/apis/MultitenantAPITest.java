@@ -19,7 +19,6 @@ package io.supertokens.test.dashboard.apis;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.dashboard.Dashboard;
-import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
@@ -27,31 +26,23 @@ import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
 import io.supertokens.multitenancy.exception.DeletionInProgressException;
-import io.supertokens.passwordless.Passwordless;
-import io.supertokens.passwordless.exceptions.*;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
-import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.passwordless.exception.DuplicateLinkCodeHashException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
-import io.supertokens.thirdparty.ThirdParty;
+import io.supertokens.utils.SemVer;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -189,7 +180,7 @@ public class MultitenantAPITest {
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     HttpRequestForTesting.getMultitenantUrl(t1, "/recipe/dashboard/signin"), requestBody,
                     1000, 1000, null,
-                    Utils.getCdiVersion2_18ForTests(), "dashboard");
+                    SemVer.v2_18.get(), "dashboard");
             assertEquals(2, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
             assertNotNull(response.get("sessionId").getAsString());
@@ -202,7 +193,7 @@ public class MultitenantAPITest {
             JsonObject verifyResponse1 = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     HttpRequestForTesting.getMultitenantUrl(t1, "/recipe/dashboard/session/verify"), requestBody,
                     1000, 1000, null,
-                    Utils.getCdiVersion2_18ForTests(), "dashboard");
+                    SemVer.v2_18.get(), "dashboard");
             assertEquals(1, verifyResponse1.entrySet().size());
             assertEquals("OK", verifyResponse1.get("status").getAsString());
         }
@@ -215,7 +206,7 @@ public class MultitenantAPITest {
             JsonObject response = HttpRequestForTesting.sendJsonDELETERequestWithQueryParams(process.getProcess(), "",
                     HttpRequestForTesting.getMultitenantUrl(t1, "/recipe/dashboard/session"), requestParams,
                     1000, 1000, null,
-                    Utils.getCdiVersion2_18ForTests(), "dashboard");
+                    SemVer.v2_18.get(), "dashboard");
             assertEquals(1, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
         }
@@ -226,7 +217,7 @@ public class MultitenantAPITest {
             JsonObject verifyResponse2 = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     HttpRequestForTesting.getMultitenantUrl(t1, "/recipe/dashboard/session/verify"), requestBody,
                     1000, 1000, null,
-                    Utils.getCdiVersion2_18ForTests(), "dashboard");
+                    SemVer.v2_18.get(), "dashboard");
 
             assertEquals(1, verifyResponse2.entrySet().size());
             assertEquals("INVALID_SESSION_ERROR", verifyResponse2.get("status").getAsString());

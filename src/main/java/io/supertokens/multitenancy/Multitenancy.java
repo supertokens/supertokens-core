@@ -36,6 +36,7 @@ import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
 import io.supertokens.thirdparty.ThirdParty;
+import org.jetbrains.annotations.TestOnly;
 
 import java.io.IOException;
 import java.util.*;
@@ -77,7 +78,16 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         }
     }
 
+    @TestOnly
     public static boolean addNewOrUpdateAppOrTenant(Main main, TenantIdentifier sourceTenant, TenantConfig newTenant)
+            throws DeletionInProgressException, CannotModifyBaseConfigException, BadPermissionException,
+            StorageQueryException, FeatureNotEnabledException, IOException, InvalidConfigException,
+            InvalidProviderConfigException, TenantOrAppNotFoundException {
+        return addNewOrUpdateAppOrTenant(main, sourceTenant, newTenant, false);
+    }
+
+    public static boolean addNewOrUpdateAppOrTenant(Main main, TenantIdentifier sourceTenant, TenantConfig newTenant,
+                                                    boolean shouldPreventDbConfigUpdate)
             throws DeletionInProgressException, CannotModifyBaseConfigException, BadPermissionException,
             StorageQueryException, FeatureNotEnabledException, IOException, InvalidConfigException,
             InvalidProviderConfigException, TenantOrAppNotFoundException {
@@ -108,7 +118,16 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
 
         // we check if the core config provided is correct
         {
-            TenantConfig[] existingTenants = getAllTenants(main);
+            if (shouldPreventDbConfigUpdate) {
+                for (String s : StorageLayer.getStorage(new TenantIdentifier(null, null, null), main)
+                        .getProtectedConfigsFromSuperTokensSaaSUsers()) {
+                    if (newTenant.coreConfig.has(s)) {
+                        throw new BadPermissionException("Not allowed to modify DB related configs.");
+                    }
+                }
+            }
+
+            TenantConfig[] existingTenants = getAllTenants(new TenantIdentifier(null, null, null), main);
             boolean updated = false;
             for (int i = 0; i < existingTenants.length; i++) {
                 if (existingTenants[i].tenantIdentifier.equals(newTenant.tenantIdentifier)) {
@@ -151,7 +170,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                         .addTenantIdInUserPool(newTenant.tenantIdentifier);
             } catch (TenantOrAppNotFoundException e) {
                 // it should never come here, since we just added the tenant above.. but just in case.
-                return addNewOrUpdateAppOrTenant(main, sourceTenant, newTenant);
+                return addNewOrUpdateAppOrTenant(main, sourceTenant, newTenant, shouldPreventDbConfigUpdate);
             }
             return true;
         } catch (DuplicateTenantException e) {
@@ -170,7 +189,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                 } catch (TenantOrAppNotFoundException ex) {
                     // this can happen cause of a race condition if the tenant was deleted in the middle
                     // of it being recreated.
-                    return addNewOrUpdateAppOrTenant(main, sourceTenant, newTenant);
+                    return addNewOrUpdateAppOrTenant(main, sourceTenant, newTenant, shouldPreventDbConfigUpdate);
                 } catch (DuplicateTenantException ex) {
                     // we treat this as a success
                     return false;

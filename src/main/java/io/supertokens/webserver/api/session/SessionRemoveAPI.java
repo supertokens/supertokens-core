@@ -89,9 +89,10 @@ public class SessionRemoveAPI extends WebserverAPI {
                                 this.getAppIdentifierWithStorage(req),
                                 userId, UserIdType.ANY);
                         if (userIdMapping != null) {
-                            ActiveUsers.updateLastActive(main, userIdMapping.superTokensUserId);
+                            ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main,
+                                    userIdMapping.superTokensUserId);
                         } else {
-                            ActiveUsers.updateLastActive(main, userId);
+                            ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main, userId);
                         }
                     } catch (StorageQueryException ignored) {
                     }

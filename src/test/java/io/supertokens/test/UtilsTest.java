@@ -41,4 +41,20 @@ public class UtilsTest {
         assert (io.supertokens.utils.Utils.convertFromBase64(io.supertokens.utils.Utils.convertToBase64("łukasz 馬 / 马"))
                 .equals("łukasz 馬 / 马"));
     }
+
+    @Test
+    public void pubPriKeyShouldHandleSemicolonSeparator() {
+        io.supertokens.utils.Utils.PubPriKey parsed = new io.supertokens.utils.Utils.PubPriKey("pub;pri");
+
+        assert ( parsed.privateKey.equals("pri"));
+        assert ( parsed.publicKey.equals("pub"));
+    }
+
+    @Test
+    public void pubPriKeyShouldHandleBarSeparator() {
+        io.supertokens.utils.Utils.PubPriKey parsed = new io.supertokens.utils.Utils.PubPriKey("pub|pri");
+
+        assert ( parsed.privateKey.equals("pri"));
+        assert ( parsed.publicKey.equals("pub"));
+    }
 }

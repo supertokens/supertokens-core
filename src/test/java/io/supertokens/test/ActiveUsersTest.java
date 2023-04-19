@@ -93,7 +93,7 @@ public class ActiveUsersTest {
                                     1000,
                                     1000,
                                     null,
-                                    Utils.getCdiVersionLatestForTests(),
+                                    Utils.getCdiVersionStringLatestForTests(),
                                     "");
                         }
                 );
@@ -114,7 +114,7 @@ public class ActiveUsersTest {
                                     1000,
                                     1000,
                                     null,
-                                    Utils.getCdiVersionLatestForTests(),
+                                    Utils.getCdiVersionStringLatestForTests(),
                                     "");
                         }
                 );
@@ -135,7 +135,7 @@ public class ActiveUsersTest {
                                     1000,
                                     1000,
                                     null,
-                                    Utils.getCdiVersionLatestForTests(),
+                                    Utils.getCdiVersionStringLatestForTests(),
                                     "");
                         }
                 );
@@ -154,7 +154,7 @@ public class ActiveUsersTest {
                 1000,
                 1000,
                 null,
-                Utils.getCdiVersionLatestForTests(),
+                Utils.getCdiVersionStringLatestForTests(),
                 "");
 
         assert res.get("status").getAsString().equals("OK");
@@ -171,7 +171,7 @@ public class ActiveUsersTest {
                 1000,
                 1000,
                 null,
-                Utils.getCdiVersionLatestForTests(),
+                Utils.getCdiVersionStringLatestForTests(),
                 "");
 
         assert res.get("status").getAsString().equals("OK");
@@ -190,7 +190,7 @@ public class ActiveUsersTest {
                 1000,
                 1000,
                 null,
-                Utils.getCdiVersionLatestForTests(),
+                Utils.getCdiVersionStringLatestForTests(),
                 "");
 
         assert res.get("status").getAsString().equals("OK");
@@ -205,7 +205,7 @@ public class ActiveUsersTest {
                 1000,
                 1000,
                 null,
-                Utils.getCdiVersionLatestForTests(),
+                Utils.getCdiVersionStringLatestForTests(),
                 "");
 
         assert res.get("status").getAsString().equals("OK");

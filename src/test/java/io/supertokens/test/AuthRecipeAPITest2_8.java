@@ -23,6 +23,7 @@ import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.thirdparty.ThirdParty;
+import io.supertokens.utils.SemVer;
 import org.junit.*;
 import org.junit.rules.TestRule;
 
@@ -58,7 +59,7 @@ public class AuthRecipeAPITest2_8 {
 
         {
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/users/count", null, 1000, 1000, null, Utils.getCdiVersion2_8ForTests(), "");
+                    "http://localhost:3567/users/count", null, 1000, 1000, null, SemVer.v2_8.get(), "");
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.get("count").getAsLong(), 0);
         }
@@ -68,7 +69,7 @@ public class AuthRecipeAPITest2_8 {
 
         {
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/users/count", null, 1000, 1000, null, Utils.getCdiVersion2_8ForTests(), "");
+                    "http://localhost:3567/users/count", null, 1000, 1000, null, SemVer.v2_8.get(), "");
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.get("count").getAsLong(), 2);
         }
@@ -76,7 +77,7 @@ public class AuthRecipeAPITest2_8 {
         {
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/users/count?includeRecipeIds=emailpassword", null, 1000, 1000, null,
-                    Utils.getCdiVersion2_8ForTests(), "");
+                    SemVer.v2_8.get(), "");
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.get("count").getAsLong(), 2);
         }
@@ -84,7 +85,7 @@ public class AuthRecipeAPITest2_8 {
         {
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/users/count?includeRecipeIds=thirdparty", null, 1000, 1000, null,
-                    Utils.getCdiVersion2_8ForTests(), "");
+                    SemVer.v2_8.get(), "");
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.get("count").getAsLong(), 0);
         }
@@ -97,7 +98,7 @@ public class AuthRecipeAPITest2_8 {
 
         {
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/users/count", null, 1000, 1000, null, Utils.getCdiVersion2_8ForTests(), "");
+                    "http://localhost:3567/users/count", null, 1000, 1000, null, SemVer.v2_8.get(), "");
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.get("count").getAsLong(), 3);
         }
@@ -105,7 +106,7 @@ public class AuthRecipeAPITest2_8 {
         {
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/users/count?includeRecipeIds=emailpassword,thirdparty", null, 1000, 1000,
-                    null, Utils.getCdiVersion2_8ForTests(), "");
+                    null, SemVer.v2_8.get(), "");
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.get("count").getAsLong(), 3);
         }
@@ -113,7 +114,7 @@ public class AuthRecipeAPITest2_8 {
         {
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/users/count?includeRecipeIds=emailpassword", null, 1000, 1000, null,
-                    Utils.getCdiVersion2_8ForTests(), "");
+                    SemVer.v2_8.get(), "");
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.get("count").getAsLong(), 2);
         }
@@ -121,7 +122,7 @@ public class AuthRecipeAPITest2_8 {
         {
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/users/count?includeRecipeIds=thirdparty", null, 1000, 1000, null,
-                    Utils.getCdiVersion2_8ForTests(), "");
+                    SemVer.v2_8.get(), "");
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.get("count").getAsLong(), 1);
         }
@@ -144,7 +145,7 @@ public class AuthRecipeAPITest2_8 {
         try {
             HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/users/count?includeRecipeIds=thirdparty,random", null, 1000, 1000, null,
-                    Utils.getCdiVersion2_8ForTests(), "");
+                    SemVer.v2_8.get(), "");
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.statusCode == 400
@@ -169,7 +170,7 @@ public class AuthRecipeAPITest2_8 {
         try {
             HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/users?includeRecipeIds=thirdparty,random", null, 1000, 1000, null,
-                    Utils.getCdiVersion2_8ForTests(), "");
+                    SemVer.v2_8.get(), "");
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.statusCode == 400
@@ -178,7 +179,7 @@ public class AuthRecipeAPITest2_8 {
 
         try {
             HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/users?limit=-1", null,
-                    1000, 1000, null, Utils.getCdiVersion2_8ForTests(), "");
+                    1000, 1000, null, SemVer.v2_8.get(), "");
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.statusCode == 400 && e.getMessage().equals(
@@ -187,7 +188,7 @@ public class AuthRecipeAPITest2_8 {
 
         try {
             HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/users?limit=501",
-                    null, 1000, 1000, null, Utils.getCdiVersion2_8ForTests(), "");
+                    null, 1000, 1000, null, SemVer.v2_8.get(), "");
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.statusCode == 400
@@ -199,7 +200,7 @@ public class AuthRecipeAPITest2_8 {
             QueryParams.put("paginationToken", "randomString");
             try {
                 HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/users",
-                        QueryParams, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "");
+                        QueryParams, 1000, 1000, null, SemVer.v2_7.get(), "");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400
@@ -238,7 +239,7 @@ public class AuthRecipeAPITest2_8 {
             HashMap<String, String> queryParams = new HashMap<>();
             queryParams.put("limit", "1");
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/users", queryParams, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "");
+                    "http://localhost:3567/users", queryParams, 1000, 1000, null, SemVer.v2_7.get(), "");
 
             Assert.assertEquals("OK", response.get("status").getAsString());
             assertNotNull(response.get("nextPaginationToken"));
@@ -259,7 +260,7 @@ public class AuthRecipeAPITest2_8 {
         // no params passed should return 5 users
         {
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/users", new HashMap<>(), 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                    "http://localhost:3567/users", new HashMap<>(), 1000, 1000, null, SemVer.v2_7.get(),
                     "");
             Assert.assertEquals(5, response.getAsJsonArray("users").size());
 

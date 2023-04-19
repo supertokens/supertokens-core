@@ -23,6 +23,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -57,7 +58,7 @@ public class SessionUserAPITest2_7 {
         // null is sent as the parameter
         try {
             HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/user",
-                    null, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "session");
+                    null, 1000, 1000, null, SemVer.v2_7.get(), "session");
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.statusCode == 400 && e.getMessage()
@@ -70,7 +71,7 @@ public class SessionUserAPITest2_7 {
 
         try {
             HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/user",
-                    map, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "session");
+                    map, 1000, 1000, null, SemVer.v2_7.get(), "session");
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.statusCode == 400 && e.getMessage()
@@ -98,7 +99,7 @@ public class SessionUserAPITest2_7 {
         map.put("userId", "");
 
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session/user", map, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                "http://localhost:3567/recipe/session/user", map, 1000, 1000, null, SemVer.v2_7.get(),
                 "session");
 
         assertEquals(response.get("status").getAsString(), "OK");
@@ -108,14 +109,14 @@ public class SessionUserAPITest2_7 {
         JsonObject sessionCreatedResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session",
                 new JsonParser().parse(createSessionJsonInput).getAsJsonObject(), 1000, 1000, null,
-                Utils.getCdiVersion2_7ForTests(), "session");
+                SemVer.v2_7.get(), "session");
 
         assertEquals("OK", sessionCreatedResponse.get("status").getAsString());
 
         map = new HashMap<>();
         map.put("userId", "UserID");
         response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session/user", map, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                "http://localhost:3567/recipe/session/user", map, 1000, 1000, null, SemVer.v2_7.get(),
                 "session");
 
         assertEquals(response.get("status").getAsString(), "OK");
@@ -130,7 +131,7 @@ public class SessionUserAPITest2_7 {
         JsonObject sessionCreatedResponse1 = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session",
                 new JsonParser().parse(createSessionJsonInput).getAsJsonObject(), 1000, 1000, null,
-                Utils.getCdiVersion2_7ForTests(), "session");
+                SemVer.v2_7.get(), "session");
 
         assertEquals(sessionCreatedResponse1.get("status").getAsString(), "OK");
 
@@ -138,12 +139,12 @@ public class SessionUserAPITest2_7 {
         JsonObject sessionCreatedResponse2 = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session",
                 new JsonParser().parse(createSessionJsonInput).getAsJsonObject(), 1000, 1000, null,
-                Utils.getCdiVersion2_7ForTests(), "session");
+                SemVer.v2_7.get(), "session");
 
         assertEquals(sessionCreatedResponse2.get("status").getAsString(), "OK");
 
         JsonObject multiResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session/user", map, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                "http://localhost:3567/recipe/session/user", map, 1000, 1000, null, SemVer.v2_7.get(),
                 "session");
 
         assertEquals(multiResponse.get("status").getAsString(), "OK");
@@ -186,21 +187,21 @@ public class SessionUserAPITest2_7 {
         // session 1
         JsonObject user1Response1 = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session", new JsonParser().parse(userJsonInput1).getAsJsonObject(), 1000,
-                1000, null, Utils.getCdiVersion2_7ForTests(), "session");
+                1000, null, SemVer.v2_7.get(), "session");
 
         assertEquals("OK", user1Response1.get("status").getAsString());
 
         // session 2
         JsonObject user1Response2 = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session", new JsonParser().parse(userJsonInput1).getAsJsonObject(), 1000,
-                1000, null, Utils.getCdiVersion2_7ForTests(), "session");
+                1000, null, SemVer.v2_7.get(), "session");
 
         assertEquals("OK", user1Response2.get("status").getAsString());
 
         // session 3
         JsonObject user1Response3 = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session", new JsonParser().parse(userJsonInput1).getAsJsonObject(), 1000,
-                1000, null, Utils.getCdiVersion2_7ForTests(), "session");
+                1000, null, SemVer.v2_7.get(), "session");
 
         assertEquals("OK", user1Response3.get("status").getAsString());
 
@@ -210,7 +211,7 @@ public class SessionUserAPITest2_7 {
 
         JsonObject user2Response1 = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session", new JsonParser().parse(userJsonInput2).getAsJsonObject(), 1000,
-                1000, null, Utils.getCdiVersion2_7ForTests(), "session");
+                1000, null, SemVer.v2_7.get(), "session");
 
         assertEquals("OK", user2Response1.get("status").getAsString());
 
@@ -218,7 +219,7 @@ public class SessionUserAPITest2_7 {
 
         JsonObject user2Response2 = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session", new JsonParser().parse(userJsonInput2).getAsJsonObject(), 1000,
-                1000, null, Utils.getCdiVersion2_7ForTests(), "session");
+                1000, null, SemVer.v2_7.get(), "session");
 
         assertEquals("OK", user2Response2.get("status").getAsString());
 
@@ -226,7 +227,7 @@ public class SessionUserAPITest2_7 {
 
         JsonObject user2Response3 = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session", new JsonParser().parse(userJsonInput2).getAsJsonObject(), 1000,
-                1000, null, Utils.getCdiVersion2_7ForTests(), "session");
+                1000, null, SemVer.v2_7.get(), "session");
 
         assertEquals("OK", user2Response3.get("status").getAsString());
 
@@ -236,7 +237,7 @@ public class SessionUserAPITest2_7 {
 
         JsonObject user3Response1 = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session", new JsonParser().parse(userJsonInput3).getAsJsonObject(), 1000,
-                1000, null, Utils.getCdiVersion2_7ForTests(), "session");
+                1000, null, SemVer.v2_7.get(), "session");
 
         assertEquals("OK", user3Response1.get("status").getAsString());
 
@@ -244,7 +245,7 @@ public class SessionUserAPITest2_7 {
 
         JsonObject user3Response2 = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session", new JsonParser().parse(userJsonInput3).getAsJsonObject(), 1000,
-                1000, null, Utils.getCdiVersion2_7ForTests(), "session");
+                1000, null, SemVer.v2_7.get(), "session");
 
         assertEquals("OK", user3Response2.get("status").getAsString());
 
@@ -252,7 +253,7 @@ public class SessionUserAPITest2_7 {
 
         JsonObject user3Response3 = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session", new JsonParser().parse(userJsonInput3).getAsJsonObject(), 1000,
-                1000, null, Utils.getCdiVersion2_7ForTests(), "session");
+                1000, null, SemVer.v2_7.get(), "session");
 
         assertEquals("OK", user3Response3.get("status").getAsString());
 
@@ -261,7 +262,7 @@ public class SessionUserAPITest2_7 {
         map.put("userId", "UserID1");
 
         JsonObject multiResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session/user", map, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                "http://localhost:3567/recipe/session/user", map, 1000, 1000, null, SemVer.v2_7.get(),
                 "session");
 
         assertEquals("OK", multiResponse.get("status").getAsString());
@@ -278,7 +279,7 @@ public class SessionUserAPITest2_7 {
         map.put("userId", "UserID2");
 
         multiResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session/user", map, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                "http://localhost:3567/recipe/session/user", map, 1000, 1000, null, SemVer.v2_7.get(),
                 "session");
         assertEquals("OK", multiResponse.get("status").getAsString());
 
@@ -293,7 +294,7 @@ public class SessionUserAPITest2_7 {
         map.put("userId", "UserID3");
 
         multiResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session/user", map, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                "http://localhost:3567/recipe/session/user", map, 1000, 1000, null, SemVer.v2_7.get(),
                 "session");
         assertEquals("OK", multiResponse.get("status").getAsString());
 

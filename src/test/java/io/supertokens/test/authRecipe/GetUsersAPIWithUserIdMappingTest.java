@@ -28,6 +28,7 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -80,7 +81,7 @@ public class GetUsersAPIWithUserIdMappingTest {
         }
 
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/users", null, 1000, 1000, null, Utils.getCdiVersion2_15ForTests(), null);
+                "http://localhost:3567/users", null, 1000, 1000, null, SemVer.v2_15.get(), null);
         assertEquals("OK", response.get("status").getAsString());
         JsonArray users = response.getAsJsonArray("users");
         assertEquals(10, users.size());
@@ -123,7 +124,7 @@ public class GetUsersAPIWithUserIdMappingTest {
         queryParams.put("limit", "10");
 
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/users", queryParams, 1000, 1000, null, Utils.getCdiVersion2_15ForTests(), null);
+                "http://localhost:3567/users", queryParams, 1000, 1000, null, SemVer.v2_15.get(), null);
 
         assertEquals("OK", response.get("status").getAsString());
         JsonArray users = response.getAsJsonArray("users");
@@ -141,7 +142,7 @@ public class GetUsersAPIWithUserIdMappingTest {
         queryParams_2.put("paginationToken", paginationToken);
 
         JsonObject response_2 = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/users", queryParams_2, 1000, 1000, null, Utils.getCdiVersion2_15ForTests(),
+                "http://localhost:3567/users", queryParams_2, 1000, 1000, null, SemVer.v2_15.get(),
                 null);
 
         assertEquals("OK", response_2.get("status").getAsString());

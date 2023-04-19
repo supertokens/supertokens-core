@@ -18,7 +18,10 @@ package io.supertokens.webserver.api.session;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.exceptions.AccessTokenPayloadError;
+import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.exceptions.UnauthorisedException;
+import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -26,6 +29,8 @@ import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicExceptio
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.session.Session;
 import io.supertokens.session.info.SessionInformationHolder;
+import io.supertokens.session.jwt.JWT;
+import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -63,16 +68,19 @@ public class SessionRegenerateAPI extends WebserverAPI {
         JsonObject userDataInJWT = InputParser.parseJsonObjectOrThrowError(input, "userDataInJWT", true);
 
         try {
-            SessionInformationHolder sessionInfo = Session.regenerateToken(
-                    this.getAppIdentifierWithStorage(req), main,
-                    accessToken, userDataInJWT);
+            SessionInformationHolder sessionInfo = getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_21) ?
+                    Session.regenerateToken(this.getAppIdentifierWithStorage(req), main, accessToken, userDataInJWT) :
+                    Session.regenerateTokenBeforeCDI2_21(this.getAppIdentifierWithStorage(req), main, accessToken,
+                            userDataInJWT);
 
             JsonObject result = sessionInfo.toJsonObject();
 
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
 
-        } catch (StorageQueryException | StorageTransactionLogicException | NoSuchAlgorithmException | InvalidKeyException | SignatureException | InvalidKeySpecException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | NoSuchAlgorithmException | TryRefreshTokenException
+                | InvalidKeyException | SignatureException | InvalidKeySpecException | JWT.JWTException |
+                UnsupportedJWTSigningAlgorithmException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         } catch (UnauthorisedException e) {
             Logging.debug(main, Utils.exceptionStacktraceToString(e));
@@ -80,6 +88,8 @@ public class SessionRegenerateAPI extends WebserverAPI {
             reply.addProperty("status", "UNAUTHORISED");
             reply.addProperty("message", e.getMessage());
             super.sendJsonResponse(200, reply, resp);
+        } catch (AccessTokenPayloadError e) {
+            throw new ServletException(new BadRequestException(e.getMessage()));
         }
     }
 

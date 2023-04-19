@@ -39,7 +39,7 @@ public class GetLicenseKeyAPITest {
 
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 "http://localhost:3567/ee/license",
-                null, 10000, 10000, null, WebserverAPI.getLatestCDIVersion(), "");
+                null, 10000, 10000, null, WebserverAPI.getLatestCDIVersion().get(), "");
         Assert.assertEquals(1, response.entrySet().size());
         Assert.assertEquals("NO_LICENSE_KEY_FOUND_ERROR", response.get("status").getAsString());
 
@@ -61,7 +61,7 @@ public class GetLicenseKeyAPITest {
         // retrieve license key
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 "http://localhost:3567/ee/license",
-                null, 10000, 10000, null, WebserverAPI.getLatestCDIVersion(), "");
+                null, 10000, 10000, null, WebserverAPI.getLatestCDIVersion().get(), "");
 
         assertEquals(2, response.entrySet().size());
         assertEquals("OK", response.get("status").getAsString());
@@ -91,7 +91,7 @@ public class GetLicenseKeyAPITest {
         // retrieve license key
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 "http://localhost:3567/ee/license",
-                null, 10000, 10000, null, WebserverAPI.getLatestCDIVersion(), "");
+                null, 10000, 10000, null, WebserverAPI.getLatestCDIVersion().get(), "");
 
         Assert.assertEquals(1, response.entrySet().size());
         Assert.assertEquals("NO_LICENSE_KEY_FOUND_ERROR", response.get("status").getAsString());

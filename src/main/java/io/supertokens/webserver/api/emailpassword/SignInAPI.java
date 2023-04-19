@@ -74,6 +74,8 @@ public class SignInAPI extends WebserverAPI {
 
             ActiveUsers.updateLastActive(main, user.id); // use the internal user id
 
+            ActiveUsers.updateLastActive(main, user.id); // use the internal user id
+
             // if a userIdMapping exists, pass the externalUserId to the response
             UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
                     getAppIdentifierWithStorage(req), user.id, UserIdType.SUPERTOKENS);

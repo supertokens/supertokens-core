@@ -18,6 +18,8 @@ package io.supertokens.test.emailpassword.api;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
+
+import io.supertokens.ActiveUsers;
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
@@ -28,6 +30,7 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -77,7 +80,7 @@ public class SignUpAPITest2_7 {
         {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/signup", null, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                        "http://localhost:3567/recipe/signup", null, 1000, 1000, null, SemVer.v2_7.get(),
                         "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
@@ -92,7 +95,7 @@ public class SignUpAPITest2_7 {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signup", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_7ForTests(), "emailpassword");
+                        SemVer.v2_7.get(), "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
@@ -105,7 +108,7 @@ public class SignUpAPITest2_7 {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signup", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_7ForTests(), "emailpassword");
+                        SemVer.v2_7.get(), "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
@@ -154,7 +157,7 @@ public class SignUpAPITest2_7 {
         responseBody.addProperty("password", "validPass123");
 
         JsonObject signInResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/signin", responseBody, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                "http://localhost:3567/recipe/signin", responseBody, 1000, 1000, null, SemVer.v2_7.get(),
                 "emailpassword");
 
         assertEquals(signInResponse.get("status").getAsString(), "OK");

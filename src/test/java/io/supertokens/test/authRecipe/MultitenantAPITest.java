@@ -310,7 +310,7 @@ public class MultitenantAPITest {
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/users/count"),
                 params, 1000, 1000, null,
-                Utils.getCdiVersionLatestForTests(), null);
+                Utils.getCdiVersionStringLatestForTests(), null);
 
         assertEquals("OK", response.get("status").getAsString());
 
@@ -327,7 +327,7 @@ public class MultitenantAPITest {
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/users"),
                 params, 1000, 1000, null,
-                Utils.getCdiVersionLatestForTests(), null);
+                Utils.getCdiVersionStringLatestForTests(), null);
 
         assertEquals("OK", response.get("status").getAsString());
 
@@ -357,7 +357,7 @@ public class MultitenantAPITest {
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/users"),
                 params, 1000, 1000, null,
-                Utils.getCdiVersionLatestForTests(), null);
+                Utils.getCdiVersionStringLatestForTests(), null);
 
         assertEquals("OK", response.get("status").getAsString());
 

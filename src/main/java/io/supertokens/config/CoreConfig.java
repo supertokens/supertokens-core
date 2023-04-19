@@ -16,6 +16,7 @@
 
 package io.supertokens.config;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.JsonObject;
@@ -73,8 +74,9 @@ public class CoreConfig {
     @JsonProperty
     private boolean access_token_signing_key_dynamic = true;
 
-    @JsonProperty
-    private double access_token_signing_key_update_interval = 168; // in hours
+    @JsonProperty("access_token_dynamic_signing_key_update_interval")
+    @JsonAlias({"access_token_dynamic_signing_key_update_interval", "access_token_signing_key_update_interval"})
+    private double access_token_dynamic_signing_key_update_interval = 168; // in hours
 
     @JsonProperty
     private int port = 3567;
@@ -137,6 +139,9 @@ public class CoreConfig {
 
     @JsonProperty
     private String ip_deny_regex = null;
+
+    @JsonProperty
+    private String supertokens_saas_secret = null;
 
     private Set<LOG_LEVEL> allowedLogLevels = null;
 
@@ -201,11 +206,9 @@ public class CoreConfig {
     }
 
     public int getArgon2HashingPoolSize() {
-        // the reason we do Math.max below is that if the password hashing algo is
-        // bcrypt,
+        // the reason we do Math.max below is that if the password hashing algo is bcrypt,
         // then we don't check the argon2 hashing pool size config at all. In this case,
-        // if the user gives a <= 0 number, it crashes the core (since it creates a
-        // blockedqueue in PaswordHashing
+        // if the user gives a <= 0 number, it crashes the core (since it creates a blockedqueue in PaswordHashing
         // .java with length <= 0). So we do a Math.max
         return Math.max(1, argon2_hashing_pool_size);
     }
@@ -319,9 +322,8 @@ public class CoreConfig {
         return access_token_signing_key_dynamic;
     }
 
-    public long getAccessTokenSigningKeyUpdateInterval() {
-        return access_token_signing_key_dynamic ? (long) (access_token_signing_key_update_interval * 3600 * 1000)
-                : (10L * 365 * 24 * 3600 * 1000);
+    public long getAccessTokenDynamicSigningKeyUpdateInterval() {
+        return (long) (access_token_dynamic_signing_key_update_interval * 3600 * 1000);
     }
 
     public String[] getAPIKeys() {
@@ -329,6 +331,13 @@ public class CoreConfig {
             return null;
         }
         return api_keys.trim().replaceAll("\\s", "").split(",");
+    }
+
+    public String getSuperTokensSaaSSecret() {
+        if (supertokens_saas_secret != null) {
+            return supertokens_saas_secret.trim();
+        }
+        return null;
     }
 
     public int getPort(Main main) {
@@ -384,9 +393,9 @@ public class CoreConfig {
         }
 
         if (!Main.isTesting || validityTesting) { // since in testing we make this really small
-            if (access_token_signing_key_update_interval < 1) {
+            if (access_token_dynamic_signing_key_update_interval < 1) {
                 throw new InvalidConfigException(
-                        "'access_token_signing_key_update_interval' must be greater than, equal to 1 hour. The "
+                        "'access_token_dynamic_signing_key_update_interval' must be greater than, equal to 1 hour. The "
                                 + "config file can be found here: " + getConfigFileLocation(main));
             }
         }
@@ -437,6 +446,27 @@ public class CoreConfig {
                                 "Invalid characters in API key. Please only use '=', '-' and alpha-numeric (including"
                                         + " capitals)");
                     }
+                }
+            }
+        }
+
+        if (supertokens_saas_secret != null) {
+            if (api_keys == null) {
+                throw new InvalidConfigException(
+                        "supertokens_saas_secret can only be used when api_key is also defined");
+            }
+            if (supertokens_saas_secret.length() < 40) {
+                throw new InvalidConfigException(
+                        "supertokens_saas_secret is too short. Please use at least 40 characters");
+            }
+            for (int y = 0; y < supertokens_saas_secret.length(); y++) {
+                char currChar = supertokens_saas_secret.charAt(y);
+                if (!(currChar == '=' || currChar == '-' || (currChar >= '0' && currChar <= '9')
+                        || (currChar >= 'a' && currChar <= 'z') || (currChar >= 'A' && currChar <= 'Z'))) {
+                    throw new InvalidConfigException(
+                            "Invalid characters in supertokens_saas_secret key. Please only use '=', '-' and " +
+                                    "alpha-numeric (including"
+                                    + " capitals)");
                 }
             }
         }
@@ -557,6 +587,11 @@ public class CoreConfig {
             throw new InvalidConfigException(
                     "webserver_https_enabled can only be set via the core's base config setting");
         }
+
+        if (config.has("supertokens_saas_secret")) {
+            throw new InvalidConfigException(
+                    "supertokens_saas_secret can only be set via the core's base config setting");
+        }
     }
 
     void assertThatConfigFromSameAppIdAreNotConflicting(CoreConfig other) throws InvalidConfigException {
@@ -569,9 +604,11 @@ public class CoreConfig {
 
         // we do not allow different values for this across tenants in the same app cause the keys are shared
         // across all tenants
-        if (other.getAccessTokenSigningKeyUpdateInterval() != this.getAccessTokenSigningKeyUpdateInterval()) {
+        if (other.getAccessTokenDynamicSigningKeyUpdateInterval() !=
+                this.getAccessTokenDynamicSigningKeyUpdateInterval()) {
             throw new InvalidConfigException(
-                    "You cannot set different values for access_token_signing_key_update_interval for the same appId");
+                    "You cannot set different values for access_token_dynamic_signing_key_update_interval for the " +
+                            "same appId");
         }
 
         if (other.getAccessTokenValidity() != this.getAccessTokenValidity()) {

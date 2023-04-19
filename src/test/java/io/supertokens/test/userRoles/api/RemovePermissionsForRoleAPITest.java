@@ -27,6 +27,7 @@ import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.userroles.UserRoles;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -68,7 +69,7 @@ public class RemovePermissionsForRoleAPITest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/role/permissions/remove", new JsonObject(), 1000, 1000, null,
-                        Utils.getCdiVersion2_14ForTests(), "userroles");
+                        SemVer.v2_14.get(), "userroles");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
@@ -86,7 +87,7 @@ public class RemovePermissionsForRoleAPITest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/role/permissions/remove", request, 1000, 1000, null,
-                        Utils.getCdiVersion2_14ForTests(), "userroles");
+                        SemVer.v2_14.get(), "userroles");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
@@ -104,7 +105,7 @@ public class RemovePermissionsForRoleAPITest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/role/permissions/remove", request, 1000, 1000, null,
-                        Utils.getCdiVersion2_14ForTests(), "userroles");
+                        SemVer.v2_14.get(), "userroles");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
@@ -119,7 +120,7 @@ public class RemovePermissionsForRoleAPITest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/role/permissions/remove", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_14ForTests(), "userroles");
+                        SemVer.v2_14.get(), "userroles");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
@@ -135,7 +136,7 @@ public class RemovePermissionsForRoleAPITest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/role/permissions/remove", request, 1000, 1000, null,
-                        Utils.getCdiVersion2_14ForTests(), "userroles");
+                        SemVer.v2_14.get(), "userroles");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
@@ -150,7 +151,7 @@ public class RemovePermissionsForRoleAPITest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/role/permissions/remove", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_14ForTests(), "userroles");
+                        SemVer.v2_14.get(), "userroles");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
@@ -188,7 +189,7 @@ public class RemovePermissionsForRoleAPITest {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/role/permissions/remove", requestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_14ForTests(), "userroles");
+                SemVer.v2_14.get(), "userroles");
 
         assertEquals(1, response.entrySet().size());
         assertEquals("OK", response.get("status").getAsString());
@@ -226,7 +227,7 @@ public class RemovePermissionsForRoleAPITest {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/role/permissions/remove", requestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_14ForTests(), "userroles");
+                SemVer.v2_14.get(), "userroles");
 
         assertEquals(1, response.entrySet().size());
         assertEquals("OK", response.get("status").getAsString());
@@ -259,7 +260,7 @@ public class RemovePermissionsForRoleAPITest {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/role/permissions/remove", requestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_14ForTests(), "userroles");
+                SemVer.v2_14.get(), "userroles");
 
         assertEquals(1, response.entrySet().size());
         assertEquals("UNKNOWN_ROLE_ERROR", response.get("status").getAsString());
