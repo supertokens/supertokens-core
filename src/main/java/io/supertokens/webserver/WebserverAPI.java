@@ -187,6 +187,23 @@ public abstract class WebserverAPI extends HttpServlet {
         }
     }
 
+    protected boolean shouldProtectDbConfig(HttpServletRequest req) throws TenantOrAppNotFoundException {
+        String apiKey = req.getHeader("api-key");
+        String superTokensSaaSSecret = Config.getConfig(
+                new TenantIdentifier(null, null, null), this.main)
+                .getSuperTokensSaaSSecret();
+
+        if (superTokensSaaSSecret == null) {
+            return false;
+        }
+
+        if (apiKey != null && apiKey.equals(superTokensSaaSSecret)) {
+            return false;
+        }
+
+        return true;
+    }
+
     protected boolean checkAPIKey(HttpServletRequest req) {
         return true;
     }

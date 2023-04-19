@@ -59,7 +59,7 @@ public class ListTenantsAPI extends WebserverAPI {
             JsonArray tenantsArray = new JsonArray();
 
             for (TenantConfig tenantConfig : tenantConfigs) {
-                tenantsArray.add(tenantConfig.toJson());
+                tenantsArray.add(tenantConfig.toJson(shouldProtectDbConfig(req)));
             }
 
             JsonObject result = new JsonObject();

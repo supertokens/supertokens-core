@@ -80,7 +80,7 @@ public class CreateOrUpdateTenantAPI extends BaseCreateOrUpdate {
         }
 
         super.handle(
-                sourceTenantIdentifier,
+                req, sourceTenantIdentifier,
                 new TenantIdentifier(sourceTenantIdentifier.getConnectionUriDomain(), sourceTenantIdentifier.getAppId(), tenantId),
                 emailPasswordEnabled, thirdPartyEnabled, passwordlessEnabled, coreConfig, resp);
 
@@ -94,7 +94,7 @@ public class CreateOrUpdateTenantAPI extends BaseCreateOrUpdate {
             if (config == null) {
                 throw new TenantOrAppNotFoundException(tenantIdentifier);
             }
-            JsonObject result = config.toJson();
+            JsonObject result = config.toJson(shouldProtectDbConfig(req));
             result.addProperty("status", "OK");
 
             super.sendJsonResponse(200, result, resp);

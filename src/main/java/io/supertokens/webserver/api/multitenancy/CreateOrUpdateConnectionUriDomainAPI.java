@@ -79,7 +79,7 @@ public class CreateOrUpdateConnectionUriDomainAPI extends BaseCreateOrUpdate {
         }
 
         super.handle(
-                sourceTenantIdentifier,
+                req, sourceTenantIdentifier,
                 new TenantIdentifier(connectionUriDomain, null, null),
                 emailPasswordEnabled, thirdPartyEnabled, passwordlessEnabled, coreConfig, resp);
 

@@ -80,7 +80,7 @@ public class CreateOrUpdateAppAPI extends BaseCreateOrUpdate {
         }
 
         super.handle(
-                sourceTenantIdentifier,
+                req, sourceTenantIdentifier,
                 new TenantIdentifier(sourceTenantIdentifier.getConnectionUriDomain(), appId, null),
                 emailPasswordEnabled, thirdPartyEnabled, passwordlessEnabled, coreConfig, resp);
 

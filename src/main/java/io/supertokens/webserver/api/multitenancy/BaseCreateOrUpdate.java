@@ -32,6 +32,7 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.thirdparty.InvalidProviderConfigException;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
@@ -43,7 +44,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
         super(main, RECIPE_ID.MULTITENANCY.toString());
     }
 
-    protected void handle(TenantIdentifier sourceTenantIdentifier, TenantIdentifier targetTenantIdentifier, Boolean emailPasswordEnabled, Boolean thirdPartyEnabled, Boolean passwordlessEnabled, JsonObject coreConfig, HttpServletResponse resp)
+    protected void handle(HttpServletRequest req, TenantIdentifier sourceTenantIdentifier, TenantIdentifier targetTenantIdentifier, Boolean emailPasswordEnabled, Boolean thirdPartyEnabled, Boolean passwordlessEnabled, JsonObject coreConfig, HttpServletResponse resp)
             throws ServletException, IOException {
 
         TenantConfig tenantConfig = Multitenancy.getTenantInfo(main,
@@ -105,7 +106,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
 
         try {
             Multitenancy.addNewOrUpdateAppOrTenant(
-                    main, sourceTenantIdentifier, tenantConfig, false); // TODO do sass check
+                    main, sourceTenantIdentifier, tenantConfig, shouldProtectDbConfig(req));
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             result.addProperty("createdNew", createdNew);

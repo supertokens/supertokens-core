@@ -91,7 +91,7 @@ public class ListConnectionUriDomainsAPI extends WebserverAPI {
                     appObject.addProperty("appId", appId);
                     JsonArray tenantsArray = new JsonArray();
                     for (TenantConfig tenantConfig : entry2.getValue()) {
-                        tenantsArray.add(tenantConfig.toJson());
+                        tenantsArray.add(tenantConfig.toJson(shouldProtectDbConfig(req)));
                     }
                     appObject.add("tenants", tenantsArray);
                     appsArray.add(appObject);
