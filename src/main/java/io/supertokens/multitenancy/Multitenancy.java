@@ -50,10 +50,10 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             // this
             if (!sourceTenant.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
                 throw new BadPermissionException(
-                        "You must use the public tenantId to add/update/delete a new tenant to this app");
+                        "You must use the public tenantId to add/update/delete a tenant to this app");
             }
             if (!sourceTenant.toAppIdentifier().equals(targetTenant.toAppIdentifier())) {
-                throw new BadPermissionException("You must use the same app to create new tenant");
+                throw new BadPermissionException("You must use the same app to create/update/delete a tenant");
             }
         } else if (!targetTenant.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)) {
             // this means that we are creating a new app for this connectionuridomain and must use the public app
@@ -62,18 +62,18 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             if (!sourceTenant.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID) ||
                     !sourceTenant.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)) {
                 throw new BadPermissionException(
-                        "You must use the public tenantId and public appId to add/update/delete a new app");
+                        "You must use the public tenantId and public appId to add/update/delete an app");
             }
             if (!sourceTenant.getConnectionUriDomain()
                     .equals(targetTenant.getConnectionUriDomain())) {
-                throw new BadPermissionException("You must use the same connection URI domain to create new app");
+                throw new BadPermissionException("You must use the same connection URI domain to create/update/delete an app");
             }
         } else if (!targetTenant.getConnectionUriDomain()
                 .equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
             // this means that we are creating a new connectionuridomain, and must use the base tenant for this
             if (!sourceTenant.equals(new TenantIdentifier(null, null, null))) {
                 throw new BadPermissionException(
-                        "You must use the base tenant to create/update/delete a new connectionUriDomain");
+                        "You must use the base tenant to create/update/delete a connectionUriDomain");
             }
         }
     }
@@ -239,6 +239,13 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             throw new BadPermissionException(
                     "Please delete all tenants except the public tenant for this app before calling the delete API");
         }
+        try {
+            ((MultitenancyStorage) StorageLayer.getStorage(appIdentifier.getAsPublicTenantIdentifier(), main))
+                    .deleteTenantIdInUserPool(appIdentifier.getAsPublicTenantIdentifier());
+        } catch (TenantOrAppNotFoundException e) {
+            // we ignore this since it may have been that past deletion attempt deleted this successfully,
+            // but not from the main table.
+        }
         StorageLayer.getMultitenancyStorage(main).deleteAppId(appIdentifier.getAppId());
         MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired(true);
     }
@@ -258,6 +265,14 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             throw new BadPermissionException(
                     "Please delete all apps except the public appID for this connectionUriDomain before calling the " +
                             "delete API.");
+        }
+        try {
+            ((MultitenancyStorage) StorageLayer.getStorage(
+                    new TenantIdentifier(connectionUriDomain, null, null), main))
+                    .deleteTenantIdInUserPool(new TenantIdentifier(connectionUriDomain, null, null));
+        } catch (TenantOrAppNotFoundException e) {
+            // we ignore this since it may have been that past deletion attempt deleted this successfully,
+            // but not from the main table.
         }
         StorageLayer.getMultitenancyStorage(main).deleteConnectionUriDomain(connectionUriDomain);
         MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired(true);
