@@ -24,6 +24,7 @@ import io.supertokens.multitenancy.exception.CannotDeleteNullConnectionUriDomain
 import io.supertokens.multitenancy.exception.CannotDeleteNullAppIdException;
 import io.supertokens.multitenancy.exception.CannotDeleteNullTenantException;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -70,7 +71,7 @@ public abstract class BaseRemove extends WebserverAPI {
                  CannotDeleteNullConnectionUriDomainException e) {
             throw new ServletException(e); // Should never come here
 
-        } catch (TenantOrAppNotFoundException | BadPermissionException e) {
+        } catch (TenantOrAppNotFoundException | BadPermissionException | StorageQueryException e) {
             throw new ServletException(e);
         }
     }

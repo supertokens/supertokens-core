@@ -2257,13 +2257,13 @@ public class Start
     }
 
     @Override
-    public void addTenantIdInUserPool(TenantIdentifier tenantIdentifier) throws
+    public void addTenantIdInTargetStorage(TenantIdentifier tenantIdentifier) throws
             DuplicateTenantException {
         // TODO:
     }
 
     @Override
-    public void deleteTenantIdInUserPool(TenantIdentifier tenantIdentifier) throws
+    public void deleteTenantIdInTargetStorage(TenantIdentifier tenantIdentifier) throws
             TenantOrAppNotFoundException {
         // TODO:
     }
@@ -2275,21 +2275,20 @@ public class Start
     }
 
     @Override
-    public void deleteTenant(TenantIdentifier tenantIdentifier) throws
-            TenantOrAppNotFoundException {
+    public void deleteTenantInfoInBaseStorage(TenantIdentifier tenantIdentifier) throws
+            StorageQueryException {
         // TODO:
     }
 
     @Override
-    public void deleteApp(TenantIdentifier tenantIdentifier) throws
-            TenantOrAppNotFoundException {
+    public void deleteAppInfoInBaseStorage(AppIdentifier appIdentifier) throws
+            StorageQueryException {
         // TODO:
     }
 
     @Override
-    public void deleteConnectionUriDomainMapping(TenantIdentifier
-                                                         tenantIdentifier) throws
-            TenantOrAppNotFoundException {
+    public void deleteConnectionUriDomainInfoInBaseStorage(String connectionUriDomain) throws
+            StorageQueryException {
         // TODO:
     }
 
@@ -2317,18 +2316,6 @@ public class Start
     public void addRoleToTenant(TenantIdentifier tenantIdentifier, String
             role)
             throws TenantOrAppNotFoundException, UnknownRoleException {
-        // TODO:
-    }
-
-    @Override
-    public void deleteAppId(String appId) throws
-            TenantOrAppNotFoundException {
-        // TODO:
-    }
-
-    @Override
-    public void deleteConnectionUriDomain(String connectionUriDomain) throws
-            TenantOrAppNotFoundException {
         // TODO:
     }
 

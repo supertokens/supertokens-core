@@ -104,16 +104,22 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
         }
 
         try {
-            Multitenancy.addNewOrUpdateAppOrTenant(main, sourceTenantIdentifier, tenantConfig);
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    main, sourceTenantIdentifier, tenantConfig, false); // TODO do sass check
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             result.addProperty("createdNew", createdNew);
             super.sendJsonResponse(200, result, resp);
 
         } catch (DeletionInProgressException | CannotModifyBaseConfigException | BadPermissionException |
-                 StorageQueryException | FeatureNotEnabledException | InvalidConfigException |
+                 StorageQueryException | FeatureNotEnabledException |
                  InvalidProviderConfigException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
+        } catch (InvalidConfigException e) {
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "INVALID_CORE_CONFIG_ERROR");
+            result.addProperty("message", e.getMessage());
+            super.sendJsonResponse(200, result, resp);
         }
     }
 
