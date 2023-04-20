@@ -23,7 +23,6 @@ import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
-import io.supertokens.multitenancy.exception.DeletionInProgressException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
@@ -62,7 +61,7 @@ public class RandomConfigTest {
     @Test
     public void randomlyTestLoadConfig()
             throws InterruptedException, ClassNotFoundException, InvocationTargetException, NoSuchMethodException,
-            IllegalAccessException, InstantiationException, DeletionInProgressException, StorageQueryException,
+            IllegalAccessException, InstantiationException, StorageQueryException,
             FeatureNotEnabledException, IOException, CannotModifyBaseConfigException, BadPermissionException,
             TenantOrAppNotFoundException {
         String[] args = {"../"};

@@ -150,7 +150,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
 
     @TestOnly
     public static boolean addNewOrUpdateAppOrTenant(Main main, TenantIdentifier sourceTenant, TenantConfig newTenant)
-            throws DeletionInProgressException, CannotModifyBaseConfigException, BadPermissionException,
+            throws CannotModifyBaseConfigException, BadPermissionException,
             StorageQueryException, FeatureNotEnabledException, IOException, InvalidConfigException,
             InvalidProviderConfigException, TenantOrAppNotFoundException {
         checkPermissionsForCreateUpdateOrDelete(main, sourceTenant, newTenant.tenantIdentifier);
@@ -159,7 +159,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
     }
 
     public static boolean addNewOrUpdateAppOrTenant(Main main, TenantConfig newTenant)
-            throws DeletionInProgressException, CannotModifyBaseConfigException, BadPermissionException,
+            throws CannotModifyBaseConfigException, BadPermissionException,
             StorageQueryException, FeatureNotEnabledException, IOException, InvalidConfigException,
             InvalidProviderConfigException, TenantOrAppNotFoundException {
 

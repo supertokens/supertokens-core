@@ -23,12 +23,10 @@ import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
-import io.supertokens.multitenancy.exception.DeletionInProgressException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -102,7 +100,7 @@ public class CreateOrUpdateThirdPartyConfigAPI extends WebserverAPI {
             Multitenancy.validateTenantConfig(main, updatedConfig, shouldProtectDbConfig(req));
             Multitenancy.addNewOrUpdateAppOrTenant(main, updatedConfig);
 
-        } catch (DeletionInProgressException | CannotModifyBaseConfigException | BadPermissionException |
+        } catch (CannotModifyBaseConfigException | BadPermissionException |
                  StorageQueryException | FeatureNotEnabledException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         } catch (InvalidConfigException e) {

@@ -29,7 +29,6 @@ import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
-import io.supertokens.multitenancy.exception.DeletionInProgressException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
@@ -422,7 +421,7 @@ public class ConfigTest {
     @Test
     public void testCreationOfTenantsUsingValidSourceTenant()
             throws InterruptedException, BadPermissionException, InvalidProviderConfigException,
-            DeletionInProgressException, StorageQueryException, FeatureNotEnabledException, IOException,
+            StorageQueryException, FeatureNotEnabledException, IOException,
             InvalidConfigException, CannotModifyBaseConfigException, TenantOrAppNotFoundException {
         String[] args = {"../"};
 
@@ -602,7 +601,7 @@ public class ConfigTest {
     @Test
     public void testInvalidCasesOfTenantCreation()
             throws InterruptedException, BadPermissionException, InvalidProviderConfigException,
-            DeletionInProgressException, StorageQueryException, FeatureNotEnabledException, IOException,
+            StorageQueryException, FeatureNotEnabledException, IOException,
             InvalidConfigException, CannotModifyBaseConfigException, TenantOrAppNotFoundException {
         String[] args = {"../"};
 
@@ -854,7 +853,7 @@ public class ConfigTest {
     @Test
     public void testUpdationOfDefaultTenant()
             throws InterruptedException, BadPermissionException, InvalidProviderConfigException,
-            DeletionInProgressException, StorageQueryException, FeatureNotEnabledException, IOException,
+            StorageQueryException, FeatureNotEnabledException, IOException,
             InvalidConfigException, CannotModifyBaseConfigException, TenantOrAppNotFoundException {
         String[] args = {"../"};
 

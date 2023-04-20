@@ -26,7 +26,6 @@ import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
-import io.supertokens.multitenancy.exception.DeletionInProgressException;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
@@ -62,7 +61,7 @@ public class MultitenantEmailPasswordTest {
 
     private void createTenants(TestingProcessManager.TestingProcess process)
             throws StorageQueryException, TenantOrAppNotFoundException, InvalidProviderConfigException,
-            DeletionInProgressException, FeatureNotEnabledException, IOException, InvalidConfigException,
+            FeatureNotEnabledException, IOException, InvalidConfigException,
             CannotModifyBaseConfigException, BadPermissionException {
         // User pool 1 - (null, a1, null)
         // User pool 2 - (null, a1, t1), (null, a1, t2)
@@ -131,7 +130,7 @@ public class MultitenantEmailPasswordTest {
     @Test
     public void testSignUpAndLoginInDifferentTenants()
             throws InterruptedException, StorageQueryException, InvalidProviderConfigException,
-            DeletionInProgressException, FeatureNotEnabledException, TenantOrAppNotFoundException, IOException,
+            FeatureNotEnabledException, TenantOrAppNotFoundException, IOException,
             InvalidConfigException, CannotModifyBaseConfigException, BadPermissionException, DuplicateEmailException,
             WrongCredentialsException {
         String[] args = {"../"};
@@ -175,7 +174,7 @@ public class MultitenantEmailPasswordTest {
 
     @Test
     public void testSameEmailWithDifferentPasswordsOnDifferentTenantsWorksCorrectly()
-            throws InterruptedException, InvalidProviderConfigException, DeletionInProgressException,
+            throws InterruptedException, InvalidProviderConfigException,
             StorageQueryException, FeatureNotEnabledException, TenantOrAppNotFoundException, IOException,
             InvalidConfigException, CannotModifyBaseConfigException, BadPermissionException, DuplicateEmailException,
             WrongCredentialsException {
@@ -222,7 +221,7 @@ public class MultitenantEmailPasswordTest {
 
     @Test
     public void testGetUserUsingIdReturnsCorrectUser()
-            throws InterruptedException, InvalidProviderConfigException, DeletionInProgressException,
+            throws InterruptedException, InvalidProviderConfigException,
             StorageQueryException, FeatureNotEnabledException, TenantOrAppNotFoundException, IOException,
             InvalidConfigException, CannotModifyBaseConfigException, BadPermissionException, DuplicateEmailException,
             UnknownUserIdException {
@@ -279,7 +278,7 @@ public class MultitenantEmailPasswordTest {
 
     @Test
     public void testGetUserUsingEmailReturnsTheUserFromTheSpecificTenant()
-            throws InterruptedException, InvalidProviderConfigException, DeletionInProgressException,
+            throws InterruptedException, InvalidProviderConfigException,
             StorageQueryException, FeatureNotEnabledException, TenantOrAppNotFoundException, IOException,
             InvalidConfigException, CannotModifyBaseConfigException, BadPermissionException, DuplicateEmailException {
         String[] args = {"../"};
@@ -324,7 +323,7 @@ public class MultitenantEmailPasswordTest {
 
     @Test
     public void testUpdatePasswordWorksCorrectlyAcrossAllTenants()
-            throws InterruptedException, InvalidProviderConfigException, DeletionInProgressException,
+            throws InterruptedException, InvalidProviderConfigException,
             StorageQueryException, FeatureNotEnabledException, TenantOrAppNotFoundException, IOException,
             InvalidConfigException, CannotModifyBaseConfigException, BadPermissionException, DuplicateEmailException,
             UnknownUserIdException, StorageTransactionLogicException, WrongCredentialsException {

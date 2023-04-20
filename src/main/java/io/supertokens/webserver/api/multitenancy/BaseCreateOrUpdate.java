@@ -23,7 +23,6 @@ import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
-import io.supertokens.multitenancy.exception.DeletionInProgressException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -115,7 +114,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
             result.addProperty("createdNew", createdNew);
             super.sendJsonResponse(200, result, resp);
 
-        } catch (DeletionInProgressException | CannotModifyBaseConfigException | BadPermissionException |
+        } catch (CannotModifyBaseConfigException | BadPermissionException |
                  StorageQueryException | FeatureNotEnabledException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         } catch (InvalidConfigException e) {

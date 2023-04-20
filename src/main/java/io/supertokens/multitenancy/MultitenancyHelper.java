@@ -26,7 +26,6 @@ import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
-import io.supertokens.multitenancy.exception.DeletionInProgressException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -70,12 +69,12 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
         if (getTenantInfo(main, new TenantIdentifier(null, null, null)) == null) {
             // we create the default base tenant
             try {
-                Multitenancy.addNewOrUpdateAppOrTenant(main, new TenantIdentifier(null, null, null),
+                Multitenancy.addNewOrUpdateAppOrTenant(main,
                         new TenantConfig(
                                 new TenantIdentifier(null, null, null),
                                 new EmailPasswordConfig(true), new ThirdPartyConfig(true, null),
                                 new PasswordlessConfig(true), new JsonObject()));
-            } catch (DeletionInProgressException | CannotModifyBaseConfigException | BadPermissionException | FeatureNotEnabledException | InvalidConfigException | InvalidProviderConfigException | TenantOrAppNotFoundException e) {
+            } catch (CannotModifyBaseConfigException | BadPermissionException | FeatureNotEnabledException | InvalidConfigException | InvalidProviderConfigException | TenantOrAppNotFoundException e) {
                 throw new IllegalStateException(e);
             }
         }

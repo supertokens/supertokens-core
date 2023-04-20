@@ -26,7 +26,6 @@ import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
-import io.supertokens.multitenancy.exception.DeletionInProgressException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
@@ -324,7 +323,7 @@ public class SuperTokensSaaSSecretTest {
     @Test
     public void gettingTenantShouldNotExposeSuperTokensSaaSSecret()
             throws InterruptedException, IOException, InvalidConfigException, TenantOrAppNotFoundException,
-            InvalidProviderConfigException, DeletionInProgressException, StorageQueryException,
+            InvalidProviderConfigException, StorageQueryException,
             FeatureNotEnabledException, CannotModifyBaseConfigException, BadPermissionException {
         String[] args = {"../"};
 
@@ -361,7 +360,7 @@ public class SuperTokensSaaSSecretTest {
     @Test
     public void testThatTenantCannotSetSuperTokensSaasSecret()
             throws InterruptedException, IOException, InvalidConfigException, TenantOrAppNotFoundException,
-            InvalidProviderConfigException, DeletionInProgressException, StorageQueryException,
+            InvalidProviderConfigException, StorageQueryException,
             FeatureNotEnabledException, CannotModifyBaseConfigException, BadPermissionException {
         String[] args = {"../"};
 
