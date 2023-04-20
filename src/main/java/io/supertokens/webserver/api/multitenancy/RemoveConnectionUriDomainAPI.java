@@ -18,22 +18,26 @@ package io.supertokens.webserver.api.multitenancy;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
+import io.supertokens.multitenancy.exception.CannotDeleteNullConnectionUriDomainException;
+import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.InputParser;
-import io.supertokens.webserver.api.multitenancy.BaseRemove;
+import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
-public class RemoveConnectionUriDomainAPI extends BaseRemove {
+public class RemoveConnectionUriDomainAPI extends WebserverAPI {
     private static final long serialVersionUID = -4641988458637882374L;
 
     public RemoveConnectionUriDomainAPI(Main main) {
-        super(main);
+        super(main, RECIPE_ID.MULTITENANCY.toString());
     }
 
     @Override
@@ -48,13 +52,27 @@ public class RemoveConnectionUriDomainAPI extends BaseRemove {
         String connectionUriDomain = InputParser.parseStringOrThrowError(input, "connectionUriDomain", false);
         connectionUriDomain = connectionUriDomain.trim();
 
+        if (connectionUriDomain.equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
+            throw new ServletException(new BadPermissionException("Cannot delete the default connection uri domain"));
+        }
+
         try {
             TenantIdentifier sourceTenantIdentifier = this.getTenantIdentifierWithStorageFromRequest(req);
-            super.handle(
-                    sourceTenantIdentifier,
-                    new TenantIdentifier(connectionUriDomain, null, null), resp);
+            if (!sourceTenantIdentifier.equals(new TenantIdentifier(null, null, null))) {
+                throw new BadPermissionException(
+                        "Only the public tenantId, public appId and default connectionUriDomain is allowed to list all " +
+                                "connectionUriDomains and appIds associated with this " +
+                                "core");
+            }
 
-        } catch (TenantOrAppNotFoundException e) {
+            boolean didExist = Multitenancy.deleteConnectionUriDomain(connectionUriDomain, main);
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "OK");
+            result.addProperty("didExist", didExist);
+            super.sendJsonResponse(200, result, resp);
+
+        } catch (TenantOrAppNotFoundException | BadPermissionException | StorageQueryException |
+                 CannotDeleteNullConnectionUriDomainException e) {
             throw new ServletException(e);
         }
 

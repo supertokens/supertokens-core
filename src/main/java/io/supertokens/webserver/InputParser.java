@@ -104,7 +104,7 @@ public class InputParser {
     public static JsonObject parseJsonObjectOrThrowError(JsonObject element, String fieldName, boolean nullable)
             throws ServletException {
         try {
-            if (nullable && (element.get(fieldName) == null || element.get(fieldName).isJsonNull())) {
+            if (nullable && element.get(fieldName) == null) {
                 return null;
             }
             return element.get(fieldName).getAsJsonObject();
@@ -130,7 +130,7 @@ public class InputParser {
     public static String parseStringOrThrowError(JsonObject element, String fieldName, boolean nullable)
             throws ServletException {
         try {
-            if (nullable && (element.get(fieldName) == null || element.get(fieldName).isJsonNull())) {
+            if (nullable && element.get(fieldName) == null) {
                 return null;
             }
             String stringified = element.get(fieldName).toString();

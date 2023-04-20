@@ -298,6 +298,7 @@ public class HttpRequestForTesting {
         if (tenantIdentifier.getConnectionUriDomain() == TenantIdentifier.DEFAULT_CONNECTION_URI) {
             sb.append("http://localhost:3567");
         } else {
+            sb.append("http://");
             sb.append(tenantIdentifier.getConnectionUriDomain());
         }
 

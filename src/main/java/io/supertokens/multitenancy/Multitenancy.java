@@ -228,7 +228,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public static void deleteTenant(TenantIdentifier tenantIdentifier, Main main)
+    public static boolean deleteTenant(TenantIdentifier tenantIdentifier, Main main)
             throws TenantOrAppNotFoundException, CannotDeleteNullTenantException, StorageQueryException {
         if (tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
             throw new CannotDeleteNullTenantException();
@@ -240,11 +240,12 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             // we ignore this since it may have been that past deletion attempt deleted this successfully,
             // but not from the main table.
         }
-        StorageLayer.getMultitenancyStorage(main).deleteTenantInfoInBaseStorage(tenantIdentifier);
+        boolean didExist = StorageLayer.getMultitenancyStorage(main).deleteTenantInfoInBaseStorage(tenantIdentifier);
         MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired(true);
+        return didExist;
     }
 
-    public static void deleteApp(AppIdentifier appIdentifier, Main main)
+    public static boolean deleteApp(AppIdentifier appIdentifier, Main main)
             throws TenantOrAppNotFoundException, CannotDeleteNullAppIdException, BadPermissionException,
             StorageQueryException {
         if (appIdentifier.getAppId().equals(AppIdentifier.DEFAULT_APP_ID)) {
@@ -261,11 +262,12 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             // we ignore this since it may have been that past deletion attempt deleted this successfully,
             // but not from the main table.
         }
-        StorageLayer.getMultitenancyStorage(main).deleteAppInfoInBaseStorage(appIdentifier);
+        boolean didExist = StorageLayer.getMultitenancyStorage(main).deleteAppInfoInBaseStorage(appIdentifier);
         MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired(true);
+        return didExist;
     }
 
-    public static void deleteConnectionUriDomain(String connectionUriDomain, Main main)
+    public static boolean deleteConnectionUriDomain(String connectionUriDomain, Main main)
             throws TenantOrAppNotFoundException, CannotDeleteNullConnectionUriDomainException, BadPermissionException,
             StorageQueryException {
         if (connectionUriDomain == null || connectionUriDomain.equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
@@ -290,8 +292,9 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             // we ignore this since it may have been that past deletion attempt deleted this successfully,
             // but not from the main table.
         }
-        StorageLayer.getMultitenancyStorage(main).deleteConnectionUriDomainInfoInBaseStorage(connectionUriDomain);
+        boolean didExist = StorageLayer.getMultitenancyStorage(main).deleteConnectionUriDomainInfoInBaseStorage(connectionUriDomain);
         MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired(true);
+        return didExist;
     }
 
     public static boolean addUserIdToTenant(Main main, TenantIdentifierWithStorage tenantIdentifierWithStorage, String userId)

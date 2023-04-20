@@ -18,22 +18,27 @@ package io.supertokens.webserver.api.multitenancy;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
+import io.supertokens.multitenancy.exception.CannotDeleteNullAppIdException;
+import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.InputParser;
-import io.supertokens.webserver.api.multitenancy.BaseRemove;
+import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
-public class RemoveAppAPI extends BaseRemove {
+public class RemoveAppAPI extends WebserverAPI {
     private static final long serialVersionUID = -4641988458637882374L;
 
     public RemoveAppAPI(Main main) {
-        super(main);
+        super(main, RECIPE_ID.MULTITENANCY.toString());
     }
 
     @Override
@@ -45,18 +50,26 @@ public class RemoveAppAPI extends BaseRemove {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
-        String appId = InputParser.parseStringOrThrowError(input, "appId", true);
-        if (appId != null) {
-            appId = appId.trim();
+        String appId = InputParser.parseStringOrThrowError(input, "appId", false);
+        if (appId.equals(TenantIdentifier.DEFAULT_APP_ID)) {
+            throw new ServletException(new BadPermissionException("Cannot delete the default app, use remove connection uri domain API instead"));
         }
 
         try {
             TenantIdentifier sourceTenantIdentifier = this.getTenantIdentifierWithStorageFromRequest(req);
-            super.handle(
-                    sourceTenantIdentifier,
-                    new TenantIdentifier(sourceTenantIdentifier.getConnectionUriDomain(), appId, null), resp);
+            if (!sourceTenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)
+                    || !sourceTenantIdentifier.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)) {
+                throw new BadPermissionException("Only the public tenantId and public appId is allowed to list " +
+                        "all apps associated with this connection uri domain");
+            }
+            boolean didExist = Multitenancy.deleteApp(new AppIdentifier(sourceTenantIdentifier.getConnectionUriDomain(), appId), main);
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "OK");
+            result.addProperty("didExist", didExist);
+            super.sendJsonResponse(200, result, resp);
 
-        } catch (TenantOrAppNotFoundException e) {
+        } catch (TenantOrAppNotFoundException | BadPermissionException | StorageQueryException |
+                 CannotDeleteNullAppIdException e) {
             throw new ServletException(e);
         }
 
