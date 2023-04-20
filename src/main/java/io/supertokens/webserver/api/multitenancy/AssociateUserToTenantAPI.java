@@ -69,12 +69,12 @@ public class AssociateUserToTenantAPI extends WebserverAPI {
                 userId = mappingAndStorage.userIdMapping.superTokensUserId;
             }
 
-            boolean wasAlreadyAssociated = Multitenancy.addUserIdToTenant(main,
+            boolean addedToTenant = Multitenancy.addUserIdToTenant(main,
                     getTenantIdentifierWithStorageFromRequest(req), userId);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
-            result.addProperty("wasAlreadyAssociated", wasAlreadyAssociated);
+            result.addProperty("wasAlreadyAssociated", !addedToTenant);
             super.sendJsonResponse(200, result, resp);
 
         } catch (StorageQueryException | TenantOrAppNotFoundException | FeatureNotEnabledException e) {

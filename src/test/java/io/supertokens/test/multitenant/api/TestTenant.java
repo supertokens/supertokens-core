@@ -41,7 +41,7 @@ import java.io.IOException;
 
 import static org.junit.Assert.*;
 
-public class TestTenant extends TestMultitenancyAPIHelper {
+public class TestTenant {
     TestingProcessManager.TestingProcess process;
 
     @AfterClass

@@ -41,7 +41,7 @@ import java.io.IOException;
 
 import static org.junit.Assert.*;
 
-public class TestConnectionUriDomain extends TestMultitenancyAPIHelper {
+public class TestConnectionUriDomain {
     TestingProcessManager.TestingProcess process;
 
     @AfterClass

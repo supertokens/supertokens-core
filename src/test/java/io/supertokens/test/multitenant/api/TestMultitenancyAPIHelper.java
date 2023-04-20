@@ -16,9 +16,11 @@
 
 package io.supertokens.test.multitenant.api;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
@@ -155,5 +157,85 @@ public class TestMultitenancyAPIHelper {
 
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
         return response;
+    }
+
+    public static JsonObject getTenant(TenantIdentifier tenantIdentifier, Main main)
+            throws HttpResponseException, IOException {
+
+        JsonObject response = HttpRequestForTesting.sendGETRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/multitenancy/tenant"),
+                null, 1000, 1000, null,
+                Utils.getCdiVersionStringLatestForTests(), "multitenancy");
+
+        assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
+        return response;
+    }
+
+    public static JsonObject associateUserToTenant(TenantIdentifier tenantIdentifier, String userId, Main main)
+            throws HttpResponseException, IOException {
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("userId", userId);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/multitenancy/tenant/user"),
+                requestBody, 1000, 1000, null,
+                Utils.getCdiVersionStringLatestForTests(), "multitenancy");
+
+        return response;
+    }
+
+    public static JsonObject disassociateUserFromTenant(TenantIdentifier tenantIdentifier, String userId, Main main)
+            throws HttpResponseException, IOException {
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("userId", userId);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/multitenancy/tenant/user/remove"),
+                requestBody, 1000, 1000, null,
+                Utils.getCdiVersionStringLatestForTests(), "multitenancy");
+
+        assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
+        return response;
+    }
+
+    public static JsonObject addOrUpdateThirdPartyProviderConfig(TenantIdentifier tenantIdentifier, ThirdPartyConfig.Provider provider, Main main)
+            throws HttpResponseException, IOException {
+        Gson gson = new Gson();
+        JsonObject requestBody = gson.toJsonTree(provider).getAsJsonObject();
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/multitenancy/config/thirdparty"),
+                requestBody, 1000, 1000, null,
+                Utils.getCdiVersionStringLatestForTests(), "multitenancy");
+
+        assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
+        return response;
+    }
+
+    public static JsonObject deleteThirdPartyProvider(TenantIdentifier tenantIdentifier, String thirdPartyId, Main main)
+            throws HttpResponseException, IOException {
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("thirdPartyId", thirdPartyId);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/multitenancy/config/thirdparty/remove"),
+                requestBody, 1000, 1000, null,
+                Utils.getCdiVersionStringLatestForTests(), "multitenancy");
+
+        assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
+        return response;
+    }
+
+    public static JsonObject epSignUp(TenantIdentifier tenantIdentifier, String email, String password, Main main)
+            throws HttpResponseException, IOException {
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("email", email);
+        requestBody.addProperty("password", password);
+        JsonObject signUpResponse = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/signup"),
+                requestBody, 1000, 1000, null,
+                Utils.getCdiVersionStringLatestForTests(), "emailpassword");
+        assertEquals("OK", signUpResponse.getAsJsonPrimitive("status").getAsString());
+        return signUpResponse.getAsJsonObject("user");
     }
 }
