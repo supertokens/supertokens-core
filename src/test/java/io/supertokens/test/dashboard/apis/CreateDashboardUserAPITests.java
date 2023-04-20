@@ -375,7 +375,7 @@ public class CreateDashboardUserAPITests {
             }
         }
 
-        // try creating another user when max number of free users is set to 1
+        // try creating another user when max number of free users is reached 
         {
             String email = "newUser@example.com";
             String password = "testPass123";

@@ -16,6 +16,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Fixes
 
 - Fixed creating JWTs using MongoDB if a key already exists
+- Increases free Dashboard user count to 3 
 
 ### Breaking changes
 

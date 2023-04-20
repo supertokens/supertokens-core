@@ -123,7 +123,7 @@ public class GetDashboardUsersAPITests {
         // create multiple users
         ArrayList<DashboardUser> createdUsers = new ArrayList<>();
 
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < Dashboard.MAX_NUMBER_OF_FREE_DASHBOARD_USERS + 1; i++) {
             DashboardUser user = Dashboard.signUpDashboardUser(process.getProcess(), "test" + i + "@example.com",
                     "testPasswordHash");
             createdUsers.add(user);
@@ -143,8 +143,11 @@ public class GetDashboardUsersAPITests {
 
         JsonArray retrievedUsers = response.get("users").getAsJsonArray();
 
-        assertEquals(1, retrievedUsers.size());
-        assertEquals(createdUsers.get(0).userId, retrievedUsers.get(0).getAsJsonObject().get("userId").getAsString());
+        assertEquals(Dashboard.MAX_NUMBER_OF_FREE_DASHBOARD_USERS, retrievedUsers.size());
+        for (int i = 0; i < Dashboard.MAX_NUMBER_OF_FREE_DASHBOARD_USERS; i++) {
+            assertEquals(createdUsers.get(i).userId, retrievedUsers.get(i).getAsJsonObject().get("userId").getAsString());
+        }
+        
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
