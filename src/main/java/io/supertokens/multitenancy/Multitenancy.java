@@ -307,7 +307,8 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
     }
 
     public static boolean removeUserIdFromTenant(Main main, TenantIdentifierWithStorage tenantIdentifierWithStorage, String userId)
-            throws FeatureNotEnabledException, TenantOrAppNotFoundException, StorageQueryException {
+            throws FeatureNotEnabledException, TenantOrAppNotFoundException, StorageQueryException,
+            UnknownUserIdException {
         if (Arrays.stream(FeatureFlag.getInstance(main, tenantIdentifierWithStorage.toAppIdentifier()).getEnabledFeatures())
                 .noneMatch(ee_features -> ee_features == EE_FEATURES.MULTI_TENANCY)) {
             throw new FeatureNotEnabledException(EE_FEATURES.MULTI_TENANCY);

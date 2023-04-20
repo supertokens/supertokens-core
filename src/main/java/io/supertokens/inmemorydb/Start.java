@@ -2312,13 +2312,6 @@ public class Start
         return true;
     }
 
-    @Override
-    public void addRoleToTenant(TenantIdentifier tenantIdentifier, String
-            role)
-            throws TenantOrAppNotFoundException, UnknownRoleException {
-        // TODO:
-    }
-
     // TOTP recipe:
     @Override
     public void createDevice(AppIdentifier appIdentifier, TOTPDevice device) throws
