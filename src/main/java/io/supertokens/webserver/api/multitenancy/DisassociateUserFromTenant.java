@@ -58,7 +58,7 @@ public class DisassociateUserFromTenant extends WebserverAPI {
                 userId = mappingAndStorage.userIdMapping.superTokensUserId;
             }
 
-            boolean wasAssociated = Multitenancy.removeUserFromTenant(main,
+            boolean wasAssociated = Multitenancy.removeUserIdFromTenant(main,
                     getTenantIdentifierWithStorageFromRequest(req), userId);
 
             JsonObject result = new JsonObject();

@@ -293,9 +293,6 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired(true);
     }
 
-    // TODO: removeUserIdFromTenant
-    // TODO: removeRoleFromTenant
-
     public static boolean addUserIdToTenant(Main main, TenantIdentifierWithStorage tenantIdentifierWithStorage, String userId)
             throws TenantOrAppNotFoundException, UnknownUserIdException, StorageQueryException,
             FeatureNotEnabledException, DuplicateEmailException, DuplicatePhoneNumberException,
@@ -309,7 +306,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                 .addUserIdToTenant(tenantIdentifierWithStorage, userId);
     }
 
-    public static boolean removeUserFromTenant(Main main, TenantIdentifierWithStorage tenantIdentifierWithStorage, String userId)
+    public static boolean removeUserIdFromTenant(Main main, TenantIdentifierWithStorage tenantIdentifierWithStorage, String userId)
             throws FeatureNotEnabledException, TenantOrAppNotFoundException, StorageQueryException {
         if (Arrays.stream(FeatureFlag.getInstance(main, tenantIdentifierWithStorage.toAppIdentifier()).getEnabledFeatures())
                 .noneMatch(ee_features -> ee_features == EE_FEATURES.MULTI_TENANCY)) {
@@ -318,20 +315,6 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
 
         return tenantIdentifierWithStorage.getMultitenancyStorageWithTargetStorage()
                 .removeUserIdFromTenant(tenantIdentifierWithStorage, userId);
-    }
-
-    public static boolean addRoleToTenant(Main main, TenantIdentifier tenantIdentifier, String role)
-            throws TenantOrAppNotFoundException, UnknownRoleException, StorageQueryException,
-            FeatureNotEnabledException {
-
-        if (Arrays.stream(FeatureFlag.getInstance(main, tenantIdentifier.toAppIdentifier()).getEnabledFeatures())
-                .noneMatch(ee_features -> ee_features == EE_FEATURES.MULTI_TENANCY)) {
-            throw new FeatureNotEnabledException(EE_FEATURES.MULTI_TENANCY);
-        }
-
-        ((MultitenancyStorage) StorageLayer.getStorage(tenantIdentifier, main))
-                .addRoleToTenant(tenantIdentifier, role);
-        return true;
     }
 
     public static TenantConfig getTenantInfo(Main main, TenantIdentifier tenantIdentifier) {
