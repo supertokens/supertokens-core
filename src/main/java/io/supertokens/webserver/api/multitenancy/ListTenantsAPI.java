@@ -24,6 +24,7 @@ import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -46,20 +47,20 @@ public class ListTenantsAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        TenantIdentifier tenantIdentifier;
+        TenantIdentifierWithStorage tenantIdentifierWithStorage;
         try {
-            tenantIdentifier = this.getTenantIdentifierWithStorageFromRequest(req);
+            tenantIdentifierWithStorage = this.getTenantIdentifierWithStorageFromRequest(req);
 
-            if (!tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
+            if (!tenantIdentifierWithStorage.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
                 throw new BadPermissionException("Only the public tenantId is allowed to list all tenants " +
                         "associated with this app");
             }
 
-            TenantConfig[] tenantConfigs = Multitenancy.getAllTenantsForApp(tenantIdentifier.toAppIdentifier(), main);
+            TenantConfig[] tenantConfigs = Multitenancy.getAllTenantsForApp(tenantIdentifierWithStorage.toAppIdentifier(), main);
             JsonArray tenantsArray = new JsonArray();
 
             for (TenantConfig tenantConfig : tenantConfigs) {
-                tenantsArray.add(tenantConfig.toJson(shouldProtectDbConfig(req)));
+                tenantsArray.add(tenantConfig.toJson(shouldProtectDbConfig(req), tenantIdentifierWithStorage.getStorage()));
             }
 
             JsonObject result = new JsonObject();

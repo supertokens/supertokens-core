@@ -19,7 +19,6 @@ package io.supertokens.webserver.api.multitenancy;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.multitenancy.Multitenancy;
-import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.InputParser;
@@ -77,7 +76,7 @@ public class CreateOrUpdateTenantAPI extends BaseCreateOrUpdate {
             if (config == null) {
                 throw new TenantOrAppNotFoundException(tenantIdentifier);
             }
-            JsonObject result = config.toJson(shouldProtectDbConfig(req));
+            JsonObject result = config.toJson(shouldProtectDbConfig(req), tenantIdentifier.getStorage());
             result.addProperty("status", "OK");
 
             super.sendJsonResponse(200, result, resp);

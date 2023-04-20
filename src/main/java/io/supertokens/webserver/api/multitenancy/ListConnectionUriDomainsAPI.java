@@ -24,6 +24,7 @@ import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -50,11 +51,11 @@ public class ListConnectionUriDomainsAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        TenantIdentifier tenantIdentifier;
+        TenantIdentifierWithStorage tenantIdentifierWithStorage;
         try {
-            tenantIdentifier = this.getTenantIdentifierWithStorageFromRequest(req);
+            tenantIdentifierWithStorage = this.getTenantIdentifierWithStorageFromRequest(req);
 
-            if (!tenantIdentifier.equals(new TenantIdentifier(null, null, null))) {
+            if (!tenantIdentifierWithStorage.equals(new TenantIdentifier(null, null, null))) {
                 throw new BadPermissionException(
                         "Only the public tenantId, public appId and default connectionUriDomain is allowed to list all " +
                                 "connectionUriDomains and appIds associated with this " +
@@ -91,7 +92,7 @@ public class ListConnectionUriDomainsAPI extends WebserverAPI {
                     appObject.addProperty("appId", appId);
                     JsonArray tenantsArray = new JsonArray();
                     for (TenantConfig tenantConfig : entry2.getValue()) {
-                        tenantsArray.add(tenantConfig.toJson(shouldProtectDbConfig(req)));
+                        tenantsArray.add(tenantConfig.toJson(shouldProtectDbConfig(req), tenantIdentifierWithStorage.getStorage()));
                     }
                     appObject.add("tenants", tenantsArray);
                     appsArray.add(appObject);
