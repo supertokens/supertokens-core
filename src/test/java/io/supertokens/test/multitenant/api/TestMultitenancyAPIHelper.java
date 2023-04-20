@@ -28,7 +28,7 @@ import java.io.IOException;
 import static org.junit.Assert.assertEquals;
 
 public class TestMultitenancyAPIHelper {
-    protected void createConnectionUriDomain(Main main, TenantIdentifier sourceTenant, String connectionUriDomain, boolean emailPasswordEnabled,
+    public static void createConnectionUriDomain(Main main, TenantIdentifier sourceTenant, String connectionUriDomain, boolean emailPasswordEnabled,
                                              boolean thirdPartyEnabled, boolean passwordlessEnabled,
                                              JsonObject coreConfig) throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
@@ -46,7 +46,7 @@ public class TestMultitenancyAPIHelper {
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
     }
 
-    protected JsonObject listConnectionUriDomains(TenantIdentifier sourceTenant, Main main)
+    public static JsonObject listConnectionUriDomains(TenantIdentifier sourceTenant, Main main)
             throws HttpResponseException, IOException {
         JsonObject response = HttpRequestForTesting.sendGETRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/connectionuridomain/list"),
@@ -57,13 +57,99 @@ public class TestMultitenancyAPIHelper {
         return response;
     }
 
-    protected JsonObject deleteConnectionUriDomain(TenantIdentifier sourceTenant, Main main, String connectionUriDomain)
+    public static JsonObject deleteConnectionUriDomain(TenantIdentifier sourceTenant, Main main, String connectionUriDomain)
             throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("connectionUriDomain", connectionUriDomain);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/connectionuridomain/remove"),
+                requestBody, 1000, 1000, null,
+                Utils.getCdiVersionStringLatestForTests(), "multitenancy");
+
+        assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
+        return response;
+    }
+
+    public static void createApp(Main main, TenantIdentifier sourceTenant, String appId, boolean emailPasswordEnabled,
+                             boolean thirdPartyEnabled, boolean passwordlessEnabled,
+                             JsonObject coreConfig) throws HttpResponseException, IOException {
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("appId", appId);
+        requestBody.addProperty("emailPasswordEnabled", emailPasswordEnabled);
+        requestBody.addProperty("thirdPartyEnabled", thirdPartyEnabled);
+        requestBody.addProperty("passwordlessEnabled", passwordlessEnabled);
+        requestBody.add("coreConfig", coreConfig);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/app"),
+                requestBody, 1000, 1000, null,
+                Utils.getCdiVersionStringLatestForTests(), "multitenancy");
+
+        assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
+    }
+
+    public static JsonObject listApps(TenantIdentifier sourceTenant, Main main)
+            throws HttpResponseException, IOException {
+        JsonObject response = HttpRequestForTesting.sendGETRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/app/list"),
+                null, 1000, 1000, null,
+                Utils.getCdiVersionStringLatestForTests(), "multitenancy");
+
+        assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
+        return response;
+    }
+
+    public static JsonObject deleteApp(TenantIdentifier sourceTenant, Main main, String appId)
+            throws HttpResponseException, IOException {
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("appId", appId);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/app/remove"),
+                requestBody, 1000, 1000, null,
+                Utils.getCdiVersionStringLatestForTests(), "multitenancy");
+
+        assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
+        return response;
+    }
+
+    public static void createTenant(Main main, TenantIdentifier sourceTenant, String tenantId, boolean emailPasswordEnabled,
+                             boolean thirdPartyEnabled, boolean passwordlessEnabled,
+                             JsonObject coreConfig) throws HttpResponseException, IOException {
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("tenantId", tenantId);
+        requestBody.addProperty("emailPasswordEnabled", emailPasswordEnabled);
+        requestBody.addProperty("thirdPartyEnabled", thirdPartyEnabled);
+        requestBody.addProperty("passwordlessEnabled", passwordlessEnabled);
+        requestBody.add("coreConfig", coreConfig);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/tenant"),
+                requestBody, 1000, 1000, null,
+                Utils.getCdiVersionStringLatestForTests(), "multitenancy");
+
+        assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
+    }
+
+    public static JsonObject listTenants(TenantIdentifier sourceTenant, Main main)
+            throws HttpResponseException, IOException {
+        JsonObject response = HttpRequestForTesting.sendGETRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/tenant/list"),
+                null, 1000, 1000, null,
+                Utils.getCdiVersionStringLatestForTests(), "multitenancy");
+
+        assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
+        return response;
+    }
+
+    public static JsonObject deleteTenant(TenantIdentifier sourceTenant, Main main, String tenantId)
+            throws HttpResponseException, IOException {
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("tenantId", tenantId);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/tenant/remove"),
                 requestBody, 1000, 1000, null,
                 Utils.getCdiVersionStringLatestForTests(), "multitenancy");
 
