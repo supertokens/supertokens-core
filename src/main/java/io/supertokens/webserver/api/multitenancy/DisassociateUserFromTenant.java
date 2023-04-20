@@ -50,7 +50,13 @@ public class DisassociateUserFromTenant extends WebserverAPI {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
+        // normalize userId
         userId = userId.trim();
+
+        if (userId.length() == 0) {
+            throw new ServletException(
+                    new WebserverAPI.BadRequestException("Field name 'userId' cannot be an empty String"));
+        }
 
         try {
             AppIdentifierWithStorageAndUserIdMapping mappingAndStorage =

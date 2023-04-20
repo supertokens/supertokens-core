@@ -71,9 +71,7 @@ public class ListAppsAPI extends WebserverAPI {
                 appsToTenants.get(tenantConfig.tenantIdentifier.getAppId()).add(tenantConfig);
             }
 
-            Multitenancy.getAllTenantsForApp(tenantIdentifier.toAppIdentifier(), main);
             JsonArray appsArray = new JsonArray();
-
             for (Map.Entry<String, List<TenantConfig>> entry : appsToTenants.entrySet()) {
                String appId = entry.getKey();
                JsonObject appObject = new JsonObject();
