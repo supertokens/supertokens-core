@@ -123,7 +123,7 @@ public class GetDashboardUsersAPITests {
         // create multiple users
         ArrayList<DashboardUser> createdUsers = new ArrayList<>();
 
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < Dashboard.MAX_NUMBER_OF_FREE_DASHBOARD_USERS + 1; i++) {
             DashboardUser user = Dashboard.signUpDashboardUser(process.getProcess(), "test" + i + "@example.com",
                     "testPasswordHash");
             createdUsers.add(user);
