@@ -97,8 +97,7 @@ public class CreateOrUpdateThirdPartyConfigAPI extends WebserverAPI {
                     config.passwordlessConfig,
                     config.coreConfig);
 
-            Multitenancy.validateTenantConfig(main, updatedConfig, shouldProtectDbConfig(req));
-            Multitenancy.addNewOrUpdateAppOrTenant(main, updatedConfig);
+            Multitenancy.addNewOrUpdateAppOrTenant(main, updatedConfig, shouldProtectDbConfig(req));
 
         } catch (CannotModifyBaseConfigException | BadPermissionException |
                  StorageQueryException | FeatureNotEnabledException | TenantOrAppNotFoundException e) {

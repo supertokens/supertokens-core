@@ -73,7 +73,7 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
                         new TenantConfig(
                                 new TenantIdentifier(null, null, null),
                                 new EmailPasswordConfig(true), new ThirdPartyConfig(true, null),
-                                new PasswordlessConfig(true), new JsonObject()));
+                                new PasswordlessConfig(true), new JsonObject()), false);
             } catch (CannotModifyBaseConfigException | BadPermissionException | FeatureNotEnabledException | InvalidConfigException | InvalidProviderConfigException | TenantOrAppNotFoundException e) {
                 throw new IllegalStateException(e);
             }

@@ -97,7 +97,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public static void validateTenantConfig(Main main, TenantConfig targetTenantConfig, boolean shouldPreventDbConfigUpdate)
+    private static void validateTenantConfig(Main main, TenantConfig targetTenantConfig, boolean shouldPreventDbConfigUpdate)
             throws IOException, InvalidConfigException, InvalidProviderConfigException, BadPermissionException,
             TenantOrAppNotFoundException, CannotModifyBaseConfigException {
 
@@ -154,11 +154,10 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             StorageQueryException, FeatureNotEnabledException, IOException, InvalidConfigException,
             InvalidProviderConfigException, TenantOrAppNotFoundException {
         checkPermissionsForCreateUpdateOrDelete(main, sourceTenant, newTenant.tenantIdentifier);
-        validateTenantConfig(main, newTenant, false);
-        return addNewOrUpdateAppOrTenant(main, newTenant);
+        return addNewOrUpdateAppOrTenant(main, newTenant, false);
     }
 
-    public static boolean addNewOrUpdateAppOrTenant(Main main, TenantConfig newTenant)
+    public static boolean addNewOrUpdateAppOrTenant(Main main, TenantConfig newTenant, boolean shouldPreventDbConfigUpdate)
             throws CannotModifyBaseConfigException, BadPermissionException,
             StorageQueryException, FeatureNotEnabledException, IOException, InvalidConfigException,
             InvalidProviderConfigException, TenantOrAppNotFoundException {
@@ -167,6 +166,8 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         //  such that they both point to the same user pool ID by trying to add them in parallel. This is not such
         //  a big issue at the moment, but we want to solve this by taking appropriate database locks on
         //  connectionuridomain, appid and tenantid.
+
+        validateTenantConfig(main, newTenant, shouldPreventDbConfigUpdate);
 
         boolean creationInSharedDbSucceeded = false;
         try {
@@ -183,7 +184,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                         .addTenantIdInTargetStorage(newTenant.tenantIdentifier);
             } catch (TenantOrAppNotFoundException e) {
                 // it should never come here, since we just added the tenant above.. but just in case.
-                return addNewOrUpdateAppOrTenant(main, newTenant);
+                return addNewOrUpdateAppOrTenant(main, newTenant, shouldPreventDbConfigUpdate);
             }
             return true;
         } catch (DuplicateTenantException e) {
@@ -202,7 +203,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                 } catch (TenantOrAppNotFoundException ex) {
                     // this can happen cause of a race condition if the tenant was deleted in the middle
                     // of it being recreated.
-                    return addNewOrUpdateAppOrTenant(main, newTenant);
+                    return addNewOrUpdateAppOrTenant(main, newTenant, shouldPreventDbConfigUpdate);
                 } catch (DuplicateTenantException ex) {
                     // we treat this as a success
                     return false;
