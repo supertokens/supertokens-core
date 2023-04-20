@@ -2275,21 +2275,24 @@ public class Start
     }
 
     @Override
-    public void deleteTenantInfoInBaseStorage(TenantIdentifier tenantIdentifier) throws
+    public boolean deleteTenantInfoInBaseStorage(TenantIdentifier tenantIdentifier) throws
             StorageQueryException {
         // TODO:
+        return false;
     }
 
     @Override
-    public void deleteAppInfoInBaseStorage(AppIdentifier appIdentifier) throws
+    public boolean deleteAppInfoInBaseStorage(AppIdentifier appIdentifier) throws
             StorageQueryException {
         // TODO:
+        return false;
     }
 
     @Override
-    public void deleteConnectionUriDomainInfoInBaseStorage(String connectionUriDomain) throws
+    public boolean deleteConnectionUriDomainInfoInBaseStorage(String connectionUriDomain) throws
             StorageQueryException {
         // TODO:
+        return false;
     }
 
     @Override
