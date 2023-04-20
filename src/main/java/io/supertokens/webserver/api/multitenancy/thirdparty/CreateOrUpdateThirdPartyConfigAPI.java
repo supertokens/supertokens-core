@@ -60,6 +60,7 @@ public class CreateOrUpdateThirdPartyConfigAPI extends WebserverAPI {
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String thirdPartyId = InputParser.parseStringOrThrowError(input, "thirdPartyId", false);
+        thirdPartyId = thirdPartyId.trim();
 
         try {
             TenantIdentifierWithStorage tenantIdentifier = this.getTenantIdentifierWithStorageFromRequest(req);
@@ -70,17 +71,23 @@ public class CreateOrUpdateThirdPartyConfigAPI extends WebserverAPI {
             List<ThirdPartyConfig.Provider> newProviders = new ArrayList<>();
 
             boolean found = false;
+
             for (ThirdPartyConfig.Provider provider: config.thirdPartyConfig.providers) {
+                // Loop through all the existing thirdParty providers in the db
 
                 if (!provider.thirdPartyId.equals(thirdPartyId)) {
+                    // if the thirdPartyId is not the same as the one we are trying to update, add it to the new list
                     newProviders.add(provider);
                 } else {
+                    // if the thirdPartyId is the same as the one we are trying to update, add the one from json input
+                    // to the new list
                     ThirdPartyConfig.Provider newProvider = new Gson().fromJson(input, ThirdPartyConfig.Provider.class);
                     newProviders.add(newProvider);
                     found = true;
                 }
             }
             if (!found) {
+                // if the thirdPartyId is not found in the db, add the one from json input to the new list
                 ThirdPartyConfig.Provider newProvider = new Gson().fromJson(input, ThirdPartyConfig.Provider.class);
                 newProviders.add(newProvider);
             }
@@ -92,23 +99,15 @@ public class CreateOrUpdateThirdPartyConfigAPI extends WebserverAPI {
                     config.passwordlessConfig,
                     config.coreConfig);
 
-            TenantIdentifier sourceTenant;
-            if (!tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
-                sourceTenant = new TenantIdentifier(
-                        tenantIdentifier.getConnectionUriDomain(), tenantIdentifier.getAppId(), null);
-            } else if (!tenantIdentifier.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)) {
-                sourceTenant = new TenantIdentifier(
-                        tenantIdentifier.getConnectionUriDomain(), null, null);
-            } else {
-                sourceTenant = new TenantIdentifier(null, null, null);
-            }
-            Multitenancy.addNewOrUpdateAppOrTenant(main, sourceTenant, updatedConfig);
+            Multitenancy.validateTenantConfig(main, updatedConfig, shouldProtectDbConfig(req));
+            Multitenancy.addNewOrUpdateAppOrTenant(main, updatedConfig);
 
-        } catch (TenantOrAppNotFoundException | StorageQueryException | FeatureNotEnabledException |
-                 InvalidConfigException | CannotModifyBaseConfigException | BadPermissionException e) {
+        } catch (DeletionInProgressException | CannotModifyBaseConfigException | BadPermissionException |
+                 StorageQueryException | FeatureNotEnabledException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
-        } catch (InvalidProviderConfigException | DeletionInProgressException e) {
-            throw new RuntimeException(e);
-        }
-    }
+        } catch (InvalidConfigException e) {
+            throw new ServletException(new BadRequestException("Invalid core config: " + e.getMessage()));
+        } catch (InvalidProviderConfigException e) {
+            throw new ServletException(new BadRequestException("Invalid third party config: " + e.getMessage()));
+        }    }
 }

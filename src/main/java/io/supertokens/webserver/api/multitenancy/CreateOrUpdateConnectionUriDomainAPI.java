@@ -45,31 +45,14 @@ public class CreateOrUpdateConnectionUriDomainAPI extends BaseCreateOrUpdate {
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
-        String connectionUriDomain = null;
-        Boolean emailPasswordEnabled = null;
-        Boolean thirdPartyEnabled = null;
-        Boolean passwordlessEnabled = null;
-        JsonObject coreConfig = null;
-
-        if (input.has("connectionUriDomain")) {
-            connectionUriDomain = InputParser.parseStringOrThrowError(input, "connectionUriDomain", false);
+        String connectionUriDomain =  InputParser.parseStringOrThrowError(input, "connectionUriDomain", true);
+        if (connectionUriDomain != null) {
+            connectionUriDomain = connectionUriDomain.trim();
         }
-
-        if (input.has("emailPasswordEnabled")) {
-            emailPasswordEnabled = InputParser.parseBooleanOrThrowError(input, "emailPasswordEnabled", false);
-        }
-
-        if (input.has("thirdPartyEnabled")) {
-            thirdPartyEnabled = InputParser.parseBooleanOrThrowError(input, "thirdPartyEnabled", false);
-        }
-
-        if (input.has("passwordlessEnabled")) {
-            passwordlessEnabled = InputParser.parseBooleanOrThrowError(input, "passwordlessEnabled", false);
-        }
-
-        if (input.has("coreConfig")) {
-            coreConfig = InputParser.parseJsonObjectOrThrowError(input, "coreConfig", false);
-        }
+        Boolean emailPasswordEnabled = InputParser.parseBooleanOrThrowError(input, "emailPasswordEnabled", true);
+        Boolean thirdPartyEnabled = InputParser.parseBooleanOrThrowError(input, "thirdPartyEnabled", true);
+        Boolean passwordlessEnabled = InputParser.parseBooleanOrThrowError(input, "passwordlessEnabled", true);
+        JsonObject coreConfig = InputParser.parseJsonObjectOrThrowError(input, "coreConfig", true);
 
         TenantIdentifier sourceTenantIdentifier;
         try {

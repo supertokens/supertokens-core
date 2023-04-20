@@ -45,7 +45,10 @@ public class RemoveTenantAPI extends BaseRemove {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
-        String tenantId = InputParser.parseStringOrThrowError(input, "tenantId", false);
+        String tenantId = InputParser.parseStringOrThrowError(input, "tenantId", true);
+        if (tenantId != null) {
+            tenantId = tenantId.trim();
+        }
 
         try {
             TenantIdentifier sourceTenantIdentifier = this.getTenantIdentifierWithStorageFromRequest(req);

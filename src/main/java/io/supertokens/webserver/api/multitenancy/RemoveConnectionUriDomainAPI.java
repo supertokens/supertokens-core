@@ -45,10 +45,8 @@ public class RemoveConnectionUriDomainAPI extends BaseRemove {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
-        String connectionUriDomain = null;
-        if (input.has("connectionUriDomain")) {
-            connectionUriDomain = InputParser.parseStringOrThrowError(input, "connectionUriDomain", false);
-        }
+        String connectionUriDomain = InputParser.parseStringOrThrowError(input, "connectionUriDomain", false);
+        connectionUriDomain = connectionUriDomain.trim();
 
         try {
             TenantIdentifier sourceTenantIdentifier = this.getTenantIdentifierWithStorageFromRequest(req);

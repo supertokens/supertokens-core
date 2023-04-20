@@ -45,7 +45,10 @@ public class RemoveAppAPI extends BaseRemove {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
-        String appId = InputParser.parseStringOrThrowError(input, "appId", false);
+        String appId = InputParser.parseStringOrThrowError(input, "appId", true);
+        if (appId != null) {
+            appId = appId.trim();
+        }
 
         try {
             TenantIdentifier sourceTenantIdentifier = this.getTenantIdentifierWithStorageFromRequest(req);

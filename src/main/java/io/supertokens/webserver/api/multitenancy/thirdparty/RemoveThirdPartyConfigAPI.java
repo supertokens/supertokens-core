@@ -59,6 +59,7 @@ public class RemoveThirdPartyConfigAPI extends WebserverAPI {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String thirdPartyId = InputParser.parseStringOrThrowError(input, "thirdPartyId", false);
+        thirdPartyId = thirdPartyId.trim();
 
         try {
             TenantIdentifierWithStorage tenantIdentifier = this.getTenantIdentifierWithStorageFromRequest(req);
@@ -66,20 +67,17 @@ public class RemoveThirdPartyConfigAPI extends WebserverAPI {
             if (config == null) {
                 throw new TenantOrAppNotFoundException(tenantIdentifier);
             }
-            List<ThirdPartyConfig.Provider> newProviders = new ArrayList<>();
 
+            // Create a new list of providers skipping the thirdPartyId provided in the input
+            List<ThirdPartyConfig.Provider> newProviders = new ArrayList<>();
             boolean found = false;
             for (ThirdPartyConfig.Provider provider: config.thirdPartyConfig.providers) {
-
                 if (!provider.thirdPartyId.equals(thirdPartyId)) {
                     newProviders.add(provider);
                 } else {
+                    // skip the matching provider in the new list
                     found = true;
                 }
-            }
-            if (!found) {
-                ThirdPartyConfig.Provider newProvider = new Gson().fromJson(input, ThirdPartyConfig.Provider.class);
-                newProviders.add(newProvider);
             }
             TenantConfig updatedConfig = new TenantConfig(
                     config.tenantIdentifier,
@@ -89,27 +87,20 @@ public class RemoveThirdPartyConfigAPI extends WebserverAPI {
                     config.passwordlessConfig,
                     config.coreConfig);
 
-            TenantIdentifier sourceTenant;
-            if (!tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
-                sourceTenant = new TenantIdentifier(
-                        tenantIdentifier.getConnectionUriDomain(), tenantIdentifier.getAppId(), null);
-            } else if (!tenantIdentifier.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)) {
-                sourceTenant = new TenantIdentifier(
-                        tenantIdentifier.getConnectionUriDomain(), null, null);
-            } else {
-                sourceTenant = new TenantIdentifier(null, null, null);
-            }
-            Multitenancy.addNewOrUpdateAppOrTenant(main, sourceTenant, updatedConfig);
+            Multitenancy.validateTenantConfig(main, updatedConfig, shouldProtectDbConfig(req));
+            Multitenancy.addNewOrUpdateAppOrTenant(main, updatedConfig);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             result.addProperty("didConfigExist", found);
 
-        } catch (TenantOrAppNotFoundException | StorageQueryException | FeatureNotEnabledException |
-                 InvalidConfigException | CannotModifyBaseConfigException | BadPermissionException e) {
+        } catch (DeletionInProgressException | CannotModifyBaseConfigException | BadPermissionException |
+                 StorageQueryException | FeatureNotEnabledException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
-        } catch (InvalidProviderConfigException | DeletionInProgressException e) {
-            throw new RuntimeException(e);
+        } catch (InvalidConfigException e) {
+            throw new ServletException(new BadRequestException("Invalid core config: " + e.getMessage()));
+        } catch (InvalidProviderConfigException e) {
+            throw new ServletException(new BadRequestException("Invalid third party config: " + e.getMessage()));
         }
     }
 }

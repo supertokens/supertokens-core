@@ -50,6 +50,7 @@ public class DisassociateUserFromTenant extends WebserverAPI {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
+        userId = userId.trim();
 
         try {
             AppIdentifierWithStorageAndUserIdMapping mappingAndStorage =
