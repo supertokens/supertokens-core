@@ -9,6 +9,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [5.0.0] - 2023-04-05
 
+### Changes
+
+- Updated the `java-jwt` dependency version 
+
 ### Fixes
 
 - Fixed creating JWTs using MongoDB if a key already exists
