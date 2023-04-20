@@ -105,22 +105,23 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
         }
 
         try {
-            Multitenancy.addNewOrUpdateAppOrTenant(
-                    main, sourceTenantIdentifier, tenantConfig, shouldProtectDbConfig(req));
+            Multitenancy.checkPermissionsForCreateUpdateOrDelete(
+                    main, sourceTenantIdentifier, tenantConfig.tenantIdentifier);
+            Multitenancy.validateTenantConfig(main, tenantConfig, shouldProtectDbConfig(req));
+
+            Multitenancy.addNewOrUpdateAppOrTenant(main, tenantConfig);
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             result.addProperty("createdNew", createdNew);
             super.sendJsonResponse(200, result, resp);
 
         } catch (DeletionInProgressException | CannotModifyBaseConfigException | BadPermissionException |
-                 StorageQueryException | FeatureNotEnabledException |
-                 InvalidProviderConfigException | TenantOrAppNotFoundException e) {
+                 StorageQueryException | FeatureNotEnabledException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         } catch (InvalidConfigException e) {
-            JsonObject result = new JsonObject();
-            result.addProperty("status", "INVALID_CORE_CONFIG_ERROR");
-            result.addProperty("message", e.getMessage());
-            super.sendJsonResponse(200, result, resp);
+            throw new ServletException(new BadRequestException("Invalid core config: " + e.getMessage()));
+        } catch (InvalidProviderConfigException e) {
+            throw new ServletException(new BadRequestException("Invalid third party config: " + e.getMessage()));
         }
     }
 

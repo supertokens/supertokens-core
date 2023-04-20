@@ -46,67 +46,14 @@ import java.util.*;
 
 public class Multitenancy extends ResourceDistributor.SingletonResource {
 
-    public static void checkSourceAndTargetTenantForCreateOrUpdate(TenantIdentifier sourceTenant, TenantIdentifier targetTenant)
-            throws BadPermissionException {
-        if (!targetTenant.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
-            // this means that we are creating a new tenant and must use the public tenant for the current app to do
-            // this
-            if (!sourceTenant.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
-                throw new BadPermissionException(
-                        "You must use the public tenantId to add/update/delete a tenant to this app");
-            }
-            if (!sourceTenant.toAppIdentifier().equals(targetTenant.toAppIdentifier())) {
-                throw new BadPermissionException("You must use the same app to create/update/delete a tenant");
-            }
-        } else if (!targetTenant.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)) {
-            // this means that we are creating a new app for this connectionuridomain and must use the public app
-            // and
-            // public tenant for this
-            if (!sourceTenant.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID) ||
-                    !sourceTenant.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)) {
-                throw new BadPermissionException(
-                        "You must use the public tenantId and public appId to add/update/delete an app");
-            }
-            if (!sourceTenant.getConnectionUriDomain()
-                    .equals(targetTenant.getConnectionUriDomain())) {
-                throw new BadPermissionException("You must use the same connection URI domain to create/update/delete an app");
-            }
-        } else if (!targetTenant.getConnectionUriDomain()
-                .equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
-            // this means that we are creating a new connectionuridomain, and must use the base tenant for this
-            if (!sourceTenant.equals(new TenantIdentifier(null, null, null))) {
-                throw new BadPermissionException(
-                        "You must use the base tenant to create/update/delete a connectionUriDomain");
-            }
-        }
-    }
+    public static void checkPermissionsForCreateUpdateOrDelete(Main main, TenantIdentifier sourceTenant,
+                                                               TenantIdentifier targetTenant)
+            throws BadPermissionException, CannotModifyBaseConfigException, FeatureNotEnabledException,
+            TenantOrAppNotFoundException, StorageQueryException, InvalidConfigException, InvalidProviderConfigException
+    {
 
-    @TestOnly
-    public static boolean addNewOrUpdateAppOrTenant(Main main, TenantIdentifier sourceTenant, TenantConfig newTenant)
-            throws DeletionInProgressException, CannotModifyBaseConfigException, BadPermissionException,
-            StorageQueryException, FeatureNotEnabledException, IOException, InvalidConfigException,
-            InvalidProviderConfigException, TenantOrAppNotFoundException {
-        return addNewOrUpdateAppOrTenant(main, sourceTenant, newTenant, false);
-    }
-
-    public static boolean addNewOrUpdateAppOrTenant(Main main, TenantIdentifier sourceTenant, TenantConfig newTenant,
-                                                    boolean shouldPreventDbConfigUpdate)
-            throws DeletionInProgressException, CannotModifyBaseConfigException, BadPermissionException,
-            StorageQueryException, FeatureNotEnabledException, IOException, InvalidConfigException,
-            InvalidProviderConfigException, TenantOrAppNotFoundException {
-
-        // TODO: adding a new tenant is not thread safe here - for example, one can add a new connectionuridomain
-        //  such that they both point to the same user pool ID by trying to add them in parallel. This is not such
-        //  a big issue at the moment, but we want to solve this by taking appropriate database locks on
-        //  connectionuridomain, appid and tenantid.
-
-        // first we don't allow changing of core config for base tenant - since that comes from config.yaml file.
         {
-            if (newTenant.tenantIdentifier.equals(new TenantIdentifier(null, null, null))) {
-                if (newTenant.coreConfig.entrySet().size() > 0) {
-                    throw new CannotModifyBaseConfigException();
-                }
-            } else {
+            if (!targetTenant.equals(new TenantIdentifier(null, null, null))) {
                 if (Arrays.stream(FeatureFlag.getInstance(main, sourceTenant.toAppIdentifier()).getEnabledFeatures())
                         .noneMatch(ee_features -> ee_features == EE_FEATURES.MULTI_TENANCY)) {
                     throw new FeatureNotEnabledException(EE_FEATURES.MULTI_TENANCY);
@@ -116,7 +63,49 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
 
         // Then we check for permissions based on sourceTenant
         {
-            checkSourceAndTargetTenantForCreateOrUpdate(sourceTenant, newTenant.tenantIdentifier);
+            if (!targetTenant.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
+                // this means that we are creating a new tenant and must use the public tenant for the current app to do
+                // this
+                if (!sourceTenant.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
+                    throw new BadPermissionException(
+                            "You must use the public tenantId to add/update/delete a tenant to this app");
+                }
+                if (!sourceTenant.toAppIdentifier().equals(targetTenant.toAppIdentifier())) {
+                    throw new BadPermissionException("You must use the same app to create/update/delete a tenant");
+                }
+            } else if (!targetTenant.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)) {
+                // this means that we are creating a new app for this connectionuridomain and must use the public app
+                // and
+                // public tenant for this
+                if (!sourceTenant.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID) ||
+                        !sourceTenant.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)) {
+                    throw new BadPermissionException(
+                            "You must use the public tenantId and public appId to add/update/delete an app");
+                }
+                if (!sourceTenant.getConnectionUriDomain()
+                        .equals(targetTenant.getConnectionUriDomain())) {
+                    throw new BadPermissionException("You must use the same connection URI domain to create/update/delete an app");
+                }
+            } else if (!targetTenant.getConnectionUriDomain()
+                    .equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
+                // this means that we are creating a new connectionuridomain, and must use the base tenant for this
+                if (!sourceTenant.equals(new TenantIdentifier(null, null, null))) {
+                    throw new BadPermissionException(
+                            "You must use the base tenant to create/update/delete a connectionUriDomain");
+                }
+            }
+        }
+    }
+
+    public static void validateTenantConfig(Main main, TenantConfig targetTenantConfig, boolean shouldPreventDbConfigUpdate)
+            throws IOException, InvalidConfigException, InvalidProviderConfigException, BadPermissionException,
+            TenantOrAppNotFoundException, CannotModifyBaseConfigException {
+
+        // first we don't allow changing of core config for base tenant - since that comes from config.yaml file.
+        if (targetTenantConfig.tenantIdentifier.equals(new TenantIdentifier(null, null, null))) {
+            if (targetTenantConfig.coreConfig.entrySet().size() > 0) {
+                throw new CannotModifyBaseConfigException();
+            }
         }
 
         // we check if the core config provided is correct
@@ -124,7 +113,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             if (shouldPreventDbConfigUpdate) {
                 for (String s : StorageLayer.getStorage(new TenantIdentifier(null, null, null), main)
                         .getProtectedConfigsFromSuperTokensSaaSUsers()) {
-                    if (newTenant.coreConfig.has(s)) {
+                    if (targetTenantConfig.coreConfig.has(s)) {
                         throw new BadPermissionException("Not allowed to modify DB related configs.");
                     }
                 }
@@ -133,8 +122,8 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             TenantConfig[] existingTenants = getAllTenants(main);
             boolean updated = false;
             for (int i = 0; i < existingTenants.length; i++) {
-                if (existingTenants[i].tenantIdentifier.equals(newTenant.tenantIdentifier)) {
-                    existingTenants[i] = newTenant;
+                if (existingTenants[i].tenantIdentifier.equals(targetTenantConfig.tenantIdentifier)) {
+                    existingTenants[i] = targetTenantConfig;
                     updated = true;
                     break;
                 }
@@ -145,7 +134,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                 for (int i = 0; i < oldTenants.length; i++) {
                     existingTenants[i] = oldTenants[i];
                 }
-                existingTenants[existingTenants.length - 1] = newTenant;
+                existingTenants[existingTenants.length - 1] = targetTenantConfig;
             }
             Map<ResourceDistributor.KeyClass, JsonObject> normalisedConfigs = Config.getNormalisedConfigsForAllTenants(
                     existingTenants,
@@ -155,8 +144,29 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
 
         // validate third party config
         {
-            ThirdParty.verifyThirdPartyProvidersArray(newTenant.thirdPartyConfig.providers);
+            ThirdParty.verifyThirdPartyProvidersArray(targetTenantConfig.thirdPartyConfig.providers);
         }
+    }
+
+    @TestOnly
+    public static boolean addNewOrUpdateAppOrTenant(Main main, TenantIdentifier sourceTenant, TenantConfig newTenant)
+            throws DeletionInProgressException, CannotModifyBaseConfigException, BadPermissionException,
+            StorageQueryException, FeatureNotEnabledException, IOException, InvalidConfigException,
+            InvalidProviderConfigException, TenantOrAppNotFoundException {
+        checkPermissionsForCreateUpdateOrDelete(main, sourceTenant, newTenant.tenantIdentifier);
+        validateTenantConfig(main, newTenant, false);
+        return addNewOrUpdateAppOrTenant(main, newTenant);
+    }
+
+    public static boolean addNewOrUpdateAppOrTenant(Main main, TenantConfig newTenant)
+            throws DeletionInProgressException, CannotModifyBaseConfigException, BadPermissionException,
+            StorageQueryException, FeatureNotEnabledException, IOException, InvalidConfigException,
+            InvalidProviderConfigException, TenantOrAppNotFoundException {
+
+        // TODO: adding a new tenant is not thread safe here - for example, one can add a new connectionuridomain
+        //  such that they both point to the same user pool ID by trying to add them in parallel. This is not such
+        //  a big issue at the moment, but we want to solve this by taking appropriate database locks on
+        //  connectionuridomain, appid and tenantid.
 
         boolean creationInSharedDbSucceeded = false;
         try {
@@ -173,7 +183,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                         .addTenantIdInTargetStorage(newTenant.tenantIdentifier);
             } catch (TenantOrAppNotFoundException e) {
                 // it should never come here, since we just added the tenant above.. but just in case.
-                return addNewOrUpdateAppOrTenant(main, sourceTenant, newTenant, shouldPreventDbConfigUpdate);
+                return addNewOrUpdateAppOrTenant(main, newTenant);
             }
             return true;
         } catch (DuplicateTenantException e) {
@@ -192,7 +202,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                 } catch (TenantOrAppNotFoundException ex) {
                     // this can happen cause of a race condition if the tenant was deleted in the middle
                     // of it being recreated.
-                    return addNewOrUpdateAppOrTenant(main, sourceTenant, newTenant, shouldPreventDbConfigUpdate);
+                    return addNewOrUpdateAppOrTenant(main, newTenant);
                 } catch (DuplicateTenantException ex) {
                     // we treat this as a success
                     return false;
