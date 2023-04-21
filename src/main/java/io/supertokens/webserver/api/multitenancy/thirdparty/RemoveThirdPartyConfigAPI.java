@@ -89,6 +89,7 @@ public class RemoveThirdPartyConfigAPI extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             result.addProperty("didConfigExist", found);
+            super.sendJsonResponse(200, result, resp);
 
         } catch (CannotModifyBaseConfigException | BadPermissionException |
                  StorageQueryException | FeatureNotEnabledException | TenantOrAppNotFoundException e) {

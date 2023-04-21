@@ -204,7 +204,7 @@ public class TestMultitenancyAPIHelper {
         Gson gson = new Gson();
         JsonObject requestBody = gson.toJsonTree(provider).getAsJsonObject();
 
-        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+        JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/multitenancy/config/thirdparty"),
                 requestBody, 1000, 1000, null,
                 Utils.getCdiVersionStringLatestForTests(), "multitenancy");

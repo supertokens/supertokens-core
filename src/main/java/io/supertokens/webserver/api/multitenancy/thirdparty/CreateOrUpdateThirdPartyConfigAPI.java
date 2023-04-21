@@ -99,6 +99,11 @@ public class CreateOrUpdateThirdPartyConfigAPI extends WebserverAPI {
 
             Multitenancy.addNewOrUpdateAppOrTenant(main, updatedConfig, shouldProtectDbConfig(req));
 
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "OK");
+            result.addProperty("createdNew", !found);
+            super.sendJsonResponse(200, result, resp);
+
         } catch (CannotModifyBaseConfigException | BadPermissionException |
                  StorageQueryException | FeatureNotEnabledException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
