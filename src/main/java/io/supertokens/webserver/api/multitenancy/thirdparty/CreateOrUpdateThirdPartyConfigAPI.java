@@ -111,5 +111,6 @@ public class CreateOrUpdateThirdPartyConfigAPI extends WebserverAPI {
             throw new ServletException(new BadRequestException("Invalid core config: " + e.getMessage()));
         } catch (InvalidProviderConfigException e) {
             throw new ServletException(new BadRequestException("Invalid third party config: " + e.getMessage()));
-        }    }
+        }
+    }
 }
