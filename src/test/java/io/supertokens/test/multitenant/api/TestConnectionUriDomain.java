@@ -159,6 +159,56 @@ public class TestConnectionUriDomain {
     }
 
     @Test
+    public void testUpdateConnectionUriDomainFromSameConnectionUriDomainWorks() throws Exception {
+        JsonObject coreConfig = new JsonObject();
+
+        StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                .modifyConfigToAddANewUserPoolForTesting(coreConfig, 1);
+
+        // Create
+        TestMultitenancyAPIHelper.createConnectionUriDomain(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "127.0.0.1:3567", true, true, true,
+                coreConfig);
+
+        JsonObject newConfig = new JsonObject();
+        newConfig.addProperty("foo", "bar");
+        coreConfig.addProperty("foo", "bar");
+
+        // Update
+        TestMultitenancyAPIHelper.createConnectionUriDomain(
+                process.getProcess(),
+                new TenantIdentifier("127.0.0.1:3567", null, null),
+                "127.0.0.1:3567", true, true, true,
+                newConfig);
+
+        JsonObject result = TestMultitenancyAPIHelper.listConnectionUriDomains(new TenantIdentifier(null, null, null), process.getProcess());
+        assertTrue(result.has("connectionUriDomains"));
+
+        boolean found = false;
+        for (JsonElement cud : result.get("connectionUriDomains").getAsJsonArray()) {
+            JsonObject cudObj = cud.getAsJsonObject();
+            if (cudObj.get("connectionUriDomain").getAsString().equals("127.0.0.1:3567")) {
+                found = true;
+
+                for (JsonElement app : cudObj.get("apps").getAsJsonArray()) {
+                    JsonObject appObj = app.getAsJsonObject();
+
+                    for (JsonElement tenant : appObj.get("tenants").getAsJsonArray()) {
+                        JsonObject tenantObj = tenant.getAsJsonObject();
+                        assertTrue(tenantObj.get("emailPassword").getAsJsonObject().get("enabled").getAsBoolean());
+                        assertTrue(tenantObj.get("thirdParty").getAsJsonObject().get("enabled").getAsBoolean());
+                        assertTrue(tenantObj.get("passwordless").getAsJsonObject().get("enabled").getAsBoolean());
+                        assertEquals(coreConfig, tenantObj.get("coreConfig").getAsJsonObject());
+                    }
+                }
+            }
+        }
+        assertTrue(found);
+    }
+
+    @Test
     public void testUpdateWithNullValueDeletesTheSetting() throws Exception {
         JsonObject coreConfig = new JsonObject();
 
@@ -226,14 +276,16 @@ public class TestConnectionUriDomain {
         assertTrue(result.has("connectionUriDomains"));
         assertEquals(2, result.get("connectionUriDomains").getAsJsonArray().size());
 
-        JsonObject response = TestMultitenancyAPIHelper.deleteConnectionUriDomain(new TenantIdentifier(null, null, null), process.getProcess(), "127.0.0.1:3567");
+        JsonObject response = TestMultitenancyAPIHelper.deleteConnectionUriDomain(new TenantIdentifier(null, null, null),
+                "127.0.0.1:3567", process.getProcess());
         assertTrue(response.get("didExist").getAsBoolean());
 
         result = TestMultitenancyAPIHelper.listConnectionUriDomains(new TenantIdentifier(null, null, null), process.getProcess());
         assertTrue(result.has("connectionUriDomains"));
         assertEquals(1, result.get("connectionUriDomains").getAsJsonArray().size());
 
-        response = TestMultitenancyAPIHelper.deleteConnectionUriDomain(new TenantIdentifier(null, null, null), process.getProcess(), "127.0.0.1:3567");
+        response = TestMultitenancyAPIHelper.deleteConnectionUriDomain(new TenantIdentifier(null, null, null),
+                "127.0.0.1:3567", process.getProcess());
         assertFalse(response.get("didExist").getAsBoolean());
     }
 }

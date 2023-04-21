@@ -64,34 +64,35 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         // Then we check for permissions based on sourceTenant
         {
             if (!targetTenant.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
-                // this means that we are creating a new tenant and must use the public tenant for the current app to do
-                // this
-                if (!sourceTenant.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
+                // this means that we are creating or updating a tenant and must use the public or same tenant
+                // to do this
+                if (!sourceTenant.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)
+                        && !sourceTenant.getTenantId().equals(targetTenant.getTenantId())) {
                     throw new BadPermissionException(
-                            "You must use the public tenantId to add/update/delete a tenant to this app");
+                            "You must use the public or same tenantId to add/update a tenant");
                 }
                 if (!sourceTenant.toAppIdentifier().equals(targetTenant.toAppIdentifier())) {
-                    throw new BadPermissionException("You must use the same app to create/update/delete a tenant");
+                    throw new BadPermissionException("You must use the same app to create/update a tenant");
                 }
             } else if (!targetTenant.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)) {
-                // this means that we are creating a new app for this connectionuridomain and must use the public app
-                // and
-                // public tenant for this
-                if (!sourceTenant.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID) ||
-                        !sourceTenant.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)) {
+                // this means that we are creating a new app for this connectionuridomain and must use the public or
+                // same app and public tenant for this
+                if (!sourceTenant.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)
+                        || (!sourceTenant.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID) && !sourceTenant.getAppId().equals(targetTenant.getAppId()))) {
                     throw new BadPermissionException(
-                            "You must use the public tenantId and public appId to add/update/delete an app");
+                            "You must use the public tenantId and, public or same appId to add/update an app");
                 }
                 if (!sourceTenant.getConnectionUriDomain()
                         .equals(targetTenant.getConnectionUriDomain())) {
-                    throw new BadPermissionException("You must use the same connection URI domain to create/update/delete an app");
+                    throw new BadPermissionException("You must use the same connection URI domain to create/update an app");
                 }
             } else if (!targetTenant.getConnectionUriDomain()
                     .equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
                 // this means that we are creating a new connectionuridomain, and must use the base tenant for this
-                if (!sourceTenant.equals(new TenantIdentifier(null, null, null))) {
+                if (!sourceTenant.equals(new TenantIdentifier(null, null, null))
+                        && !sourceTenant.getConnectionUriDomain().equals(targetTenant.getConnectionUriDomain())) {
                     throw new BadPermissionException(
-                            "You must use the base tenant to create/update/delete a connectionUriDomain");
+                            "You must use the default or same connectionUriDomain to create/update a connectionUriDomain");
                 }
             }
         }

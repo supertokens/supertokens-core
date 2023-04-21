@@ -52,15 +52,14 @@ public class RemoveAppAPI extends WebserverAPI {
 
         String appId = InputParser.parseStringOrThrowError(input, "appId", false);
         if (appId.equals(TenantIdentifier.DEFAULT_APP_ID)) {
-            throw new ServletException(new BadPermissionException("Cannot delete the default app, use remove connection uri domain API instead"));
+            throw new ServletException(new BadPermissionException("Cannot delete the public app, use remove connection uri domain API instead"));
         }
 
         try {
             TenantIdentifier sourceTenantIdentifier = this.getTenantIdentifierWithStorageFromRequest(req);
             if (!sourceTenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)
                     || !sourceTenantIdentifier.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)) {
-                throw new BadPermissionException("Only the public tenantId and public appId is allowed to list " +
-                        "all apps associated with this connection uri domain");
+                throw new BadPermissionException("Only the public tenantId and public appId is allowed to delete an app");
             }
             boolean didExist = Multitenancy.deleteApp(new AppIdentifier(sourceTenantIdentifier.getConnectionUriDomain(), appId), main);
             JsonObject result = new JsonObject();

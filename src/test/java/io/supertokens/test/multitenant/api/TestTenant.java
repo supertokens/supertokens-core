@@ -214,14 +214,16 @@ public class TestTenant {
         assertTrue(result.has("tenants"));
         assertEquals(2, result.get("tenants").getAsJsonArray().size());
 
-        JsonObject response = TestMultitenancyAPIHelper.deleteTenant(new TenantIdentifier(null, null, null), process.getProcess(), "t1");
+        JsonObject response = TestMultitenancyAPIHelper.deleteTenant(new TenantIdentifier(null, null, null), "t1",
+                process.getProcess());
         assertTrue(response.get("didExist").getAsBoolean());
 
         result = TestMultitenancyAPIHelper.listTenants(new TenantIdentifier(null, null, null), process.getProcess());
         assertTrue(result.has("tenants"));
         assertEquals(1, result.get("tenants").getAsJsonArray().size());
 
-        response = TestMultitenancyAPIHelper.deleteTenant(new TenantIdentifier(null, null, null), process.getProcess(), "t1");
+        response = TestMultitenancyAPIHelper.deleteTenant(new TenantIdentifier(null, null, null), "t1",
+                process.getProcess());
         assertFalse(response.get("didExist").getAsBoolean());
     }
 }

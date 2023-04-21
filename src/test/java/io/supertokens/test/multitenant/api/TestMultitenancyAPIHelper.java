@@ -59,7 +59,8 @@ public class TestMultitenancyAPIHelper {
         return response;
     }
 
-    public static JsonObject deleteConnectionUriDomain(TenantIdentifier sourceTenant, Main main, String connectionUriDomain)
+    public static JsonObject deleteConnectionUriDomain(TenantIdentifier sourceTenant, String connectionUriDomain,
+                                                       Main main)
             throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("connectionUriDomain", connectionUriDomain);
@@ -102,7 +103,7 @@ public class TestMultitenancyAPIHelper {
         return response;
     }
 
-    public static JsonObject deleteApp(TenantIdentifier sourceTenant, Main main, String appId)
+    public static JsonObject deleteApp(TenantIdentifier sourceTenant, String appId, Main main)
             throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("appId", appId);
@@ -145,7 +146,7 @@ public class TestMultitenancyAPIHelper {
         return response;
     }
 
-    public static JsonObject deleteTenant(TenantIdentifier sourceTenant, Main main, String tenantId)
+    public static JsonObject deleteTenant(TenantIdentifier sourceTenant, String tenantId, Main main)
             throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("tenantId", tenantId);

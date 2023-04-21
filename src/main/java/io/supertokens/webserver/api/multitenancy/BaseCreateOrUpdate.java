@@ -113,9 +113,11 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
             result.addProperty("createdNew", createdNew);
             super.sendJsonResponse(200, result, resp);
 
-        } catch (CannotModifyBaseConfigException | BadPermissionException |
-                 StorageQueryException | FeatureNotEnabledException | TenantOrAppNotFoundException e) {
+        } catch (BadPermissionException | StorageQueryException | FeatureNotEnabledException
+                 | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
+        } catch (CannotModifyBaseConfigException e) {
+            throw new ServletException(new BadRequestException("Cannot modify base config"));
         } catch (InvalidConfigException e) {
             throw new ServletException(new BadRequestException("Invalid core config: " + e.getMessage()));
         } catch (InvalidProviderConfigException e) {
