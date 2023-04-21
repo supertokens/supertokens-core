@@ -95,9 +95,9 @@ public class VerifySessionAPI extends WebserverAPI {
 
             if (!super.getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_21)) {
                 result.addProperty("jwtSigningPublicKey",
-                        new Utils.PubPriKey(SigningKeys.getInstance(main).getLatestIssuedDynamicKey().value).publicKey);
+                        new Utils.PubPriKey(SigningKeys.getInstance(appIdentifier, main).getLatestIssuedDynamicKey().value).publicKey);
                 result.addProperty("jwtSigningPublicKeyExpiryTime",
-                        SigningKeys.getInstance(main).getDynamicSigningKeyExpiryTime());
+                        SigningKeys.getInstance(appIdentifier, main).getDynamicSigningKeyExpiryTime());
 
                 Utils.addLegacySigningKeyInfos(appIdentifier, main, result,
                         super.getVersionFromRequest(req).betweenInclusive(SemVer.v2_9, SemVer.v2_21));
@@ -122,9 +122,9 @@ public class VerifySessionAPI extends WebserverAPI {
 
                 if (!super.getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_21)) {
                     reply.addProperty("jwtSigningPublicKey", new Utils.PubPriKey(
-                            SigningKeys.getInstance(main).getLatestIssuedDynamicKey().value).publicKey);
+                            SigningKeys.getInstance(appIdentifier, main).getLatestIssuedDynamicKey().value).publicKey);
                     reply.addProperty("jwtSigningPublicKeyExpiryTime",
-                            SigningKeys.getInstance(main).getDynamicSigningKeyExpiryTime());
+                            SigningKeys.getInstance(appIdentifier, main).getDynamicSigningKeyExpiryTime());
 
                     Utils.addLegacySigningKeyInfos(this.getAppIdentifierWithStorage(req), main, reply,
                             super.getVersionFromRequest(req).betweenInclusive(SemVer.v2_9, SemVer.v2_21));
