@@ -629,7 +629,7 @@ public class ConfigTest {
             );
             fail();
         } catch (BadPermissionException e) {
-            assertEquals("You must use the base tenant to create/update/delete a connectionUriDomain", e.getMessage());
+            assertEquals("You must use the default or same connectionUriDomain to create/update a connectionUriDomain", e.getMessage());
         }
 
         try {
@@ -658,7 +658,7 @@ public class ConfigTest {
             );
             fail();
         } catch (BadPermissionException e) {
-            assertEquals("You must use the public tenantId and public appId to add/update/delete an app", e.getMessage());
+            assertEquals("You must use the public tenantId and, public or same appId to add/update an app", e.getMessage());
         }
 
         try {
@@ -687,7 +687,7 @@ public class ConfigTest {
             );
             fail();
         } catch (BadPermissionException e) {
-            assertEquals("You must use the public tenantId to add/update/delete a tenant to this app", e.getMessage());
+            assertEquals("You must use the public or same tenantId to add/update a tenant", e.getMessage());
         }
 
         try {
@@ -704,7 +704,7 @@ public class ConfigTest {
             );
             fail();
         } catch (BadPermissionException e) {
-            assertEquals("You must use the public tenantId to add/update/delete a tenant to this app", e.getMessage());
+            assertEquals("You must use the public or same tenantId to add/update a tenant", e.getMessage());
         }
 
         try {
@@ -721,7 +721,7 @@ public class ConfigTest {
             );
             fail();
         } catch (BadPermissionException e) {
-            assertEquals("You must use the same app to create/update/delete a tenant", e.getMessage());
+            assertEquals("You must use the same app to create/update a tenant", e.getMessage());
         }
 
         try {
@@ -738,7 +738,7 @@ public class ConfigTest {
             );
             fail();
         } catch (BadPermissionException e) {
-            assertEquals("You must use the same app to create/update/delete a tenant", e.getMessage());
+            assertEquals("You must use the same app to create/update a tenant", e.getMessage());
         }
 
         try {
@@ -755,7 +755,7 @@ public class ConfigTest {
             );
             fail();
         } catch (BadPermissionException e) {
-            assertEquals("You must use the public tenantId to add/update/delete a tenant to this app", e.getMessage());
+            assertEquals("You must use the public or same tenantId to add/update a tenant", e.getMessage());
         }
 
         try {
@@ -772,7 +772,7 @@ public class ConfigTest {
             );
             fail();
         } catch (BadPermissionException e) {
-            assertEquals("You must use the public tenantId and public appId to add/update/delete an app", e.getMessage());
+            assertEquals("You must use the public tenantId and, public or same appId to add/update an app", e.getMessage());
         }
 
         try {
@@ -789,7 +789,7 @@ public class ConfigTest {
             );
             fail();
         } catch (BadPermissionException e) {
-            assertEquals("You must use the public tenantId to add/update/delete a tenant to this app", e.getMessage());
+            assertEquals("You must use the public or same tenantId to add/update a tenant", e.getMessage());
         }
 
         try {
@@ -806,7 +806,7 @@ public class ConfigTest {
             );
             fail();
         } catch (BadPermissionException e) {
-            assertEquals("You must use the same app to create/update/delete a tenant", e.getMessage());
+            assertEquals("You must use the same app to create/update a tenant", e.getMessage());
         }
 
         try {
@@ -823,7 +823,7 @@ public class ConfigTest {
             );
             fail();
         } catch (BadPermissionException e) {
-            assertEquals("You must use the same app to create/update/delete a tenant", e.getMessage());
+            assertEquals("You must use the same app to create/update a tenant", e.getMessage());
         }
 
         try {
@@ -840,7 +840,7 @@ public class ConfigTest {
             );
             fail();
         } catch (BadPermissionException e) {
-            assertEquals("You must use the same app to create/update/delete a tenant", e.getMessage());
+            assertEquals("You must use the same app to create/update a tenant", e.getMessage());
         }
 
         TenantConfig[] allTenants = Multitenancy.getAllTenants(process.getProcess());
