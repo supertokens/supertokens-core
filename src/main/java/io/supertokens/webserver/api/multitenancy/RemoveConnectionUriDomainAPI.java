@@ -26,6 +26,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.InputParser;
+import io.supertokens.webserver.Utils;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -50,7 +51,7 @@ public class RemoveConnectionUriDomainAPI extends WebserverAPI {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
         String connectionUriDomain = InputParser.parseStringOrThrowError(input, "connectionUriDomain", false);
-        connectionUriDomain = connectionUriDomain.trim();
+        connectionUriDomain = Utils.normalizeAndValidateConnectionUriDomain(connectionUriDomain);
 
         if (connectionUriDomain.equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
             throw new ServletException(new BadPermissionException("Cannot delete the default connection uri domain"));

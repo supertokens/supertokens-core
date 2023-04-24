@@ -22,6 +22,7 @@ import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.InputParser;
+import io.supertokens.webserver.Utils;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -47,7 +48,7 @@ public class CreateOrUpdateConnectionUriDomainAPI extends BaseCreateOrUpdate {
 
         String connectionUriDomain =  InputParser.parseStringOrThrowError(input, "connectionUriDomain", true);
         if (connectionUriDomain != null) {
-            connectionUriDomain = connectionUriDomain.trim();
+            connectionUriDomain = Utils.normalizeAndValidateConnectionUriDomain(connectionUriDomain);
         }
         Boolean emailPasswordEnabled = InputParser.parseBooleanOrThrowError(input, "emailPasswordEnabled", true);
         Boolean thirdPartyEnabled = InputParser.parseBooleanOrThrowError(input, "thirdPartyEnabled", true);

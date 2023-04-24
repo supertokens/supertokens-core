@@ -272,7 +272,7 @@ public class TestPermissionChecks {
                 new TestCase(
                         new TenantIdentifier("127.0.0.1:3567", null, null),
                         new TenantIdentifier(null, null, null),
-                        "Cannot modify base config"
+                        "connectionUriDomain should not be an empty String"
                 )
         };
 
@@ -312,6 +312,157 @@ public class TestPermissionChecks {
 
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+    }
+
+    @Test
+    public void testValidConnectionUriDomains() throws Exception {
+        TestCase[] testCases = new TestCase[]{
+                new TestCase(
+                        new TenantIdentifier(null, null, null),
+                        new TenantIdentifier("127.0.0.1", null, null),
+                        null
+                ),
+                new TestCase(
+                        new TenantIdentifier(null, null, null),
+                        new TenantIdentifier("127.0.0.1:3567", null, null),
+                        null
+                ),
+                new TestCase(
+                        new TenantIdentifier(null, null, null),
+                        new TenantIdentifier("localhost", null, null),
+                        null
+                ),
+                new TestCase(
+                        new TenantIdentifier(null, null, null),
+                        new TenantIdentifier("localhost:3567", null, null),
+                        null
+                ),
+                new TestCase(
+                        new TenantIdentifier(null, null, null),
+                        new TenantIdentifier("abc.co", null, null),
+                        null
+                ),
+                new TestCase(
+                        new TenantIdentifier(null, null, null),
+                        new TenantIdentifier("abc.co:3567", null, null),
+                        null
+                ),
+                new TestCase(
+                        new TenantIdentifier(null, null, null),
+                        new TenantIdentifier("sub-domain.example.com", null, null),
+                        null
+                ),
+                new TestCase(
+                        new TenantIdentifier(null, null, null),
+                        new TenantIdentifier("sub-domain.example.com:3567", null, null),
+                        null
+                ),
+                new TestCase(
+                        new TenantIdentifier(null, null, null),
+                        new TenantIdentifier("http://localhost", null, null),
+                        "connectionUriDomain is invalid"
+                ),
+                new TestCase(
+                        new TenantIdentifier(null, null, null),
+                        new TenantIdentifier("https://localhost:3567", null, null),
+                        "connectionUriDomain is invalid"
+                ),
+                new TestCase(
+                        new TenantIdentifier(null, null, null),
+                        new TenantIdentifier("localhost/abc", null, null),
+                        "connectionUriDomain is invalid"
+                ),
+                new TestCase(
+                        new TenantIdentifier(null, null, null),
+                        new TenantIdentifier("abc.", null, null),
+                        "connectionUriDomain is invalid"
+                ),
+                new TestCase(
+                        new TenantIdentifier(null, null, null),
+                        new TenantIdentifier("example+2.world.com", null, null),
+                        "connectionUriDomain is invalid"
+                )
+        };
+
+        for (TestCase testCase : testCases) {
+            Utils.reset();
+            String[] args = {"../"};
+
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+            FeatureFlagTestContent.getInstance(process.getProcess())
+                    .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+            process.startProcess();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            {
+                createTenant(process.getProcess(), testCase.sourceTenant);
+
+                try {
+                    JsonObject coreConfig = new JsonObject();
+                    StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                            .modifyConfigToAddANewUserPoolForTesting(coreConfig, 2);
+
+                    TestMultitenancyAPIHelper.createConnectionUriDomain(process.getProcess(),
+                            testCase.sourceTenant,
+                            testCase.targetTenant.getConnectionUriDomain(),
+                            true, true, true, coreConfig
+                    );
+                    if (testCase.errorMessage != null) {
+                        fail();
+                    }
+                } catch (HttpResponseException e) {
+                    if (testCase.errorMessage == null) {
+                        throw e;
+                    }
+                    assertTrue(e.getMessage().contains(testCase.errorMessage));
+                }
+            }
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+    }
+
+    @Test
+    public void testConnectionUriDomainValidationUtil() throws Exception {
+        String[] validDomains = new String[]{
+                "127.0.0.1",
+                "127.0.0.1:3567",
+                "localhost",
+                "localhost:3567",
+                "abc.co",
+                "abc.co:3567",
+                "sub-domain.example.com",
+                "sub-domain.example.com:3567",
+                "hello.co.uk",
+        };
+        String[] invalidDomains = new String[]{
+                "http://localhost",
+                "https://localhost:3567",
+                "localhost:abc",
+                "localhost:3567:2567",
+                "localhost:3567/prefix",
+                "localhost/abc",
+                "abc.",
+                "example+2.world.com",
+                ":3567",
+                ":",
+                "somedomain.com:",
+                "*",
+                "abc*",
+        };
+
+        for (String domain : validDomains) {
+            io.supertokens.webserver.Utils.normalizeAndValidateConnectionUriDomain(domain);
+        }
+
+        for (String domain : invalidDomains) {
+            try {
+                io.supertokens.webserver.Utils.normalizeAndValidateConnectionUriDomain(domain);
+                fail();
+            } catch (Exception ignored) {
+            }
         }
     }
 
@@ -358,6 +509,70 @@ public class TestPermissionChecks {
                         new TenantIdentifier("127.0.0.1:3567", "a2", null),
                         "You must use the public tenantId and, public or same appId to add/update an app"
                 ),
+        };
+
+        for (TestCase testCase : testCases) {
+            Utils.reset();
+            String[] args = {"../"};
+
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+            FeatureFlagTestContent.getInstance(process.getProcess())
+                    .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+            process.startProcess();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            {
+                createTenant(process.getProcess(), testCase.sourceTenant);
+
+                try {
+                    JsonObject coreConfig = new JsonObject();
+                    StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                            .modifyConfigToAddANewUserPoolForTesting(coreConfig, 2);
+
+                    TestMultitenancyAPIHelper.createApp(process.getProcess(),
+                            testCase.sourceTenant,
+                            testCase.targetTenant.getAppId(),
+                            true, true, true, coreConfig
+                    );
+                    if (testCase.errorMessage != null) {
+                        fail();
+                    }
+                } catch (HttpResponseException e) {
+                    if (testCase.errorMessage == null) {
+                        throw e;
+                    }
+                    assertTrue(e.getMessage().contains(testCase.errorMessage));
+                }
+            }
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+    }
+
+    @Test
+    public void testValidationOfAppId() throws Exception {
+        TestCase[] testCases = new TestCase[]{
+                new TestCase(
+                        new TenantIdentifier(null, null, null),
+                        new TenantIdentifier(null, "a1", null),
+                        null
+                ),
+                new TestCase(
+                        new TenantIdentifier(null, null, null),
+                        new TenantIdentifier(null, "abcd-1234", null),
+                        null
+                ),
+                new TestCase(
+                        new TenantIdentifier(null, null, null),
+                        new TenantIdentifier(null, "appid-1234", null),
+                        "appId must not start with 'appid-'"
+                ),
+                new TestCase(
+                        new TenantIdentifier(null, null, null),
+                        new TenantIdentifier(null, "abcd+1234", null),
+                        "appId can only contain letters, numbers and hyphens"
+                )
         };
 
         for (TestCase testCase : testCases) {
@@ -489,6 +704,70 @@ public class TestPermissionChecks {
     }
 
     @Test
+    public void testValidationOfTenantId() throws Exception {
+        TestCase[] testCases = new TestCase[]{
+                new TestCase(
+                        new TenantIdentifier(null, null, null),
+                        new TenantIdentifier(null, null, "t1"),
+                        null
+                ),
+                new TestCase(
+                        new TenantIdentifier(null, null, null),
+                        new TenantIdentifier(null, null, "abcd-1234"),
+                        null
+                ),
+                new TestCase(
+                        new TenantIdentifier(null, null, null),
+                        new TenantIdentifier(null, null, "recipe"),
+                        "Cannot use 'recipe' as a tenantId"
+                ),
+                new TestCase(
+                        new TenantIdentifier(null, null, null),
+                        new TenantIdentifier(null, null, "abcd+1234"),
+                        "tenantId can only contain letters, numbers and hyphens"
+                ),
+        };
+
+        for (TestCase testCase : testCases) {
+            Utils.reset();
+            String[] args = {"../"};
+
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+            FeatureFlagTestContent.getInstance(process.getProcess())
+                    .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+            process.startProcess();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            {
+                createTenant(process.getProcess(), testCase.sourceTenant);
+
+                try {
+                    JsonObject coreConfig = new JsonObject();
+                    StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                            .modifyConfigToAddANewUserPoolForTesting(coreConfig, 2);
+
+                    TestMultitenancyAPIHelper.createTenant(process.getProcess(),
+                            testCase.sourceTenant,
+                            testCase.targetTenant.getTenantId(),
+                            true, true, true, coreConfig
+                    );
+                    if (testCase.errorMessage != null) {
+                        fail();
+                    }
+                } catch (HttpResponseException e) {
+                    if (testCase.errorMessage == null) {
+                        throw e;
+                    }
+                    assertTrue(e.getMessage().contains(testCase.errorMessage));
+                }
+            }
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+    }
+
+    @Test
     public void testPermissionsForDeleteConnectionUriDomain() throws Exception {
         TestCase[] testCases = new TestCase[]{
                 new TestCase(
@@ -499,7 +778,7 @@ public class TestPermissionChecks {
                 new TestCase(
                         new TenantIdentifier(null, null, null),
                         new TenantIdentifier("", null, null),
-                        "Cannot delete the default connection uri domain"
+                        "connectionUriDomain should not be an empty String"
                 ),
                 new TestCase(
                         new TenantIdentifier("127.0.0.1:3567", null, null),
@@ -636,13 +915,28 @@ public class TestPermissionChecks {
                         "Only the public tenantId is allowed to delete a tenant"
                 ),
                 new TestCase(
+                        new TenantIdentifier(null, null, "t1"),
+                        new TenantIdentifier(null, null, "t1"),
+                        "Only the public tenantId is allowed to delete a tenant"
+                ),
+                new TestCase(
                         new TenantIdentifier(null, "a1", "t1"),
                         new TenantIdentifier(null, "a1", "t2"),
                         "Only the public tenantId is allowed to delete a tenant"
                 ),
                 new TestCase(
+                        new TenantIdentifier(null, "a1", "t1"),
+                        new TenantIdentifier(null, "a1", "t1"),
+                        "Only the public tenantId is allowed to delete a tenant"
+                ),
+                new TestCase(
                         new TenantIdentifier("127.0.0.1:3567", "a1", "t1"),
                         new TenantIdentifier("127.0.0.1:3567", "a1", "t2"),
+                        "Only the public tenantId is allowed to delete a tenant"
+                ),
+                new TestCase(
+                        new TenantIdentifier("127.0.0.1:3567", "a1", "t1"),
+                        new TenantIdentifier("127.0.0.1:3567", "a1", "t1"),
                         "Only the public tenantId is allowed to delete a tenant"
                 ),
                 new TestCase(
