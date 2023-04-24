@@ -26,6 +26,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.InputParser;
+import io.supertokens.webserver.Utils;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -50,6 +51,8 @@ public class RemoveTenantAPI extends WebserverAPI {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
         String tenantId = InputParser.parseStringOrThrowError(input, "tenantId", false);
+        tenantId = Utils.normalizeAndValidateTenantId(tenantId);
+
         if (tenantId.equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
             throw new ServletException(new BadPermissionException("Cannot delete public tenant, use remove app API instead"));
         }

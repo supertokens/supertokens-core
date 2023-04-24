@@ -27,6 +27,7 @@ import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.InputParser;
+import io.supertokens.webserver.Utils;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -51,6 +52,8 @@ public class RemoveAppAPI extends WebserverAPI {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
         String appId = InputParser.parseStringOrThrowError(input, "appId", false);
+        appId = Utils.normalizeAndValidateAppId(appId);
+
         if (appId.equals(TenantIdentifier.DEFAULT_APP_ID)) {
             throw new ServletException(new BadPermissionException("Cannot delete the public app, use remove connection uri domain API instead"));
         }

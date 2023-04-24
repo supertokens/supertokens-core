@@ -35,7 +35,6 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateThirdPart
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.passwordless.exception.DuplicatePhoneNumberException;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
-import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
 import io.supertokens.thirdparty.ThirdParty;
@@ -46,8 +45,8 @@ import java.util.*;
 
 public class Multitenancy extends ResourceDistributor.SingletonResource {
 
-    public static void checkPermissionsForCreateUpdateOrDelete(Main main, TenantIdentifier sourceTenant,
-                                                               TenantIdentifier targetTenant)
+    public static void checkPermissionsForCreateOrUpdate(Main main, TenantIdentifier sourceTenant,
+                                                         TenantIdentifier targetTenant)
             throws BadPermissionException, CannotModifyBaseConfigException, FeatureNotEnabledException,
             TenantOrAppNotFoundException, StorageQueryException, InvalidConfigException, InvalidProviderConfigException
     {
@@ -154,7 +153,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             throws CannotModifyBaseConfigException, BadPermissionException,
             StorageQueryException, FeatureNotEnabledException, IOException, InvalidConfigException,
             InvalidProviderConfigException, TenantOrAppNotFoundException {
-        checkPermissionsForCreateUpdateOrDelete(main, sourceTenant, newTenant.tenantIdentifier);
+        checkPermissionsForCreateOrUpdate(main, sourceTenant, newTenant.tenantIdentifier);
         return addNewOrUpdateAppOrTenant(main, newTenant, false);
     }
 

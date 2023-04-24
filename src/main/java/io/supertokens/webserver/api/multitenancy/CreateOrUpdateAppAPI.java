@@ -22,6 +22,7 @@ import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.InputParser;
+import io.supertokens.webserver.Utils;
 import io.supertokens.webserver.api.multitenancy.BaseCreateOrUpdate;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -48,7 +49,7 @@ public class CreateOrUpdateAppAPI extends BaseCreateOrUpdate {
 
         String appId = InputParser.parseStringOrThrowError(input, "appId", true);
         if (appId != null) {
-            appId = appId.trim();
+            appId = Utils.normalizeAndValidateAppId(appId);
         }
         Boolean emailPasswordEnabled = InputParser.parseBooleanOrThrowError(input, "emailPasswordEnabled", true);
         Boolean thirdPartyEnabled = InputParser.parseBooleanOrThrowError(input, "thirdPartyEnabled", true);

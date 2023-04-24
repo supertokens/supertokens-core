@@ -22,6 +22,7 @@ import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.InputParser;
+import io.supertokens.webserver.Utils;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -47,7 +48,7 @@ public class CreateOrUpdateTenantAPI extends BaseCreateOrUpdate {
 
         String tenantId = InputParser.parseStringOrThrowError(input, "tenantId", true);
         if (tenantId != null) {
-            tenantId = tenantId.trim();
+            tenantId = Utils.normalizeAndValidateTenantId(tenantId);
         }
         Boolean emailPasswordEnabled = InputParser.parseBooleanOrThrowError(input, "emailPasswordEnabled", true);
         Boolean thirdPartyEnabled = InputParser.parseBooleanOrThrowError(input, "thirdPartyEnabled", true);

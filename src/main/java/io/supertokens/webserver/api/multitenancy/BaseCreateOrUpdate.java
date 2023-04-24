@@ -104,7 +104,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
         }
 
         try {
-            Multitenancy.checkPermissionsForCreateUpdateOrDelete(
+            Multitenancy.checkPermissionsForCreateOrUpdate(
                     main, sourceTenantIdentifier, tenantConfig.tenantIdentifier);
 
             Multitenancy.addNewOrUpdateAppOrTenant(main, tenantConfig, shouldProtectDbConfig(req));

@@ -18,7 +18,11 @@ package io.supertokens.webserver;
 
 import jakarta.servlet.ServletException;
 
+import java.util.List;
+
 public class Utils {
+
+    private static final List<String> INVALID_WORDS_FOR_TENANTID = List.of("recipe", "config", "users");
 
     public static String normalizeAndValidateStringParam(String param, String paramName) throws ServletException {
         param = param.trim();
@@ -29,5 +33,60 @@ public class Utils {
         return param;
     }
 
-    
+    public static String normalizeAndValidateConnectionUriDomain(String connectionUriDomain) throws ServletException {
+        connectionUriDomain = connectionUriDomain.trim();
+        connectionUriDomain = connectionUriDomain.toLowerCase();
+
+        if (connectionUriDomain.length() == 0) {
+            throw new ServletException(new WebserverAPI.BadRequestException("connectionUriDomain should not be an empty String"));
+        }
+
+        if (!connectionUriDomain.matches("^[a-z0-9-]+(\\.[a-z0-9-]+)*(:[0-9]+)?$")) {
+            throw new ServletException(new WebserverAPI.BadRequestException("connectionUriDomain is invalid"));
+        }
+
+        return connectionUriDomain;
+    }
+
+    public static String normalizeAndValidateAppId(String appId) throws ServletException {
+        appId = appId.trim();
+        appId = appId.toLowerCase();
+
+        if (appId.length() == 0) {
+            throw new ServletException(new WebserverAPI.BadRequestException("appId should not be an empty String"));
+        }
+
+        if (appId.startsWith("appid-")) {
+            throw new ServletException(new WebserverAPI.BadRequestException("appId must not start with 'appid-'"));
+        }
+
+        if (!appId.matches("^[a-z0-9-]+$")) {
+            throw new ServletException(new WebserverAPI.BadRequestException("appId can only contain letters, numbers and hyphens"));
+        }
+
+        return appId;
+    }
+
+    public static String normalizeAndValidateTenantId(String tenantId) throws ServletException {
+        tenantId = tenantId.trim();
+        tenantId = tenantId.toLowerCase();
+
+        if (tenantId.length() == 0) {
+            throw new ServletException(new WebserverAPI.BadRequestException("tenantId should not be an empty String"));
+        }
+
+        if (INVALID_WORDS_FOR_TENANTID.contains(tenantId)) {
+            throw new ServletException(new WebserverAPI.BadRequestException("Cannot use '" + tenantId + "'" + " as a tenantId"));
+        }
+
+        if (tenantId.startsWith("appid-")) {
+            throw new ServletException(new WebserverAPI.BadRequestException("tenantId must not start with 'appid-'"));
+        }
+
+        if (!tenantId.matches("^[a-z0-9-]+$")) {
+            throw new ServletException(new WebserverAPI.BadRequestException("tenantId can only contain letters, numbers and hyphens"));
+        }
+
+        return tenantId;
+    }
 }

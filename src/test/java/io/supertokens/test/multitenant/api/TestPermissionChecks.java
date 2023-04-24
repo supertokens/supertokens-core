@@ -272,7 +272,7 @@ public class TestPermissionChecks {
                 new TestCase(
                         new TenantIdentifier("127.0.0.1:3567", null, null),
                         new TenantIdentifier(null, null, null),
-                        "Cannot modify base config"
+                        "connectionUriDomain should not be an empty String"
                 )
         };
 
@@ -499,7 +499,7 @@ public class TestPermissionChecks {
                 new TestCase(
                         new TenantIdentifier(null, null, null),
                         new TenantIdentifier("", null, null),
-                        "Cannot delete the default connection uri domain"
+                        "connectionUriDomain should not be an empty String"
                 ),
                 new TestCase(
                         new TenantIdentifier("127.0.0.1:3567", null, null),
@@ -636,13 +636,28 @@ public class TestPermissionChecks {
                         "Only the public tenantId is allowed to delete a tenant"
                 ),
                 new TestCase(
+                        new TenantIdentifier(null, null, "t1"),
+                        new TenantIdentifier(null, null, "t1"),
+                        "Only the public tenantId is allowed to delete a tenant"
+                ),
+                new TestCase(
                         new TenantIdentifier(null, "a1", "t1"),
                         new TenantIdentifier(null, "a1", "t2"),
                         "Only the public tenantId is allowed to delete a tenant"
                 ),
                 new TestCase(
+                        new TenantIdentifier(null, "a1", "t1"),
+                        new TenantIdentifier(null, "a1", "t1"),
+                        "Only the public tenantId is allowed to delete a tenant"
+                ),
+                new TestCase(
                         new TenantIdentifier("127.0.0.1:3567", "a1", "t1"),
                         new TenantIdentifier("127.0.0.1:3567", "a1", "t2"),
+                        "Only the public tenantId is allowed to delete a tenant"
+                ),
+                new TestCase(
+                        new TenantIdentifier("127.0.0.1:3567", "a1", "t1"),
+                        new TenantIdentifier("127.0.0.1:3567", "a1", "t1"),
                         "Only the public tenantId is allowed to delete a tenant"
                 ),
                 new TestCase(
