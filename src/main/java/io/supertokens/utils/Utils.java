@@ -337,12 +337,12 @@ public class Utils {
             TenantOrAppNotFoundException {
         if (Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getAccessTokenSigningKeyDynamic()) {
             result.addProperty("jwtSigningPublicKey",
-                    new Utils.PubPriKey(SigningKeys.getInstance(main).getLatestIssuedDynamicKey().value).publicKey);
+                    new Utils.PubPriKey(SigningKeys.getInstance(appIdentifier, main).getLatestIssuedDynamicKey().value).publicKey);
             result.addProperty("jwtSigningPublicKeyExpiryTime",
-                    SigningKeys.getInstance(main).getDynamicSigningKeyExpiryTime());
+                    SigningKeys.getInstance(appIdentifier, main).getDynamicSigningKeyExpiryTime());
 
             if (addKeyList) {
-                List<KeyInfo> keys = SigningKeys.getInstance(main).getDynamicKeys();
+                List<KeyInfo> keys = SigningKeys.getInstance(appIdentifier, main).getDynamicKeys();
 
                 JsonArray jwtSigningPublicKeyListJSON = new JsonArray();
                 for (KeyInfo keyInfo : keys) {
@@ -356,7 +356,7 @@ public class Utils {
                 result.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);
             }
         } else {
-            JWTSigningKeyInfo keyInfo = SigningKeys.getInstance(main)
+            JWTSigningKeyInfo keyInfo = SigningKeys.getInstance(appIdentifier, main)
                     .getStaticKeyForAlgorithm(JWTSigningKey.SupportedAlgorithms.RS256);
             result.addProperty("jwtSigningPublicKey", new Utils.PubPriKey(keyInfo.keyString).publicKey);
             result.addProperty("jwtSigningPublicKeyExpiryTime", 10L * 365 * 24 * 3600 * 1000);

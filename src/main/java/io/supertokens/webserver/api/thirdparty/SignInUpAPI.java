@@ -78,7 +78,7 @@ public class SignInUpAPI extends WebserverAPI {
                         thirdPartyId,
                         thirdPartyUserId, email, isEmailVerified);
 
-                ActiveUsers.updateLastActive(main, response.user.id);
+                ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main, response.user.id);
 
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");

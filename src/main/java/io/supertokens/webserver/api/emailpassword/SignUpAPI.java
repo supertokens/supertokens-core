@@ -72,9 +72,7 @@ public class SignUpAPI extends WebserverAPI {
         try {
             UserInfo user = EmailPassword.signUp(this.getTenantIdentifierWithStorageFromRequest(req), super.main, normalisedEmail, password);
 
-            ActiveUsers.updateLastActive(main, user.id);
-
-            ActiveUsers.updateLastActive(main, user.id);
+            ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main, user.id);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
