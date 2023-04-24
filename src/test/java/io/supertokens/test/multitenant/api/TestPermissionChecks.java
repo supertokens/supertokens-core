@@ -425,6 +425,48 @@ public class TestPermissionChecks {
     }
 
     @Test
+    public void testConnectionUriDomainValidationUtil() throws Exception {
+        String[] validDomains = new String[]{
+                "127.0.0.1",
+                "127.0.0.1:3567",
+                "localhost",
+                "localhost:3567",
+                "abc.co",
+                "abc.co:3567",
+                "sub-domain.example.com",
+                "sub-domain.example.com:3567",
+                "hello.co.uk",
+        };
+        String[] invalidDomains = new String[]{
+                "http://localhost",
+                "https://localhost:3567",
+                "localhost:abc",
+                "localhost:3567:2567",
+                "localhost:3567/prefix",
+                "localhost/abc",
+                "abc.",
+                "example+2.world.com",
+                ":3567",
+                ":",
+                "somedomain.com:",
+                "*",
+                "abc*",
+        };
+
+        for (String domain : validDomains) {
+            io.supertokens.webserver.Utils.normalizeAndValidateConnectionUriDomain(domain);
+        }
+
+        for (String domain : invalidDomains) {
+            try {
+                io.supertokens.webserver.Utils.normalizeAndValidateConnectionUriDomain(domain);
+                fail();
+            } catch (Exception ignored) {
+            }
+        }
+    }
+
+    @Test
     public void testPermissionsForCreateOrUpdateApp() throws Exception {
         TestCase[] testCases = new TestCase[]{
                 new TestCase(
