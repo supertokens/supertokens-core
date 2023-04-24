@@ -46,7 +46,7 @@ public class GetDashboardUsersAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-
+        // API is app specific
         try {
 
             JsonArray arr = new com.google.gson.JsonParser().parse(new Gson().toJson(

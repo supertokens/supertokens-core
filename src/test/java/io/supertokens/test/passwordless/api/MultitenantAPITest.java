@@ -24,7 +24,6 @@ import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
-import io.supertokens.multitenancy.exception.DeletionInProgressException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -64,7 +63,7 @@ public class MultitenantAPITest {
     }
 
     @Before
-    public void beforeEach() throws InterruptedException, InvalidProviderConfigException, DeletionInProgressException,
+    public void beforeEach() throws InterruptedException, InvalidProviderConfigException,
             StorageQueryException, FeatureNotEnabledException, TenantOrAppNotFoundException, IOException,
             InvalidConfigException, CannotModifyBaseConfigException, BadPermissionException {
         Utils.reset();
@@ -83,7 +82,7 @@ public class MultitenantAPITest {
 
     private void createTenants()
             throws StorageQueryException, TenantOrAppNotFoundException, InvalidProviderConfigException,
-            DeletionInProgressException, FeatureNotEnabledException, IOException, InvalidConfigException,
+            FeatureNotEnabledException, IOException, InvalidConfigException,
             CannotModifyBaseConfigException, BadPermissionException {
         // User pool 1 - (null, a1, null)
         // User pool 2 - (null, a1, t1), (null, a1, t2)

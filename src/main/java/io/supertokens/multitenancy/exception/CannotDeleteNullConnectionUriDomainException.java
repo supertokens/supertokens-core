@@ -16,9 +16,5 @@
 
 package io.supertokens.multitenancy.exception;
 
-public class DeletionInProgressException extends Exception {
-
-    public DeletionInProgressException(String message) {
-        super(message);
-    }
+public class CannotDeleteNullConnectionUriDomainException extends Exception {
 }

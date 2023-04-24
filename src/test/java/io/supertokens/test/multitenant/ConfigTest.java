@@ -29,7 +29,6 @@ import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
-import io.supertokens.multitenancy.exception.DeletionInProgressException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
@@ -420,57 +419,9 @@ public class ConfigTest {
     }
 
     @Test
-    public void testThatOnlyDefaultConnectionURIAppAndTenantIsAllowedToGetAllTenants()
-            throws InterruptedException {
-        String[] args = {"../"};
-
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
-        FeatureFlagTestContent.getInstance(process.getProcess())
-                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        try {
-            Multitenancy.getAllTenants(new TenantIdentifier("c1", null, null),
-                    process.getProcess());
-            fail();
-        } catch (BadPermissionException e) {
-            assertEquals(
-                    "Only the public tenantId, public appId and default connectionUriDomain is allowed to list all " +
-                            "connectionUriDomains and appIds associated with this core",
-                    e.getMessage());
-        }
-
-        try {
-            Multitenancy.getAllTenants(new TenantIdentifier(null, "a1", null),
-                    process.getProcess());
-            fail();
-        } catch (BadPermissionException e) {
-            assertEquals(
-                    "Only the public tenantId, public appId and default connectionUriDomain is allowed to list all " +
-                            "connectionUriDomains and appIds associated with this core",
-                    e.getMessage());
-        }
-
-        try {
-            Multitenancy.getAllTenants(new TenantIdentifier(null, null, "t1"),
-                    process.getProcess());
-            fail();
-        } catch (BadPermissionException e) {
-            assertEquals(
-                    "Only the public tenantId, public appId and default connectionUriDomain is allowed to list all " +
-                            "connectionUriDomains and appIds associated with this core",
-                    e.getMessage());
-        }
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-    }
-
-    @Test
     public void testCreationOfTenantsUsingValidSourceTenant()
             throws InterruptedException, BadPermissionException, InvalidProviderConfigException,
-            DeletionInProgressException, StorageQueryException, FeatureNotEnabledException, IOException,
+            StorageQueryException, FeatureNotEnabledException, IOException,
             InvalidConfigException, CannotModifyBaseConfigException, TenantOrAppNotFoundException {
         String[] args = {"../"};
 
@@ -640,8 +591,7 @@ public class ConfigTest {
                 )
         );
 
-        TenantConfig[] allTenants = Multitenancy.getAllTenants(new TenantIdentifier(null, null, null),
-                process.getProcess());
+        TenantConfig[] allTenants = Multitenancy.getAllTenants(process.getProcess());
         assertEquals(14, allTenants.length);
 
         process.kill();
@@ -651,7 +601,7 @@ public class ConfigTest {
     @Test
     public void testInvalidCasesOfTenantCreation()
             throws InterruptedException, BadPermissionException, InvalidProviderConfigException,
-            DeletionInProgressException, StorageQueryException, FeatureNotEnabledException, IOException,
+            StorageQueryException, FeatureNotEnabledException, IOException,
             InvalidConfigException, CannotModifyBaseConfigException, TenantOrAppNotFoundException {
         String[] args = {"../"};
 
@@ -679,7 +629,7 @@ public class ConfigTest {
             );
             fail();
         } catch (BadPermissionException e) {
-            assertEquals("You must use the base tenant to create a new connectionUriDomain", e.getMessage());
+            assertEquals("You must use the default or same connectionUriDomain to create/update a connectionUriDomain", e.getMessage());
         }
 
         try {
@@ -708,7 +658,7 @@ public class ConfigTest {
             );
             fail();
         } catch (BadPermissionException e) {
-            assertEquals("You must use the public tenantId and public appId to add a new app", e.getMessage());
+            assertEquals("You must use the public tenantId and, public or same appId to add/update an app", e.getMessage());
         }
 
         try {
@@ -737,7 +687,7 @@ public class ConfigTest {
             );
             fail();
         } catch (BadPermissionException e) {
-            assertEquals("You must use the public tenantId to add a new tenant to this app", e.getMessage());
+            assertEquals("You must use the public or same tenantId to add/update a tenant", e.getMessage());
         }
 
         try {
@@ -754,7 +704,7 @@ public class ConfigTest {
             );
             fail();
         } catch (BadPermissionException e) {
-            assertEquals("You must use the public tenantId to add a new tenant to this app", e.getMessage());
+            assertEquals("You must use the public or same tenantId to add/update a tenant", e.getMessage());
         }
 
         try {
@@ -771,7 +721,7 @@ public class ConfigTest {
             );
             fail();
         } catch (BadPermissionException e) {
-            assertEquals("You must use the same app to create new tenant", e.getMessage());
+            assertEquals("You must use the same app to create/update a tenant", e.getMessage());
         }
 
         try {
@@ -788,7 +738,7 @@ public class ConfigTest {
             );
             fail();
         } catch (BadPermissionException e) {
-            assertEquals("You must use the same app to create new tenant", e.getMessage());
+            assertEquals("You must use the same app to create/update a tenant", e.getMessage());
         }
 
         try {
@@ -805,7 +755,7 @@ public class ConfigTest {
             );
             fail();
         } catch (BadPermissionException e) {
-            assertEquals("You must use the public tenantId to add a new tenant to this app", e.getMessage());
+            assertEquals("You must use the public or same tenantId to add/update a tenant", e.getMessage());
         }
 
         try {
@@ -822,7 +772,7 @@ public class ConfigTest {
             );
             fail();
         } catch (BadPermissionException e) {
-            assertEquals("You must use the public tenantId and public appId to add a new app", e.getMessage());
+            assertEquals("You must use the public tenantId and, public or same appId to add/update an app", e.getMessage());
         }
 
         try {
@@ -839,7 +789,7 @@ public class ConfigTest {
             );
             fail();
         } catch (BadPermissionException e) {
-            assertEquals("You must use the public tenantId to add a new tenant to this app", e.getMessage());
+            assertEquals("You must use the public or same tenantId to add/update a tenant", e.getMessage());
         }
 
         try {
@@ -856,7 +806,7 @@ public class ConfigTest {
             );
             fail();
         } catch (BadPermissionException e) {
-            assertEquals("You must use the same app to create new tenant", e.getMessage());
+            assertEquals("You must use the same app to create/update a tenant", e.getMessage());
         }
 
         try {
@@ -873,7 +823,7 @@ public class ConfigTest {
             );
             fail();
         } catch (BadPermissionException e) {
-            assertEquals("You must use the same app to create new tenant", e.getMessage());
+            assertEquals("You must use the same app to create/update a tenant", e.getMessage());
         }
 
         try {
@@ -890,11 +840,10 @@ public class ConfigTest {
             );
             fail();
         } catch (BadPermissionException e) {
-            assertEquals("You must use the same app to create new tenant", e.getMessage());
+            assertEquals("You must use the same app to create/update a tenant", e.getMessage());
         }
 
-        TenantConfig[] allTenants = Multitenancy.getAllTenants(new TenantIdentifier(null, null, null),
-                process.getProcess());
+        TenantConfig[] allTenants = Multitenancy.getAllTenants(process.getProcess());
         assertEquals(3, allTenants.length);
 
         process.kill();
@@ -904,7 +853,7 @@ public class ConfigTest {
     @Test
     public void testUpdationOfDefaultTenant()
             throws InterruptedException, BadPermissionException, InvalidProviderConfigException,
-            DeletionInProgressException, StorageQueryException, FeatureNotEnabledException, IOException,
+            StorageQueryException, FeatureNotEnabledException, IOException,
             InvalidConfigException, CannotModifyBaseConfigException, TenantOrAppNotFoundException {
         String[] args = {"../"};
 
@@ -926,8 +875,7 @@ public class ConfigTest {
                 )
         );
 
-        TenantConfig[] allTenants = Multitenancy.getAllTenants(new TenantIdentifier(null, null, null),
-                process.getProcess());
+        TenantConfig[] allTenants = Multitenancy.getAllTenants(process.getProcess());
         assertEquals(1, allTenants.length);
         assertFalse(allTenants[0].passwordlessConfig.enabled);
 

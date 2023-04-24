@@ -26,7 +26,6 @@ import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
-import io.supertokens.multitenancy.exception.DeletionInProgressException;
 import io.supertokens.pluginInterface.exceptions.DbInitException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -91,7 +90,7 @@ public class SigningKeysTest {
     public void keysAreGeneratedForAllUserPoolIds()
             throws InterruptedException, IOException, StorageQueryException, StorageTransactionLogicException,
             InvalidConfigException, DbInitException, TenantOrAppNotFoundException, InvalidProviderConfigException,
-            DeletionInProgressException, FeatureNotEnabledException, CannotModifyBaseConfigException,
+            FeatureNotEnabledException, CannotModifyBaseConfigException,
             BadPermissionException, UnsupportedJWTSigningAlgorithmException {
         String[] args = {"../"};
 
@@ -149,7 +148,7 @@ public class SigningKeysTest {
     public void signingKeyClassesAreThereForAllTenants()
             throws InterruptedException, IOException, InvalidConfigException, DbInitException, StorageQueryException,
             StorageTransactionLogicException, TenantOrAppNotFoundException, InvalidProviderConfigException,
-            DeletionInProgressException, FeatureNotEnabledException, CannotModifyBaseConfigException,
+            FeatureNotEnabledException, CannotModifyBaseConfigException,
             BadPermissionException, UnsupportedJWTSigningAlgorithmException {
         String[] args = {"../"};
 

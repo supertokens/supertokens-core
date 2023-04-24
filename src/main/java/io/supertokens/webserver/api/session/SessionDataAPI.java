@@ -76,6 +76,7 @@ public class SessionDataAPI extends WebserverAPI {
 
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String sessionHandle = InputParser.parseStringOrThrowError(input, "sessionHandle", false);
         assert sessionHandle != null;

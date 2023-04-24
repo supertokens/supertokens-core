@@ -2257,13 +2257,13 @@ public class Start
     }
 
     @Override
-    public void addTenantIdInUserPool(TenantIdentifier tenantIdentifier) throws
+    public void addTenantIdInTargetStorage(TenantIdentifier tenantIdentifier) throws
             DuplicateTenantException {
         // TODO:
     }
 
     @Override
-    public void deleteTenantIdInUserPool(TenantIdentifier tenantIdentifier) throws
+    public void deleteTenantIdInTargetStorage(TenantIdentifier tenantIdentifier) throws
             TenantOrAppNotFoundException {
         // TODO:
     }
@@ -2275,22 +2275,24 @@ public class Start
     }
 
     @Override
-    public void deleteTenant(TenantIdentifier tenantIdentifier) throws
-            TenantOrAppNotFoundException {
+    public boolean deleteTenantInfoInBaseStorage(TenantIdentifier tenantIdentifier) throws
+            StorageQueryException {
         // TODO:
+        return false;
     }
 
     @Override
-    public void deleteApp(TenantIdentifier tenantIdentifier) throws
-            TenantOrAppNotFoundException {
+    public boolean deleteAppInfoInBaseStorage(AppIdentifier appIdentifier) throws
+            StorageQueryException {
         // TODO:
+        return false;
     }
 
     @Override
-    public void deleteConnectionUriDomainMapping(TenantIdentifier
-                                                         tenantIdentifier) throws
-            TenantOrAppNotFoundException {
+    public boolean deleteConnectionUriDomainInfoInBaseStorage(String connectionUriDomain) throws
+            StorageQueryException {
         // TODO:
+        return false;
     }
 
     @Override
@@ -2300,29 +2302,17 @@ public class Start
     }
 
     @Override
-    public void addUserIdToTenant(TenantIdentifier tenantIdentifier, String
+    public boolean addUserIdToTenant(TenantIdentifier tenantIdentifier, String
             userId)
             throws TenantOrAppNotFoundException, UnknownUserIdException {
         // TODO:
+        return true;
     }
 
     @Override
-    public void addRoleToTenant(TenantIdentifier tenantIdentifier, String
-            role)
-            throws TenantOrAppNotFoundException, UnknownRoleException {
+    public boolean removeUserIdFromTenant(TenantIdentifier tenantIdentifier, String userId) {
         // TODO:
-    }
-
-    @Override
-    public void deleteAppId(String appId) throws
-            TenantOrAppNotFoundException {
-        // TODO:
-    }
-
-    @Override
-    public void deleteConnectionUriDomain(String connectionUriDomain) throws
-            TenantOrAppNotFoundException {
-        // TODO:
+        return true;
     }
 
     // TOTP recipe:

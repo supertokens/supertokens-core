@@ -44,6 +44,7 @@ public class ActiveUsersCountAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is app specific
         Long sinceTimestamp = InputParser.getLongQueryParamOrThrowError(req, "since", false);
 
         if (sinceTimestamp < 0) {
