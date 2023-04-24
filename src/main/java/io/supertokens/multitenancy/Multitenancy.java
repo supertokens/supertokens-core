@@ -45,6 +45,16 @@ import java.util.*;
 
 public class Multitenancy extends ResourceDistributor.SingletonResource {
 
+    /*
+        Permissions for Multitenancy CRUD operations:
+            Create or update - Parent and self can perform the operation
+            List - Queried from parent -> returns parent + all the children
+            Delete - Only parent can delete a child
+
+        `checkPermissionsForCreateOrUpdate` below checks for the create/update API.
+        For the list and delete APIs, checks are implemented in their respective API implementations
+     */
+
     public static void checkPermissionsForCreateOrUpdate(Main main, TenantIdentifier sourceTenant,
                                                          TenantIdentifier targetTenant)
             throws BadPermissionException, CannotModifyBaseConfigException, FeatureNotEnabledException,
