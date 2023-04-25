@@ -17,14 +17,20 @@ import io.supertokens.featureflag.exceptions.InvalidLicenseKeyException;
 import io.supertokens.featureflag.exceptions.NoLicenseKeyFoundException;
 import io.supertokens.httpRequest.HttpRequest;
 import io.supertokens.httpRequest.HttpResponseException;
+import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.ActiveUsersStorage;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.dashboard.sqlStorage.DashboardSQLStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantConfig;
+import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.version.Version;
 import org.jetbrains.annotations.TestOnly;
@@ -49,6 +55,13 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
 
     public static final String FEATURE_FLAG_KEY_IN_DB = "FEATURE_FLAG";
     public static final String LICENSE_KEY_IN_DB = "LICENSE_KEY";
+
+    private static final String[] ENTERPRISE_THIRD_PARTY_IDS = new String[] {
+            "google-workspaces",
+            "okta",
+            "active-directory",
+            "boxy-saml",
+    };
 
     private static final String JWT_PUBLIC_KEY_N = "yDzeKQFJMtc4" +
             "-Z4BkLvlHVTEW8DEu31onyslJ2fg48hWYlesBkb2UTLT2t7dZw9CCmqtuyYxxHIQ3iy" +
@@ -149,59 +162,129 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         return isLicenseKeyPresent;
     }
 
+    private JsonObject getDashboardLoginStats() throws TenantOrAppNotFoundException, StorageQueryException {
+        JsonObject stats = new JsonObject();
+        int userCount = ((DashboardSQLStorage) StorageLayer.getStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main))
+                .getAllDashboardUsers(this.appIdentifier).length;
+        stats.addProperty("user_count", userCount);
+        return stats;
+    }
+
+    private JsonObject getTOTPStats() throws StorageQueryException {
+        JsonObject totpStats = new JsonObject();
+        JsonArray totpMauArr = new JsonArray();
+
+        Storage[] storages = StorageLayer.getStoragesForApp(main, this.appIdentifier);
+
+        final long now = System.currentTimeMillis();
+        for (int i = 0; i < 30; i++) {
+            long today = now - (now % (24 * 60 * 60 * 1000L));
+            long timestamp = today - (i * 24 * 60 * 60 * 1000L);
+
+            int totpMau = 0;
+            for (Storage storage : storages) {
+                totpMau += ((ActiveUsersStorage) storage).countUsersEnabledTotpAndActiveSince(this.appIdentifier, timestamp);
+            }
+            totpMauArr.add(new JsonPrimitive(totpMau));
+        }
+
+        totpStats.add("maus", totpMauArr);
+
+        int totpTotalUsers = 0;
+        for (Storage storage : storages) {
+            totpTotalUsers += ((ActiveUsersStorage) storage).countUsersEnabledTotp(this.appIdentifier);
+        }
+        totpStats.addProperty("total_users", totpTotalUsers);
+        return totpStats;
+    }
+
+    private boolean isEnterpriseThirdPartyId(String thirdPartyId) {
+        for (String enterpriseThirdPartyId : ENTERPRISE_THIRD_PARTY_IDS) {
+            if (thirdPartyId.startsWith(enterpriseThirdPartyId)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private JsonObject getMultiTenancyStats()
+            throws TenantOrAppNotFoundException, StorageQueryException {
+        JsonObject stats = new JsonObject();
+
+        stats.addProperty("connectionUriDomain", this.appIdentifier.getConnectionUriDomain());
+        stats.addProperty("appId", this.appIdentifier.getAppId());
+
+        JsonArray tenantStats = new JsonArray();
+
+        TenantConfig[] tenantConfigs = Multitenancy.getAllTenantsForApp(this.appIdentifier, main);
+        for (TenantConfig tenantConfig : tenantConfigs) {
+            JsonObject tenantStat = new JsonObject();
+            tenantStat.addProperty("tenantId", tenantConfig.tenantIdentifier.getTenantId());
+
+            {
+                Storage storage = StorageLayer.getStorage(tenantConfig.tenantIdentifier, main);
+                boolean hasUsersOrSessions = ((AuthRecipeStorage) storage).getUsersCount(tenantConfig.tenantIdentifier, null) > 0;
+                hasUsersOrSessions = hasUsersOrSessions || ((SessionSQLStorage) storage).getNumberOfSessions(tenantConfig.tenantIdentifier) > 0;
+                tenantStat.addProperty("hasUsersOrSessions", hasUsersOrSessions);
+            }
+            {
+                boolean hasEnterpriseLogin = false;
+                for (ThirdPartyConfig.Provider provider : tenantConfig.thirdPartyConfig.providers) {
+                    if (isEnterpriseThirdPartyId(provider.thirdPartyId)) {
+                        hasEnterpriseLogin = true;
+                        break;
+                    }
+                }
+                tenantStat.addProperty("hasEnterpriseLogin", hasEnterpriseLogin);
+            }
+
+            tenantStats.add(tenantStat);
+        }
+
+        stats.add("tenants", tenantStats);
+
+        return stats;
+    }
+
+    private JsonArray getMAUs() throws StorageQueryException, TenantOrAppNotFoundException {
+        JsonArray mauArr = new JsonArray();
+        for (int i = 0; i < 30; i++) {
+            long now = System.currentTimeMillis();
+            long today = now - (now % (24 * 60 * 60 * 1000L));
+            long timestamp = today - (i * 24 * 60 * 60 * 1000L);
+            ActiveUsersStorage activeUsersStorage = (ActiveUsersStorage) StorageLayer.getStorage(
+                    this.appIdentifier.getAsPublicTenantIdentifier(), main);
+            int mau = activeUsersStorage.countUsersActiveSince(this.appIdentifier, timestamp);
+            mauArr.add(new JsonPrimitive(mau));
+        }
+        return mauArr;
+    }
+
     @Override
     public JsonObject getPaidFeatureStats() throws StorageQueryException, TenantOrAppNotFoundException {
         JsonObject usageStats = new JsonObject();
-        EE_FEATURES[] features = getEnabledEEFeaturesFromDbOrCache();
 
-        ActiveUsersStorage activeUsersStorage =
-                StorageLayer.getStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main).getType() ==
-                        STORAGE_TYPE.SQL ?
-                        (ActiveUsersStorage) StorageLayer.getStorage(this.appIdentifier.getAsPublicTenantIdentifier(),
-                                main) : null;
+        if (StorageLayer.getStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main).getType() != STORAGE_TYPE.SQL) {
+            return usageStats;
+        }
+
+        EE_FEATURES[] features = getEnabledEEFeaturesFromDbOrCache();
 
         for (EE_FEATURES feature : features) {
             if (feature == EE_FEATURES.DASHBOARD_LOGIN) {
-                JsonObject stats = new JsonObject();
-                int userCount = ((DashboardSQLStorage) StorageLayer.getStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main))
-                        .getAllDashboardUsers(this.appIdentifier).length;
-                stats.addProperty("user_count", userCount);
-                usageStats.add(EE_FEATURES.DASHBOARD_LOGIN.toString(), stats);
+                usageStats.add(EE_FEATURES.DASHBOARD_LOGIN.toString(), getDashboardLoginStats());
             }
-            if (feature == EE_FEATURES.TOTP && activeUsersStorage != null) {
-                JsonObject totpStats = new JsonObject();
-                JsonArray totpMauArr = new JsonArray();
 
-                for (int i = 0; i < 30; i++) {
-                    long now = System.currentTimeMillis();
-                    long today = now - (now % (24 * 60 * 60 * 1000L));
-                    long timestamp = today - (i * 24 * 60 * 60 * 1000L);
+            if (feature == EE_FEATURES.TOTP) {
+                usageStats.add(EE_FEATURES.TOTP.toString(), getTOTPStats());
+            }
 
-                    int totpMau = activeUsersStorage.countUsersEnabledTotpAndActiveSince(this.appIdentifier, timestamp);
-                    totpMauArr.add(new JsonPrimitive(totpMau));
-                }
-
-                totpStats.add("maus", totpMauArr);
-
-                int totpTotalUsers = activeUsersStorage.countUsersEnabledTotp(this.appIdentifier);
-                totpStats.addProperty("total_users", totpTotalUsers);
-                usageStats.add(EE_FEATURES.TOTP.toString(), totpStats);
+            if (feature == EE_FEATURES.MULTI_TENANCY) {
+                usageStats.add(EE_FEATURES.MULTI_TENANCY.toString(), getMultiTenancyStats());
             }
         }
 
-        if (activeUsersStorage != null) {
-            JsonArray mauArr = new JsonArray();
-            for (int i = 0; i < 30; i++) {
-                long now = System.currentTimeMillis();
-                long today = now - (now % (24 * 60 * 60 * 1000L));
-                long timestamp = today - (i * 24 * 60 * 60 * 1000L);
-
-                int mau = activeUsersStorage.countUsersActiveSince(this.appIdentifier, timestamp);
-                mauArr.add(new JsonPrimitive(mau));
-            }
-
-            usageStats.add("maus", mauArr);
-        }
+        usageStats.add("maus", getMAUs());
 
         return usageStats;
     }

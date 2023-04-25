@@ -63,7 +63,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
 
         {
             if (!targetTenant.equals(new TenantIdentifier(null, null, null))) {
-                if (Arrays.stream(FeatureFlag.getInstance(main, sourceTenant.toAppIdentifier()).getEnabledFeatures())
+                if (Arrays.stream(FeatureFlag.getInstance(main, new AppIdentifier(null, null)).getEnabledFeatures())
                         .noneMatch(ee_features -> ee_features == EE_FEATURES.MULTI_TENANCY)) {
                     throw new FeatureNotEnabledException(EE_FEATURES.MULTI_TENANCY);
                 }
@@ -311,7 +311,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             throws TenantOrAppNotFoundException, UnknownUserIdException, StorageQueryException,
             FeatureNotEnabledException, DuplicateEmailException, DuplicatePhoneNumberException,
             DuplicateThirdPartyUserException {
-        if (Arrays.stream(FeatureFlag.getInstance(main, tenantIdentifierWithStorage.toAppIdentifier()).getEnabledFeatures())
+        if (Arrays.stream(FeatureFlag.getInstance(main, new AppIdentifier(null, null)).getEnabledFeatures())
                 .noneMatch(ee_features -> ee_features == EE_FEATURES.MULTI_TENANCY)) {
             throw new FeatureNotEnabledException(EE_FEATURES.MULTI_TENANCY);
         }
@@ -323,7 +323,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
     public static boolean removeUserIdFromTenant(Main main, TenantIdentifierWithStorage tenantIdentifierWithStorage, String userId)
             throws FeatureNotEnabledException, TenantOrAppNotFoundException, StorageQueryException,
             UnknownUserIdException {
-        if (Arrays.stream(FeatureFlag.getInstance(main, tenantIdentifierWithStorage.toAppIdentifier()).getEnabledFeatures())
+        if (Arrays.stream(FeatureFlag.getInstance(main, new AppIdentifier(null, null)).getEnabledFeatures())
                 .noneMatch(ee_features -> ee_features == EE_FEATURES.MULTI_TENANCY)) {
             throw new FeatureNotEnabledException(EE_FEATURES.MULTI_TENANCY);
         }
@@ -345,8 +345,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         return null;
     }
 
-    public static TenantConfig[] getAllTenantsForApp(AppIdentifier appIdentifier, Main main)
-            throws BadPermissionException {
+    public static TenantConfig[] getAllTenantsForApp(AppIdentifier appIdentifier, Main main) {
         MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired(true);
         TenantConfig[] tenants = MultitenancyHelper.getInstance(main).getAllTenants();
         List<TenantConfig> tenantList = new ArrayList<>();

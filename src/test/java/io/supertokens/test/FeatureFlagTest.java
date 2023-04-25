@@ -19,11 +19,14 @@ package io.supertokens.test;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
+import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.NoLicenseKeyFoundException;
+import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
@@ -231,5 +234,44 @@ public class FeatureFlagTest {
 
         process.kill();
         Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    private final String OPAQUE_KEY_WITH_MULTITENANCY_FEATURE = "ijaleljUd2kU9XXWLiqFYv5br8nutTxbyBqWypQdv2N-" +
+            "BocoNriPrnYQd0NXPm8rVkeEocN9ayq0B7c3Pv-BTBIhAZSclXMlgyfXtlwAOJk=9BfESEleW6LyTov47dXu";
+
+    @Test
+    public void testFeatureFlagWithMultitenancyFor500Tenants() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(OPAQUE_KEY_WITH_MULTITENANCY_FEATURE);
+
+        for (int i=0; i<500; i++) {
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    new TenantConfig(
+                            new TenantIdentifier(null, null, "t" + i),
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(true),
+                            new JsonObject()
+                    )
+            );
+            System.out.println("Added tenant " + i);
+        }
+
+        JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/ee/featureflag",
+                null, 1000, 1000, null, WebserverAPI.getLatestCDIVersion().get(), "");
+        Assert.assertEquals("OK", response.get("status").getAsString());
+
+        // TODO
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 }
