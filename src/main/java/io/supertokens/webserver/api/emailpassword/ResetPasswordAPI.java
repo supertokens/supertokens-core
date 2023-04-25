@@ -73,12 +73,18 @@ public class ResetPasswordAPI extends WebserverAPI {
             throw new ServletException(new WebserverAPI.BadRequestException("Password cannot be an empty string"));
         }
 
+        TenantIdentifierWithStorage tenantIdentifierWithStorage = null;
         try {
-            TenantIdentifierWithStorage tenantIdentifierWithStorage = getTenantIdentifierWithStorageFromRequest(req);
+            tenantIdentifierWithStorage = getTenantIdentifierWithStorageFromRequest(req);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new ServletException(e);
+        }
+
+        try {
             String userId = EmailPassword.resetPassword(tenantIdentifierWithStorage, super.main, token, newPassword);
 
             io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping.getUserIdMapping(
-                    getAppIdentifierWithStorage(req), userId, UserIdType.SUPERTOKENS);
+                    tenantIdentifierWithStorage.toAppIdentifierWithStorage(), userId, UserIdType.SUPERTOKENS);
 
             // if userIdMapping exists, pass the externalUserId to the response
             if (userIdMapping != null) {
@@ -98,7 +104,7 @@ public class ResetPasswordAPI extends WebserverAPI {
             super.sendJsonResponse(200, result, resp);
 
         } catch (ResetPasswordInvalidTokenException e) {
-            Logging.debug(main, Utils.exceptionStacktraceToString(e));
+            Logging.debug(main, tenantIdentifierWithStorage, Utils.exceptionStacktraceToString(e));
             JsonObject result = new JsonObject();
             result.addProperty("status", "RESET_PASSWORD_INVALID_TOKEN_ERROR");
             super.sendJsonResponse(200, result, resp);

@@ -78,7 +78,7 @@ public class Config extends ResourceDistributor.SingletonResource {
             // should never come here..
         }
 
-        Logging.info(main, "Loading supertokens config.", true);
+        Logging.info(main, TenantIdentifier.BASE_TENANT, "Loading supertokens config.", true);
     }
 
     public static JsonObject getBaseConfigAsJsonObject(Main main) throws IOException {

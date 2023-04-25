@@ -22,6 +22,7 @@ import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
 import io.supertokens.output.Logging;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.test.TestingProcessManager.TestingProcess;
 import org.apache.tomcat.util.http.fileupload.FileUtils;
 import org.junit.AfterClass;
@@ -85,7 +86,7 @@ public class LoggingTest {
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
-        Logging.error(process.getProcess(), "From test", false);
+        Logging.error(process.getProcess(), TenantIdentifier.BASE_TENANT, "From test", false);
 
         boolean infoFlag = false;
         boolean errorFlag = false;
@@ -132,8 +133,8 @@ public class LoggingTest {
             TestingProcess process = TestingProcessManager.start(args);
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
-            Logging.error(process.getProcess(), "From Test", false);
-            Logging.info(process.getProcess(), "From Test", true);
+            Logging.error(process.getProcess(), TenantIdentifier.BASE_TENANT, "From Test", false);
+            Logging.info(process.getProcess(), TenantIdentifier.BASE_TENANT, "From Test", true);
 
             boolean infoFlag = false;
             boolean errorFlag = false;
@@ -215,8 +216,8 @@ public class LoggingTest {
             process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
-            Logging.debug(process.getProcess(), "outTest-dfkn3knsakn");
-            Logging.error(process.getProcess(), "errTest-sdvjovnoasid", true);
+            Logging.debug(process.getProcess(), TenantIdentifier.BASE_TENANT, "outTest-dfkn3knsakn");
+            Logging.error(process.getProcess(), TenantIdentifier.BASE_TENANT, "errTest-sdvjovnoasid", true);
 
             assertTrue(fileContainsString(stdOutput, "outTest-dfkn3knsakn"));
             assertTrue(fileContainsString(errorOutput, "errTest-sdvjovnoasid"));
@@ -249,8 +250,8 @@ public class LoggingTest {
             process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
-            Logging.debug(process.getProcess(), "outTest-dfkn3knsakn");
-            Logging.error(process.getProcess(), "errTest-sdvjovnoasid", true);
+            Logging.debug(process.getProcess(), TenantIdentifier.BASE_TENANT, "outTest-dfkn3knsakn");
+            Logging.error(process.getProcess(), TenantIdentifier.BASE_TENANT, "errTest-sdvjovnoasid", true);
 
             assertTrue(fileContainsString(stdOutput, "outTest-dfkn3knsakn"));
             assertTrue(fileContainsString(errorOutput, "errTest-sdvjovnoasid"));

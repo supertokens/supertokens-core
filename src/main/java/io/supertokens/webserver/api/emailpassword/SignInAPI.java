@@ -68,15 +68,21 @@ public class SignInAPI extends WebserverAPI {
 
         String normalisedEmail = Utils.normaliseEmail(email);
 
+        TenantIdentifierWithStorage tenantIdentifierWithStorage = null;
         try {
-            TenantIdentifierWithStorage tenantIdentifierWithStorage = getTenantIdentifierWithStorageFromRequest(req);
+            tenantIdentifierWithStorage = getTenantIdentifierWithStorageFromRequest(req);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new ServletException(e);
+        }
+
+        try {
             UserInfo user = EmailPassword.signIn(tenantIdentifierWithStorage, super.main, normalisedEmail, password);
 
             ActiveUsers.updateLastActive(tenantIdentifierWithStorage.toAppIdentifierWithStorage(), main, user.id); // use the internal user id
 
             // if a userIdMapping exists, pass the externalUserId to the response
             UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                    getAppIdentifierWithStorage(req), user.id, UserIdType.SUPERTOKENS);
+                    tenantIdentifierWithStorage.toAppIdentifierWithStorage(), user.id, UserIdType.SUPERTOKENS);
 
             if (userIdMapping != null) {
                 user.id = userIdMapping.externalUserId;
@@ -89,7 +95,7 @@ public class SignInAPI extends WebserverAPI {
             super.sendJsonResponse(200, result, resp);
 
         } catch (WrongCredentialsException e) {
-            Logging.debug(main, Utils.exceptionStacktraceToString(e));
+            Logging.debug(main, tenantIdentifierWithStorage, Utils.exceptionStacktraceToString(e));
             JsonObject result = new JsonObject();
             result.addProperty("status", "WRONG_CREDENTIALS_ERROR");
             super.sendJsonResponse(200, result, resp);

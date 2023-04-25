@@ -29,6 +29,7 @@ import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
@@ -69,6 +70,13 @@ public class SignUpAPI extends WebserverAPI {
             throw new ServletException(new WebserverAPI.BadRequestException("Password cannot be an empty string"));
         }
 
+        TenantIdentifier tenantIdentifier = null;
+        try {
+            tenantIdentifier = getTenantIdentifierWithStorageFromRequest(req);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new ServletException(e);
+        }
+
         try {
             UserInfo user = EmailPassword.signUp(this.getTenantIdentifierWithStorageFromRequest(req), super.main, normalisedEmail, password);
 
@@ -81,7 +89,7 @@ public class SignUpAPI extends WebserverAPI {
             super.sendJsonResponse(200, result, resp);
 
         } catch (DuplicateEmailException e) {
-            Logging.debug(main, Utils.exceptionStacktraceToString(e));
+            Logging.debug(main, tenantIdentifier, Utils.exceptionStacktraceToString(e));
             JsonObject result = new JsonObject();
             result.addProperty("status", "EMAIL_ALREADY_EXISTS_ERROR");
             super.sendJsonResponse(200, result, resp);

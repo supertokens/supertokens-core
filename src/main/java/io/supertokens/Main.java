@@ -123,12 +123,12 @@ public class Main {
                 ProcessState.getInstance(this).addState(ProcessState.PROCESS_STATE.SHUTTING_DOWN, null);
                 stopApp();
 
-                Logging.info(this, "Goodbye", true);
+                Logging.info(this, TenantIdentifier.BASE_TENANT, "Goodbye", true);
             } catch (Exception e) {
 
                 ProcessState.getInstance(this).addState(ProcessState.PROCESS_STATE.SHUTTING_DOWN, null);
                 stopApp();
-                Logging.error(this, "What caused the crash: " + e.getMessage(), true, e);
+                Logging.error(this, TenantIdentifier.BASE_TENANT, "What caused the crash: " + e.getMessage(), true, e);
                 exitCode = 1;
             }
             ProcessState.getInstance(this).addState(ProcessState.PROCESS_STATE.STOPPED, null);
@@ -155,7 +155,7 @@ public class Main {
             throw new QuitProgramException(e);
         }
 
-        Logging.info(this, "Completed config.yaml loading.", true);
+        Logging.info(this, TenantIdentifier.BASE_TENANT, "Completed config.yaml loading.", true);
 
         // loading storage layer
         try {
@@ -266,7 +266,7 @@ public class Main {
 
         // NOTE: If the message below is changed, make sure to also change the corresponding check in the CLI program
         // for start command
-        Logging.info(this, "Started SuperTokens on " + Config.getBaseConfig(this).
+        Logging.info(this, TenantIdentifier.BASE_TENANT, "Started SuperTokens on " + Config.getBaseConfig(this).
 
                 getHost(this) + ":"
                 + Config.getBaseConfig(this).
@@ -367,7 +367,7 @@ public class Main {
                 Files.deleteIfExists(Paths.get(startedFileName));
             }
         } catch (Exception e) {
-            Logging.error(this, "Error while removing .started file", false, e);
+            Logging.error(this, TenantIdentifier.BASE_TENANT, "Error while removing .started file", false, e);
         }
     }
 
@@ -412,7 +412,7 @@ public class Main {
             // since we load config before loading anything else
             // below this, and this whole block is surrounded in a
             // try / catch.
-            Logging.info(this, "Stopping SuperTokens...", true);
+            Logging.info(this, TenantIdentifier.BASE_TENANT, "Stopping SuperTokens...", true);
             Webserver.getInstance(this).stop();
             Cronjobs.shutdownAndAwaitTermination(this);
             StorageLayer.close(this);

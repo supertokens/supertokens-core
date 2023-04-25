@@ -71,7 +71,7 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                 this.transferLegacyKeyToNewTable();
                 this.getOrCreateAndGetSigningKeys();
             } catch (StorageQueryException | StorageTransactionLogicException e) {
-                Logging.error(main, "Error while fetching access token signing key", false, e);
+                Logging.error(main, appIdentifier.getAsPublicTenantIdentifier(), "Error while fetching access token signing key", false, e);
             }
         }
     }

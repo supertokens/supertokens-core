@@ -65,12 +65,19 @@ public class NotFoundOrHelloAPI extends WebserverAPI {
     protected void handleRequest(HttpServletRequest req, HttpServletResponse resp) throws IOException,
             ServletException {
         // getServletPath returns the path without the base path.
+        AppIdentifierWithStorage appIdentifierWithStorage = null;
+
+        try {
+            appIdentifierWithStorage = getAppIdentifierWithStorage(req);
+        } catch (TenantOrAppNotFoundException e) {
+            // we send 500 status code
+            throw new ServletException(e);
+        }
+
         if (req.getServletPath().equals("/")) {
             // API is app specific
             // TODO add rate limiter to this API based on appIdentifier
             try {
-                AppIdentifierWithStorage appIdentifierWithStorage =  getAppIdentifierWithStorage(req);
-
                 for (Storage storage : appIdentifierWithStorage.getStorages()) {
                     // even if the public tenant does not exist, the following function will return a null
                     // idea here is to test that the storage is working
@@ -78,14 +85,14 @@ public class NotFoundOrHelloAPI extends WebserverAPI {
                 }
                 super.sendTextResponse(200, "Hello", resp);
 
-            } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+            } catch (StorageQueryException e) {
                 // we send 500 status code
                 throw new ServletException(e);
             }
         } else {
             super.sendTextResponse(404, "Not found", resp);
 
-            Logging.error(main, "Unknown API called: " + req.getRequestURL(), false);
+            Logging.error(main, appIdentifierWithStorage.getAsPublicTenantIdentifier(), "Unknown API called: " + req.getRequestURL(), false);
         }
     }
 

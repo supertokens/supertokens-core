@@ -29,6 +29,7 @@ import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.session.SessionInfo;
 import io.supertokens.session.Session;
@@ -139,9 +140,15 @@ public class SessionAPI extends WebserverAPI {
         String sessionHandle = InputParser.getQueryParamOrThrowError(req, "sessionHandle", false);
         assert sessionHandle != null;
 
+        TenantIdentifierWithStorage tenantIdentifierWithStorage = null;
         try {
-            SessionInfo sessionInfo = Session.getSession(this.getTenantIdentifierWithStorageFromRequest(req),
-                    sessionHandle);
+            tenantIdentifierWithStorage = this.getTenantIdentifierWithStorageFromRequest(req);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new ServletException(e);
+        }
+
+        try {
+            SessionInfo sessionInfo = Session.getSession(tenantIdentifierWithStorage, sessionHandle);
 
             JsonObject result = new Gson().toJsonTree(sessionInfo).getAsJsonObject();
             result.add("userDataInJWT", Utils.toJsonTreeWithNulls(sessionInfo.userDataInJWT));
@@ -151,10 +158,10 @@ public class SessionAPI extends WebserverAPI {
 
             super.sendJsonResponse(200, result, resp);
 
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException e) {
             throw new ServletException(e);
         } catch (UnauthorisedException e) {
-            Logging.debug(main, Utils.exceptionStacktraceToString(e));
+            Logging.debug(main, tenantIdentifierWithStorage, Utils.exceptionStacktraceToString(e));
             JsonObject reply = new JsonObject();
             reply.addProperty("status", "UNAUTHORISED");
             reply.addProperty("message", e.getMessage());

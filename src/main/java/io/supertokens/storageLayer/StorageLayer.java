@@ -91,7 +91,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
     private StorageLayer(Main main, String pluginFolderPath, JsonObject configJson)
             throws MalformedURLException, InvalidConfigException {
-        Logging.info(main, "Loading storage layer.", true);
+        Logging.info(main, TenantIdentifier.BASE_TENANT, "Loading storage layer.", true);
         File loc = new File(pluginFolderPath);
 
         File[] flist = loc.listFiles(file -> file.getPath().toLowerCase().endsWith(".jar"));
@@ -113,7 +113,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         this.storage = getNewStorageInstance(main, configJson);
 
         if (this.storage instanceof Start) {
-            Logging.info(main, "Using in memory storage.", true);
+            Logging.info(main, TenantIdentifier.BASE_TENANT, "Using in memory storage.", true);
         }
     }
 
@@ -268,7 +268,8 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                                 Config.getBaseConfig(main).getInfoLogPath(main),
                                 Config.getBaseConfig(main).getErrorLogPath(main));
                     } catch (DbInitException e) {
-                        Logging.error(main, e.getMessage(), false, e);
+
+                        Logging.error(main, TenantIdentifier.BASE_TENANT, e.getMessage(), false, e);
                         // we ignore any exceptions from db here cause it's not the base tenant's db that
                         // would throw and only tenants belonging to a specific tenant / app. In this case,
                         // we still want other tenants to continue to work

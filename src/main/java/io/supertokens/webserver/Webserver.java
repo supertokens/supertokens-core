@@ -25,6 +25,7 @@ import io.supertokens.config.Config;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.api.core.*;
 import io.supertokens.webserver.api.dashboard.*;
@@ -154,7 +155,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
             tomcat.start();
         } catch (LifecycleException e) {
             // reusing same port OR not right permissions given.
-            Logging.error(main, null, false, e);
+            Logging.error(main, TenantIdentifierWithStorage.BASE_TENANT, null, false, e);
             throw new QuitProgramException(
                     "Error while starting webserver. Possible reasons:\n- Another instance of SuperTokens is already "
                             + "running on the same port. If you want to run another instance, please pass a new config "
@@ -309,7 +310,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
             if (tomcat.getServer() == null) {
                 return;
             }
-            Logging.info(main, "Stopping webserver...", true);
+            Logging.info(main, TenantIdentifier.BASE_TENANT, "Stopping webserver...", true);
             if (tomcat.getServer().getState() != LifecycleState.DESTROYED) {
                 if (tomcat.getServer().getState() != LifecycleState.STOPPED) {
                     try {
@@ -317,13 +318,13 @@ public class Webserver extends ResourceDistributor.SingletonResource {
                         // amount is defined by unloadDelay
                         tomcat.stop();
                     } catch (LifecycleException e) {
-                        Logging.error(main, "Stop tomcat error.", false, e);
+                        Logging.error(main, TenantIdentifier.BASE_TENANT, "Stop tomcat error.", false, e);
                     }
                 }
                 try {
                     tomcat.destroy();
                 } catch (LifecycleException e) {
-                    Logging.error(main, "Destroy tomcat error.", false, e);
+                    Logging.error(main, TenantIdentifier.BASE_TENANT, "Destroy tomcat error.", false, e);
                 }
             }
         }

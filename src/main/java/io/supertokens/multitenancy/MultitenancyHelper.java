@@ -123,7 +123,7 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
                         loadStorageLayer();
                     }
                 } catch (Exception e) {
-                    Logging.error(main, e.getMessage(), false, e);
+                    Logging.error(main, TenantIdentifier.BASE_TENANT, e.getMessage(), false, e);
                 }
             });
         } catch (ResourceDistributor.FuncException e) {
@@ -141,7 +141,7 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
                     loadSigningKeys();
                     refreshCronjobs();
                 } catch (Exception e) {
-                    Logging.error(main, e.getMessage(), false, e);
+                    Logging.error(main, TenantIdentifier.BASE_TENANT, e.getMessage(), false, e);
                 }
             });
         } catch (ResourceDistributor.FuncException e) {

@@ -24,6 +24,7 @@ import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.session.Session;
 import io.supertokens.utils.SemVer;
@@ -59,12 +60,19 @@ public class JWTDataAPI extends WebserverAPI {
         JsonObject userDataInJWT = InputParser.parseJsonObjectOrThrowError(input, "userDataInJWT", false);
         assert userDataInJWT != null;
 
+        TenantIdentifierWithStorage tenantIdentifierWithStorage = null;
+        try {
+            tenantIdentifierWithStorage = this.getTenantIdentifierWithStorageFromRequest(req);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new ServletException(e);
+        }
+
         try {
             if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_21)) {
-                Session.updateSession(this.getTenantIdentifierWithStorageFromRequest(req), sessionHandle, null,
+                Session.updateSession(tenantIdentifierWithStorage, sessionHandle, null,
                         userDataInJWT);
             } else {
-                Session.updateSessionBeforeCDI2_21(this.getTenantIdentifierWithStorageFromRequest(req), sessionHandle,
+                Session.updateSessionBeforeCDI2_21(tenantIdentifierWithStorage, sessionHandle,
                         null, userDataInJWT);
             }
 
@@ -73,12 +81,12 @@ public class JWTDataAPI extends WebserverAPI {
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
 
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException e) {
             throw new ServletException(e);
         } catch (AccessTokenPayloadError e) {
             throw new ServletException(new BadRequestException(e.getMessage()));
         } catch (UnauthorisedException e) {
-            Logging.debug(main, Utils.exceptionStacktraceToString(e));
+            Logging.debug(main, tenantIdentifierWithStorage, Utils.exceptionStacktraceToString(e));
             JsonObject reply = new JsonObject();
             reply.addProperty("status", "UNAUTHORISED");
             reply.addProperty("message", e.getMessage());
@@ -93,9 +101,15 @@ public class JWTDataAPI extends WebserverAPI {
         String sessionHandle = InputParser.getQueryParamOrThrowError(req, "sessionHandle", false);
         assert sessionHandle != null;
 
+        TenantIdentifierWithStorage tenantIdentifierWithStorage = null;
         try {
-            JsonElement jwtPayload = Session.getJWTData(this.getTenantIdentifierWithStorageFromRequest(req),
-                    sessionHandle);
+            tenantIdentifierWithStorage = this.getTenantIdentifierWithStorageFromRequest(req);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new ServletException(e);
+        }
+
+        try {
+            JsonElement jwtPayload = Session.getJWTData(tenantIdentifierWithStorage, sessionHandle);
 
             JsonObject result = new JsonObject();
 
@@ -103,10 +117,10 @@ public class JWTDataAPI extends WebserverAPI {
             result.add("userDataInJWT", jwtPayload);
             super.sendJsonResponse(200, result, resp);
 
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException e) {
             throw new ServletException(e);
         } catch (UnauthorisedException e) {
-            Logging.debug(main, Utils.exceptionStacktraceToString(e));
+            Logging.debug(main, tenantIdentifierWithStorage, Utils.exceptionStacktraceToString(e));
             JsonObject reply = new JsonObject();
             reply.addProperty("status", "UNAUTHORISED");
             reply.addProperty("message", e.getMessage());

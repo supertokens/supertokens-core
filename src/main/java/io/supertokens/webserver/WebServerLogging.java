@@ -19,6 +19,7 @@ package io.supertokens.webserver;
 import ch.qos.logback.core.CoreConstants;
 import io.supertokens.Main;
 import io.supertokens.output.Logging;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.utils.Utils;
 
 import java.util.logging.Handler;
@@ -52,9 +53,9 @@ public class WebServerLogging extends Handler {
         if (record.getThrown() != null) {
             sb.append(" | ");
             sb.append(Utils.throwableStacktraceToString(record.getThrown()));
-            Logging.error(main, sb.toString(), false);
+            Logging.error(main, TenantIdentifier.BASE_TENANT, sb.toString(), false); // TODO logging
         } else {
-            Logging.debug(main, sb.toString());
+            Logging.debug(main, TenantIdentifier.BASE_TENANT, sb.toString()); // TODO logging
         }
     }
 

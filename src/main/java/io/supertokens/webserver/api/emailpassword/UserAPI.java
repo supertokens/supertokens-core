@@ -28,6 +28,7 @@ import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailExc
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
@@ -148,6 +149,12 @@ public class UserAPI extends WebserverAPI {
         }
 
         email = Utils.normaliseEmail(email);
+        AppIdentifier appIdentifier = null;
+        try {
+            appIdentifier = this.getAppIdentifierWithStorage(req);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new ServletException(e);
+        }
 
         try {
             AppIdentifierWithStorageAndUserIdMapping appIdentifierWithStorageAndUserIdMapping =
@@ -169,13 +176,13 @@ public class UserAPI extends WebserverAPI {
             throw new ServletException(e);
 
         } catch (UnknownUserIdException e) {
-            Logging.debug(main, Utils.exceptionStacktraceToString(e));
+            Logging.debug(main, appIdentifier.getAsPublicTenantIdentifier(), Utils.exceptionStacktraceToString(e));
             JsonObject result = new JsonObject();
             result.addProperty("status", "UNKNOWN_USER_ID_ERROR");
             super.sendJsonResponse(200, result, resp);
 
         } catch (DuplicateEmailException e) {
-            Logging.debug(main, Utils.exceptionStacktraceToString(e));
+            Logging.debug(main, appIdentifier.getAsPublicTenantIdentifier(), Utils.exceptionStacktraceToString(e));
             JsonObject result = new JsonObject();
             result.addProperty("status", "EMAIL_ALREADY_EXISTS_ERROR");
             super.sendJsonResponse(200, result, resp);
