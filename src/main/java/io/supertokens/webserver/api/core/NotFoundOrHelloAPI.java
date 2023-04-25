@@ -22,6 +22,7 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.utils.RateLimiter;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -76,8 +77,17 @@ public class NotFoundOrHelloAPI extends WebserverAPI {
 
         if (req.getServletPath().equals("/")) {
             // API is app specific
-            // TODO add rate limiter to this API based on appIdentifier
             try {
+                RateLimiter rateLimiter = RateLimiter.getInstance(getAppIdentifierWithStorage(req), super.main, 200);
+                if (!rateLimiter.checkRequest()) {
+                    if (Main.isTesting) {
+                        super.sendTextResponse(200, "RateLimitedHello", resp);
+                    } else {
+                        super.sendTextResponse(200, "Hello", resp);
+                    }
+                    return;
+                }
+
                 for (Storage storage : appIdentifierWithStorage.getStorages()) {
                     // even if the public tenant does not exist, the following function will return a null
                     // idea here is to test that the storage is working
@@ -85,7 +95,7 @@ public class NotFoundOrHelloAPI extends WebserverAPI {
                 }
                 super.sendTextResponse(200, "Hello", resp);
 
-            } catch (StorageQueryException e) {
+            } catch (StorageQueryException | TenantOrAppNotFoundException e) {
                 // we send 500 status code
                 throw new ServletException(e);
             }
