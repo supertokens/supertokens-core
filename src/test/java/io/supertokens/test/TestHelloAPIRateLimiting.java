@@ -126,22 +126,20 @@ public class TestHelloAPIRateLimiting {
 
     private boolean callHello(TenantIdentifier tenantIdentifier, Main main)
             throws HttpResponseException, IOException {
-        try {
-            String response = HttpRequestForTesting.sendGETRequest(main, "",
-                    HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/hello"),
-                    null, 1000, 1000, null,
-                    Utils.getCdiVersionStringLatestForTests(), null);
-            if ("Hello".equals(response)) {
-                return true;
-            } else {
-                throw new IllegalStateException("Unexpected response: " + response);
-            }
-        } catch (HttpResponseException e) {
-            if (e.statusCode == 429) {
-                return false;
-            }
-            throw e;
-        }
+        String response = HttpRequestForTesting.sendGETRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/hello"),
+                null, 1000, 1000, null,
+                Utils.getCdiVersionStringLatestForTests(), null);
+        return "Hello".equals(response);
+    }
+
+    private boolean callHello2(TenantIdentifier tenantIdentifier, Main main)
+            throws HttpResponseException, IOException {
+        String response = HttpRequestForTesting.sendGETRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/"),
+                null, 1000, 1000, null,
+                Utils.getCdiVersionStringLatestForTests(), null);
+        return "Hello".equals(response);
     }
 
     @Test
@@ -207,6 +205,34 @@ public class TestHelloAPIRateLimiting {
         assertTrue(callHello(new TenantIdentifier(null, "a1", null), process.getProcess()));
         assertTrue(callHello(new TenantIdentifier(null, "a2", null), process.getProcess()));
         assertTrue(callHello(new TenantIdentifier(null, "a3", null), process.getProcess()));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testThatTheHelloAPIisRateLimited2() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        createApps(process);
+
+        // Call 5 requests rapidly
+        for (int i=0; i < 5; i++) {
+            assertTrue(callHello2(new TenantIdentifier(null, null, null), process.getProcess()));
+        }
+
+        // 6th request fails
+        assertFalse(callHello2(new TenantIdentifier(null, null, null), process.getProcess()));
+
+        // Should be able to call after pausing for 200ms
+        Thread.sleep(201);
+        assertTrue(callHello2(new TenantIdentifier(null, null, null), process.getProcess()));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

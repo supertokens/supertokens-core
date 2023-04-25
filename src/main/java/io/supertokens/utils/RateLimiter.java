@@ -16,22 +16,32 @@
 
 package io.supertokens.utils;
 
+import io.supertokens.Main;
+import io.supertokens.ResourceDistributor;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+
 import java.util.HashMap;
 import java.util.Map;
 
-public class RateLimiter {
+public class RateLimiter extends ResourceDistributor.SingletonResource {
+
+    private static final String RESOURCE_KEY = "io.supertokens.utils.RateLimiter";
+
     private long lastRequestTime = 0;
     private final long timeInterval; // in milliseconds
     private long tokenBucketSize = 5;
     private long tokensAvailable = tokenBucketSize;
 
-    private static final Map<Object, RateLimiter> rateLimiters = new HashMap<>();
-
-    public static synchronized RateLimiter getInstance(Object key, long timeInterval) {
-        if (!rateLimiters.containsKey(key)) {
-            rateLimiters.put(key, new RateLimiter(timeInterval));
+    public static RateLimiter getInstance(AppIdentifier appIdentifier, Main main, long timeIntervalIfCreatingNewRateLimiter) {
+        try {
+            return (RateLimiter) main.getResourceDistributor().getResource(appIdentifier, RESOURCE_KEY);
+        } catch (TenantOrAppNotFoundException e) {
+            // Create a new rate limiter
+            RateLimiter rateLimiter = new RateLimiter(timeIntervalIfCreatingNewRateLimiter);
+            main.getResourceDistributor().setResource(appIdentifier, RESOURCE_KEY, rateLimiter);
+            return rateLimiter;
         }
-        return rateLimiters.get(key);
     }
 
     public RateLimiter(long timeInterval) {

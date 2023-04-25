@@ -78,9 +78,13 @@ public class HelloAPI extends WebserverAPI {
         // API is app specific
 
         try {
-            RateLimiter rateLimiter = RateLimiter.getInstance(getAppIdentifierWithStorage(req), 200);
+            RateLimiter rateLimiter = RateLimiter.getInstance(getAppIdentifierWithStorage(req), super.main, 200);
             if (!rateLimiter.checkRequest()) {
-                super.sendTextResponse(429, "Too many requests", resp);
+                if (Main.isTesting) {
+                    super.sendTextResponse(200, "RateLimitedHello", resp);
+                } else {
+                    super.sendTextResponse(200, "Hello", resp);
+                }
                 return;
             }
 
