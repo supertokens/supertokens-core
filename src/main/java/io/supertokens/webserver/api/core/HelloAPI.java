@@ -21,6 +21,7 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.utils.RateLimiter;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -75,8 +76,14 @@ public class HelloAPI extends WebserverAPI {
 
     private void handleRequest(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         // API is app specific
-        // TODO add rate limiter to this API based on appIdentifier
+
         try {
+            RateLimiter rateLimiter = RateLimiter.getInstance(getAppIdentifierWithStorage(req), 200);
+            if (!rateLimiter.checkRequest()) {
+                super.sendTextResponse(429, "Too many requests", resp);
+                return;
+            }
+
             AppIdentifierWithStorage appIdentifierWithStorage =  getAppIdentifierWithStorage(req);
 
             for (Storage storage : appIdentifierWithStorage.getStorages()) {
