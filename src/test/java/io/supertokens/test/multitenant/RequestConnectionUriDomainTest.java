@@ -22,15 +22,22 @@ import io.supertokens.ProcessState;
 import io.supertokens.config.Config;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
+import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.httpRequest.HttpRequest;
 import io.supertokens.httpRequest.HttpResponseException;
+import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.multitenancy.exception.BadPermissionException;
+import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.test.multitenant.api.TestMultitenancyAPIHelper;
+import io.supertokens.thirdparty.InvalidProviderConfigException;
 import io.supertokens.webserver.Webserver;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.http.HttpServletRequest;
@@ -103,7 +110,9 @@ public class RequestConnectionUriDomainTest {
     @Test
     public void basicTestingWithDifferentAPIKey()
             throws InterruptedException, IOException, HttpResponseException, InvalidConfigException,
-            io.supertokens.test.httpRequest.HttpResponseException, TenantOrAppNotFoundException {
+            io.supertokens.test.httpRequest.HttpResponseException, TenantOrAppNotFoundException,
+            InvalidProviderConfigException, StorageQueryException, FeatureNotEnabledException,
+            CannotModifyBaseConfigException, BadPermissionException {
         String[] args = {"../"};
 
         Utils.setValueInConfig("host", "\"0.0.0.0\"");
@@ -122,15 +131,14 @@ public class RequestConnectionUriDomainTest {
         StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
                 .modifyConfigToAddANewUserPoolForTesting(tenant2Config, 3);
 
-        Config.loadAllTenantConfig(process.getProcess(), new TenantConfig[]{
-                new TenantConfig(new TenantIdentifier("localhost:3567", null, null), new EmailPasswordConfig(false),
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(new TenantIdentifier("localhost:3567", null, null), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        tenantConfig),
-                new TenantConfig(new TenantIdentifier("127.0.0.1:3567", null, null), new EmailPasswordConfig(false),
+                        tenantConfig), false);
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(new TenantIdentifier("127.0.0.1:3567", null, null), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        tenant2Config)});
+                        tenant2Config), false);
 
         Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
 
@@ -195,7 +203,9 @@ public class RequestConnectionUriDomainTest {
     @Test
     public void basicTestingWithDifferentAPIKeyAndTenantId()
             throws InterruptedException, IOException, HttpResponseException, InvalidConfigException,
-            io.supertokens.test.httpRequest.HttpResponseException, TenantOrAppNotFoundException {
+            io.supertokens.test.httpRequest.HttpResponseException, TenantOrAppNotFoundException,
+            InvalidProviderConfigException, StorageQueryException, FeatureNotEnabledException,
+            CannotModifyBaseConfigException, BadPermissionException {
         String[] args = {"../"};
 
         Utils.setValueInConfig("host", "\"0.0.0.0\"");
@@ -214,23 +224,38 @@ public class RequestConnectionUriDomainTest {
         StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
                 .modifyConfigToAddANewUserPoolForTesting(tenant2Config, 3);
 
-        Config.loadAllTenantConfig(process.getProcess(), new TenantConfig[]{
+        Multitenancy.addNewOrUpdateAppOrTenant(
+                process.getProcess(),
                 new TenantConfig(new TenantIdentifier("localhost:3567", null, null), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
                         tenantConfig),
+                false
+        );
+        Multitenancy.addNewOrUpdateAppOrTenant(
+                process.getProcess(),
                 new TenantConfig(new TenantIdentifier("localhost:3567", null, "t1"), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
                         tenantConfig),
+                false
+        );
+        Multitenancy.addNewOrUpdateAppOrTenant(
+                process.getProcess(),
                 new TenantConfig(new TenantIdentifier("127.0.0.1:3567", null, null), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
                         tenant2Config),
+                false
+        );
+        Multitenancy.addNewOrUpdateAppOrTenant(
+                process.getProcess(),
                 new TenantConfig(new TenantIdentifier("127.0.0.1:3567", null, "t1"), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        tenant2Config)});
+                        tenant2Config),
+                false
+        );
 
         Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
 

@@ -86,12 +86,27 @@ public class Logging extends ResourceDistributor.SingletonResource {
                 .setResource(new TenantIdentifier(null, null, null), RESOURCE_ID, new Logging(main));
     }
 
-    public static void debug(Main main, String msg) {
+    private static String prependTenantIdentifierToMessage(TenantIdentifier tenantIdentifier, String msg) {
+        if (tenantIdentifier == null) {
+            tenantIdentifier = TenantIdentifier.BASE_TENANT;
+        }
+        return "Tenant(" +
+                tenantIdentifier.getConnectionUriDomain() +
+                ", " +
+                tenantIdentifier.getAppId() +
+                ", " +
+                tenantIdentifier.getTenantId() +
+                ") | " +
+                msg;
+    }
+
+    public static void debug(Main main, TenantIdentifier tenantIdentifier, String msg) {
         if (!Config.getBaseConfig(main).getLogLevels(main).contains(LOG_LEVEL.DEBUG)) {
             return;
         }
         try {
             msg = msg.trim();
+            msg = prependTenantIdentifierToMessage(tenantIdentifier, msg);
             if (getInstance(main) != null) {
                 getInstance(main).infoLogger.debug(msg);
             }
@@ -100,12 +115,13 @@ public class Logging extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public static void info(Main main, String msg, boolean toConsoleAsWell) {
+    public static void info(Main main, TenantIdentifier tenantIdentifier, String msg, boolean toConsoleAsWell) {
         if (!Config.getBaseConfig(main).getLogLevels(main).contains(LOG_LEVEL.INFO)) {
             return;
         }
         try {
             msg = msg.trim();
+            msg = prependTenantIdentifierToMessage(tenantIdentifier, msg);
             if (getInstance(main) != null) {
                 getInstance(main).infoLogger.info(msg);
             }
@@ -116,12 +132,13 @@ public class Logging extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public static void warn(Main main, String msg) {
+    public static void warn(Main main, TenantIdentifier tenantIdentifier, String msg) {
         if (!Config.getBaseConfig(main).getLogLevels(main).contains(LOG_LEVEL.WARN)) {
             return;
         }
         try {
             msg = msg.trim();
+            msg = prependTenantIdentifierToMessage(tenantIdentifier, msg);
             if (getInstance(main) != null) {
                 getInstance(main).errorLogger.warn(msg);
             }
@@ -129,7 +146,7 @@ public class Logging extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public static void error(Main main, String err, boolean toConsoleAsWell) {
+    public static void error(Main main, TenantIdentifier tenantIdentifier, String err, boolean toConsoleAsWell) {
         try {
             if (!Config.getConfig(new TenantIdentifier(null, null, null), main).getLogLevels(main)
                     .contains(LOG_LEVEL.ERROR)) {
@@ -142,6 +159,7 @@ public class Logging extends ResourceDistributor.SingletonResource {
         }
         try {
             err = err.trim();
+            err = prependTenantIdentifierToMessage(tenantIdentifier, err);
             if (getInstance(main) != null) {
                 getInstance(main).errorLogger.error(err);
             }
@@ -152,7 +170,7 @@ public class Logging extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public static void error(Main main, String message, boolean toConsoleAsWell, Exception e) {
+    public static void error(Main main, TenantIdentifier tenantIdentifier, String message, boolean toConsoleAsWell, Exception e) {
         try {
             if (!Config.getConfig(new TenantIdentifier(null, null, null), main).getLogLevels(main)
                     .contains(LOG_LEVEL.ERROR)) {
@@ -172,6 +190,7 @@ public class Logging extends ResourceDistributor.SingletonResource {
             }
             if (message != null) {
                 message = message.trim();
+                message = prependTenantIdentifierToMessage(tenantIdentifier, message);
                 if (getInstance(main) != null) {
                     getInstance(main).errorLogger.error(message);
                 }

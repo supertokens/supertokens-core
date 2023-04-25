@@ -109,13 +109,13 @@ public class VerifySessionAPI extends WebserverAPI {
         } catch (AccessTokenPayloadError e) {
             throw new ServletException(new BadRequestException(e.getMessage()));
         } catch (UnauthorisedException e) {
-            Logging.debug(main, Utils.exceptionStacktraceToString(e));
+            Logging.debug(main, appIdentifier.getAsPublicTenantIdentifier(), Utils.exceptionStacktraceToString(e));
             JsonObject reply = new JsonObject();
             reply.addProperty("status", "UNAUTHORISED");
             reply.addProperty("message", e.getMessage());
             super.sendJsonResponse(200, reply, resp);
         } catch (TryRefreshTokenException e) {
-            Logging.debug(main, Utils.exceptionStacktraceToString(e));
+            Logging.debug(main, appIdentifier.getAsPublicTenantIdentifier(), Utils.exceptionStacktraceToString(e));
             try {
                 JsonObject reply = new JsonObject();
                 reply.addProperty("status", "TRY_REFRESH_TOKEN");

@@ -65,7 +65,7 @@ public class Version extends ResourceDistributor.SingletonResource {
     }
 
     private VersionFile loadVersionFile(String versionFilePath) throws IOException {
-        Logging.info(main, "Loading supertokens version.yaml file.", true);
+        Logging.info(main, TenantIdentifier.BASE_TENANT, "Loading supertokens version.yaml file.", true);
         final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
         VersionFile version = mapper.readValue(new File(versionFilePath), VersionFile.class);
         version.validate();

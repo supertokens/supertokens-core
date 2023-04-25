@@ -53,7 +53,7 @@ public class RefreshTokenKey extends ResourceDistributor.SingletonResource {
         try {
             this.getKey();
         } catch (StorageQueryException | StorageTransactionLogicException e) {
-            Logging.error(main, "Error while fetching refresh token key", false, e);
+            Logging.error(main, appIdentifier.getAsPublicTenantIdentifier(), "Error while fetching refresh token key", false, e);
         }
     }
 

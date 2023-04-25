@@ -24,6 +24,8 @@ import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.TenantIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
@@ -59,6 +61,12 @@ public class GeneratePasswordResetTokenAPI extends WebserverAPI {
         assert userId != null;
 
         // logic according to https://github.com/supertokens/supertokens-core/issues/106
+        TenantIdentifier tenantIdentifier = null;
+        try {
+            tenantIdentifier = getTenantIdentifierWithStorageFromRequest(req);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new ServletException(e);
+        }
 
         try {
             TenantIdentifierWithStorageAndUserIdMapping tenantIdentifierStorageAndMapping =
@@ -76,7 +84,7 @@ public class GeneratePasswordResetTokenAPI extends WebserverAPI {
             super.sendJsonResponse(200, result, resp);
 
         } catch (UnknownUserIdException e) {
-            Logging.debug(main, Utils.exceptionStacktraceToString(e));
+            Logging.debug(main, tenantIdentifier, Utils.exceptionStacktraceToString(e));
             JsonObject result = new JsonObject();
             result.addProperty("status", "UNKNOWN_USER_ID_ERROR");
             super.sendJsonResponse(200, result, resp);

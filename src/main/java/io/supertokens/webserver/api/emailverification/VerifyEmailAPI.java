@@ -21,6 +21,7 @@ import io.supertokens.Main;
 import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.emailverification.User;
 import io.supertokens.emailverification.exception.EmailVerificationInvalidTokenException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
@@ -64,8 +65,15 @@ public class VerifyEmailAPI extends WebserverAPI {
             throw new ServletException(new BadRequestException("Unsupported method for email verification"));
         }
 
+        TenantIdentifierWithStorage tenantIdentifierWithStorage = null;
         try {
-            User user = EmailVerification.verifyEmail(this.getTenantIdentifierWithStorageFromRequest(req), token);
+            tenantIdentifierWithStorage = this.getTenantIdentifierWithStorageFromRequest(req);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new ServletException(e);
+        }
+
+        try {
+            User user = EmailVerification.verifyEmail(tenantIdentifierWithStorage, token);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
@@ -74,7 +82,7 @@ public class VerifyEmailAPI extends WebserverAPI {
             super.sendJsonResponse(200, result, resp);
 
         } catch (EmailVerificationInvalidTokenException e) {
-            Logging.debug(main, Utils.exceptionStacktraceToString(e));
+            Logging.debug(main, tenantIdentifierWithStorage, Utils.exceptionStacktraceToString(e));
             JsonObject result = new JsonObject();
             result.addProperty("status", "EMAIL_VERIFICATION_INVALID_TOKEN_ERROR");
             super.sendJsonResponse(200, result, resp);

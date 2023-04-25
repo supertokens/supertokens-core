@@ -339,22 +339,25 @@ public abstract class WebserverAPI extends HttpServlet {
 
     @Override
     protected void service(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        TenantIdentifier tenantIdentifier = null;
         try {
             if (this.checkAPIKey(req)) {
                 assertThatAPIKeyCheckPasses(req);
             }
+            tenantIdentifier = getTenantIdentifierWithStorageFromRequest(req);
             if (this.versionNeeded(req)) {
                 SemVer version = getVersionFromRequest(req);
                 assertThatVersionIsCompatible(version);
-                Logging.info(main,
+                Logging.info(main, tenantIdentifier,
                         "API called: " + req.getRequestURI() + ". Method: " + req.getMethod() + ". Version: " + version,
                         false);
             } else {
-                Logging.info(main, "API called: " + req.getRequestURI() + ". Method: " + req.getMethod(), false);
+                Logging.info(main, tenantIdentifier, "API called: " + req.getRequestURI() + ". Method: " + req.getMethod(), false);
             }
             super.service(req, resp);
+
         } catch (Exception e) {
-            Logging.error(main, "API threw an exception: " + req.getMethod() + " " + req.getRequestURI(),
+            Logging.error(main, tenantIdentifier, "API threw an exception: " + req.getMethod() + " " + req.getRequestURI(),
                     Main.isTesting, e);
 
             if (e instanceof QuitProgramException) {
@@ -389,7 +392,7 @@ public abstract class WebserverAPI extends HttpServlet {
                 sendTextResponse(500, "Internal Error", resp);
             }
         }
-        Logging.info(main, "API ended: " + req.getRequestURI() + ". Method: " + req.getMethod(), false);
+        Logging.info(main, tenantIdentifier, "API ended: " + req.getRequestURI() + ". Method: " + req.getMethod(), false);
     }
 
     protected String getRIDFromRequest(HttpServletRequest req) {

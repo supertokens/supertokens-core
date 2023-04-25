@@ -21,6 +21,7 @@ import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.config.Config;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.LOG_LEVEL;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.test.TestingProcessManager.TestingProcess;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -169,10 +170,10 @@ public class LogLevelTest {
             File infoLog = new File(Config.getConfig(process.getProcess()).getInfoLogPath(process.getProcess()));
             File errorLog = new File(Config.getConfig(process.getProcess()).getErrorLogPath(process.getProcess()));
             boolean didOutput = false;
-            Logging.error(process.getProcess(), "some message", false);
-            Logging.warn(process.getProcess(), "some message");
-            Logging.info(process.getProcess(), "some message", true);
-            Logging.debug(process.getProcess(), "some message");
+            Logging.error(process.getProcess(), TenantIdentifier.BASE_TENANT, "some message", false);
+            Logging.warn(process.getProcess(), TenantIdentifier.BASE_TENANT, "some message");
+            Logging.info(process.getProcess(), TenantIdentifier.BASE_TENANT, "some message", true);
+            Logging.debug(process.getProcess(), TenantIdentifier.BASE_TENANT, "some message");
 
             try (Scanner scanner = new Scanner(infoLog, StandardCharsets.UTF_8)) {
                 while (scanner.hasNextLine()) {
@@ -217,10 +218,10 @@ public class LogLevelTest {
             boolean infoOutput = false;
             boolean debugOutput = false;
 
-            Logging.error(process.getProcess(), "some error", false);
-            Logging.warn(process.getProcess(), "some warn");
-            Logging.info(process.getProcess(), "some info", true);
-            Logging.debug(process.getProcess(), "some debug");
+            Logging.error(process.getProcess(), TenantIdentifier.BASE_TENANT, "some error", false);
+            Logging.warn(process.getProcess(), TenantIdentifier.BASE_TENANT, "some warn");
+            Logging.info(process.getProcess(), TenantIdentifier.BASE_TENANT, "some info", true);
+            Logging.debug(process.getProcess(), TenantIdentifier.BASE_TENANT, "some debug");
 
             try (Scanner scanner = new Scanner(infoLog, StandardCharsets.UTF_8)) {
                 while (scanner.hasNextLine()) {
@@ -271,10 +272,10 @@ public class LogLevelTest {
             boolean infoOutput = false;
             boolean debugOutput = false;
 
-            Logging.error(process.getProcess(), "some error", false);
-            Logging.warn(process.getProcess(), "some warn");
-            Logging.info(process.getProcess(), "some info", true);
-            Logging.debug(process.getProcess(), "some debug");
+            Logging.error(process.getProcess(), TenantIdentifier.BASE_TENANT, "some error", false);
+            Logging.warn(process.getProcess(), TenantIdentifier.BASE_TENANT, "some warn");
+            Logging.info(process.getProcess(), TenantIdentifier.BASE_TENANT, "some info", true);
+            Logging.debug(process.getProcess(), TenantIdentifier.BASE_TENANT, "some debug");
 
             try (Scanner scanner = new Scanner(infoLog, StandardCharsets.UTF_8)) {
                 while (scanner.hasNextLine()) {
@@ -325,10 +326,10 @@ public class LogLevelTest {
             boolean infoOutput = false;
             boolean debugOutput = false;
 
-            Logging.error(process.getProcess(), "some error", false);
-            Logging.warn(process.getProcess(), "some warn");
-            Logging.info(process.getProcess(), "some info", true);
-            Logging.debug(process.getProcess(), "some debug");
+            Logging.error(process.getProcess(), TenantIdentifier.BASE_TENANT, "some error", false);
+            Logging.warn(process.getProcess(), TenantIdentifier.BASE_TENANT, "some warn");
+            Logging.info(process.getProcess(), TenantIdentifier.BASE_TENANT, "some info", true);
+            Logging.debug(process.getProcess(), TenantIdentifier.BASE_TENANT, "some debug");
 
             try (Scanner scanner = new Scanner(infoLog, StandardCharsets.UTF_8)) {
                 while (scanner.hasNextLine()) {
@@ -379,10 +380,10 @@ public class LogLevelTest {
             boolean infoOutput = false;
             boolean debugOutput = false;
 
-            Logging.error(process.getProcess(), "some error", false);
-            Logging.warn(process.getProcess(), "some warn");
-            Logging.info(process.getProcess(), "some info", true);
-            Logging.debug(process.getProcess(), "some debug");
+            Logging.error(process.getProcess(), TenantIdentifier.BASE_TENANT, "some error", false);
+            Logging.warn(process.getProcess(), TenantIdentifier.BASE_TENANT, "some warn");
+            Logging.info(process.getProcess(), TenantIdentifier.BASE_TENANT, "some info", true);
+            Logging.debug(process.getProcess(), TenantIdentifier.BASE_TENANT, "some debug");
 
             try (Scanner scanner = new Scanner(infoLog, StandardCharsets.UTF_8)) {
                 while (scanner.hasNextLine()) {
