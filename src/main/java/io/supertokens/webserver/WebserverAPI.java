@@ -357,10 +357,8 @@ public abstract class WebserverAPI extends HttpServlet {
             super.service(req, resp);
 
         } catch (Exception e) {
-            if (!(e instanceof TenantOrAppNotFoundException)) {
-                Logging.error(main, tenantIdentifier, "API threw an exception: " + req.getMethod() + " " + req.getRequestURI(),
-                        Main.isTesting, e);
-            }
+            Logging.error(main, tenantIdentifier, "API threw an exception: " + req.getMethod() + " " + req.getRequestURI(),
+                    Main.isTesting, e);
 
             if (e instanceof QuitProgramException) {
                 main.wakeUpMainThreadToShutdown();
