@@ -19,6 +19,8 @@ package io.supertokens.webserver.api.multitenancy.thirdparty;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
@@ -26,9 +28,7 @@ import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.multitenancy.TenantConfig;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
-import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
+import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
 import io.supertokens.webserver.InputParser;
@@ -39,6 +39,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class CreateOrUpdateThirdPartyConfigAPI extends WebserverAPI {
@@ -62,6 +63,14 @@ public class CreateOrUpdateThirdPartyConfigAPI extends WebserverAPI {
 
         try {
             TenantIdentifierWithStorage tenantIdentifier = this.getTenantIdentifierWithStorageFromRequest(req);
+
+            if (!tenantIdentifier.equals(TenantIdentifier.BASE_TENANT)) {
+                if (Arrays.stream(FeatureFlag.getInstance(main, new AppIdentifier(null, null)).getEnabledFeatures())
+                        .noneMatch(ee_features -> ee_features == EE_FEATURES.MULTI_TENANCY)) {
+                    throw new FeatureNotEnabledException(EE_FEATURES.MULTI_TENANCY);
+                }
+            }
+
             TenantConfig config = Multitenancy.getTenantInfo(main, tenantIdentifier);
             if (config == null) {
                 throw new TenantOrAppNotFoundException(tenantIdentifier);
