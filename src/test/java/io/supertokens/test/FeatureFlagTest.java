@@ -17,8 +17,10 @@
 package io.supertokens.test;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
+import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.FeatureFlagTestContent;
@@ -28,14 +30,14 @@ import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.session.Session;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.webserver.WebserverAPI;
 import org.junit.*;
 import org.junit.rules.TestRule;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 public class FeatureFlagTest {
 
@@ -269,8 +271,94 @@ public class FeatureFlagTest {
                 null, 1000, 1000, null, WebserverAPI.getLatestCDIVersion().get(), "");
         Assert.assertEquals("OK", response.get("status").getAsString());
 
-        // TODO
+        JsonArray multitenancyStats = response.get("usageStats").getAsJsonObject().get("multi_tenancy").getAsJsonObject().get("tenants").getAsJsonArray();
+        assertEquals(501, multitenancyStats.size());
 
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testThatMultitenantStatsAreAccurate() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(OPAQUE_KEY_WITH_MULTITENANCY_FEATURE);
+
+        for (int i=0; i<5; i++) {
+            JsonObject coreConfig = new JsonObject();
+            StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                    .modifyConfigToAddANewUserPoolForTesting(coreConfig, i+1);
+
+            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, null, "t" + i);
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    new TenantConfig(
+                            tenantIdentifier,
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(true),
+                            coreConfig
+                    )
+            );
+
+            TenantIdentifierWithStorage tenantIdentifierWithStorage = tenantIdentifier.withStorage(
+                    StorageLayer.getStorage(tenantIdentifier, process.getProcess()));
+            if (i % 3 == 0) {
+                // Create a user
+                EmailPassword.signUp(
+                        tenantIdentifierWithStorage, process.getProcess(), "user@example.com", "password");
+            } else if (i % 3 == 1) {
+                // Create a session
+                Session.createNewSession(tenantIdentifierWithStorage, process.getProcess(), "userid", new JsonObject(), new JsonObject());
+            } else {
+                // Create an enterprise provider
+                Multitenancy.addNewOrUpdateAppOrTenant(
+                        process.getProcess(),
+                        new TenantIdentifier(null, null, null),
+                        new TenantConfig(
+                                tenantIdentifier,
+                                new EmailPasswordConfig(true),
+                                new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[]{
+                                        new ThirdPartyConfig.Provider("okta", "Okta", null, null, null, null, null, null, null, null, null, null, null, null)
+                                }),
+                                new PasswordlessConfig(true),
+                                coreConfig
+                        )
+                );
+            }
+        }
+
+        JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/ee/featureflag",
+                null, 1000, 1000, null, WebserverAPI.getLatestCDIVersion().get(), "");
+        Assert.assertEquals("OK", response.get("status").getAsString());
+
+        JsonArray multitenancyStats = response.get("usageStats").getAsJsonObject().get("multi_tenancy").getAsJsonObject().get("tenants").getAsJsonArray();
+        assertEquals(6, multitenancyStats.size());
+
+        for (JsonElement tenantStat : multitenancyStats) {
+            JsonObject tenantStatObj = tenantStat.getAsJsonObject();
+            String tenantId = tenantStatObj.get("tenantId").getAsString();
+
+            if (tenantId.equals("public")) {
+                assertFalse(tenantStatObj.get("hasUsersOrSessions").getAsBoolean());
+                assertFalse(tenantStatObj.get("hasEnterpriseLogin").getAsBoolean());
+            } else if (tenantId.equals("t0")) {
+                assertTrue(tenantStatObj.get("hasUsersOrSessions").getAsBoolean());
+                assertFalse(tenantStatObj.get("hasEnterpriseLogin").getAsBoolean());
+            } else if (tenantId.equals("t1")) {
+                assertTrue(tenantStatObj.get("hasUsersOrSessions").getAsBoolean());
+                assertFalse(tenantStatObj.get("hasEnterpriseLogin").getAsBoolean());
+            } else if (tenantId.equals("t2")) {
+                assertFalse(tenantStatObj.get("hasUsersOrSessions").getAsBoolean());
+                assertTrue(tenantStatObj.get("hasEnterpriseLogin").getAsBoolean());
+            }
+        }
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
