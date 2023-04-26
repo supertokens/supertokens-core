@@ -239,4 +239,24 @@ public class TestMultitenancyAPIHelper {
         assertEquals("OK", signUpResponse.getAsJsonPrimitive("status").getAsString());
         return signUpResponse.getAsJsonObject("user");
     }
+
+    public static JsonObject tpSignInUp(TenantIdentifier tenantIdentifier, String thirdPartyId, String thirdPartyUserId, String email, Main main)
+            throws HttpResponseException, IOException {
+        JsonObject emailObject = new JsonObject();
+        emailObject.addProperty("id", email);
+
+        JsonObject signUpRequestBody = new JsonObject();
+        signUpRequestBody.addProperty("thirdPartyId", thirdPartyId);
+        signUpRequestBody.addProperty("thirdPartyUserId", thirdPartyUserId);
+        signUpRequestBody.add("email", emailObject);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/signinup"), signUpRequestBody,
+                1000, 1000, null,
+                Utils.getCdiVersionStringLatestForTests(), "thirdparty");
+        assertEquals("OK", response.get("status").getAsString());
+        assertEquals(3, response.entrySet().size());
+
+        return response.get("user").getAsJsonObject();
+    }
 }

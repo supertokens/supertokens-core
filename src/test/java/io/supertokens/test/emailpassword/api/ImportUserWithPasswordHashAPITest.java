@@ -22,6 +22,7 @@ import io.supertokens.config.CoreConfig.PASSWORD_HASHING_ALG;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.ParsedFirebaseSCryptResponse;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.emailpassword.CreateUserInfo;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
@@ -331,7 +332,7 @@ public class ImportUserWithPasswordHashAPITest {
 
         long timeJoined = System.currentTimeMillis();
 
-        UserInfo userInfo = new UserInfo("userId", email, combinedPasswordHash, timeJoined);
+        CreateUserInfo userInfo = new CreateUserInfo("userId", email, combinedPasswordHash, timeJoined);
         EmailPasswordSQLStorage storage = (EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         storage.signUp(new TenantIdentifier(null, null, null), userInfo);
@@ -374,7 +375,7 @@ public class ImportUserWithPasswordHashAPITest {
 
         long timeJoined = System.currentTimeMillis();
 
-        UserInfo userInfo = new UserInfo("userId", email, combinedPasswordHash, timeJoined);
+        CreateUserInfo userInfo = new CreateUserInfo("userId", email, combinedPasswordHash, timeJoined);
         EmailPasswordSQLStorage storage = (EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         storage.signUp(new TenantIdentifier(null, null, null), userInfo);

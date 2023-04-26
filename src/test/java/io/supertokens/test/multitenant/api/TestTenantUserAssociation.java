@@ -18,14 +18,17 @@ package io.supertokens.test.multitenant.api;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
+import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
+import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -167,5 +170,21 @@ public class TestTenantUserAssociation {
 
         JsonObject response = TestMultitenancyAPIHelper.associateUserToTenant(new TenantIdentifier(null, "a1", null), userId, process.getProcess());
         assertEquals("UNKNOWN_USER_ID_ERROR", response.get("status").getAsString());
+    }
+
+    @Test
+    public void testEmailPasswordUsersHaveTenantIds() throws Exception {
+        createTenants();
+
+        TenantIdentifier t1 = new TenantIdentifier(null, "a1", "t1");
+        TenantIdentifier t2 = new TenantIdentifier(null, "a1", "t2");
+
+        TenantIdentifierWithStorage t1WithStorage = t1.withStorage(StorageLayer.getStorage(t1, process.getProcess()));
+        TenantIdentifierWithStorage t2WithStorage = t2.withStorage(StorageLayer.getStorage(t2, process.getProcess()));
+
+        UserInfo user = EmailPassword.signUp(t1WithStorage,
+                process.getProcess(), "user@example.com", "password");
+        assertArrayEquals(new String[]{"t1"}, user.tenantIds);
+
     }
 }

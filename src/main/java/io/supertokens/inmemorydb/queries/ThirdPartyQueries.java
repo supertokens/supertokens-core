@@ -46,7 +46,7 @@ public class ThirdPartyQueries {
                 + "time_joined BIGINT UNSIGNED NOT NULL," + "PRIMARY KEY (third_party_id, third_party_user_id));";
     }
 
-    public static void signUp(Start start, io.supertokens.pluginInterface.thirdparty.UserInfo userInfo)
+    public static void signUp(Start start, io.supertokens.pluginInterface.thirdparty.CreateUserInfo userInfo)
             throws StorageQueryException, StorageTransactionLogicException {
         start.startTransaction(con -> {
             Connection sqlCon = (Connection) con.getConnection();
@@ -247,7 +247,7 @@ public class ThirdPartyQueries {
             return new UserInfo(result.getString("user_id"), result.getString("email"),
                     new UserInfo.ThirdParty(result.getString("third_party_id"),
                             result.getString("third_party_user_id")),
-                    result.getLong("time_joined"));
+                    result.getLong("time_joined"), null); // TODO
         }
     }
 }

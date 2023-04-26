@@ -24,6 +24,7 @@ import io.supertokens.pluginInterface.RowMapper;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.passwordless.CreateUserInfo;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
 import io.supertokens.pluginInterface.passwordless.PasswordlessDevice;
 import io.supertokens.pluginInterface.passwordless.UserInfo;
@@ -269,7 +270,7 @@ public class PasswordlessQueries {
         update(con, QUERY, pst -> pst.setString(1, codeId));
     }
 
-    public static void createUser(Start start, UserInfo user)
+    public static void createUser(Start start, CreateUserInfo user)
             throws StorageTransactionLogicException, StorageQueryException {
         start.startTransaction(con -> {
             Connection sqlCon = (Connection) con.getConnection();
@@ -604,7 +605,7 @@ public class PasswordlessQueries {
         @Override
         public UserInfo map(ResultSet result) throws Exception {
             return new UserInfo(result.getString("user_id"), result.getString("email"),
-                    result.getString("phone_number"), result.getLong("time_joined"));
+                    result.getString("phone_number"), result.getLong("time_joined"), null); // TODO
         }
     }
 }

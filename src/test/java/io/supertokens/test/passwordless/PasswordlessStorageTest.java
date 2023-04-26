@@ -25,6 +25,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.passwordless.CreateUserInfo;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
 import io.supertokens.pluginInterface.passwordless.UserInfo;
 import io.supertokens.pluginInterface.passwordless.exception.*;
@@ -254,16 +255,16 @@ public class PasswordlessStorageTest {
 
         long timeJoined = System.currentTimeMillis();
 
-        storage.createUser(new TenantIdentifier(null, null, null), new UserInfo(userId, email, null, timeJoined));
+        storage.createUser(new TenantIdentifier(null, null, null), new CreateUserInfo(userId, email, null, timeJoined));
         storage.createUser(new TenantIdentifier(null, null, null),
-                new UserInfo(userId2, null, phoneNumber, timeJoined));
+                new CreateUserInfo(userId2, null, phoneNumber, timeJoined));
         assertNotNull(storage.getUserById(new AppIdentifier(null, null), userId));
 
         {
             Exception error = null;
             try {
                 storage.createUser(new TenantIdentifier(null, null, null),
-                        new UserInfo(userId, email2, null, timeJoined));
+                        new CreateUserInfo(userId, email2, null, timeJoined));
             } catch (Exception e) {
                 error = e;
             }
@@ -277,7 +278,7 @@ public class PasswordlessStorageTest {
             Exception error = null;
             try {
                 storage.createUser(new TenantIdentifier(null, null, null),
-                        new UserInfo(userId, null, phoneNumber2, timeJoined));
+                        new CreateUserInfo(userId, null, phoneNumber2, timeJoined));
             } catch (Exception e) {
                 error = e;
             }
@@ -291,7 +292,7 @@ public class PasswordlessStorageTest {
             Exception error = null;
             try {
                 storage.createUser(new TenantIdentifier(null, null, null),
-                        new UserInfo(userId3, email, null, timeJoined));
+                        new CreateUserInfo(userId3, email, null, timeJoined));
             } catch (Exception e) {
                 error = e;
             }
@@ -305,7 +306,7 @@ public class PasswordlessStorageTest {
             Exception error = null;
             try {
                 storage.createUser(new TenantIdentifier(null, null, null),
-                        new UserInfo(userId3, null, phoneNumber, timeJoined));
+                        new CreateUserInfo(userId3, null, phoneNumber, timeJoined));
             } catch (Exception e) {
                 error = e;
             }
@@ -319,7 +320,7 @@ public class PasswordlessStorageTest {
             Exception error = null;
             try {
                 storage.createUser(new TenantIdentifier(null, null, null),
-                        new UserInfo(userId3, null, null, timeJoined));
+                        new CreateUserInfo(userId3, null, null, timeJoined));
             } catch (Exception e) {
                 error = e;
             }
@@ -362,13 +363,13 @@ public class PasswordlessStorageTest {
 
         long timeJoined = System.currentTimeMillis();
 
-        storage.createUser(new TenantIdentifier(null, null, null), new UserInfo(userIdEmail1, email, null, timeJoined));
+        storage.createUser(new TenantIdentifier(null, null, null), new CreateUserInfo(userIdEmail1, email, null, timeJoined));
         storage.createUser(new TenantIdentifier(null, null, null),
-                new UserInfo(userIdEmail2, email2, null, timeJoined));
+                new CreateUserInfo(userIdEmail2, email2, null, timeJoined));
         storage.createUser(new TenantIdentifier(null, null, null),
-                new UserInfo(userIdPhone1, null, phoneNumber, timeJoined));
+                new CreateUserInfo(userIdPhone1, null, phoneNumber, timeJoined));
         storage.createUser(new TenantIdentifier(null, null, null),
-                new UserInfo(userIdPhone2, null, phoneNumber2, timeJoined));
+                new CreateUserInfo(userIdPhone2, null, phoneNumber2, timeJoined));
 
         assertNotNull(storage.getUserById(new AppIdentifier(null, null), userIdEmail1));
 
@@ -555,7 +556,7 @@ public class PasswordlessStorageTest {
 
         long timeJoined = System.currentTimeMillis();
 
-        storage.createUser(new TenantIdentifier(null, null, null), new UserInfo(userId, email, null, timeJoined));
+        storage.createUser(new TenantIdentifier(null, null, null), new CreateUserInfo(userId, email, null, timeJoined));
 
         assertNotNull(storage.getUserById(new AppIdentifier(null, null), userId));
 

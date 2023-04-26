@@ -343,7 +343,7 @@ public class EmailPasswordQueries {
         @Override
         public UserInfo map(ResultSet result) throws Exception {
             return new UserInfo(result.getString("user_id"), result.getString("email"),
-                    result.getString("password_hash"), result.getLong("time_joined"));
+                    result.getString("password_hash"), result.getLong("time_joined"), null); // TODO
         }
     }
 

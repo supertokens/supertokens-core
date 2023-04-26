@@ -21,6 +21,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.passwordless.CreateUserInfo;
 import io.supertokens.pluginInterface.passwordless.PasswordlessStorage;
 import io.supertokens.pluginInterface.passwordless.UserInfo;
 import io.supertokens.storageLayer.StorageLayer;
@@ -70,11 +71,11 @@ public class PasswordlessUserPutAPITest2_11 {
 
         PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
         storage.createUser(new TenantIdentifier(null, null, null),
-                new UserInfo(userId, email, null, System.currentTimeMillis()));
+                new CreateUserInfo(userId, email, null, System.currentTimeMillis()));
         storage.createUser(new TenantIdentifier(null, null, null),
-                new UserInfo("userId2", email2, null, System.currentTimeMillis()));
+                new CreateUserInfo("userId2", email2, null, System.currentTimeMillis()));
         storage.createUser(new TenantIdentifier(null, null, null),
-                new UserInfo("userId3", null, phoneNumber, System.currentTimeMillis()));
+                new CreateUserInfo("userId3", null, phoneNumber, System.currentTimeMillis()));
 
         {
             JsonObject updateUserRequestBody = new JsonObject();
@@ -152,7 +153,7 @@ public class PasswordlessUserPutAPITest2_11 {
         PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
         String email = "email";
         storage.createUser(new TenantIdentifier(null, null, null),
-                new UserInfo(userId, email, null, System.currentTimeMillis()));
+                new CreateUserInfo(userId, email, null, System.currentTimeMillis()));
 
         JsonObject updateUserRequestBody = new JsonObject();
         updateUserRequestBody.addProperty("userId", userId);
@@ -193,7 +194,7 @@ public class PasswordlessUserPutAPITest2_11 {
 
         PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
         storage.createUser(new TenantIdentifier(null, null, null),
-                new UserInfo(userId, null, phoneNumber, System.currentTimeMillis()));
+                new CreateUserInfo(userId, null, phoneNumber, System.currentTimeMillis()));
 
         JsonObject updateUserRequestBody = new JsonObject();
         updateUserRequestBody.addProperty("userId", userId);
@@ -236,7 +237,7 @@ public class PasswordlessUserPutAPITest2_11 {
 
         PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
         storage.createUser(new TenantIdentifier(null, null, null),
-                new UserInfo(userId, email, phoneNumber, System.currentTimeMillis()));
+                new CreateUserInfo(userId, email, phoneNumber, System.currentTimeMillis()));
 
         JsonObject updateUserRequestBody = new JsonObject();
         updateUserRequestBody.addProperty("userId", userId);
@@ -281,7 +282,7 @@ public class PasswordlessUserPutAPITest2_11 {
 
         PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
         storage.createUser(new TenantIdentifier(null, null, null),
-                new UserInfo(userId, email, phoneNumber, System.currentTimeMillis()));
+                new CreateUserInfo(userId, email, phoneNumber, System.currentTimeMillis()));
 
         JsonObject updateUserRequestBody = new JsonObject();
         updateUserRequestBody.addProperty("userId", userId);
@@ -329,7 +330,7 @@ public class PasswordlessUserPutAPITest2_11 {
 
         PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
         storage.createUser(new TenantIdentifier(null, null, null),
-                new UserInfo(userId, email, null, System.currentTimeMillis()));
+                new CreateUserInfo(userId, email, null, System.currentTimeMillis()));
 
         JsonObject updateUserRequestBody = new JsonObject();
         updateUserRequestBody.addProperty("userId", userId);
@@ -377,7 +378,7 @@ public class PasswordlessUserPutAPITest2_11 {
 
         PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
         storage.createUser(new TenantIdentifier(null, null, null),
-                new UserInfo(userId, null, phoneNumber, System.currentTimeMillis()));
+                new CreateUserInfo(userId, null, phoneNumber, System.currentTimeMillis()));
 
         JsonObject updateUserRequestBody = new JsonObject();
         updateUserRequestBody.addProperty("userId", userId);
@@ -425,7 +426,7 @@ public class PasswordlessUserPutAPITest2_11 {
 
         PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
         storage.createUser(new TenantIdentifier(null, null, null),
-                new UserInfo(userId, email, phoneNumber, System.currentTimeMillis()));
+                new CreateUserInfo(userId, email, phoneNumber, System.currentTimeMillis()));
 
         JsonObject updateUserRequestBody = new JsonObject();
         updateUserRequestBody.addProperty("userId", userId);
@@ -466,7 +467,7 @@ public class PasswordlessUserPutAPITest2_11 {
 
         PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
         storage.createUser(new TenantIdentifier(null, null, null),
-                new UserInfo(userId, email, phoneNumber, System.currentTimeMillis()));
+                new CreateUserInfo(userId, email, phoneNumber, System.currentTimeMillis()));
 
         JsonObject updateUserRequestBody = new JsonObject();
         updateUserRequestBody.addProperty("userId", userId);
@@ -507,7 +508,7 @@ public class PasswordlessUserPutAPITest2_11 {
 
         PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
         storage.createUser(new TenantIdentifier(null, null, null),
-                new UserInfo(userId, email, phoneNumber, System.currentTimeMillis()));
+                new CreateUserInfo(userId, email, phoneNumber, System.currentTimeMillis()));
 
         JsonObject updateUserRequestBody = new JsonObject();
         updateUserRequestBody.addProperty("userId", userId);
@@ -547,7 +548,7 @@ public class PasswordlessUserPutAPITest2_11 {
         String email = "email";
         String updated_email = "test@example.com";
         storage.createUser(new TenantIdentifier(null, null, null),
-                new UserInfo(userId, email, null, System.currentTimeMillis()));
+                new CreateUserInfo(userId, email, null, System.currentTimeMillis()));
 
         JsonObject updateUserRequestBody = new JsonObject();
         updateUserRequestBody.addProperty("userId", userId);
@@ -588,7 +589,7 @@ public class PasswordlessUserPutAPITest2_11 {
 
         PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
         storage.createUser(new TenantIdentifier(null, null, null),
-                new UserInfo(userId, null, phoneNumber, System.currentTimeMillis()));
+                new CreateUserInfo(userId, null, phoneNumber, System.currentTimeMillis()));
 
         JsonObject updateUserRequestBody = new JsonObject();
         updateUserRequestBody.addProperty("userId", userId);

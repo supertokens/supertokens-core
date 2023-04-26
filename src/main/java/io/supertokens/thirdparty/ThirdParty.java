@@ -24,6 +24,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.thirdparty.CreateUserInfo;
 import io.supertokens.pluginInterface.thirdparty.UserInfo;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateUserIdException;
@@ -141,12 +142,16 @@ public class ThirdParty {
                 long timeJoined = System.currentTimeMillis();
 
                 try {
-                    UserInfo user = new UserInfo(userId, email, new UserInfo.ThirdParty(thirdPartyId, thirdPartyUserId),
+                    CreateUserInfo user = new CreateUserInfo(userId, email,
+                            new UserInfo.ThirdParty(thirdPartyId, thirdPartyUserId),
                             timeJoined);
 
                     storage.signUp(tenantIdentifierWithStorage, user);
 
-                    return new SignInUpResponse(true, user);
+                    UserInfo createdUser = storage.getThirdPartyUserInfoUsingId(
+                            tenantIdentifierWithStorage.toAppIdentifier(), user.id);
+
+                    return new SignInUpResponse(true, createdUser);
                 } catch (DuplicateUserIdException e) {
                     // we try again..
                 } catch (DuplicateThirdPartyUserException e) {
