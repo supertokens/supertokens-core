@@ -357,14 +357,14 @@ public abstract class WebserverAPI extends HttpServlet {
             try {
                 filter.setAllow(allow);
             } catch (PatternSyntaxException e) {
-                throw new QuitProgramException("Provided regular expression is invalid for ip_allow_regex config");
+                throw new RuntimeException("should never happen");
             }
         }
         if (deny != null) {
             try {
                 filter.setDeny(deny);
             } catch (PatternSyntaxException e) {
-                throw new QuitProgramException("Provided regular expression is invalid for ip_deny_regex config");
+                throw new RuntimeException("should never happen");
             }
         }
         filter.setDenyStatus(403);
