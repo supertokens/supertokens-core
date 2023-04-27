@@ -371,8 +371,8 @@ public class Passwordless {
                 try {
                     String userId = Utils.getUUID();
                     long timeJoined = System.currentTimeMillis();
-                    user = new UserInfo(userId, consumedDevice.email, consumedDevice.phoneNumber, timeJoined);
-                    passwordlessStorage.createUser(tenantIdentifierWithStorage, user);
+                    user = passwordlessStorage.createUser(tenantIdentifierWithStorage, userId, consumedDevice.email,
+                            consumedDevice.phoneNumber, timeJoined);
                     return new ConsumeCodeResponse(true, user);
                 } catch (DuplicateEmailException | DuplicatePhoneNumberException e) {
                     // Getting these would mean that between getting the user and trying creating it:

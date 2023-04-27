@@ -628,12 +628,11 @@ public class Start
     }
 
     @Override
-    public void signUp(TenantIdentifier tenantIdentifier, UserInfo userInfo)
+    public UserInfo signUp(TenantIdentifier tenantIdentifier, String id, String email, String passwordHash, long timeJoined)
             throws StorageQueryException, DuplicateUserIdException, DuplicateEmailException {
         // TODO...
         try {
-            EmailPasswordQueries.signUp(this, userInfo.id, userInfo.email, userInfo.passwordHash,
-                    userInfo.timeJoined);
+            return EmailPasswordQueries.signUp(this, id, email, passwordHash, timeJoined);
         } catch (StorageTransactionLogicException eTemp) {
             Exception e = eTemp.actualException;
             if (e.getMessage()
@@ -996,13 +995,13 @@ public class Start
     }
 
     @Override
-    public void signUp(TenantIdentifier
-                               tenantIdentifier, io.supertokens.pluginInterface.thirdparty.UserInfo userInfo)
+    public io.supertokens.pluginInterface.thirdparty.UserInfo signUp(TenantIdentifier
+                               tenantIdentifier, String id, String email, io.supertokens.pluginInterface.thirdparty.UserInfo.ThirdParty thirdParty, long timeJoined)
             throws StorageQueryException, io.supertokens.pluginInterface.thirdparty.exception.DuplicateUserIdException,
             DuplicateThirdPartyUserException {
         try {
             // TODO..
-            ThirdPartyQueries.signUp(this, userInfo);
+            return ThirdPartyQueries.signUp(this, id, email, thirdParty, timeJoined);
         } catch (StorageTransactionLogicException eTemp) {
             Exception e = eTemp.actualException;
             if (e.getMessage()
@@ -1450,13 +1449,17 @@ public class Start
     }
 
     @Override
-    public void createUser(TenantIdentifier
-                                   tenantIdentifier, io.supertokens.pluginInterface.passwordless.UserInfo user)
+    public io.supertokens.pluginInterface.passwordless.UserInfo createUser(TenantIdentifier
+                                   tenantIdentifier, String id, @Nullable String email, @Nullable String phoneNumber, long timeJoined)
             throws StorageQueryException,
             DuplicateEmailException, DuplicatePhoneNumberException, DuplicateUserIdException {
+        if (email == null && phoneNumber == null) {
+            throw new IllegalArgumentException("Both email and phoneNumber cannot be null");
+        }
+
         try {
             // TODO..
-            PasswordlessQueries.createUser(this, user);
+            return PasswordlessQueries.createUser(this, id, email, phoneNumber, timeJoined);
         } catch (StorageTransactionLogicException e) {
             String message = e.actualException.getMessage();
             if (message

@@ -141,12 +141,9 @@ public class ThirdParty {
                 long timeJoined = System.currentTimeMillis();
 
                 try {
-                    UserInfo user = new UserInfo(userId, email, new UserInfo.ThirdParty(thirdPartyId, thirdPartyUserId),
-                            timeJoined);
+                    UserInfo createdUser = storage.signUp(tenantIdentifierWithStorage, userId, email, new UserInfo.ThirdParty(thirdPartyId, thirdPartyUserId), timeJoined);
 
-                    storage.signUp(tenantIdentifierWithStorage, user);
-
-                    return new SignInUpResponse(true, user);
+                    return new SignInUpResponse(true, createdUser);
                 } catch (DuplicateUserIdException e) {
                     // we try again..
                 } catch (DuplicateThirdPartyUserException e) {

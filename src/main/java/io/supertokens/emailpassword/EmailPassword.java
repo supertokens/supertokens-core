@@ -109,10 +109,7 @@ public class EmailPassword {
             long timeJoined = System.currentTimeMillis();
 
             try {
-                UserInfo user = new UserInfo(userId, email, hashedPassword, timeJoined);
-                tenantIdentifierWithStorage.getEmailPasswordStorage().signUp(tenantIdentifierWithStorage, user);
-
-                return user;
+                return tenantIdentifierWithStorage.getEmailPasswordStorage().signUp(tenantIdentifierWithStorage, userId, email, hashedPassword, timeJoined);
 
             } catch (DuplicateUserIdException ignored) {
                 // we retry with a new userId (while loop)
@@ -158,11 +155,11 @@ public class EmailPassword {
             String userId = Utils.getUUID();
             long timeJoined = System.currentTimeMillis();
 
-            UserInfo userInfo = new UserInfo(userId, email, passwordHash, timeJoined);
             EmailPasswordSQLStorage storage = tenantIdentifierWithStorage.getEmailPasswordStorage();
 
             try {
-                storage.signUp(tenantIdentifierWithStorage, userInfo);
+                UserInfo userInfo = storage.signUp(tenantIdentifierWithStorage, userId, email, passwordHash,
+                        timeJoined);
                 return new ImportUserResponse(false, userInfo);
             } catch (DuplicateUserIdException e) {
                 // we retry with a new userId
