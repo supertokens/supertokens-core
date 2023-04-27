@@ -344,13 +344,13 @@ public abstract class WebserverAPI extends HttpServlet {
                 appIdentifierWithStorage, appIdentifierWithStorage.getStorage(), userId, userIdType);
     }
 
-    protected void checkIPAccess(HttpServletRequest req, HttpServletResponse resp)
+    protected boolean checkIPAccess(HttpServletRequest req, HttpServletResponse resp)
             throws TenantOrAppNotFoundException, ServletException, IOException {
         CoreConfig config = Config.getConfig(getTenantIdentifierWithStorageFromRequest(req), main);
         String allow = config.getIpAllowRegex();
         String deny = config.getIpDenyRegex();
         if (allow == null && deny == null) {
-            return;
+            return true;
         }
         RemoteAddrFilter filter = new RemoteAddrFilter();
         if (allow != null) {
@@ -368,15 +368,18 @@ public abstract class WebserverAPI extends HttpServlet {
             }
         }
         filter.setDenyStatus(403);
+
+        final boolean[] isAllowed = {false};
         FilterChain dummyFilterChain = new FilterChain() {
             @Override
             public void doFilter(ServletRequest request, ServletResponse response)
                     throws IOException, ServletException {
-                // do nothing
+                isAllowed[0] = true;
             }
         };
 
         filter.doFilter(req, resp, dummyFilterChain);
+        return isAllowed[0];
     }
 
     @Override
@@ -385,8 +388,7 @@ public abstract class WebserverAPI extends HttpServlet {
 
         TenantIdentifier tenantIdentifier = null;
         try {
-            this.checkIPAccess(req, resp);
-            if (resp.isCommitted()) {
+            if (!this.checkIPAccess(req, resp)) {
                 // IP access denied and the filter has already sent the response
                 return;
             }
