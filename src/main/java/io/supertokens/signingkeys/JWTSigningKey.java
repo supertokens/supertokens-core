@@ -47,8 +47,13 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
 
     public static void initForBaseTenant(Main main) throws UnsupportedJWTSigningAlgorithmException {
         try {
-            main.getResourceDistributor().setResource(new AppIdentifier(null, null), RESOURCE_KEY,
-                    new JWTSigningKey(new AppIdentifier(null, null), main));
+            JWTSigningKey jwtSigningKey = new JWTSigningKey(new AppIdentifier(null, null), main);
+            main.getResourceDistributor().setResource(new AppIdentifier(null, null), RESOURCE_KEY, jwtSigningKey);
+
+            if (!Main.isTesting) {
+                // init JWT signing keys, we create one key for each supported algorithm type
+                jwtSigningKey.generateKeysForSupportedAlgos(main);
+            }
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
@@ -86,9 +91,14 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
                                     resource);
                         } else {
                             try {
+                                JWTSigningKey jwtSigningKey = new JWTSigningKey(app, main);
                                 main.getResourceDistributor()
-                                        .setResource(app, RESOURCE_KEY,
-                                                new JWTSigningKey(app, main));
+                                        .setResource(app, RESOURCE_KEY, jwtSigningKey);
+
+                                if (!Main.isTesting) {
+                                    jwtSigningKey.generateKeysForSupportedAlgos(main);
+                                }
+
                             } catch (TenantOrAppNotFoundException e) {
                                 throw new IllegalStateException(e);
                             }
@@ -132,10 +142,6 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
             throws UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException {
         this.appIdentifier = appIdentifier;
         this.main = main;
-        if (!Main.isTesting) {
-            // init JWT signing keys, we create one key for each supported algorithm type
-            generateKeysForSupportedAlgos(main);
-        }
     }
 
     private void generateKeysForSupportedAlgos(Main main)
