@@ -23,7 +23,6 @@ import io.supertokens.emailpassword.PasswordHashing;
 import io.supertokens.emailpassword.exceptions.ResetPasswordInvalidTokenException;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.emailpassword.CreateUserInfo;
 import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
@@ -431,15 +430,15 @@ public class EmailPasswordTest {
         }
 
         ((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
-                .signUp(new TenantIdentifier(null, null, null), new CreateUserInfo(
+                .signUp(new TenantIdentifier(null, null, null),
                         "8ed86166-bfd8-4234-9dfe-abca9606dbd5", "test@example.com", "password",
-                        System.currentTimeMillis()));
+                        System.currentTimeMillis());
 
         try {
             ((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
                     .signUp(new TenantIdentifier(null, null, null),
-                            new CreateUserInfo("8ed86166-bfd8-4234-9dfe-abca9606dbd5", "test1@example.com", "password",
-                                    System.currentTimeMillis()));
+                            "8ed86166-bfd8-4234-9dfe-abca9606dbd5", "test1@example.com", "password",
+                                    System.currentTimeMillis());
             assert (false);
         } catch (DuplicateUserIdException ignored) {
 
@@ -484,15 +483,15 @@ public class EmailPasswordTest {
         }
 
         ((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
-                .signUp(new TenantIdentifier(null, null, null), new CreateUserInfo(
+                .signUp(new TenantIdentifier(null, null, null),
                         "8ed86166-bfd8-4234-9dfe-abca9606dbd5", "test@example.com", "password",
-                        System.currentTimeMillis()));
+                        System.currentTimeMillis());
 
         try {
             ((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
                     .signUp(new TenantIdentifier(null, null, null),
-                            new CreateUserInfo("8ed86166-bfd8-4234-9dfe-abca9606dbd5", "test@example.com", "password",
-                                    System.currentTimeMillis()));
+                            "8ed86166-bfd8-4234-9dfe-abca9606dbd5", "test@example.com", "password",
+                                    System.currentTimeMillis());
             assert (false);
         } catch (DuplicateUserIdException ignored) {
 

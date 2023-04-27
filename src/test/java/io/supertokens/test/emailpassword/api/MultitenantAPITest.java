@@ -26,8 +26,6 @@ import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
 import io.supertokens.pluginInterface.RECIPE_ID;
-import io.supertokens.pluginInterface.emailpassword.CreateUserInfo;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -633,10 +631,9 @@ public class MultitenantAPITest {
 
         long timeJoined = System.currentTimeMillis();
 
-        CreateUserInfo userInfo = new CreateUserInfo("userId", email, combinedPasswordHash, timeJoined);
         EmailPasswordSQLStorage storage = (EmailPasswordSQLStorage) StorageLayer.getStorage(t2, process.getProcess());
 
-        storage.signUp(t2.withStorage(storage), userInfo);
+        storage.signUp(t2.withStorage(storage), "userId", email, combinedPasswordHash, timeJoined);
 
         successfulSignIn(t2, email, password);
         wrongCredentialsSignIn(t1, email, password);

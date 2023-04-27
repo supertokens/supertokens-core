@@ -30,7 +30,6 @@ import io.supertokens.pluginInterface.dashboard.DashboardSessionInfo;
 import io.supertokens.pluginInterface.dashboard.DashboardUser;
 import io.supertokens.pluginInterface.dashboard.exceptions.UserIdNotFoundException;
 import io.supertokens.pluginInterface.dashboard.sqlStorage.DashboardSQLStorage;
-import io.supertokens.pluginInterface.emailpassword.CreateUserInfo;
 import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
@@ -629,12 +628,11 @@ public class Start
     }
 
     @Override
-    public void signUp(TenantIdentifier tenantIdentifier, CreateUserInfo userInfo)
+    public UserInfo signUp(TenantIdentifier tenantIdentifier, String id, String email, String passwordHash, long timeJoined)
             throws StorageQueryException, DuplicateUserIdException, DuplicateEmailException {
         // TODO...
         try {
-            EmailPasswordQueries.signUp(this, userInfo.id, userInfo.email, userInfo.passwordHash,
-                    userInfo.timeJoined);
+            return EmailPasswordQueries.signUp(this, id, email, passwordHash, timeJoined);
         } catch (StorageTransactionLogicException eTemp) {
             Exception e = eTemp.actualException;
             if (e.getMessage()
@@ -997,13 +995,13 @@ public class Start
     }
 
     @Override
-    public void signUp(TenantIdentifier
-                               tenantIdentifier, io.supertokens.pluginInterface.thirdparty.CreateUserInfo userInfo)
+    public io.supertokens.pluginInterface.thirdparty.UserInfo signUp(TenantIdentifier
+                               tenantIdentifier, String id, String email, io.supertokens.pluginInterface.thirdparty.UserInfo.ThirdParty thirdParty, long timeJoined)
             throws StorageQueryException, io.supertokens.pluginInterface.thirdparty.exception.DuplicateUserIdException,
             DuplicateThirdPartyUserException {
         try {
             // TODO..
-            ThirdPartyQueries.signUp(this, userInfo);
+            return ThirdPartyQueries.signUp(this, id, email, thirdParty, timeJoined);
         } catch (StorageTransactionLogicException eTemp) {
             Exception e = eTemp.actualException;
             if (e.getMessage()

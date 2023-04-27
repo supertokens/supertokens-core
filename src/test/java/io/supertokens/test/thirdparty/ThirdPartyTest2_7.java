@@ -20,7 +20,6 @@ import io.supertokens.ProcessState;
 import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
-import io.supertokens.pluginInterface.thirdparty.CreateUserInfo;
 import io.supertokens.pluginInterface.thirdparty.UserInfo;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateUserIdException;
@@ -298,10 +297,9 @@ public class ThirdPartyTest2_7 {
 
         checkSignInUpResponse(signUpResponse, thirdPartyUserId, thirdPartyId, email, true);
         try {
-            CreateUserInfo userInfo = new CreateUserInfo(io.supertokens.utils.Utils.getUUID(), email,
-                    new UserInfo.ThirdParty(thirdPartyId, thirdPartyUserId), System.currentTimeMillis());
             ((ThirdPartySQLStorage) StorageLayer.getStorage(process.getProcess()))
-                    .signUp(new TenantIdentifier(null, null, null), userInfo);
+                    .signUp(new TenantIdentifier(null, null, null), io.supertokens.utils.Utils.getUUID(), email,
+                            new UserInfo.ThirdParty(thirdPartyId, thirdPartyUserId), System.currentTimeMillis());
             throw new Exception("Should not come here");
         } catch (DuplicateThirdPartyUserException ignored) {
         }
@@ -332,10 +330,9 @@ public class ThirdPartyTest2_7 {
 
         checkSignInUpResponse(signUpResponse, thirdPartyUserId, thirdPartyId, email, true);
         try {
-            CreateUserInfo userInfo = new CreateUserInfo(signUpResponse.user.id, email,
-                    new UserInfo.ThirdParty("newThirdParty", "newThirdPartyUserId"), System.currentTimeMillis());
             ((ThirdPartySQLStorage) StorageLayer.getStorage(process.getProcess()))
-                    .signUp(new TenantIdentifier(null, null, null), userInfo);
+                    .signUp(new TenantIdentifier(null, null, null), signUpResponse.user.id, email,
+                            new UserInfo.ThirdParty("newThirdParty", "newThirdPartyUserId"), System.currentTimeMillis());
             throw new Exception("Should not come here");
         } catch (DuplicateUserIdException ignored) {
         }

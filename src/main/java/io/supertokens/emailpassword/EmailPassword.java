@@ -25,7 +25,6 @@ import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.Storage;
-import io.supertokens.pluginInterface.emailpassword.CreateUserInfo;
 import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
@@ -110,11 +109,7 @@ public class EmailPassword {
             long timeJoined = System.currentTimeMillis();
 
             try {
-                CreateUserInfo user = new CreateUserInfo(userId, email, hashedPassword, timeJoined);
-                tenantIdentifierWithStorage.getEmailPasswordStorage().signUp(tenantIdentifierWithStorage, user);
-
-                return tenantIdentifierWithStorage.getEmailPasswordStorage().getUserInfoUsingId(
-                        tenantIdentifierWithStorage.toAppIdentifier(), userId);
+                return tenantIdentifierWithStorage.getEmailPasswordStorage().signUp(tenantIdentifierWithStorage, userId, email, hashedPassword, timeJoined);
 
             } catch (DuplicateUserIdException ignored) {
                 // we retry with a new userId (while loop)
@@ -160,11 +155,11 @@ public class EmailPassword {
             String userId = Utils.getUUID();
             long timeJoined = System.currentTimeMillis();
 
-            CreateUserInfo userInfo = new CreateUserInfo(userId, email, passwordHash, timeJoined);
             EmailPasswordSQLStorage storage = tenantIdentifierWithStorage.getEmailPasswordStorage();
 
             try {
-                storage.signUp(tenantIdentifierWithStorage, userInfo);
+                UserInfo userInfo = storage.signUp(tenantIdentifierWithStorage, userId, email, passwordHash,
+                        timeJoined);
                 return new ImportUserResponse(false, storage.getUserInfoUsingId(tenantIdentifierWithStorage.toAppIdentifier(), userInfo.id));
             } catch (DuplicateUserIdException e) {
                 // we retry with a new userId
