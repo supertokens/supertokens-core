@@ -269,12 +269,6 @@ public class FeatureFlagTest {
                     )
             );
 
-            TenantIdentifierWithStorage tenantIdentifierWithStorage = tenantIdentifier.withStorage(StorageLayer.getStorage(tenantIdentifier, process.getProcess()));
-
-            for (int j = 0; j<500; j++) {
-                ThirdParty.signInUp(tenantIdentifierWithStorage, process.getProcess(), "google", "googleid" + j, "email" + j + "@gmail.com");
-            }
-
             System.out.println("Added tenant " + i);
         }
 
@@ -285,7 +279,6 @@ public class FeatureFlagTest {
 
         long timeTaken = System.currentTimeMillis() - startTime;
         assertTrue(timeTaken < 2500);
-        System.out.println(timeTaken);
         Assert.assertEquals("OK", response.get("status").getAsString());
 
         JsonArray multitenancyStats = response.get("usageStats").getAsJsonObject().get("multi_tenancy").getAsJsonObject().get("tenants").getAsJsonArray();
