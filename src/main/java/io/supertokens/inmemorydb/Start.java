@@ -1449,13 +1449,17 @@ public class Start
     }
 
     @Override
-    public void createUser(TenantIdentifier
-                                   tenantIdentifier, io.supertokens.pluginInterface.passwordless.CreateUserInfo user)
+    public io.supertokens.pluginInterface.passwordless.UserInfo createUser(TenantIdentifier
+                                   tenantIdentifier, String id, @Nullable String email, @Nullable String phoneNumber, long timeJoined)
             throws StorageQueryException,
             DuplicateEmailException, DuplicatePhoneNumberException, DuplicateUserIdException {
+        if (email == null && phoneNumber == null) {
+            throw new IllegalArgumentException("Both email and phoneNumber cannot be null");
+        }
+
         try {
             // TODO..
-            PasswordlessQueries.createUser(this, user);
+            return PasswordlessQueries.createUser(this, id, email, phoneNumber, timeJoined);
         } catch (StorageTransactionLogicException e) {
             String message = e.actualException.getMessage();
             if (message

@@ -20,9 +20,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
-import io.supertokens.pluginInterface.passwordless.CreateUserInfo;
 import io.supertokens.pluginInterface.passwordless.PasswordlessStorage;
-import io.supertokens.pluginInterface.passwordless.UserInfo;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -172,7 +170,7 @@ public class PasswordlessUserGetAPITest2_11 {
         String phoneNumber = "1234";
 
         storage.createUser(new TenantIdentifier(null, null, null),
-                new CreateUserInfo(userIdEmail, email, null, System.currentTimeMillis()));
+                userIdEmail, email, null, System.currentTimeMillis());
         {
             HashMap<String, String> map = new HashMap<>();
             map.put("userId", userIdEmail);
@@ -198,7 +196,7 @@ public class PasswordlessUserGetAPITest2_11 {
          * get user with phone number
          */
         storage.createUser(new TenantIdentifier(null, null, null),
-                new CreateUserInfo(userIdPhone, null, phoneNumber, System.currentTimeMillis()));
+                userIdPhone, null, phoneNumber, System.currentTimeMillis());
         {
             HashMap<String, String> map = new HashMap<>();
             map.put("phoneNumber", phoneNumber);

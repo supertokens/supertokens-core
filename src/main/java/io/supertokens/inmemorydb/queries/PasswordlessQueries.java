@@ -24,7 +24,6 @@ import io.supertokens.pluginInterface.RowMapper;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.pluginInterface.passwordless.CreateUserInfo;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
 import io.supertokens.pluginInterface.passwordless.PasswordlessDevice;
 import io.supertokens.pluginInterface.passwordless.UserInfo;
@@ -32,6 +31,7 @@ import io.supertokens.pluginInterface.passwordless.exception.UnknownDeviceIdHash
 import io.supertokens.pluginInterface.sqlStorage.SQLStorage.TransactionIsolationLevel;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -270,18 +270,18 @@ public class PasswordlessQueries {
         update(con, QUERY, pst -> pst.setString(1, codeId));
     }
 
-    public static void createUser(Start start, CreateUserInfo user)
+    public static UserInfo createUser(Start start, String id, @Nullable String email, @Nullable String phoneNumber, long timeJoined)
             throws StorageTransactionLogicException, StorageQueryException {
-        start.startTransaction(con -> {
+        return start.startTransaction(con -> {
             Connection sqlCon = (Connection) con.getConnection();
             try {
                 {
                     String QUERY = "INSERT INTO " + getConfig(start).getUsersTable()
                             + "(user_id, recipe_id, time_joined)" + " VALUES(?, ?, ?)";
                     update(sqlCon, QUERY, pst -> {
-                        pst.setString(1, user.id);
+                        pst.setString(1, id);
                         pst.setString(2, PASSWORDLESS.toString());
-                        pst.setLong(3, user.timeJoined);
+                        pst.setLong(3, timeJoined);
                     });
                 }
 
@@ -289,17 +289,18 @@ public class PasswordlessQueries {
                     String QUERY = "INSERT INTO " + getConfig(start).getPasswordlessUsersTable()
                             + "(user_id, email, phone_number, time_joined)" + " VALUES(?, ?, ?, ?)";
                     update(sqlCon, QUERY, pst -> {
-                        pst.setString(1, user.id);
-                        pst.setString(2, user.email);
-                        pst.setString(3, user.phoneNumber);
-                        pst.setLong(4, user.timeJoined);
+                        pst.setString(1, id);
+                        pst.setString(2, email);
+                        pst.setString(3, phoneNumber);
+                        pst.setLong(4, timeJoined);
                     });
                 }
+                UserInfo userInfo = new UserInfo(id, email, phoneNumber, timeJoined, null); // TODO tenantIds
                 sqlCon.commit();
+                return userInfo;
             } catch (SQLException throwables) {
                 throw new StorageTransactionLogicException(throwables);
             }
-            return null;
         });
     }
 

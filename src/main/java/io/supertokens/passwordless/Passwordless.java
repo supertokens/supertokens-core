@@ -31,7 +31,6 @@ import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.passwordless.CreateUserInfo;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
 import io.supertokens.pluginInterface.passwordless.PasswordlessDevice;
 import io.supertokens.pluginInterface.passwordless.UserInfo;
@@ -372,10 +371,8 @@ public class Passwordless {
                 try {
                     String userId = Utils.getUUID();
                     long timeJoined = System.currentTimeMillis();
-                    CreateUserInfo createUser = new CreateUserInfo(userId, consumedDevice.email,
+                    user = passwordlessStorage.createUser(tenantIdentifierWithStorage, userId, consumedDevice.email,
                             consumedDevice.phoneNumber, timeJoined);
-                    passwordlessStorage.createUser(tenantIdentifierWithStorage, createUser);
-                    user = passwordlessStorage.getUserById(tenantIdentifierWithStorage.toAppIdentifier(), userId);
                     return new ConsumeCodeResponse(true, user);
                 } catch (DuplicateEmailException | DuplicatePhoneNumberException e) {
                     // Getting these would mean that between getting the user and trying creating it:
