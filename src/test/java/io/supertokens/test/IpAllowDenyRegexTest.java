@@ -16,11 +16,17 @@
 
 package io.supertokens.test;
 
+import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.config.Config;
+import io.supertokens.exceptions.QuitProgramException;
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.httpRequest.HttpRequest;
 import io.supertokens.httpRequest.HttpResponseException;
+import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.test.TestingProcessManager.TestingProcess;
 import org.junit.*;
 import org.junit.rules.TestRule;
@@ -29,7 +35,7 @@ import org.mockito.Mockito;
 import java.io.*;
 
 import static junit.framework.TestCase.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 public class IpAllowDenyRegexTest extends Mockito {
 
@@ -107,7 +113,7 @@ public class IpAllowDenyRegexTest extends Mockito {
             TestingProcess process = TestingProcessManager.start(args);
             ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
             assertNotNull(e);
-            assertEquals(e.exception.getMessage(), "Provided regular expression is invalid for ip_allow_regex config");
+            assertTrue(e.exception.getMessage().contains("Provided regular expression is invalid for ip_allow_regex config"));
 
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
@@ -115,14 +121,14 @@ public class IpAllowDenyRegexTest extends Mockito {
     }
 
     @Test
-    public void InvalidRegexErrorForIpDeby() throws InterruptedException, IOException {
+    public void InvalidRegexErrorForIpDeny() throws InterruptedException, IOException {
         {
             String[] args = {"../"};
             Utils.setValueInConfig("ip_deny_regex", "\"*\"");
             TestingProcess process = TestingProcessManager.start(args);
             ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
             assertNotNull(e);
-            assertEquals(e.exception.getMessage(), "Provided regular expression is invalid for ip_deny_regex config");
+            assertTrue(e.exception.getMessage().contains("Provided regular expression is invalid for ip_deny_regex config"));
 
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
@@ -321,10 +327,11 @@ public class IpAllowDenyRegexTest extends Mockito {
 
     @Test
     public void CheckNoLoggingForNotAllowedAPIRoutes() throws Exception {
+        ByteArrayOutputStream stdOutput = new ByteArrayOutputStream();
+        ByteArrayOutputStream errorOutput = new ByteArrayOutputStream();
+
         try {
             String[] args = {"../"};
-            ByteArrayOutputStream stdOutput = new ByteArrayOutputStream();
-            ByteArrayOutputStream errorOutput = new ByteArrayOutputStream();
             Utils.setValueInConfig("ip_deny_regex", "127\\\\.\\\\d+\\\\.\\\\d+\\\\.\\\\d+|::1|0:0:0:0:0:0:0:1");
             Utils.setValueInConfig("info_log_path", "\"null\"");
             Utils.setValueInConfig("error_log_path", "\"null\"");
@@ -351,6 +358,91 @@ public class IpAllowDenyRegexTest extends Mockito {
         } finally {
             System.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)));
             System.setErr(new PrintStream(new FileOutputStream(FileDescriptor.err)));
+        }
+    }
+
+    @Test
+    public void CheckThatIPFiltersAreTenantSpecific() throws Exception {
+        String[] args = {"../"};
+
+        { // test allow works
+            Utils.reset();
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            FeatureFlagTestContent.getInstance(process.getProcess())
+                    .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+            process.startProcess();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            JsonObject coreConfig = new JsonObject();
+            coreConfig.addProperty("ip_allow_regex", "192.123.3.4");
+
+            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                    new TenantIdentifier(null, null, "t1"),
+                    new EmailPasswordConfig(true), new ThirdPartyConfig(true, null), new PasswordlessConfig(true),
+                    coreConfig
+            ), false);
+            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                    new TenantIdentifier(null, null, "t2"),
+                    new EmailPasswordConfig(true), new ThirdPartyConfig(true, null), new PasswordlessConfig(true),
+                    new JsonObject()
+            ), false);
+
+            // this should pass
+            HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/hello", null, 1000, 1000,
+                    null);
+            HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/t2/hello", null, 1000, 1000,
+                    null);
+
+            try {
+                HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/t1/hello", null, 1000, 1000,
+                        null);
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(e.statusCode, 403);
+            }
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+
+        { // test deny works
+            Utils.reset();
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            FeatureFlagTestContent.getInstance(process.getProcess())
+                    .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+            process.startProcess();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            JsonObject coreConfig = new JsonObject();
+            coreConfig.addProperty("ip_deny_regex", "127\\.\\d+\\.\\d+\\.\\d+|::1|0:0:0:0:0:0:0:1");
+
+            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                    new TenantIdentifier(null, null, "t1"),
+                    new EmailPasswordConfig(true), new ThirdPartyConfig(true, null), new PasswordlessConfig(true),
+                    coreConfig
+            ), false);
+            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                    new TenantIdentifier(null, null, "t2"),
+                    new EmailPasswordConfig(true), new ThirdPartyConfig(true, null), new PasswordlessConfig(true),
+                    new JsonObject()
+            ), false);
+
+            // this should pass
+            HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/hello", null, 1000, 1000,
+                    null);
+            HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/t2/hello", null, 1000, 1000,
+                    null);
+
+            try {
+                HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/t1/hello", null, 1000, 1000,
+                        null);
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(e.statusCode, 403);
+            }
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
         }
     }
 }

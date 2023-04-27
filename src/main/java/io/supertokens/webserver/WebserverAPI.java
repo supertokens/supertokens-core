@@ -19,8 +19,10 @@ package io.supertokens.webserver;
 import com.google.gson.JsonElement;
 import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
+import io.supertokens.ProcessState;
 import io.supertokens.TenantIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.config.Config;
+import io.supertokens.config.CoreConfig;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
@@ -35,15 +37,20 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.SemVer;
+import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.apache.catalina.filters.RemoteAddrFilter;
 import org.jetbrains.annotations.TestOnly;
 
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.regex.PatternSyntaxException;
 
 public abstract class WebserverAPI extends HttpServlet {
 
@@ -337,10 +344,53 @@ public abstract class WebserverAPI extends HttpServlet {
                 appIdentifierWithStorage, appIdentifierWithStorage.getStorage(), userId, userIdType);
     }
 
+    protected void checkIPAccess(HttpServletRequest req, HttpServletResponse resp)
+            throws TenantOrAppNotFoundException, ServletException, IOException {
+        CoreConfig config = Config.getConfig(getTenantIdentifierWithStorageFromRequest(req), main);
+        String allow = config.getIpAllowRegex();
+        String deny = config.getIpDenyRegex();
+        if (allow == null && deny == null) {
+            return;
+        }
+        RemoteAddrFilter filter = new RemoteAddrFilter();
+        if (allow != null) {
+            try {
+                filter.setAllow(allow);
+            } catch (PatternSyntaxException e) {
+                throw new QuitProgramException("Provided regular expression is invalid for ip_allow_regex config");
+            }
+        }
+        if (deny != null) {
+            try {
+                filter.setDeny(deny);
+            } catch (PatternSyntaxException e) {
+                throw new QuitProgramException("Provided regular expression is invalid for ip_deny_regex config");
+            }
+        }
+        filter.setDenyStatus(403);
+        FilterChain dummyFilterChain = new FilterChain() {
+            @Override
+            public void doFilter(ServletRequest request, ServletResponse response)
+                    throws IOException, ServletException {
+                // do nothing
+            }
+        };
+
+        filter.doFilter(req, resp, dummyFilterChain);
+    }
+
     @Override
     protected void service(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+
+
         TenantIdentifier tenantIdentifier = null;
         try {
+            this.checkIPAccess(req, resp);
+            if (resp.isCommitted()) {
+                // IP access denied and the filter has already sent the response
+                return;
+            }
+
             if (this.checkAPIKey(req)) {
                 assertThatAPIKeyCheckPasses(req);
             }
