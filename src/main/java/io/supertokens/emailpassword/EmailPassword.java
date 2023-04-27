@@ -160,7 +160,7 @@ public class EmailPassword {
             try {
                 UserInfo userInfo = storage.signUp(tenantIdentifierWithStorage, userId, email, passwordHash,
                         timeJoined);
-                return new ImportUserResponse(false, storage.getUserInfoUsingId(tenantIdentifierWithStorage.toAppIdentifier(), userInfo.id));
+                return new ImportUserResponse(false, userInfo);
             } catch (DuplicateUserIdException e) {
                 // we retry with a new userId
             } catch (DuplicateEmailException e) {
