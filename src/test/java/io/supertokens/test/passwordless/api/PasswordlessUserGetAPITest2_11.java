@@ -233,6 +233,6 @@ public class PasswordlessUserGetAPITest2_11 {
 
         assert (user.has("timeJoined"));
         assert (System.currentTimeMillis() - 10000 < user.get("timeJoined").getAsLong());
-        assertEquals(3, user.entrySet().size());
+        assertEquals(4, user.entrySet().size());
     }
 }
