@@ -29,6 +29,7 @@ import org.jetbrains.annotations.TestOnly;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.PatternSyntaxException;
@@ -671,7 +672,19 @@ public class CoreConfig {
             throw new InvalidConfigException(
                     "You cannot set different values for bcrypt_log_rounds for the same appId");
         }
-    }
 
+        // Check that the same set of API keys are present
+        {
+            String[] thisKeys = this.getAPIKeys() == null ? new String[0] : Arrays.copyOf(this.getAPIKeys(), this.getAPIKeys().length);
+            String[] otherKeys = other.getAPIKeys() == null ? new String[0] : Arrays.copyOf(other.getAPIKeys(), other.getAPIKeys().length);
+            Arrays.sort(thisKeys);
+            Arrays.sort(otherKeys);
+
+            if (!Arrays.equals(thisKeys, otherKeys)) {
+                throw new InvalidConfigException(
+                        "You cannot set different values for api_keys for the same appId");
+            }
+        }
+    }
 }
 
