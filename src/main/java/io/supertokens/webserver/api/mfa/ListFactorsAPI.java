@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
 import io.supertokens.TenantIdentifierWithStorageAndUserIdMapping;
+import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.mfa.Mfa;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
@@ -47,7 +48,7 @@ public class ListFactorsAPI extends WebserverAPI {
             TenantIdentifierWithStorage tenantIdentifierWithStorage;
             try {
                 // This step is required only because user_last_active table stores supertokens internal user id.
-                // While sending the usage stats we do a join, so totp tables also must use internal user id.
+                // While sending the usage stats we do a join, so mfa tables must also use internal user id.
 
                 // Try to find the tenantIdentifier with right storage based on the userId
                 TenantIdentifierWithStorageAndUserIdMapping mappingAndStorage =
@@ -74,7 +75,7 @@ public class ListFactorsAPI extends WebserverAPI {
             result.addProperty("status", "OK");
             result.add("factors", factorsJson);
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | FeatureNotEnabledException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }
