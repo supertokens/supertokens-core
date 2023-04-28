@@ -24,12 +24,14 @@ import io.supertokens.Main;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.pluginInterface.LOG_LEVEL;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
+import org.apache.catalina.filters.RemoteAddrFilter;
 import org.jetbrains.annotations.TestOnly;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.regex.PatternSyntaxException;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CoreConfig {
@@ -513,6 +515,25 @@ public class CoreConfig {
                 && !log_level.equalsIgnoreCase("debug")) {
             throw new InvalidConfigException(
                     "'log_level' config must be one of \"NONE\",\"DEBUG\", \"INFO\", \"WARN\" or \"ERROR\".");
+        }
+
+        {
+            // IP Filter validation
+            RemoteAddrFilter filter = new RemoteAddrFilter();
+            if (ip_allow_regex != null) {
+                try {
+                    filter.setAllow(ip_allow_regex);
+                } catch (PatternSyntaxException e) {
+                    throw new InvalidConfigException("Provided regular expression is invalid for ip_allow_regex config");
+                }
+            }
+            if (ip_deny_regex != null) {
+                try {
+                    filter.setDeny(ip_deny_regex);
+                } catch (PatternSyntaxException e) {
+                    throw new InvalidConfigException("Provided regular expression is invalid for ip_deny_regex config");
+                }
+            }
         }
     }
 
