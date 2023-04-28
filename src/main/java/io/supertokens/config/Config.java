@@ -25,6 +25,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.output.Logging;
+import io.supertokens.pluginInterface.LOG_LEVEL;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
@@ -37,6 +38,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 public class Config extends ResourceDistributor.SingletonResource {
 
@@ -141,7 +143,9 @@ public class Config extends ResourceDistributor.SingletonResource {
             // of view cause getNewStorageInstance calls loadConfig on the db plugin
             // which calls creates a new instance of the Config object, which calls
             // the validate function.
-            Storage storage = StorageLayer.getNewStorageInstance(main, currentConfig, key.getTenantIdentifier());
+
+            // doNotLog is set to true so that the plugin loading message is not logged from here
+            Storage storage = StorageLayer.getNewStorageInstance(main, currentConfig, key.getTenantIdentifier(), true);
             final String userPoolId = storage.getUserPoolId();
             final String connectionUriAndAppId =
                     key.getTenantIdentifier().getConnectionUriDomain() + "|" + key.getTenantIdentifier().getAppId();
