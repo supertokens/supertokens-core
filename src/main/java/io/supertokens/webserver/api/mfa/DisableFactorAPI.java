@@ -71,7 +71,7 @@ public class DisableFactorAPI extends WebserverAPI {
             boolean actuallyDeleted = Mfa.disableFactor(tenantIdentifierWithStorage, main, userId, factor);
 
             result.addProperty("status", "OK");
-            result.addProperty("didExist", !actuallyDeleted);
+            result.addProperty("didExist", actuallyDeleted);
             super.sendJsonResponse(200, result, resp);
         } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
