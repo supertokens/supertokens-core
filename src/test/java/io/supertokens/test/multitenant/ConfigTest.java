@@ -882,4 +882,104 @@ public class ConfigTest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    @Test
+    public void testThatDifferentTenantsInSameAppCannotHaveDifferentAPIKeys() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        { // Create an app with API key
+            JsonObject coreConfig = new JsonObject();
+            coreConfig.addProperty("api_keys", "asdfasdfasdfasdfasdf");
+
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    new TenantConfig(
+                            new TenantIdentifier(null, "a1", null),
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(false),
+                            coreConfig
+                    )
+            );
+        }
+
+        { // Create an tenant with different API key
+            JsonObject coreConfig = new JsonObject();
+            coreConfig.addProperty("api_keys", "qwerqwerqwerqwerqwer");
+
+            try {
+                Multitenancy.addNewOrUpdateAppOrTenant(
+                        process.getProcess(),
+                        new TenantIdentifier(null, "a1", null),
+                        new TenantConfig(
+                                new TenantIdentifier(null, "a1", "t1"),
+                                new EmailPasswordConfig(true),
+                                new ThirdPartyConfig(true, null),
+                                new PasswordlessConfig(false),
+                                coreConfig
+                        )
+                );
+                fail();
+            } catch (InvalidConfigException e) {
+                assertEquals("You cannot set different values for api_keys for the same appId", e.getMessage());
+            }
+        }
+
+        { // Allow same API key or no setting
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    process.getProcess(),
+                    new TenantIdentifier(null, "a1", null),
+                    new TenantConfig(
+                            new TenantIdentifier(null, "a1", "t1"),
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(false),
+                            new JsonObject()
+                    )
+            );
+
+            JsonObject coreConfig = new JsonObject();
+            coreConfig.addProperty("api_keys", "asdfasdfasdfasdfasdf");
+
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    process.getProcess(),
+                    new TenantIdentifier(null, "a1", null),
+                    new TenantConfig(
+                            new TenantIdentifier(null, "a1", "t2"),
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(false),
+                            coreConfig
+                    )
+            );
+        }
+
+        { // Create another app with different API key
+            JsonObject coreConfig = new JsonObject();
+            coreConfig.addProperty("api_keys", "qwerqwerqwerqwerqwer");
+
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    new TenantConfig(
+                            new TenantIdentifier(null, "a2", null),
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(false),
+                            coreConfig
+                    )
+            );
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
+    }
 }
