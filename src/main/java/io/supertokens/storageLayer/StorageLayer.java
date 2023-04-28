@@ -53,7 +53,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         return storage;
     }
 
-    public static Storage getNewStorageInstance(Main main, JsonObject config) throws InvalidConfigException {
+    public static Storage getNewStorageInstance(Main main, JsonObject config, TenantIdentifier tenantIdentifier) throws InvalidConfigException {
         Storage result;
         if (StorageLayer.ucl == null) {
             result = new Start(main);
@@ -81,7 +81,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         result.constructor(main.getProcessId(), Main.makeConsolePrintSilent);
 
         // this is intentionally null, null below cause log levels is per core and not per tenant anyway
-        result.loadConfig(config, Config.getBaseConfig(main).getLogLevels(main));
+        result.loadConfig(config, Config.getBaseConfig(main).getLogLevels(main), tenantIdentifier);
         return result;
     }
 
@@ -89,9 +89,9 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         this.storage = storage;
     }
 
-    private StorageLayer(Main main, String pluginFolderPath, JsonObject configJson)
+    private StorageLayer(Main main, String pluginFolderPath, JsonObject configJson, TenantIdentifier tenantIdentifier)
             throws MalformedURLException, InvalidConfigException {
-        Logging.info(main, TenantIdentifier.BASE_TENANT, "Loading storage layer.", true);
+        Logging.info(main, tenantIdentifier, "Loading storage layer.", true);
         File loc = new File(pluginFolderPath);
 
         File[] flist = loc.listFiles(file -> file.getPath().toLowerCase().endsWith(".jar"));
@@ -110,7 +110,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
             }
         }
 
-        this.storage = getNewStorageInstance(main, configJson);
+        this.storage = getNewStorageInstance(main, configJson, tenantIdentifier);
 
         if (this.storage instanceof Start) {
             Logging.info(main, TenantIdentifier.BASE_TENANT, "Using in memory storage.", true);
@@ -175,7 +175,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     public static void initPrimary(Main main, String pluginFolderPath, JsonObject configJson)
             throws MalformedURLException, InvalidConfigException {
         main.getResourceDistributor().setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY,
-                new StorageLayer(main, pluginFolderPath, configJson));
+                new StorageLayer(main, pluginFolderPath, configJson, TenantIdentifier.BASE_TENANT));
     }
 
     public static void loadAllTenantStorage(Main main, TenantConfig[] tenants)
@@ -190,7 +190,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         {
             Map<String, Storage> idToStorageMap = new HashMap<>();
             for (ResourceDistributor.KeyClass key : normalisedConfigs.keySet()) {
-                Storage storage = StorageLayer.getNewStorageInstance(main, normalisedConfigs.get(key));
+                Storage storage = StorageLayer.getNewStorageInstance(main, normalisedConfigs.get(key), key.getTenantIdentifier());
                 String userPoolId = storage.getUserPoolId();
                 String connectionPoolId = storage.getConnectionPoolId();
                 String uniqueId = userPoolId + "~" + connectionPoolId;

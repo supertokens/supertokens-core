@@ -141,7 +141,7 @@ public class Config extends ResourceDistributor.SingletonResource {
             // of view cause getNewStorageInstance calls loadConfig on the db plugin
             // which calls creates a new instance of the Config object, which calls
             // the validate function.
-            Storage storage = StorageLayer.getNewStorageInstance(main, currentConfig);
+            Storage storage = StorageLayer.getNewStorageInstance(main, currentConfig, key.getTenantIdentifier());
             final String userPoolId = storage.getUserPoolId();
             final String connectionUriAndAppId =
                     key.getTenantIdentifier().getConnectionUriDomain() + "|" + key.getTenantIdentifier().getAppId();
