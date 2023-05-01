@@ -122,13 +122,17 @@ public class TestingProcessManager {
         }
 
         public void kill() throws InterruptedException {
+            kill(true);
+        }
+
+        public void kill(boolean removeAllInfo) throws InterruptedException {
             if (killed) {
                 return;
             }
             // we check if there are multiple user pool IDs loaded, and if there are,
             // we clear all the info before killing cause otherwise those extra dbs will retain info
             // across tests
-            if (StorageLayer.hasMultipleUserPools(this.main)) {
+            if (removeAllInfo && StorageLayer.hasMultipleUserPools(this.main)) {
                 try {
                     main.deleteAllInformationForTesting();
                 } catch (Exception e) {
@@ -138,6 +142,14 @@ public class TestingProcessManager {
                         throw new RuntimeException(e);
                     }
                 }
+            }
+            main.killForTestingAndWaitForShutdown();
+            killed = true;
+        }
+
+        public void killWithoutDeletingData() throws InterruptedException {
+            if (killed) {
+                return;
             }
             main.killForTestingAndWaitForShutdown();
             killed = true;

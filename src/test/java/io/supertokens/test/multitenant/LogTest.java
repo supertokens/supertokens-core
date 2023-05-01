@@ -25,7 +25,6 @@ import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.multitenancy.*;
-import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import org.junit.AfterClass;
@@ -107,7 +106,9 @@ public class LogTest {
                 new PasswordlessConfig(true),
                 new JsonObject()), false);
 
-        process.kill();
+        assertEquals(7, Multitenancy.getAllTenants(process.getProcess()).length);
+
+        process.kill(false);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
         ByteArrayOutputStream stdOutput = new ByteArrayOutputStream();
@@ -138,6 +139,8 @@ public class LogTest {
         }
 
         assertEquals(uniqueLines.size(), lines.length);
+
+        assertEquals(7, Multitenancy.getAllTenants(process.getProcess()).length);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

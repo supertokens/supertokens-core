@@ -26,6 +26,7 @@ import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 
 import java.io.IOException;
+import java.util.HashMap;
 
 import static org.junit.Assert.assertEquals;
 
@@ -34,7 +35,9 @@ public class TestMultitenancyAPIHelper {
                                              boolean thirdPartyEnabled, boolean passwordlessEnabled,
                                              JsonObject coreConfig) throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("connectionUriDomain", connectionUriDomain);
+        if (connectionUriDomain != null) {
+            requestBody.addProperty("connectionUriDomain", connectionUriDomain);
+        }
         requestBody.addProperty("emailPasswordEnabled", emailPasswordEnabled);
         requestBody.addProperty("thirdPartyEnabled", thirdPartyEnabled);
         requestBody.addProperty("passwordlessEnabled", passwordlessEnabled);
@@ -258,5 +261,36 @@ public class TestMultitenancyAPIHelper {
         assertEquals(3, response.entrySet().size());
 
         return response.get("user").getAsJsonObject();
+    }
+
+    public static void addLicense(String licenseKey, Main main) throws HttpResponseException, IOException {
+        JsonObject licenseKeyRequest = new JsonObject();
+        licenseKeyRequest.addProperty("licenseKey", licenseKey);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
+                "http://localhost:3567/ee/license", licenseKeyRequest,
+                2000, 2000, null,
+                Utils.getCdiVersionStringLatestForTests(), null);
+        assertEquals("OK", response.get("status").getAsString());
+    }
+
+    public static void removeLicense(Main main) throws HttpResponseException, IOException {
+        JsonObject response = HttpRequestForTesting.sendJsonDELETERequest(main, "",
+                "http://localhost:3567/ee/license", null,
+                1000, 1000, null,
+                Utils.getCdiVersionStringLatestForTests(), null);
+        assertEquals("OK", response.get("status").getAsString());
+    }
+
+    public static JsonObject getEpUserById(TenantIdentifier tenantIdentifier, String userId, Main main)
+            throws HttpResponseException, IOException {
+        HashMap<String, String> map = new HashMap<>();
+        map.put("userId", userId);
+        JsonObject userResponse = HttpRequestForTesting.sendGETRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user"),
+                map, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
+                "emailpassword");
+        assertEquals("OK", userResponse.getAsJsonPrimitive("status").getAsString());
+        return userResponse.getAsJsonObject("user");
     }
 }
