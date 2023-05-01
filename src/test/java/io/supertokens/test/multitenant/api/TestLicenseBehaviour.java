@@ -255,4 +255,36 @@ public class TestLicenseBehaviour {
             assertEquals("Http error. Status Code: 402. Message: Cannot use feature: multi_tenancy, because the license key is missing, or doesn't have this feature enabled.", e.getMessage());
         }
     }
+
+    @Test
+    public void testUpdationOfBaseTenantIsAllowedWithoutLicense() throws Exception {
+        TestMultitenancyAPIHelper.addLicense(OPAQUE_KEY_WITH_MULTITENANCY_FEATURE, process.getProcess());
+
+        JsonObject coreConfig = new JsonObject();
+        StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                .modifyConfigToAddANewUserPoolForTesting(coreConfig, 1);
+
+        TestMultitenancyAPIHelper.createApp(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "a1", true, true, true,
+                coreConfig);
+
+        TestMultitenancyAPIHelper.createTenant(
+                process.getProcess(),
+                new TenantIdentifier(null, "a1", null),
+                "t1", true, true, true,
+                coreConfig);
+
+        TestMultitenancyAPIHelper.removeLicense(process.getProcess());
+
+        JsonObject config = new JsonObject();
+        TestMultitenancyAPIHelper.createConnectionUriDomain(process.main, new TenantIdentifier(null, null, null), null, true, true, true, new JsonObject() );
+        TestMultitenancyAPIHelper.addOrUpdateThirdPartyProviderConfig(
+                new TenantIdentifier(null, null, null),
+                new ThirdPartyConfig.Provider(
+                        "google", "Google", null, null, null, null, null, null, null, null, null, null, null, null
+                ),
+                process.getProcess());
+    }
 }

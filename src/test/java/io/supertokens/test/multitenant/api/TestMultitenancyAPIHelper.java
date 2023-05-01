@@ -35,7 +35,9 @@ public class TestMultitenancyAPIHelper {
                                              boolean thirdPartyEnabled, boolean passwordlessEnabled,
                                              JsonObject coreConfig) throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("connectionUriDomain", connectionUriDomain);
+        if (connectionUriDomain != null) {
+            requestBody.addProperty("connectionUriDomain", connectionUriDomain);
+        }
         requestBody.addProperty("emailPasswordEnabled", emailPasswordEnabled);
         requestBody.addProperty("thirdPartyEnabled", thirdPartyEnabled);
         requestBody.addProperty("passwordlessEnabled", passwordlessEnabled);
