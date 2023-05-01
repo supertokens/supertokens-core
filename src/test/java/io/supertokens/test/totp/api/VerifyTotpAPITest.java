@@ -193,7 +193,7 @@ public class VerifyTotpAPITest {
             assert res.get("status").getAsString().equals("OK");
 
             // try to reuse the same code (replay attack)
-            body.addProperty("totp", "mycode");
+            body.addProperty("totp", validTotp);
             JsonObject res2 = HttpRequestForTesting.sendJsonPOSTRequest(
                     process.getProcess(),
                     "",
@@ -205,6 +205,20 @@ public class VerifyTotpAPITest {
                     Utils.getCdiVersionStringLatestForTests(),
                     "totp");
             assert res2.get("status").getAsString().equals("INVALID_TOTP_ERROR");
+
+            // Try with a new valid code during rate limiting:
+            body.addProperty("totp", TOTPRecipeTest.generateTotpCode(process.getProcess(), device));
+            res = HttpRequestForTesting.sendJsonPOSTRequest(
+                    process.getProcess(),
+                    "",
+                    "http://localhost:3567/recipe/totp/verify",
+                    body,
+                    1000,
+                    1000,
+                    null,
+                    Utils.getCdiVersionLatestForTests(),
+                    "totp");
+            assert res.get("status").getAsString().equals("LIMIT_REACHED_ERROR");
 
             // try verifying device for a non-existent user
             body.addProperty("userId", "non-existent-user");

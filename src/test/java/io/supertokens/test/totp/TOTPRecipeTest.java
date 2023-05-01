@@ -234,7 +234,21 @@ public class TOTPRecipeTest {
         TOTPUsedCode[] usedCodes = getAllUsedCodesUtil(result.storage, "user");
         TOTPUsedCode latestCode = usedCodes[0];
         assert latestCode.isValid == false;
-        assert latestCode.expiryTime - latestCode.createdTime == 3000; // it should be 3s because of device1
+        assert latestCode.expiryTime - latestCode.createdTime == 3000; // it should be 3s because of device1 (i.e. max(device1Exp, device2Exp))
+
+        // Now verify device2:
+        Totp.verifyDevice(main, "user", device2.deviceName, generateTotpCode(main, device2));
+
+        // device1: unverified, device2: verified
+        // Valid code & allowUnverifiedDevice = false:
+        assertThrows(
+                InvalidTotpException.class,
+                () -> Totp.verifyCode(main, "user", generateTotpCode(main, device), false));
+        Totp.verifyCode(main, "user", generateTotpCode(main, device2), false);
+
+        // Valid code & allowUnverifiedDevice = true:
+        Totp.verifyCode(main, "user", generateTotpCode(main, device), true);
+        Totp.verifyCode(main, "user", generateTotpCode(main, device2), true);
     }
 
     /*
@@ -248,7 +262,7 @@ public class TOTPRecipeTest {
         // First N attempts should fail with invalid code:
         // This is to trigger rate limiting
         for (int i = 0; i < N; i++) {
-            String code = "ic-" + i;
+            String code = "ic-" + i; // ic = invalid code
             assertThrows(
                     InvalidTotpException.class,
                     () -> Totp.verifyCode(main, "user", code, true));
@@ -487,6 +501,8 @@ public class TOTPRecipeTest {
         // Try update device name to an already existing device name:
         assertThrows(DeviceAlreadyExistsException.class,
                 () -> Totp.updateDeviceName(main, "user", "device2", "new-device-name"));
+        // Try to rename to the same name: (Should work)
+        Totp.updateDeviceName(main, "user", "device2", "device2");
     }
 
     @Test
