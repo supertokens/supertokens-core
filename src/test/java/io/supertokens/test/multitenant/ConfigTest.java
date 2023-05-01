@@ -1103,7 +1103,7 @@ public class ConfigTest {
             assertEquals(1000, coreConfig.getEmailVerificationTokenLifetime());
         }
 
-        { // create tenant tenant value
+        { // create tenant without value
             JsonObject coreConfigJson = new JsonObject();
             StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
                     .modifyConfigToAddANewUserPoolForTesting(coreConfigJson, 1);
