@@ -107,7 +107,9 @@ public class LogTest {
                 new PasswordlessConfig(true),
                 new JsonObject()), false);
 
-        process.kill();
+        assertEquals(7, Multitenancy.getAllTenants(process.getProcess()).length);
+
+        process.killWithoutDeletingData();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
         ByteArrayOutputStream stdOutput = new ByteArrayOutputStream();
@@ -138,6 +140,8 @@ public class LogTest {
         }
 
         assertEquals(uniqueLines.size(), lines.length);
+
+        assertEquals(7, Multitenancy.getAllTenants(process.getProcess()).length);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

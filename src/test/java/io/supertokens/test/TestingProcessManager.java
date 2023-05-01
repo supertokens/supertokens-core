@@ -143,6 +143,14 @@ public class TestingProcessManager {
             killed = true;
         }
 
+        public void killWithoutDeletingData() throws InterruptedException {
+            if (killed) {
+                return;
+            }
+            main.killForTestingAndWaitForShutdown();
+            killed = true;
+        }
+
         public EventAndException checkOrWaitForEvent(PROCESS_STATE state) throws InterruptedException {
             return checkOrWaitForEvent(state, 15000);
         }
