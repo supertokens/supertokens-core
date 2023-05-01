@@ -269,7 +269,7 @@ public class TestMultitenancyAPIHelper {
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
                 "http://localhost:3567/ee/license", licenseKeyRequest,
-                1000, 1000, null,
+                2000, 2000, null,
                 Utils.getCdiVersionStringLatestForTests(), null);
         assertEquals("OK", response.get("status").getAsString());
     }

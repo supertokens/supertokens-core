@@ -130,7 +130,7 @@ public class TestLicenseBehaviour {
             assertEquals("Http error. Status Code: 402. Message: Cannot use feature: multi_tenancy, because the license key is missing, or doesn't have this feature enabled.", e.getMessage());
         }
     }
-    
+
     @Test
     public void testThatCoreCanRestartWithAllTheTenantsWithoutLicenseKey() throws Exception {
         TestMultitenancyAPIHelper.addLicense(OPAQUE_KEY_WITH_MULTITENANCY_FEATURE, process.getProcess());
@@ -157,7 +157,7 @@ public class TestLicenseBehaviour {
         TestMultitenancyAPIHelper.removeLicense(process.getProcess());
 
         // Restart the core
-        process.killWithoutDeletingData();
+        process.kill(false);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
         String[] args = {"../"};
