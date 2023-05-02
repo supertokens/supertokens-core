@@ -213,6 +213,34 @@ public class AuthRecipe {
         });
     }
 
+    public static boolean deleteNonAuthRecipeUser(TenantIdentifierWithStorage
+                                                        tenantIdentifierWithStorage, String userId)
+            throws StorageQueryException {
+
+        // UserMetadata is per app, so nothing to delete
+
+        boolean finalDidExist = false;
+        boolean didExist = false;
+
+        didExist = tenantIdentifierWithStorage.getSessionStorage()
+                .deleteSessionsOfUser(tenantIdentifierWithStorage, userId);
+        finalDidExist = finalDidExist || didExist;
+
+        didExist = tenantIdentifierWithStorage.getEmailVerificationStorage()
+                .deleteEmailVerificationUserInfo(tenantIdentifierWithStorage, userId);
+        finalDidExist = finalDidExist || didExist;
+
+        didExist = (tenantIdentifierWithStorage.getUserRolesStorage()
+                .deleteAllRolesForUser(tenantIdentifierWithStorage, userId) > 0);
+        finalDidExist = finalDidExist || didExist;
+
+        didExist = tenantIdentifierWithStorage.getTOTPStorage()
+                .removeUser(tenantIdentifierWithStorage, userId);
+        finalDidExist = finalDidExist || didExist;
+
+        return finalDidExist;
+    }
+
     private static void deleteAuthRecipeUser(AppIdentifierWithStorage appIdentifierWithStorage, String
             userId)
             throws StorageQueryException {

@@ -19,6 +19,7 @@ package io.supertokens.multitenancy;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
+import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.config.Config;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
@@ -328,8 +329,15 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             throw new FeatureNotEnabledException(EE_FEATURES.MULTI_TENANCY);
         }
 
-        return tenantIdentifierWithStorage.getMultitenancyStorageWithTargetStorage()
+        boolean finalDidExist = false;
+        boolean didExist = AuthRecipe.deleteNonAuthRecipeUser(tenantIdentifierWithStorage, userId);
+        finalDidExist = finalDidExist || didExist;
+
+        didExist = tenantIdentifierWithStorage.getMultitenancyStorageWithTargetStorage()
                 .removeUserIdFromTenant(tenantIdentifierWithStorage, userId);
+        finalDidExist = finalDidExist || didExist;
+
+        return finalDidExist;
     }
 
     public static TenantConfig getTenantInfo(Main main, TenantIdentifier tenantIdentifier) {
