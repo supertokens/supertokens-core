@@ -19,6 +19,7 @@ package io.supertokens.inmemorydb.queries;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 
 import java.sql.SQLException;
@@ -33,7 +34,7 @@ public class MfaQueries {
         return "CREATE TABLE IF NOT EXISTS " + Config.getConfig(start).getMfaUserFactorsTable() + " ("
                 + "app_id VARCHAR(64) DEFAULT 'public',"
                 + "tenant_id VARCHAR(64) DEFAULT 'public',"
-                + "user_id VARCHAR(255) NOT NULL,"
+                + "user_id VARCHAR(128) NOT NULL,"
                 + "factor_id VARCHAR(255) NOT NULL,"
                 + "PRIMARY KEY (app_id, tenant_id, user_id, factor_id),"
                 + "FOREIGN KEY (app_id, tenant_id)"
@@ -80,6 +81,15 @@ public class MfaQueries {
             pst.setString(2, tenantIdentifier.getTenantId());
             pst.setString(3, userId);
             pst.setString(4, factorId);
+        });
+    }
+
+    public static int deleteUser(Start start, AppIdentifier appIdentifier, String userId) throws StorageQueryException, SQLException {
+        String QUERY = "DELETE FROM " + Config.getConfig(start).getMfaUserFactorsTable() + " WHERE app_id = ? AND user_id = ?";
+
+        return update(start, QUERY, pst -> {
+            pst.setString(1, appIdentifier.getAppId());
+            pst.setString(2, userId);
         });
     }
 }

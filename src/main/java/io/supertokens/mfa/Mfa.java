@@ -27,7 +27,7 @@ public class Mfa {
             StorageQueryException, FeatureNotEnabledException, TenantOrAppNotFoundException {
         if (!isMfaEnabled(tenantIdentifierWithStorage.toAppIdentifier(), main)) {
             throw new FeatureNotEnabledException(
-                    "TOTP feature is not enabled. Please subscribe to a SuperTokens core license key to enable this " +
+                    "MFA feature is not enabled. Please subscribe to a SuperTokens core license key to enable this " +
                             "feature.");
         }
 
@@ -40,7 +40,7 @@ public class Mfa {
             StorageQueryException, TenantOrAppNotFoundException, FeatureNotEnabledException {
         if (!isMfaEnabled(tenantIdentifierWithStorage.toAppIdentifier(), main)) {
             throw new FeatureNotEnabledException(
-                    "TOTP feature is not enabled. Please subscribe to a SuperTokens core license key to enable this " +
+                    "MFA feature is not enabled. Please subscribe to a SuperTokens core license key to enable this " +
                             "feature.");
         }
 
@@ -48,9 +48,16 @@ public class Mfa {
         return mfaStorage.listFactors(tenantIdentifierWithStorage, userId);
     }
 
-    public static boolean disableFactor(TenantIdentifierWithStorage tenantIdentifierWithStorage, Main main, String userId, String factorId) throws
-            StorageQueryException {
-        // No need to check for MFA feature flag here.
+    public static boolean disableFactor(TenantIdentifierWithStorage tenantIdentifierWithStorage, Main main, String userId, String factorId)
+            throws
+            StorageQueryException, TenantOrAppNotFoundException, FeatureNotEnabledException {
+
+        if (!isMfaEnabled(tenantIdentifierWithStorage.toAppIdentifier(), main)) {
+            throw new FeatureNotEnabledException(
+                    "MFA feature is not enabled. Please subscribe to a SuperTokens core license key to enable this " +
+                            "feature.");
+        }
+
         MfaStorage mfaStorage = tenantIdentifierWithStorage.getMfaStorage();
         return mfaStorage.disableFactor(tenantIdentifierWithStorage, userId, factorId);
     }

@@ -567,6 +567,28 @@ public class Start
     }
 
     @Override
+    public int countUsersEnabledMfa(AppIdentifier appIdentifier) throws StorageQueryException {
+        try {
+            // TODO..
+            return ActiveUsersQueries.countUsersEnabledMfa(this);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+
+    @Override
+    public int countUsersEnabledMfaAndActiveSince(AppIdentifier appIdentifier, long time)
+            throws StorageQueryException {
+        try {
+            // TODO..
+            return ActiveUsersQueries.countUsersEnabledMfaAndActiveSince(this, time);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
     public boolean doesUserIdExist(TenantIdentifier tenantIdentifierIdentifier, String userId)
             throws StorageQueryException {
         // TODO..
@@ -2525,6 +2547,20 @@ public class Start
             throws StorageQueryException {
         try {
             int deletedCount = MfaQueries.disableFactor(this, tenantIdentifier, userId, factor);
+            if (deletedCount == 0) {
+                return false;
+            }
+            return true;
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public boolean deleteUser(AppIdentifier appIdentifier, String userId)
+            throws StorageQueryException {
+        try {
+            int deletedCount = MfaQueries.deleteUser(this, appIdentifier, userId);
             if (deletedCount == 0) {
                 return false;
             }

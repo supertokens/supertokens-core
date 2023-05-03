@@ -37,7 +37,7 @@ public class DisableFactorAPI extends WebserverAPI {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
-        String factor = InputParser.parseStringOrThrowError(input, "factor", false);
+        String factor = InputParser.parseStringOrThrowError(input, "factor", false).trim().toLowerCase();
 
         if (userId.isEmpty()) {
             throw new ServletException(new BadRequestException("userId cannot be empty"));
@@ -73,7 +73,7 @@ public class DisableFactorAPI extends WebserverAPI {
             result.addProperty("status", "OK");
             result.addProperty("didExist", actuallyDeleted);
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | FeatureNotEnabledException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }
