@@ -49,9 +49,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 
 public class MfaLicenseTest extends MfaAPITest {
-    public final static String OPAQUE_KEY_WITH_MFA_FEATURE = "pXhNK=nYiEsb6gJEOYP2kIR6M0kn4XLvNqcwT1XbX8xHtm44K" +
-            "-lQfGCbaeN0Ieeza39fxkXr=tiiUU=DXxDH40Y=4FLT4CE-rG1ETjkXxO4yucLpJvw3uSegPayoISGL";
-
     @Test
     public void testTotpWithoutLicense() throws Exception {
         TestSetupResult result = initSteps(false);
@@ -165,6 +162,4 @@ public class MfaLicenseTest extends MfaAPITest {
         assert res3.get("status").getAsString().equals("OK");
         assert res3.get("didExist").getAsBoolean() == true;
     }
-
-
 }

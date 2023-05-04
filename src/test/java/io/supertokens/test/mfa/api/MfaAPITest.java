@@ -108,7 +108,7 @@ public class MfaAPITest {
         return HttpRequestForTesting.sendJsonPOSTRequest(
                 process.getProcess(),
                 "",
-                "http://localhost:3567/recipe/mfa/enable",
+                "http://localhost:3567/recipe/mfa/factors/enable",
                 body,
                 1000,
                 1000,
@@ -136,7 +136,7 @@ public class MfaAPITest {
         return HttpRequestForTesting.sendJsonPOSTRequest(
                 process.getProcess(),
                 "",
-                "http://localhost:3567/recipe/mfa/disable",
+                "http://localhost:3567/recipe/mfa/factors/disable",
                 body,
                 1000,
                 1000,

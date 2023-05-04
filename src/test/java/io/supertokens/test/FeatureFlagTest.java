@@ -21,7 +21,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
-import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.NoLicenseKeyFoundException;
@@ -232,6 +231,106 @@ public class FeatureFlagTest {
             assert totpMaus.get(29).getAsInt() == 1;
 
             assert totalTotpUsers == 1;
+        }
+
+        process.kill();
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    private final static String OPAQUE_KEY_WITH_MFA_FEATURE = "Qk8olVa=v-9PU=snnUFMF4ihMCx4zVBOO6Jd7Nrg6Cg5YyFliEj252ADgpwEpDLfFowA0U5OyVo3XL=U4FMft2HDHCDGg9hWD4iwQQiyjMRi6Mu03CVbAxIkNGaXtJ53";
+
+
+    @Test
+    public void testThatCallingGetFeatureFlagAPIReturnsMfaStats() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(OPAQUE_KEY_WITH_MFA_FEATURE);
+
+        // Get the stats without any users/activity
+        {
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/ee/featureflag",
+                    null, 1000, 1000, null, WebserverAPI.getLatestCDIVersion().get(), "");
+            Assert.assertEquals("OK", response.get("status").getAsString());
+
+            JsonArray features = response.get("features").getAsJsonArray();
+            JsonObject usageStats = response.get("usageStats").getAsJsonObject();
+            JsonArray maus = usageStats.get("maus").getAsJsonArray();
+
+            assert features.size() == 1;
+            assert features.get(0).getAsString().equals("mfa");
+            assert maus.size() == 30;
+            assert maus.get(0).getAsInt() == 0;
+            assert maus.get(29).getAsInt() == 0;
+
+            JsonObject mfaStats = usageStats.get("mfa").getAsJsonObject();
+            JsonArray mfaMaus = mfaStats.get("maus").getAsJsonArray();
+            int totaMfaUsers = mfaStats.get("total_users").getAsInt();
+
+            assert mfaMaus.size() == 30;
+            assert mfaMaus.get(0).getAsInt() == 0;
+            assert mfaMaus.get(29).getAsInt() == 0;
+
+            assert totaMfaUsers == 0;
+        }
+
+        // First register 2 users for emailpassword recipe.
+        // This also marks them as active.
+        JsonObject signUpResponse = Utils.signUpRequest_2_5(process, "random@gmail.com", "validPass123");
+        assert signUpResponse.get("status").getAsString().equals("OK");
+
+        JsonObject signUpResponse2 = Utils.signUpRequest_2_5(process, "random2@gmail.com", "validPass123");
+        assert signUpResponse2.get("status").getAsString().equals("OK");
+
+        // Now enable MFA for the first user by enabling a factor.
+        JsonObject body = new JsonObject();
+        body.addProperty("userId", signUpResponse.get("user").getAsJsonObject().get("id").getAsString());
+        body.addProperty("factor", "f1");
+        JsonObject res = HttpRequestForTesting.sendJsonPOSTRequest(
+                process.getProcess(),
+                "",
+                "http://localhost:3567/recipe/mfa/factors/enable",
+                body,
+                1000,
+                1000,
+                null,
+                Utils.getCdiVersionStringLatestForTests(),
+                "mfa");
+        assert res.get("status").getAsString().equals("OK");
+
+        // Now check the stats again:
+        {
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/ee/featureflag",
+                    null, 1000, 1000, null, WebserverAPI.getLatestCDIVersion().get(), "");
+            Assert.assertEquals("OK", response.get("status").getAsString());
+
+            JsonArray features = response.get("features").getAsJsonArray();
+            JsonObject usageStats = response.get("usageStats").getAsJsonObject();
+            JsonArray maus = usageStats.get("maus").getAsJsonArray();
+
+            assert features.size() == 1;
+            assert features.get(0).getAsString().equals("mfa");
+            assert maus.size() == 30;
+            assert maus.get(0).getAsInt() == 2; // 2 users have signed up
+            assert maus.get(29).getAsInt() == 2;
+
+            JsonObject mfaStats = usageStats.get("mfa").getAsJsonObject();
+            JsonArray mfaMaus = mfaStats.get("maus").getAsJsonArray();
+            int totalMfaUsers = mfaStats.get("total_users").getAsInt();
+
+            assert mfaMaus.size() == 30;
+            assert mfaMaus.get(0).getAsInt() == 1; // only 1 user has MFA factor enabled
+            assert mfaMaus.get(29).getAsInt() == 1;
+
+            assert totalMfaUsers == 1;
         }
 
         process.kill();
