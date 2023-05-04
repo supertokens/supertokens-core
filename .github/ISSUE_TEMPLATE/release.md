@@ -73,6 +73,10 @@ labels:
 ### 📚 Documentation (test site)
 
 - [ ] All recipe main documentation update
+- [ ] Code type checking versions are pointing to X.Y
+   - [ ] jsEnv
+   - [ ] goEnv
+   - [ ] pythonEnv
 - [ ] Update table schema in mysql / postgresql section for self hosted
 - [ ] community documentation update
 - [ ] website changes (test.supertokens.io)
