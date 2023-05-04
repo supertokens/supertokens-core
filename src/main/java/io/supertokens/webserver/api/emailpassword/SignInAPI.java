@@ -19,10 +19,10 @@ package io.supertokens.webserver.api.emailpassword;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-
 import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.emailpassword.exceptions.BannedUserException;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
@@ -33,10 +33,10 @@ import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 public class SignInAPI extends WebserverAPI {
@@ -89,6 +89,11 @@ public class SignInAPI extends WebserverAPI {
             super.sendJsonResponse(200, result, resp);
         } catch (StorageQueryException e) {
             throw new ServletException(e);
+        } catch (BannedUserException e) {
+            Logging.debug(main, Utils.exceptionStacktraceToString(e));
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "BANNED_USER_ERROR");
+            super.sendJsonResponse(200, result, resp);
         }
 
     }

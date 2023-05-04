@@ -24,6 +24,8 @@ import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.output.Logging;
+import io.supertokens.webserver.api.banuser.BanUserAPI;
+import io.supertokens.webserver.api.banuser.RemoveBanUserAPI;
 import io.supertokens.webserver.api.core.UsersAPI;
 import io.supertokens.webserver.api.core.UsersCountAPI;
 import io.supertokens.webserver.api.dashboard.DashboardSignInAPI;
@@ -275,6 +277,8 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new GetDashboardUsersAPI(main));
         addAPI(new GetDashboardSessionsForUserAPI(main));
         addAPI(new SearchTagsAPI(main));
+        addAPI(new BanUserAPI(main));
+        addAPI(new RemoveBanUserAPI(main));
         // deprecated APIs:
         addAPI(new RecipeRouter(main, new io.supertokens.webserver.api.emailpassword.UsersAPI(main),
                 new io.supertokens.webserver.api.thirdparty.UsersAPI(main)));

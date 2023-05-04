@@ -22,15 +22,12 @@ import io.supertokens.ProcessState;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.emailverification.exception.EmailAlreadyVerifiedException;
-import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.inmemorydb.queries.*;
-import io.supertokens.pluginInterface.ActiveUsersStorage;
-import io.supertokens.pluginInterface.KeyValueInfo;
-import io.supertokens.pluginInterface.LOG_LEVEL;
-import io.supertokens.pluginInterface.RECIPE_ID;
-import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.*;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.ban.BannedUserStorage;
+import io.supertokens.pluginInterface.ban.exceptions.UserNotBannedException;
 import io.supertokens.pluginInterface.dashboard.DashboardSearchTags;
 import io.supertokens.pluginInterface.dashboard.DashboardSessionInfo;
 import io.supertokens.pluginInterface.dashboard.DashboardUser;
@@ -64,16 +61,16 @@ import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
 import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
 import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
-import io.supertokens.pluginInterface.totp.TOTPStorage;
-import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
-import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
 import io.supertokens.pluginInterface.totp.TOTPDevice;
+import io.supertokens.pluginInterface.totp.TOTPStorage;
 import io.supertokens.pluginInterface.totp.TOTPUsedCode;
 import io.supertokens.pluginInterface.totp.exception.DeviceAlreadyExistsException;
 import io.supertokens.pluginInterface.totp.exception.TotpNotEnabledException;
 import io.supertokens.pluginInterface.totp.exception.UnknownDeviceException;
 import io.supertokens.pluginInterface.totp.exception.UsedCodeAlreadyExistsException;
 import io.supertokens.pluginInterface.totp.sqlStorage.TOTPSQLStorage;
+import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
+import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
 import io.supertokens.pluginInterface.useridmapping.exception.UnknownSuperTokensUserIdException;
 import io.supertokens.pluginInterface.useridmapping.exception.UserIdMappingAlreadyExistsException;
 import io.supertokens.pluginInterface.usermetadata.UserMetadataStorage;
@@ -83,7 +80,6 @@ import io.supertokens.pluginInterface.userroles.exception.DuplicateUserRoleMappi
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
 import io.supertokens.session.Session;
-import io.supertokens.totp.Totp;
 import io.supertokens.usermetadata.UserMetadata;
 import io.supertokens.userroles.UserRoles;
 import org.jetbrains.annotations.NotNull;
@@ -104,7 +100,7 @@ import java.util.Set;
 public class Start
         implements SessionSQLStorage, EmailPasswordSQLStorage, EmailVerificationSQLStorage, ThirdPartySQLStorage,
         JWTRecipeSQLStorage, PasswordlessSQLStorage, UserMetadataSQLStorage, UserRolesSQLStorage, UserIdMappingStorage,
-        DashboardSQLStorage, TOTPSQLStorage, ActiveUsersStorage {
+        DashboardSQLStorage, TOTPSQLStorage, ActiveUsersStorage, BannedUserStorage {
 
     private static final Object appenderLock = new Object();
     private static final String APP_ID_KEY_NAME = "app_id";
@@ -313,8 +309,8 @@ public class Start
 
     @Override
     public void createNewSession(String sessionHandle, String userId, String refreshTokenHash2,
-            JsonObject userDataInDatabase, long expiry, JsonObject userDataInJWT,
-            long createdAtTime)
+                                 JsonObject userDataInDatabase, long expiry, JsonObject userDataInJWT,
+                                 long createdAtTime)
             throws StorageQueryException {
         try {
             SessionQueries.createNewSession(this, sessionHandle, userId, refreshTokenHash2, userDataInDatabase, expiry,
@@ -427,11 +423,13 @@ public class Start
 
     @Override
     public AuthRecipeUserInfo[] getUsers(@NotNull Integer limit, @NotNull String timeJoinedOrder,
-            @Nullable RECIPE_ID[] includeRecipeIds, @Nullable String userId, @Nullable Long timeJoined,
-            @Nullable DashboardSearchTags dashboardSearchTags)
+                                         @Nullable RECIPE_ID[] includeRecipeIds, @Nullable String userId,
+                                         @Nullable Long timeJoined,
+                                         @Nullable DashboardSearchTags dashboardSearchTags)
             throws StorageQueryException {
         try {
-            return GeneralQueries.getUsers(this, limit, timeJoinedOrder, includeRecipeIds, userId, timeJoined, dashboardSearchTags);
+            return GeneralQueries.getUsers(this, limit, timeJoinedOrder, includeRecipeIds, userId, timeJoined,
+                    dashboardSearchTags);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -472,7 +470,7 @@ public class Start
             throw new StorageQueryException(e);
         }
     }
-    
+
     @Override
     public int countUsersEnabledTotpAndActiveSince(long time) throws StorageQueryException {
         try {
@@ -495,7 +493,7 @@ public class Start
 
     @Override
     public void updateSessionInfo_Transaction(TransactionConnection con, String sessionHandle, String refreshTokenHash2,
-            long expiry) throws StorageQueryException {
+                                              long expiry) throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
             SessionQueries.updateSessionInfo_Transaction(this, sqlCon, sessionHandle, refreshTokenHash2, expiry);
@@ -540,8 +538,8 @@ public class Start
                     .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
                             + Config.getConfig(this).getEmailPasswordUsersTable() + ".user_id)")
                     || e.getMessage()
-                            .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
-                                    + Config.getConfig(this).getUsersTable() + ".user_id)")) {
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                            + Config.getConfig(this).getUsersTable() + ".user_id)")) {
                 throw new DuplicateUserIdException();
             }
             throw new StorageQueryException(e);
@@ -615,7 +613,7 @@ public class Start
 
     @Override
     public PasswordResetTokenInfo[] getAllPasswordResetTokenInfoForUser_Transaction(TransactionConnection con,
-            String userId)
+                                                                                    String userId)
             throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
@@ -678,7 +676,7 @@ public class Start
     @Override
     @Deprecated
     public UserInfo[] getUsers(@NotNull String userId, @NotNull Long timeJoined, @NotNull Integer limit,
-            @NotNull String timeJoinedOrder) throws StorageQueryException {
+                               @NotNull String timeJoinedOrder) throws StorageQueryException {
         try {
             return EmailPasswordQueries.getUsersInfo(this, userId, timeJoined, limit, timeJoinedOrder);
         } catch (SQLException e) {
@@ -717,7 +715,7 @@ public class Start
 
     @Override
     public EmailVerificationTokenInfo[] getAllEmailVerificationTokenInfoForUser_Transaction(TransactionConnection con,
-            String userId, String email)
+                                                                                            String userId, String email)
             throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
@@ -748,7 +746,7 @@ public class Start
 
     @Override
     public void deleteAllEmailVerificationTokensForUser_Transaction(TransactionConnection con, String userId,
-            String email) throws StorageQueryException {
+                                                                    String email) throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
             EmailVerificationQueries.deleteAllEmailVerificationTokensForUser_Transaction(this, sqlCon, userId, email);
@@ -759,7 +757,7 @@ public class Start
 
     @Override
     public void updateIsEmailVerified_Transaction(TransactionConnection con, String userId, String email,
-            boolean isEmailVerified) throws StorageQueryException {
+                                                  boolean isEmailVerified) throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
             EmailVerificationQueries.updateUsersIsEmailVerified_Transaction(this, sqlCon, userId, email,
@@ -841,8 +839,8 @@ public class Start
 
     @Override
     public io.supertokens.pluginInterface.thirdparty.UserInfo getUserInfoUsingId_Transaction(TransactionConnection con,
-            String thirdPartyId,
-            String thirdPartyUserId)
+                                                                                             String thirdPartyId,
+                                                                                             String thirdPartyUserId)
             throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
@@ -854,7 +852,7 @@ public class Start
 
     @Override
     public void updateUserEmail_Transaction(TransactionConnection con, String thirdPartyId, String thirdPartyUserId,
-            String newEmail) throws StorageQueryException {
+                                            String newEmail) throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
             ThirdPartyQueries.updateUserEmail_Transaction(this, sqlCon, thirdPartyId, thirdPartyUserId, newEmail);
@@ -880,8 +878,8 @@ public class Start
                     .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
                             + Config.getConfig(this).getThirdPartyUsersTable() + ".user_id)")
                     || e.getMessage()
-                            .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
-                                    + Config.getConfig(this).getUsersTable() + ".user_id)")) {
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                            + Config.getConfig(this).getUsersTable() + ".user_id)")) {
                 throw new io.supertokens.pluginInterface.thirdparty.exception.DuplicateUserIdException();
             }
             throw new StorageQueryException(e);
@@ -899,7 +897,7 @@ public class Start
 
     @Override
     public io.supertokens.pluginInterface.thirdparty.UserInfo getThirdPartyUserInfoUsingId(String thirdPartyId,
-            String thirdPartyUserId)
+                                                                                           String thirdPartyUserId)
             throws StorageQueryException {
         try {
             return ThirdPartyQueries.getThirdPartyUserInfoUsingId(this, thirdPartyId, thirdPartyUserId);
@@ -921,9 +919,9 @@ public class Start
     @Override
     @Deprecated
     public io.supertokens.pluginInterface.thirdparty.UserInfo[] getThirdPartyUsers(@NotNull String userId,
-            @NotNull Long timeJoined,
-            @NotNull Integer limit,
-            @NotNull String timeJoinedOrder)
+                                                                                   @NotNull Long timeJoined,
+                                                                                   @NotNull Integer limit,
+                                                                                   @NotNull String timeJoinedOrder)
             throws StorageQueryException {
         try {
             return ThirdPartyQueries.getThirdPartyUsers(this, userId, timeJoined, limit, timeJoinedOrder);
@@ -935,7 +933,7 @@ public class Start
     @Override
     @Deprecated
     public io.supertokens.pluginInterface.thirdparty.UserInfo[] getThirdPartyUsers(@NotNull Integer limit,
-            @NotNull String timeJoinedOrder)
+                                                                                   @NotNull String timeJoinedOrder)
             throws StorageQueryException {
         try {
             return ThirdPartyQueries.getThirdPartyUsers(this, limit, timeJoinedOrder);
@@ -1088,7 +1086,7 @@ public class Start
 
     @Override
     public void createDeviceWithCode(@Nullable String email, @Nullable String phoneNumber, String linkCodeSalt,
-            PasswordlessCode code)
+                                     PasswordlessCode code)
             throws StorageQueryException, DuplicateDeviceIdHashException,
             DuplicateCodeIdException, DuplicateLinkCodeHashException {
         if (email == null && phoneNumber == null) {
@@ -1239,8 +1237,8 @@ public class Start
                     .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
                             + Config.getConfig(this).getPasswordlessUsersTable() + ".user_id)")
                     || message
-                            .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
-                                    + Config.getConfig(this).getUsersTable() + ".user_id)")) {
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                            + Config.getConfig(this).getUsersTable() + ".user_id)")) {
                 throw new DuplicateUserIdException();
             }
 
@@ -1458,7 +1456,7 @@ public class Start
 
     @Override
     public void addPermissionToRoleOrDoNothingIfExists_Transaction(TransactionConnection con, String role,
-            String permission)
+                                                                   String permission)
             throws StorageQueryException, UnknownRoleException {
         Connection sqlCon = (Connection) con.getConnection();
 
@@ -1508,7 +1506,7 @@ public class Start
 
     @Override
     public void createUserIdMapping(String superTokensUserId, String externalUserId,
-            @Nullable String externalUserIdInfo)
+                                    @Nullable String externalUserIdInfo)
             throws StorageQueryException, UnknownSuperTokensUserIdException, UserIdMappingAlreadyExistsException {
         try {
             UserIdMappingQueries.createUserIdMapping(this, superTokensUserId, externalUserId, externalUserIdInfo);
@@ -1578,7 +1576,7 @@ public class Start
 
     @Override
     public boolean updateOrDeleteExternalUserIdInfo(String userId, boolean isSuperTokensUserId,
-            @Nullable String externalUserIdInfo) throws StorageQueryException {
+                                                    @Nullable String externalUserIdInfo) throws StorageQueryException {
         try {
             if (isSuperTokensUserId) {
                 return UserIdMappingQueries.updateOrDeleteExternalUserIdInfoWithSuperTokensUserId(this, userId,
@@ -1625,11 +1623,10 @@ public class Start
         } else if (className.equals(JWTRecipeStorage.class.getName())) {
             return false;
         } else if (className.equals(TOTPStorage.class.getName())) {
-            try{
+            try {
                 TOTPDevice[] devices = TOTPQueries.getDevices(this, userId);
                 return devices.length > 0;
-            }
-            catch (SQLException e){
+            } catch (SQLException e) {
                 throw new StorageQueryException(e);
             }
         } else {
@@ -1677,12 +1674,10 @@ public class Start
             try {
                 TOTPDevice device = new TOTPDevice(userId, "testDevice", "secret", 0, 30, false);
                 TOTPQueries.createDevice(this, device);
-            }
-            catch (StorageTransactionLogicException e) {
+            } catch (StorageTransactionLogicException e) {
                 throw new StorageQueryException(e.actualException);
             }
-        }
-        else if (className.equals(JWTRecipeStorage.class.getName())) {
+        } else if (className.equals(JWTRecipeStorage.class.getName())) {
             /* Since JWT recipe tables do not store userId we do not add any data to them */
         } else {
             throw new IllegalStateException("ClassName: " + className + " is not part of NonAuthRecipeStorage");
@@ -1740,7 +1735,7 @@ public class Start
     }
 
     public void updateDashboardUsersEmailWithUserId_Transaction(TransactionConnection con, String userId,
-            String newEmail)
+                                                                String newEmail)
             throws StorageQueryException, io.supertokens.pluginInterface.dashboard.exceptions.DuplicateEmailException,
             UserIdNotFoundException {
         Connection sqlCon = (Connection) con.getConnection();
@@ -1758,7 +1753,7 @@ public class Start
     }
 
     public void updateDashboardUsersPasswordWithUserId_Transaction(TransactionConnection con, String userId,
-            String newPassword)
+                                                                   String newPassword)
             throws StorageQueryException, UserIdNotFoundException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
@@ -1968,4 +1963,46 @@ public class Start
             throw new StorageQueryException(e);
         }
     }
+
+    @Override
+    public boolean isUserBanned(String userId) throws StorageQueryException {
+        try {
+            return BannedUserQueries.checkUserIsBanned(this, userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+
+    @Override
+    public void createNewBannedUser(String userId) throws StorageQueryException,
+            io.supertokens.pluginInterface.ban.exceptions.DuplicateUserIdException,
+            io.supertokens.pluginInterface.ban.exceptions.UnknownUserIdException {
+        try {
+            BannedUserQueries.createNewBannedUser(this, userId);
+        } catch (SQLException e) {
+            if (e.getMessage()
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                            + Config.getConfig(this).getBannedUsersTable() + ".user_id")) {
+                throw new io.supertokens.pluginInterface.ban.exceptions.DuplicateUserIdException();
+            } else if (e.getMessage()
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (FOREIGN KEY constraint failed)")) {
+                throw new io.supertokens.pluginInterface.ban.exceptions.UnknownUserIdException();
+            } else {
+                throw new StorageQueryException(e);
+            }
+        }
+    }
+
+    @Override
+    public void removeBannedUser(String userId) throws StorageQueryException, UserNotBannedException {
+        try {
+            if (!BannedUserQueries.deleteBannedUser(this, userId)){
+                throw new UserNotBannedException();
+            }
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
 }

@@ -30,7 +30,6 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
-
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -221,6 +220,10 @@ public class GeneralQueries {
             // index
             update(start, DashboardQueries.getQueryToCreateDashboardUserSessionsExpiryIndex(start), NO_OP_SETTER);
         }
+        if (!doesTableExists(start, Config.getConfig(start).getBannedUsersTable())) {
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, BannedUserQueries.getQueryToCreateBannedUsersTable(start), NO_OP_SETTER);
+        }
 
     }
 
@@ -330,9 +333,9 @@ public class GeneralQueries {
     }
 
     public static AuthRecipeUserInfo[] getUsers(Start start, @NotNull Integer limit, @NotNull String timeJoinedOrder,
-            @Nullable RECIPE_ID[] includeRecipeIds, @Nullable String userId,
-            @Nullable Long timeJoined,
-            @Nullable DashboardSearchTags dashboardSearchTags)
+                                                @Nullable RECIPE_ID[] includeRecipeIds, @Nullable String userId,
+                                                @Nullable Long timeJoined,
+                                                @Nullable DashboardSearchTags dashboardSearchTags)
             throws SQLException, StorageQueryException {
 
         // This list will be used to keep track of the result's order from the db
@@ -596,7 +599,7 @@ public class GeneralQueries {
     }
 
     private static List<? extends AuthRecipeUserInfo> getUserInfoForRecipeIdFromUserIds(Start start, RECIPE_ID recipeId,
-            List<String> userIds)
+                                                                                        List<String> userIds)
             throws StorageQueryException, SQLException {
         if (recipeId == RECIPE_ID.EMAIL_PASSWORD) {
             return EmailPasswordQueries.getUsersInfoUsingIdList(start, userIds);

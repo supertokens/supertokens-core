@@ -20,6 +20,7 @@ import io.supertokens.Main;
 import io.supertokens.authRecipe.UserPaginationToken;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
+import io.supertokens.emailpassword.exceptions.BannedUserException;
 import io.supertokens.emailpassword.exceptions.ResetPasswordInvalidTokenException;
 import io.supertokens.emailpassword.exceptions.UnsupportedPasswordHashingFormatException;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
@@ -130,12 +131,17 @@ public class EmailPassword {
     }
 
     public static UserInfo signIn(Main main, @Nonnull String email, @Nonnull String password)
-            throws StorageQueryException, WrongCredentialsException {
+            throws StorageQueryException, WrongCredentialsException, BannedUserException{
 
         UserInfo user = StorageLayer.getEmailPasswordStorage(main).getUserInfoUsingEmail(email);
 
         if (user == null) {
             throw new WrongCredentialsException();
+        }
+
+        //Check whether the user is banned
+        if(StorageLayer.getBannedUserStorage(main).isUserBanned(user.id)){
+            throw new BannedUserException();
         }
 
         try {

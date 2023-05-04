@@ -113,4 +113,8 @@ public class SQLiteConfig {
     public String getDashboardSessionsTable() {
         return "dashboard_user_sessions";
     }
+
+    public String getBannedUsersTable() {
+        return "banned_users";
+    }
 }
