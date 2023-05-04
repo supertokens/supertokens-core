@@ -2022,8 +2022,9 @@ public class Start
 
     @TestOnly
     @Override
-    public void addInfoToNonAuthRecipesBasedOnUserId(String className, String
+    public void addInfoToNonAuthRecipesBasedOnUserId(TenantIdentifier tenantIdentifier, String className, String
             userId) throws StorageQueryException {
+        // TODO...
         // add entries to nonAuthRecipe tables with input userId
         if (className.equals(SessionStorage.class.getName())) {
             try {

@@ -25,6 +25,7 @@ import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.nonAuthRecipe.NonAuthRecipeStorage;
 import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
 import io.supertokens.pluginInterface.useridmapping.exception.UnknownSuperTokensUserIdException;
@@ -810,7 +811,7 @@ public class UserIdMappingTest {
             String userId = user.id;
 
             // create entry in nonAuth table
-            StorageLayer.getStorage(process.main).addInfoToNonAuthRecipesBasedOnUserId(className, userId);
+            StorageLayer.getStorage(process.main).addInfoToNonAuthRecipesBasedOnUserId(TenantIdentifier.BASE_TENANT, className, userId);
             // try to create the mapping with superTokensId
             String errorMessage = null;
             try {
@@ -849,7 +850,7 @@ public class UserIdMappingTest {
 
         Exception error = null;
         try {
-            StorageLayer.getStorage(process.main).addInfoToNonAuthRecipesBasedOnUserId("unknownRecipe", "testUserId");
+            StorageLayer.getStorage(process.main).addInfoToNonAuthRecipesBasedOnUserId(TenantIdentifier.BASE_TENANT, "unknownRecipe", "testUserId");
         } catch (IllegalStateException e) {
             error = e;
         }
@@ -891,7 +892,7 @@ public class UserIdMappingTest {
             UserIdMapping.createUserIdMapping(process.main, user.id, externalId, null, false);
 
             // create entry in nonAuth table with externalId
-            StorageLayer.getStorage(process.main).addInfoToNonAuthRecipesBasedOnUserId(className, externalId);
+            StorageLayer.getStorage(process.main).addInfoToNonAuthRecipesBasedOnUserId(TenantIdentifier.BASE_TENANT, className, externalId);
 
             // try to delete UserIdMapping
             String errorMessage = null;
