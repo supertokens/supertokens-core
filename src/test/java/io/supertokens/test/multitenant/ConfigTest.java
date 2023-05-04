@@ -1197,24 +1197,6 @@ public class ConfigTest {
     }
 
     @Test
-    public void testInvalidConfigInYAML() throws Exception {
-        String[] args = {"../"};
-
-        Utils.setValueInConfig("foo", "bar");
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
-        FeatureFlagTestContent.getInstance(process.getProcess())
-                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
-        ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
-        assertNotNull(e);
-        assertTrue(e.exception instanceof QuitProgramException);
-        assertEquals("io.supertokens.pluginInterface.exceptions.InvalidConfigException: Invalid config key: foo", e.exception.getMessage());
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-    }
-
-    @Test
     public void testInvalidConfigWhileCreatingNewTenant() throws Exception {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);

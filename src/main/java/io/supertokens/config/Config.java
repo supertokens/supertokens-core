@@ -45,7 +45,6 @@ public class Config extends ResourceDistributor.SingletonResource {
     public static final String RESOURCE_KEY = "io.supertokens.config.Config";
     private final Main main;
     private final CoreConfig core;
-    private final String configFilePath;
 
     private Config(Main main, String configFilePath) throws InvalidConfigException, IOException {
         this.main = main;
@@ -53,7 +52,6 @@ public class Config extends ResourceDistributor.SingletonResource {
         CoreConfig config = mapper.readValue(new File(configFilePath), CoreConfig.class);
         config.validate(main);
         this.core = config;
-        this.configFilePath = configFilePath;
     }
 
     private Config(Main main, JsonObject jsonConfig) throws IOException, InvalidConfigException {
@@ -62,23 +60,11 @@ public class Config extends ResourceDistributor.SingletonResource {
         CoreConfig config = mapper.readValue(jsonConfig.toString(), CoreConfig.class);
         config.validate(main);
         this.core = config;
-        this.configFilePath = null;
     }
 
     private static Config getInstance(TenantIdentifier tenantIdentifier, Main main)
             throws TenantOrAppNotFoundException {
         return (Config) main.getResourceDistributor().getResource(tenantIdentifier, RESOURCE_KEY);
-    }
-
-    public static JsonObject getConfigFromYAMLAsJsonObject(Main main) throws IOException, TenantOrAppNotFoundException {
-        Config config = getInstance(TenantIdentifier.BASE_TENANT, main);
-        if (config.configFilePath == null) {
-            return null;
-        }
-        final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-        Object result = mapper.readValue(new File(config.configFilePath), Object.class);
-
-        return new Gson().toJsonTree(result).getAsJsonObject();
     }
 
     public static void loadBaseConfig(Main main)

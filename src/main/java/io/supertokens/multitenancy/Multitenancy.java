@@ -110,7 +110,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public static void validateConfigJsonForInvalidKeys(Main main, JsonObject coreConfig) throws InvalidConfigException {
+    private static void validateConfigJsonForInvalidKeys(Main main, JsonObject coreConfig) throws InvalidConfigException {
         Set<String> coreFields = CoreConfig.getValidFields();
         Set<String> storageFields = StorageLayer.getBaseStorage(main).getValidFieldsInConfig();
 

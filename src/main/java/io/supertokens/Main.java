@@ -167,13 +167,6 @@ public class Main {
             throw new QuitProgramException(e);
         }
 
-        // validate config from yaml for invalid keys
-        try {
-            Multitenancy.validateConfigJsonForInvalidKeys(this, Config.getConfigFromYAMLAsJsonObject(this));
-        } catch (InvalidConfigException | TenantOrAppNotFoundException e) {
-            throw new QuitProgramException(e);
-        }
-
         // loading version file
         Version.loadVersion(this, CLIOptions.get(this).getInstallationPath() + "version.yaml");
 

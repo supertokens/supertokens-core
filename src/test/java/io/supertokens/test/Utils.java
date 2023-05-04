@@ -153,12 +153,7 @@ public abstract class Utils extends Mockito {
                 originalFileContent.append(currentReadingLine).append(System.lineSeparator());
                 currentReadingLine = reader.readLine();
             }
-            String originalFileContentStr = originalFileContent.toString();
-            String modifiedFileContent = originalFileContentStr.replaceAll(oldStr, newStr);
-            if (originalFileContentStr.equals(modifiedFileContent)) {
-                // The file was not changed, so append the new config
-                modifiedFileContent = originalFileContentStr + newStr;
-            }
+            String modifiedFileContent = originalFileContent.toString().replaceAll(oldStr, newStr);
             try (BufferedWriter writer = new BufferedWriter(new FileWriter("../config.yaml"))) {
                 writer.write(modifiedFileContent);
             }
