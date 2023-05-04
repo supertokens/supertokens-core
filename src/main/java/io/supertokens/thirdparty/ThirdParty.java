@@ -274,9 +274,7 @@ public class ThirdParty {
             throw new InvalidProviderConfigException("scope array cannot contain a null");
         }
 
-        if (thirdPartyId.startsWith("active-directory")) {
-            // Nothing here
-        } else if (thirdPartyId.startsWith("apple")) {
+        if (thirdPartyId.startsWith("apple")) {
             String errorMessage = "a non empty string value must be specified for keyId, teamId and privateKey in the" +
                     " additionalConfig for Apple provider";
 
@@ -304,14 +302,6 @@ public class ThirdParty {
             } catch (ClassCastException e) {
                 throw new InvalidProviderConfigException(errorMessage);
             }
-        } else if (thirdPartyId.startsWith("bitbucket")) {
-            // Nothing here
-        } else if (thirdPartyId.startsWith("discord")) {
-            // Nothing here
-        } else if (thirdPartyId.startsWith("facebook")) {
-            // Nothing here
-        } else if (thirdPartyId.startsWith("gitlab")) {
-            // Nothing here
         } else if (thirdPartyId.startsWith("google-workspaces")) {
             if (client.additionalConfig != null && client.additionalConfig.has("hd")) {
                 String errorMessage = "hd in additionalConfig must be a non empty string value";
@@ -325,12 +315,6 @@ public class ThirdParty {
                     throw new InvalidProviderConfigException(errorMessage);
                 }
             }
-        } else if (thirdPartyId.startsWith("google")) {
-            // Nothing here
-        } else if (thirdPartyId.startsWith("linkedin")) {
-            // Nothing here
-        } else if (thirdPartyId.startsWith("okta")) {
-            // Nothing here
         } else if (thirdPartyId.startsWith("boxy-saml")) {
             String errorMessage = "a non empty string value must be specified for boxyURL in the additionalConfig for" +
                     " Boxy SAML provider";
