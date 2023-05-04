@@ -29,9 +29,12 @@ import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.nonAuthRecipe.NonAuthRecipeStorage;
+import io.supertokens.pluginInterface.usermetadata.UserMetadataStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -42,8 +45,13 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
+import org.reflections.Reflections;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
@@ -148,6 +156,41 @@ public class TestTenantUserAssociation {
         response = TestMultitenancyAPIHelper.associateUserToTenant(new TenantIdentifier(null, "a1", "t2"), userId, process.getProcess());
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
         assertFalse(response.get("wasAlreadyAssociated").getAsBoolean());
+    }
+
+    @Test
+    public void testUserDisassociationForNotAuthRecipes() throws Exception {
+        createTenants();
+
+        Reflections reflections = new Reflections("io.supertokens.pluginInterface");
+        Set<Class<? extends NonAuthRecipeStorage>> classes = reflections.getSubTypesOf(NonAuthRecipeStorage.class);
+        List<String> names = classes.stream().map(Class::getCanonicalName).collect(Collectors.toList());
+        List<String> classNames = new ArrayList<>();
+        for (String name : names) {
+            if (name.contains("SQLStorage")) {
+                continue;
+            }
+
+            if (name.equals(UserMetadataStorage.class.getName()) || name.equals(JWTRecipeStorage.class.getName())) {
+                // user metadata is app specific and does not have any tenant specific data
+                // JWT storage does not have any user specific data
+                continue;
+            }
+
+            classNames.add(name);
+        }
+
+        TenantIdentifier t2 = new TenantIdentifier(null, "a1", "t2");
+
+        for (String className : classNames) {
+            String userId = "userId";
+
+            StorageLayer.getStorage(t2, process.main).addInfoToNonAuthRecipesBasedOnUserId(t2, className, userId);
+
+            JsonObject response = TestMultitenancyAPIHelper.disassociateUserFromTenant(t2, userId, process.getProcess());
+            assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
+            assertTrue(response.get("wasAssociated").getAsBoolean());
+        }
     }
 
     @Test

@@ -374,6 +374,17 @@ public class Start
     }
 
     @Override
+    public boolean deleteSessionsOfUser(TenantIdentifier tenantIdentifier, String userId) throws StorageQueryException {
+        try {
+            // TODO..
+            SessionQueries.deleteSessionsOfUser(this, userId);
+            return false; // FIXME
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
     public int getNumberOfSessions(TenantIdentifier tenantIdentifier) throws StorageQueryException {
         try {
             // TODO..
@@ -890,6 +901,18 @@ public class Start
         try {
             // TODO..
             EmailVerificationQueries.deleteUserInfo(this, userId);
+        } catch (StorageTransactionLogicException e) {
+            throw new StorageQueryException(e.actualException);
+        }
+    }
+
+    @Override
+    public boolean deleteEmailVerificationUserInfo(TenantIdentifier tenantIdentifier, String userId)
+            throws StorageQueryException {
+        try {
+            // TODO..
+            EmailVerificationQueries.deleteUserInfo(this, userId);
+            return false; // FIXME
         } catch (StorageTransactionLogicException e) {
             throw new StorageQueryException(e.actualException);
         }
@@ -1999,8 +2022,9 @@ public class Start
 
     @TestOnly
     @Override
-    public void addInfoToNonAuthRecipesBasedOnUserId(String className, String
+    public void addInfoToNonAuthRecipesBasedOnUserId(TenantIdentifier tenantIdentifier, String className, String
             userId) throws StorageQueryException {
+        // TODO...
         // add entries to nonAuthRecipe tables with input userId
         if (className.equals(SessionStorage.class.getName())) {
             try {
@@ -2383,6 +2407,13 @@ public class Start
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
+    }
+
+    @Override
+    public boolean removeUser(TenantIdentifier tenantIdentifier, String userId)
+            throws StorageQueryException {
+        // TODO..
+        return false; // FIXME
     }
 
     @Override
