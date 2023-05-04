@@ -102,10 +102,6 @@ public class SQLiteConfig {
         return "mfa_user_factors";
     }
 
-    public String getTenantsTable() {
-        return "tenants";
-    }
-
     public String getTotpUserDevicesTable() {
         return "totp_user_devices";
     }
