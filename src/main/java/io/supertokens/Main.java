@@ -32,12 +32,14 @@ import io.supertokens.emailpassword.PasswordHashing;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
+import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.MultitenancyHelper;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.exceptions.DbInitException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.*;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.session.refreshToken.RefreshTokenKey;
 import io.supertokens.signingkeys.AccessTokenSigningKey;
 import io.supertokens.signingkeys.JWTSigningKey;
@@ -162,6 +164,13 @@ public class Main {
             StorageLayer.initPrimary(this, CLIOptions.get(this).getInstallationPath() + "plugin/",
                     Config.getBaseConfigAsJsonObject(this));
         } catch (InvalidConfigException e) {
+            throw new QuitProgramException(e);
+        }
+
+        // validate config from yaml for invalid keys
+        try {
+            Multitenancy.validateConfigJsonForInvalidKeys(this, Config.getConfigFromYAMLAsJsonObject(this));
+        } catch (InvalidConfigException | TenantOrAppNotFoundException e) {
             throw new QuitProgramException(e);
         }
 

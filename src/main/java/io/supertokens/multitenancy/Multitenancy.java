@@ -16,7 +16,6 @@
 
 package io.supertokens.multitenancy;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
@@ -111,6 +110,17 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         }
     }
 
+    public static void validateConfigJsonForInvalidKeys(Main main, JsonObject coreConfig) throws InvalidConfigException {
+        Set<String> coreFields = CoreConfig.getValidFields();
+        Set<String> storageFields = StorageLayer.getBaseStorage(main).getValidFieldsInConfig();
+
+        for (Map.Entry<String, JsonElement> entry: coreConfig.entrySet()) {
+            if (!coreFields.contains(entry.getKey()) && !storageFields.contains(entry.getKey())) {
+                throw new InvalidConfigException("Invalid config key: " + entry.getKey());
+            }
+        }
+    }
+
     private static void validateTenantConfig(Main main, TenantConfig targetTenantConfig, boolean shouldPreventDbConfigUpdate)
             throws IOException, InvalidConfigException, InvalidProviderConfigException, BadPermissionException,
             TenantOrAppNotFoundException, CannotModifyBaseConfigException {
@@ -123,16 +133,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         }
 
         // Verify that the keys in the coreConfig is valid
-        {
-            Set<String> coreFields = CoreConfig.getValidFields();
-            Set<String> storageFields = StorageLayer.getBaseStorage(main).getValidFieldsInConfig();
-
-            for (Map.Entry<String, JsonElement> entry: targetTenantConfig.coreConfig.entrySet()) {
-                if (!coreFields.contains(entry.getKey()) && !storageFields.contains(entry.getKey())) {
-                    throw new InvalidConfigException("Invalid config key: " + entry.getKey());
-                }
-            }
-        }
+        validateConfigJsonForInvalidKeys(main, targetTenantConfig.coreConfig);
 
         // we check if the core config provided is correct
         {
