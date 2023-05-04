@@ -17,23 +17,16 @@
 package io.supertokens.test.session;
 
 import com.google.gson.JsonObject;
-
 import io.supertokens.ProcessState;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.exceptions.UnauthorisedException;
-import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.session.Session;
-import io.supertokens.signingkeys.AccessTokenSigningKey;
 import io.supertokens.session.info.SessionInformationHolder;
-import io.supertokens.signingkeys.SigningKeys;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import org.junit.*;
 import org.junit.rules.TestRule;
-
-import java.io.IOException;
 
 import static junit.framework.TestCase.*;
 import static org.junit.Assert.assertNotNull;
@@ -57,7 +50,7 @@ public class SessionTest4 {
     @Test
     public void checkForNumberOfDeletedSessions() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -71,7 +64,7 @@ public class SessionTest4 {
                 userDataInDatabase);
 
         assertEquals(Session.revokeSessionUsingSessionHandles(process.getProcess(),
-                new String[] { sessionInfo.session.handle })[0], sessionInfo.session.handle);
+                new String[]{sessionInfo.session.handle})[0], sessionInfo.session.handle);
 
         SessionInformationHolder sessionInfo2 = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
                 userDataInDatabase);
@@ -82,7 +75,7 @@ public class SessionTest4 {
         Session.createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase);
         Session.createNewSession(process.getProcess(), "userId2", userDataInJWT, userDataInDatabase);
 
-        String[] handles = { sessionInfo2.session.handle, sessionInfo3.session.handle, sessionInfo4.session.handle };
+        String[] handles = {sessionInfo2.session.handle, sessionInfo3.session.handle, sessionInfo4.session.handle};
         String[] actuallyRevoked = Session.revokeSessionUsingSessionHandles(process.getProcess(), handles);
         boolean revokedAll = true;
         assertEquals(actuallyRevoked.length, 3);
@@ -112,7 +105,7 @@ public class SessionTest4 {
         assertEquals(Session.revokeSessionUsingSessionHandles(process.getProcess(), handles).length, 0);
         assertEquals(Session.revokeAllSessionsForUser(process.getProcess(), "userId2").length, 0);
         assertEquals(Session.revokeSessionUsingSessionHandles(process.getProcess(),
-                new String[] { sessionInfo.session.handle }).length, 0);
+                new String[]{sessionInfo.session.handle}).length, 0);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -122,7 +115,7 @@ public class SessionTest4 {
     @Test
     public void gettingAndUpdatingSessionDataForNonExistantSession() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -147,9 +140,9 @@ public class SessionTest4 {
 
     @Test
     public void createVerifyRefreshVerifyRefresh() throws Exception {
-        Utils.setValueInConfig("access_token_validity", "1");
+        Utils.setValueInConfig("access_token_validity", "2");
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -183,7 +176,7 @@ public class SessionTest4 {
             assertEquals(verifiedSession.session.userId, userId);
             assertEquals(verifiedSession.session.handle, sessionInfo.session.handle);
 
-            Thread.sleep(1500);
+            Thread.sleep(2500);
 
             try {
                 Session.getSession(process.getProcess(), sessionInfo.accessToken.token, sessionInfo.antiCsrfToken,
@@ -207,7 +200,7 @@ public class SessionTest4 {
     @Test
     public void verifyAccessTokenThatIsBelongsToGrandparentRefreshToken() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -253,7 +246,7 @@ public class SessionTest4 {
     @Test
     public void passInvalidRefreshTokenShouldGiveUnauthorisedError() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -289,7 +282,7 @@ public class SessionTest4 {
         Utils.setValueInConfig("access_token_validity", "3");
         Utils.setValueInConfig("refresh_token_validity", "0.08"); // 5 seconds
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -335,7 +328,7 @@ public class SessionTest4 {
         Utils.setValueInConfig("access_token_validity", "63072000"); // 2 years in seconds
         Utils.setValueInConfig("refresh_token_validity", "1051200"); // 2 years in minutes
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -356,7 +349,7 @@ public class SessionTest4 {
         Utils.setValueInConfig("access_token_validity", "63072000"); // 2 years in seconds
         Utils.setValueInConfig("refresh_token_validity", "1051200"); // 2 years in minutes
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -386,7 +379,7 @@ public class SessionTest4 {
 
         Utils.setValueInConfig("access_token_validity", "63072000"); // 2 years in seconds
         Utils.setValueInConfig("refresh_token_validity", "1051200"); // 2 years in minutes
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
