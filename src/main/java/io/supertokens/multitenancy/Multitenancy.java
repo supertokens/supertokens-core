@@ -16,11 +16,13 @@
 
 package io.supertokens.multitenancy;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.config.Config;
+import io.supertokens.config.CoreConfig;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
@@ -108,6 +110,17 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         }
     }
 
+    private static void validateConfigJsonForInvalidKeys(Main main, JsonObject coreConfig) throws InvalidConfigException {
+        Set<String> coreFields = CoreConfig.getValidFields();
+        Set<String> storageFields = StorageLayer.getBaseStorage(main).getValidFieldsInConfig();
+
+        for (Map.Entry<String, JsonElement> entry: coreConfig.entrySet()) {
+            if (!coreFields.contains(entry.getKey()) && !storageFields.contains(entry.getKey())) {
+                throw new InvalidConfigException("Invalid config key: " + entry.getKey());
+            }
+        }
+    }
+
     private static void validateTenantConfig(Main main, TenantConfig targetTenantConfig, boolean shouldPreventDbConfigUpdate)
             throws IOException, InvalidConfigException, InvalidProviderConfigException, BadPermissionException,
             TenantOrAppNotFoundException, CannotModifyBaseConfigException {
@@ -118,6 +131,9 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                 throw new CannotModifyBaseConfigException();
             }
         }
+
+        // Verify that the keys in the coreConfig is valid
+        validateConfigJsonForInvalidKeys(main, targetTenantConfig.coreConfig);
 
         // we check if the core config provided is correct
         {
@@ -147,6 +163,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                 }
                 existingTenants[existingTenants.length - 1] = targetTenantConfig;
             }
+
             Map<ResourceDistributor.KeyClass, JsonObject> normalisedConfigs = Config.getNormalisedConfigsForAllTenants(
                     existingTenants,
                     Config.getBaseConfigAsJsonObject(main));

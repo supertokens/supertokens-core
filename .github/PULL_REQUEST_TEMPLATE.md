@@ -29,6 +29,7 @@ highlighting the necessary changes)
 - [ ] Had installed and ran the pre-commit hook
 - [ ] If there are new dependencies that have been added in `build.gradle`, please make sure to add them
   in `implementationDependencies.json`.
+- [ ] Update function `getValidFields` in `io/supertokens/config/CoreConfig.java` if new aliases were added for any core config (similar to the `access_token_signing_key_update_interval` config alias).
 - [ ] Issue this PR against the latest non released version branch.
     - To know which one it is, run find the latest released tag (`git tag`) in the format `vX.Y.Z`, and then find the
       latest branch (`git branch --all`) whose `X.Y` is greater than the latest released tag.

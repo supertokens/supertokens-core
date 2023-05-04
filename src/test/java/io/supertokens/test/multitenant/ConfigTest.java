@@ -24,6 +24,7 @@ import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.config.CoreConfigTestContent;
+import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
@@ -1189,6 +1190,34 @@ public class ConfigTest {
             CoreConfig coreConfig = Config.getConfig(tenantIdentifier, process.getProcess());
             // Check for previous value in the hierarchy
             assertEquals(2000, coreConfig.getEmailVerificationTokenLifetime());
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testInvalidConfigWhileCreatingNewTenant() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        try {
+            JsonObject coreConfig = new JsonObject();
+            coreConfig.addProperty("foo", "bar");
+            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                    new TenantIdentifier(null, null, "t1"),
+                    new EmailPasswordConfig(true),
+                    new ThirdPartyConfig(true, null),
+                    new PasswordlessConfig(true),
+                    coreConfig
+            ), false);
+            fail();
+        } catch (InvalidConfigException e) {
+            assertEquals("Invalid config key: foo", e.getMessage());
         }
 
         process.kill();

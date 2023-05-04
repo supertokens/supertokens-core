@@ -60,14 +60,10 @@ public class GenerateThirdPartyConfig_ProviderClient {
             boolean valid = new Random().nextDouble() > 0.05;
 
             if (thirdPartyId != null) {
-                if (thirdPartyId.startsWith("active-directory")) {
-                    return generateForActiveDirectory(valid);
-                } else if (thirdPartyId.startsWith("apple")) {
+                if (thirdPartyId.startsWith("apple")) {
                     return generateForApple(valid);
                 } else if (thirdPartyId.startsWith("google-workspaces")) {
                     return generateForGoogleWorkspaces(valid);
-                } else if (thirdPartyId.startsWith("okta")) {
-                    return generateForOkta(valid);
                 } else if (thirdPartyId.startsWith("boxy-saml")) {
                     return generateForBoxy(valid);
                 }
@@ -78,39 +74,6 @@ public class GenerateThirdPartyConfig_ProviderClient {
                 jsonObject,
                 new ConfigGenerator.Expectation("ok", jsonObject)    
             );
-        }
-
-        private static ConfigGenerator.GeneratedValueAndExpectation generateForActiveDirectory(boolean valid) {
-            if (valid) {
-                JsonObject result = new JsonObject();
-                result.add("directoryId", new JsonPrimitive(NullableStringGenerator.generate(0)));
-                return new ConfigGenerator.GeneratedValueAndExpectation(
-                        result,
-                        new ConfigGenerator.Expectation("ok", result)
-                );
-            } else {
-                String EXPECTED_ERROR = "a non empty string value must be specified for directoryId in the additionalConfig for Active Directory provider";
-                int option = new Random().nextInt(3);
-                switch (option) {
-                    case 0:
-                        return new ConfigGenerator.GeneratedValueAndExpectation(
-                                null,
-                                new ConfigGenerator.Expectation("exception", EXPECTED_ERROR)
-                        );
-                    case 1:
-                        return new ConfigGenerator.GeneratedValueAndExpectation(
-                                new JsonObject(),
-                                new ConfigGenerator.Expectation("exception", EXPECTED_ERROR)
-                        );
-                    default:
-                        JsonObject result = new JsonObject();
-                        result.add("directoryId", new JsonPrimitive(100));
-                        return new ConfigGenerator.GeneratedValueAndExpectation(
-                                result,
-                                new ConfigGenerator.Expectation("exception", EXPECTED_ERROR)
-                        );
-                }
-            }
         }
 
         private static ConfigGenerator.GeneratedValueAndExpectation generateForApple(boolean valid) {
@@ -211,53 +174,6 @@ public class GenerateThirdPartyConfig_ProviderClient {
                         );
                     default:
                         result.add("hd", new JsonPrimitive(""));
-                        return new ConfigGenerator.GeneratedValueAndExpectation(
-                                result,
-                                new ConfigGenerator.Expectation("exception", EXPECTED_ERROR)
-                        );
-                }
-            }
-        }
-
-        private static ConfigGenerator.GeneratedValueAndExpectation generateForOkta(boolean valid) {
-            if (valid) {
-                JsonObject result = new JsonObject();
-                result.add("oktaDomain", new JsonPrimitive(NullableStringGenerator.generate(0)));
-                return new ConfigGenerator.GeneratedValueAndExpectation(
-                        result,
-                        new ConfigGenerator.Expectation("ok", result)
-                );
-            } else {
-                String EXPECTED_ERROR = "a non empty string value must be specified for oktaDomain in the additionalConfig for Okta provider";
-                int option = new Random().nextInt(5);
-                switch (option) {
-                    case 0:
-                        return new ConfigGenerator.GeneratedValueAndExpectation(
-                                null,
-                                new ConfigGenerator.Expectation("exception", EXPECTED_ERROR)
-                        );
-                    case 1:
-                        return new ConfigGenerator.GeneratedValueAndExpectation(
-                                new JsonObject(),
-                                new ConfigGenerator.Expectation("exception", EXPECTED_ERROR)
-                        );
-                    case 2:
-                        JsonObject result = new JsonObject();
-                        result.add("oktaDomain", null);
-                        return new ConfigGenerator.GeneratedValueAndExpectation(
-                                result,
-                                new ConfigGenerator.Expectation("exception", EXPECTED_ERROR)
-                        );
-                    case 3:
-                        result = new JsonObject();
-                        result.add("oktaDomain", new JsonPrimitive(""));
-                        return new ConfigGenerator.GeneratedValueAndExpectation(
-                                result,
-                                new ConfigGenerator.Expectation("exception", EXPECTED_ERROR)
-                        );
-                    default:
-                        result = new JsonObject();
-                        result.add("oktaDomain", new JsonPrimitive(100));
                         return new ConfigGenerator.GeneratedValueAndExpectation(
                                 result,
                                 new ConfigGenerator.Expectation("exception", EXPECTED_ERROR)
