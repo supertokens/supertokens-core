@@ -54,6 +54,7 @@ import java.security.InvalidKeyException;
 import java.security.Key;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Objects;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
@@ -145,7 +146,7 @@ public class TOTPRecipeTest {
 
         // Create device
         TOTPDevice device = Totp.registerDevice(main, "user", "device1", 1, 30);
-        assert device.secretKey != "";
+        assert !Objects.equals(device.secretKey, "");
 
         // Create same device again (should fail)
         assertThrows(DeviceAlreadyExistsException.class,
@@ -213,7 +214,7 @@ public class TOTPRecipeTest {
 
         // Create device with skew = 0, check that it only works with the current code
         TOTPDevice device2 = Totp.registerDevice(main, "user", "device2", 0, 1);
-        assert device2.secretKey != device.secretKey;
+        assert !Objects.equals(device2.secretKey, device.secretKey);
 
         String nextValidCode2 = generateTotpCode(main, device2, 1);
         assertThrows(InvalidTotpException.class,
@@ -233,8 +234,12 @@ public class TOTPRecipeTest {
 
         TOTPUsedCode[] usedCodes = getAllUsedCodesUtil(result.storage, "user");
         TOTPUsedCode latestCode = usedCodes[0];
-        assert latestCode.isValid == false;
-        assert latestCode.expiryTime - latestCode.createdTime == 3000; // it should be 3s because of device1 (i.e. max(device1Exp, device2Exp))
+        assert !latestCode.isValid;
+        assert latestCode.expiryTime - latestCode.createdTime ==
+                3000; // it should be 3s because of device1 (i.e. max(device1Exp, device2Exp))
+
+        // Sleep for 1s so that code changes.
+        Thread.sleep(1000);
 
         // Now verify device2:
         Totp.verifyDevice(main, "user", device2.deviceName, generateTotpCode(main, device2));
@@ -244,10 +249,15 @@ public class TOTPRecipeTest {
         assertThrows(
                 InvalidTotpException.class,
                 () -> Totp.verifyCode(main, "user", generateTotpCode(main, device), false));
+
+        Thread.sleep(1000);
+
         Totp.verifyCode(main, "user", generateTotpCode(main, device2), false);
 
         // Valid code & allowUnverifiedDevice = true:
+        Thread.sleep(1000);
         Totp.verifyCode(main, "user", generateTotpCode(main, device), true);
+        Thread.sleep(1000);
         Totp.verifyCode(main, "user", generateTotpCode(main, device2), true);
     }
 
