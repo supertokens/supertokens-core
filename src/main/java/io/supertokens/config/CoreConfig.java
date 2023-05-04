@@ -19,6 +19,9 @@ package io.supertokens.config;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.cliOptions.CLIOptions;
@@ -31,6 +34,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.PatternSyntaxException;
 
@@ -147,6 +151,20 @@ public class CoreConfig {
     private String supertokens_saas_secret = null;
 
     private Set<LOG_LEVEL> allowedLogLevels = null;
+
+    public static Set<String> getValidFields() {
+        CoreConfig coreConfig = new CoreConfig();
+        JsonObject coreConfigObj = new GsonBuilder().serializeNulls().create().toJsonTree(coreConfig).getAsJsonObject();
+
+        Set<String> validFields = new HashSet<>();
+        for (Map.Entry<String, JsonElement> entry : coreConfigObj.entrySet()) {
+            validFields.add(entry.getKey());
+        }
+
+        // Adding the aliases
+        validFields.add("access_token_signing_key_update_interval");
+        return validFields;
+    }
 
     public String getIpAllowRegex() {
         if (ip_allow_regex != null && ip_allow_regex.trim().equals("")) {
