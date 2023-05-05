@@ -27,6 +27,7 @@ import io.supertokens.test.httpRequest.HttpResponseException;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
@@ -225,6 +226,27 @@ public class TestMultitenancyAPIHelper {
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/multitenancy/config/thirdparty/remove"),
                 requestBody, 1000, 1000, null,
                 Utils.getCdiVersionStringLatestForTests(), "multitenancy");
+
+        assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
+        return response;
+    }
+
+    public static JsonObject listUsers(TenantIdentifier sourceTenant, String paginationToken, String limit, String includeRecipeIds, Main main)
+            throws HttpResponseException, IOException {
+        Map<String, String> params = new HashMap<>();
+        if (paginationToken != null) {
+            params.put("paginationToken", paginationToken);
+        }
+        if (limit != null) {
+            params.put("limit", limit);
+        }
+        if (includeRecipeIds != null) {
+            params.put("includeRecipeIds", includeRecipeIds);
+        }
+        JsonObject response = HttpRequestForTesting.sendGETRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/users"),
+                params, 1000, 1000, null,
+                Utils.getCdiVersionStringLatestForTests(), null);
 
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
         return response;
