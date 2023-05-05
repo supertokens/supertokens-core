@@ -16,59 +16,68 @@ core_config_version: 0
 # host:
 
 
-# (OPTIONAL | Default: 3600) integer value. Time in seconds for how long an access token is valid for.
+# (DIFFERENT_ACROSS_APPS | OPTIONAL | Default: 3600) integer value. Time in seconds for how long an access token is
+# valid for.
 # access_token_validity:
 
 
-# (OPTIONAL | Default: false) boolean value. Deprecated, please see changelog. Only used in CDI<=2.18
-# If true, allows for immediate revocation of any access token. Keep in mind that setting this to true will result
-# in a db query for each API call that requires authentication.
+# (DIFFERENT_ACROSS_APPS | OPTIONAL | Default: false) boolean value. Deprecated, please see changelog. Only used in
+# CDI<=2.18 If true, allows for immediate revocation of any access token. Keep in mind that setting this to true will
+# result in a db query for each API call that requires authentication.
 # access_token_blacklisting:
 
 
-# (OPTIONAL | Default: true) boolean value. Deprecated, please see changelog.
+# (DIFFERENT_ACROSS_APPS | OPTIONAL | Default: true) boolean value. Deprecated, please see changelog.
 # If this is set to true, the access tokens created using CDI<=2.18 will be signed using a static signing key.
 # access_token_signing_key_dynamic:
 
 
-# (OPTIONAL | Default:168) integer value. Time in hours for how frequently the dynamic signing key will change.
+# (DIFFERENT_ACROSS_APPS | OPTIONAL | Default: 168) integer value. Time in hours for how frequently the dynamic signing
+# key will change.
 # access_token_dynamic_signing_key_update_interval:
 
 # This is now deprecated, we only add this to the dev config to test if the fallback in the config parser works right
 # access_token_signing_key_update_interval:
 
-# (OPTIONAL | Default: 144000) double value. Time in mins for how long a refresh token is valid for.
+# (DIFFERENT_ACROSS_APPS | OPTIONAL | Default: 144000) double value. Time in mins for how long a refresh token is valid
+# for.
 # refresh_token_validity:
 
 
-# (OPTIONAL | Default: 3600000) long value. Time in milliseconds for how long a password reset token / link is valid for.
+# (DIFFERENT_ACROSS_TENANTS | OPTIONAL | Default: 3600000) long value. Time in milliseconds for how long a password
+# reset token / link is valid for.
 # password_reset_token_lifetime:
 
 
-# (OPTIONAL | Default: 1 day) long value. Time in milliseconds for how long an email verification token / link is valid for.
+# (DIFFERENT_ACROSS_TENANTS | OPTIONAL | Default: 1 day) long value. Time in milliseconds for how long an email
+# verification token / link is valid for.
 # email_verification_token_lifetime:
 
 
-# (OPTIONAL | Default: 5) integer value. The maximum number of code input attempts per login before the user needs to restart.
+# (DIFFERENT_ACROSS_TENANTS | OPTIONAL | Default: 5) integer value. The maximum number of code input attempts per login
+# before the user needs to restart.
 # passwordless_max_code_input_attempts:
 
-# (OPTIONAL | Default: 900000) long value. Time in milliseconds for how long a passwordless code is valid for.
+# (DIFFERENT_ACROSS_TENANTS | OPTIONAL | Default: 900000) long value. Time in milliseconds for how long a passwordless
+# code is valid for.
 # passwordless_code_lifetime:
 
-# (OPTIONAL | Default: 5) integer value. The maximum number of invalid TOTP attempts that will trigger rate limiting.
+# (DIFFERENT_ACROSS_TENANTS | OPTIONAL | Default: 5) integer value. The maximum number of invalid TOTP attempts that
+# will trigger rate limiting.
 # totp_max_attempts:
 
-# (OPTIONAL | Default: 900) integer value. The time in seconds for which the user will be rate limited once totp_max_attempts is crossed.
+# (DIFFERENT_ACROSS_TENANTS | OPTIONAL | Default: 900) integer value. The time in seconds for which the user will be
+# rate limited once totp_max_attempts is crossed.
 # totp_rate_limit_cooldown_sec:
 
 # (OPTIONAL | Default: installation directory/logs/info.log) string value. Give the path to a file (on your local
-#  system) in which the SuperTokens service can write INFO logs to. Set it to "null" if you want it to log to
+# system) in which the SuperTokens service can write INFO logs to. Set it to "null" if you want it to log to
 # standard output instead.
 # info_log_path:
 
 
 # (OPTIONAL | Default: installation directory/logs/error.log) string value. Give the path to a file (on your local
-#  system) in which the SuperTokens service can write ERROR logs to. Set it to "null" if you want it to log to
+# system) in which the SuperTokens service can write ERROR logs to. Set it to "null" if you want it to log to
 # standard error instead
 # error_log_path:
 
@@ -77,33 +86,34 @@ core_config_version: 0
 # max_server_pool_size:
 
 
-# (OPTIONAL | Default: no API keys) comma separated string values. The API keys to query an instance using this config
-# file. The format is "key1,key2,key3". Keys can only contain '=', '-' and alpha-numeric (including capital) chars.
-# Each key must have a minimum length of 20 chars
+# (DIFFERENT_ACROSS_APPS | OPTIONAL | Default: no API keys) comma separated string values. The API keys to query an
+# instance using this config file. The format is "key1,key2,key3". Keys can only contain '=', '-' and alpha-numeric
+# (including capital) chars. Each key must have a minimum length of 20 chars
 # api_keys:
 
 
-# Important: This is set to true here but is uncommented in config.yaml. The reason is that when testing with drivers or
-# in CICD, we do not want to send telemetry data. For unit tests, this is commented again in Utils.reset function (in
-# the test package)
+# DIFFERENT_ACROSS_APPS | Important: This is set to true here but is uncommented in config.yaml. The reason is that
+# when testing with drivers or in CICD, we do not want to send telemetry data. For unit tests, this is commented
+# again in Utils.reset function (in the test package)
 disable_telemetry: true
 
 # (OPTIONAL | Default: ""). Used to prepend a base path to all APIs when querying the core.
 # base_path:
 
-# (OPTIONAL | Default: "BCRYPT"). The password hashing algorithm to use. Values are "ARGON2" | "BCRYPT"
+# (DIFFERENT_ACROSS_APPS | OPTIONAL | Default: "BCRYPT"). The password hashing algorithm to use. Values are "ARGON2" |
+# "BCRYPT"
 # password_hashing_alg:
 
-# (OPTIONAL | Default: 11). Number of rounds to set for bcrypt password hashing
+# (DIFFERENT_ACROSS_APPS | OPTIONAL | Default: 11). Number of rounds to set for bcrypt password hashing
 # bcrypt_log_rounds:
 
-# (OPTIONAL | Default: 1). Number of iterations for argon2 password hashing
+# (DIFFERENT_ACROSS_APPS | OPTIONAL | Default: 1). Number of iterations for argon2 password hashing
 # argon2_iterations:
 
-# (OPTIONAL | Default: 87795 (85 mb)). Amount of memory in kb for argon2 password hashing
+# (DIFFERENT_ACROSS_APPS | OPTIONAL | Default: 87795 (85 mb)). Amount of memory in kb for argon2 password hashing
 # argon2_memory_kb:
 
-# (OPTIONAL | Default: 2). Amount of parallelism for argon2 password hashing
+# (DIFFERENT_ACROSS_APPS | OPTIONAL | Default: 2). Amount of parallelism for argon2 password hashing
 # argon2_parallelism:
 
 # (OPTIONAL | Default: 1). Number of concurrent argon2 hashes that can happen at the same time for sign up or sign
@@ -113,19 +123,19 @@ disable_telemetry: true
 # (OPTIONAL | Default: "INFO"). Logging level for the core. Values are "DEBUG" | "INFO" | "WARN" | "ERROR" | "NONE"
 # log_level:
 
-# (OPTIONAL | Default: null). The signer key used for firebase scrypt password hashing
+# (DIFFERENT_ACROSS_APPS | OPTIONAL | Default: null). The signer key used for firebase scrypt password hashing
 # firebase_password_hashing_signer_key:
 
 # (OPTIONAL | Default: 1). Number of concurrent firebase scrypt hashes that can happen at the same time for sign in requests.
 # firebase_password_hashing_pool_size:
 
-# (OPTIONAL | Default: null). Regex for allowing requests from IP addresses that match with the value.
-# For example, use the value of 127\.\d+\.\d+\.\d+|::1|0:0:0:0:0:0:0:1 to allow only localhost to query the
+# (DIFFERENT_ACROSS_TENANTS | OPTIONAL | Default: null). Regex for allowing requests from IP addresses that match with
+# the value. For example, use the value of 127\.\d+\.\d+\.\d+|::1|0:0:0:0:0:0:0:1 to allow only localhost to query the
 # core. Comment it out to allow requests from any IP address.
 # ip_allow_regex:
 
-# (OPTIONAL | Default: null). Regex for denying requests from IP addresses that match with the value. Comment this
-# value to deny no IP address.
+# (DIFFERENT_ACROSS_TENANTS | OPTIONAL | Default: null). Regex for denying requests from IP addresses that match with
+# the value. Comment this value to deny no IP address.
 # ip_deny_regex:
 
 # (OPTIONAL | Default: null). This is used when deploying the core in SuperTokens SaaS infrastructure. If set, limits

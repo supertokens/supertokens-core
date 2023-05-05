@@ -32,10 +32,7 @@ import org.jetbrains.annotations.TestOnly;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.PatternSyntaxException;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -628,6 +625,11 @@ public class CoreConfig {
                     "webserver_https_enabled can only be set via the core's base config setting");
         }
 
+        if (config.has("max_server_pool_size")) {
+            throw new InvalidConfigException(
+                    "max_server_pool_size can only be set via the core's base config setting");
+        }
+
         if (config.has("supertokens_saas_secret")) {
             throw new InvalidConfigException(
                     "supertokens_saas_secret can only be set via the core's base config setting");
@@ -689,6 +691,16 @@ public class CoreConfig {
         if (other.getBcryptLogRounds() != this.getBcryptLogRounds()) {
             throw new InvalidConfigException(
                     "You cannot set different values for bcrypt_log_rounds for the same appId");
+        }
+
+        if (!Objects.equals(other.firebase_password_hashing_signer_key, this.firebase_password_hashing_signer_key)) {
+            throw new InvalidConfigException(
+                    "You cannot set different values for firebase_password_hashing_signer_key for the same appId");
+        }
+
+        if (other.isTelemetryDisabled() != this.isTelemetryDisabled()) {
+            throw new InvalidConfigException(
+                    "You cannot set different values for disable_telemetry for the same appId");
         }
 
         // Check that the same set of API keys are present
