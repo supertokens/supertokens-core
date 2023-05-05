@@ -65,7 +65,7 @@ public class RemoveBannedUserAPITest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/ban/user/remove", new JsonObject(), 1000, 1000, null,
-                        Utils.getCdiVersion2_15ForTests(), "userId");
+                        Utils.getCdiVersionLatestForTests(), "userId");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
@@ -80,7 +80,7 @@ public class RemoveBannedUserAPITest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/ban/user/remove", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_15ForTests(), "banuser");
+                        Utils.getCdiVersionLatestForTests(), "banuser");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
@@ -96,7 +96,7 @@ public class RemoveBannedUserAPITest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/ban/user/remove", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_15ForTests(), "banuser");
+                        Utils.getCdiVersionLatestForTests(), "banuser");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
@@ -122,7 +122,7 @@ public class RemoveBannedUserAPITest {
         BannedUserStorage storage = StorageLayer.getBannedUserStorage(process.main);
 
         // create a User
-        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        UserInfo userInfo = EmailPassword.signUp(process.main, "testbanremove@example.com", "testPass123");
         String userId = userInfo.id;
 
         // Ban the user
@@ -136,7 +136,7 @@ public class RemoveBannedUserAPITest {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/ban/user/remove", requestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_15ForTests(), "banuser");
+                Utils.getCdiVersionLatestForTests(), "banuser");
 
         assertEquals(1, response.entrySet().size());
         assertEquals("OK", response.get("status").getAsString());
@@ -162,7 +162,7 @@ public class RemoveBannedUserAPITest {
         BannedUserStorage storage = StorageLayer.getBannedUserStorage(process.main);
 
         // create a User
-        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        UserInfo userInfo = EmailPassword.signUp(process.main, "testbanremove2@example.com", "testPass123");
         String userId = userInfo.id;
 
         // remove the ban by calling api
@@ -172,7 +172,7 @@ public class RemoveBannedUserAPITest {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/ban/user/remove", requestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_15ForTests(), "banuser");
+                Utils.getCdiVersionLatestForTests(), "banuser");
 
         assertEquals(1, response.entrySet().size());
         assertEquals("USER_NOT_BANNED_ERROR", response.get("status").getAsString());

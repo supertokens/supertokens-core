@@ -47,14 +47,14 @@ public class RemoveBanUserAPI extends WebserverAPI {
 
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-        String userId = InputParser.parseStringOrThrowError(input, "user_id", false);
+        String userId = InputParser.parseStringOrThrowError(input, "userId", false);
         assert userId != null;
 
+        userId = userId.trim();
 
-        if (userId.equals("")) {
+        if (userId.length() == 0) {
             throw new ServletException(new WebserverAPI.BadRequestException("UserId cannot be an empty string"));
         }
-
         try {
             BannedUser.deleteBannedUser(super.main, userId);
 

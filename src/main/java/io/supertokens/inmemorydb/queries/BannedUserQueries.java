@@ -43,7 +43,8 @@ public class BannedUserQueries {
 
         return execute(start, QUERY, pst -> pst.setString(1, userId), result -> {
             if (result.next()) {
-                return true;
+                int count = result.getInt(1);
+                return count == 1;
             }
             return false;
         });
@@ -51,7 +52,7 @@ public class BannedUserQueries {
 
     public static void createNewBannedUser(Start start, String userId) throws SQLException, StorageQueryException {
         String QUERY = "INSERT INTO " + Config.getConfig(start).getBannedUsersTable()
-                + "(user_id, banned_at) VALUES(?, ?)";
+                + "(user_id, banned_at_time) VALUES(?, ?)";
 
         long now = System.currentTimeMillis();
         update(start, QUERY, pst -> {

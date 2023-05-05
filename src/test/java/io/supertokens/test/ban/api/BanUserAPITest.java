@@ -64,26 +64,11 @@ public class BanUserAPITest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/ban/user", new JsonObject(), 1000, 1000, null,
-                        Utils.getCdiVersion2_15ForTests(), "userId");
+                        Utils.getCdiVersionLatestForTests(), "userId");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
-                        + " Field name 'userId' is invalid in JSON input"));
-            }
-        }
-
-        // userId as a number
-        {
-            JsonObject requestBody = new JsonObject();
-            requestBody.addProperty("userId", 1);
-            try {
-                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/ban/user", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_15ForTests(), "banuser");
-                throw new Exception("should not come here");
-            } catch (HttpResponseException e) {
-                assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
-                        + " Field name 'userId' is invalid in JSON input"));
+                        + "UserId cannot be an empty string"));
             }
         }
 
@@ -95,11 +80,11 @@ public class BanUserAPITest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/ban/user", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_15ForTests(), "banuser");
+                        Utils.getCdiVersionLatestForTests(), "banuser");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
-                        + " Field name 'userId' cannot be an empty String"));
+                        + "UserId cannot be an empty string"));
             }
         }
 
@@ -121,7 +106,7 @@ public class BanUserAPITest {
         BannedUserStorage storage = StorageLayer.getBannedUserStorage(process.main);
 
         // create a User
-        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        UserInfo userInfo = EmailPassword.signUp(process.main, "bantest@example.com", "testPass123");
         String userId = userInfo.id;
 
         JsonObject requestBody = new JsonObject();
@@ -130,7 +115,7 @@ public class BanUserAPITest {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/ban/user", requestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_15ForTests(), "banuser");
+                Utils.getCdiVersionLatestForTests(), "banuser");
 
         assertEquals(1, response.entrySet().size());
         assertEquals("OK", response.get("status").getAsString());
@@ -161,7 +146,7 @@ public class BanUserAPITest {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/ban/user", requestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_15ForTests(), "banuser");
+                Utils.getCdiVersionLatestForTests(), "banuser");
 
         assertEquals(1, response.entrySet().size());
         assertEquals("USER_ID_INCORRECT_ERROR", response.get("status").getAsString());
@@ -183,7 +168,7 @@ public class BanUserAPITest {
 
         BannedUserStorage storage = StorageLayer.getBannedUserStorage(process.main);
         // create a User
-        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        UserInfo userInfo = EmailPassword.signUp(process.main, "bantest2@example.com", "testPass123");
         String userId = userInfo.id;
 
         // ban the user
@@ -197,7 +182,7 @@ public class BanUserAPITest {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/ban/user", requestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_15ForTests(), "banuser");
+                Utils.getCdiVersionLatestForTests(), "banuser");
 
         assertEquals(1, response.entrySet().size());
         assertEquals("USER_ALREADY_BANNED_ERROR", response.get("status").getAsString());

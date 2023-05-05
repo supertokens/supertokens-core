@@ -48,10 +48,12 @@ public class BanUserAPI extends WebserverAPI {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
+
         assert userId != null;
 
+        userId = userId.trim();
 
-        if (userId.equals("")) {
+        if (userId.length() == 0) {
             throw new ServletException(new WebserverAPI.BadRequestException("UserId cannot be an empty string"));
         }
 
@@ -71,7 +73,7 @@ public class BanUserAPI extends WebserverAPI {
             Logging.debug(main, Utils.exceptionStacktraceToString(e));
             JsonObject result = new JsonObject();
             result.addProperty("status", "USER_ID_INCORRECT_ERROR");
-            super.sendJsonResponse(400, result, resp);
+            super.sendJsonResponse(200, result, resp);
         }
         catch (StorageQueryException e) {
             throw new ServletException(e);

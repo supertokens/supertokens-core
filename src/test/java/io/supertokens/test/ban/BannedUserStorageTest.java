@@ -30,6 +30,7 @@ import io.supertokens.test.Utils;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import static org.junit.Assert.*;
@@ -48,6 +49,7 @@ public class BannedUserStorageTest {
         Utils.reset();
     }
 
+    @Test
     public void testCreateNewBannedUser() throws Exception {
 
         String[] args = {"../"};
@@ -61,7 +63,7 @@ public class BannedUserStorageTest {
 
         BannedUserStorage bannedUserStorage = StorageLayer.getBannedUserStorage(process.getProcess());
         // create a user
-        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPassword");
+        UserInfo userInfo = EmailPassword.signUp(process.main, "test1@example.com", "testPassword");
 
 
         bannedUserStorage.createNewBannedUser(userInfo.id);
@@ -74,6 +76,7 @@ public class BannedUserStorageTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    @Test
     public void testCreateNewNonExistingBannedUser() throws Exception {
 
         String[] args = {"../"};
@@ -105,6 +108,7 @@ public class BannedUserStorageTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    @Test
     public void testCreateDuplicateBannedUser() throws Exception {
 
         String[] args = {"../"};
@@ -118,9 +122,13 @@ public class BannedUserStorageTest {
 
 
         BannedUserStorage bannedUserStorage = StorageLayer.getBannedUserStorage(process.getProcess());
-        // pass a random user Id
 
-        String userId = "random";
+        // create a user
+        UserInfo userInfo = EmailPassword.signUp(process.main, "test5@example.com", "testPassword");
+        String userId = userInfo.id;
+
+        bannedUserStorage.createNewBannedUser(userId);
+
         Exception error = null;
         try {
             bannedUserStorage.createNewBannedUser(userId);
@@ -136,6 +144,7 @@ public class BannedUserStorageTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    @Test
     public void testCheckWhetherUserIsBanned() throws Exception {
 
         String[] args = {"../"};
@@ -149,7 +158,7 @@ public class BannedUserStorageTest {
 
         BannedUserStorage bannedUserStorage = StorageLayer.getBannedUserStorage(process.getProcess());
         // create a user
-        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPassword");
+        UserInfo userInfo = EmailPassword.signUp(process.main, "test2@example.com", "testPassword");
 
 
         // check whether the newly created user is banned
@@ -159,6 +168,7 @@ public class BannedUserStorageTest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+    @Test
     public void testDeleteBannedUser() throws Exception {
         String[] args = {"../"};
 
@@ -172,7 +182,7 @@ public class BannedUserStorageTest {
 
         BannedUserStorage bannedUserStorage = StorageLayer.getBannedUserStorage(process.getProcess());
         // create a user
-        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPassword");
+        UserInfo userInfo = EmailPassword.signUp(process.main, "test3@example.com", "testPassword");
 
 
         bannedUserStorage.createNewBannedUser(userInfo.id);
@@ -185,6 +195,7 @@ public class BannedUserStorageTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    @Test
     public void testDeleteUnBannedUser() throws Exception {
         String[] args = {"../"};
 
@@ -198,10 +209,8 @@ public class BannedUserStorageTest {
 
         BannedUserStorage bannedUserStorage = StorageLayer.getBannedUserStorage(process.getProcess());
         // create a user
-        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPassword");
+        UserInfo userInfo = EmailPassword.signUp(process.main, "test4@example.com", "testPassword");
 
-
-        bannedUserStorage.removeBannedUser(userInfo.id);
 
         Exception error = null;
         try {

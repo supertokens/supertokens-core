@@ -139,17 +139,18 @@ public class EmailPassword {
             throw new WrongCredentialsException();
         }
 
-        //Check whether the user is banned
-        if(StorageLayer.getBannedUserStorage(main).isUserBanned(user.id)){
-            throw new BannedUserException();
-        }
 
         try {
             if (!PasswordHashing.getInstance(main).verifyPasswordWithHash(password, user.passwordHash)) {
                 throw new WrongCredentialsException();
             }
-        } catch (WrongCredentialsException e) {
+            //Check whether the user is banned
+            if(StorageLayer.getBannedUserStorage(main).isUserBanned(user.id)){
+                throw new BannedUserException();
+            }
+        } catch (WrongCredentialsException | BannedUserException e) {
             throw e;
+
         } catch (IllegalStateException e) {
             if (e.getMessage().equals("'firebase_password_hashing_signer_key' cannot be null")) {
                 throw e;
