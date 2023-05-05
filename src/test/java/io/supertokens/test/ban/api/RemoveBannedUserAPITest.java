@@ -60,16 +60,16 @@ public class RemoveBannedUserAPITest {
             return;
         }
 
-        // dont pass userId
+        // dont pass any body
         {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/ban/user/remove", new JsonObject(), 1000, 1000, null,
+                        "http://localhost:3567/recipe/ban/user/remove", null, 1000, 1000, null,
                         Utils.getCdiVersionLatestForTests(), "userId");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
-                        + " Field name 'userId' is invalid in JSON input"));
+                        + " Invalid Json Input"));
             }
         }
 
@@ -100,7 +100,7 @@ public class RemoveBannedUserAPITest {
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
-                        + " Field name 'userId' cannot be an empty String"));
+                        + " UserId cannot be an empty string"));
             }
         }
 
@@ -158,8 +158,6 @@ public class RemoveBannedUserAPITest {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
-
-        BannedUserStorage storage = StorageLayer.getBannedUserStorage(process.main);
 
         // create a User
         UserInfo userInfo = EmailPassword.signUp(process.main, "testbanremove2@example.com", "testPass123");

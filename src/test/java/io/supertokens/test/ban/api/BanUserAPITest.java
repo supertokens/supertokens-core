@@ -59,16 +59,30 @@ public class BanUserAPITest {
             return;
         }
 
-        // dont pass userId 
+        // dont pass json body
         {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/ban/user", new JsonObject(), 1000, 1000, null,
+                        "http://localhost:3567/recipe/ban/user", null, 1000, 1000, null,
                         Utils.getCdiVersionLatestForTests(), "userId");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
-                assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
-                        + "UserId cannot be an empty string"));
+                assertTrue(e.statusCode == 400 &&
+                        e.getMessage().equals("Http error. Status Code: 400. Message: Invalid Json Input"));
+            }
+        }
+
+        {
+            JsonObject requestBody = new JsonObject();
+            try {
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/ban/user", requestBody, 1000, 1000, null,
+                        Utils.getCdiVersionLatestForTests(), "userId");
+                throw new Exception("should not come here");
+            } catch (HttpResponseException e) {
+                assertTrue(e.statusCode == 400 &&
+                        e.getMessage().equals("Http error. Status Code: 400. Message: Field name 'userId' is " +
+                                "invalid in JSON input"));
             }
         }
 
@@ -84,7 +98,7 @@ public class BanUserAPITest {
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
-                        + "UserId cannot be an empty string"));
+                        + " UserId cannot be an empty string"));
             }
         }
 

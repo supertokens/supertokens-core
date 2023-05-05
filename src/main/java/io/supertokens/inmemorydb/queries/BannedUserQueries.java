@@ -30,7 +30,7 @@ public class BannedUserQueries {
 
     public static String getQueryToCreateBannedUsersTable(Start start) {
         return "CREATE TABLE IF NOT EXISTS " + Config.getConfig(start).getBannedUsersTable() + " ("
-                + "user_id VARCHAR(128) NOT NULL,"
+                + "user_id VARCHAR(128) NOT NULL UNIQUE,"
                 + "banned_at_time BIGINT UNSIGNED NOT NULL,"
                 + "PRIMARY KEY (user_id, banned_at_time),"
                 + "FOREIGN KEY (user_id) REFERENCES " + Config.getConfig(start).getUsersTable()

@@ -17,12 +17,14 @@
 package io.supertokens.test.emailpassword;
 
 import io.supertokens.ProcessState;
+import io.supertokens.ban.BannedUser;
 import io.supertokens.config.Config;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.PasswordHashing;
 import io.supertokens.emailpassword.UserPaginationContainer;
 import io.supertokens.emailpassword.exceptions.ResetPasswordInvalidTokenException;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
+import io.supertokens.exceptions.BannedUserException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
@@ -667,4 +669,32 @@ public class EmailPasswordTest {
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
         }
     }
+
+    @Test
+    public void testBannedUserSignin() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        UserInfo userSignUp = EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
+        BannedUser.insertBannedUser(process.getProcess(),userSignUp.id);
+        Exception error = null;
+        try {
+            UserInfo user = EmailPassword.signIn(process.getProcess(), "test@example.com", "password");
+        }catch (Exception e){
+            error = e;
+        }
+        assertNotNull(error);
+
+        assertTrue(error instanceof BannedUserException);
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
+    }
+
 }

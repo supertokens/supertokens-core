@@ -66,12 +66,12 @@ public class RemoveBanUserAPI extends WebserverAPI {
             Logging.debug(main, Utils.exceptionStacktraceToString(e));
             JsonObject result = new JsonObject();
             result.addProperty("status", "USER_ID_INCORRECT_ERROR");
-            super.sendJsonResponse(400, result, resp);
+            super.sendJsonResponse(200, result, resp);
         } catch (UserNotBannedException e) {
             Logging.debug(main, Utils.exceptionStacktraceToString(e));
             JsonObject result = new JsonObject();
             result.addProperty("status", "USER_NOT_BANNED_ERROR");
-            super.sendJsonResponse(400, result, resp);
+            super.sendJsonResponse(200, result, resp);
         } catch (StorageQueryException e) {
             throw new ServletException(e);
         }

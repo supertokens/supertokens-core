@@ -24,6 +24,7 @@ import io.supertokens.pluginInterface.ban.exceptions.DuplicateUserIdException;
 import io.supertokens.pluginInterface.ban.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.ban.exceptions.UserNotBannedException;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -124,7 +125,7 @@ public class BannedUserStorageTest {
         BannedUserStorage bannedUserStorage = StorageLayer.getBannedUserStorage(process.getProcess());
 
         // create a user
-        UserInfo userInfo = EmailPassword.signUp(process.main, "test5@example.com", "testPassword");
+        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPassword");
         String userId = userInfo.id;
 
         bannedUserStorage.createNewBannedUser(userId);
@@ -137,6 +138,7 @@ public class BannedUserStorageTest {
         }
 
         assertNotNull(error);
+        assertEquals(DuplicateUserIdException.class, error.getClass());
         assertTrue(error instanceof DuplicateUserIdException);
 
 

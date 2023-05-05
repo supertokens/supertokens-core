@@ -36,7 +36,7 @@ public class BannedUser {
 
     public static void deleteBannedUser(Main main, @Nonnull String userId)
             throws StorageQueryException, UnknownUserIdException, UserNotBannedException {
-        if (StorageLayer.getAuthRecipeStorage(main).doesUserIdExist(userId)) {
+        if (!StorageLayer.getAuthRecipeStorage(main).doesUserIdExist(userId)) {
             throw new UnknownUserIdException();
         }
         BannedUserStorage storage = StorageLayer.getBannedUserStorage(main);

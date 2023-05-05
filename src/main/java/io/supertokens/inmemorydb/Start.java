@@ -1983,7 +1983,7 @@ public class Start
         } catch (SQLException e) {
             if (e.getMessage()
                     .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
-                            + Config.getConfig(this).getBannedUsersTable() + ".user_id")) {
+                            + Config.getConfig(this).getBannedUsersTable() + ".user_id)")) {
                 throw new io.supertokens.pluginInterface.ban.exceptions.DuplicateUserIdException();
             } else if (e.getMessage()
                     .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (FOREIGN KEY constraint failed)")) {

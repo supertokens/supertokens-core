@@ -14,7 +14,7 @@
  *    under the License.
  */
 
-package io.supertokens.emailpassword.exceptions;
+package io.supertokens.exceptions;
 
-public class BannedUserException extends Exception{
+public class BannedUserException extends Exception {
 }
