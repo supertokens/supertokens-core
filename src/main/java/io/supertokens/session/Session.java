@@ -306,6 +306,11 @@ public class Session {
             }
         }
 
+        if(StorageLayer.getBannedUserStorage(main).isUserBanned(refreshTokenInfo.userId)){
+            //if the user is banned, make the user un-authorized
+            throw new UnauthorisedException("User is banned");
+        }
+
         return refreshSessionHelper(main, refreshToken, refreshTokenInfo, enableAntiCsrf);
     }
 

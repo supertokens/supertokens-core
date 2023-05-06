@@ -32,6 +32,7 @@ public class BannedUser {
             UnknownUserIdException, DuplicateUserIdException {
         BannedUserStorage storage = StorageLayer.getBannedUserStorage(main);
         storage.createNewBannedUser(userId);
+        //TODO: on successful ban ,invalidate/revoke the current session of user
     }
 
     public static void deleteBannedUser(Main main, @Nonnull String userId)

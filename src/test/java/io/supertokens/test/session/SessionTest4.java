@@ -20,9 +20,12 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import io.supertokens.ProcessState;
+import io.supertokens.ban.BannedUser;
+import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.exceptions.TokenTheftDetectedException;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.exceptions.UnauthorisedException;
+import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.session.Session;
@@ -455,4 +458,50 @@ public class SessionTest4 {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    @Test
+    public void testRefreshingBannedUserSession() throws Exception {
+        Utils.setValueInConfig("access_token_validity", "1");
+
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPassword");
+        String userId = userInfo.id;
+
+        JsonObject userDataInJWT = new JsonObject();
+        userDataInJWT.addProperty("key", "value");
+        JsonObject userDataInDatabase = new JsonObject();
+        userDataInDatabase.addProperty("key", "value");
+
+        SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
+                userDataInDatabase, false);
+        assertEquals(sessionInfo.session.userId, userId);
+        assertEquals(sessionInfo.session.userDataInJWT.toString(), userDataInJWT.toString());
+        assertEquals(StorageLayer.getSessionStorage(process.getProcess()).getNumberOfSessions(), 1);
+        assert sessionInfo.accessToken != null;
+        assert sessionInfo.refreshToken != null;
+        assertNull(sessionInfo.antiCsrfToken);
+
+        {
+            BannedUser.insertBannedUser(process.getProcess(),sessionInfo.session.userId);
+
+            Exception error = null;
+            try {
+                sessionInfo = Session.refreshSession(process.getProcess(), sessionInfo.refreshToken.token,
+                        sessionInfo.antiCsrfToken, false);
+            }catch (Exception e){
+                error = e;
+            }
+
+            assertNotNull(error);
+            assertTrue(error instanceof UnauthorisedException);
+            assertEquals("User is banned", error.getMessage());
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
 }
