@@ -35,6 +35,7 @@ import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
+import io.supertokens.utils.SemVer;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -158,7 +159,7 @@ public class MultitenantAPITest {
         JsonObject signUpResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/signup"),
                 requestBody, 1000, 1000, null,
-                Utils.getCdiVersionStringLatestForTests(), "emailpassword");
+                SemVer.v2_22.get(), "emailpassword");
         assertEquals("OK", signUpResponse.getAsJsonPrimitive("status").getAsString());
         return signUpResponse.getAsJsonObject("user");
     }
@@ -172,7 +173,7 @@ public class MultitenantAPITest {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/userid/map"), requestBody,
                 1000, 1000, null,
-                Utils.getCdiVersionStringLatestForTests(), "useridmapping");
+                SemVer.v2_22.get(), "useridmapping");
         assertEquals("OK", response.get("status").getAsString());
     }
 
@@ -185,7 +186,7 @@ public class MultitenantAPITest {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/userid/map"), requestBody,
                 1000, 1000, null,
-                Utils.getCdiVersionStringLatestForTests(), "useridmapping");
+                SemVer.v2_22.get(), "useridmapping");
         assertEquals("USER_ID_MAPPING_ALREADY_EXISTS_ERROR", response.get("status").getAsString());
     }
 
@@ -197,7 +198,7 @@ public class MultitenantAPITest {
 
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/userid/map"), QUERY_PARAM, 1000, 1000, null,
-                Utils.getCdiVersionStringLatestForTests(), "useridmapping");
+                SemVer.v2_22.get(), "useridmapping");
         assertEquals("OK", response.get("status").getAsString());
         return response;
     }
@@ -210,7 +211,7 @@ public class MultitenantAPITest {
 
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/userid/map"), QUERY_PARAM, 1000, 1000, null,
-                Utils.getCdiVersionStringLatestForTests(), "useridmapping");
+                SemVer.v2_22.get(), "useridmapping");
         assertEquals("UNKNOWN_MAPPING_ERROR", response.get("status").getAsString());
     }
 
@@ -223,7 +224,7 @@ public class MultitenantAPITest {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/userid/map/remove"), request,
                 1000, 1000, null,
-                Utils.getCdiVersionStringLatestForTests(), "useridmapping");
+                SemVer.v2_22.get(), "useridmapping");
         assertEquals(2, response.entrySet().size());
         assertEquals("OK", response.get("status").getAsString());
         assertTrue(response.get("didMappingExist").getAsBoolean());

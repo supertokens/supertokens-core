@@ -36,6 +36,7 @@ import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.test.totp.TOTPRecipeTest;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
+import io.supertokens.utils.SemVer;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -167,7 +168,7 @@ public class MultitenantAPITest {
                 1000,
                 1000,
                 null,
-                Utils.getCdiVersionStringLatestForTests(),
+                SemVer.v2_22.get(),
                 "totp");
         assertEquals("OK", res.get("status").getAsString());
         return res;
@@ -189,7 +190,7 @@ public class MultitenantAPITest {
                 1000,
                 1000,
                 null,
-                Utils.getCdiVersionStringLatestForTests(),
+                SemVer.v2_22.get(),
                 "totp");
         assertEquals("DEVICE_ALREADY_EXISTS_ERROR", res.get("status").getAsString());
     }
@@ -208,7 +209,7 @@ public class MultitenantAPITest {
                 1000,
                 1000,
                 null,
-                Utils.getCdiVersionStringLatestForTests(),
+                SemVer.v2_22.get(),
                 "totp");
         assert res.get("status").getAsString().equals("OK");
     }
@@ -228,7 +229,7 @@ public class MultitenantAPITest {
                 1000,
                 1000,
                 null,
-                Utils.getCdiVersionStringLatestForTests(),
+                SemVer.v2_22.get(),
                 "totp");
         assertEquals("OK", res.get("status").getAsString());
     }

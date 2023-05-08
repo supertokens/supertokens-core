@@ -36,6 +36,7 @@ import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
+import io.supertokens.utils.SemVer;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -165,7 +166,7 @@ public class MultitenantAPITest {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/signinup"), signUpRequestBody,
                 1000, 1000, null,
-                Utils.getCdiVersionStringLatestForTests(), "thirdparty");
+                SemVer.v2_22.get(), "thirdparty");
         assertEquals("OK", response.get("status").getAsString());
         assertEquals(3, response.entrySet().size());
 
@@ -178,7 +179,7 @@ public class MultitenantAPITest {
         map.put("userId", userId);
         JsonObject userResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user"),
-                map, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
+                map, 1000, 1000, null, SemVer.v2_22.get(),
                 "thirdparty");
         assertEquals("OK", userResponse.getAsJsonPrimitive("status").getAsString());
         return userResponse.getAsJsonObject("user");
@@ -191,7 +192,7 @@ public class MultitenantAPITest {
         map.put("thirdPartyUserId", thirdPartyUserId);
         JsonObject userResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user"),
-                map, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
+                map, 1000, 1000, null, SemVer.v2_22.get(),
                 "thirdparty");
         assertEquals("OK", userResponse.getAsJsonPrimitive("status").getAsString());
         return userResponse.getAsJsonObject("user");
@@ -203,7 +204,7 @@ public class MultitenantAPITest {
         map.put("email", email);
         JsonObject userResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/users/by-email"),
-                map, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
+                map, 1000, 1000, null, SemVer.v2_22.get(),
                 "thirdparty");
         assertEquals("OK", userResponse.getAsJsonPrimitive("status").getAsString());
 
