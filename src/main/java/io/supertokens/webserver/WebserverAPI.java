@@ -399,14 +399,15 @@ public abstract class WebserverAPI extends HttpServlet {
             }
 
             tenantIdentifier = getTenantIdentifierWithStorageFromRequest(req);
-            if (this.versionNeeded(req)) {
-                // Check for CDI version for multitenancy
-                SemVer version = getVersionFromRequest(req);
-                if (version.lesserThan(SemVer.v2_22) && !tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
-                    sendTextResponse(404, "Not found", resp);
-                    return;
-                }
+            SemVer version = getVersionFromRequest(req);
 
+            // Check for CDI version for multitenancy
+            if (version.lesserThan(SemVer.v2_22) && !tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
+                sendTextResponse(404, "Not found", resp);
+                return;
+            }
+
+            if (this.versionNeeded(req)) {
                 assertThatVersionIsCompatible(version);
                 Logging.info(main, tenantIdentifier,
                         "API called: " + req.getRequestURI() + ". Method: " + req.getMethod() + ". Version: " + version,
