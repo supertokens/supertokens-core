@@ -34,6 +34,7 @@ import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
+import io.supertokens.utils.SemVer;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -161,7 +162,7 @@ public class MultitenantAPITest {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/session"), request,
-                1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
+                1000, 1000, null, SemVer.v2_22.get(),
                 "session");
 
         return response;
@@ -173,7 +174,7 @@ public class MultitenantAPITest {
         map.put("sessionHandle", sessionHandle);
         JsonObject sessionResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/session"),
-                map, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
+                map, 1000, 1000, null, SemVer.v2_22.get(),
                 "session");
 
         assertEquals("OK", sessionResponse.getAsJsonPrimitive("status").getAsString());
@@ -186,7 +187,7 @@ public class MultitenantAPITest {
         map.put("sessionHandle", sessionHandle);
         JsonObject sessionResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/session"),
-                map, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
+                map, 1000, 1000, null, SemVer.v2_22.get(),
                 "session");
 
         assertEquals("UNAUTHORISED", sessionResponse.getAsJsonPrimitive("status").getAsString());
@@ -201,7 +202,7 @@ public class MultitenantAPITest {
         JsonObject sessionRegenerateResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/session/regenerate"),
                 sessionRegenerateRequest, 1000, 1000, null,
-                Utils.getCdiVersionStringLatestForTests(), "session");
+                SemVer.v2_22.get(), "session");
 
         assertEquals(sessionRegenerateResponse.get("status").getAsString(), "OK");
     }
@@ -216,7 +217,7 @@ public class MultitenantAPITest {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/session/verify"), request,
                 1000, 1000, null,
-                Utils.getCdiVersionStringLatestForTests(), "session");
+                SemVer.v2_22.get(), "session");
         return response;
     }
 
@@ -230,7 +231,7 @@ public class MultitenantAPITest {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/session/refresh"),
                 sessionRefreshBody, 1000, 1000, null,
-                Utils.getCdiVersionStringLatestForTests(), "session");
+                SemVer.v2_22.get(), "session");
         return response;
     }
 

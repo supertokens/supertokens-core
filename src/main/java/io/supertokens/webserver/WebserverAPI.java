@@ -75,10 +75,11 @@ public abstract class WebserverAPI extends HttpServlet {
         supportedVersions.add(SemVer.v2_19);
         supportedVersions.add(SemVer.v2_20);
         supportedVersions.add(SemVer.v2_21);
+        supportedVersions.add(SemVer.v2_22);
     }
 
     public static SemVer getLatestCDIVersion() {
-        return SemVer.v2_21;
+        return SemVer.v2_22;
     }
 
     public WebserverAPI(Main main, String rid) {
@@ -396,9 +397,17 @@ public abstract class WebserverAPI extends HttpServlet {
             if (this.checkAPIKey(req)) {
                 assertThatAPIKeyCheckPasses(req);
             }
+
             tenantIdentifier = getTenantIdentifierWithStorageFromRequest(req);
+            SemVer version = getVersionFromRequest(req);
+
+            // Check for CDI version for multitenancy
+            if (version.lesserThan(SemVer.v2_22) && !tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
+                sendTextResponse(404, "Not found", resp);
+                return;
+            }
+
             if (this.versionNeeded(req)) {
-                SemVer version = getVersionFromRequest(req);
                 assertThatVersionIsCompatible(version);
                 Logging.info(main, tenantIdentifier,
                         "API called: " + req.getRequestURI() + ". Method: " + req.getMethod() + ". Version: " + version,

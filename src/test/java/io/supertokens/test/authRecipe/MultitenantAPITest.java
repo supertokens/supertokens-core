@@ -44,6 +44,7 @@ import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
 import io.supertokens.thirdparty.ThirdParty;
+import io.supertokens.utils.SemVer;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -309,7 +310,7 @@ public class MultitenantAPITest {
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/users/count"),
                 params, 1000, 1000, null,
-                Utils.getCdiVersionStringLatestForTests(), null);
+                SemVer.v2_22.get(), null);
 
         assertEquals("OK", response.get("status").getAsString());
 
@@ -326,7 +327,7 @@ public class MultitenantAPITest {
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/users"),
                 params, 1000, 1000, null,
-                Utils.getCdiVersionStringLatestForTests(), null);
+                SemVer.v2_22.get(), null);
 
         assertEquals("OK", response.get("status").getAsString());
 
@@ -356,7 +357,7 @@ public class MultitenantAPITest {
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/users"),
                 params, 1000, 1000, null,
-                Utils.getCdiVersionStringLatestForTests(), null);
+                SemVer.v2_22.get(), null);
 
         assertEquals("OK", response.get("status").getAsString());
 
