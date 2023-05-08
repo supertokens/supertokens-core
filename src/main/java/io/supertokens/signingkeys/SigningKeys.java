@@ -52,11 +52,6 @@ public class SigningKeys extends ResourceDistributor.SingletonResource {
     private List<JWTSigningKeyInfo> staticKeys;
 
 
-    public static void initForBaseTenant(Main main) throws UnsupportedJWTSigningAlgorithmException {
-        main.getResourceDistributor().setResource(new AppIdentifier(null, null), RESOURCE_KEY,
-                new SigningKeys(new AppIdentifier(null, null), main));
-    }
-
     public static SigningKeys getInstance(AppIdentifier appIdentifier, Main main)
             throws TenantOrAppNotFoundException {
         return (SigningKeys) main.getResourceDistributor()
@@ -91,11 +86,6 @@ public class SigningKeys extends ResourceDistributor.SingletonResource {
                                         new SigningKeys(app, main));
                     }
                 }
-                // re add the base config
-                main.getResourceDistributor().setResource(new AppIdentifier(null, null), RESOURCE_KEY,
-                        existingResources.get(
-                                new ResourceDistributor.KeyClass(new AppIdentifier(null, null),
-                                        RESOURCE_KEY)));
             });
         } catch (ResourceDistributor.FuncException e) {
             throw new RuntimeException(e);
