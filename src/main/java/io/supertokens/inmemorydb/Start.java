@@ -49,10 +49,7 @@ import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
 import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
 import io.supertokens.pluginInterface.jwt.exceptions.DuplicateKeyIdException;
 import io.supertokens.pluginInterface.jwt.sqlstorage.JWTRecipeSQLStorage;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
-import io.supertokens.pluginInterface.multitenancy.MultitenancyStorage;
-import io.supertokens.pluginInterface.multitenancy.TenantConfig;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateTenantException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
@@ -2322,7 +2319,15 @@ public class Start
     @Override
     public TenantConfig[] getAllTenants() {
         // TODO:
-        return new TenantConfig[0];
+        return new TenantConfig[]{
+                new TenantConfig(
+                        new TenantIdentifier(null, null, null),
+                        new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true),
+                        new JsonObject()
+                )
+        };
     }
 
     @Override

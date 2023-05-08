@@ -45,20 +45,6 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
     private final Main main;
     private final AppIdentifier appIdentifier;
 
-    public static void initForBaseTenant(Main main) throws UnsupportedJWTSigningAlgorithmException {
-        try {
-            JWTSigningKey jwtSigningKey = new JWTSigningKey(new AppIdentifier(null, null), main);
-            main.getResourceDistributor().setResource(new AppIdentifier(null, null), RESOURCE_KEY, jwtSigningKey);
-
-            if (!Main.isTesting) {
-                // init JWT signing keys, we create one key for each supported algorithm type
-                jwtSigningKey.generateKeysForSupportedAlgos(main);
-            }
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
     public static JWTSigningKey getInstance(AppIdentifier appIdentifier, Main main)
             throws TenantOrAppNotFoundException {
         return (JWTSigningKey) main.getResourceDistributor()
@@ -104,11 +90,6 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
                             }
                         }
                     }
-                    // re add the base config
-                    main.getResourceDistributor().setResource(new AppIdentifier(null, null), RESOURCE_KEY,
-                            existingResources.get(
-                                    new ResourceDistributor.KeyClass(new AppIdentifier(null, null),
-                                            RESOURCE_KEY)));
                 } catch (UnsupportedJWTSigningAlgorithmException e) {
                     throw new ResourceDistributor.FuncException(e);
                 }

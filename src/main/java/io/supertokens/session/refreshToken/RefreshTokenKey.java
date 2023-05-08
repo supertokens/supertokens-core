@@ -57,15 +57,6 @@ public class RefreshTokenKey extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public static void initForBaseTenant(Main main) {
-        try {
-            main.getResourceDistributor().setResource(new AppIdentifier(null, null), RESOURCE_KEY,
-                    new RefreshTokenKey(new AppIdentifier(null, null), main));
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
     public static RefreshTokenKey getInstance(AppIdentifier appIdentifier, Main main)
             throws TenantOrAppNotFoundException {
         return (RefreshTokenKey) main.getResourceDistributor()
@@ -104,11 +95,6 @@ public class RefreshTokenKey extends ResourceDistributor.SingletonResource {
                         }
                     }
                 }
-                // re add the base config
-                main.getResourceDistributor().setResource(new AppIdentifier(null, null), RESOURCE_KEY,
-                        existingResources.get(
-                                new ResourceDistributor.KeyClass(new AppIdentifier(null, null),
-                                        RESOURCE_KEY)));
             });
         } catch (ResourceDistributor.FuncException e) {
             throw new RuntimeException(e);

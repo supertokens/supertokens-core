@@ -120,6 +120,7 @@ public class SigningKeysTest {
         for (TenantConfig t : tenants) {
             apps.add(t.tenantIdentifier.toAppIdentifier());
         }
+        apps.add(new AppIdentifier(null, null)); // Add base app
         AccessTokenSigningKey.loadForAllTenants(process.getProcess(), apps);
 
         assertEquals(
@@ -186,6 +187,7 @@ public class SigningKeysTest {
         for (TenantConfig t : tenants) {
             apps.add(t.tenantIdentifier.toAppIdentifier());
         }
+        apps.add(new AppIdentifier(null, null)); // Add base app
         AccessTokenSigningKey.loadForAllTenants(process.getProcess(), apps);
 
         assertEquals(
