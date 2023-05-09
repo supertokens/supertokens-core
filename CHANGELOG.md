@@ -55,24 +55,24 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Database Changes
 
 - Added new `useStaticKey` field into session info
-- Manual migration is also required if `access_token_signing_key_dynamic` was set to true
+- Manual migration is also required if `access_token_signing_key_dynamic` was set to false
 
 #### Migration steps for SQL
 
 - If using `access_token_signing_key_dynamic` false:
     - `ALTER TABLE session_info ADD COLUMN use_static_key BOOLEAN NOT NULL DEFAULT(true);`
-    - ```sql
+    ```sql
     INSERT INTO jwt_signing_keys(key_id, key_string, algorithm, created_at)
       select CONCAT('s-', created_at_time) as key_id, value as key_string, 'RS256' as algorithm, created_at_time as created_at
       from session_access_token_signing_keys;
     ```
-- If using `access_token_signing_key_dynamic` true:
+- If using `access_token_signing_key_dynamic` true or not set:
     - `ALTER TABLE session_info ADD COLUMN use_static_key BOOLEAN NOT NULL DEFAULT(false);`
 
 #### Migration steps for MongoDB
 
 - If using `access_token_signing_key_dynamic` false:
-    - ```
+    ```
     db.session_info.update({},
       {
         "$set": {
@@ -80,7 +80,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
         }
       });
     ```
-    - ```
+    ```
     db.key_value.aggregate([
       {
         "$match": {
@@ -124,8 +124,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     ]);
     ```
 
-- If using `access_token_signing_key_dynamic` true:
-    - ```
+- If using `access_token_signing_key_dynamic` true or not set:
+    ```
     db.session_info.update({},
       {
         "$set": {
