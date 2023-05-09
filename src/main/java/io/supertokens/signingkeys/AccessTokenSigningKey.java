@@ -66,13 +66,11 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
             throws TenantOrAppNotFoundException {
         this.main = main;
         this.appIdentifier = appIdentifier;
-        if (!Main.isTesting) {
-            try {
-                this.transferLegacyKeyToNewTable();
-                this.getOrCreateAndGetSigningKeys();
-            } catch (StorageQueryException | StorageTransactionLogicException e) {
-                Logging.error(main, appIdentifier.getAsPublicTenantIdentifier(), "Error while fetching access token signing key", false, e);
-            }
+        try {
+            this.transferLegacyKeyToNewTable();
+            this.getOrCreateAndGetSigningKeys();
+        } catch (StorageQueryException | StorageTransactionLogicException e) {
+            Logging.error(main, appIdentifier.getAsPublicTenantIdentifier(), "Error while fetching access token signing key", false, e);
         }
     }
 
