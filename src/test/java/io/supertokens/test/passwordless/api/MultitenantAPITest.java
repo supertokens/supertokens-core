@@ -35,6 +35,7 @@ import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
+import io.supertokens.utils.SemVer;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -186,7 +187,7 @@ public class MultitenantAPITest {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/signinup/code"),
                 createCodeRequestBody, 1000, 1000, null,
-                Utils.getCdiVersionStringLatestForTests(), "passwordless");
+                SemVer.v2_22.get(), "passwordless");
 
         assertEquals("OK", response.get("status").getAsString());
         assertEquals(8, response.entrySet().size());
@@ -202,7 +203,7 @@ public class MultitenantAPITest {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/signinup/code"),
                 createCodeRequestBody, 1000, 1000, null,
-                Utils.getCdiVersionStringLatestForTests(), "passwordless");
+                SemVer.v2_22.get(), "passwordless");
 
         assertEquals("OK", response.get("status").getAsString());
         assertEquals(8, response.entrySet().size());
@@ -219,7 +220,7 @@ public class MultitenantAPITest {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/signinup/code/consume"),
                 consumeCodeRequestBody, 1000, 1000, null,
-                Utils.getCdiVersionStringLatestForTests(), "passwordless");
+                SemVer.v2_22.get(), "passwordless");
 
         assertEquals("OK", response.get("status").getAsString());
         return response.get("user").getAsJsonObject();
@@ -234,7 +235,7 @@ public class MultitenantAPITest {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/signinup/code/consume"),
                 consumeCodeRequestBody, 1000, 1000, null,
-                Utils.getCdiVersionStringLatestForTests(), "passwordless");
+                SemVer.v2_22.get(), "passwordless");
 
         assertEquals("RESTART_FLOW_ERROR", response.get("status").getAsString());
     }
@@ -249,7 +250,7 @@ public class MultitenantAPITest {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/signinup/code/consume"),
                 consumeCodeRequestBody, 1000, 1000, null,
-                Utils.getCdiVersionStringLatestForTests(), "passwordless");
+                SemVer.v2_22.get(), "passwordless");
         assertEquals("OK", response.get("status").getAsString());
         return response.get("user").getAsJsonObject();
     }
@@ -264,7 +265,7 @@ public class MultitenantAPITest {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/signinup/code/consume"),
                 consumeCodeRequestBody, 1000, 1000, null,
-                Utils.getCdiVersionStringLatestForTests(), "passwordless");
+                SemVer.v2_22.get(), "passwordless");
         assertEquals("RESTART_FLOW_ERROR", response.get("status").getAsString());
     }
 
@@ -298,7 +299,7 @@ public class MultitenantAPITest {
         map.put("userId", userId);
         JsonObject userResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user"),
-                map, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
+                map, 1000, 1000, null, SemVer.v2_22.get(),
                 "passwordless");
         assertEquals("OK", userResponse.getAsJsonPrimitive("status").getAsString());
         return userResponse.getAsJsonObject("user");
@@ -310,7 +311,7 @@ public class MultitenantAPITest {
         map.put("email", email);
         JsonObject userResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user"),
-                map, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
+                map, 1000, 1000, null, SemVer.v2_22.get(),
                 "passwordless");
         assertEquals("OK", userResponse.getAsJsonPrimitive("status").getAsString());
         return userResponse.getAsJsonObject("user");
@@ -322,7 +323,7 @@ public class MultitenantAPITest {
         map.put("phoneNumber", phoneNumber);
         JsonObject userResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user"),
-                map, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
+                map, 1000, 1000, null, SemVer.v2_22.get(),
                 "passwordless");
         assertEquals("OK", userResponse.getAsJsonPrimitive("status").getAsString());
         return userResponse.getAsJsonObject("user");
@@ -336,7 +337,7 @@ public class MultitenantAPITest {
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user"), body,
-                1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
+                1000, 1000, null, SemVer.v2_22.get(),
                 RECIPE_ID.PASSWORDLESS.toString());
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
     }
@@ -349,7 +350,7 @@ public class MultitenantAPITest {
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user"), body,
-                1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
+                1000, 1000, null, SemVer.v2_22.get(),
                 RECIPE_ID.PASSWORDLESS.toString());
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
     }

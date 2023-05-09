@@ -79,9 +79,9 @@ public class AccessTokenSigningKeyTest {
         sessionStorage.setKeyValue(new TenantIdentifier(null, null, null), "access_token_signing_key", newKey);
         AccessTokenSigningKey accessTokenSigningKeyInstance = AccessTokenSigningKey.getInstance(process.getProcess());
         accessTokenSigningKeyInstance.transferLegacyKeyToNewTable();
-        assertEquals(SigningKeys.getInstance(process.getProcess()).getAllKeys().size(), 2);
+        assertEquals(SigningKeys.getInstance(process.getProcess()).getAllKeys().size(), 3);
         List<KeyInfo> keys = SigningKeys.getInstance(process.getProcess()).getDynamicKeys();
-        assertEquals(keys.size(), 1);
+        assertEquals(keys.size(), 2);
         assertEquals(keys.get(0).createdAtTime, newKey.createdAtTime);
         assertEquals(keys.get(0).value, newKey.value);
         assertNull(sessionStorage.getKeyValue(new TenantIdentifier(null, null, null), "access_token_signing_key"));
@@ -191,10 +191,10 @@ public class AccessTokenSigningKeyTest {
         accessTokenSigningKeyInstance.cleanExpiredAccessTokenSigningKeys();
         List<JWTSigningKeyInfo> keys = SigningKeys.getInstance(process.getProcess()).getStaticKeys();
 
-        assertEquals(keys.size(), 1);
+        assertEquals(keys.size(), 2);
 
-        assertEquals(legacyKey.value, keys.get(0).keyString);
-        assertEquals(keys.get(0).keyId.substring(0, 2), "s-");
+        assertEquals(legacyKey.value, keys.get(1).keyString);
+        assertEquals(keys.get(1).keyId.substring(0, 2), "s-");
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
     }

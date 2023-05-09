@@ -66,22 +66,11 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
             throws TenantOrAppNotFoundException {
         this.main = main;
         this.appIdentifier = appIdentifier;
-        if (!Main.isTesting) {
-            try {
-                this.transferLegacyKeyToNewTable();
-                this.getOrCreateAndGetSigningKeys();
-            } catch (StorageQueryException | StorageTransactionLogicException e) {
-                Logging.error(main, appIdentifier.getAsPublicTenantIdentifier(), "Error while fetching access token signing key", false, e);
-            }
-        }
-    }
-
-    public static void initForBaseTenant(Main main) {
         try {
-            main.getResourceDistributor().setResource(new AppIdentifier(null, null), RESOURCE_KEY,
-                    new AccessTokenSigningKey(new AppIdentifier(null, null), main));
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
+            this.transferLegacyKeyToNewTable();
+            this.getOrCreateAndGetSigningKeys();
+        } catch (StorageQueryException | StorageTransactionLogicException e) {
+            Logging.error(main, appIdentifier.getAsPublicTenantIdentifier(), "Error while fetching access token signing key", false, e);
         }
     }
 
@@ -129,11 +118,6 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                         }
                     }
                 }
-                // re add the base config
-                main.getResourceDistributor().setResource(new AppIdentifier(null, null), RESOURCE_KEY,
-                        existingResources.get(
-                                new ResourceDistributor.KeyClass(new AppIdentifier(null, null),
-                                        RESOURCE_KEY)));
             });
         } catch (ResourceDistributor.FuncException e) {
             throw new RuntimeException(e);

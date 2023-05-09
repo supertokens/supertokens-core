@@ -141,12 +141,9 @@ public class ThirdParty {
                 long timeJoined = System.currentTimeMillis();
 
                 try {
-                    UserInfo user = new UserInfo(userId, email, new UserInfo.ThirdParty(thirdPartyId, thirdPartyUserId),
-                            timeJoined);
+                    UserInfo createdUser = storage.signUp(tenantIdentifierWithStorage, userId, email, new UserInfo.ThirdParty(thirdPartyId, thirdPartyUserId), timeJoined);
 
-                    storage.signUp(tenantIdentifierWithStorage, user);
-
-                    return new SignInUpResponse(true, user);
+                    return new SignInUpResponse(true, createdUser);
                 } catch (DuplicateUserIdException e) {
                     // we try again..
                 } catch (DuplicateThirdPartyUserException e) {
@@ -277,21 +274,7 @@ public class ThirdParty {
             throw new InvalidProviderConfigException("scope array cannot contain a null");
         }
 
-        if (thirdPartyId.startsWith("active-directory")) {
-            String errorMessage = "a non empty string value must be specified for directoryId in the additionalConfig" +
-                    " for Active Directory provider";
-            try {
-                if (client.additionalConfig == null || !client.additionalConfig.has("directoryId") ||
-                        client.additionalConfig.get("directoryId").isJsonNull() ||
-                        client.additionalConfig.get("directoryId").getAsString().isEmpty() ||
-                        !client.additionalConfig.getAsJsonPrimitive("directoryId").isString()
-                ) {
-                    throw new InvalidProviderConfigException(errorMessage);
-                }
-            } catch (ClassCastException e) {
-                throw new InvalidProviderConfigException(errorMessage);
-            }
-        } else if (thirdPartyId.startsWith("apple")) {
+        if (thirdPartyId.startsWith("apple")) {
             String errorMessage = "a non empty string value must be specified for keyId, teamId and privateKey in the" +
                     " additionalConfig for Apple provider";
 
@@ -319,10 +302,6 @@ public class ThirdParty {
             } catch (ClassCastException e) {
                 throw new InvalidProviderConfigException(errorMessage);
             }
-        } else if (thirdPartyId.startsWith("discord")) {
-            // Nothing here
-        } else if (thirdPartyId.startsWith("facebook")) {
-            // Nothing here
         } else if (thirdPartyId.startsWith("google-workspaces")) {
             if (client.additionalConfig != null && client.additionalConfig.has("hd")) {
                 String errorMessage = "hd in additionalConfig must be a non empty string value";
@@ -335,24 +314,6 @@ public class ThirdParty {
                 } catch (ClassCastException e) {
                     throw new InvalidProviderConfigException(errorMessage);
                 }
-            }
-        } else if (thirdPartyId.startsWith("google")) {
-            // Nothing here
-        } else if (thirdPartyId.startsWith("linkedin")) {
-            // Nothing here
-        } else if (thirdPartyId.startsWith("okta")) {
-            String errorMessage = "a non empty string value must be specified for oktaDomain in the additionalConfig " +
-                    "for Okta provider";
-            try {
-                if (client.additionalConfig == null || !client.additionalConfig.has("oktaDomain") ||
-                        client.additionalConfig.get("oktaDomain").isJsonNull() ||
-                        client.additionalConfig.get("oktaDomain").getAsString().isEmpty() ||
-                        !client.additionalConfig.getAsJsonPrimitive("oktaDomain").isString()) {
-
-                    throw new InvalidProviderConfigException(errorMessage);
-                }
-            } catch (ClassCastException e) {
-                throw new InvalidProviderConfigException(errorMessage);
             }
         } else if (thirdPartyId.startsWith("boxy-saml")) {
             String errorMessage = "a non empty string value must be specified for boxyURL in the additionalConfig for" +

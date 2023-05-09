@@ -46,18 +46,18 @@ public class ThirdPartyQueries {
                 + "time_joined BIGINT UNSIGNED NOT NULL," + "PRIMARY KEY (third_party_id, third_party_user_id));";
     }
 
-    public static void signUp(Start start, io.supertokens.pluginInterface.thirdparty.UserInfo userInfo)
+    public static UserInfo signUp(Start start, String id, String email, UserInfo.ThirdParty thirdParty, long timeJoined)
             throws StorageQueryException, StorageTransactionLogicException {
-        start.startTransaction(con -> {
+        return start.startTransaction(con -> {
             Connection sqlCon = (Connection) con.getConnection();
             try {
                 {
                     String QUERY = "INSERT INTO " + getConfig(start).getUsersTable()
                             + "(user_id, recipe_id, time_joined)" + " VALUES(?, ?, ?)";
                     update(sqlCon, QUERY, pst -> {
-                        pst.setString(1, userInfo.id);
+                        pst.setString(1, id);
                         pst.setString(2, THIRD_PARTY.toString());
-                        pst.setLong(3, userInfo.timeJoined);
+                        pst.setLong(3, timeJoined);
                     });
                 }
 
@@ -66,19 +66,19 @@ public class ThirdPartyQueries {
                             + "(third_party_id, third_party_user_id, user_id, email, time_joined)"
                             + " VALUES(?, ?, ?, ?, ?)";
                     update(sqlCon, QUERY, pst -> {
-                        pst.setString(1, userInfo.thirdParty.id);
-                        pst.setString(2, userInfo.thirdParty.userId);
-                        pst.setString(3, userInfo.id);
-                        pst.setString(4, userInfo.email);
-                        pst.setLong(5, userInfo.timeJoined);
+                        pst.setString(1, thirdParty.id);
+                        pst.setString(2, thirdParty.userId);
+                        pst.setString(3, id);
+                        pst.setString(4, email);
+                        pst.setLong(5, timeJoined);
                     });
                 }
 
                 sqlCon.commit();
+                return new UserInfo(id, email, thirdParty, timeJoined, null); // TODO tenantIds
             } catch (SQLException throwables) {
                 throw new StorageTransactionLogicException(throwables);
             }
-            return null;
         });
     }
 
@@ -247,7 +247,7 @@ public class ThirdPartyQueries {
             return new UserInfo(result.getString("user_id"), result.getString("email"),
                     new UserInfo.ThirdParty(result.getString("third_party_id"),
                             result.getString("third_party_user_id")),
-                    result.getLong("time_joined"));
+                    result.getLong("time_joined"), null); // TODO
         }
     }
 }

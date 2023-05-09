@@ -123,8 +123,8 @@ public class TestConnectionUriDomain {
                 coreConfig);
 
         JsonObject newConfig = new JsonObject();
-        newConfig.addProperty("foo", "bar");
-        coreConfig.addProperty("foo", "bar");
+        newConfig.addProperty("email_verification_token_lifetime", 2000);
+        coreConfig.addProperty("email_verification_token_lifetime", 2000);
 
         // Update
         TestMultitenancyAPIHelper.createConnectionUriDomain(
@@ -173,8 +173,8 @@ public class TestConnectionUriDomain {
                 coreConfig);
 
         JsonObject newConfig = new JsonObject();
-        newConfig.addProperty("foo", "bar");
-        coreConfig.addProperty("foo", "bar");
+        newConfig.addProperty("email_verification_token_lifetime", 2000);
+        coreConfig.addProperty("email_verification_token_lifetime", 2000);
 
         // Update
         TestMultitenancyAPIHelper.createConnectionUriDomain(
@@ -214,7 +214,7 @@ public class TestConnectionUriDomain {
 
         StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
                 .modifyConfigToAddANewUserPoolForTesting(coreConfig, 1);
-        coreConfig.addProperty("foo", "bar");
+        coreConfig.addProperty("email_verification_token_lifetime", 2000);
 
         // Create
         TestMultitenancyAPIHelper.createConnectionUriDomain(
@@ -224,8 +224,8 @@ public class TestConnectionUriDomain {
                 coreConfig);
 
         JsonObject newConfig = new JsonObject();
-        newConfig.add("foo", null);
-        coreConfig.remove("foo"); // for verification
+        newConfig.add("email_verification_token_lifetime", null);
+        coreConfig.remove("email_verification_token_lifetime"); // for verification
 
         // Update
         TestMultitenancyAPIHelper.createConnectionUriDomain(

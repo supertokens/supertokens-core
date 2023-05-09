@@ -32,9 +32,13 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.session.Session;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.webserver.WebserverAPI;
 import org.junit.*;
 import org.junit.rules.TestRule;
+
+import java.util.HashSet;
+import java.util.Set;
 
 import static org.junit.Assert.*;
 
@@ -351,27 +355,42 @@ public class FeatureFlagTest {
         FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(OPAQUE_KEY_WITH_MULTITENANCY_FEATURE);
 
         for (int i=0; i<500; i++) {
+            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, null, "t" + i);
             Multitenancy.addNewOrUpdateAppOrTenant(
                     process.getProcess(),
                     new TenantIdentifier(null, null, null),
                     new TenantConfig(
-                            new TenantIdentifier(null, null, "t" + i),
+                            tenantIdentifier,
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
                             new JsonObject()
                     )
             );
+
             System.out.println("Added tenant " + i);
         }
 
+        long startTime = System.currentTimeMillis();
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 "http://localhost:3567/ee/featureflag",
-                null, 1000, 1000, null, WebserverAPI.getLatestCDIVersion().get(), "");
+                null, 5000, 5000, null, WebserverAPI.getLatestCDIVersion().get(), "");
+
+        long timeTaken = System.currentTimeMillis() - startTime;
+        assertTrue(timeTaken < 2500);
         Assert.assertEquals("OK", response.get("status").getAsString());
 
         JsonArray multitenancyStats = response.get("usageStats").getAsJsonObject().get("multi_tenancy").getAsJsonObject().get("tenants").getAsJsonArray();
         assertEquals(501, multitenancyStats.size());
+
+        String userPoolId = null;
+        for (JsonElement elem : multitenancyStats) {
+            if (userPoolId == null) {
+                userPoolId = elem.getAsJsonObject().get("userPoolId").getAsString();
+            }
+            // ensure all userPoolIds are same
+            assertEquals(userPoolId, elem.getAsJsonObject().get("userPoolId").getAsString());
+        }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -440,9 +459,16 @@ public class FeatureFlagTest {
         JsonArray multitenancyStats = response.get("usageStats").getAsJsonObject().get("multi_tenancy").getAsJsonObject().get("tenants").getAsJsonArray();
         assertEquals(6, multitenancyStats.size());
 
+
+        Set<String> userPoolIds = new HashSet<>();
         for (JsonElement tenantStat : multitenancyStats) {
             JsonObject tenantStatObj = tenantStat.getAsJsonObject();
             String tenantId = tenantStatObj.get("tenantId").getAsString();
+
+            // Ensure each userPoolId is unique
+            String userPoolId = tenantStatObj.get("userPoolId").getAsString();
+            assertFalse(userPoolIds.contains(userPoolId));
+            userPoolIds.add(userPoolId);
 
             if (tenantId.equals("public")) {
                 assertFalse(tenantStatObj.get("hasUsersOrSessions").getAsBoolean());

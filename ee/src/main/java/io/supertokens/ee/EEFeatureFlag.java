@@ -32,6 +32,7 @@ import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.utils.Utils;
 import io.supertokens.version.Version;
 import org.jetbrains.annotations.TestOnly;
 
@@ -260,6 +261,12 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
                 boolean hasUsersOrSessions = ((AuthRecipeStorage) storage).getUsersCount(tenantConfig.tenantIdentifier, null) > 0;
                 hasUsersOrSessions = hasUsersOrSessions || ((SessionSQLStorage) storage).getNumberOfSessions(tenantConfig.tenantIdentifier) > 0;
                 tenantStat.addProperty("hasUsersOrSessions", hasUsersOrSessions);
+
+                try {
+                    tenantStat.addProperty("userPoolId", Utils.hashSHA256(storage.getUserPoolId()));
+                } catch (NoSuchAlgorithmException e) {
+                    throw new RuntimeException(e); // should not come here
+                }
             }
             {
                 boolean hasEnterpriseLogin = false;

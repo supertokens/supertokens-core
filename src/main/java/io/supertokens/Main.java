@@ -218,10 +218,6 @@ public class Main {
 
         // init signing keys
         try {
-            AccessTokenSigningKey.initForBaseTenant(this);
-            RefreshTokenKey.initForBaseTenant(this);
-            JWTSigningKey.initForBaseTenant(this);
-            SigningKeys.initForBaseTenant(this);
             MultitenancyHelper.getInstance(this).loadSigningKeys();
         } catch (UnsupportedJWTSigningAlgorithmException e) {
             throw new QuitProgramException(e);

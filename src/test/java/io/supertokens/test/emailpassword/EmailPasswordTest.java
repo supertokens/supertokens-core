@@ -430,15 +430,15 @@ public class EmailPasswordTest {
         }
 
         ((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
-                .signUp(new TenantIdentifier(null, null, null), new UserInfo(
+                .signUp(new TenantIdentifier(null, null, null),
                         "8ed86166-bfd8-4234-9dfe-abca9606dbd5", "test@example.com", "password",
-                        System.currentTimeMillis()));
+                        System.currentTimeMillis());
 
         try {
             ((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
                     .signUp(new TenantIdentifier(null, null, null),
-                            new UserInfo("8ed86166-bfd8-4234-9dfe-abca9606dbd5", "test1@example.com", "password",
-                                    System.currentTimeMillis()));
+                            "8ed86166-bfd8-4234-9dfe-abca9606dbd5", "test1@example.com", "password",
+                                    System.currentTimeMillis());
             assert (false);
         } catch (DuplicateUserIdException ignored) {
 
@@ -483,15 +483,15 @@ public class EmailPasswordTest {
         }
 
         ((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
-                .signUp(new TenantIdentifier(null, null, null), new UserInfo(
+                .signUp(new TenantIdentifier(null, null, null),
                         "8ed86166-bfd8-4234-9dfe-abca9606dbd5", "test@example.com", "password",
-                        System.currentTimeMillis()));
+                        System.currentTimeMillis());
 
         try {
             ((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
                     .signUp(new TenantIdentifier(null, null, null),
-                            new UserInfo("8ed86166-bfd8-4234-9dfe-abca9606dbd5", "test@example.com", "password",
-                                    System.currentTimeMillis()));
+                            "8ed86166-bfd8-4234-9dfe-abca9606dbd5", "test@example.com", "password",
+                                    System.currentTimeMillis());
             assert (false);
         } catch (DuplicateUserIdException ignored) {
 

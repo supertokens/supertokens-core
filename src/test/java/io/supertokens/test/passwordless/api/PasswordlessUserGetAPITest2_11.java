@@ -21,7 +21,6 @@ import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.passwordless.PasswordlessStorage;
-import io.supertokens.pluginInterface.passwordless.UserInfo;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -171,7 +170,7 @@ public class PasswordlessUserGetAPITest2_11 {
         String phoneNumber = "1234";
 
         storage.createUser(new TenantIdentifier(null, null, null),
-                new UserInfo(userIdEmail, email, null, System.currentTimeMillis()));
+                userIdEmail, email, null, System.currentTimeMillis());
         {
             HashMap<String, String> map = new HashMap<>();
             map.put("userId", userIdEmail);
@@ -197,7 +196,7 @@ public class PasswordlessUserGetAPITest2_11 {
          * get user with phone number
          */
         storage.createUser(new TenantIdentifier(null, null, null),
-                new UserInfo(userIdPhone, null, phoneNumber, System.currentTimeMillis()));
+                userIdPhone, null, phoneNumber, System.currentTimeMillis());
         {
             HashMap<String, String> map = new HashMap<>();
             map.put("phoneNumber", phoneNumber);
@@ -232,6 +231,6 @@ public class PasswordlessUserGetAPITest2_11 {
 
         assert (user.has("timeJoined"));
         assert (System.currentTimeMillis() - 10000 < user.get("timeJoined").getAsLong());
-        assertEquals(3, user.entrySet().size());
+        assertEquals(4, user.entrySet().size());
     }
 }

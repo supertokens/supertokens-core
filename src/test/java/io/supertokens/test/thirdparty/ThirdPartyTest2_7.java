@@ -297,10 +297,9 @@ public class ThirdPartyTest2_7 {
 
         checkSignInUpResponse(signUpResponse, thirdPartyUserId, thirdPartyId, email, true);
         try {
-            UserInfo userInfo = new UserInfo(io.supertokens.utils.Utils.getUUID(), email,
-                    new UserInfo.ThirdParty(thirdPartyId, thirdPartyUserId), System.currentTimeMillis());
             ((ThirdPartySQLStorage) StorageLayer.getStorage(process.getProcess()))
-                    .signUp(new TenantIdentifier(null, null, null), userInfo);
+                    .signUp(new TenantIdentifier(null, null, null), io.supertokens.utils.Utils.getUUID(), email,
+                            new UserInfo.ThirdParty(thirdPartyId, thirdPartyUserId), System.currentTimeMillis());
             throw new Exception("Should not come here");
         } catch (DuplicateThirdPartyUserException ignored) {
         }
@@ -331,10 +330,9 @@ public class ThirdPartyTest2_7 {
 
         checkSignInUpResponse(signUpResponse, thirdPartyUserId, thirdPartyId, email, true);
         try {
-            UserInfo userInfo = new UserInfo(signUpResponse.user.id, email,
-                    new UserInfo.ThirdParty("newThirdParty", "newThirdPartyUserId"), System.currentTimeMillis());
             ((ThirdPartySQLStorage) StorageLayer.getStorage(process.getProcess()))
-                    .signUp(new TenantIdentifier(null, null, null), userInfo);
+                    .signUp(new TenantIdentifier(null, null, null), signUpResponse.user.id, email,
+                            new UserInfo.ThirdParty("newThirdParty", "newThirdPartyUserId"), System.currentTimeMillis());
             throw new Exception("Should not come here");
         } catch (DuplicateUserIdException ignored) {
         }

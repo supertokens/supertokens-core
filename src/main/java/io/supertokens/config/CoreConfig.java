@@ -19,17 +19,21 @@ package io.supertokens.config;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.pluginInterface.LOG_LEVEL;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
+import org.apache.catalina.filters.RemoteAddrFilter;
 import org.jetbrains.annotations.TestOnly;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
+import java.util.regex.PatternSyntaxException;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CoreConfig {
@@ -144,6 +148,20 @@ public class CoreConfig {
     private String supertokens_saas_secret = null;
 
     private Set<LOG_LEVEL> allowedLogLevels = null;
+
+    public static Set<String> getValidFields() {
+        CoreConfig coreConfig = new CoreConfig();
+        JsonObject coreConfigObj = new GsonBuilder().serializeNulls().create().toJsonTree(coreConfig).getAsJsonObject();
+
+        Set<String> validFields = new HashSet<>();
+        for (Map.Entry<String, JsonElement> entry : coreConfigObj.entrySet()) {
+            validFields.add(entry.getKey());
+        }
+
+        // Adding the aliases
+        validFields.add("access_token_signing_key_update_interval");
+        return validFields;
+    }
 
     public String getIpAllowRegex() {
         if (ip_allow_regex != null && ip_allow_regex.trim().equals("")) {
@@ -514,6 +532,25 @@ public class CoreConfig {
             throw new InvalidConfigException(
                     "'log_level' config must be one of \"NONE\",\"DEBUG\", \"INFO\", \"WARN\" or \"ERROR\".");
         }
+
+        {
+            // IP Filter validation
+            RemoteAddrFilter filter = new RemoteAddrFilter();
+            if (ip_allow_regex != null) {
+                try {
+                    filter.setAllow(ip_allow_regex);
+                } catch (PatternSyntaxException e) {
+                    throw new InvalidConfigException("Provided regular expression is invalid for ip_allow_regex config");
+                }
+            }
+            if (ip_deny_regex != null) {
+                try {
+                    filter.setDeny(ip_deny_regex);
+                } catch (PatternSyntaxException e) {
+                    throw new InvalidConfigException("Provided regular expression is invalid for ip_deny_regex config");
+                }
+            }
+        }
     }
 
     public void createLoggingFile(Main main) throws IOException {
@@ -588,6 +625,11 @@ public class CoreConfig {
                     "webserver_https_enabled can only be set via the core's base config setting");
         }
 
+        if (config.has("max_server_pool_size")) {
+            throw new InvalidConfigException(
+                    "max_server_pool_size can only be set via the core's base config setting");
+        }
+
         if (config.has("supertokens_saas_secret")) {
             throw new InvalidConfigException(
                     "supertokens_saas_secret can only be set via the core's base config setting");
@@ -650,7 +692,29 @@ public class CoreConfig {
             throw new InvalidConfigException(
                     "You cannot set different values for bcrypt_log_rounds for the same appId");
         }
-    }
 
+        if (!Objects.equals(other.firebase_password_hashing_signer_key, this.firebase_password_hashing_signer_key)) {
+            throw new InvalidConfigException(
+                    "You cannot set different values for firebase_password_hashing_signer_key for the same appId");
+        }
+
+        if (other.isTelemetryDisabled() != this.isTelemetryDisabled()) {
+            throw new InvalidConfigException(
+                    "You cannot set different values for disable_telemetry for the same appId");
+        }
+
+        // Check that the same set of API keys are present
+        {
+            String[] thisKeys = this.getAPIKeys() == null ? new String[0] : Arrays.copyOf(this.getAPIKeys(), this.getAPIKeys().length);
+            String[] otherKeys = other.getAPIKeys() == null ? new String[0] : Arrays.copyOf(other.getAPIKeys(), other.getAPIKeys().length);
+            Arrays.sort(thisKeys);
+            Arrays.sort(otherKeys);
+
+            if (!Arrays.equals(thisKeys, otherKeys)) {
+                throw new InvalidConfigException(
+                        "You cannot set different values for api_keys for the same appId");
+            }
+        }
+    }
 }
 

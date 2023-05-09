@@ -22,7 +22,9 @@ import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
+import io.supertokens.config.CoreConfig;
 import io.supertokens.config.CoreConfigTestContent;
+import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
@@ -45,6 +47,7 @@ import org.junit.rules.TestRule;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertFalse;
@@ -878,6 +881,344 @@ public class ConfigTest {
         TenantConfig[] allTenants = Multitenancy.getAllTenants(process.getProcess());
         assertEquals(1, allTenants.length);
         assertFalse(allTenants[0].passwordlessConfig.enabled);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testThatDifferentTenantsInSameAppCannotHaveDifferentAPIKeys() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        { // Create an app with API key
+            JsonObject coreConfig = new JsonObject();
+            coreConfig.addProperty("api_keys", "asdfasdfasdfasdfasdf");
+
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    new TenantConfig(
+                            new TenantIdentifier(null, "a1", null),
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(false),
+                            coreConfig
+                    )
+            );
+        }
+
+        { // Create an tenant with different API key
+            JsonObject coreConfig = new JsonObject();
+            coreConfig.addProperty("api_keys", "qwerqwerqwerqwerqwer");
+
+            try {
+                Multitenancy.addNewOrUpdateAppOrTenant(
+                        process.getProcess(),
+                        new TenantIdentifier(null, "a1", null),
+                        new TenantConfig(
+                                new TenantIdentifier(null, "a1", "t1"),
+                                new EmailPasswordConfig(true),
+                                new ThirdPartyConfig(true, null),
+                                new PasswordlessConfig(false),
+                                coreConfig
+                        )
+                );
+                fail();
+            } catch (InvalidConfigException e) {
+                assertEquals("You cannot set different values for api_keys for the same appId", e.getMessage());
+            }
+        }
+
+        { // Allow same API key or no setting
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    process.getProcess(),
+                    new TenantIdentifier(null, "a1", null),
+                    new TenantConfig(
+                            new TenantIdentifier(null, "a1", "t1"),
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(false),
+                            new JsonObject()
+                    )
+            );
+
+            JsonObject coreConfig = new JsonObject();
+            coreConfig.addProperty("api_keys", "asdfasdfasdfasdfasdf");
+
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    process.getProcess(),
+                    new TenantIdentifier(null, "a1", null),
+                    new TenantConfig(
+                            new TenantIdentifier(null, "a1", "t2"),
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(false),
+                            coreConfig
+                    )
+            );
+        }
+
+        { // Create another app with different API key
+            JsonObject coreConfig = new JsonObject();
+            coreConfig.addProperty("api_keys", "qwerqwerqwerqwerqwer");
+
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    new TenantConfig(
+                            new TenantIdentifier(null, "a2", null),
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(false),
+                            coreConfig
+                    )
+            );
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
+    }
+
+    @Test
+    public void testConfigNormalisation() throws Exception {
+        TenantIdentifier[][] testCases = new TenantIdentifier[][]{
+                new TenantIdentifier[]{
+                        new TenantIdentifier("c1", null, null),
+                },
+                new TenantIdentifier[]{
+                        new TenantIdentifier("c1", null, null),
+                        new TenantIdentifier("c1", "a1", null),
+                },
+                new TenantIdentifier[]{
+                        new TenantIdentifier("c1", null, null),
+                        new TenantIdentifier("c1", "a1", null),
+                        new TenantIdentifier("c1", "a1", "t1"),
+                },
+                new TenantIdentifier[]{
+                        new TenantIdentifier("c1", null, null),
+                        new TenantIdentifier("c1", null, "t1"),
+                },
+                new TenantIdentifier[]{
+                        new TenantIdentifier("a1", null, null),
+                },
+                new TenantIdentifier[]{
+                        new TenantIdentifier(null, "a1", null),
+                        new TenantIdentifier(null, "a1", "t1"),
+                },
+                new TenantIdentifier[]{
+                        new TenantIdentifier(null, null, "t1"),
+                },
+        };
+
+        for (TenantIdentifier[] testCase : testCases) {
+
+            Utils.reset();
+            String[] args = {"../"};
+
+            Utils.setValueInConfig("email_verification_token_lifetime", "1000");
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+            FeatureFlagTestContent.getInstance(process.getProcess())
+                    .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+            process.startProcess();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            for (int i = 0; i < testCase.length; i++) {
+                TenantIdentifier tenantIdentifier = testCase[i];
+
+                { // create without setting value and test it
+                    JsonObject coreConfigJson = new JsonObject();
+                    StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                            .modifyConfigToAddANewUserPoolForTesting(coreConfigJson, 1);
+
+                    Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                            tenantIdentifier,
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(true),
+                            coreConfigJson
+                    ), false);
+
+                    CoreConfig coreConfig = Config.getConfig(tenantIdentifier, process.getProcess());
+                    // Check for previous value in the hierarchy
+                    assertEquals((i+1) * 1000, coreConfig.getEmailVerificationTokenLifetime());
+
+                }
+
+                { // set a new value and test that it works
+                    JsonObject coreConfigJson = new JsonObject();
+                    coreConfigJson.addProperty("email_verification_token_lifetime", (i+2) * 1000);
+                    StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                            .modifyConfigToAddANewUserPoolForTesting(coreConfigJson, 1);
+
+                    Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                            tenantIdentifier,
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(true),
+                            coreConfigJson
+                    ), false);
+
+                    CoreConfig coreConfig2 = Config.getConfig(tenantIdentifier, process.getProcess());
+                    assertEquals((i+2) * 1000, coreConfig2.getEmailVerificationTokenLifetime());
+                }
+            }
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+    }
+
+    @Test
+    public void testTenantConfigIsNormalisedFromCUD1() throws Exception {
+        String[] args = {"../"};
+
+        Utils.setValueInConfig("email_verification_token_lifetime", "1000");
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        { // create app without value
+            JsonObject coreConfigJson = new JsonObject();
+            StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                    .modifyConfigToAddANewUserPoolForTesting(coreConfigJson, 1);
+            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, "a1", null);
+            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                    tenantIdentifier,
+                    new EmailPasswordConfig(true),
+                    new ThirdPartyConfig(true, null),
+                    new PasswordlessConfig(true),
+                    coreConfigJson
+            ), false);
+
+            CoreConfig coreConfig = Config.getConfig(tenantIdentifier, process.getProcess());
+            // Check for previous value in the hierarchy
+            assertEquals(1000, coreConfig.getEmailVerificationTokenLifetime());
+        }
+
+        { // create tenant without value
+            JsonObject coreConfigJson = new JsonObject();
+            StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                    .modifyConfigToAddANewUserPoolForTesting(coreConfigJson, 1);
+            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, "a1", "t1");
+            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                    tenantIdentifier,
+                    new EmailPasswordConfig(true),
+                    new ThirdPartyConfig(true, null),
+                    new PasswordlessConfig(true),
+                    coreConfigJson
+            ), false);
+
+            CoreConfig coreConfig = Config.getConfig(tenantIdentifier, process.getProcess());
+            // Check for previous value in the hierarchy
+            assertEquals(1000, coreConfig.getEmailVerificationTokenLifetime());
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testTenantConfigIsNormalisedFromCUD2() throws Exception {
+        String[] args = {"../"};
+
+        Utils.setValueInConfig("email_verification_token_lifetime", "1000");
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        { // create cud with value
+            JsonObject coreConfigJson = new JsonObject();
+            coreConfigJson.addProperty("email_verification_token_lifetime", 2000);
+            StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                    .modifyConfigToAddANewUserPoolForTesting(coreConfigJson, 1);
+            TenantIdentifier tenantIdentifier = new TenantIdentifier("c1", null, null);
+            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                    tenantIdentifier,
+                    new EmailPasswordConfig(true),
+                    new ThirdPartyConfig(true, null),
+                    new PasswordlessConfig(true),
+                    coreConfigJson
+            ), false);
+
+            CoreConfig coreConfig = Config.getConfig(tenantIdentifier, process.getProcess());
+            // Check for previous value in the hierarchy
+            assertEquals(2000, coreConfig.getEmailVerificationTokenLifetime());
+        }
+
+        { // create app without value
+            JsonObject coreConfigJson = new JsonObject();
+            StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                    .modifyConfigToAddANewUserPoolForTesting(coreConfigJson, 1);
+            TenantIdentifier tenantIdentifier = new TenantIdentifier("c1", "a1", null);
+            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                    tenantIdentifier,
+                    new EmailPasswordConfig(true),
+                    new ThirdPartyConfig(true, null),
+                    new PasswordlessConfig(true),
+                    coreConfigJson
+            ), false);
+
+            CoreConfig coreConfig = Config.getConfig(tenantIdentifier, process.getProcess());
+            // Check for previous value in the hierarchy
+            assertEquals(2000, coreConfig.getEmailVerificationTokenLifetime());
+        }
+
+        { // create tenant without value
+            JsonObject coreConfigJson = new JsonObject();
+            StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                    .modifyConfigToAddANewUserPoolForTesting(coreConfigJson, 1);
+            TenantIdentifier tenantIdentifier = new TenantIdentifier("c1", "a1", "t1");
+            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                    tenantIdentifier,
+                    new EmailPasswordConfig(true),
+                    new ThirdPartyConfig(true, null),
+                    new PasswordlessConfig(true),
+                    coreConfigJson
+            ), false);
+
+            CoreConfig coreConfig = Config.getConfig(tenantIdentifier, process.getProcess());
+            // Check for previous value in the hierarchy
+            assertEquals(2000, coreConfig.getEmailVerificationTokenLifetime());
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testInvalidConfigWhileCreatingNewTenant() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        try {
+            JsonObject coreConfig = new JsonObject();
+            coreConfig.addProperty("foo", "bar");
+            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                    new TenantIdentifier(null, null, "t1"),
+                    new EmailPasswordConfig(true),
+                    new ThirdPartyConfig(true, null),
+                    new PasswordlessConfig(true),
+                    coreConfig
+            ), false);
+            fail();
+        } catch (InvalidConfigException e) {
+            assertEquals("Invalid config key: foo", e.getMessage());
+        }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

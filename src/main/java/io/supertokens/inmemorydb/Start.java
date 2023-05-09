@@ -50,10 +50,7 @@ import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
 import io.supertokens.pluginInterface.jwt.exceptions.DuplicateKeyIdException;
 import io.supertokens.pluginInterface.jwt.sqlstorage.JWTRecipeSQLStorage;
 import io.supertokens.pluginInterface.mfa.MfaStorage;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
-import io.supertokens.pluginInterface.multitenancy.MultitenancyStorage;
-import io.supertokens.pluginInterface.multitenancy.TenantConfig;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateTenantException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
@@ -97,10 +94,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLTransactionRollbackException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class Start
         implements SessionSQLStorage, EmailPasswordSQLStorage, EmailVerificationSQLStorage, ThirdPartySQLStorage,
@@ -143,7 +137,7 @@ public class Start
     }
 
     @Override
-    public void loadConfig(JsonObject ignored, Set<LOG_LEVEL> logLevel) throws InvalidConfigException {
+    public void loadConfig(JsonObject ignored, Set<LOG_LEVEL> logLevel, TenantIdentifier tenantIdentifier) throws InvalidConfigException {
         Config.loadConfig(this);
     }
 
@@ -369,6 +363,17 @@ public class Start
         try {
             // TODO..
             SessionQueries.deleteSessionsOfUser(this, userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public boolean deleteSessionsOfUser(TenantIdentifier tenantIdentifier, String userId) throws StorageQueryException {
+        try {
+            // TODO..
+            SessionQueries.deleteSessionsOfUser(this, userId);
+            return false; // FIXME
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -651,12 +656,11 @@ public class Start
     }
 
     @Override
-    public void signUp(TenantIdentifier tenantIdentifier, UserInfo userInfo)
+    public UserInfo signUp(TenantIdentifier tenantIdentifier, String id, String email, String passwordHash, long timeJoined)
             throws StorageQueryException, DuplicateUserIdException, DuplicateEmailException {
         // TODO...
         try {
-            EmailPasswordQueries.signUp(this, userInfo.id, userInfo.email, userInfo.passwordHash,
-                    userInfo.timeJoined);
+            return EmailPasswordQueries.signUp(this, id, email, passwordHash, timeJoined);
         } catch (StorageTransactionLogicException eTemp) {
             Exception e = eTemp.actualException;
             if (e.getMessage()
@@ -920,6 +924,18 @@ public class Start
     }
 
     @Override
+    public boolean deleteEmailVerificationUserInfo(TenantIdentifier tenantIdentifier, String userId)
+            throws StorageQueryException {
+        try {
+            // TODO..
+            EmailVerificationQueries.deleteUserInfo(this, userId);
+            return false; // FIXME
+        } catch (StorageTransactionLogicException e) {
+            throw new StorageQueryException(e.actualException);
+        }
+    }
+
+    @Override
     public EmailVerificationTokenInfo getEmailVerificationTokenInfo(TenantIdentifier
                                                                             tenantIdentifier, String token)
             throws StorageQueryException {
@@ -1019,13 +1035,13 @@ public class Start
     }
 
     @Override
-    public void signUp(TenantIdentifier
-                               tenantIdentifier, io.supertokens.pluginInterface.thirdparty.UserInfo userInfo)
+    public io.supertokens.pluginInterface.thirdparty.UserInfo signUp(TenantIdentifier
+                               tenantIdentifier, String id, String email, io.supertokens.pluginInterface.thirdparty.UserInfo.ThirdParty thirdParty, long timeJoined)
             throws StorageQueryException, io.supertokens.pluginInterface.thirdparty.exception.DuplicateUserIdException,
             DuplicateThirdPartyUserException {
         try {
             // TODO..
-            ThirdPartyQueries.signUp(this, userInfo);
+            return ThirdPartyQueries.signUp(this, id, email, thirdParty, timeJoined);
         } catch (StorageTransactionLogicException eTemp) {
             Exception e = eTemp.actualException;
             if (e.getMessage()
@@ -1473,13 +1489,17 @@ public class Start
     }
 
     @Override
-    public void createUser(TenantIdentifier
-                                   tenantIdentifier, io.supertokens.pluginInterface.passwordless.UserInfo user)
+    public io.supertokens.pluginInterface.passwordless.UserInfo createUser(TenantIdentifier
+                                   tenantIdentifier, String id, @Nullable String email, @Nullable String phoneNumber, long timeJoined)
             throws StorageQueryException,
             DuplicateEmailException, DuplicatePhoneNumberException, DuplicateUserIdException {
+        if (email == null && phoneNumber == null) {
+            throw new IllegalArgumentException("Both email and phoneNumber cannot be null");
+        }
+
         try {
             // TODO..
-            PasswordlessQueries.createUser(this, user);
+            return PasswordlessQueries.createUser(this, id, email, phoneNumber, timeJoined);
         } catch (StorageTransactionLogicException e) {
             String message = e.actualException.getMessage();
             if (message
@@ -2019,8 +2039,9 @@ public class Start
 
     @TestOnly
     @Override
-    public void addInfoToNonAuthRecipesBasedOnUserId(String className, String
+    public void addInfoToNonAuthRecipesBasedOnUserId(TenantIdentifier tenantIdentifier, String className, String
             userId) throws StorageQueryException {
+        // TODO...
         // add entries to nonAuthRecipe tables with input userId
         if (className.equals(SessionStorage.class.getName())) {
             try {
@@ -2321,7 +2342,15 @@ public class Start
     @Override
     public TenantConfig[] getAllTenants() {
         // TODO:
-        return new TenantConfig[0];
+        return new TenantConfig[]{
+                new TenantConfig(
+                        new TenantIdentifier(null, null, null),
+                        new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true),
+                        new JsonObject()
+                )
+        };
     }
 
     @Override
@@ -2403,6 +2432,13 @@ public class Start
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
+    }
+
+    @Override
+    public boolean removeUser(TenantIdentifier tenantIdentifier, String userId)
+            throws StorageQueryException {
+        // TODO..
+        return false; // FIXME
     }
 
     @Override
@@ -2570,4 +2606,9 @@ public class Start
         }
     }
 
+
+    @Override
+    public Set<String> getValidFieldsInConfig() {
+        return new HashSet<>(); // TODO
+    }
 }

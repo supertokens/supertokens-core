@@ -168,7 +168,7 @@ public class SignUpAPITest2_7 {
         assertEquals(signInResponse.get("user").getAsJsonObject().get("email").getAsString(),
                 signUpUser.get("email").getAsString());
         signInResponse.get("user").getAsJsonObject().get("timeJoined").getAsLong();
-        assertEquals(signInResponse.get("user").getAsJsonObject().entrySet().size(), 3);
+        assertEquals(signInResponse.get("user").getAsJsonObject().entrySet().size(), 4);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
