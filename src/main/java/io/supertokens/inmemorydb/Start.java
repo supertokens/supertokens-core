@@ -574,8 +574,7 @@ public class Start
     @Override
     public int countUsersEnabledMfa(AppIdentifier appIdentifier) throws StorageQueryException {
         try {
-            // TODO..
-            return ActiveUsersQueries.countUsersEnabledMfa(this);
+            return ActiveUsersQueries.countUsersEnabledMfa(this, appIdentifier);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -586,8 +585,7 @@ public class Start
     public int countUsersEnabledMfaAndActiveSince(AppIdentifier appIdentifier, long time)
             throws StorageQueryException {
         try {
-            // TODO..
-            return ActiveUsersQueries.countUsersEnabledMfaAndActiveSince(this, time);
+            return ActiveUsersQueries.countUsersEnabledMfaAndActiveSince(this, appIdentifier, time);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }

@@ -5,6 +5,7 @@ import java.sql.SQLException;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.inmemorydb.Start;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
@@ -53,10 +54,12 @@ public class ActiveUsersQueries {
         });
     }
 
-    public static int countUsersEnabledMfa(Start start) throws SQLException, StorageQueryException {
-        String QUERY = "SELECT COUNT(*) as total FROM (SELECT DISTINCT user_id FROM " + Config.getConfig(start).getMfaUserFactorsTable() + ") AS mfa_users";
+    public static int countUsersEnabledMfa(Start start, AppIdentifier appIdentifier) throws SQLException, StorageQueryException {
+        String QUERY = "SELECT COUNT(*) as total FROM (SELECT DISTINCT user_id FROM " + Config.getConfig(start).getMfaUserFactorsTable() + "WHERE app_id = ?) AS app_mfa_users";
 
-        return execute(start, QUERY, null, result -> {
+        return execute(start, QUERY, pst -> {
+            pst.setString(1, appIdentifier.getAppId());
+        }, result -> {
             if (result.next()) {
                 return result.getInt("total");
             }
@@ -64,14 +67,18 @@ public class ActiveUsersQueries {
         });
     }
 
-    public static int countUsersEnabledMfaAndActiveSince(Start start, long sinceTime) throws SQLException, StorageQueryException {
+    public static int countUsersEnabledMfaAndActiveSince(Start start, AppIdentifier appIdentifier, long sinceTime) throws SQLException, StorageQueryException {
         // Find unique users from mfa_user_factors table and join with user_last_active table
         String QUERY = "SELECT COUNT(*) as total FROM (SELECT DISTINCT user_id FROM " + Config.getConfig(start).getMfaUserFactorsTable() + ") AS mfa_users "
                 + "INNER JOIN " + Config.getConfig(start).getUserLastActiveTable() + " AS user_last_active "
                 + "ON mfa_users.user_id = user_last_active.user_id "
-                + "WHERE user_last_active.last_active_time >= ?";
+                + "WHERE user_last_active.app_id = ?"
+                + "AND user_last_active.last_active_time >= ?";
 
-        return execute(start, QUERY, pst -> pst.setLong(1, sinceTime), result -> {
+        return execute(start, QUERY, pst -> {
+            pst.setString(1, appIdentifier.getAppId());
+            pst.setLong(2, sinceTime);
+        }, result -> {
             if (result.next()) {
                 return result.getInt("total");
             }

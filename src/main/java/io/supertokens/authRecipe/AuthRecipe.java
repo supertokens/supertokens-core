@@ -205,6 +205,8 @@ public class AuthRecipe {
                 .deleteEmailVerificationUserInfo(appIdentifierWithStorage, userId);
         appIdentifierWithStorage.getUserRolesStorage()
                 .deleteAllRolesForUser(appIdentifierWithStorage, userId);
+        appIdentifierWithStorage.getMfaStorage()
+                .deleteUser(appIdentifierWithStorage, userId);
 
         TOTPSQLStorage totpStorage = appIdentifierWithStorage.getTOTPStorage();
         totpStorage.startTransaction(con -> {
@@ -212,9 +214,6 @@ public class AuthRecipe {
             totpStorage.commitTransaction(con);
             return null;
         });
-
-        MfaStorage mfaStorage = appIdentifierWithStorage.getMfaStorage();
-        mfaStorage.deleteUser(appIdentifierWithStorage, userId);
     }
 
     public static boolean deleteNonAuthRecipeUser(TenantIdentifierWithStorage
