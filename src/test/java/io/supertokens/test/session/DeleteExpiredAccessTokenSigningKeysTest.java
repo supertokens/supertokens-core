@@ -35,8 +35,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 public class DeleteExpiredAccessTokenSigningKeysTest {
     @Rule
@@ -114,9 +113,9 @@ public class DeleteExpiredAccessTokenSigningKeysTest {
 
         sqlStorage.startTransaction(con -> {
             KeyValueInfo[] keys = sqlStorage.getAccessTokenSigningKeys_Transaction(new AppIdentifier(null, null), con);
-            assertEquals(keys.length, 3);
+            assertEquals(keys.length, 4);
             for (KeyValueInfo key : keys) {
-                assertEquals("keep!", key.value);
+                assertNotEquals("clean!", key.value);
             }
             return true;
         });

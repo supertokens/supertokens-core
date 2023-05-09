@@ -81,9 +81,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
                                 main.getResourceDistributor()
                                         .setResource(app, RESOURCE_KEY, jwtSigningKey);
 
-                                if (!Main.isTesting) {
-                                    jwtSigningKey.generateKeysForSupportedAlgos(main);
-                                }
+                                jwtSigningKey.generateKeysForSupportedAlgos(main);
 
                             } catch (TenantOrAppNotFoundException e) {
                                 throw new IllegalStateException(e);
