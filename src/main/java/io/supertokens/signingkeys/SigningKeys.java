@@ -70,11 +70,21 @@ public class SigningKeys extends ResourceDistributor.SingletonResource {
     public static void loadForAllTenants(Main main, List<AppIdentifier> apps) {
         try {
             main.getResourceDistributor().withResourceDistributorLock(() -> {
+                Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingResources =
+                        main.getResourceDistributor()
+                                .getAllResourcesWithResourceKey(RESOURCE_KEY);
                 main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
                 for (AppIdentifier app : apps) {
-                    main.getResourceDistributor()
-                            .setResource(app, RESOURCE_KEY,
-                                    new SigningKeys(app, main));
+                    ResourceDistributor.SingletonResource resource = existingResources.get(
+                            new ResourceDistributor.KeyClass(app, RESOURCE_KEY));
+                    if (resource != null) {
+                        main.getResourceDistributor().setResource(app, RESOURCE_KEY,
+                                resource);
+                    } else {
+                        main.getResourceDistributor()
+                                .setResource(app, RESOURCE_KEY,
+                                        new SigningKeys(app, main));
+                    }
                 }
             });
         } catch (ResourceDistributor.FuncException e) {

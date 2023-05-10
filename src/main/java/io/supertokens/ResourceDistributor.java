@@ -110,7 +110,7 @@ public class ResourceDistributor {
         if (singletonResource == null) {
             return null;
         }
-        resources.remove(new KeyClass(tenantIdentifier, key), singletonResource);
+        resources.remove(new KeyClass(tenantIdentifier, key));
         return singletonResource;
     }
 

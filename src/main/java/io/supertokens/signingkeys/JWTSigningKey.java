@@ -65,17 +65,27 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
         try {
             main.getResourceDistributor().withResourceDistributorLock(() -> {
                 try {
+                    Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingResources =
+                            main.getResourceDistributor()
+                                    .getAllResourcesWithResourceKey(RESOURCE_KEY);
                     main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
                     for (AppIdentifier app : apps) {
-                        try {
-                            JWTSigningKey jwtSigningKey = new JWTSigningKey(app, main);
-                            main.getResourceDistributor()
-                                    .setResource(app, RESOURCE_KEY, jwtSigningKey);
+                        ResourceDistributor.SingletonResource resource = existingResources.get(
+                                new ResourceDistributor.KeyClass(app, RESOURCE_KEY));
+                        if (resource != null) {
+                            main.getResourceDistributor().setResource(app, RESOURCE_KEY,
+                                    resource);
+                        } else {
+                            try {
+                                JWTSigningKey jwtSigningKey = new JWTSigningKey(app, main);
+                                main.getResourceDistributor()
+                                        .setResource(app, RESOURCE_KEY, jwtSigningKey);
 
-                            jwtSigningKey.generateKeysForSupportedAlgos(main);
+                                jwtSigningKey.generateKeysForSupportedAlgos(main);
 
-                        } catch (TenantOrAppNotFoundException e) {
-                            throw new IllegalStateException(e);
+                            } catch (TenantOrAppNotFoundException e) {
+                                throw new IllegalStateException(e);
+                            }
                         }
                     }
                 } catch (UnsupportedJWTSigningAlgorithmException e) {
