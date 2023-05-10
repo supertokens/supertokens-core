@@ -94,7 +94,7 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
     public void constructor(Main main, AppIdentifier appIdentifier) {
         this.main = main;
         this.appIdentifier = appIdentifier;
-        Cronjobs.addCronjob(main, EELicenseCheck.getInstance(main, this.appIdentifier.getAsPublicTenantIdentifier()));
+        Cronjobs.addCronjob(main, EELicenseCheck.getNewInstance(main, this.appIdentifier.getAsPublicTenantIdentifier()));
         try {
             this.syncFeatureFlagWithLicenseKey();
         } catch (HttpResponseException | IOException e) {

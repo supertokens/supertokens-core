@@ -104,10 +104,25 @@ public class ResourceDistributor {
         return resource;
     }
 
+    public synchronized SingletonResource removeResource(TenantIdentifier tenantIdentifier,
+                                                      @Nonnull String key) {
+        SingletonResource singletonResource = resources.get(new KeyClass(tenantIdentifier, key));
+        if (singletonResource == null) {
+            return null;
+        }
+        resources.remove(new KeyClass(tenantIdentifier, key), singletonResource);
+        return singletonResource;
+    }
+
     public synchronized SingletonResource setResource(AppIdentifier appIdentifier,
                                                       @Nonnull String key,
                                                       SingletonResource resource) {
         return setResource(appIdentifier.getAsPublicTenantIdentifier(), key, resource);
+    }
+
+    public synchronized SingletonResource removeResource(AppIdentifier appIdentifier,
+                                                         @Nonnull String key) {
+        return removeResource(appIdentifier.getAsPublicTenantIdentifier(), key);
     }
 
     public synchronized void clearAllResourcesWithResourceKey(String inputKey) {

@@ -3,6 +3,7 @@ package io.supertokens.ee.cronjobs;
 import io.supertokens.Main;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
+import io.supertokens.cronjobs.Cronjobs;
 import io.supertokens.ee.EEFeatureFlag;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
@@ -16,15 +17,19 @@ public class EELicenseCheck extends CronTask {
         super("EELicenseCheck", main, targetTenant);
     }
 
-    public static EELicenseCheck getInstance(Main main, TenantIdentifier tenantIdentifier) {
+    public static EELicenseCheck getNewInstance(Main main, TenantIdentifier tenantIdentifier) {
         try {
-            return (EELicenseCheck) main.getResourceDistributor()
+            EELicenseCheck existingCronTask = (EELicenseCheck) main.getResourceDistributor()
                     .getResource(tenantIdentifier, RESOURCE_KEY);
+
+            Cronjobs.removeCronjob(main, existingCronTask);
+            main.getResourceDistributor().removeResource(tenantIdentifier, RESOURCE_KEY);
         } catch (TenantOrAppNotFoundException e) {
-            return (EELicenseCheck) main.getResourceDistributor()
-                    .setResource(tenantIdentifier, RESOURCE_KEY,
-                            new EELicenseCheck(main, tenantIdentifier));
+            // ignore
         }
+        return (EELicenseCheck) main.getResourceDistributor()
+                .setResource(tenantIdentifier, RESOURCE_KEY,
+                        new EELicenseCheck(main, tenantIdentifier));
     }
 
     @Override
