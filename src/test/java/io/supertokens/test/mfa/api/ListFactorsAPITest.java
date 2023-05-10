@@ -22,13 +22,14 @@ import io.supertokens.Main;
 import io.supertokens.pluginInterface.mfa.MfaStorage;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.httpRequest.HttpResponseException;
+import io.supertokens.test.mfa.MfaTestBase;
 import org.junit.Test;
 
 import java.util.HashMap;
 
 import static org.junit.Assert.assertThrows;
 
-public class ListFactorsAPITest extends MfaAPITest {
+public class ListFactorsAPITest extends MfaTestBase {
 
     private HttpResponseException listFactorsRequestAndReturnException(TestingProcessManager.TestingProcess process, HashMap<String, String> params) {
         return assertThrows(
@@ -56,7 +57,7 @@ public class ListFactorsAPITest extends MfaAPITest {
         // Missing userId
         {
             Exception e = listFactorsRequestAndReturnException(result.process, params);
-            checkFieldMissingErrorResponse(e, "userId");
+            checkResponseErrorContains(e, "Field name 'userId' is missing in GET request");
         }
         // Invalid userId
         {

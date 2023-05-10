@@ -17,16 +17,16 @@
 package io.supertokens.test.mfa.api;
 
 import com.google.gson.JsonObject;
-import io.supertokens.Main;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.httpRequest.HttpResponseException;
+import io.supertokens.test.mfa.MfaTestBase;
 import org.junit.Test;
 
 import java.util.HashMap;
 
 import static org.junit.Assert.assertThrows;
 
-public class DisableFactorAPITest extends MfaAPITest {
+public class DisableFactorAPITest extends MfaTestBase {
     private HttpResponseException disableFactorRequestAndReturnException(TestingProcessManager.TestingProcess process, JsonObject body) {
         return assertThrows(
                 HttpResponseException.class,
@@ -55,18 +55,17 @@ public class DisableFactorAPITest extends MfaAPITest {
             Exception e  = disableFactorRequestAndReturnException(result.process, body);
             checkFieldMissingErrorResponse(e, "userId");
 
-            body.addProperty("userId", "userId");
+            body.addProperty("userId", "");
             e  = disableFactorRequestAndReturnException(result.process, body);
             checkFieldMissingErrorResponse(e, "factor");
         }
         // Invalid userId/factor
         {
-            body.addProperty("userId", "");
+            body.addProperty("factor", "");
             Exception e = disableFactorRequestAndReturnException(result.process, body);
             checkResponseErrorContains(e, "userId cannot be empty");
 
             body.addProperty("userId", "userId");
-            body.addProperty("factor", "");
             e = disableFactorRequestAndReturnException(result.process, body);
             checkResponseErrorContains(e, "factor cannot be empty");
         }
@@ -78,7 +77,7 @@ public class DisableFactorAPITest extends MfaAPITest {
         assert res.get("didExist").getAsBoolean() == true;
 
         // Repeat the same request, should pass but wasAlreadyEnabled should be true
-        res = enableFactorRequest(result.process, body);
+        res = disableFactorRequest(result.process, body);
         assert res.get("status").getAsString().equals("OK");
         assert res.get("didExist").getAsBoolean() == false;
 

@@ -14,7 +14,7 @@
  *    under the License.
  */
 
-package io.supertokens.test.mfa.api;
+package io.supertokens.test.mfa;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
@@ -37,7 +37,7 @@ import java.util.HashMap;
 
 import static org.junit.Assert.*;
 
-public class MfaAPITest {
+public class MfaTestBase {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 

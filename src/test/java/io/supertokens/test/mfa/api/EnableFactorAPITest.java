@@ -19,13 +19,14 @@ package io.supertokens.test.mfa.api;
 import com.google.gson.JsonObject;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.httpRequest.HttpResponseException;
+import io.supertokens.test.mfa.MfaTestBase;
 import org.junit.Test;
 
 import java.util.HashMap;
 
 import static org.junit.Assert.assertThrows;
 
-public class EnableFactorAPITest extends MfaAPITest {
+public class EnableFactorAPITest extends MfaTestBase {
     private HttpResponseException enableFactorRequestAndReturnException(TestingProcessManager.TestingProcess process, JsonObject body) {
         return assertThrows(
                 HttpResponseException.class,
@@ -43,18 +44,17 @@ public class EnableFactorAPITest extends MfaAPITest {
             Exception e  = enableFactorRequestAndReturnException(result.process, body);
             checkFieldMissingErrorResponse(e, "userId");
 
-            body.addProperty("userId", "userId");
+            body.addProperty("userId", "");
             e  = enableFactorRequestAndReturnException(result.process, body);
             checkFieldMissingErrorResponse(e, "factor");
         }
         // Invalid userId/factor
         {
-            body.addProperty("userId", "");
+            body.addProperty("factor", "");
             Exception e = enableFactorRequestAndReturnException(result.process, body);
             checkResponseErrorContains(e, "userId cannot be empty");
 
             body.addProperty("userId", "userId");
-            body.addProperty("factor", "");
             e = enableFactorRequestAndReturnException(result.process, body);
             checkResponseErrorContains(e, "factor cannot be empty");
         }

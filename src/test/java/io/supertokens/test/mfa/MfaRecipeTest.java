@@ -17,67 +17,14 @@
 package io.supertokens.test.mfa;
 
 import io.supertokens.Main;
-import io.supertokens.ProcessState;
-import io.supertokens.featureflag.EE_FEATURES;
-import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.mfa.Mfa;
-import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.mfa.MfaStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
-import io.supertokens.storageLayer.StorageLayer;
-import io.supertokens.test.TestingProcessManager;
-import io.supertokens.test.Utils;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestRule;
 
 import static org.junit.Assert.assertNotNull;
 
-public class MfaRecipeTest {
-
-    @Rule
-    public TestRule watchman = Utils.getOnFailure();
-
-    @AfterClass
-    public static void afterTesting() {
-        Utils.afterTesting();
-    }
-
-    @Before
-    public void beforeEach() {
-        Utils.reset();
-    }
-
-    public class TestSetupResult {
-        public MfaStorage storage;
-        public TestingProcessManager.TestingProcess process;
-
-        public TestSetupResult(MfaStorage storage, TestingProcessManager.TestingProcess process) {
-            this.storage = storage;
-            this.process = process;
-        }
-    }
-
-    public TestSetupResult initSteps()
-            throws InterruptedException {
-        String[] args = {"../"};
-
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            return null;
-        }
-        MfaStorage storage = (MfaStorage) StorageLayer.getStorage(process.getProcess());
-
-        FeatureFlagTestContent.getInstance(process.main)
-                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MFA});
-
-        return new TestSetupResult(storage, process);
-    }
-
+public class MfaRecipeTest extends MfaTestBase {
     @Test
     public void enableFactorTests() throws Exception {
         TestSetupResult result = initSteps();
@@ -142,8 +89,8 @@ public class MfaRecipeTest {
         assert Mfa.enableFactor(tid, main, "userId", "f2") == true;
 
         assert Mfa.disableFactor(tid, main, "non-existent-userId", "f1") == false; // userId does not exist
-        assert Mfa.disableFactor(tid, main, "userId", "f3") == true; // f3 was enabled
-        assert Mfa.disableFactor(tid, main, "userId", "f3") == false; // f2 was never enabled
+        assert Mfa.disableFactor(tid, main, "userId", "f2") == true; // f2 was enabled
+        assert Mfa.disableFactor(tid, main, "userId", "f3") == false; // f3 was never enabled
 
         String[] factors = storage.listFactors(tid, "userId");
 
@@ -152,6 +99,6 @@ public class MfaRecipeTest {
         assert factors[0].equals("f1");
 
         factors = Mfa.listFactors(tid, main, "non-existent-user");
-        assert factors == null;
+        assert factors.length == 0;
     }
 }

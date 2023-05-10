@@ -20,12 +20,13 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.test.mfa.MfaTestBase;
 import io.supertokens.useridmapping.UserIdMapping;
 import org.junit.Test;
 
 import java.util.HashMap;
 
-public class MfaUserIdMappingTest extends MfaAPITest {
+public class MfaUserIdMappingTest extends MfaTestBase {
     @Test
     public void testExternalUserIdTranslation() throws Exception {
         TestSetupResult result = initSteps(true);
