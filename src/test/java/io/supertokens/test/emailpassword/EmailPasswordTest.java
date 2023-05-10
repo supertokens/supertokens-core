@@ -245,8 +245,7 @@ public class EmailPasswordTest {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
-        io.supertokens.emailpassword.EmailPasswordTest.getInstance(process.getProcess())
-                .setPasswordResetTokenLifetime(10);
+        Utils.setValueInConfig("password_reset_token_lifetime", "10");
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 

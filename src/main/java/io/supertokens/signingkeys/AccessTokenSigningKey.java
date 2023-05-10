@@ -92,30 +92,16 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
     public static void loadForAllTenants(Main main, List<AppIdentifier> apps) {
         try {
             main.getResourceDistributor().withResourceDistributorLock(() -> {
-                Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingResources =
-                        main.getResourceDistributor()
-                                .getAllResourcesWithResourceKey(RESOURCE_KEY);
                 main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
                 for (AppIdentifier app : apps) {
-                    ResourceDistributor.SingletonResource resource = existingResources.get(
-                            new ResourceDistributor.KeyClass(
-                                    app,
-                                    RESOURCE_KEY));
-                    if (resource != null) {
+                    try {
                         main.getResourceDistributor()
-                                .setResource(app,
+                                .setResource(
+                                        app,
                                         RESOURCE_KEY,
-                                        resource);
-                    } else {
-                        try {
-                            main.getResourceDistributor()
-                                    .setResource(
-                                            app,
-                                            RESOURCE_KEY,
-                                            new AccessTokenSigningKey(app, main));
-                        } catch (TenantOrAppNotFoundException e) {
-                            throw new IllegalStateException(e);
-                        }
+                                        new AccessTokenSigningKey(app, main));
+                    } catch (TenantOrAppNotFoundException e) {
+                        throw new IllegalStateException(e);
                     }
                 }
             });
