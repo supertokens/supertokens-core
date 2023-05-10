@@ -16,10 +16,15 @@
 
 package io.supertokens.test.mfa;
 
+import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.mfa.Mfa;
+import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.mfa.MfaStorage;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.*;
 import org.junit.Test;
 
 import static org.junit.Assert.assertNotNull;

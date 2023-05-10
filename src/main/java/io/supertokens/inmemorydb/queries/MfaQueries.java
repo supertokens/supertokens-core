@@ -38,7 +38,7 @@ public class MfaQueries {
                 + "factor_id VARCHAR(16) NOT NULL,"
                 + "PRIMARY KEY (app_id, tenant_id, user_id, factor_id),"
                 + "FOREIGN KEY (app_id, tenant_id)"
-                + "REFERENCES " + Config.getConfig(start).getTenantsTable() + " (app_id, tenant_id) ON DELETE CASCADE";
+                + "REFERENCES " + Config.getConfig(start).getTenantsTable() + " (app_id, tenant_id) ON DELETE CASCADE);";
     }
 
     public static int enableFactor(Start start, TenantIdentifier tenantIdentifier, String userId, String factorId)
@@ -90,6 +90,17 @@ public class MfaQueries {
         return update(start, QUERY, pst -> {
             pst.setString(1, appIdentifier.getAppId());
             pst.setString(2, userId);
+        });
+    }
+
+    public static int deleteUserFromTenant(Start start, TenantIdentifier tenantIdentifier, String userId)
+            throws StorageQueryException, SQLException {
+        String QUERY = "DELETE FROM " + Config.getConfig(start).getMfaUserFactorsTable() + " WHERE app_id = ? AND tenant_id = ? AND user_id = ?";
+
+        return update(start, QUERY, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, tenantIdentifier.getTenantId());
+            pst.setString(3, userId);
         });
     }
 }

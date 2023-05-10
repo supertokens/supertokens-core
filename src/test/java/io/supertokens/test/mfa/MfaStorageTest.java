@@ -16,8 +16,15 @@
 
 package io.supertokens.test.mfa;
 
+import com.google.gson.JsonObject;
+import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlag;
+import io.supertokens.featureflag.FeatureFlagTestContent;
+import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.mfa.MfaStorage;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.*;
 import org.junit.Test;
 
 import static org.junit.Assert.assertNotNull;
@@ -125,6 +132,58 @@ public class MfaStorageTest extends MfaTestBase {
         assert factors.length == 2;
         assert factors[0].equals("f1");
         assert factors[1].equals("f2");
+    }
+
+
+    @Test
+    public void deleteUserFromTenantTest() throws Exception {
+        TestSetupResult result = initSteps();
+        if (result == null) {
+            return;
+        }
+
+        FeatureFlagTestContent.getInstance(result.process.main)
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MFA, EE_FEATURES.MULTI_TENANCY});
+
+        MfaStorage mfaStorage = result.storage;
+
+        TenantIdentifierWithStorage publicTenant = new TenantIdentifierWithStorage(null, null, null, result.storage);
+        TenantIdentifierWithStorage privateTenant = new TenantIdentifierWithStorage(null, null, "t1", result.storage);
+
+        TenantConfig privateTenantConfig = new TenantConfig(privateTenant, new EmailPasswordConfig(true), new ThirdPartyConfig(true, null), new PasswordlessConfig(true), new JsonObject());
+
+        Multitenancy.addNewOrUpdateAppOrTenant(
+                result.process.main,
+                privateTenantConfig,
+                false
+        );
+
+        // we will use the same userId for both tenants
+        String userId = EmailPassword.signUp(
+                privateTenant,
+                result.process.main,
+                "user@example.com",
+                "password"
+        ).id;
+
+        // Iterate over all both tenants and enable the same set of factors for the same user ID
+        for (TenantIdentifierWithStorage tid : new TenantIdentifierWithStorage[]{publicTenant, privateTenant}) {
+            assert mfaStorage.enableFactor(tid, userId, "f1") == true;
+            assert mfaStorage.enableFactor(tid, userId, "f2") == true;
+        }
+
+        // Delete private tenant user
+        assert mfaStorage.deleteUserFromTenant(privateTenant, userId) == true;
+
+        // Deleting user from one tenant shouldn't affect others:
+        assert mfaStorage.listFactors(privateTenant, userId).length == 0;
+        assert mfaStorage.listFactors(publicTenant, userId).length == 2;
+
+         String userEmail = EmailPassword.signIn(privateTenant, result.process.main, "user@example.com", "password").email;
+         assert userEmail.equals("user@example.com"); // Use should still exist in the private tenant since we have only disabled MFA related info
+
+        // Deleting from non existent user should return false:
+        assert mfaStorage.deleteUserFromTenant(privateTenant, "non-existent-user") == false;
     }
 
 }
