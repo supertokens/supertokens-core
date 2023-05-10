@@ -165,8 +165,8 @@ public class MfaStorageTest {
         assert storage.enableFactor(tid, "user2", "f1") == true;
         assert storage.enableFactor(tid, "user2", "f3") == true;
 
-        assert storage.deleteUser(tid, "non-existent-user") == false;
-        assert storage.deleteUser(tid, "user2") == true;
+        assert storage.deleteUser(tid.toAppIdentifier(), "non-existent-user") == false;
+        assert storage.deleteUser(tid.toAppIdentifier(), "user2") == true;
 
         String[] factors = storage.listFactors(tid, "user2");
         assert factors == null;
