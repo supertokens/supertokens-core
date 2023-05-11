@@ -185,14 +185,12 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                 new StorageLayer(main, pluginFolderPath, configJson, TenantIdentifier.BASE_TENANT));
     }
 
-    @TestOnly
     public static void loadAllTenantStorage(Main main, TenantConfig[] tenants)
             throws InvalidConfigException, IOException {
-        loadAllTenantStorage(main, tenants, new ArrayList<>());
-    }
+        // We decided not to include tenantsThatChanged in this function because we do not want to reload the storage
+        // when the db config has not change. And when db config has changed, it results in a
+        // different userPoolId + connectionPoolId, which in turn results in a new storage instance
 
-    public static void loadAllTenantStorage(Main main, TenantConfig[] tenants, List<TenantIdentifier> tenantsThatChanged)
-            throws InvalidConfigException, IOException {
         ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.LOADING_ALL_TENANT_STORAGE, null);
 
         Map<ResourceDistributor.KeyClass, JsonObject> normalisedConfigs = Config.getNormalisedConfigsForAllTenants(
@@ -207,8 +205,9 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                 Storage storage = StorageLayer.getNewStorageInstance(main, normalisedConfigs.get(key), key.getTenantIdentifier(), true);
                 String userPoolId = storage.getUserPoolId();
                 String connectionPoolId = storage.getConnectionPoolId();
-                String uniqueId = userPoolId + "~" + connectionPoolId;
-                if (idToStorageMap.get(uniqueId) != null && !tenantsThatChanged.contains(key.getTenantIdentifier())) {
+                String configHash = storage.getConfigHash();
+                String uniqueId = userPoolId + "~" + connectionPoolId + "~" + configHash;
+                if (idToStorageMap.get(uniqueId) != null) {
                     // this means there already exists a storage object that can be reused
                     // for this tenant
                     resourceKeyToStorageMap.put(key, idToStorageMap.get(uniqueId));
@@ -234,7 +233,8 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                     StorageLayer currStorageLayer = (StorageLayer) resource;
                     String userPoolId = currStorageLayer.storage.getUserPoolId();
                     String connectionPoolId = currStorageLayer.storage.getConnectionPoolId();
-                    String uniqueId = userPoolId + "~" + connectionPoolId;
+                    String configHash = currStorageLayer.storage.getConfigHash();
+                    String uniqueId = userPoolId + "~" + connectionPoolId + "~" + configHash;
                     idToExistingStorageLayerMap.put(uniqueId, currStorageLayer);
                 }
                 main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
@@ -243,8 +243,9 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                     Storage currStorage = resourceKeyToStorageMap.get(key);
                     String userPoolId = currStorage.getUserPoolId();
                     String connectionPoolId = currStorage.getConnectionPoolId();
-                    String uniqueId = userPoolId + "~" + connectionPoolId;
-                    if (idToExistingStorageLayerMap.containsKey(uniqueId) && !tenantsThatChanged.contains(key.getTenantIdentifier())) {
+                    String configHash = currStorage.getConfigHash();
+                    String uniqueId = userPoolId + "~" + connectionPoolId + "~" + configHash;
+                    if (idToExistingStorageLayerMap.containsKey(uniqueId)) {
                         // we reuse the existing storage layer
                         resourceKeyToStorageMap.put(key, idToExistingStorageLayerMap.get(uniqueId).storage);
                     }

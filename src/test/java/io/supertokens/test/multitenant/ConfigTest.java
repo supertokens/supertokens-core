@@ -1253,6 +1253,8 @@ public class ConfigTest {
         {
             Config configBefore = Config.getInstance(t1, process.getProcess());
 
+            ProcessState.getInstance(process.getProcess()).clear();
+
             JsonObject coreConfig = new JsonObject();
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     t1,
@@ -1261,6 +1263,8 @@ public class ConfigTest {
                     new PasswordlessConfig(true),
                     coreConfig
             ), false);
+
+            assertNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.TENANTS_CHANGED_DURING_REFRESH_FROM_DB));
 
             Config configAfter = Config.getInstance(t1, process.getProcess());
 
@@ -1320,6 +1324,8 @@ public class ConfigTest {
         }
 
         {
+            ProcessState.getInstance(process.getProcess()).clear();
+
             Config configBefore = Config.getInstance(t1, process.getProcess());
 
             JsonObject coreConfig = new JsonObject();
@@ -1335,7 +1341,9 @@ public class ConfigTest {
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
                 coreConfig
-        ), false);
+            ), false);
+
+            assertNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.TENANTS_CHANGED_DURING_REFRESH_FROM_DB));
 
             Config configAfter = Config.getInstance(t1, process.getProcess());
 
@@ -1387,6 +1395,7 @@ public class ConfigTest {
         }
 
         {
+            ProcessState.getInstance(process.getProcess()).clear();
             Storage storageLayerBefore = StorageLayer.getStorage(t1, process.getProcess());
 
             JsonObject coreConfig = new JsonObject();
@@ -1398,6 +1407,7 @@ public class ConfigTest {
                     coreConfig
             ), false);
 
+            assertNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.TENANTS_CHANGED_DURING_REFRESH_FROM_DB));
             Storage storageLayerAfter = StorageLayer.getStorage(t1, process.getProcess());
 
             assertEquals(storageLayerBefore, storageLayerAfter);
@@ -1418,7 +1428,7 @@ public class ConfigTest {
 
             Storage storageLayerAfter = StorageLayer.getStorage(t1, process.getProcess());
 
-            assertNotEquals(storageLayerBefore, storageLayerAfter);
+            assertEquals(storageLayerBefore, storageLayerAfter);
         }
 
         {
@@ -1468,6 +1478,8 @@ public class ConfigTest {
         }
 
         {
+            ProcessState.getInstance(process.getProcess()).clear();
+
             FeatureFlag featureFlagBefore = FeatureFlag.getInstance(process.getProcess(), t1);
 
             JsonObject coreConfig = new JsonObject();
@@ -1479,6 +1491,7 @@ public class ConfigTest {
                     coreConfig
             ), false);
 
+            assertNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.TENANTS_CHANGED_DURING_REFRESH_FROM_DB));
             FeatureFlag featureFlagAfter = FeatureFlag.getInstance(process.getProcess(), t1);
 
             assertEquals(featureFlagBefore, featureFlagAfter);
@@ -1529,6 +1542,8 @@ public class ConfigTest {
         }
 
         {
+            ProcessState.getInstance(process.getProcess()).clear();
+
             AccessTokenSigningKey accessTokenSigningKeyBefore = AccessTokenSigningKey.getInstance(t1, process.getProcess());
             RefreshTokenKey refreshTokenKeyBefore = RefreshTokenKey.getInstance(t1, process.getProcess());
             JWTSigningKey jwtSigningKeyBefore = JWTSigningKey.getInstance(t1, process.getProcess());
@@ -1542,6 +1557,8 @@ public class ConfigTest {
                     new PasswordlessConfig(true),
                     coreConfig
             ), false);
+
+            assertNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.TENANTS_CHANGED_DURING_REFRESH_FROM_DB));
 
             AccessTokenSigningKey accessTokenSigningKeyAfter = AccessTokenSigningKey.getInstance(t1, process.getProcess());
             RefreshTokenKey refreshTokenKeyAfter = RefreshTokenKey.getInstance(t1, process.getProcess());

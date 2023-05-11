@@ -58,7 +58,7 @@ public class ResourceDistributor {
             throw new TenantOrAppNotFoundException(tenantIdentifier);
         }
 
-        MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired(true);
+        MultitenancyHelper.getInstance(main).refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(true);
 
         // we try again..
         resource = resources.get(new KeyClass(tenantIdentifier, key));

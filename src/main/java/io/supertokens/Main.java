@@ -209,7 +209,7 @@ public class Main {
             MultitenancyHelper.getInstance(this).loadConfig(new ArrayList<>());
 
             // init storage layers for each unique db connection based on unique (user pool ID, connection pool ID).
-            MultitenancyHelper.getInstance(this).loadStorageLayer(new ArrayList<>());
+            MultitenancyHelper.getInstance(this).loadStorageLayer();
         } catch (InvalidConfigException e) {
             throw new QuitProgramException(e);
         }

@@ -4,6 +4,7 @@ import io.supertokens.Main;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.cronjobs.Cronjobs;
+import io.supertokens.cronjobs.deleteExpiredAccessTokenSigningKeys.DeleteExpiredAccessTokenSigningKeys;
 import io.supertokens.ee.EEFeatureFlag;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
@@ -16,21 +17,14 @@ public class EELicenseCheck extends CronTask {
 
     public static final String RESOURCE_KEY = "io.supertokens.ee.cronjobs.EELicenseCheck";
 
-    private static EELicenseCheck instance = null;
-
     private EELicenseCheck(Main main, List<List<TenantIdentifier>> tenantsInfo) {
         super("EELicenseCheck", main, tenantsInfo, true);
     }
 
-    public static synchronized EELicenseCheck getOrCreateInstance(Main main) {
-        if (instance != null) {
-            return instance;
-        }
-
-        instance = new EELicenseCheck(main, StorageLayer.getTenantsWithUniqueUserPoolId(main));
-        Cronjobs.addCronjob(main, instance);
-
-        return instance;
+    public static EELicenseCheck init(Main main, List<List<TenantIdentifier>> tenantsInfo) {
+        return (EELicenseCheck) main.getResourceDistributor()
+                .setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY,
+                        new EELicenseCheck(main, tenantsInfo));
     }
 
     @Override

@@ -153,6 +153,11 @@ public class Start
     }
 
     @Override
+    public String getConfigHash() {
+        return "same-hash";
+    }
+
+    @Override
     public void assertThatConfigFromSameUserPoolIsNotConflicting(JsonObject otherConfig) throws InvalidConfigException {
         // there is nothing to check here cause there is no config specific to in mem db that the user
         // can give anyway.

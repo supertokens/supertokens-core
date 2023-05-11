@@ -16,9 +16,9 @@
 
 package io.supertokens.multitenancy;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.ProcessState;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
 import io.supertokens.cronjobs.Cronjobs;
@@ -85,7 +85,7 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
         return StorageLayer.getMultitenancyStorage(main).getAllTenants();
     }
 
-    public List<TenantIdentifier> refreshTenantsInCoreIfRequired(boolean reloadAllResources) {
+    public List<TenantIdentifier> refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(boolean reloadAllResources) {
         try {
             return main.getResourceDistributor().withResourceDistributorLock(() -> {
                 try {
@@ -115,6 +115,8 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
                         return tenantsThatChanged;
                     }
 
+                    ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.TENANTS_CHANGED_DURING_REFRESH_FROM_DB, null);
+
                     // this order is important. For example, storageLayer depends on config, and cronjobs depends on
                     // storageLayer
                     if (reloadAllResources) {
@@ -123,7 +125,7 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
                         // we do these two here cause they don't really depend on any table in the db, and these
                         // two are required for allocating any further resource for this tenant
                         loadConfig(tenantsThatChanged);
-                        loadStorageLayer(tenantsThatChanged);
+                        loadStorageLayer();
                     }
                     return tenantsThatChanged;
                 } catch (Exception e) {
@@ -141,7 +143,7 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
             main.getResourceDistributor().withResourceDistributorLock(() -> {
                 try {
                     loadConfig(tenantsThatChanged);
-                    loadStorageLayer(tenantsThatChanged);
+                    loadStorageLayer();
                     loadFeatureFlag(tenantsThatChanged);
                     loadSigningKeys(tenantsThatChanged);
                     refreshCronjobs();
@@ -159,8 +161,8 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
         Config.loadAllTenantConfig(main, this.tenantConfigs, tenantsThatChanged);
     }
 
-    public void loadStorageLayer(List<TenantIdentifier> tenantsThatChanged) throws IOException, InvalidConfigException {
-        StorageLayer.loadAllTenantStorage(main, this.tenantConfigs, tenantsThatChanged);
+    public void loadStorageLayer() throws IOException, InvalidConfigException {
+        StorageLayer.loadAllTenantStorage(main, this.tenantConfigs);
     }
 
     public void loadFeatureFlag(List<TenantIdentifier> tenantsThatChanged) {
