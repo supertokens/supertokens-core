@@ -55,6 +55,7 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -205,20 +206,20 @@ public class Main {
 
         try {
             // load all configs for each of the tenants.
-            MultitenancyHelper.getInstance(this).loadConfig();
+            MultitenancyHelper.getInstance(this).loadConfig(new ArrayList<>());
 
             // init storage layers for each unique db connection based on unique (user pool ID, connection pool ID).
-            MultitenancyHelper.getInstance(this).loadStorageLayer();
+            MultitenancyHelper.getInstance(this).loadStorageLayer(new ArrayList<>());
         } catch (InvalidConfigException e) {
             throw new QuitProgramException(e);
         }
 
         // load feature flag for all loaded apps
-        MultitenancyHelper.getInstance(this).loadFeatureFlag();
+        MultitenancyHelper.getInstance(this).loadFeatureFlag(new ArrayList<>());
 
         // init signing keys
         try {
-            MultitenancyHelper.getInstance(this).loadSigningKeys();
+            MultitenancyHelper.getInstance(this).loadSigningKeys(new ArrayList<>());
         } catch (UnsupportedJWTSigningAlgorithmException e) {
             throw new QuitProgramException(e);
         }

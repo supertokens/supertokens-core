@@ -16,6 +16,7 @@
 
 package io.supertokens.multitenancy;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
@@ -84,46 +85,46 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
         return StorageLayer.getMultitenancyStorage(main).getAllTenants();
     }
 
-    public void refreshTenantsInCoreIfRequired(boolean reloadAllResources) {
+    public List<TenantIdentifier> refreshTenantsInCoreIfRequired(boolean reloadAllResources) {
         try {
-            main.getResourceDistributor().withResourceDistributorLock(() -> {
+            return main.getResourceDistributor().withResourceDistributorLock(() -> {
                 try {
                     TenantConfig[] tenantsFromDb = getAllTenantsFromDb();
 
-                    boolean hasChanged = false;
-                    if (tenantsFromDb.length != tenantConfigs.length) {
-                        hasChanged = true;
-                    } else {
-                        Map<TenantIdentifier, TenantConfig> fromDb = new HashMap<>();
-                        for (TenantConfig t : tenantsFromDb) {
-                            fromDb.put(t.tenantIdentifier, t);
-                        }
-                        for (TenantConfig t : this.tenantConfigs) {
-                            TenantConfig fromDbConfig = fromDb.get(t.tenantIdentifier);
-                            if (!t.deepEquals(fromDbConfig)) {
-                                hasChanged = true;
-                                break;
-                            }
+                    List<TenantIdentifier> tenantsThatChanged = new ArrayList<>();
+
+                    Map<TenantIdentifier, TenantConfig> fromDb = new HashMap<>();
+                    for (TenantConfig t : tenantsFromDb) {
+                        fromDb.put(t.tenantIdentifier, t);
+                    }
+                    for (TenantConfig t : this.tenantConfigs) {
+                        TenantConfig fromDbConfig = fromDb.get(t.tenantIdentifier);
+                        if (!t.deepEquals(fromDbConfig)) {
+                            tenantsThatChanged.add(t.tenantIdentifier);
                         }
                     }
 
+                    boolean sameNumberOfTenants = tenantsFromDb.length == this.tenantConfigs.length;
+
                     this.tenantConfigs = tenantsFromDb;
-                    if (!hasChanged) {
-                        return;
+                    if (tenantsThatChanged.size() == 0 && sameNumberOfTenants) {
+                        return tenantsThatChanged;
                     }
 
                     // this order is important. For example, storageLayer depends on config, and cronjobs depends on
                     // storageLayer
                     if (reloadAllResources) {
-                        forceReloadAllResources();
+                        forceReloadAllResources(tenantsThatChanged);
                     } else {
                         // we do these two here cause they don't really depend on any table in the db, and these
                         // two are required for allocating any further resource for this tenant
-                        loadConfig();
-                        loadStorageLayer();
+                        loadConfig(tenantsThatChanged);
+                        loadStorageLayer(tenantsThatChanged);
                     }
+                    return tenantsThatChanged;
                 } catch (Exception e) {
                     Logging.error(main, TenantIdentifier.BASE_TENANT, e.getMessage(), false, e);
+                    return new ArrayList<>();
                 }
             });
         } catch (ResourceDistributor.FuncException e) {
@@ -131,33 +132,34 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public void forceReloadAllResources() {
+    public void forceReloadAllResources(List<TenantIdentifier> tenantsThatChanged) {
         try {
             main.getResourceDistributor().withResourceDistributorLock(() -> {
                 try {
-                    loadConfig();
-                    loadStorageLayer();
-                    loadFeatureFlag();
-                    loadSigningKeys();
+                    loadConfig(tenantsThatChanged);
+                    loadStorageLayer(tenantsThatChanged);
+                    loadFeatureFlag(tenantsThatChanged);
+                    loadSigningKeys(tenantsThatChanged);
                     refreshCronjobs();
                 } catch (Exception e) {
                     Logging.error(main, TenantIdentifier.BASE_TENANT, e.getMessage(), false, e);
                 }
+                return null;
             });
         } catch (ResourceDistributor.FuncException e) {
             throw new IllegalStateException(e);
         }
     }
 
-    public void loadConfig() throws IOException, InvalidConfigException {
-        Config.loadAllTenantConfig(main, this.tenantConfigs);
+    public void loadConfig(List<TenantIdentifier> tenantsThatChanged) throws IOException, InvalidConfigException {
+        Config.loadAllTenantConfig(main, this.tenantConfigs, tenantsThatChanged);
     }
 
-    public void loadStorageLayer() throws IOException, InvalidConfigException {
-        StorageLayer.loadAllTenantStorage(main, this.tenantConfigs);
+    public void loadStorageLayer(List<TenantIdentifier> tenantsThatChanged) throws IOException, InvalidConfigException {
+        StorageLayer.loadAllTenantStorage(main, this.tenantConfigs, tenantsThatChanged);
     }
 
-    public void loadFeatureFlag() {
+    public void loadFeatureFlag(List<TenantIdentifier> tenantsThatChanged) {
         List<AppIdentifier> apps = new ArrayList<>();
         Set<AppIdentifier> appsSet = new HashSet<>();
         for (TenantConfig t : tenantConfigs) {
@@ -167,10 +169,10 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
             apps.add(t.tenantIdentifier.toAppIdentifier());
             appsSet.add(t.tenantIdentifier.toAppIdentifier());
         }
-        FeatureFlag.loadForAllTenants(main, apps);
+        FeatureFlag.loadForAllTenants(main, apps, tenantsThatChanged);
     }
 
-    public void loadSigningKeys() throws UnsupportedJWTSigningAlgorithmException {
+    public void loadSigningKeys(List<TenantIdentifier> tenantsThatChanged) throws UnsupportedJWTSigningAlgorithmException {
         List<AppIdentifier> apps = new ArrayList<>();
         Set<AppIdentifier> appsSet = new HashSet<>();
         for (TenantConfig t : tenantConfigs) {
@@ -180,10 +182,10 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
             apps.add(t.tenantIdentifier.toAppIdentifier());
             appsSet.add(t.tenantIdentifier.toAppIdentifier());
         }
-        AccessTokenSigningKey.loadForAllTenants(main, apps);
-        RefreshTokenKey.loadForAllTenants(main, apps);
-        JWTSigningKey.loadForAllTenants(main, apps);
-        SigningKeys.loadForAllTenants(main, apps);
+        AccessTokenSigningKey.loadForAllTenants(main, apps, tenantsThatChanged);
+        RefreshTokenKey.loadForAllTenants(main, apps, tenantsThatChanged);
+        JWTSigningKey.loadForAllTenants(main, apps, tenantsThatChanged);
+        SigningKeys.loadForAllTenants(main, apps, tenantsThatChanged);
     }
 
     private void refreshCronjobs() {
@@ -193,7 +195,14 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
 
     public TenantConfig[] getAllTenants() {
         try {
-            return main.getResourceDistributor().withResourceDistributorLockWithReturn(() -> this.tenantConfigs);
+            return main.getResourceDistributor().withResourceDistributorLockWithReturn(() -> {
+                TenantConfig[] tenantConfigs = new TenantConfig[this.tenantConfigs.length];
+
+                for (int i = 0; i < this.tenantConfigs.length; i++) {
+                    tenantConfigs[i] = new TenantConfig(this.tenantConfigs[i]);
+                }
+                return tenantConfigs;
+            });
         } catch (ResourceDistributor.FuncException e) {
             throw new IllegalStateException(e);
         }

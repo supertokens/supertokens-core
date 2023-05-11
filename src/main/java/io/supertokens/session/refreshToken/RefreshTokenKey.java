@@ -26,6 +26,7 @@ import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.session.noSqlStorage.SessionNoSQLStorage_1;
@@ -72,7 +73,7 @@ public class RefreshTokenKey extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public static void loadForAllTenants(Main main, List<AppIdentifier> apps) {
+    public static void loadForAllTenants(Main main, List<AppIdentifier> apps, List<TenantIdentifier> tenantsThatChanged) {
         try {
             main.getResourceDistributor().withResourceDistributorLock(() -> {
                 Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingResources =
@@ -82,7 +83,7 @@ public class RefreshTokenKey extends ResourceDistributor.SingletonResource {
                 for (AppIdentifier app : apps) {
                     ResourceDistributor.SingletonResource resource = existingResources.get(
                             new ResourceDistributor.KeyClass(app, RESOURCE_KEY));
-                    if (resource != null) {
+                    if (resource != null && !tenantsThatChanged.contains(app.getAsPublicTenantIdentifier())) {
                         main.getResourceDistributor().setResource(app, RESOURCE_KEY,
                                 resource);
                     } else {
@@ -95,6 +96,7 @@ public class RefreshTokenKey extends ResourceDistributor.SingletonResource {
                         }
                     }
                 }
+                return null;
             });
         } catch (ResourceDistributor.FuncException e) {
             throw new RuntimeException(e);

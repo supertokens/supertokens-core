@@ -24,8 +24,8 @@ import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.config.CoreConfigTestContent;
-import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.Multitenancy;
@@ -37,6 +37,10 @@ import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.session.refreshToken.RefreshTokenKey;
+import io.supertokens.signingkeys.AccessTokenSigningKey;
+import io.supertokens.signingkeys.JWTSigningKey;
+import io.supertokens.signingkeys.SigningKeys;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -47,7 +51,7 @@ import org.junit.rules.TestRule;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
+import java.util.ArrayList;
 
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertFalse;
@@ -141,7 +145,7 @@ public class ConfigTest {
                 new TenantConfig(new TenantIdentifier("abc", null, null), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        tenantConfig)});
+                        tenantConfig)}, new ArrayList<>());
 
         Assert.assertEquals(Config.getConfig(process.getProcess()).getRefreshTokenValidity(),
                 (long) 144001 * 60 * 1000);
@@ -193,7 +197,7 @@ public class ConfigTest {
                     new TenantConfig(new TenantIdentifier("abc", null, null), new EmailPasswordConfig(false),
                             new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                             new PasswordlessConfig(false),
-                            tenantConfig)});
+                            tenantConfig)}, new ArrayList<>());
             fail();
         } catch (InvalidConfigException e) {
             assert (e.getMessage()
@@ -225,7 +229,7 @@ public class ConfigTest {
                     new TenantConfig(new TenantIdentifier(null, null, "abc"), new EmailPasswordConfig(false),
                             new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                             new PasswordlessConfig(false),
-                            tenantConfig)});
+                            tenantConfig)}, new ArrayList<>());
             fail();
         } catch (InvalidConfigException e) {
             assert (e.getMessage()
@@ -267,7 +271,7 @@ public class ConfigTest {
                     new TenantConfig(new TenantIdentifier("abc", null, null), new EmailPasswordConfig(false),
                             new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                             new PasswordlessConfig(false),
-                            tenantConfig)});
+                            tenantConfig)}, new ArrayList<>());
 
         }
 
@@ -340,7 +344,7 @@ public class ConfigTest {
                     tenantConfig);
         }
 
-        Config.loadAllTenantConfig(process.getProcess(), tenants);
+        Config.loadAllTenantConfig(process.getProcess(), tenants, new ArrayList<>());
 
         Assert.assertEquals(Config.getConfig(new TenantIdentifier(null, null, null), process.getProcess())
                         .getEmailVerificationTokenLifetime(),
@@ -410,7 +414,7 @@ public class ConfigTest {
         }
 
         try {
-            Config.loadAllTenantConfig(process.getProcess(), tenants);
+            Config.loadAllTenantConfig(process.getProcess(), tenants, new ArrayList<>());
             fail();
         } catch (InvalidConfigException e) {
             assert (e.getMessage()
@@ -1223,4 +1227,287 @@ public class ConfigTest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    @Test
+    public void testThatConfigChangesReloadsConfig() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        TenantIdentifier t1 = new TenantIdentifier(null, null, "t1");
+
+        {
+            JsonObject coreConfig = new JsonObject();
+            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                    t1,
+                    new EmailPasswordConfig(true),
+                    new ThirdPartyConfig(true, null),
+                    new PasswordlessConfig(true),
+                    coreConfig
+            ), false);
+        }
+
+        {
+            Config configBefore = Config.getInstance(t1, process.getProcess());
+
+            JsonObject coreConfig = new JsonObject();
+            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                    t1,
+                    new EmailPasswordConfig(true),
+                    new ThirdPartyConfig(true, null),
+                    new PasswordlessConfig(true),
+                    coreConfig
+            ), false);
+
+            Config configAfter = Config.getInstance(t1, process.getProcess());
+
+            assertEquals(configBefore, configAfter);
+        }
+
+        {
+            Config configBefore = Config.getInstance(t1, process.getProcess());
+
+            JsonObject coreConfig = new JsonObject();
+            coreConfig.addProperty("email_verification_token_lifetime", 2000);
+            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                    t1,
+                    new EmailPasswordConfig(true),
+                    new ThirdPartyConfig(true, null),
+                    new PasswordlessConfig(true),
+                    coreConfig
+            ), false);
+
+            Config configAfter = Config.getInstance(t1, process.getProcess());
+
+            assertNotEquals(configBefore, configAfter);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testThatConfigChangesReloadsStorageLayer() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        TenantIdentifier t1 = new TenantIdentifier(null, null, "t1");
+
+        {
+            JsonObject coreConfig = new JsonObject();
+            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                    t1,
+                    new EmailPasswordConfig(true),
+                    new ThirdPartyConfig(true, null),
+                    new PasswordlessConfig(true),
+                    coreConfig
+            ), false);
+        }
+
+        {
+            Storage storageLayerBefore = StorageLayer.getStorage(t1, process.getProcess());
+
+            JsonObject coreConfig = new JsonObject();
+            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                    t1,
+                    new EmailPasswordConfig(true),
+                    new ThirdPartyConfig(true, null),
+                    new PasswordlessConfig(true),
+                    coreConfig
+            ), false);
+
+            Storage storageLayerAfter = StorageLayer.getStorage(t1, process.getProcess());
+
+            assertEquals(storageLayerBefore, storageLayerAfter);
+        }
+
+        {
+            Storage storageLayerBefore = StorageLayer.getStorage(t1, process.getProcess());
+
+            JsonObject coreConfig = new JsonObject();
+            coreConfig.addProperty("email_verification_token_lifetime", 2000);
+            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                    t1,
+                    new EmailPasswordConfig(true),
+                    new ThirdPartyConfig(true, null),
+                    new PasswordlessConfig(true),
+                    coreConfig
+            ), false);
+
+            Storage storageLayerAfter = StorageLayer.getStorage(t1, process.getProcess());
+
+            assertEquals(storageLayerBefore, storageLayerAfter);
+        }
+
+        {
+            Storage storageLayerBefore = StorageLayer.getStorage(t1, process.getProcess());
+
+            JsonObject coreConfig = new JsonObject();
+            StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                    .modifyConfigToAddANewUserPoolForTesting(coreConfig, 1);
+
+            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                    t1,
+                    new EmailPasswordConfig(true),
+                    new ThirdPartyConfig(true, null),
+                    new PasswordlessConfig(true),
+                    coreConfig
+            ), false);
+
+            Storage storageLayerAfter = StorageLayer.getStorage(t1, process.getProcess());
+
+            assertNotEquals(storageLayerBefore, storageLayerAfter);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testThatConfigChangesReloadsFeatureFlag() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        AppIdentifier t1 = new AppIdentifier(null, "a1");
+
+        {
+            JsonObject coreConfig = new JsonObject();
+            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                    t1.getAsPublicTenantIdentifier(),
+                    new EmailPasswordConfig(true),
+                    new ThirdPartyConfig(true, null),
+                    new PasswordlessConfig(true),
+                    coreConfig
+            ), false);
+        }
+
+        {
+            FeatureFlag featureFlagBefore = FeatureFlag.getInstance(process.getProcess(), t1);
+
+            JsonObject coreConfig = new JsonObject();
+            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                    t1.getAsPublicTenantIdentifier(),
+                    new EmailPasswordConfig(true),
+                    new ThirdPartyConfig(true, null),
+                    new PasswordlessConfig(true),
+                    coreConfig
+            ), false);
+
+            FeatureFlag featureFlagAfter = FeatureFlag.getInstance(process.getProcess(), t1);
+
+            assertEquals(featureFlagBefore, featureFlagAfter);
+        }
+
+        {
+            FeatureFlag featureFlagBefore = FeatureFlag.getInstance(process.getProcess(), t1);
+
+            JsonObject coreConfig = new JsonObject();
+            coreConfig.addProperty("email_verification_token_lifetime", 2000);
+            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                    t1.getAsPublicTenantIdentifier(),
+                    new EmailPasswordConfig(true),
+                    new ThirdPartyConfig(true, null),
+                    new PasswordlessConfig(true),
+                    coreConfig
+            ), false);
+
+            FeatureFlag featureFlagAfter = FeatureFlag.getInstance(process.getProcess(), t1);
+
+            assertNotEquals(featureFlagBefore, featureFlagAfter);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testThatConfigChangesReloadsSigningKeys() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        AppIdentifier t1 = new AppIdentifier(null, "a1");
+
+        {
+            JsonObject coreConfig = new JsonObject();
+            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                    t1.getAsPublicTenantIdentifier(),
+                    new EmailPasswordConfig(true),
+                    new ThirdPartyConfig(true, null),
+                    new PasswordlessConfig(true),
+                    coreConfig
+            ), false);
+        }
+
+        {
+            AccessTokenSigningKey accessTokenSigningKeyBefore = AccessTokenSigningKey.getInstance(t1, process.getProcess());
+            RefreshTokenKey refreshTokenKeyBefore = RefreshTokenKey.getInstance(t1, process.getProcess());
+            JWTSigningKey jwtSigningKeyBefore = JWTSigningKey.getInstance(t1, process.getProcess());
+            SigningKeys signingKeysBefore = SigningKeys.getInstance(t1, process.getProcess());
+
+            JsonObject coreConfig = new JsonObject();
+            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                    t1.getAsPublicTenantIdentifier(),
+                    new EmailPasswordConfig(true),
+                    new ThirdPartyConfig(true, null),
+                    new PasswordlessConfig(true),
+                    coreConfig
+            ), false);
+
+            AccessTokenSigningKey accessTokenSigningKeyAfter = AccessTokenSigningKey.getInstance(t1, process.getProcess());
+            RefreshTokenKey refreshTokenKeyAfter = RefreshTokenKey.getInstance(t1, process.getProcess());
+            JWTSigningKey jwtSigningKeyAfter = JWTSigningKey.getInstance(t1, process.getProcess());
+            SigningKeys signingKeysAfter = SigningKeys.getInstance(t1, process.getProcess());
+
+            assertEquals(accessTokenSigningKeyBefore, accessTokenSigningKeyAfter);
+            assertEquals(refreshTokenKeyBefore, refreshTokenKeyAfter);
+            assertEquals(jwtSigningKeyBefore, jwtSigningKeyAfter);
+            assertEquals(signingKeysBefore, signingKeysAfter);
+        }
+
+        {
+            AccessTokenSigningKey accessTokenSigningKeyBefore = AccessTokenSigningKey.getInstance(t1, process.getProcess());
+            RefreshTokenKey refreshTokenKeyBefore = RefreshTokenKey.getInstance(t1, process.getProcess());
+            JWTSigningKey jwtSigningKeyBefore = JWTSigningKey.getInstance(t1, process.getProcess());
+            SigningKeys signingKeysBefore = SigningKeys.getInstance(t1, process.getProcess());
+
+            JsonObject coreConfig = new JsonObject();
+            coreConfig.addProperty("email_verification_token_lifetime", 2000);
+            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                    t1.getAsPublicTenantIdentifier(),
+                    new EmailPasswordConfig(true),
+                    new ThirdPartyConfig(true, null),
+                    new PasswordlessConfig(true),
+                    coreConfig
+            ), false);
+
+            AccessTokenSigningKey accessTokenSigningKeyAfter = AccessTokenSigningKey.getInstance(t1, process.getProcess());
+            RefreshTokenKey refreshTokenKeyAfter = RefreshTokenKey.getInstance(t1, process.getProcess());
+            JWTSigningKey jwtSigningKeyAfter = JWTSigningKey.getInstance(t1, process.getProcess());
+            SigningKeys signingKeysAfter = SigningKeys.getInstance(t1, process.getProcess());
+
+            assertNotEquals(accessTokenSigningKeyBefore, accessTokenSigningKeyAfter);
+            assertNotEquals(refreshTokenKeyBefore, refreshTokenKeyAfter);
+            assertNotEquals(jwtSigningKeyBefore, jwtSigningKeyAfter);
+            assertNotEquals(signingKeysBefore, signingKeysAfter);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
 }

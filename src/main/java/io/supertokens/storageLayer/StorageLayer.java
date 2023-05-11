@@ -185,7 +185,13 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                 new StorageLayer(main, pluginFolderPath, configJson, TenantIdentifier.BASE_TENANT));
     }
 
+    @TestOnly
     public static void loadAllTenantStorage(Main main, TenantConfig[] tenants)
+            throws InvalidConfigException, IOException {
+        loadAllTenantStorage(main, tenants, new ArrayList<>());
+    }
+
+    public static void loadAllTenantStorage(Main main, TenantConfig[] tenants, List<TenantIdentifier> tenantsThatChanged)
             throws InvalidConfigException, IOException {
         ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.LOADING_ALL_TENANT_STORAGE, null);
 
@@ -202,7 +208,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                 String userPoolId = storage.getUserPoolId();
                 String connectionPoolId = storage.getConnectionPoolId();
                 String uniqueId = userPoolId + "~" + connectionPoolId;
-                if (idToStorageMap.get(uniqueId) != null) {
+                if (idToStorageMap.get(uniqueId) != null && !tenantsThatChanged.contains(key.getTenantIdentifier())) {
                     // this means there already exists a storage object that can be reused
                     // for this tenant
                     resourceKeyToStorageMap.put(key, idToStorageMap.get(uniqueId));
@@ -283,6 +289,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                         // we still want other tenants to continue to work
                     }
                 }
+                return null;
             });
         } catch (ResourceDistributor.FuncException e) {
             throw new RuntimeException(e);

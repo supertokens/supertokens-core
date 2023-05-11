@@ -34,6 +34,7 @@ import io.supertokens.pluginInterface.jwt.exceptions.DuplicateKeyIdException;
 import io.supertokens.pluginInterface.jwt.nosqlstorage.JWTRecipeNoSQLStorage_1;
 import io.supertokens.pluginInterface.jwt.sqlstorage.JWTRecipeSQLStorage;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.session.noSqlStorage.SessionNoSQLStorage_1;
@@ -89,7 +90,7 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
         }
     }
 
-    public static void loadForAllTenants(Main main, List<AppIdentifier> apps) {
+    public static void loadForAllTenants(Main main, List<AppIdentifier> apps, List<TenantIdentifier> tenantsThatChanged) {
         try {
             main.getResourceDistributor().withResourceDistributorLock(() -> {
                 Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingResources =
@@ -101,7 +102,7 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                             new ResourceDistributor.KeyClass(
                                     app,
                                     RESOURCE_KEY));
-                    if (resource != null) {
+                    if (resource != null && !tenantsThatChanged.contains(app.getAsPublicTenantIdentifier())) {
                         main.getResourceDistributor()
                                 .setResource(app,
                                         RESOURCE_KEY,
@@ -118,6 +119,7 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                         }
                     }
                 }
+                return null;
             });
         } catch (ResourceDistributor.FuncException e) {
             throw new RuntimeException(e);
