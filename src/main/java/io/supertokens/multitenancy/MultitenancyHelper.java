@@ -91,16 +91,20 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
                 try {
                     TenantConfig[] tenantsFromDb = getAllTenantsFromDb();
 
+                    Map<ResourceDistributor.KeyClass, JsonObject> normalizedTenantsFromDb = Config.getNormalisedConfigsForAllTenants(
+                            tenantsFromDb, Config.getBaseConfigAsJsonObject(main));
+
+                    Map<ResourceDistributor.KeyClass, JsonObject> normalizedTenantsFromMemory = Config.getNormalisedConfigsForAllTenants(
+                            this.tenantConfigs, Config.getBaseConfigAsJsonObject(main));
+
                     List<TenantIdentifier> tenantsThatChanged = new ArrayList<>();
 
-                    Map<TenantIdentifier, TenantConfig> fromDb = new HashMap<>();
-                    for (TenantConfig t : tenantsFromDb) {
-                        fromDb.put(t.tenantIdentifier, t);
-                    }
-                    for (TenantConfig t : this.tenantConfigs) {
-                        TenantConfig fromDbConfig = fromDb.get(t.tenantIdentifier);
-                        if (!t.deepEquals(fromDbConfig)) {
-                            tenantsThatChanged.add(t.tenantIdentifier);
+                    for (Map.Entry<ResourceDistributor.KeyClass, JsonObject> entry : normalizedTenantsFromMemory.entrySet()) {
+                        JsonObject tenantConfigFromMemory = entry.getValue();
+                        JsonObject tenantConfigFromDb = normalizedTenantsFromDb.get(entry.getKey());
+
+                        if (!tenantConfigFromMemory.equals(tenantConfigFromDb)) {
+                            tenantsThatChanged.add(entry.getKey().getTenantIdentifier());
                         }
                     }
 
@@ -196,6 +200,8 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
     public TenantConfig[] getAllTenants() {
         try {
             return main.getResourceDistributor().withResourceDistributorLockWithReturn(() -> {
+                // Returning a deep copy of the tenantConfigs array so that the functions consuming it
+                // do not modify the original array
                 TenantConfig[] tenantConfigs = new TenantConfig[this.tenantConfigs.length];
 
                 for (int i = 0; i < this.tenantConfigs.length; i++) {

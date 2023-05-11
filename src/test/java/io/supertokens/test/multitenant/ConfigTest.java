@@ -1290,6 +1290,81 @@ public class ConfigTest {
     }
 
     @Test
+    public void testThatConfigChangesInAppReloadsConfigInTenant() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        TenantIdentifier a1 = new TenantIdentifier(null, "a1", null);
+        TenantIdentifier t1 = new TenantIdentifier(null, "a1", "t1");
+
+        {
+            JsonObject coreConfig = new JsonObject();
+            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                    a1,
+                    new EmailPasswordConfig(true),
+                    new ThirdPartyConfig(true, null),
+                    new PasswordlessConfig(true),
+                    coreConfig
+            ), false);
+            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                    t1,
+                    new EmailPasswordConfig(true),
+                    new ThirdPartyConfig(true, null),
+                    new PasswordlessConfig(true),
+                    coreConfig
+            ), false);
+        }
+
+        {
+            Config configBefore = Config.getInstance(t1, process.getProcess());
+
+            JsonObject coreConfig = new JsonObject();
+            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                    a1,
+                    new EmailPasswordConfig(true),
+                    new ThirdPartyConfig(true, null),
+                    new PasswordlessConfig(true),
+                    coreConfig
+            ), false);Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                t1,
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                coreConfig
+        ), false);
+
+            Config configAfter = Config.getInstance(t1, process.getProcess());
+
+            assertEquals(configBefore, configAfter);
+        }
+
+        {
+            Config configBefore = Config.getInstance(t1, process.getProcess());
+
+            JsonObject coreConfig = new JsonObject();
+            coreConfig.addProperty("email_verification_token_lifetime", 2000);
+            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                    a1,
+                    new EmailPasswordConfig(true),
+                    new ThirdPartyConfig(true, null),
+                    new PasswordlessConfig(true),
+                    coreConfig
+            ), false);
+
+            Config configAfter = Config.getInstance(t1, process.getProcess());
+
+            assertNotEquals(configBefore, configAfter);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
     public void testThatConfigChangesReloadsStorageLayer() throws Exception {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
@@ -1343,7 +1418,7 @@ public class ConfigTest {
 
             Storage storageLayerAfter = StorageLayer.getStorage(t1, process.getProcess());
 
-            assertEquals(storageLayerBefore, storageLayerAfter);
+            assertNotEquals(storageLayerBefore, storageLayerAfter);
         }
 
         {

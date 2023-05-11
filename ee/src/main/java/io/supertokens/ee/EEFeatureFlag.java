@@ -9,7 +9,6 @@ import com.auth0.jwt.interfaces.RSAKeyProvider;
 import com.google.gson.*;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
-import io.supertokens.cronjobs.Cronjobs;
 import io.supertokens.cronjobs.telemetry.Telemetry;
 import io.supertokens.ee.cronjobs.EELicenseCheck;
 import io.supertokens.featureflag.EE_FEATURES;
@@ -94,7 +93,7 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
     public void constructor(Main main, AppIdentifier appIdentifier) {
         this.main = main;
         this.appIdentifier = appIdentifier;
-        Cronjobs.addCronjob(main, EELicenseCheck.getNewInstance(main, this.appIdentifier.getAsPublicTenantIdentifier()));
+        EELicenseCheck.getOrCreateInstance(main);
         try {
             this.syncFeatureFlagWithLicenseKey();
         } catch (HttpResponseException | IOException e) {

@@ -6,36 +6,36 @@ import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.cronjobs.Cronjobs;
 import io.supertokens.ee.EEFeatureFlag;
 import io.supertokens.featureflag.FeatureFlag;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
-import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.storageLayer.StorageLayer;
+
+import java.util.List;
 
 public class EELicenseCheck extends CronTask {
 
     public static final String RESOURCE_KEY = "io.supertokens.ee.cronjobs.EELicenseCheck";
 
-    private EELicenseCheck(Main main, TenantIdentifier targetTenant) {
-        super("EELicenseCheck", main, targetTenant);
+    private static EELicenseCheck instance = null;
+
+    private EELicenseCheck(Main main, List<List<TenantIdentifier>> tenantsInfo) {
+        super("EELicenseCheck", main, tenantsInfo, true);
     }
 
-    public static EELicenseCheck getNewInstance(Main main, TenantIdentifier tenantIdentifier) {
-        try {
-            EELicenseCheck existingCronTask = (EELicenseCheck) main.getResourceDistributor()
-                    .getResource(tenantIdentifier, RESOURCE_KEY);
-
-            Cronjobs.removeCronjob(main, existingCronTask);
-            main.getResourceDistributor().removeResource(tenantIdentifier, RESOURCE_KEY);
-        } catch (TenantOrAppNotFoundException e) {
-            // ignore
+    public static synchronized EELicenseCheck getOrCreateInstance(Main main) {
+        if (instance != null) {
+            return instance;
         }
-        return (EELicenseCheck) main.getResourceDistributor()
-                .setResource(tenantIdentifier, RESOURCE_KEY,
-                        new EELicenseCheck(main, tenantIdentifier));
+
+        instance = new EELicenseCheck(main, StorageLayer.getTenantsWithUniqueUserPoolId(main));
+        Cronjobs.addCronjob(main, instance);
+
+        return instance;
     }
 
     @Override
-    protected void doTaskForTargetTenant(TenantIdentifier tenantIdentifier) throws Exception {
-        // this cronjob is for one tenant only (the targetTenant provided in the constructor)
-        FeatureFlag.getInstance(main, tenantIdentifier.toAppIdentifier()).syncFeatureFlagWithLicenseKey();
+    protected void doTaskPerApp(AppIdentifier app) throws Exception {
+        FeatureFlag.getInstance(main, app).syncFeatureFlagWithLicenseKey();
     }
 
     @Override

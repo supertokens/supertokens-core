@@ -244,7 +244,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                     String userPoolId = currStorage.getUserPoolId();
                     String connectionPoolId = currStorage.getConnectionPoolId();
                     String uniqueId = userPoolId + "~" + connectionPoolId;
-                    if (idToExistingStorageLayerMap.containsKey(uniqueId)) {
+                    if (idToExistingStorageLayerMap.containsKey(uniqueId) && !tenantsThatChanged.contains(key.getTenantIdentifier())) {
                         // we reuse the existing storage layer
                         resourceKeyToStorageMap.put(key, idToExistingStorageLayerMap.get(uniqueId).storage);
                     }
