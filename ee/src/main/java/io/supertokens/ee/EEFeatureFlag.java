@@ -95,6 +95,8 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         this.main = main;
         this.appIdentifier = appIdentifier;
 
+        // EELicenseCheck.init does not create a new CronTask each time, it creates for the first time and
+        // returns the same instance from there on.
         Cronjobs.addCronjob(main, EELicenseCheck.init(main, StorageLayer.getTenantsWithUniqueUserPoolId(main)));
 
         try {
