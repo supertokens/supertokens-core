@@ -216,6 +216,8 @@ public class CronjobTest {
     public void testNormalCronjob() throws Exception {
         String[] args = {"../"};
 
+        normalCronjobCounter = 0;
+
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -229,7 +231,6 @@ public class CronjobTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
     }
-
 
     @Test
     public void testAddingCronJobTwice() throws Exception {
