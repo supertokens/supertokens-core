@@ -198,6 +198,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         validateTenantConfig(main, newTenant, shouldPreventDbConfigUpdate);
 
         boolean creationInSharedDbSucceeded = false;
+        List<TenantIdentifier> tenantsThatChanged = new ArrayList<>();
         try {
             StorageLayer.getMultitenancyStorage(main).createTenant(newTenant);
             creationInSharedDbSucceeded = true;
@@ -206,7 +207,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             // the tenant being there in the tenants table. But that insertion is done in the addTenantIdInUserPool
             // function below. So in order to actually refresh the resources, we have a finally block here which
             // calls the forceReloadAllResources function.
-            MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired(false);
+            tenantsThatChanged = MultitenancyHelper.getInstance(main).refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(false);
             try {
                 ((MultitenancyStorage) StorageLayer.getStorage(newTenant.tenantIdentifier, main))
                         .addTenantIdInTargetStorage(newTenant.tenantIdentifier);
@@ -219,7 +220,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             if (!creationInSharedDbSucceeded) {
                 try {
                     StorageLayer.getMultitenancyStorage(main).overwriteTenantConfig(newTenant);
-                    MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired(false);
+                    tenantsThatChanged = MultitenancyHelper.getInstance(main).refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(false);
 
                     // we do this extra step cause if previously an attempt to add a tenant failed midway,
                     // such that the main tenant was added in the user pool, but did not get created
@@ -252,7 +253,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         } catch (DuplicateClientTypeException e) {
             throw new InvalidProviderConfigException("Duplicate clientType was specified in the clients list.");
         } finally {
-            MultitenancyHelper.getInstance(main).forceReloadAllResources();
+            MultitenancyHelper.getInstance(main).forceReloadAllResources(tenantsThatChanged);
         }
     }
 
@@ -269,7 +270,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             // but not from the main table.
         }
         boolean didExist = StorageLayer.getMultitenancyStorage(main).deleteTenantInfoInBaseStorage(tenantIdentifier);
-        MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired(true);
+        MultitenancyHelper.getInstance(main).refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(true);
         return didExist;
     }
 
@@ -291,7 +292,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             // but not from the main table.
         }
         boolean didExist = StorageLayer.getMultitenancyStorage(main).deleteAppInfoInBaseStorage(appIdentifier);
-        MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired(true);
+        MultitenancyHelper.getInstance(main).refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(true);
         return didExist;
     }
 
@@ -321,7 +322,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             // but not from the main table.
         }
         boolean didExist = StorageLayer.getMultitenancyStorage(main).deleteConnectionUriDomainInfoInBaseStorage(connectionUriDomain);
-        MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired(true);
+        MultitenancyHelper.getInstance(main).refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(true);
         return didExist;
     }
 
@@ -371,7 +372,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
     }
 
     public static TenantConfig[] getAllTenantsForApp(AppIdentifier appIdentifier, Main main) {
-        MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired(true);
+        MultitenancyHelper.getInstance(main).refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(true);
         TenantConfig[] tenants = MultitenancyHelper.getInstance(main).getAllTenants();
         List<TenantConfig> tenantList = new ArrayList<>();
 
@@ -393,7 +394,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         if (connectionUriDomain == null) {
             connectionUriDomain = TenantIdentifier.DEFAULT_CONNECTION_URI;
         }
-        MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired(true);
+        MultitenancyHelper.getInstance(main).refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(true);
         TenantConfig[] tenants = MultitenancyHelper.getInstance(main).getAllTenants();
         List<TenantConfig> tenantList = new ArrayList<>();
 
@@ -412,7 +413,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
     }
 
     public static TenantConfig[] getAllTenants(Main main) {
-        MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired(true);
+        MultitenancyHelper.getInstance(main).refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(true);
         return MultitenancyHelper.getInstance(main).getAllTenants();
     }
 }

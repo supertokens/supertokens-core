@@ -31,6 +31,7 @@ import io.supertokens.pluginInterface.jwt.exceptions.DuplicateKeyIdException;
 import io.supertokens.pluginInterface.jwt.nosqlstorage.JWTRecipeNoSQLStorage_1;
 import io.supertokens.pluginInterface.jwt.sqlstorage.JWTRecipeSQLStorage;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
@@ -60,7 +61,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public static void loadForAllTenants(Main main, List<AppIdentifier> apps)
+    public static void loadForAllTenants(Main main, List<AppIdentifier> apps, List<TenantIdentifier> tenantsThatChanged)
             throws UnsupportedJWTSigningAlgorithmException {
         try {
             main.getResourceDistributor().withResourceDistributorLock(() -> {
@@ -72,7 +73,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
                     for (AppIdentifier app : apps) {
                         ResourceDistributor.SingletonResource resource = existingResources.get(
                                 new ResourceDistributor.KeyClass(app, RESOURCE_KEY));
-                        if (resource != null) {
+                        if (resource != null && !tenantsThatChanged.contains(app.getAsPublicTenantIdentifier())) {
                             main.getResourceDistributor().setResource(app, RESOURCE_KEY,
                                     resource);
                         } else {
@@ -91,6 +92,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
                 } catch (UnsupportedJWTSigningAlgorithmException e) {
                     throw new ResourceDistributor.FuncException(e);
                 }
+                return null;
             });
         } catch (ResourceDistributor.FuncException e) {
             if (e.getCause() instanceof UnsupportedJWTSigningAlgorithmException) {

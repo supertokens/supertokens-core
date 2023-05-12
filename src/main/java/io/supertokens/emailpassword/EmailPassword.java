@@ -69,9 +69,6 @@ public class EmailPassword {
 
     private static long getPasswordResetTokenLifetime(TenantIdentifier tenantIdentifier, Main main)
             throws TenantOrAppNotFoundException {
-        if (Main.isTesting) {
-            return EmailPasswordTest.getInstance(main).getPasswordResetTokenLifetime();
-        }
         return Config.getConfig(tenantIdentifier, main).getPasswordResetTokenLifetime();
     }
 

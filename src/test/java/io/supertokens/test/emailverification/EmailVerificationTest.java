@@ -185,9 +185,7 @@ public class EmailVerificationTest {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
-
-        io.supertokens.emailverification.EmailVerificationTest.getInstance(process.getProcess())
-                .setEmailVerificationTokenLifetime(10);
+        Utils.setValueInConfig("email_verification_token_lifetime", "10");
 
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
