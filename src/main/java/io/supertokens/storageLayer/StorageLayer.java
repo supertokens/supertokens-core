@@ -246,16 +246,9 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                     if (idToExistingStorageLayerMap.containsKey(uniqueId)) {
                         // we reuse the existing storage layer
                         resourceKeyToStorageMap.put(key, idToExistingStorageLayerMap.get(uniqueId).storage);
-                    } else {
-                        try {
-                            // Creating new storage here with logging enabled
-                            resourceKeyToStorageMap.put(
-                                    key, StorageLayer.getNewStorageInstance(
-                                            main, normalisedConfigs.get(key), key.getTenantIdentifier(), false));
-                        } catch (InvalidConfigException e) {
-                            throw new RuntimeException(e); // Should never come here
-                        }
                     }
+
+                    resourceKeyToStorageMap.get(key).setLogLevels(Config.getBaseConfig(main).getLogLevels(main));
 
                     main.getResourceDistributor().setResource(key.getTenantIdentifier(), RESOURCE_KEY,
                             new StorageLayer(resourceKeyToStorageMap.get(key)));
