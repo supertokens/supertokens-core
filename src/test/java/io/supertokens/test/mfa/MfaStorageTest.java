@@ -19,10 +19,8 @@ package io.supertokens.test.mfa;
 import com.google.gson.JsonObject;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.featureflag.EE_FEATURES;
-import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.multitenancy.Multitenancy;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.mfa.MfaStorage;
 import io.supertokens.pluginInterface.multitenancy.*;
 import org.junit.Test;
@@ -121,8 +119,8 @@ public class MfaStorageTest extends MfaTestBase {
         assert storage.enableFactor(tid, "user2", "f1") == true;
         assert storage.enableFactor(tid, "user2", "f3") == true;
 
-        assert storage.deleteUser(tid.toAppIdentifier(), "non-existent-user") == false;
-        assert storage.deleteUser(tid.toAppIdentifier(), "user2") == true;
+        assert storage.deleteMfaInfoForUser(tid.toAppIdentifier(), "non-existent-user") == false;
+        assert storage.deleteMfaInfoForUser(tid.toAppIdentifier(), "user2") == true;
 
         String[] factors = storage.listFactors(tid, "user2");
         assert factors.length == 0;
@@ -173,7 +171,7 @@ public class MfaStorageTest extends MfaTestBase {
         }
 
         // Delete private tenant user
-        assert mfaStorage.deleteUserFromTenant(privateTenant, userId) == true;
+        assert mfaStorage.deleteMfaInfoForUser(privateTenant, userId) == true;
 
         // Deleting user from one tenant shouldn't affect others:
         assert mfaStorage.listFactors(privateTenant, userId).length == 0;
@@ -183,7 +181,7 @@ public class MfaStorageTest extends MfaTestBase {
          assert userEmail.equals("user@example.com"); // Use should still exist in the private tenant since we have only disabled MFA related info
 
         // Deleting from non existent user should return false:
-        assert mfaStorage.deleteUserFromTenant(privateTenant, "non-existent-user") == false;
+        assert mfaStorage.deleteMfaInfoForUser(privateTenant, "non-existent-user") == false;
     }
 
 }

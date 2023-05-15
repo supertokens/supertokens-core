@@ -26,7 +26,6 @@ import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.dashboard.DashboardSearchTags;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.pluginInterface.mfa.MfaStorage;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -206,7 +205,7 @@ public class AuthRecipe {
         appIdentifierWithStorage.getUserRolesStorage()
                 .deleteAllRolesForUser(appIdentifierWithStorage, userId);
         appIdentifierWithStorage.getMfaStorage()
-                .deleteUser(appIdentifierWithStorage, userId);
+                .deleteMfaInfoForUser(appIdentifierWithStorage, userId);
 
         TOTPSQLStorage totpStorage = appIdentifierWithStorage.getTOTPStorage();
         totpStorage.startTransaction(con -> {
@@ -239,6 +238,10 @@ public class AuthRecipe {
 
         didExist = tenantIdentifierWithStorage.getTOTPStorage()
                 .removeUser(tenantIdentifierWithStorage, userId);
+        finalDidExist = finalDidExist || didExist;
+
+        didExist = tenantIdentifierWithStorage.getMfaStorage()
+                .deleteMfaInfoForUser(tenantIdentifierWithStorage, userId);
         finalDidExist = finalDidExist || didExist;
 
         return finalDidExist;
