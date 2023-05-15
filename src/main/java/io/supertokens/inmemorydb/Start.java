@@ -2534,4 +2534,9 @@ public class Start
     public Set<String> getValidFieldsInConfig() {
         return new HashSet<>(); // TODO
     }
+
+    @Override
+    public void setLogLevels(Set<LOG_LEVEL> logLevels) {
+        // TODO
+    }
 }

@@ -247,6 +247,8 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                         resourceKeyToStorageMap.put(key, idToExistingStorageLayerMap.get(uniqueId).storage);
                     }
 
+                    resourceKeyToStorageMap.get(key).setLogLevels(Config.getBaseConfig(main).getLogLevels(main));
+
                     main.getResourceDistributor().setResource(key.getTenantIdentifier(), RESOURCE_KEY,
                             new StorageLayer(resourceKeyToStorageMap.get(key)));
                 }
