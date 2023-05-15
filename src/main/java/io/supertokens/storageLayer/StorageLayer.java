@@ -85,7 +85,6 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         if (doNotLog) {
             logLevels = new HashSet<>();
         } else {
-            result.initFileLogging(Config.getBaseConfig(main).getInfoLogPath(main), Config.getBaseConfig(main).getErrorLogPath(main));
             logLevels = Config.getBaseConfig(main).getLogLevels(main);
         }
         // this is intentionally null, null below cause log levels is per core and not per tenant anyway
