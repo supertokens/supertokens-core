@@ -2077,14 +2077,6 @@ public class Start
         }
         else if (className.equals(JWTRecipeStorage.class.getName())) {
             /* Since JWT recipe tables do not store userId we do not add any data to them */
-        } else if (className.equals(TOTPStorage.class.getName())) {
-            try {
-                TOTPDevice device = new TOTPDevice(userId, "testDevice", "secret", 0,
-                        30, false);
-                TOTPQueries.createDevice(this, device);
-            } catch (StorageTransactionLogicException e) {
-                throw new StorageQueryException(e.actualException);
-            }
         } else {
             throw new IllegalStateException("ClassName: " + className +
                     " is not part of NonAuthRecipeStorage");
