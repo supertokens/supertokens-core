@@ -180,7 +180,6 @@ public class AuthRecipe {
         }
     }
 
-
     @TestOnly
     public static void deleteUser(Main main, String userId)
             throws StorageQueryException, StorageTransactionLogicException {

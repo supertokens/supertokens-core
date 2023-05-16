@@ -14,7 +14,9 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.test.totp.TotpLicenseTest;
+import io.supertokens.test.totp.TOTPRecipeTest;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -84,7 +86,8 @@ public class VerifyTotpAPITest {
             return;
         }
 
-        FeatureFlagTestContent.getInstance(process.main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[] { EE_FEATURES.TOTP });
+        FeatureFlagTestContent.getInstance(process.main)
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.TOTP});
 
         // Setup user and devices:
         JsonObject createDeviceReq = new JsonObject();
@@ -205,6 +208,20 @@ public class VerifyTotpAPITest {
                     Utils.getCdiVersionStringLatestForTests(),
                     "totp");
             assert res2.get("status").getAsString().equals("INVALID_TOTP_ERROR");
+
+            // Try with a new valid code during rate limiting:
+            body.addProperty("totp", TOTPRecipeTest.generateTotpCode(process.getProcess(), device));
+            res = HttpRequestForTesting.sendJsonPOSTRequest(
+                    process.getProcess(),
+                    "",
+                    "http://localhost:3567/recipe/totp/verify",
+                    body,
+                    1000,
+                    1000,
+                    null,
+                    Utils.getCdiVersionStringLatestForTests(),
+                    "totp");
+            assert res.get("status").getAsString().equals("LIMIT_REACHED_ERROR");
 
             // try verifying device for a non-existent user
             body.addProperty("userId", "non-existent-user");

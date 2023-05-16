@@ -21,6 +21,7 @@ import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.emailverification.exception.EmailAlreadyVerifiedException;
+import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.inmemorydb.queries.*;
 import io.supertokens.pluginInterface.*;
@@ -72,6 +73,13 @@ import io.supertokens.pluginInterface.totp.exception.UsedCodeAlreadyExistsExcept
 import io.supertokens.pluginInterface.totp.sqlStorage.TOTPSQLStorage;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
+import io.supertokens.pluginInterface.totp.TOTPDevice;
+import io.supertokens.pluginInterface.totp.TOTPUsedCode;
+import io.supertokens.pluginInterface.totp.exception.DeviceAlreadyExistsException;
+import io.supertokens.pluginInterface.totp.exception.TotpNotEnabledException;
+import io.supertokens.pluginInterface.totp.exception.UnknownDeviceException;
+import io.supertokens.pluginInterface.totp.exception.UsedCodeAlreadyExistsException;
+import io.supertokens.pluginInterface.totp.sqlStorage.TOTPSQLStorage;
 import io.supertokens.pluginInterface.useridmapping.exception.UnknownSuperTokensUserIdException;
 import io.supertokens.pluginInterface.useridmapping.exception.UserIdMappingAlreadyExistsException;
 import io.supertokens.pluginInterface.usermetadata.UserMetadataStorage;
@@ -81,6 +89,7 @@ import io.supertokens.pluginInterface.userroles.exception.DuplicateUserRoleMappi
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
 import io.supertokens.session.Session;
+import io.supertokens.totp.Totp;
 import io.supertokens.usermetadata.UserMetadata;
 import io.supertokens.userroles.UserRoles;
 import org.jetbrains.annotations.NotNull;
@@ -2057,7 +2066,16 @@ public class Start
             } catch (StorageTransactionLogicException e) {
                 throw new StorageQueryException(e);
             }
-        } else if (className.equals(JWTRecipeStorage.class.getName())) {
+        } else if (className.equals(TOTPStorage.class.getName())) {
+            try {
+                TOTPDevice device = new TOTPDevice(userId, "testDevice", "secret", 0, 30, false);
+                TOTPQueries.createDevice(this, device);
+            }
+            catch (StorageTransactionLogicException e) {
+                throw new StorageQueryException(e.actualException);
+            }
+        }
+        else if (className.equals(JWTRecipeStorage.class.getName())) {
             /* Since JWT recipe tables do not store userId we do not add any data to them */
         } else if (className.equals(TOTPStorage.class.getName())) {
             try {
@@ -2167,9 +2185,7 @@ public class Start
     public void updateDashboardUsersPasswordWithUserId_Transaction
             (AppIdentifier appIdentifier, TransactionConnection con, String userId,
              String newPassword)
-            throws StorageQueryException,
-
-            UserIdNotFoundException {
+            throws StorageQueryException, UserIdNotFoundException {
         // TODO..
         Connection sqlCon = (Connection) con.getConnection();
         try {

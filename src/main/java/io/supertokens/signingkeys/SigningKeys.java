@@ -342,7 +342,7 @@ public class SigningKeys extends ResourceDistributor.SingletonResource {
      * @param bigInt The big integer to be converted. Must not be
      *               {@code null}.
      * @return A byte array representation of the big integer, without the
-     * sign bit.
+     *         sign bit.
      */
     private static byte[] toBytesUnsigned(final BigInteger bigInt) {
 

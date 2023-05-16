@@ -28,10 +28,7 @@ import io.supertokens.signingkeys.AccessTokenSigningKey;
 import io.supertokens.signingkeys.SigningKeys;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.TestRule;
 
 import java.time.Instant;
@@ -311,8 +308,7 @@ public class SessionTest5 {
 
         SessionInformationHolder createInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
                 userDataInDatabase, false, true, false);
-        SessionInformationHolder createInfoStatic = Session.createNewSession(process.getProcess(), userId,
-                userDataInJWT,
+        SessionInformationHolder createInfoStatic = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
                 userDataInDatabase, false, true, true);
 
         Thread.sleep(1500);
@@ -375,8 +371,7 @@ public class SessionTest5 {
         assertEquals(2, signingKeysInstance.getDynamicKeys().size());
         assertEquals(3, signingKeysInstance.getAllKeys().size());
 
-        SessionInformationHolder createInfoAfterOverlap = Session.createNewSession(process.getProcess(), userId,
-                userDataInJWT,
+        SessionInformationHolder createInfoAfterOverlap = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
                 userDataInDatabase, false, true, false);
         JWT.JWTPreParseInfo preParseInfoAfterOverlap = JWT.preParseJWTInfo(createInfoAfterOverlap.accessToken.token);
 

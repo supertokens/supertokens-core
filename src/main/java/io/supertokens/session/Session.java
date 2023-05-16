@@ -396,6 +396,9 @@ public class Session {
                 if (e.actualException instanceof AccessTokenPayloadError) {
                     throw (AccessTokenPayloadError) e.actualException;
                 }
+                if (e.actualException instanceof AccessTokenPayloadError) {
+                    throw (AccessTokenPayloadError) e.actualException;
+                }
                 throw e;
             }
         } else if (tenantIdentifierWithStorage.getSessionStorage().getType() ==

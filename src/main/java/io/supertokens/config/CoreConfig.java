@@ -25,6 +25,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.cliOptions.CLIOptions;
+import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.pluginInterface.LOG_LEVEL;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import org.apache.catalina.filters.RemoteAddrFilter;
@@ -224,9 +225,11 @@ public class CoreConfig {
     }
 
     public int getArgon2HashingPoolSize() {
-        // the reason we do Math.max below is that if the password hashing algo is bcrypt,
+        // the reason we do Math.max below is that if the password hashing algo is
+        // bcrypt,
         // then we don't check the argon2 hashing pool size config at all. In this case,
-        // if the user gives a <= 0 number, it crashes the core (since it creates a blockedqueue in PaswordHashing
+        // if the user gives a <= 0 number, it crashes the core (since it creates a
+        // blockedqueue in PaswordHashing
         // .java with length <= 0). So we do a Math.max
         return Math.max(1, argon2_hashing_pool_size);
     }
@@ -442,6 +445,14 @@ public class CoreConfig {
             throw new InvalidConfigException("'totp_rate_limit_cooldown_sec' must be > 0");
         }
 
+        if (totp_max_attempts <= 0) {
+            throw new QuitProgramException("'totp_max_attempts' must be > 0");
+        }
+
+        if (totp_rate_limit_cooldown_sec <= 0) {
+            throw new QuitProgramException("'totp_rate_limit_cooldown_sec' must be > 0");
+        }
+
         if (max_server_pool_size <= 0) {
             throw new InvalidConfigException(
                     "'max_server_pool_size' must be >= 1. The config file can be found here: "
@@ -576,7 +587,6 @@ public class CoreConfig {
             }
         }
     }
-
 
     static void assertThatCertainConfigIsNotSetForAppOrTenants(JsonObject config) throws InvalidConfigException {
         // these are all configs that are per core. So we do not allow the developer to set these dynamically.

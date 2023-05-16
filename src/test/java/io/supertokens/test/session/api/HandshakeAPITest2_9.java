@@ -25,6 +25,7 @@ import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.signingkeys.AccessTokenSigningKey;
 import io.supertokens.signingkeys.SigningKeys;
 import io.supertokens.signingkeys.SigningKeys.KeyInfo;
 import io.supertokens.test.TestingProcessManager;

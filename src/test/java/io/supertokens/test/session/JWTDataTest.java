@@ -286,6 +286,7 @@ public class JWTDataTest {
                 userDataInDatabase);
 
         assert sessionInfo.accessToken != null;
+        assert sessionInfo.refreshToken != null;
 
         JsonObject newUserDataInJWT = new JsonObject();
         newUserDataInJWT.addProperty("key", "value2");
@@ -299,6 +300,16 @@ public class JWTDataTest {
         assertEquals(newInfo.session.userDataInJWT, newUserDataInJWT);
         assert newInfo.accessToken != null;
         assertNotEquals(newInfo.accessToken, sessionInfo.accessToken);
+
+        ProcessState.getInstance(process.getProcess()).clear();
+
+        SessionInformationHolder newInfo2 = Session.getSession(process.getProcess(), sessionInfo.accessToken.token,
+                newInfo.antiCsrfToken, false, true, false);
+
+        assertNull(ProcessState.getInstance(process.getProcess())
+                .getLastEventByName(ProcessState.PROCESS_STATE.GET_SESSION_NEW_TOKENS));
+        assertEquals(newInfo2.session.userDataInJWT, sessionInfo.session.userDataInJWT);
+        assert newInfo2.accessToken == null;
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

@@ -44,6 +44,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Arrays;
 
 public class SessionRegenerateAPI extends WebserverAPI {
 

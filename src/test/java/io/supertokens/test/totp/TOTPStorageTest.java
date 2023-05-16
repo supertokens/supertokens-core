@@ -27,6 +27,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
+import java.io.IOException;
+
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 

@@ -46,7 +46,7 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 
 public class Dashboard {
-    public static final int MAX_NUMBER_OF_FREE_DASHBOARD_USERS = 1;
+    public static final int MAX_NUMBER_OF_FREE_DASHBOARD_USERS = 3;
     public static final long DASHBOARD_SESSION_DURATION = 2592000000L; // 30 days in milliseconds
 
     @TestOnly
