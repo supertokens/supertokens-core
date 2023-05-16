@@ -241,9 +241,6 @@ public class Main {
         // removes expired TOTP used tokens
         Cronjobs.addCronjob(this, DeleteExpiredTotpTokens.init(this, uniqueUserPoolIdsTenants));
 
-        // removes expired TOTP used tokens
-        Cronjobs.addCronjob(this, DeleteExpiredTotpTokens.getInstance(this));
-
         // removes expired dashboard session
         Cronjobs.addCronjob(this, DeleteExpiredDashboardSessions.init(this, uniqueUserPoolIdsTenants));
 

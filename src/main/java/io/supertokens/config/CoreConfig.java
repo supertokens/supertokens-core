@@ -445,14 +445,6 @@ public class CoreConfig {
             throw new InvalidConfigException("'totp_rate_limit_cooldown_sec' must be > 0");
         }
 
-        if (totp_max_attempts <= 0) {
-            throw new QuitProgramException("'totp_max_attempts' must be > 0");
-        }
-
-        if (totp_rate_limit_cooldown_sec <= 0) {
-            throw new QuitProgramException("'totp_rate_limit_cooldown_sec' must be > 0");
-        }
-
         if (max_server_pool_size <= 0) {
             throw new InvalidConfigException(
                     "'max_server_pool_size' must be >= 1. The config file can be found here: "
