@@ -73,7 +73,7 @@ public class Session {
             JWT.JWTException, UnsupportedJWTSigningAlgorithmException, AccessTokenPayloadError {
         try {
             return createNewSession(tenantIdentifierWithStorage, main, userId, userDataInJWT, userDataInDatabase, false,
-                    true, false);
+                    AccessToken.getLatestVersion(), false);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
@@ -92,7 +92,7 @@ public class Session {
         try {
             return createNewSession(
                     new TenantIdentifierWithStorage(null, null, null, storage), main,
-                    userId, userDataInJWT, userDataInDatabase, false, true, false);
+                    userId, userDataInJWT, userDataInDatabase, false, AccessToken.getLatestVersion(), false);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
@@ -102,7 +102,7 @@ public class Session {
     public static SessionInformationHolder createNewSession(Main main, @Nonnull String userId,
                                                             @Nonnull JsonObject userDataInJWT,
                                                             @Nonnull JsonObject userDataInDatabase,
-                                                            boolean enableAntiCsrf, boolean useV3AccessToken,
+                                                            boolean enableAntiCsrf, AccessToken.VERSION version,
                                                             boolean useStaticKey)
             throws NoSuchAlgorithmException, StorageQueryException, InvalidKeyException,
             InvalidKeySpecException, StorageTransactionLogicException, SignatureException, IllegalBlockSizeException,
@@ -112,7 +112,7 @@ public class Session {
         try {
             return createNewSession(
                     new TenantIdentifierWithStorage(null, null, null, storage), main,
-                    userId, userDataInJWT, userDataInDatabase, enableAntiCsrf, useV3AccessToken, useStaticKey);
+                    userId, userDataInJWT, userDataInDatabase, enableAntiCsrf, version, useStaticKey);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
@@ -122,7 +122,7 @@ public class Session {
                                                             Main main, @Nonnull String userId,
                                                             @Nonnull JsonObject userDataInJWT,
                                                             @Nonnull JsonObject userDataInDatabase,
-                                                            boolean enableAntiCsrf, boolean useV3AccessToken,
+                                                            boolean enableAntiCsrf, AccessToken.VERSION version,
                                                             boolean useStaticKey)
             throws NoSuchAlgorithmException, StorageQueryException, InvalidKeyException,
             InvalidKeySpecException, StorageTransactionLogicException, SignatureException, IllegalBlockSizeException,
@@ -136,7 +136,7 @@ public class Session {
 
         TokenInfo accessToken = AccessToken.createNewAccessToken(tenantIdentifierWithStorage, main, sessionHandle,
                 userId, Utils.hashSHA256(refreshToken.token), null, userDataInJWT, antiCsrfToken,
-                null, useV3AccessToken ? AccessToken.VERSION.V3 : AccessToken.VERSION.V2, useStaticKey);
+                null, version, useStaticKey);
 
         tenantIdentifierWithStorage.getSessionStorage()
                 .createNewSession(tenantIdentifierWithStorage, sessionHandle, userId,
@@ -464,13 +464,13 @@ public class Session {
     @TestOnly
     public static SessionInformationHolder refreshSession(Main main, @Nonnull String refreshToken,
                                                           @Nullable String antiCsrfToken, boolean enableAntiCsrf,
-                                                          boolean useV3AccessToken)
+                                                          AccessToken.VERSION accessTokenVersion)
             throws StorageTransactionLogicException,
             UnauthorisedException, StorageQueryException, TokenTheftDetectedException,
             UnsupportedJWTSigningAlgorithmException, AccessTokenPayloadError {
         try {
             return refreshSession(new AppIdentifier(null, null), main, refreshToken, antiCsrfToken,
-                    enableAntiCsrf, useV3AccessToken);
+                    enableAntiCsrf, accessTokenVersion);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
@@ -479,7 +479,7 @@ public class Session {
     public static SessionInformationHolder refreshSession(AppIdentifier appIdentifier, Main main,
                                                           @Nonnull String refreshToken,
                                                           @Nullable String antiCsrfToken, boolean enableAntiCsrf,
-                                                          boolean useV3AccessToken)
+                                                          AccessToken.VERSION accessTokenVersion)
             throws StorageTransactionLogicException,
             UnauthorisedException, StorageQueryException, TokenTheftDetectedException,
             UnsupportedJWTSigningAlgorithmException, AccessTokenPayloadError, TenantOrAppNotFoundException {
@@ -495,9 +495,7 @@ public class Session {
 
         return refreshSessionHelper(refreshTokenInfo.tenantIdentifier.withStorage(
                         StorageLayer.getStorage(refreshTokenInfo.tenantIdentifier, main)),
-                main, refreshToken, refreshTokenInfo,
-                enableAntiCsrf,
-                useV3AccessToken ? AccessToken.VERSION.V3 : AccessToken.VERSION.V2);
+                main, refreshToken, refreshTokenInfo, enableAntiCsrf, accessTokenVersion);
     }
 
     private static SessionInformationHolder refreshSessionHelper(

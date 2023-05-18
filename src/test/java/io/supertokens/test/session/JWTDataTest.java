@@ -20,6 +20,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.session.Session;
+import io.supertokens.session.accessToken.AccessToken;
 import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -331,13 +332,13 @@ public class JWTDataTest {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false, false, false);
+                userDataInDatabase, false, AccessToken.VERSION.V2, false);
 
         assert sessionInfo.accessToken != null;
         assert sessionInfo.refreshToken != null;
 
         SessionInformationHolder refreshedSession = Session.refreshSession(process.getProcess(),
-                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false, false);
+                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false, AccessToken.VERSION.V2);
 
         assert refreshedSession.accessToken != null;
 
@@ -386,7 +387,7 @@ public class JWTDataTest {
         assert sessionInfo.refreshToken != null;
 
         SessionInformationHolder refreshedSession = Session.refreshSession(process.getProcess(),
-                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false, true);
+                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false, AccessToken.getLatestVersion());
 
         assert refreshedSession.accessToken != null;
 
@@ -435,7 +436,7 @@ public class JWTDataTest {
         assert sessionInfo.refreshToken != null;
 
         SessionInformationHolder refreshedSession = Session.refreshSession(process.getProcess(),
-                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false, true);
+                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false, AccessToken.getLatestVersion());
 
         assert refreshedSession.accessToken != null;
 

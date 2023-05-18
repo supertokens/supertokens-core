@@ -58,7 +58,7 @@ public class JWT {
         String header;
         header = version == AccessToken.VERSION.V1 ? JWT.HEADERv1 : JWT.HEADERv2;
         payload = Utils.convertToBase64(jsonObj.toString());
-        String signature = Utils.signWithPrivateKey(header + "." + payload, privateSigningKey, version == AccessToken.VERSION.V3);
+        String signature = Utils.signWithPrivateKey(header + "." + payload, privateSigningKey, version != AccessToken.VERSION.V1 && version != AccessToken.VERSION.V2);
         return header + "." + payload + "." + signature;
     }
 
@@ -90,7 +90,7 @@ public class JWT {
         }
 
         JsonPrimitive version = parsedHeader.get("version").getAsJsonPrimitive();
-        if (!version.isString() || !version.getAsString().equals("3")) {
+        if (!version.isString() || (!version.getAsString().equals("3") && !version.getAsString().equals("4"))) {
             throw new JWTException("JWT header mismatch - version");
         }
 
@@ -98,14 +98,14 @@ public class JWT {
         if (!kid.isString()) {
             throw new JWTException("JWT header mismatch - kid");
         }
-        return new JWTPreParseInfo(splittedInput, AccessToken.VERSION.V3, kid.getAsString());
+        return new JWTPreParseInfo(splittedInput, AccessToken.getVersionFromString(version.getAsString()), kid.getAsString());
     }
 
     public static JWTInfo verifyJWTAndGetPayload(JWTPreParseInfo jwt, String publicSigningKey)
             throws InvalidKeyException, NoSuchAlgorithmException, JWTException {
 
         try {
-            if (!Utils.verifyWithPublicKey(jwt.header + "." + jwt.payload, jwt.signature, publicSigningKey, jwt.version == AccessToken.VERSION.V3)) {
+            if (!Utils.verifyWithPublicKey(jwt.header + "." + jwt.payload, jwt.signature, publicSigningKey, jwt.version != AccessToken.VERSION.V1 && jwt.version != AccessToken.VERSION.V2)) {
                 throw new JWTException("JWT verification failed");
             }
         } catch (InvalidKeySpecException | SignatureException e) {

@@ -126,7 +126,7 @@ public class AccessTokenTest {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false, true, false);
+                userDataInDatabase, false, AccessToken.getLatestVersion(), false);
 
         // expire
         Thread.sleep(2000);
@@ -162,7 +162,7 @@ public class AccessTokenTest {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false, true, false);
+                userDataInDatabase, false, AccessToken.getLatestVersion(), false);
 
         assert sessionInfo.accessToken != null;
         AccessTokenInfo accessTokenInfo = AccessToken.getInfoFromAccessToken(process.getProcess(),
@@ -173,7 +173,7 @@ public class AccessTokenTest {
         TokenInfo newAccessTokenInfo = AccessToken.createNewAccessToken(process.getProcess(),
                 sessionInfo.session.handle, userId, accessTokenInfo.refreshTokenHash1,
                 accessTokenInfo.parentRefreshTokenHash1, userDataInDatabase, accessTokenInfo.antiCsrfToken,
-                value, AccessToken.VERSION.V3, false);
+                value, AccessToken.getLatestVersion(), false);
 
         AccessTokenInfo customAccessToken = AccessToken
                 .getInfoFromAccessTokenWithoutVerifying(newAccessTokenInfo.token);
@@ -197,7 +197,7 @@ public class AccessTokenTest {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false, false, false);
+                userDataInDatabase, false, AccessToken.VERSION.V2, false);
 
         assert sessionInfo.accessToken != null;
         AccessTokenInfo accessTokenInfo = AccessToken.getInfoFromAccessToken(process.getProcess(),
@@ -231,7 +231,7 @@ public class AccessTokenTest {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false, false, false);
+                userDataInDatabase, false, AccessToken.VERSION.V2, false);
 
         assert sessionInfo.accessToken != null;
         AccessToken.AccessTokenInfo accessTokenInfo = AccessToken.getInfoFromAccessToken(process.getProcess(),
@@ -258,7 +258,7 @@ public class AccessTokenTest {
         long expiryTime = System.currentTimeMillis() + 1000;
         TokenInfo newToken = AccessToken.createNewAccessToken(process.getProcess(), "sessionHandle", "userId",
                 "refreshTokenHash1", "parentRefreshTokenHash1", jsonObj, "antiCsrfToken", expiryTime,
-                AccessToken.VERSION.V3, false);
+                AccessToken.getLatestVersion(), false);
         AccessTokenInfo info = AccessToken.getInfoFromAccessToken(process.getProcess(), newToken.token, true);
         assertEquals("sessionHandle", info.sessionHandle);
         assertEquals("userId", info.userId);
@@ -270,7 +270,7 @@ public class AccessTokenTest {
 
         JWT.JWTPreParseInfo jwtInfo = JWT.preParseJWTInfo(newToken.token);
         assertNotNull(jwtInfo.kid);
-        assertEquals(jwtInfo.version, AccessToken.VERSION.V3);
+        assertEquals(jwtInfo.version, AccessToken.getLatestVersion());
 
         process.kill();
     }
@@ -288,7 +288,7 @@ public class AccessTokenTest {
         long expiryTime = System.currentTimeMillis() + 1000;
         TokenInfo newToken = AccessToken.createNewAccessToken(process.getProcess(), "sessionHandle", "userId",
                 "refreshTokenHash1", "parentRefreshTokenHash1", jsonObj, "antiCsrfToken", expiryTime,
-                AccessToken.VERSION.V3, true);
+                AccessToken.getLatestVersion(), true);
         AccessTokenInfo info = AccessToken.getInfoFromAccessToken(process.getProcess(), newToken.token, true);
         assertEquals("sessionHandle", info.sessionHandle);
         assertEquals("userId", info.userId);
@@ -300,7 +300,7 @@ public class AccessTokenTest {
 
         JWT.JWTPreParseInfo jwtInfo = JWT.preParseJWTInfo(newToken.token);
         assertNotNull(jwtInfo.kid);
-        assertEquals(jwtInfo.version, AccessToken.VERSION.V3);
+        assertEquals(jwtInfo.version, AccessToken.getLatestVersion());
         process.kill();
     }
 
@@ -386,7 +386,7 @@ public class AccessTokenTest {
 
         TokenInfo tokenInfo = AccessToken.createNewAccessToken(process.getProcess(), "sessionHandle", "userId",
                 "refreshTokenHash1", "parentRefreshTokenHash1", jsonObj, "antiCsrfToken",
-                null, AccessToken.VERSION.V3, false);
+                null, AccessToken.getLatestVersion(), false);
         Thread.sleep(1500);
 
         try {
@@ -413,7 +413,7 @@ public class AccessTokenTest {
 
         TokenInfo tokenInfo = AccessToken.createNewAccessToken(process.getProcess(), "sessionHandle", "userId",
                 "refreshTokenHash1", "parentRefreshTokenHash1", jsonObj, "antiCsrfToken",
-                null, AccessToken.VERSION.V3, false);
+                null, AccessToken.getLatestVersion(), false);
         Thread.sleep(1500);
 
         try {
@@ -458,7 +458,7 @@ public class AccessTokenTest {
 
         TokenInfo tokenInfo = AccessToken.createNewAccessToken(process.getProcess(), "sessionHandle", "userId",
                 "refreshTokenHash1", "parentRefreshTokenHash1", jsonObj, "antiCsrfToken",
-                null, AccessToken.VERSION.V3, false);
+                null, AccessToken.getLatestVersion(), false);
 
         Thread.sleep(3500);
 

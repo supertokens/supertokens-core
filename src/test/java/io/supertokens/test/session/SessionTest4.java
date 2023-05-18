@@ -23,6 +23,7 @@ import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.session.Session;
+import io.supertokens.session.accessToken.AccessToken;
 import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -192,7 +193,7 @@ public class SessionTest4 {
             }
 
             sessionInfo = Session.refreshSession(process.getProcess(), sessionInfo.refreshToken.token,
-                    sessionInfo.antiCsrfToken, false, true);
+                    sessionInfo.antiCsrfToken, false, AccessToken.getLatestVersion());
             assert sessionInfo.refreshToken != null;
             assert sessionInfo.accessToken != null;
 
@@ -228,16 +229,16 @@ public class SessionTest4 {
         assertNull(sessionInfo.antiCsrfToken);
 
         SessionInformationHolder refreshedSession = Session.refreshSession(process.getProcess(),
-                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false, true);
+                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false, AccessToken.getLatestVersion());
         assert refreshedSession.refreshToken != null;
         assert refreshedSession.accessToken != null;
 
         SessionInformationHolder refreshedSession2 = Session.refreshSession(process.getProcess(),
-                refreshedSession.refreshToken.token, refreshedSession.antiCsrfToken, false, true);
+                refreshedSession.refreshToken.token, refreshedSession.antiCsrfToken, false, AccessToken.getLatestVersion());
         assert refreshedSession2.refreshToken != null;
 
         Session.refreshSession(process.getProcess(), refreshedSession2.refreshToken.token,
-                refreshedSession2.antiCsrfToken, false, true);
+                refreshedSession2.antiCsrfToken, false, AccessToken.getLatestVersion());
 
         SessionInformationHolder verifiedSession = Session.getSession(process.getProcess(),
                 refreshedSession.accessToken.token, refreshedSession.antiCsrfToken, false, true, false);
@@ -269,14 +270,14 @@ public class SessionTest4 {
 
         try {
             Session.refreshSession(process.getProcess(), "INVALID_TOKEN" + sessionInfo.refreshToken,
-                    sessionInfo.antiCsrfToken, true, true);
+                    sessionInfo.antiCsrfToken, true, AccessToken.getLatestVersion());
             Assert.fail();
         } catch (UnauthorisedException ignored) {
         }
 
         try {
             Session.refreshSession(process.getProcess(), sessionInfo.refreshToken + "INVALID_TOKEN",
-                    sessionInfo.antiCsrfToken, true, true);
+                    sessionInfo.antiCsrfToken, true, AccessToken.getLatestVersion());
             Assert.fail();
         } catch (UnauthorisedException ignored) {
         }
@@ -369,7 +370,7 @@ public class SessionTest4 {
         assertEquals(sessionInfo.refreshToken.expiry - sessionInfo.refreshToken.createdTime, twoYearsInSeconds * 1000);
 
         SessionInformationHolder sessionInfo2 = Session.refreshSession(process.main, sessionInfo.refreshToken.token,
-                null, false, true);
+                null, false, AccessToken.getLatestVersion());
 
         assertFalse(sessionInfo.accessToken.token.equals(sessionInfo2.accessToken.token));
         assertFalse(sessionInfo.refreshToken.token.equals(sessionInfo2.refreshToken.token));
