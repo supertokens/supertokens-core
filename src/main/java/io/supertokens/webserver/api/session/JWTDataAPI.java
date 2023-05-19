@@ -27,6 +27,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.session.Session;
+import io.supertokens.session.accessToken.AccessToken;
 import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
@@ -69,8 +70,9 @@ public class JWTDataAPI extends WebserverAPI {
 
         try {
             if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_21)) {
+                AccessToken.VERSION version = AccessToken.getAccessTokenVersionForCDI(getVersionFromRequest(req));
                 Session.updateSession(tenantIdentifierWithStorage, sessionHandle, null,
-                        userDataInJWT);
+                        userDataInJWT, version);
             } else {
                 Session.updateSessionBeforeCDI2_21(tenantIdentifierWithStorage, sessionHandle,
                         null, userDataInJWT);

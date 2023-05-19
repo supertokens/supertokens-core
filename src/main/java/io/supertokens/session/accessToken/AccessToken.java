@@ -326,7 +326,28 @@ public class AccessToken {
     }
 
     public static class AccessTokenInfo {
-        public static String[] protectedPropNames = {
+
+        static String[] protectedPropNamesV2 = {
+                "userId",
+                "expiryTime",
+                "timeCreated",
+                "sessionHandle",
+                "refreshTokenHash1",
+                "parentRefreshTokenHash1",
+                "antiCsrfToken"
+        };
+
+        public static String[] protectedPropNamesV3 = {
+                "sub",
+                "exp",
+                "iat",
+                "sessionHandle",
+                "refreshTokenHash1",
+                "parentRefreshTokenHash1",
+                "antiCsrfToken"
+        };
+
+        public static String[] protectedPropNamesV4 = {
                 "sub",
                 "exp",
                 "iat",
@@ -424,6 +445,8 @@ public class AccessToken {
                 checkRequiredPropsExist(payload, version);
                 JsonObject userData = new JsonObject();
 
+                String[] protectedPropNames = getProtectedProps(version);
+
                 for (Map.Entry<String, JsonElement> element : payload.entrySet()) {
                     if (Arrays.stream(protectedPropNames).noneMatch(element.getKey()::equals)) {
                         userData.add(element.getKey(), element.getValue());
@@ -500,6 +523,15 @@ public class AccessToken {
             }
 
             return res;
+        }
+
+        public static String[] getProtectedProps(VERSION version) {
+            return switch (version) {
+                case V1, V2 -> protectedPropNamesV2;
+                case V3 -> protectedPropNamesV3;
+                case V4 -> protectedPropNamesV4;
+                default -> throw new IllegalArgumentException("Unknown version: " + version);
+            };
         }
 
         private static void checkRequiredPropsExist(JsonObject obj, VERSION version)

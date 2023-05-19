@@ -174,7 +174,7 @@ public class SessionTest2 {
         JsonArray arr = new JsonArray();
         userDataInDatabase2.add("key3", arr);
 
-        Session.updateSession(process.getProcess(), sessionInfo.session.handle, userDataInDatabase2, null);
+        Session.updateSession(process.getProcess(), sessionInfo.session.handle, userDataInDatabase2, null, AccessToken.getLatestVersion());
 
         JsonObject sessionDataAfterUpdate = Session.getSessionData(process.getProcess(), sessionInfo.session.handle);
         assertEquals(userDataInDatabase2.toString(), sessionDataAfterUpdate.toString());

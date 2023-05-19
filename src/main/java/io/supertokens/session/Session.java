@@ -198,7 +198,7 @@ public class Session {
                 accessToken.sessionHandle);
         JsonObject newJWTUserPayload = userDataInJWT == null ? sessionInfo.userDataInJWT
                 : userDataInJWT;
-        updateSession(tenantIdentifierWithStorage, accessToken.sessionHandle, null, newJWTUserPayload);
+        updateSession(tenantIdentifierWithStorage, accessToken.sessionHandle, null, newJWTUserPayload, accessToken.version);
 
         // if the above succeeds but the below fails, it's OK since the client will get server error and will try
         // again. In this case, the JWT data will be updated again since the API will get the old JWT. In case there
@@ -803,18 +803,19 @@ public class Session {
     @TestOnly
     public static void updateSession(Main main, String sessionHandle,
                                      @Nullable JsonObject sessionData,
-                                     @Nullable JsonObject jwtData)
+                                     @Nullable JsonObject jwtData,
+                                     AccessToken.VERSION version)
             throws StorageQueryException, UnauthorisedException, AccessTokenPayloadError {
         Storage storage = StorageLayer.getStorage(main);
         updateSession(new TenantIdentifierWithStorage(null, null, null, storage),
-                sessionHandle, sessionData, jwtData);
+                sessionHandle, sessionData, jwtData, version);
     }
 
     public static void updateSession(TenantIdentifierWithStorage tenantIdentifierWithStorage,
                                      String sessionHandle, @Nullable JsonObject sessionData,
-                                     @Nullable JsonObject jwtData)
+                                     @Nullable JsonObject jwtData, AccessToken.VERSION version)
             throws StorageQueryException, UnauthorisedException, AccessTokenPayloadError {
-        if (jwtData != null && Arrays.stream(AccessTokenInfo.protectedPropNames).anyMatch(jwtData::has)) {
+        if (jwtData != null && Arrays.stream(AccessTokenInfo.getProtectedProps(version)).anyMatch(jwtData::has)) {
             throw new AccessTokenPayloadError("The user payload contains protected field");
         }
 
