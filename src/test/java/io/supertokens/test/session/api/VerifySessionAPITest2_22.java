@@ -20,9 +20,11 @@ import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import io.supertokens.ProcessState;
 import io.supertokens.config.Config;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.session.accessToken.AccessToken;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
@@ -49,7 +51,6 @@ public class VerifySessionAPITest2_22 {
     public void beforeEach() {
         Utils.reset();
     }
-
 
     @Test
     public void successOutputCheckV3AccessToken() throws Exception {
@@ -250,6 +251,81 @@ public class VerifySessionAPITest2_22 {
         // [antiCsrfToken, sub, sessionHandle, exp, iat, parentRefreshTokenHash1, key, refreshTokenHash1, tId]
         assertEquals(9, decodedJWT.getClaims().size());
         assertEquals("value", decodedJWT.getClaim("key").asString());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testAccessTokenInfoOnV3AccessTokenPointsToPublicTenant() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        String userId = "userId";
+        JsonObject userDataInJWT = new JsonObject();
+        userDataInJWT.addProperty("key", "value");
+        JsonObject userDataInDatabase = new JsonObject();
+        userDataInDatabase.addProperty("key", "value");
+
+        JsonObject sessionRequest = new JsonObject();
+        sessionRequest.addProperty("userId", userId);
+        sessionRequest.add("userDataInJWT", userDataInJWT);
+        sessionRequest.add("userDataInDatabase", userDataInDatabase);
+        sessionRequest.addProperty("enableAntiCsrf", false);
+        JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/session", sessionRequest, 1000, 1000, null,
+                SemVer.v2_21.get(), "session");
+
+        AccessToken.AccessTokenInfo accessTokenInfo = AccessToken.getInfoFromAccessToken(new AppIdentifier(null, null), process.getProcess(), sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString(),
+                false);
+
+        assertEquals(TenantIdentifier.DEFAULT_TENANT_ID, accessTokenInfo.tenantIdentifier.getTenantId());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testV4AccessTokenOnOlderCDIWorksFine() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        String userId = "userId";
+        JsonObject userDataInJWT = new JsonObject();
+        userDataInJWT.addProperty("key", "value");
+        userDataInJWT.add("nullProp", JsonNull.INSTANCE);
+        JsonObject userDataInDatabase = new JsonObject();
+        userDataInDatabase.addProperty("key", "value");
+
+        JsonObject sessionRequest = new JsonObject();
+        sessionRequest.addProperty("userId", userId);
+        sessionRequest.add("userDataInJWT", userDataInJWT);
+        sessionRequest.add("userDataInDatabase", userDataInDatabase);
+        sessionRequest.addProperty("enableAntiCsrf", false);
+
+        JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/session", sessionRequest, 1000, 1000, null,
+                SemVer.v2_22.get(), "session");
+
+        JsonObject request = new JsonObject();
+        request.addProperty("accessToken", sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString());
+        request.addProperty("doAntiCsrfCheck", true);
+        request.addProperty("enableAntiCsrf", false);
+        request.addProperty("checkDatabase", false);
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/session/verify", request, 1000, 1000, null,
+                SemVer.v2_21.get(), "session");
+
+        assertEquals(response.get("status").getAsString(), "OK");
+
+        assertNotNull(response.get("session").getAsJsonObject().get("handle").getAsString());
+        assertEquals(response.get("session").getAsJsonObject().get("userId").getAsString(), userId);
+        assertEquals(response.get("session").getAsJsonObject().get("userDataInJWT").getAsJsonObject(), userDataInJWT);
+        assertEquals(response.get("session").getAsJsonObject().entrySet().size(), 3);
+
+        assertEquals(response.entrySet().size(), 2);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

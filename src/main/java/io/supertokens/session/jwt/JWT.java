@@ -90,7 +90,7 @@ public class JWT {
         }
 
         JsonPrimitive version = parsedHeader.get("version").getAsJsonPrimitive();
-        if (!version.isString() || (!version.getAsString().equals("3") && !version.getAsString().equals("4"))) {
+        if (!version.isString() || version.getAsString().equals("1") || version.getAsString().equals("2")) {
             throw new JWTException("JWT header mismatch - version");
         }
 

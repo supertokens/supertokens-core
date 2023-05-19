@@ -322,18 +322,7 @@ public class AccessToken {
     }
 
     public static VERSION getVersionFromString(String versionString) {
-        switch (versionString) {
-            case "1":
-                return VERSION.V1;
-            case "2":
-                return VERSION.V2;
-            case "3":
-                return VERSION.V3;
-            case "4":
-                return VERSION.V4;
-            default:
-                throw new IllegalArgumentException("Invalid version string: " + versionString);
-        }
+        return VERSION.valueOf("V" + versionString);
     }
 
     public static class AccessTokenInfo {
@@ -441,6 +430,13 @@ public class AccessToken {
                     }
                 }
 
+                TenantIdentifier tenantIdentifier;
+                if (version == VERSION.V3) {
+                    tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(), null);
+                } else {
+                    tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(), payload.get("tId").getAsString());
+                }
+
                 return new AccessTokenInfo(
                         payload.get("sessionHandle").getAsString(),
                         payload.get("sub").getAsString(),
@@ -450,9 +446,7 @@ public class AccessToken {
                         userData,
                         antiCsrfToken.isJsonNull() ? null : antiCsrfToken.getAsString(),
                         payload.get("iat").getAsLong() * 1000,
-                        version,
-                        new TenantIdentifier(appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(),
-                                payload.has("tId") ? payload.get("tId").getAsString() : null)
+                        version, tenantIdentifier
                 );
             } else {
                 checkRequiredPropsExist(payload, version);
@@ -479,7 +473,7 @@ public class AccessToken {
                 res.addProperty("exp", this.expiryTime / 1000);
                 res.addProperty("iat", this.timeCreated / 1000);
 
-                if (this.version == VERSION.V4) {
+                if (this.version != VERSION.V3) {
                     res.addProperty("tId", this.tenantIdentifier.getTenantId());
                 }
             } else {
@@ -528,6 +522,7 @@ public class AccessToken {
         }
     }
 
+    @TestOnly
     public static VERSION getLatestVersion() {
         return VERSION.V4;
     }
