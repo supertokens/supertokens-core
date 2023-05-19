@@ -363,10 +363,28 @@ public class VerifySessionAPITest2_22 {
 
         assertEquals(TenantIdentifier.DEFAULT_TENANT_ID, accessTokenInfo.tenantIdentifier.getTenantId());
 
-        String accessToken = sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString();
 
-        DecodedJWT decodedJWT = com.auth0.jwt.JWT.decode(accessToken);
-        assertEquals(decodedJWT.getClaim("tId").toString(), "tenant1");
+        {
+            String accessToken = sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString();
+            DecodedJWT decodedJWT = com.auth0.jwt.JWT.decode(accessToken);
+            assertEquals(decodedJWT.getClaim("tId").asString(), "tenant1");
+        }
+
+        JsonObject sessionRefreshRequest = new JsonObject();
+        sessionRefreshRequest.addProperty("refreshToken", sessionInfo.get("refreshToken").getAsJsonObject().get("token").getAsString());
+        sessionRefreshRequest.addProperty("enableAntiCsrf", false);
+
+        JsonObject sessionRefreshResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/session/refresh", sessionRefreshRequest, 1000, 1000, null,
+                SemVer.v2_21.get(), "session");
+
+        assertEquals("OK", sessionRefreshResponse.get("status").getAsString());
+
+        {
+            String accessToken = sessionRefreshResponse.get("accessToken").getAsJsonObject().get("token").getAsString();
+            DecodedJWT decodedJWT = com.auth0.jwt.JWT.decode(accessToken);
+            assertEquals(decodedJWT.getClaim("tId").asString(), "tenant1");
+        }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
