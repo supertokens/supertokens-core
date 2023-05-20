@@ -326,39 +326,7 @@ public class AccessToken {
     }
 
     public static class AccessTokenInfo {
-
-        static String[] protectedPropNamesV2 = {
-                "userId",
-                "expiryTime",
-                "timeCreated",
-                "sessionHandle",
-                "refreshTokenHash1",
-                "parentRefreshTokenHash1",
-                "antiCsrfToken"
-        };
-
-        public static String[] protectedPropNamesV3 = {
-                "sub",
-                "exp",
-                "iat",
-                "sessionHandle",
-                "refreshTokenHash1",
-                "parentRefreshTokenHash1",
-                "antiCsrfToken"
-        };
-
-        public static String[] protectedPropNamesV4 = {
-                "sub",
-                "exp",
-                "iat",
-                "sessionHandle",
-                "refreshTokenHash1",
-                "parentRefreshTokenHash1",
-                "antiCsrfToken",
-                "tId"
-        };
-
-        static String[] requiredPropsV2 = {
+        static String[] requiredAndProtectedPropsV2 = {
                 "userId",
                 "expiryTime",
                 "timeCreated",
@@ -368,7 +336,7 @@ public class AccessToken {
                 "antiCsrfToken",
         };
 
-        static String[] requiredPropsV3 = {
+        static String[] requiredAndProtectedPropsV3 = {
                 "sub",
                 "exp",
                 "iat",
@@ -378,7 +346,7 @@ public class AccessToken {
                 "antiCsrfToken"
         };
 
-        static String[] requiredPropsV4 = {
+        static String[] requiredAndProtectedPropsV4 = {
                 "sub",
                 "exp",
                 "iat",
@@ -445,7 +413,7 @@ public class AccessToken {
                 checkRequiredPropsExist(payload, version);
                 JsonObject userData = new JsonObject();
 
-                String[] protectedPropNames = getProtectedProps(version);
+                String[] protectedPropNames = getRequiredAndProtectedProps(version);
 
                 for (Map.Entry<String, JsonElement> element : payload.entrySet()) {
                     if (Arrays.stream(protectedPropNames).noneMatch(element.getKey()::equals)) {
@@ -455,6 +423,9 @@ public class AccessToken {
 
                 TenantIdentifier tenantIdentifier;
                 if (version == VERSION.V3) {
+                    // V3 tokens are from core version 2.21 that did not have support for multi-tenancy
+                    // so we always assume that the the tenant id is public always. User may have added `tId`
+                    // as a custom payload and we don't want to use that as tenant id here.
                     tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(), null);
                 } else {
                     tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(), payload.get("tId").getAsString());
@@ -525,11 +496,11 @@ public class AccessToken {
             return res;
         }
 
-        public static String[] getProtectedProps(VERSION version) {
+        public static String[] getRequiredAndProtectedProps(VERSION version) {
             return switch (version) {
-                case V1, V2 -> protectedPropNamesV2;
-                case V3 -> protectedPropNamesV3;
-                case V4 -> protectedPropNamesV4;
+                case V1, V2 -> requiredAndProtectedPropsV2;
+                case V3 -> requiredAndProtectedPropsV3;
+                case V4 -> requiredAndProtectedPropsV4;
                 default -> throw new IllegalArgumentException("Unknown version: " + version);
             };
         }
@@ -537,12 +508,7 @@ public class AccessToken {
         private static void checkRequiredPropsExist(JsonObject obj, VERSION version)
                 throws TryRefreshTokenException {
 
-            String[] propNames = switch (version) {
-                case V1, V2 -> requiredPropsV2;
-                case V3 -> requiredPropsV3;
-                case V4 -> requiredPropsV4;
-                default -> throw new IllegalArgumentException("Unknown version: " + version);
-            };
+            String[] propNames = getRequiredAndProtectedProps(version);
 
             for (String prop : propNames) {
                 if (!obj.has(prop)) {

@@ -815,7 +815,7 @@ public class Session {
                                      String sessionHandle, @Nullable JsonObject sessionData,
                                      @Nullable JsonObject jwtData, AccessToken.VERSION version)
             throws StorageQueryException, UnauthorisedException, AccessTokenPayloadError {
-        if (jwtData != null && Arrays.stream(AccessTokenInfo.getProtectedProps(version)).anyMatch(jwtData::has)) {
+        if (jwtData != null && Arrays.stream(AccessTokenInfo.getRequiredAndProtectedProps(version)).anyMatch(jwtData::has)) {
             throw new AccessTokenPayloadError("The user payload contains protected field");
         }
 
