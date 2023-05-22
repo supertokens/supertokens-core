@@ -237,7 +237,7 @@ public class RegenerateTokenTest {
 
         assert sessionInfo.refreshToken != null;
         SessionInformationHolder refreshSessionInfo = Session.refreshSession(process.getProcess(),
-                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false, true);
+                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false, AccessToken.getLatestVersion());
 
         // Verify
         assert refreshSessionInfo.accessToken != null;
@@ -306,7 +306,7 @@ public class RegenerateTokenTest {
         // refresh
         assert sessionInfo.refreshToken != null;
         SessionInformationHolder refreshSessionInfo = Session.refreshSession(process.getProcess(),
-                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false, true);
+                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false, AccessToken.getLatestVersion());
 
         // Verify
         assert refreshSessionInfo.accessToken != null;
@@ -392,7 +392,7 @@ public class RegenerateTokenTest {
 
         // - create session with some payload
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false, false, false);
+                userDataInDatabase, false, AccessToken.VERSION.V2, false);
 
         assert sessionInfo.accessToken != null;
         AccessToken.AccessTokenInfo accessTokenInfoBefore = AccessToken.getInfoFromAccessToken(process.getProcess(),
@@ -416,7 +416,7 @@ public class RegenerateTokenTest {
         // refresh
         assert sessionInfo.refreshToken != null;
         SessionInformationHolder refreshSessionInfo = Session.refreshSession(process.getProcess(),
-                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false, false);
+                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false, AccessToken.VERSION.V2);
 
         assert refreshSessionInfo.accessToken != null;
         AccessToken.AccessTokenInfo accessTokenInfoAfterRefresh = AccessToken
@@ -465,7 +465,7 @@ public class RegenerateTokenTest {
 
         // - create session with some payload
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false, true, false);
+                userDataInDatabase, false, AccessToken.getLatestVersion(), false);
 
         assert sessionInfo.accessToken != null;
         AccessToken.AccessTokenInfo accessTokenInfoBefore = AccessToken.getInfoFromAccessToken(process.getProcess(),
@@ -491,7 +491,7 @@ public class RegenerateTokenTest {
         // refresh
         assert sessionInfo.refreshToken != null;
         SessionInformationHolder refreshSessionInfo = Session.refreshSession(process.getProcess(),
-                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false, true);
+                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false, AccessToken.getLatestVersion());
 
         assert refreshSessionInfo.accessToken != null;
         AccessToken.AccessTokenInfo accessTokenInfoAfterRefresh = AccessToken
@@ -541,7 +541,7 @@ public class RegenerateTokenTest {
 
         // - create session with some payload
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false, false, false);
+                userDataInDatabase, false, AccessToken.VERSION.V2, false);
 
         assert sessionInfo.accessToken != null;
         AccessToken.AccessTokenInfo accessTokenInfoBefore = AccessToken.getInfoFromAccessToken(process.getProcess(),
@@ -565,7 +565,7 @@ public class RegenerateTokenTest {
         // refresh
         assert sessionInfo.refreshToken != null;
         SessionInformationHolder refreshSessionInfo = Session.refreshSession(process.getProcess(),
-                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false, true);
+                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false, AccessToken.getLatestVersion());
 
         assert refreshSessionInfo.accessToken != null;
         AccessToken.AccessTokenInfo accessTokenInfoAfterRefresh = AccessToken

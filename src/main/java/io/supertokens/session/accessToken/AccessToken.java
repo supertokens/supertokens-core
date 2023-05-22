@@ -38,6 +38,7 @@ import io.supertokens.session.jwt.JWT;
 import io.supertokens.session.jwt.JWT.JWTException;
 import io.supertokens.signingkeys.JWTSigningKey;
 import io.supertokens.signingkeys.SigningKeys;
+import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import org.jetbrains.annotations.TestOnly;
 
@@ -249,9 +250,9 @@ public class AccessToken {
         }
 
         String token;
-        if (version == VERSION.V3) {
+        if (version != VERSION.V1 && version != VERSION.V2) {
             HashMap<String, Object> headers = new HashMap<>();
-            headers.put("version", "3");
+            headers.put("version", version.toString().substring(1));
             token = JWTSigningFunctions.createJWTToken(JWTSigningKey.SupportedAlgorithms.RS256, headers,
                     accessToken.toJSON(), null, expires, now, keyToUse);
         } else {
@@ -308,19 +309,24 @@ public class AccessToken {
         return accessToken.version;
     }
 
-    public static class AccessTokenInfo {
-        public static String[] protectedPropNames = {
-                "sub",
-                "exp",
-                "iat",
-                "sessionHandle",
-                "refreshTokenHash1",
-                "parentRefreshTokenHash1",
-                "antiCsrfToken",
-                "tId"
-        };
+    public static VERSION getAccessTokenVersionForCDI(SemVer version) {
+        if (version.greaterThanOrEqualTo(SemVer.v2_22)) {
+            return AccessToken.VERSION.V4;
+        }
 
-        static String[] requiredPropsV2 = {
+        if (version.greaterThanOrEqualTo(SemVer.v2_21)) {
+            return AccessToken.VERSION.V3;
+        }
+
+        return AccessToken.VERSION.V2;
+    }
+
+    public static VERSION getVersionFromString(String versionString) {
+        return VERSION.valueOf("V" + versionString);
+    }
+
+    public static class AccessTokenInfo {
+        static String[] requiredAndProtectedPropsV2 = {
                 "userId",
                 "expiryTime",
                 "timeCreated",
@@ -330,7 +336,17 @@ public class AccessToken {
                 "antiCsrfToken",
         };
 
-        static String[] requiredPropsV3 = {
+        static String[] requiredAndProtectedPropsV3 = {
+                "sub",
+                "exp",
+                "iat",
+                "sessionHandle",
+                "refreshTokenHash1",
+                "parentRefreshTokenHash1",
+                "antiCsrfToken"
+        };
+
+        static String[] requiredAndProtectedPropsV4 = {
                 "sub",
                 "exp",
                 "iat",
@@ -394,13 +410,25 @@ public class AccessToken {
             JsonElement antiCsrfToken = payload.get("antiCsrfToken");
 
             if (version != VERSION.V1 && version != VERSION.V2) {
-                checkRequiredPropsExist(payload, requiredPropsV3);
+                checkRequiredPropsExist(payload, version);
                 JsonObject userData = new JsonObject();
+
+                String[] protectedPropNames = getRequiredAndProtectedProps(version);
 
                 for (Map.Entry<String, JsonElement> element : payload.entrySet()) {
                     if (Arrays.stream(protectedPropNames).noneMatch(element.getKey()::equals)) {
                         userData.add(element.getKey(), element.getValue());
                     }
+                }
+
+                TenantIdentifier tenantIdentifier;
+                if (version == VERSION.V3) {
+                    // V3 tokens are from core version 2.21 that did not have support for multi-tenancy
+                    // so we always assume that the the tenant id is public always. User may have added `tId`
+                    // as a custom payload and we don't want to use that as tenant id here.
+                    tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(), null);
+                } else {
+                    tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(), payload.get("tId").getAsString());
                 }
 
                 return new AccessTokenInfo(
@@ -412,12 +440,10 @@ public class AccessToken {
                         userData,
                         antiCsrfToken.isJsonNull() ? null : antiCsrfToken.getAsString(),
                         payload.get("iat").getAsLong() * 1000,
-                        version,
-                        new TenantIdentifier(appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(),
-                                payload.get("tId").getAsString())
+                        version, tenantIdentifier
                 );
             } else {
-                checkRequiredPropsExist(payload, requiredPropsV2);
+                checkRequiredPropsExist(payload, version);
                 return new AccessTokenInfo(
                         payload.get("sessionHandle").getAsString(),
                         payload.get("userId").getAsString(),
@@ -440,7 +466,10 @@ public class AccessToken {
                 res.addProperty("sub", this.userId);
                 res.addProperty("exp", this.expiryTime / 1000);
                 res.addProperty("iat", this.timeCreated / 1000);
-                res.addProperty("tId", this.tenantIdentifier.getTenantId());
+
+                if (this.version != VERSION.V3) {
+                    res.addProperty("tId", this.tenantIdentifier.getTenantId());
+                }
             } else {
                 res.addProperty("userId", this.userId);
                 res.addProperty("expiryTime", this.expiryTime);
@@ -451,7 +480,7 @@ public class AccessToken {
             res.addProperty("parentRefreshTokenHash1", this.parentRefreshTokenHash1);
             res.addProperty("antiCsrfToken", this.antiCsrfToken);
 
-            if (this.version == VERSION.V3) {
+            if (this.version != VERSION.V1 && this.version != VERSION.V2) {
                 for (Map.Entry<String, JsonElement> element : this.userData.entrySet()) {
                     if (res.has(element.getKey())) {
                         // The use is trying to add a protected prop into the payload (userId, etc) in V3 (this
@@ -467,19 +496,36 @@ public class AccessToken {
             return res;
         }
 
-        private static void checkRequiredPropsExist(JsonObject obj, String[] propNames)
+        public static String[] getRequiredAndProtectedProps(VERSION version) {
+            return switch (version) {
+                case V1, V2 -> requiredAndProtectedPropsV2;
+                case V3 -> requiredAndProtectedPropsV3;
+                case V4 -> requiredAndProtectedPropsV4;
+                default -> throw new IllegalArgumentException("Unknown version: " + version);
+            };
+        }
+
+        private static void checkRequiredPropsExist(JsonObject obj, VERSION version)
                 throws TryRefreshTokenException {
+
+            String[] propNames = getRequiredAndProtectedProps(version);
+
             for (String prop : propNames) {
                 if (!obj.has(prop)) {
                     throw new TryRefreshTokenException(
-                            "Access token does not contain all the information. Maybe the structure has changed?" +
+                            "Access token does not contain all the information. Maybe the structure has changed? " +
                                     prop);
                 }
             }
         }
     }
 
+    @TestOnly
+    public static VERSION getLatestVersion() {
+        return VERSION.V4;
+    }
+
     public enum VERSION {
-        V1, V2, V3
+        V1, V2, V3, V4
     }
 }

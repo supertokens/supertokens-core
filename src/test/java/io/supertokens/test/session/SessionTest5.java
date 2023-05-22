@@ -22,6 +22,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.config.Config;
 import io.supertokens.session.Session;
+import io.supertokens.session.accessToken.AccessToken;
 import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.session.jwt.JWT;
 import io.supertokens.signingkeys.AccessTokenSigningKey;
@@ -67,7 +68,7 @@ public class SessionTest5 {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false, false, false);
+                userDataInDatabase, false, AccessToken.VERSION.V2, false);
 
         String[] tokenParts = sessionInfo.accessToken.token.split("\\.");
         assertEquals(tokenParts.length, 3);
@@ -96,7 +97,7 @@ public class SessionTest5 {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false, false, true);
+                userDataInDatabase, false, AccessToken.VERSION.V2, true);
 
         String[] tokenParts = sessionInfo.accessToken.token.split("\\.");
         assertEquals(tokenParts.length, 3);
@@ -125,9 +126,9 @@ public class SessionTest5 {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder createInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false, false, false);
+                userDataInDatabase, false, AccessToken.VERSION.V2, false);
         SessionInformationHolder sessionInfo = Session.refreshSession(process.getProcess(),
-                createInfo.refreshToken.token, null, false, false);
+                createInfo.refreshToken.token, null, false, AccessToken.VERSION.V2);
 
         String[] tokenParts = sessionInfo.accessToken.token.split("\\.");
         assertEquals(tokenParts.length, 3);
@@ -156,7 +157,7 @@ public class SessionTest5 {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false, true, false);
+                userDataInDatabase, false, AccessToken.VERSION.V3, false);
 
         String[] tokenParts = sessionInfo.accessToken.token.split("\\.");
         assertEquals(tokenParts.length, 3);
@@ -193,7 +194,7 @@ public class SessionTest5 {
         assertNull(decodedJWT.getNotBefore());
 
         // [antiCsrfToken, sub, sessionHandle, exp, iat, parentRefreshTokenHash1, key, refreshTokenHash1]
-        assertEquals(9, decodedJWT.getClaims().size());
+        assertEquals(8, decodedJWT.getClaims().size());
         assertEquals("value", decodedJWT.getClaim("key").asString());
 
         process.kill();
@@ -215,7 +216,7 @@ public class SessionTest5 {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false, true, true);
+                userDataInDatabase, false, AccessToken.VERSION.V3, true);
 
         String[] tokenParts = sessionInfo.accessToken.token.split("\\.");
         assertEquals(tokenParts.length, 3);
@@ -253,7 +254,7 @@ public class SessionTest5 {
         assertNull(decodedJWT.getNotBefore());
 
         // [antiCsrfToken, sub, sessionHandle, exp, iat, parentRefreshTokenHash1, key, refreshTokenHash1]
-        assertEquals(9, decodedJWT.getClaims().size());
+        assertEquals(8, decodedJWT.getClaims().size());
         assertEquals("value", decodedJWT.getClaim("key").asString());
 
         process.kill();
@@ -275,9 +276,9 @@ public class SessionTest5 {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder createInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false, true, false);
+                userDataInDatabase, false, AccessToken.getLatestVersion(), false);
         SessionInformationHolder sessionInfo = Session.refreshSession(process.getProcess(),
-                createInfo.refreshToken.token, null, false, true);
+                createInfo.refreshToken.token, null, false, AccessToken.getLatestVersion());
 
         String[] tokenParts = sessionInfo.accessToken.token.split("\\.");
         assertEquals(tokenParts.length, 3);
@@ -307,16 +308,16 @@ public class SessionTest5 {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder createInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false, true, false);
+                userDataInDatabase, false, AccessToken.getLatestVersion(), false);
         SessionInformationHolder createInfoStatic = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false, true, true);
+                userDataInDatabase, false, AccessToken.getLatestVersion(), true);
 
         Thread.sleep(1500);
 
         SessionInformationHolder sessionInfo = Session.refreshSession(process.getProcess(),
-                createInfo.refreshToken.token, null, false, true);
+                createInfo.refreshToken.token, null, false, AccessToken.getLatestVersion());
         SessionInformationHolder sessionInfoStatic = Session.refreshSession(process.getProcess(),
-                createInfoStatic.refreshToken.token, null, false, true);
+                createInfoStatic.refreshToken.token, null, false, AccessToken.getLatestVersion());
 
         JWT.JWTPreParseInfo preParseInfoCreate = JWT.preParseJWTInfo(createInfo.accessToken.token);
         JWT.JWTPreParseInfo preParseInfoRefresh = JWT.preParseJWTInfo(sessionInfo.accessToken.token);
@@ -354,7 +355,7 @@ public class SessionTest5 {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder createInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false, true, false);
+                userDataInDatabase, false, AccessToken.getLatestVersion(), false);
         JWT.JWTPreParseInfo preParseInfoCreate = JWT.preParseJWTInfo(createInfo.accessToken.token);
 
         Thread.sleep(2000);
@@ -363,7 +364,7 @@ public class SessionTest5 {
 
         SessionInformationHolder createInfoDuringOverlap = Session.createNewSession(process.getProcess(), userId,
                 userDataInJWT,
-                userDataInDatabase, false, true, false);
+                userDataInDatabase, false, AccessToken.getLatestVersion(), false);
         JWT.JWTPreParseInfo preParseInfoCreateDuringOverlap = JWT.preParseJWTInfo(
                 createInfoDuringOverlap.accessToken.token);
 
@@ -372,7 +373,7 @@ public class SessionTest5 {
         assertEquals(3, signingKeysInstance.getAllKeys().size());
 
         SessionInformationHolder createInfoAfterOverlap = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false, true, false);
+                userDataInDatabase, false, AccessToken.getLatestVersion(), false);
         JWT.JWTPreParseInfo preParseInfoAfterOverlap = JWT.preParseJWTInfo(createInfoAfterOverlap.accessToken.token);
 
         assertEquals(preParseInfoCreate.kid, preParseInfoCreateDuringOverlap.kid);

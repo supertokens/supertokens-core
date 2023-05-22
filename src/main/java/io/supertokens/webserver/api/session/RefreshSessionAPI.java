@@ -32,6 +32,7 @@ import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.session.Session;
+import io.supertokens.session.accessToken.AccessToken;
 import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.useridmapping.UserIdType;
@@ -76,9 +77,11 @@ public class RefreshSessionAPI extends WebserverAPI {
 
         SemVer version = super.getVersionFromRequest(req);
         try {
+            AccessToken.VERSION accessTokenVersion = AccessToken.getAccessTokenVersionForCDI(version);
+
             SessionInformationHolder sessionInfo = Session.refreshSession(appIdentifierWithStorage, main,
                     refreshToken, antiCsrfToken,
-                    enableAntiCsrf, version.greaterThanOrEqualTo((SemVer.v2_21)));
+                    enableAntiCsrf, accessTokenVersion);
 
             if (StorageLayer.getStorage(this.getTenantIdentifierWithStorageFromRequest(req), main).getType() ==
                     STORAGE_TYPE.SQL) {
