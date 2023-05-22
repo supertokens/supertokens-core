@@ -7,7 +7,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
-### Added
+### Changes
 
 - Support for multitenancy
   - New APIs to manage apps and tenants
@@ -25,7 +25,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     - `/appid-<appid>/recipe/multitenancy/config/thirdparty/remove` POST
     - `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant/user` POST
     - `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant/user/remove` POST
-  - API paths can be prefixed with `/appid-<appid>/<tenantid>` to perform app or tenant specific operations
+  - API paths can be prefixed with `/appid-<appid>/<tenantid>` to perform app or tenant specific operations.
 
 #### Migration steps for SQL
 
