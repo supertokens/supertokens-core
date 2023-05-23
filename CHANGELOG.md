@@ -27,9 +27,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     - `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant/user/remove` POST
   - API paths can be prefixed with `/appid-<appid>/<tenantid>` to perform app or tenant specific operations.
 
-#### Migration steps for SQL
+### Migration steps for SQL
 
-If using PostgreSQL, run the following:
+<details>
+
+<summary>If using PostgreSQL</summary>
+
+#### Run the following SQL script
 
 ```sql
 -- General Tables
@@ -733,10 +737,19 @@ ALTER TABLE user_last_active
     PRIMARY KEY (app_id, user_id);
 ```
 
-If using MySQL, run the following:
+</details>
+
+<details>
+
+<summary>If using MySQL</summary>
+
+#### Run the following SQL script
+
 ```sql
 TODO
 ```
+
+</details>
 
 ## [5.0.0] - 2023-04-05
 
