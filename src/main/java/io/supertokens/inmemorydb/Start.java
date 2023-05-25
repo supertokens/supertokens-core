@@ -569,6 +569,11 @@ public class Start
     }
 
     @Override
+    public void deleteUserActive(AppIdentifier appIdentifier, String userId) throws StorageQueryException {
+        // TODO...
+    }
+
+    @Override
     public int countUsersEnabledTotpAndActiveSince(AppIdentifier appIdentifier, long time)
             throws StorageQueryException {
         try {

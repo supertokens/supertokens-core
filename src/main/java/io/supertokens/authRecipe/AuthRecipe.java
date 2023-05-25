@@ -203,6 +203,8 @@ public class AuthRecipe {
                 .deleteEmailVerificationUserInfo(appIdentifierWithStorage, userId);
         appIdentifierWithStorage.getUserRolesStorage()
                 .deleteAllRolesForUser(appIdentifierWithStorage, userId);
+        appIdentifierWithStorage.getActiveUsersStorage()
+                .deleteUserActive(appIdentifierWithStorage, userId);
 
         TOTPSQLStorage storage = appIdentifierWithStorage.getTOTPStorage();
         storage.startTransaction(con -> {
