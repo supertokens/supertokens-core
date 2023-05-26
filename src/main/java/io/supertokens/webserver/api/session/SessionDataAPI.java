@@ -26,6 +26,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.session.Session;
+import io.supertokens.session.accessToken.AccessToken;
 import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
@@ -101,8 +102,9 @@ public class SessionDataAPI extends WebserverAPI {
             // This is only here for consistency: the difference between the two versions is the handling of jwtData
             // which is always null here
             if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_21)) {
+                AccessToken.VERSION version = AccessToken.getAccessTokenVersionForCDI(getVersionFromRequest(req));
                 Session.updateSession(tenantIdentifierWithStorage, sessionHandle,
-                        userDataInDatabase, null);
+                        userDataInDatabase, null, version);
             } else {
                 Session.updateSessionBeforeCDI2_21(tenantIdentifierWithStorage, sessionHandle,
                         userDataInDatabase, null);

@@ -216,6 +216,8 @@ public class CronjobTest {
     public void testNormalCronjob() throws Exception {
         String[] args = {"../"};
 
+        normalCronjobCounter = 0;
+
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -230,4 +232,22 @@ public class CronjobTest {
 
     }
 
+    @Test
+    public void testAddingCronJobTwice() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        int initialSize = Cronjobs.getInstance(process.getProcess()).getTasks().size();
+
+        Cronjobs.addCronjob(process.getProcess(), NormalCronjob.getInstance(process.getProcess()));
+        assertEquals(initialSize + 1, Cronjobs.getInstance(process.getProcess()).getTasks().size());
+
+        Cronjobs.addCronjob(process.getProcess(), NormalCronjob.getInstance(process.getProcess()));
+        assertEquals(initialSize + 1, Cronjobs.getInstance(process.getProcess()).getTasks().size());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }

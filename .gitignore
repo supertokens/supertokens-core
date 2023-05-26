@@ -47,3 +47,4 @@ local.properties
 addDevTag
 addReleaseTag
 *.iml
+ee/bin

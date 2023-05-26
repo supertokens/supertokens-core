@@ -77,7 +77,7 @@ public class VerifySessionAPITest2_21 {
         request.addProperty("checkDatabase", false);
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session/verify", request, 1000, 1000, null,
-                Utils.getCdiVersionStringLatestForTests(), "session");
+                SemVer.v2_21.get(), "session");
 
         assertEquals(response.get("status").getAsString(), "OK");
 
@@ -114,7 +114,7 @@ public class VerifySessionAPITest2_21 {
 
         JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session", sessionRequest, 1000, 1000, null,
-                Utils.getCdiVersionStringLatestForTests(), "session");
+                SemVer.v2_21.get(), "session");
 
         JsonObject request = new JsonObject();
         request.addProperty("accessToken", sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString());
@@ -123,7 +123,7 @@ public class VerifySessionAPITest2_21 {
         request.addProperty("checkDatabase", false);
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session/verify", request, 1000, 1000, null,
-                Utils.getCdiVersionStringLatestForTests(), "session");
+                SemVer.v2_21.get(), "session");
 
         assertEquals(response.get("status").getAsString(), "OK");
 
@@ -166,7 +166,7 @@ public class VerifySessionAPITest2_21 {
         refreshRequest.addProperty("enableAntiCsrf", false);
         sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session/refresh", refreshRequest, 1000, 1000, null,
-                Utils.getCdiVersionStringLatestForTests(), "session");
+                SemVer.v2_21.get(), "session");
 
         JsonObject request = new JsonObject();
         request.addProperty("accessToken", sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString());
@@ -175,7 +175,7 @@ public class VerifySessionAPITest2_21 {
         request.addProperty("checkDatabase", false);
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session/verify", request, 1000, 1000, null,
-                Utils.getCdiVersionStringLatestForTests(), "session");
+                SemVer.v2_21.get(), "session");
 
         assertEquals(response.get("status").getAsString(), "OK");
 
@@ -249,7 +249,7 @@ public class VerifySessionAPITest2_21 {
             request.addProperty("checkDatabase", false);
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/session/verify", request, 1000, 1000, null,
-                    Utils.getCdiVersionStringLatestForTests(), "session");
+                    SemVer.v2_21.get(), "session");
 
             assertEquals(response.get("status").getAsString(), "OK");
         }

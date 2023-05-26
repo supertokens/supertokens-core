@@ -48,7 +48,7 @@ import static org.junit.Assert.*;
 
 public class MultitenantAPITest {
     TestingProcessManager.TestingProcess process;
-    TenantIdentifier t1, t2, t3;
+    TenantIdentifier t1, t2, t3, t4;
 
     @AfterClass
     public static void afterTesting() {
@@ -83,7 +83,7 @@ public class MultitenantAPITest {
             throws StorageQueryException, TenantOrAppNotFoundException, InvalidProviderConfigException,
             FeatureNotEnabledException, IOException, InvalidConfigException,
             CannotModifyBaseConfigException, BadPermissionException {
-        // User pool 1 - (null, a1, null)
+        // User pool 1 - (null, a1, null), (null, a2, null)
         // User pool 2 - (null, a1, t1), (null, a1, t2)
 
         { // tenant 1
@@ -146,9 +146,30 @@ public class MultitenantAPITest {
             );
         }
 
+        { // tenant 4
+            JsonObject config = new JsonObject();
+            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, "a2", null);
+
+            StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                    .modifyConfigToAddANewUserPoolForTesting(config, 1);
+
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    new TenantConfig(
+                            tenantIdentifier,
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(false, null),
+                            new PasswordlessConfig(false),
+                            config
+                    )
+            );
+        }
+
         t1 = new TenantIdentifier(null, "a1", null);
         t2 = new TenantIdentifier(null, "a1", "t1");
         t3 = new TenantIdentifier(null, "a1", "t2");
+        t4 = new TenantIdentifier(null, "a2", null);
     }
 
     private JsonObject emailPasswordSignUp(TenantIdentifier tenantIdentifier, String email, String password)
@@ -377,6 +398,31 @@ public class MultitenantAPITest {
         {
             JsonObject mapping = getUserIdMapping(t3, "euserid", "ANY");
             assertEquals(user2.get("id").getAsString(), mapping.get("superTokensUserId").getAsString());
+        }
+    }
+
+    @Test
+    public void testUserIdFromDifferentAppIsAllowedForUserIdMapping() throws Exception {
+        JsonObject user1 = emailPasswordSignUp(t1, "user@example.com", "password1");
+        JsonObject user2 = emailPasswordSignUp(t4, "user1@example.com", "password2");
+        JsonObject user3 = emailPasswordSignUp(t4, "user2@example.com", "password3");
+
+        successfulCreateUserIdMapping(t4, user2.get("id").getAsString(), user1.get("id").getAsString());
+        successfulCreateUserIdMapping(t1, user1.get("id").getAsString(), user2.get("id").getAsString());
+
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("superTokensUserId", user3.get("id").getAsString());
+        requestBody.addProperty("externalUserId", user2.get("id").getAsString());
+
+        try {
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    HttpRequestForTesting.getMultitenantUrl(t4, "/recipe/userid/map"), requestBody,
+                    1000, 1000, null,
+                    SemVer.v2_22.get(), "useridmapping");
+            fail();
+        } catch (HttpResponseException e) {
+            assertEquals(400, e.statusCode);
+            assertEquals("Http error. Status Code: 400. Message: Cannot create a userId mapping where the externalId is also a SuperTokens userID", e.getMessage());
         }
     }
 }

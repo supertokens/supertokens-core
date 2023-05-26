@@ -28,6 +28,7 @@ import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicExceptio
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.session.Session;
+import io.supertokens.session.accessToken.AccessToken;
 import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -95,7 +96,7 @@ public class SessionTest3 {
 
         try {
             Session.refreshSession(process.getProcess(), sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken,
-                    false, true);
+                    false, AccessToken.getLatestVersion());
             fail();
         } catch (UnauthorisedException e) {
 
@@ -150,7 +151,7 @@ public class SessionTest3 {
 
         try {
             Session.refreshSession(process.getProcess(), sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken,
-                    false, true);
+                    false, AccessToken.getLatestVersion());
             fail();
         } catch (UnauthorisedException ignored) {
 

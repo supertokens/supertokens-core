@@ -18,6 +18,7 @@ package io.supertokens.test.session.api;
 
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
+
 import io.supertokens.ActiveUsers;
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
@@ -199,7 +200,6 @@ public class RefreshSessionAPITest2_7 {
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertEquals("Http error. Status Code: 400. Message: Invalid Json Input", e.getMessage());
         }
-
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

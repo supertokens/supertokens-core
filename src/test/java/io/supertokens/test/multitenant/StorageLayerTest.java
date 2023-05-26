@@ -21,6 +21,7 @@ import com.google.gson.JsonPrimitive;
 import io.supertokens.ProcessState;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
@@ -35,6 +36,8 @@ import org.junit.*;
 import org.junit.rules.TestRule;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -1667,6 +1670,78 @@ public class StorageLayerTest {
         assertEquals("id2", provider.userInfoMap.fromUserInfoAPI.userId);
         assertEquals("email2", provider.userInfoMap.fromUserInfoAPI.email);
         assertEquals("email_verified2", provider.userInfoMap.fromUserInfoAPI.emailVerified);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testThatStoragePointingToSameDbSharesThInstance() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        JsonObject config1 = new JsonObject();
+        JsonObject config2 = new JsonObject();
+        StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                .modifyConfigToAddANewUserPoolForTesting(config2, 1);
+
+        StorageLayer.loadAllTenantStorage(process.getProcess(), new TenantConfig[]{
+                new TenantConfig(
+                        new TenantIdentifier(null, null, "t1"),
+                        new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true),
+                        config1
+                ),
+                new TenantConfig(
+                        new TenantIdentifier(null, null, "t2"),
+                        new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true),
+                        config1
+                ),
+                new TenantConfig(
+                        new TenantIdentifier(null, "a1", null),
+                        new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true),
+                        config2
+                ),
+                new TenantConfig(
+                        new TenantIdentifier(null, "a1", "t1"),
+                        new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true),
+                        config2
+                )
+        });
+
+        TenantIdentifier[] tenants = new TenantIdentifier[]{
+                TenantIdentifier.BASE_TENANT,
+                new TenantIdentifier(null, null, "t1"),
+                new TenantIdentifier(null, null, "t2"),
+                new TenantIdentifier(null, "a1", null),
+                new TenantIdentifier(null, "a1", "t1")
+        };
+        Map<String, Storage> storageMap = new HashMap<>();
+
+        for (TenantIdentifier tenant : tenants) {
+            Storage storage = StorageLayer.getStorage(tenant, process.getProcess());
+            String userPoolId = storage.getUserPoolId();
+            String connectionPoolId = storage.getConnectionPoolId();
+            String uniqueId = userPoolId + "~" + connectionPoolId;
+
+            if (storageMap.containsKey(uniqueId)) {
+                assertEquals(storageMap.get(uniqueId), storage);
+            } else {
+                storageMap.put(uniqueId, storage);
+            }
+        }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

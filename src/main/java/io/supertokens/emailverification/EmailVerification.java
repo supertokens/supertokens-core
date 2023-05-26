@@ -53,9 +53,6 @@ public class EmailVerification {
 
     private static long getEmailVerificationTokenLifetime(TenantIdentifier tenantIdentifier, Main main)
             throws TenantOrAppNotFoundException {
-        if (Main.isTesting) {
-            return EmailVerificationTest.getInstance(main).getEmailVerificationTokenLifetime();
-        }
         return Config.getConfig(tenantIdentifier, main).getEmailVerificationTokenLifetime();
     }
 

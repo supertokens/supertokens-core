@@ -187,6 +187,10 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
     public static void loadAllTenantStorage(Main main, TenantConfig[] tenants)
             throws InvalidConfigException, IOException {
+        // We decided not to include tenantsThatChanged in this function because we do not want to reload the storage
+        // when the db config has not change. And when db config has changed, it results in a
+        // different userPoolId + connectionPoolId, which in turn results in a new storage instance
+
         ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.LOADING_ALL_TENANT_STORAGE, null);
 
         Map<ResourceDistributor.KeyClass, JsonObject> normalisedConfigs = Config.getNormalisedConfigsForAllTenants(
@@ -243,6 +247,8 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                         resourceKeyToStorageMap.put(key, idToExistingStorageLayerMap.get(uniqueId).storage);
                     }
 
+                    resourceKeyToStorageMap.get(key).setLogLevels(Config.getBaseConfig(main).getLogLevels(main));
+
                     main.getResourceDistributor().setResource(key.getTenantIdentifier(), RESOURCE_KEY,
                             new StorageLayer(resourceKeyToStorageMap.get(key)));
                 }
@@ -283,6 +289,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                         // we still want other tenants to continue to work
                     }
                 }
+                return null;
             });
         } catch (ResourceDistributor.FuncException e) {
             throw new RuntimeException(e);

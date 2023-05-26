@@ -20,6 +20,7 @@ import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import org.jetbrains.annotations.TestOnly;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -92,8 +93,14 @@ public class Cronjobs extends ResourceDistributor.SingletonResource {
         synchronized (instance.lock) {
             instance.executor.scheduleWithFixedDelay(task, task.getInitialWaitTimeSeconds(),
                     task.getIntervalTimeSeconds(), TimeUnit.SECONDS);
-            instance.tasks.add(task);
+            if (!instance.tasks.contains(task)) {
+                instance.tasks.add(task);
+            }
         }
     }
 
+    @TestOnly
+    public List<CronTask> getTasks() {
+        return this.tasks;
+    }
 }

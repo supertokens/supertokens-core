@@ -121,7 +121,7 @@ public class SigningKeysTest {
             apps.add(t.tenantIdentifier.toAppIdentifier());
         }
         apps.add(new AppIdentifier(null, null)); // Add base app
-        AccessTokenSigningKey.loadForAllTenants(process.getProcess(), apps);
+        AccessTokenSigningKey.loadForAllTenants(process.getProcess(), apps, new ArrayList<>());
 
         assertEquals(
                 SigningKeys.getInstance(new AppIdentifier(null, null), process.main).getDynamicKeys()
@@ -188,7 +188,7 @@ public class SigningKeysTest {
             apps.add(t.tenantIdentifier.toAppIdentifier());
         }
         apps.add(new AppIdentifier(null, null)); // Add base app
-        AccessTokenSigningKey.loadForAllTenants(process.getProcess(), apps);
+        AccessTokenSigningKey.loadForAllTenants(process.getProcess(), apps, new ArrayList<>());
 
         assertEquals(
                 SigningKeys.getInstance(new AppIdentifier(null, null), process.main).getDynamicKeys()

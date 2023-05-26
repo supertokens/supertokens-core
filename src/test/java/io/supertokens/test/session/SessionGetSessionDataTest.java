@@ -22,6 +22,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.session.Session;
+import io.supertokens.session.accessToken.AccessToken;
 import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -78,7 +79,7 @@ public class SessionGetSessionDataTest {
         JsonArray arr = new JsonArray();
         userDataInDatabase2.add("key3", arr);
 
-        Session.updateSession(process.getProcess(), sessionInfo.session.handle, userDataInDatabase2, null);
+        Session.updateSession(process.getProcess(), sessionInfo.session.handle, userDataInDatabase2, null, AccessToken.getLatestVersion());
 
         JsonObject sessionDataAfterUpdate = Session.getSession(process.getProcess(),
                 sessionInfo.session.handle).userDataInDatabase;
@@ -106,7 +107,7 @@ public class SessionGetSessionDataTest {
         }
 
         try {
-            Session.updateSession(process.getProcess(), "random", new JsonObject(), null);
+            Session.updateSession(process.getProcess(), "random", new JsonObject(), null, AccessToken.getLatestVersion());
             fail();
         } catch (UnauthorisedException e) {
             assertEquals(e.getMessage(), "Session does not exist.");

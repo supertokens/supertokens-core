@@ -28,6 +28,7 @@ import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicExceptio
 import io.supertokens.pluginInterface.jwt.JWTAsymmetricSigningKeyInfo;
 import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.utils.Utils;
 import org.jetbrains.annotations.TestOnly;
@@ -67,7 +68,7 @@ public class SigningKeys extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public static void loadForAllTenants(Main main, List<AppIdentifier> apps) {
+    public static void loadForAllTenants(Main main, List<AppIdentifier> apps, List<TenantIdentifier> tenantsThatChanged) {
         try {
             main.getResourceDistributor().withResourceDistributorLock(() -> {
                 Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingResources =
@@ -77,7 +78,7 @@ public class SigningKeys extends ResourceDistributor.SingletonResource {
                 for (AppIdentifier app : apps) {
                     ResourceDistributor.SingletonResource resource = existingResources.get(
                             new ResourceDistributor.KeyClass(app, RESOURCE_KEY));
-                    if (resource != null) {
+                    if (resource != null && !tenantsThatChanged.contains(app.getAsPublicTenantIdentifier())) {
                         main.getResourceDistributor().setResource(app, RESOURCE_KEY,
                                 resource);
                     } else {
@@ -86,6 +87,7 @@ public class SigningKeys extends ResourceDistributor.SingletonResource {
                                         new SigningKeys(app, main));
                     }
                 }
+                return null;
             });
         } catch (ResourceDistributor.FuncException e) {
             throw new RuntimeException(e);
@@ -340,7 +342,7 @@ public class SigningKeys extends ResourceDistributor.SingletonResource {
      * @param bigInt The big integer to be converted. Must not be
      *               {@code null}.
      * @return A byte array representation of the big integer, without the
-     * sign bit.
+     *         sign bit.
      */
     private static byte[] toBytesUnsigned(final BigInteger bigInt) {
 

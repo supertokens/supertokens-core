@@ -58,7 +58,7 @@ public class ResourceDistributor {
             throw new TenantOrAppNotFoundException(tenantIdentifier);
         }
 
-        MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired(true);
+        MultitenancyHelper.getInstance(main).refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(true);
 
         // we try again..
         resource = resources.get(new KeyClass(tenantIdentifier, key));
@@ -104,10 +104,25 @@ public class ResourceDistributor {
         return resource;
     }
 
+    public synchronized SingletonResource removeResource(TenantIdentifier tenantIdentifier,
+                                                      @Nonnull String key) {
+        SingletonResource singletonResource = resources.get(new KeyClass(tenantIdentifier, key));
+        if (singletonResource == null) {
+            return null;
+        }
+        resources.remove(new KeyClass(tenantIdentifier, key));
+        return singletonResource;
+    }
+
     public synchronized SingletonResource setResource(AppIdentifier appIdentifier,
                                                       @Nonnull String key,
                                                       SingletonResource resource) {
         return setResource(appIdentifier.getAsPublicTenantIdentifier(), key, resource);
+    }
+
+    public synchronized SingletonResource removeResource(AppIdentifier appIdentifier,
+                                                         @Nonnull String key) {
+        return removeResource(appIdentifier.getAsPublicTenantIdentifier(), key);
     }
 
     public synchronized void clearAllResourcesWithResourceKey(String inputKey) {
@@ -138,12 +153,12 @@ public class ResourceDistributor {
         return setResource(new TenantIdentifier(null, null, null), key, resource);
     }
 
-    public interface Func {
-        void performTask() throws FuncException;
+    public interface Func<T> {
+        T performTask() throws FuncException;
     }
 
-    public synchronized void withResourceDistributorLock(Func func) throws FuncException {
-        func.performTask();
+    public synchronized <T> T withResourceDistributorLock(Func<T> func) throws FuncException {
+        return func.performTask();
     }
 
     public interface FuncWithReturn<T> {

@@ -49,6 +49,7 @@ import org.junit.rules.TestRule;
 import org.mockito.Mockito;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import static org.junit.Assert.*;
@@ -1527,7 +1528,7 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(new TenantIdentifier("localhost:3567", null, "t1"), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        tenantConfig)});
+                        tenantConfig)}, new ArrayList<>());
 
         Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
 
@@ -2725,7 +2726,7 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(new TenantIdentifier("localhost:3567", "app1", "t1"), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        tenantConfig)});
+                        tenantConfig)}, new ArrayList<>());
 
         Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
 

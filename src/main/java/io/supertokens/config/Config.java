@@ -25,7 +25,6 @@ import io.supertokens.ProcessState;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.output.Logging;
-import io.supertokens.pluginInterface.LOG_LEVEL;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
@@ -36,9 +35,10 @@ import org.jetbrains.annotations.TestOnly;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 public class Config extends ResourceDistributor.SingletonResource {
 
@@ -62,7 +62,7 @@ public class Config extends ResourceDistributor.SingletonResource {
         this.core = config;
     }
 
-    private static Config getInstance(TenantIdentifier tenantIdentifier, Main main)
+    public static Config getInstance(TenantIdentifier tenantIdentifier, Main main)
             throws TenantOrAppNotFoundException {
         return (Config) main.getResourceDistributor().getResource(tenantIdentifier, RESOURCE_KEY);
     }
@@ -98,7 +98,13 @@ public class Config extends ResourceDistributor.SingletonResource {
                 : CLIOptions.get(main).getConfigFilePath();
     }
 
+    @TestOnly
     public static void loadAllTenantConfig(Main main, TenantConfig[] tenants)
+            throws IOException, InvalidConfigException {
+        loadAllTenantConfig(main, tenants, new ArrayList<>());
+    }
+
+    public static void loadAllTenantConfig(Main main, TenantConfig[] tenants, List<TenantIdentifier> tenantsThatChanged)
             throws IOException, InvalidConfigException {
         ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.LOADING_ALL_TENANT_CONFIG, null);
         Map<ResourceDistributor.KeyClass, JsonObject> normalisedConfigs = getNormalisedConfigsForAllTenants(
@@ -110,16 +116,32 @@ public class Config extends ResourceDistributor.SingletonResource {
         // At this point, we know that all configs are valid.
         try {
             main.getResourceDistributor().withResourceDistributorLock(() -> {
-                main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
                 try {
+                    Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingResources =
+                            main.getResourceDistributor()
+                                    .getAllResourcesWithResourceKey(RESOURCE_KEY);
+                    main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
                     for (ResourceDistributor.KeyClass key : normalisedConfigs.keySet()) {
-                        main.getResourceDistributor()
-                                .setResource(key.getTenantIdentifier(), RESOURCE_KEY,
-                                        new Config(main, normalisedConfigs.get(key)));
+                        ResourceDistributor.SingletonResource resource = existingResources.get(
+                                new ResourceDistributor.KeyClass(
+                                        key.getTenantIdentifier(),
+                                        RESOURCE_KEY));
+                        if (resource != null && !tenantsThatChanged.contains(key.getTenantIdentifier())) {
+                            main.getResourceDistributor()
+                                    .setResource(key.getTenantIdentifier(),
+                                            RESOURCE_KEY,
+                                            resource);
+                        } else {
+                            main.getResourceDistributor()
+                                    .setResource(key.getTenantIdentifier(), RESOURCE_KEY,
+                                            new Config(main, normalisedConfigs.get(key)));
+
+                        }
                     }
                 } catch (InvalidConfigException | IOException e) {
                     throw new ResourceDistributor.FuncException(e);
                 }
+                return null;
             });
         } catch (ResourceDistributor.FuncException e) {
             if (e.getCause() instanceof InvalidConfigException) {

@@ -180,7 +180,6 @@ public class AuthRecipe {
         }
     }
 
-
     @TestOnly
     public static void deleteUser(Main main, String userId)
             throws StorageQueryException, StorageTransactionLogicException {
@@ -206,6 +205,8 @@ public class AuthRecipe {
                 .deleteAllRolesForUser(appIdentifierWithStorage, userId);
         appIdentifierWithStorage.getMfaStorage()
                 .deleteMfaInfoForUser(appIdentifierWithStorage, userId);
+        appIdentifierWithStorage.getActiveUsersStorage()
+                .deleteUserActive(appIdentifierWithStorage, userId);
 
         TOTPSQLStorage totpStorage = appIdentifierWithStorage.getTOTPStorage();
         totpStorage.startTransaction(con -> {

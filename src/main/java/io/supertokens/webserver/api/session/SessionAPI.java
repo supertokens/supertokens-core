@@ -32,7 +32,9 @@ import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicExceptio
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.session.SessionInfo;
+import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.session.Session;
+import io.supertokens.session.accessToken.AccessToken;
 import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.useridmapping.UserIdType;
@@ -92,9 +94,11 @@ public class SessionAPI extends WebserverAPI {
                 useStaticSigningKey = Boolean.FALSE.equals(useDynamicSigningKey);
             }
 
+            AccessToken.VERSION accessTokenVersion = AccessToken.getAccessTokenVersionForCDI(version);
+
             SessionInformationHolder sessionInfo = Session.createNewSession(
                     this.getTenantIdentifierWithStorageFromRequest(req), main, userId, userDataInJWT,
-                    userDataInDatabase, enableAntiCsrf, version.greaterThanOrEqualTo(SemVer.v2_21),
+                    userDataInDatabase, enableAntiCsrf, accessTokenVersion,
                     useStaticSigningKey);
 
             if (StorageLayer.getStorage(this.getTenantIdentifierWithStorageFromRequest(req), main).getType() ==
