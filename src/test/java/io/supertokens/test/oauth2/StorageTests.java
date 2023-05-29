@@ -192,6 +192,7 @@ public class StorageTests {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
     @Test
     public void testCreateOAuth2Scope() throws Exception {
         String[] args = {"../"};
