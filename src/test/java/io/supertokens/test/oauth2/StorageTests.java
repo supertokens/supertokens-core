@@ -18,11 +18,13 @@ package io.supertokens.test.oauth2;
 
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.oauth2.OAuth2Client;
 import io.supertokens.pluginInterface.oauth2.exception.DuplicateOAuth2ClientIdException;
 import io.supertokens.pluginInterface.oauth2.exception.DuplicateOAuth2ClientSecretHash;
+import io.supertokens.pluginInterface.oauth2.exception.DuplicateOAuth2ScopeException;
 import io.supertokens.pluginInterface.oauth2.sqlStorage.OAuth2SQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -82,6 +84,39 @@ public class StorageTests {
                 oAuth2Client.clientId);
 
         Assert.assertEquals(oAuth2Client, oAuth2ClientFromGetQuery);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testCreateOAuth2Scope() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        OAuth2SQLStorage storage = (OAuth2SQLStorage) StorageLayer.getStorage(process.getProcess());
+        List<String> scopes = new ArrayList<>();
+        scopes.add("profile");
+        scopes.add("home_page");
+
+        scopes.forEach(
+                it -> {
+                    try {
+                        storage.createOAuth2Scope(new AppIdentifier(null, null), it);
+                    } catch (DuplicateOAuth2ScopeException | TenantOrAppNotFoundException | StorageQueryException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+        );
+
+        List<String> getOAuth2ScopesFromAppId = storage.getOAuth2Scopes(new AppIdentifier(null, null));
+        Assert.assertEquals(scopes, getOAuth2ScopesFromAppId);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
