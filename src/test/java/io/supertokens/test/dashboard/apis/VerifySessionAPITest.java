@@ -76,8 +76,9 @@ public class VerifySessionAPITest {
         JsonObject verifyResponse1 = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/dashboard/session/verify", requestBody, 1000, 1000, null,
                 SemVer.v2_18.get(), "dashboard");
-        assertEquals(1, verifyResponse1.entrySet().size());
+        assertEquals(2, verifyResponse1.entrySet().size());
         assertEquals("OK", verifyResponse1.get("status").getAsString());
+        assertEquals("test@example.com", verifyResponse1.get("email").getAsString());
 
         Dashboard.revokeSessionWithSessionId(process.getProcess(), sessionId);
 
