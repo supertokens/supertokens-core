@@ -9,6 +9,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changes
 
+- Modifies the `/recipe/dashboard/session/verify` API to include the user's email in the response
 - Support for multitenancy
   - New APIs to manage apps and tenants
     - `/recipe/multitenancy/connectionuridomain` PUT
