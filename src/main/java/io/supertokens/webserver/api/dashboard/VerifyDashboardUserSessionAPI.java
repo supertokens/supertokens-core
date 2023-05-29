@@ -25,6 +25,7 @@ import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.Utils;
 import io.supertokens.webserver.WebserverAPI;
@@ -70,7 +71,14 @@ public class VerifyDashboardUserSessionAPI extends WebserverAPI {
                 } else {
                     JsonObject response = new JsonObject();
                     response.addProperty("status", "OK");
-                    response.addProperty("email", email);
+
+                    SemVer cdiVersion = getVersionFromRequest(req);
+
+                    // We only add email for CDI version 2.22 and above
+                    if (cdiVersion.greaterThanOrEqualTo(SemVer.v2_22)) {
+                        response.addProperty("email", email);
+                    }
+
                     super.sendJsonResponse(200, response, resp);
                 }
             } else {
