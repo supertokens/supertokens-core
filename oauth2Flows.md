@@ -1,5 +1,5 @@
 # Flow diagrams
-## Create oauth 2 client
+## Create oauth2 client
 - Path: "/appid-<appId>/recipe/oauth2/client"
 - Method: POST 
 - Input:
