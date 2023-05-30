@@ -12,7 +12,7 @@
 ```
 - Output:
 ```
-{
+{   
     status : "OK",
     clientInfo : {
             clientId: string,
@@ -72,9 +72,3 @@
 
 ```
 - Flow diagram: https://app.code2flow.com/flowcharts/6475cc5b3f4c2482c82a736a
-
-## Todo's:
-- [ ] Add implementation of `upsertOAuth2ClientScope_Transaction()` in postgres-plugin
-- [ ] Update changes to Create oauth2 client api contract in `core-driver-interface` 
-- [ ] Add `create_oauth2_client` api implementation in `supertokens-core`
-- [ ] Add test cases for create `oauth2_client` api  in `supertokens-core`
