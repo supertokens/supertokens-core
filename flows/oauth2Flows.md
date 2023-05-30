@@ -21,7 +21,10 @@
             timeCreated: number
     }
 } | {
-    status : "CLIENT_ALREADY_EXISTS_ERROR" | "UNKNOWN_SCOPE_ERROR"
+    status : "CLIENT_ALREADY_EXISTS_ERROR"
+} | {
+    status : "UNKNOWN_SCOPE_ERROR",
+    scope : string
 }
 ```
 - Flow diagram: https://app.code2flow.com/flowcharts/6475a4953f4c2482c82a4352
