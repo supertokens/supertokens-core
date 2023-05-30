@@ -1,5 +1,5 @@
 # Flow diagrams
-## Create oauth2 client
+## 1. Create oauth2 client 
 - Path: "/appid-<appId>/recipe/oauth2/client"
 - Method: POST 
 - Input:
@@ -26,7 +26,7 @@
 ```
 - Flow diagram: https://app.code2flow.com/flowcharts/6475a4953f4c2482c82a4352
 
-## Get oauth2 client [in progress]
+## 2. Get oauth2 client  [in progress]
 - Path: "appid-<appId>/recipe/oauth2/client"
 - Method: GET
 - Query Parameter Name : clientId (`Type : String`)
@@ -71,7 +71,7 @@
 - Flow diagram: https://app.code2flow.com/flowcharts/6475cc5b3f4c2482c82a736a
 
 ## Todo's:
-- [] Add implementation of `upsertOAuth2ClientScope_Transaction()` in postgres-plugin
-- [] Update changes to Create oauth2 client api contract in `core-driver-interface` repo
-- [] Add `create_oauth2_client` api implementation in `supertokens-core`
-- [] Add test cases `create_oauth2_client` in `supertokens-core`
+- [ ] Add implementation of `upsertOAuth2ClientScope_Transaction()` in postgres-plugin
+- [ ] Update changes to Create oauth2 client api contract in `core-driver-interface` repo
+- [ ] Add `create_oauth2_client` api implementation in `supertokens-core`
+- [ ] Add test cases `create_oauth2_client` in `supertokens-core`
