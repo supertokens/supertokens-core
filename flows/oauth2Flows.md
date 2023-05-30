@@ -72,6 +72,6 @@
 
 ## Todo's:
 - [ ] Add implementation of `upsertOAuth2ClientScope_Transaction()` in postgres-plugin
-- [ ] Update changes to Create oauth2 client api contract in `core-driver-interface` repo
+- [ ] Update changes to Create oauth2 client api contract in `core-driver-interface` 
 - [ ] Add `create_oauth2_client` api implementation in `supertokens-core`
-- [ ] Add test cases `create_oauth2_client` in `supertokens-core`
+- [ ] Add test cases for create `oauth2_client` api  in `supertokens-core`
