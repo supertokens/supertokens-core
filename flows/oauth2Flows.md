@@ -69,3 +69,9 @@
 
 ```
 - Flow diagram: https://app.code2flow.com/flowcharts/6475cc5b3f4c2482c82a736a
+
+## Todo's:
+- [] Add implementation of `upsertOAuth2ClientScope_Transaction()` in postgres-plugin
+- [] Update changes to Create oauth2 client api contract in `core-driver-interface` repo
+- [] Add `create_oauth2_client` api implementation in `supertokens-core`
+- [] Add test cases `create_oauth2_client` in `supertokens-core`
