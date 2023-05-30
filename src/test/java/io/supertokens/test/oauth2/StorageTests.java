@@ -16,17 +16,18 @@
 
 package io.supertokens.test.oauth2;
 
+import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlagTestContent;
+import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.oauth2.OAuth2Client;
-import io.supertokens.pluginInterface.oauth2.exception.DuplicateOAuth2ClientIdException;
-import io.supertokens.pluginInterface.oauth2.exception.DuplicateOAuth2ClientSecretHash;
-import io.supertokens.pluginInterface.oauth2.exception.DuplicateOAuth2ScopeException;
-import io.supertokens.pluginInterface.oauth2.exception.UnknownOAuth2ClientIdException;
+import io.supertokens.pluginInterface.oauth2.exception.*;
 import io.supertokens.pluginInterface.oauth2.sqlStorage.OAuth2SQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -36,6 +37,8 @@ import org.junit.rules.TestRule;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.junit.Assert.assertNotNull;
 
@@ -101,7 +104,7 @@ public class StorageTests {
                 storage.startTransaction(con -> {
                     try {
                         storage.createOAuth2Client_Transaction(new AppIdentifier(null, "test-1"), con, oAuth2Client);
-                    } catch (DuplicateOAuth2ClientSecretHash | DuplicateOAuth2ClientIdException |
+                    } catch (DuplicateOAuth2ClientSecretHash | DuplicateOAuth2ClientIdException | DuplicateOAuth2ClientNameException |
                              TenantOrAppNotFoundException e) {
                         throw new StorageTransactionLogicException(e);
                     }
@@ -115,7 +118,7 @@ public class StorageTests {
             assert (error instanceof TenantOrAppNotFoundException);
         }
 
-        // test - check createOuth2ClientTransaction for DuplicateOAuth2ClientIdException
+        // test - check createOAuth2ClientTransaction for DuplicateOAuth2ClientIdException
         {
             OAuth2Client oAuth2Client = getOAuth2Client("test-1", "test-1", "test1-secret");
             createOAuth2Client_TransactionHelper(storage ,oAuth2Client);
@@ -124,7 +127,7 @@ public class StorageTests {
                 storage.startTransaction(con -> {
                     try {
                         storage.createOAuth2Client_Transaction(new AppIdentifier(null, null), con, oAuth2Client);
-                    } catch (DuplicateOAuth2ClientSecretHash | DuplicateOAuth2ClientIdException |
+                    } catch (DuplicateOAuth2ClientSecretHash | DuplicateOAuth2ClientIdException | DuplicateOAuth2ClientNameException |
                              TenantOrAppNotFoundException e) {
                         throw new StorageTransactionLogicException(e);
                     }
@@ -148,8 +151,8 @@ public class StorageTests {
                 storage.startTransaction(con -> {
                     try {
                         storage.createOAuth2Client_Transaction(new AppIdentifier(null, null), con,
-                                getOAuth2Client("exp2", "exp2",oAuth2Client.clientSecretHash));
-                    } catch (DuplicateOAuth2ClientSecretHash | DuplicateOAuth2ClientIdException |
+                                getOAuth2Client("exp2", "random-name",oAuth2Client.clientSecretHash));
+                    } catch (DuplicateOAuth2ClientSecretHash | DuplicateOAuth2ClientIdException | DuplicateOAuth2ClientNameException |
                              TenantOrAppNotFoundException e) {
                         throw new StorageTransactionLogicException(e);
                     }
@@ -161,6 +164,29 @@ public class StorageTests {
 
             Assert.assertNotNull(error);
             assert (error instanceof DuplicateOAuth2ClientSecretHash);
+        }
+        // test - check createOauth2ClientTransaction for DuplicateOAuth2ClientNameException
+        {
+            error = null;
+            try {
+                OAuth2Client oAuth2Client = getOAuth2Client("test-name-ex", "test-name-ex", "test-name-ex");
+                createOAuth2Client_TransactionHelper(storage ,oAuth2Client);
+                storage.startTransaction(con -> {
+                    try {
+                        storage.createOAuth2Client_Transaction(new AppIdentifier(null, null), con,
+                                getOAuth2Client("test-name-ex-2", "test-name-ex","test-name-ex-2"));
+                    } catch (DuplicateOAuth2ClientSecretHash | DuplicateOAuth2ClientIdException | DuplicateOAuth2ClientNameException |
+                             TenantOrAppNotFoundException e) {
+                        throw new StorageTransactionLogicException(e);
+                    }
+                    return null;
+                });
+            } catch (StorageTransactionLogicException e) {
+                error = e.actualException;
+            }
+
+            Assert.assertNotNull(error);
+            assert (error instanceof DuplicateOAuth2ClientNameException);
         }
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -274,20 +300,78 @@ public class StorageTests {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    public static void createOAuth2Client_TransactionHelper(OAuth2SQLStorage storage, OAuth2Client oAuth2Client)
+    @Test
+    public void testGetOAuth2Scopes() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        Multitenancy.addNewOrUpdateAppOrTenant(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                new TenantConfig(
+                        new TenantIdentifier(null, "test_app", null),
+                        new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true),
+                        new JsonObject()
+                )
+        );
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        OAuth2SQLStorage storage = (OAuth2SQLStorage) StorageLayer.getStorage(process.getProcess());
+        // test - to check whether correct scopes are returned for an app while scopes for multiple apps are present
+        {
+            List<String> scopes = Stream.of("profile", "home", "special")
+                    .collect(Collectors.toCollection(
+                            ArrayList::new));
+            scopes.forEach(
+                    it -> {
+                        try {
+                            storage.createOAuth2Scope(new AppIdentifier(null,"test_app"),it);
+                        } catch (StorageQueryException | DuplicateOAuth2ScopeException |TenantOrAppNotFoundException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+            );
+
+            List<String> getOauth2scopesFromAppId = storage.getOAuth2Scopes(new AppIdentifier(null, "test_app"));
+
+            Assert.assertEquals(scopes,getOauth2scopesFromAppId);
+        }
+
+        // test - to check whether an empty scope list is returned for a non-existent app
+        {
+            List<String> scopes = storage.getOAuth2Scopes(new AppIdentifier(null, "test_app_non_existent"));
+
+            Assert.assertTrue(scopes.isEmpty());
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    private static void createOAuth2Client_TransactionHelper(OAuth2SQLStorage storage, OAuth2Client oAuth2Client)
             throws StorageQueryException, StorageTransactionLogicException {
 
         storage.startTransaction(con -> {
             try {
                 storage.createOAuth2Client_Transaction(new AppIdentifier(null, null), con, oAuth2Client);
-            } catch (DuplicateOAuth2ClientSecretHash  | DuplicateOAuth2ClientIdException | TenantOrAppNotFoundException e) {
+            } catch (DuplicateOAuth2ClientSecretHash | DuplicateOAuth2ClientNameException | DuplicateOAuth2ClientIdException | TenantOrAppNotFoundException e) {
                 throw new RuntimeException(e);
             }
             return null;
         });
     }
 
-    public static  OAuth2Client getOAuth2Client(String clientId, String name, String clientSecretHash){
+    private static OAuth2Client getOAuth2Client(String clientId, String name, String clientSecretHash){
         List<String> redirectUris = new ArrayList<>();
         redirectUris.add("randomURL1");
         redirectUris.add("randomURL2");
