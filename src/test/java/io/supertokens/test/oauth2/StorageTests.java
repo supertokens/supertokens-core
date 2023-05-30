@@ -310,6 +310,10 @@ public class StorageTests {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
@@ -321,10 +325,6 @@ public class StorageTests {
                         new JsonObject()
                 )
         );
-
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            return;
-        }
 
         OAuth2SQLStorage storage = (OAuth2SQLStorage) StorageLayer.getStorage(process.getProcess());
         // test - to check whether correct scopes are returned for an app while scopes for multiple apps are present
