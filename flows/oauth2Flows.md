@@ -34,7 +34,7 @@
 
 
 ## 2. Get oauth2 client
-- Path: "/appid-<appId>/recipe/oauth2/client/<clientId>"
+- Path: "/appid-<appId>/recipe/oauth2/client/"
 - Method: GET
 - Input Params:
     - ```clientId=string```
@@ -74,7 +74,7 @@
       accessTokenHash: string,
       refreshTokenHash?: string,
       timeCreated: number,
-      lastUpdated?: number,
+      lastUpdated: number,
       timeAccessTokenExpires: number,
       timeRefreshTokenExpires?: number
     }
