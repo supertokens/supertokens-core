@@ -15,10 +15,13 @@
 {   
     status : "OK",
     clientInfo : {
-            clientId: string,
-            clientSecret: string,
-            scopes: string[],
-            timeCreated: number
+       name: string
+       clientId: string,
+       clientSecret: string,
+       scopes: string[],
+       redirectUris: string[],
+       timeCreated: number,
+       timeUpdated: number
     }
 } | {
     status : "CLIENT_ALREADY_EXISTS_ERROR"
@@ -40,23 +43,23 @@
 {
   status: "OK",
   name: string,
-  clientInfo : 
-    {
+  clientInfo : {
+       name: string,
        clientId: string,
        clientSecret: string,
        scopes: string[],
-       timeCreated: number
-    }
-  redirectUris: string[],
-  timeUpdated: number,
+       redirectUris: string[],
+       timeCreated: number,
+       timeUpdated: number
+  },
   authorizationCodes: [
     {
-      tenantId: string,
+      tenantId: string, 
       sessionHandle: string,
       scopes: string[],
       accessType: string,
-      codeChallenge: string,
-      codeChallengeMethod: string,
+      codeChallenge?: string,
+      codeChallengeMethod?: string,
       redirectUri: string,
       timeCreated: number,
       timeExpires: number
@@ -64,17 +67,20 @@
   ],
   issuedTokens: [
     {
+      id: string, 
       tenantId: string,
       sessionHandle: string,
-      userId: string,
       scopes: string[],
       accessTokenHash: string,
-      refreshTokenHash: string,
+      refreshTokenHash?: string,
       timeCreated: number,
+      lastUpdated?: number,
       timeAccessTokenExpires: number,
-      timeRefreshTokenExpires: number
+      timeRefreshTokenExpires?: number
     }
   ]
+} | {
+      status : "UNKONWN_CLIENT_ID_ERROR"
 }
 
 ```
