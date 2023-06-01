@@ -26,6 +26,7 @@ import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
 import io.supertokens.passwordless.Passwordless;
+import io.supertokens.pluginInterface.ActiveUsersStorage;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -175,9 +176,11 @@ public class TestTenantUserAssociation {
                 continue;
             }
 
-            if (name.equals(UserMetadataStorage.class.getName()) || name.equals(JWTRecipeStorage.class.getName())) {
+            if (name.equals(UserMetadataStorage.class.getName())
+                    || name.equals(JWTRecipeStorage.class.getName()) || name.equals(ActiveUsersStorage.class.getName())) {
                 // user metadata is app specific and does not have any tenant specific data
                 // JWT storage does not have any user specific data
+                // Active users storage does not have tenant specific data
                 continue;
             }
 
