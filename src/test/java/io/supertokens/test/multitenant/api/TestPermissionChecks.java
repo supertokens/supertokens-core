@@ -175,7 +175,12 @@ public class TestPermissionChecks {
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
             if (StorageLayer.isInMemDb(process.getProcess())) {
-                return;
+                if (!testCase.sourceTenant.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
+                    process.kill();
+                    assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
+                    continue;
+                }
             }
 
             {
@@ -239,7 +244,12 @@ public class TestPermissionChecks {
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
             if (StorageLayer.isInMemDb(process.getProcess())) {
-                return;
+                if (!testCase.sourceTenant.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
+                    process.kill();
+                    assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
+                    continue;
+                }
             }
 
             {
@@ -542,7 +552,12 @@ public class TestPermissionChecks {
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
             if (StorageLayer.isInMemDb(process.getProcess())) {
-                return;
+                if (!testCase.sourceTenant.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI) || !testCase.targetTenant.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
+                    process.kill();
+                    assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
+                    continue;
+                }
             }
 
             {
@@ -699,7 +714,12 @@ public class TestPermissionChecks {
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
             if (StorageLayer.isInMemDb(process.getProcess())) {
-                return;
+                if (!testCase.sourceTenant.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI) || !testCase.targetTenant.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
+                    process.kill();
+                    assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
+                    continue;
+                }
             }
 
             {
@@ -902,7 +922,12 @@ public class TestPermissionChecks {
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
             if (StorageLayer.isInMemDb(process.getProcess())) {
-                return;
+                if (!testCase.sourceTenant.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI) || !testCase.targetTenant.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
+                    process.kill();
+                    assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
+                    continue;
+                }
             }
 
             {
@@ -1003,7 +1028,12 @@ public class TestPermissionChecks {
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
             if (StorageLayer.isInMemDb(process.getProcess())) {
-                return;
+                if (!testCase.sourceTenant.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI) || !testCase.targetTenant.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
+                    process.kill();
+                    assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
+                    continue;
+                }
             }
 
             {
