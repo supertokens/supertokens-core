@@ -72,6 +72,10 @@ public class TestConnectionUriDomain {
 
     @Test
     public void testCreateConnectionUriDomainWorks() throws Exception {
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         JsonObject coreConfig = new JsonObject();
 
         StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
@@ -110,6 +114,10 @@ public class TestConnectionUriDomain {
 
     @Test
     public void testUpdateConnectionUriDomainWorks() throws Exception {
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         JsonObject coreConfig = new JsonObject();
 
         StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
@@ -160,6 +168,10 @@ public class TestConnectionUriDomain {
 
     @Test
     public void testUpdateConnectionUriDomainFromSameConnectionUriDomainWorks() throws Exception {
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         JsonObject coreConfig = new JsonObject();
 
         StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
@@ -210,6 +222,10 @@ public class TestConnectionUriDomain {
 
     @Test
     public void testUpdateWithNullValueDeletesTheSetting() throws Exception {
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         JsonObject coreConfig = new JsonObject();
 
         StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
@@ -261,6 +277,10 @@ public class TestConnectionUriDomain {
 
     @Test
     public void testDeleteConnectionUriDomainWorks() throws Exception {
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         JsonObject coreConfig = new JsonObject();
 
         StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())

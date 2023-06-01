@@ -122,6 +122,10 @@ public class RequestConnectionUriDomainTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         JsonObject tenantConfig = new JsonObject();
         tenantConfig.add("api_keys", new JsonPrimitive("abctijenbogweg=-2438243u98"));
         StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
@@ -214,6 +218,10 @@ public class RequestConnectionUriDomainTest {
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
 
         JsonObject tenantConfig = new JsonObject();
         tenantConfig.add("api_keys", new JsonPrimitive("abctijenbogweg=-2438243u98"));

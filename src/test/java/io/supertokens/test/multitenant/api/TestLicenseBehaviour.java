@@ -133,6 +133,10 @@ public class TestLicenseBehaviour {
 
     @Test
     public void testThatCoreCanRestartWithAllTheTenantsWithoutLicenseKey() throws Exception {
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         TestMultitenancyAPIHelper.addLicense(OPAQUE_KEY_WITH_MULTITENANCY_FEATURE, process.getProcess());
 
         JsonObject coreConfig = new JsonObject();

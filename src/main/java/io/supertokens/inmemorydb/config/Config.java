@@ -18,6 +18,9 @@ package io.supertokens.inmemorydb.config;
 
 import io.supertokens.inmemorydb.ResourceDistributor;
 import io.supertokens.inmemorydb.Start;
+import io.supertokens.pluginInterface.LOG_LEVEL;
+
+import java.util.Set;
 
 public class Config extends ResourceDistributor.SingletonResource {
 
@@ -44,4 +47,7 @@ public class Config extends ResourceDistributor.SingletonResource {
         return getInstance(start).config;
     }
 
+    public static void setLogLevels(Start start, Set<LOG_LEVEL> logLevels) {
+        // no-op
+    }
 }

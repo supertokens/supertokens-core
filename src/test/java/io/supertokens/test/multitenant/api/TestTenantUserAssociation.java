@@ -160,6 +160,10 @@ public class TestTenantUserAssociation {
 
     @Test
     public void testUserDisassociationForNotAuthRecipes() throws Exception {
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         createTenants();
 
         Reflections reflections = new Reflections("io.supertokens.pluginInterface");
@@ -210,6 +214,10 @@ public class TestTenantUserAssociation {
 
     @Test
     public void testAssociateOnDifferentStorageIsNotPossible() throws Exception {
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         createTenants();
         JsonObject user = TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", "t1"), "user@example.com", "password", process.getProcess());
         String userId = user.get("id").getAsString();
@@ -220,6 +228,10 @@ public class TestTenantUserAssociation {
 
     @Test
     public void testEmailPasswordUsersHaveTenantIds() throws Exception {
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         createTenants();
 
         TenantIdentifier t1 = new TenantIdentifier(null, "a1", "t1");
@@ -246,6 +258,10 @@ public class TestTenantUserAssociation {
 
     @Test
     public void testPasswordlessUsersHaveTenantIds1() throws Exception {
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         createTenants();
 
         TenantIdentifier t1 = new TenantIdentifier(null, "a1", "t1");
@@ -275,6 +291,10 @@ public class TestTenantUserAssociation {
 
     @Test
     public void testPasswordlessUsersHaveTenantIds2() throws Exception {
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         createTenants();
 
         TenantIdentifier t1 = new TenantIdentifier(null, "a1", "t1");
@@ -304,6 +324,10 @@ public class TestTenantUserAssociation {
 
     @Test
     public void testThirdPartyUsersHaveTenantIds() throws Exception {
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         createTenants();
 
         TenantIdentifier t1 = new TenantIdentifier(null, "a1", "t1");

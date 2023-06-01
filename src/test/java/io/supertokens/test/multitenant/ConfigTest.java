@@ -123,6 +123,11 @@ public class ConfigTest {
     }
 
     @Test
+    public void mergingTenantWithBaseConfigWorksForInMemDb() throws Exception {
+        throw new RuntimeException("Not implemented");
+    }
+
+    @Test
     public void mergingTenantWithBaseConfigWorks()
             throws InterruptedException, IOException, InvalidConfigException, TenantOrAppNotFoundException {
         String[] args = {"../"};
@@ -134,6 +139,10 @@ public class ConfigTest {
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
 
         JsonObject tenantConfig = new JsonObject();
         tenantConfig.add("refresh_token_validity", new JsonPrimitive(144002));
@@ -253,6 +262,10 @@ public class ConfigTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         Storage storage = StorageLayer.getStorage(process.getProcess());
         if (storage.getType() == STORAGE_TYPE.SQL
                 && !Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
@@ -300,6 +313,10 @@ public class ConfigTest {
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
 
         TenantConfig[] tenants = new TenantConfig[4];
 
@@ -388,6 +405,10 @@ public class ConfigTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         TenantConfig[] tenants = new TenantConfig[2];
 
         {
@@ -425,6 +446,10 @@ public class ConfigTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    @Test void testCreateOfTenantsUsingValidSourceTenantForInMemDb() throws Exception {
+        throw new RuntimeException("Not implemented");
+    }
+
     @Test
     public void testCreationOfTenantsUsingValidSourceTenant()
             throws InterruptedException, BadPermissionException, InvalidProviderConfigException,
@@ -437,6 +462,10 @@ public class ConfigTest {
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
 
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
@@ -991,6 +1020,11 @@ public class ConfigTest {
     }
 
     @Test
+    public void testConfigNormalisationForInMemDb() throws Exception {
+        throw new RuntimeException("Not implemented");
+    }
+
+    @Test
     public void testConfigNormalisation() throws Exception {
         TenantIdentifier[][] testCases = new TenantIdentifier[][]{
                 new TenantIdentifier[]{
@@ -1140,6 +1174,10 @@ public class ConfigTest {
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
 
         { // create cud with value
             JsonObject coreConfigJson = new JsonObject();
@@ -1370,6 +1408,11 @@ public class ConfigTest {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testThatConfigChangesReloadsStorageLayerForInMemDb() throws Exception {
+        throw new RuntimeException("This test is not valid for in memory db");
     }
 
     @Test
