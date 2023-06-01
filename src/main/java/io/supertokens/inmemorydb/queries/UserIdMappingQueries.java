@@ -43,9 +43,9 @@ public class UserIdMappingQueries {
                 + "supertokens_user_id CHAR(36) NOT NULL,"
                 + "external_user_id VARCHAR(128) NOT NULL,"
                 + "external_user_id_info TEXT,"
-                + "PRIMARY KEY(app_id, supertokens_user_id, external_user_id),"
                 + "UNIQUE (app_id, supertokens_user_id),"
                 + "UNIQUE (app_id, external_user_id),"
+                + "PRIMARY KEY(app_id, supertokens_user_id, external_user_id),"
                 + "FOREIGN KEY(app_id, supertokens_user_id) REFERENCES " + Config.getConfig(start).getAppIdToUserIdTable()
                 + " (app_id, user_id) ON DELETE CASCADE"
                 + ");";

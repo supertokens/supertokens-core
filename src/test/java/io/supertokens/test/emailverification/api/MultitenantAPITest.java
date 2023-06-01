@@ -74,10 +74,6 @@ public class MultitenantAPITest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        if (StorageLayer.isInMemDb(process.getProcess())) {
-            return;
-        }
-
         createTenants();
     }
 
@@ -215,10 +211,6 @@ public class MultitenantAPITest {
 
     @Test
     public void testSameEmailAcrossDifferentTenantButSameUserPoolDoesNotNeedVerificationAgain() throws Exception {
-        if (StorageLayer.isInMemDb(process.getProcess())) {
-            return;
-        }
-
         verifyEmail(t2, "userid", "test@example.com");
         assertTrue(isEmailVerified(t2, "userid", "test@example.com"));
         assertTrue(isEmailVerified(t3, "userid", "test@example.com"));

@@ -29,6 +29,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
+import io.supertokens.pluginInterface.useridmapping.exception.UserIdMappingAlreadyExistsException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -364,6 +365,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testSameExternalIdAcrossUserPoolPrioritizesTenantOfInterest() throws Exception {
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         JsonObject user1 = emailPasswordSignUp(t1, "user@example.com", "password1");
         JsonObject user2 = emailPasswordSignUp(t2, "user@example.com", "password2");
 

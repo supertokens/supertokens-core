@@ -123,11 +123,6 @@ public class ConfigTest {
     }
 
     @Test
-    public void mergingTenantWithBaseConfigWorksForInMemDb() throws Exception {
-        throw new RuntimeException("Not implemented");
-    }
-
-    @Test
     public void mergingTenantWithBaseConfigWorks()
             throws InterruptedException, IOException, InvalidConfigException, TenantOrAppNotFoundException {
         String[] args = {"../"};
@@ -446,10 +441,6 @@ public class ConfigTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    @Test void testCreateOfTenantsUsingValidSourceTenantForInMemDb() throws Exception {
-        throw new RuntimeException("Not implemented");
-    }
-
     @Test
     public void testCreationOfTenantsUsingValidSourceTenant()
             throws InterruptedException, BadPermissionException, InvalidProviderConfigException,
@@ -462,10 +453,6 @@ public class ConfigTest {
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        if (StorageLayer.isInMemDb(process.getProcess())) {
-            return;
-        }
 
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
@@ -543,92 +530,98 @@ public class ConfigTest {
         StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
                 .modifyConfigToAddANewUserPoolForTesting(config, 2);
 
-        Multitenancy.addNewOrUpdateAppOrTenant(
-                process.getProcess(),
-                new TenantIdentifier(null, null, null),
-                new TenantConfig(
-                        new TenantIdentifier("c1", null, null),
-                        new EmailPasswordConfig(true),
-                        new ThirdPartyConfig(true, null),
-                        new PasswordlessConfig(true),
-                        config
-                )
-        );
+        if (!StorageLayer.isInMemDb(process.getProcess())) {
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    new TenantConfig(
+                            new TenantIdentifier("c1", null, null),
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(true),
+                            config
+                    )
+            );
 
-        Multitenancy.addNewOrUpdateAppOrTenant(
-                process.getProcess(),
-                new TenantIdentifier("c1", null, null),
-                new TenantConfig(
-                        new TenantIdentifier("c1", null, "t1"),
-                        new EmailPasswordConfig(true),
-                        new ThirdPartyConfig(true, null),
-                        new PasswordlessConfig(true),
-                        config
-                )
-        );
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    process.getProcess(),
+                    new TenantIdentifier("c1", null, null),
+                    new TenantConfig(
+                            new TenantIdentifier("c1", null, "t1"),
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(true),
+                            config
+                    )
+            );
 
-        Multitenancy.addNewOrUpdateAppOrTenant(
-                process.getProcess(),
-                new TenantIdentifier("c1", null, null),
-                new TenantConfig(
-                        new TenantIdentifier("c1", "a1", null),
-                        new EmailPasswordConfig(true),
-                        new ThirdPartyConfig(true, null),
-                        new PasswordlessConfig(true),
-                        config
-                )
-        );
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    process.getProcess(),
+                    new TenantIdentifier("c1", null, null),
+                    new TenantConfig(
+                            new TenantIdentifier("c1", "a1", null),
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(true),
+                            config
+                    )
+            );
 
-        Multitenancy.addNewOrUpdateAppOrTenant(
-                process.getProcess(),
-                new TenantIdentifier("c1", "a1", null),
-                new TenantConfig(
-                        new TenantIdentifier("c1", "a1", "t1"),
-                        new EmailPasswordConfig(true),
-                        new ThirdPartyConfig(true, null),
-                        new PasswordlessConfig(true),
-                        config
-                )
-        );
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    process.getProcess(),
+                    new TenantIdentifier("c1", "a1", null),
+                    new TenantConfig(
+                            new TenantIdentifier("c1", "a1", "t1"),
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(true),
+                            config
+                    )
+            );
 
-        Multitenancy.addNewOrUpdateAppOrTenant(
-                process.getProcess(),
-                new TenantIdentifier("c1", null, null),
-                new TenantConfig(
-                        new TenantIdentifier("c1", "a2", null),
-                        new EmailPasswordConfig(true),
-                        new ThirdPartyConfig(true, null),
-                        new PasswordlessConfig(true),
-                        config
-                )
-        );
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    process.getProcess(),
+                    new TenantIdentifier("c1", null, null),
+                    new TenantConfig(
+                            new TenantIdentifier("c1", "a2", null),
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(true),
+                            config
+                    )
+            );
 
-        Multitenancy.addNewOrUpdateAppOrTenant(
-                process.getProcess(),
-                new TenantIdentifier("c1", "a2", null),
-                new TenantConfig(
-                        new TenantIdentifier("c1", "a2", "t1"),
-                        new EmailPasswordConfig(true),
-                        new ThirdPartyConfig(true, null),
-                        new PasswordlessConfig(true),
-                        config
-                )
-        );
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    process.getProcess(),
+                    new TenantIdentifier("c1", "a2", null),
+                    new TenantConfig(
+                            new TenantIdentifier("c1", "a2", "t1"),
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(true),
+                            config
+                    )
+            );
 
-        Multitenancy.addNewOrUpdateAppOrTenant(
-                process.getProcess(),
-                new TenantIdentifier("c1", "a2", null),
-                new TenantConfig(
-                        new TenantIdentifier("c1", "a2", "t2"),
-                        new EmailPasswordConfig(true),
-                        new ThirdPartyConfig(true, null),
-                        new PasswordlessConfig(true),
-                        config
-                )
-        );
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    process.getProcess(),
+                    new TenantIdentifier("c1", "a2", null),
+                    new TenantConfig(
+                            new TenantIdentifier("c1", "a2", "t2"),
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(true),
+                            config
+                    )
+            );
+        }
 
         TenantConfig[] allTenants = Multitenancy.getAllTenants(process.getProcess());
-        assertEquals(14, allTenants.length);
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            assertEquals(7, allTenants.length);
+        } else {
+            assertEquals(14, allTenants.length);
+        }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -1020,11 +1013,6 @@ public class ConfigTest {
     }
 
     @Test
-    public void testConfigNormalisationForInMemDb() throws Exception {
-        throw new RuntimeException("Not implemented");
-    }
-
-    @Test
     public void testConfigNormalisation() throws Exception {
         TenantIdentifier[][] testCases = new TenantIdentifier[][]{
                 new TenantIdentifier[]{
@@ -1066,6 +1054,12 @@ public class ConfigTest {
                     .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
             process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.isInMemDb(process.getProcess())) {
+                if (!testCase[0].getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
+                    continue;
+                }
+            }
 
             for (int i = 0; i < testCase.length; i++) {
                 TenantIdentifier tenantIdentifier = testCase[i];
@@ -1411,11 +1405,6 @@ public class ConfigTest {
     }
 
     @Test
-    public void testThatConfigChangesReloadsStorageLayerForInMemDb() throws Exception {
-        throw new RuntimeException("This test is not valid for in memory db");
-    }
-
-    @Test
     public void testThatConfigChangesReloadsStorageLayer() throws Exception {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
@@ -1474,7 +1463,7 @@ public class ConfigTest {
             assertEquals(storageLayerBefore, storageLayerAfter);
         }
 
-        {
+        if (!StorageLayer.isInMemDb(process.getProcess())) {
             Storage storageLayerBefore = StorageLayer.getStorage(t1, process.getProcess());
 
             JsonObject coreConfig = new JsonObject();

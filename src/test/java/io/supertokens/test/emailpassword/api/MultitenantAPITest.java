@@ -90,12 +90,11 @@ public class MultitenantAPITest {
             throws StorageQueryException, TenantOrAppNotFoundException, InvalidProviderConfigException,
             FeatureNotEnabledException, IOException, InvalidConfigException,
             CannotModifyBaseConfigException, BadPermissionException {
-        if (StorageLayer.isInMemDb(process.getProcess())) {
-            return;
-        }
 
         // User pool 1 - (null, a1, null)
         // User pool 2 - (null, a1, t1), (null, a1, t2)
+
+        // NOTE - user pools are not applicable if using in memory database
 
         { // tenant 1
             JsonObject config = new JsonObject();
@@ -490,10 +489,6 @@ public class MultitenantAPITest {
 
     @Test
     public void testResetPasswordWorksCorrectlyAcrossTenants() throws Exception {
-        if (StorageLayer.isInMemDb(process.getProcess())) {
-            return;
-        }
-
         createTenants();
 
         JsonObject user1 = signUp(t1, "user@example.com", "password1");
@@ -524,10 +519,6 @@ public class MultitenantAPITest {
 
     @Test
     public void testCrossTenantPasswordResetCombinations() throws Exception {
-        if (StorageLayer.isInMemDb(process.getProcess())) {
-            return;
-        }
-
         createTenants();
 
         JsonObject user1 = signUp(t1, "user@example.com", "password1");
@@ -559,7 +550,13 @@ public class MultitenantAPITest {
                             }
                         }
                     } else {
-                        invalidResetPasswordUsingToken(tenant, token, newPassword);
+                        if (StorageLayer.isInMemDb(process.getProcess())) {
+                            // For in memory db, the user is in the same user pool and the password reset will succeed
+                            successfulResetPasswordUsingToken(tenant, user.getAsJsonPrimitive("id").getAsString(), token,
+                                    newPassword);
+                        } else {
+                            invalidResetPasswordUsingToken(tenant, token, newPassword);
+                        }
                     }
                 }
             }
@@ -590,7 +587,13 @@ public class MultitenantAPITest {
                             }
                         }
                     } else {
-                        invalidResetPasswordUsingToken(tenant, token, newPassword);
+                        if (StorageLayer.isInMemDb(process.getProcess())) {
+                            // For in memory db, the user is in the same user pool and the password reset will succeed
+                            successfulResetPasswordUsingToken(tenant, user.getAsJsonPrimitive("id").getAsString(), token,
+                                    newPassword);
+                        } else {
+                            invalidResetPasswordUsingToken(tenant, token, newPassword);
+                        }
                     }
                 }
             }
