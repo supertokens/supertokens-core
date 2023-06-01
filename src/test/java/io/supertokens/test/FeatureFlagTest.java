@@ -360,16 +360,17 @@ public class FeatureFlagTest {
         JsonArray multitenancyStats = response.get("usageStats").getAsJsonObject().get("multi_tenancy").getAsJsonObject().get("tenants").getAsJsonArray();
         assertEquals(6, multitenancyStats.size());
 
-
         Set<String> userPoolIds = new HashSet<>();
         for (JsonElement tenantStat : multitenancyStats) {
             JsonObject tenantStatObj = tenantStat.getAsJsonObject();
             String tenantId = tenantStatObj.get("tenantId").getAsString();
 
-            // Ensure each userPoolId is unique
-            String userPoolId = tenantStatObj.get("userPoolId").getAsString();
-            assertFalse(userPoolIds.contains(userPoolId));
-            userPoolIds.add(userPoolId);
+            if (!StorageLayer.isInMemDb(process.getProcess())) {
+                // Ensure each userPoolId is unique
+                String userPoolId = tenantStatObj.get("userPoolId").getAsString();
+                assertFalse(userPoolIds.contains(userPoolId));
+                userPoolIds.add(userPoolId);
+            }
 
             if (tenantId.equals("public")) {
                 assertFalse(tenantStatObj.get("hasUsersOrSessions").getAsBoolean());
@@ -385,6 +386,7 @@ public class FeatureFlagTest {
                 assertTrue(tenantStatObj.get("hasEnterpriseLogin").getAsBoolean());
             }
         }
+
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }

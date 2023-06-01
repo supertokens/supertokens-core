@@ -112,6 +112,10 @@ public class TestPermissionChecks {
             process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+            if (StorageLayer.isInMemDb(process.getProcess())) {
+                return;
+            }
+
             {
                 createTenant(process.getProcess(), testCase.sourceTenant);
 
@@ -169,6 +173,15 @@ public class TestPermissionChecks {
                     .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
             process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.isInMemDb(process.getProcess())) {
+                if (!testCase.sourceTenant.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
+                    process.kill();
+                    assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
+                    continue;
+                }
+            }
 
             {
                 createTenant(process.getProcess(), testCase.sourceTenant);
@@ -230,6 +243,15 @@ public class TestPermissionChecks {
             process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+            if (StorageLayer.isInMemDb(process.getProcess())) {
+                if (!testCase.sourceTenant.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
+                    process.kill();
+                    assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
+                    continue;
+                }
+            }
+
             {
                 createTenant(process.getProcess(), testCase.sourceTenant);
 
@@ -285,6 +307,10 @@ public class TestPermissionChecks {
                     .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
             process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.isInMemDb(process.getProcess())) {
+                return;
+            }
 
             {
                 createTenant(process.getProcess(), testCase.sourceTenant);
@@ -394,6 +420,10 @@ public class TestPermissionChecks {
                     .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
             process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.isInMemDb(process.getProcess())) {
+                return;
+            }
 
             {
                 createTenant(process.getProcess(), testCase.sourceTenant);
@@ -520,6 +550,15 @@ public class TestPermissionChecks {
                     .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
             process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.isInMemDb(process.getProcess())) {
+                if (!testCase.sourceTenant.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI) || !testCase.targetTenant.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
+                    process.kill();
+                    assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
+                    continue;
+                }
+            }
 
             {
                 createTenant(process.getProcess(), testCase.sourceTenant);
@@ -674,6 +713,15 @@ public class TestPermissionChecks {
             process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+            if (StorageLayer.isInMemDb(process.getProcess())) {
+                if (!testCase.sourceTenant.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI) || !testCase.targetTenant.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
+                    process.kill();
+                    assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
+                    continue;
+                }
+            }
+
             {
                 createTenant(process.getProcess(), testCase.sourceTenant);
 
@@ -797,6 +845,10 @@ public class TestPermissionChecks {
             process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+            if (StorageLayer.isInMemDb(process.getProcess())) {
+                return;
+            }
+
             {
                 createTenant(process.getProcess(), testCase.sourceTenant);
 
@@ -868,6 +920,15 @@ public class TestPermissionChecks {
                     .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
             process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.isInMemDb(process.getProcess())) {
+                if (!testCase.sourceTenant.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI) || !testCase.targetTenant.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
+                    process.kill();
+                    assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
+                    continue;
+                }
+            }
 
             {
                 createTenant(process.getProcess(), testCase.sourceTenant);
@@ -965,6 +1026,15 @@ public class TestPermissionChecks {
                     .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
             process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.isInMemDb(process.getProcess())) {
+                if (!testCase.sourceTenant.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI) || !testCase.targetTenant.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
+                    process.kill();
+                    assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
+                    continue;
+                }
+            }
 
             {
                 createTenant(process.getProcess(), testCase.sourceTenant);

@@ -199,6 +199,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testSameEmailAcrossDifferentUserPoolNeedsToBeVerifiedSeparately() throws Exception {
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         verifyEmail(t1, "userid", "test@example.com");
         assertTrue(isEmailVerified(t1, "userid", "test@example.com"));
         assertFalse(isEmailVerified(t2, "userid", "test@example.com"));

@@ -1560,6 +1560,10 @@ public class StorageLayerTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LOADING_ALL_TENANT_STORAGE));
         MultitenancyStorage mtStorage = StorageLayer.getMultitenancyStorage(process.getProcess());
 
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         JsonObject authParams = new JsonObject();
         authParams.add("auth-param", new JsonPrimitive("auth-val"));
 
