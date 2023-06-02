@@ -24,6 +24,7 @@ import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
@@ -237,6 +238,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testSessionCreatedIsAccessableFromTheSameTenantOnly() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         JsonObject user1DataInJWT = new JsonObject();
         user1DataInJWT.addProperty("foo", "val1");
         JsonObject user1DataInDb = new JsonObject();
@@ -286,6 +291,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testSessionFromOneTenantCannotBeFetchedFromAnother() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         TenantIdentifier[] tenants = new TenantIdentifier[]{t1, t2, t3};
 
         for (TenantIdentifier tenant1 : tenants) {
@@ -307,6 +316,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testRegenerateSessionWorksFromAnyTenantButUpdatesTheRightSession() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         TenantIdentifier[] tenants = new TenantIdentifier[]{t1, t2, t3};
 
         for (TenantIdentifier tenant1 : tenants) {
@@ -331,6 +344,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testVerifySessionWorksFromAnyTenantInTheApp() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         TenantIdentifier[] tenants = new TenantIdentifier[]{t1, t2, t3};
 
         for (TenantIdentifier tenant1 : tenants) {
@@ -352,6 +369,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testVerifySessionDoesNotWorkFromDifferentApp() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         JsonObject userDataInJWT = new JsonObject();
         userDataInJWT.addProperty("foo", "val1");
         JsonObject userDataInDb = new JsonObject();
@@ -365,6 +386,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testRefreshSessionDoesNotWorkFromDifferentApp() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         JsonObject userDataInJWT = new JsonObject();
         userDataInJWT.addProperty("foo", "val1");
         JsonObject userDataInDb = new JsonObject();

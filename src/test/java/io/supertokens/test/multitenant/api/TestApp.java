@@ -24,6 +24,7 @@ import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
@@ -72,6 +73,10 @@ public class TestApp {
 
     @Test
     public void testCreateAppWorks() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         JsonObject coreConfig = new JsonObject();
 
         StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
@@ -109,6 +114,10 @@ public class TestApp {
 
     @Test
     public void testUpdateAppWorks() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         JsonObject coreConfig = new JsonObject();
 
         StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
@@ -158,6 +167,10 @@ public class TestApp {
 
     @Test
     public void testUpdateWithNullValueDeletesTheSetting() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         JsonObject coreConfig = new JsonObject();
 
         StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
@@ -208,6 +221,10 @@ public class TestApp {
 
     @Test
     public void testDeleteAppWorks() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         JsonObject coreConfig = new JsonObject();
 
         StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())

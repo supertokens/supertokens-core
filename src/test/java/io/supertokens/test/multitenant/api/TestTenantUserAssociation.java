@@ -27,6 +27,7 @@ import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.ActiveUsersStorage;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -123,6 +124,10 @@ public class TestTenantUserAssociation {
 
     @Test
     public void testUserAssociationWorksForEmailPasswordUser() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         createTenants();
         JsonObject user = TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", "t1"), "user@example.com", "password", process.getProcess());
         String userId = user.get("id").getAsString();
@@ -138,6 +143,10 @@ public class TestTenantUserAssociation {
 
     @Test
     public void testUserDisassociationWorks() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         createTenants();
         JsonObject user = TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", "t1"), "user@example.com", "password", process.getProcess());
         String userId = user.get("id").getAsString();
@@ -161,6 +170,10 @@ public class TestTenantUserAssociation {
 
     @Test
     public void testUserDisassociationForNotAuthRecipes() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         createTenants();
 
         Reflections reflections = new Reflections("io.supertokens.pluginInterface");
@@ -198,6 +211,10 @@ public class TestTenantUserAssociation {
 
     @Test
     public void testDisassociateFromAllTenantsAndThenAssociateWithATenantWorks() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         createTenants();
         JsonObject user = TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", "t1"), "user@example.com", "password", process.getProcess());
         String userId = user.get("id").getAsString();
@@ -213,6 +230,10 @@ public class TestTenantUserAssociation {
 
     @Test
     public void testAssociateOnDifferentStorageIsNotPossible() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         if (StorageLayer.isInMemDb(process.getProcess())) {
             return;
         }
@@ -227,6 +248,10 @@ public class TestTenantUserAssociation {
 
     @Test
     public void testEmailPasswordUsersHaveTenantIds() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         createTenants();
 
         TenantIdentifier t1 = new TenantIdentifier(null, "a1", "t1");
@@ -254,6 +279,10 @@ public class TestTenantUserAssociation {
 
     @Test
     public void testPasswordlessUsersHaveTenantIds1() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         createTenants();
 
         TenantIdentifier t1 = new TenantIdentifier(null, "a1", "t1");
@@ -283,6 +312,10 @@ public class TestTenantUserAssociation {
 
     @Test
     public void testPasswordlessUsersHaveTenantIds2() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         createTenants();
 
         TenantIdentifier t1 = new TenantIdentifier(null, "a1", "t1");
@@ -312,6 +345,10 @@ public class TestTenantUserAssociation {
 
     @Test
     public void testThirdPartyUsersHaveTenantIds() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         createTenants();
 
         TenantIdentifier t1 = new TenantIdentifier(null, "a1", "t1");

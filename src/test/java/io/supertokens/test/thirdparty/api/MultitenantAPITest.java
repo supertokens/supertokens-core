@@ -26,6 +26,7 @@ import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
@@ -221,6 +222,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testSameThirdPartyUserCanLoginAcrossTenants() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         JsonObject user1 = signInUp(t1, "google", "google-user-id", "user@gmail.com");
         JsonObject user2 = signInUp(t2, "google", "google-user-id", "user@gmail.com");
         JsonObject user3 = signInUp(t3, "google", "google-user-id", "user@gmail.com");
@@ -232,6 +237,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testGetUserUsingIdReturnsUserFromTheRightTenantWhileQueryingFromAnyTenantInTheSameApp() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         JsonObject user1 = signInUp(t1, "google", "google-user-id", "user@gmail.com");
         JsonObject user2 = signInUp(t2, "google", "google-user-id", "user@gmail.com");
         JsonObject user3 = signInUp(t3, "google", "google-user-id", "user@gmail.com");
@@ -245,6 +254,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testGetUserByThirdPartyIdReturnsTenantSpecificUser() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         JsonObject user1 = signInUp(t1, "google", "google-user-id", "user@gmail.com");
         JsonObject user2 = signInUp(t2, "google", "google-user-id", "user@gmail.com");
         JsonObject user3 = signInUp(t3, "google", "google-user-id", "user@gmail.com");
@@ -256,6 +269,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testGetUserByEmailReturnsTenantSpecificUser() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         JsonObject user1 = signInUp(t1, "google", "google-user-id", "user@gmail.com");
         JsonObject user2 = signInUp(t2, "google", "google-user-id", "user@gmail.com");
         JsonObject user3 = signInUp(t3, "google", "google-user-id", "user@gmail.com");
