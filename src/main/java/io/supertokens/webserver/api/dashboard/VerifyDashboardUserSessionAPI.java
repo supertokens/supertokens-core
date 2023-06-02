@@ -75,7 +75,7 @@ public class VerifyDashboardUserSessionAPI extends WebserverAPI {
                     SemVer cdiVersion = getVersionFromRequest(req);
 
                     // We only add email for CDI version 2.22 and above
-                    if (cdiVersion.greaterThanOrEqualTo(SemVer.v2_22)) {
+                    if (cdiVersion.greaterThanOrEqualTo(SemVer.v3_0)) {
                         response.addProperty("email", email);
                     }
 

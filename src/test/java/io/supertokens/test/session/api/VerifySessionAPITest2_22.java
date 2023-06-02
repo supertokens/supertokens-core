@@ -20,15 +20,11 @@ import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import io.supertokens.ProcessState;
 import io.supertokens.config.Config;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
-import io.supertokens.pluginInterface.session.SessionInfo;
-import io.supertokens.session.Session;
 import io.supertokens.session.accessToken.AccessToken;
-import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
@@ -131,7 +127,7 @@ public class VerifySessionAPITest2_22 {
         request.addProperty("checkDatabase", false);
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session/verify", request, 1000, 1000, null,
-                SemVer.v2_22.get(), "session");
+                SemVer.v3_0.get(), "session");
 
         assertEquals(response.get("status").getAsString(), "OK");
 
@@ -198,7 +194,7 @@ public class VerifySessionAPITest2_22 {
         refreshRequest.addProperty("enableAntiCsrf", false);
         sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session/refresh", refreshRequest, 1000, 1000, null,
-                SemVer.v2_22.get(), "session");
+                SemVer.v3_0.get(), "session");
 
         JsonObject request = new JsonObject();
         request.addProperty("accessToken", sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString());
@@ -207,7 +203,7 @@ public class VerifySessionAPITest2_22 {
         request.addProperty("checkDatabase", false);
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session/verify", request, 1000, 1000, null,
-                SemVer.v2_22.get(), "session");
+                SemVer.v3_0.get(), "session");
 
         assertEquals(response.get("status").getAsString(), "OK");
 
@@ -312,7 +308,7 @@ public class VerifySessionAPITest2_22 {
 
         JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session", sessionRequest, 1000, 1000, null,
-                SemVer.v2_22.get(), "session");
+                SemVer.v3_0.get(), "session");
 
         JsonObject request = new JsonObject();
         request.addProperty("accessToken", sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString());
@@ -423,7 +419,7 @@ public class VerifySessionAPITest2_22 {
 
         JsonObject sessionRefreshResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session/refresh", sessionRefreshRequest, 1000, 1000, null,
-                SemVer.v2_22.get(), "session");
+                SemVer.v3_0.get(), "session");
 
         assertEquals("UNAUTHORISED", sessionRefreshResponse.get("status").getAsString());
         assertEquals("The user payload contains protected field", sessionRefreshResponse.get("message").getAsString());

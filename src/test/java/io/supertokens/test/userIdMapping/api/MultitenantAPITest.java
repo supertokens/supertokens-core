@@ -29,7 +29,6 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
-import io.supertokens.pluginInterface.useridmapping.exception.UserIdMappingAlreadyExistsException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -181,7 +180,7 @@ public class MultitenantAPITest {
         JsonObject signUpResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/signup"),
                 requestBody, 1000, 1000, null,
-                SemVer.v2_22.get(), "emailpassword");
+                SemVer.v3_0.get(), "emailpassword");
         assertEquals("OK", signUpResponse.getAsJsonPrimitive("status").getAsString());
         return signUpResponse.getAsJsonObject("user");
     }
@@ -195,7 +194,7 @@ public class MultitenantAPITest {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/userid/map"), requestBody,
                 1000, 1000, null,
-                SemVer.v2_22.get(), "useridmapping");
+                SemVer.v3_0.get(), "useridmapping");
         assertEquals("OK", response.get("status").getAsString());
     }
 
@@ -208,7 +207,7 @@ public class MultitenantAPITest {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/userid/map"), requestBody,
                 1000, 1000, null,
-                SemVer.v2_22.get(), "useridmapping");
+                SemVer.v3_0.get(), "useridmapping");
         assertEquals("USER_ID_MAPPING_ALREADY_EXISTS_ERROR", response.get("status").getAsString());
     }
 
@@ -220,7 +219,7 @@ public class MultitenantAPITest {
 
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/userid/map"), QUERY_PARAM, 1000, 1000, null,
-                SemVer.v2_22.get(), "useridmapping");
+                SemVer.v3_0.get(), "useridmapping");
         assertEquals("OK", response.get("status").getAsString());
         return response;
     }
@@ -233,7 +232,7 @@ public class MultitenantAPITest {
 
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/userid/map"), QUERY_PARAM, 1000, 1000, null,
-                SemVer.v2_22.get(), "useridmapping");
+                SemVer.v3_0.get(), "useridmapping");
         assertEquals("UNKNOWN_MAPPING_ERROR", response.get("status").getAsString());
     }
 
@@ -246,7 +245,7 @@ public class MultitenantAPITest {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/userid/map/remove"), request,
                 1000, 1000, null,
-                SemVer.v2_22.get(), "useridmapping");
+                SemVer.v3_0.get(), "useridmapping");
         assertEquals(2, response.entrySet().size());
         assertEquals("OK", response.get("status").getAsString());
         assertTrue(response.get("didMappingExist").getAsBoolean());
@@ -423,7 +422,7 @@ public class MultitenantAPITest {
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     HttpRequestForTesting.getMultitenantUrl(t4, "/recipe/userid/map"), requestBody,
                     1000, 1000, null,
-                    SemVer.v2_22.get(), "useridmapping");
+                    SemVer.v3_0.get(), "useridmapping");
             fail();
         } catch (HttpResponseException e) {
             assertEquals(400, e.statusCode);

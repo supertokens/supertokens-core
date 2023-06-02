@@ -160,7 +160,7 @@ public class MultitenantAPITest {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user/email/verify/token"),
                 requestBody, 1000, 1000, null,
-                SemVer.v2_22.get(), "emailverification");
+                SemVer.v3_0.get(), "emailverification");
 
         assertEquals(response.entrySet().size(), 2);
         assertEquals(response.get("status").getAsString(), "OK");
@@ -173,7 +173,7 @@ public class MultitenantAPITest {
         JsonObject response2 = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user/email/verify"),
                 verifyResponseBody, 1000, 1000, null,
-                SemVer.v2_22.get(), "emailverification");
+                SemVer.v3_0.get(), "emailverification");
 
         assertEquals(response2.entrySet().size(), 3);
         assertEquals(response2.get("status").getAsString(), "OK");
@@ -191,7 +191,7 @@ public class MultitenantAPITest {
         JsonObject verifyResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user/email/verify"), map, 1000, 1000,
                 null,
-                SemVer.v2_22.get(), "emailverification");
+                SemVer.v3_0.get(), "emailverification");
         assertEquals(verifyResponse.entrySet().size(), 2);
         assertEquals(verifyResponse.get("status").getAsString(), "OK");
         return verifyResponse.get("isVerified").getAsBoolean();

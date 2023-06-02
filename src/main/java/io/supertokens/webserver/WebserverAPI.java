@@ -19,7 +19,6 @@ package io.supertokens.webserver;
 import com.google.gson.JsonElement;
 import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
-import io.supertokens.ProcessState;
 import io.supertokens.TenantIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
@@ -75,11 +74,11 @@ public abstract class WebserverAPI extends HttpServlet {
         supportedVersions.add(SemVer.v2_19);
         supportedVersions.add(SemVer.v2_20);
         supportedVersions.add(SemVer.v2_21);
-        supportedVersions.add(SemVer.v2_22);
+        supportedVersions.add(SemVer.v3_0);
     }
 
     public static SemVer getLatestCDIVersion() {
-        return SemVer.v2_22;
+        return SemVer.v3_0;
     }
 
     public WebserverAPI(Main main, String rid) {
@@ -402,7 +401,7 @@ public abstract class WebserverAPI extends HttpServlet {
             SemVer version = getVersionFromRequest(req);
 
             // Check for CDI version for multitenancy
-            if (version.lesserThan(SemVer.v2_22) && !tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
+            if (version.lesserThan(SemVer.v3_0) && !tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
                 sendTextResponse(404, "Not found", resp);
                 return;
             }

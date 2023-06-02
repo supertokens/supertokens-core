@@ -310,7 +310,7 @@ public class AccessToken {
     }
 
     public static VERSION getAccessTokenVersionForCDI(SemVer version) {
-        if (version.greaterThanOrEqualTo(SemVer.v2_22)) {
+        if (version.greaterThanOrEqualTo(SemVer.v3_0)) {
             return AccessToken.VERSION.V4;
         }
 
