@@ -1754,6 +1754,10 @@ public class StorageLayerTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         JsonObject config1 = new JsonObject();
         JsonObject config2 = new JsonObject();
         StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())

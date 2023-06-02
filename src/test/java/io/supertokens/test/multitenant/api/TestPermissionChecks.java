@@ -442,6 +442,10 @@ public class TestPermissionChecks {
                 return;
             }
 
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
             {
                 createTenant(process.getProcess(), testCase.sourceTenant);
 
@@ -645,6 +649,10 @@ public class TestPermissionChecks {
             process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
             {
                 createTenant(process.getProcess(), testCase.sourceTenant);
 
@@ -810,6 +818,10 @@ public class TestPermissionChecks {
                     .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
             process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
 
             {
                 createTenant(process.getProcess(), testCase.sourceTenant);

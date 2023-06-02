@@ -88,9 +88,9 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
             return new TenantConfig[]{
                     new TenantConfig(
                             TenantIdentifier.BASE_TENANT,
-                            new EmailPasswordConfig(false),
-                            new ThirdPartyConfig(false, null),
-                            new PasswordlessConfig(false),
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(true),
                             new JsonObject()
                     )
             };

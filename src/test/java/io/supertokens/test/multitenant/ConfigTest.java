@@ -229,6 +229,10 @@ public class ConfigTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         JsonObject tenantConfig = new JsonObject();
         tenantConfig.add("access_token_signing_key_dynamic", new JsonPrimitive(false));
 

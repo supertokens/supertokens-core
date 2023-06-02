@@ -192,7 +192,11 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             InvalidProviderConfigException, TenantOrAppNotFoundException {
 
         if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL) {
-            return true;
+            if (newTenant.tenantIdentifier.equals(TenantIdentifier.BASE_TENANT)) {
+                return true;
+            } else {
+                throw new UnsupportedOperationException();
+            }
         }
 
         // TODO: adding a new tenant is not thread safe here - for example, one can add a new connectionuridomain
