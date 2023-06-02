@@ -20,11 +20,14 @@ import io.supertokens.Main;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.utils.RateLimiter;
 import io.supertokens.webserver.WebserverAPI;
-
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 public class NotFoundOrHelloAPI extends WebserverAPI {
@@ -41,20 +44,65 @@ public class NotFoundOrHelloAPI extends WebserverAPI {
     }
 
     @Override
-    protected void service(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        if (req.getRequestURI().equals("/")) {
-            Storage storage = StorageLayer.getStorage(main);
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        handleRequest(req, resp);
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        handleRequest(req, resp);
+    }
+
+    @Override
+    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        handleRequest(req, resp);
+    }
+
+    @Override
+    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        handleRequest(req, resp);
+    }
+
+    protected void handleRequest(HttpServletRequest req, HttpServletResponse resp) throws IOException,
+            ServletException {
+        // getServletPath returns the path without the base path.
+        AppIdentifierWithStorage appIdentifierWithStorage = null;
+
+        try {
+            appIdentifierWithStorage = getAppIdentifierWithStorage(req);
+        } catch (TenantOrAppNotFoundException e) {
+            // we send 500 status code
+            throw new ServletException(e);
+        }
+
+        if (req.getServletPath().equals("/")) {
+            // API is app specific
             try {
-                storage.getKeyValue("Test");
+                RateLimiter rateLimiter = RateLimiter.getInstance(getAppIdentifierWithStorage(req), super.main, 200);
+                if (!rateLimiter.checkRequest()) {
+                    if (Main.isTesting) {
+                        super.sendTextResponse(200, "RateLimitedHello", resp);
+                    } else {
+                        super.sendTextResponse(200, "Hello", resp);
+                    }
+                    return;
+                }
+
+                for (Storage storage : appIdentifierWithStorage.getStorages()) {
+                    // even if the public tenant does not exist, the following function will return a null
+                    // idea here is to test that the storage is working
+                    storage.getKeyValue(appIdentifierWithStorage.getAsPublicTenantIdentifier(), "Test");
+                }
                 super.sendTextResponse(200, "Hello", resp);
-            } catch (StorageQueryException e) {
+
+            } catch (StorageQueryException | TenantOrAppNotFoundException e) {
                 // we send 500 status code
-                throw new IOException(e);
+                throw new ServletException(e);
             }
         } else {
             super.sendTextResponse(404, "Not found", resp);
 
-            Logging.error(main, "Unknown API called: " + req.getRequestURL(), false);
+            Logging.error(main, appIdentifierWithStorage.getAsPublicTenantIdentifier(), "Unknown API called: " + req.getRequestURL(), false);
         }
     }
 

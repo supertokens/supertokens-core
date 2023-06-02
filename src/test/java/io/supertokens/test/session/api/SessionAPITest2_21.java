@@ -78,7 +78,7 @@ public class SessionAPITest2_21 {
         checkSessionResponse(response, process, userId, userDataInJWT, false);
         assertFalse(response.has("antiCsrfToken"));
 
-        String iat = JWT.getPayloadWithoutVerifying(response.get("accessToken").getAsJsonObject().get("token").getAsString()).payload.get("iat").toString();
+        String iat = "" + JWT.getPayloadWithoutVerifying(response.get("accessToken").getAsJsonObject().get("token").getAsString()).payload.get("iat").getAsInt();
         assertEquals(10, iat.length());
         //noinspection ResultOfMethodCallIgnored
         Long.parseLong(iat); // We are checking that this doesn't throw, it would if it was in exponential form

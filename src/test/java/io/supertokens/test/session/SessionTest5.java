@@ -22,6 +22,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.config.Config;
 import io.supertokens.session.Session;
+import io.supertokens.session.accessToken.AccessToken;
 import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.session.jwt.JWT;
 import io.supertokens.signingkeys.AccessTokenSigningKey;
@@ -56,7 +57,7 @@ public class SessionTest5 {
     @Test
     public void checkCreateV2TokenEncoding() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -67,7 +68,7 @@ public class SessionTest5 {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false, false, false);
+                userDataInDatabase, false, AccessToken.VERSION.V2, false);
 
         String[] tokenParts = sessionInfo.accessToken.token.split("\\.");
         assertEquals(tokenParts.length, 3);
@@ -85,7 +86,7 @@ public class SessionTest5 {
     @Test
     public void checkCreateStaticV2TokenEncoding() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -96,7 +97,7 @@ public class SessionTest5 {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false, false, true);
+                userDataInDatabase, false, AccessToken.VERSION.V2, true);
 
         String[] tokenParts = sessionInfo.accessToken.token.split("\\.");
         assertEquals(tokenParts.length, 3);
@@ -110,10 +111,11 @@ public class SessionTest5 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
     }
+
     @Test
     public void checkRefreshV2TokenEncoding() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -124,8 +126,9 @@ public class SessionTest5 {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder createInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false, false, false);
-        SessionInformationHolder sessionInfo = Session.refreshSession(process.getProcess(), createInfo.refreshToken.token, null, false, false);
+                userDataInDatabase, false, AccessToken.VERSION.V2, false);
+        SessionInformationHolder sessionInfo = Session.refreshSession(process.getProcess(),
+                createInfo.refreshToken.token, null, false, AccessToken.VERSION.V2);
 
         String[] tokenParts = sessionInfo.accessToken.token.split("\\.");
         assertEquals(tokenParts.length, 3);
@@ -143,7 +146,7 @@ public class SessionTest5 {
     @Test
     public void checkCreateV3TokenEncoding() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -154,7 +157,7 @@ public class SessionTest5 {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false, true, false);
+                userDataInDatabase, false, AccessToken.VERSION.V3, false);
 
         String[] tokenParts = sessionInfo.accessToken.token.split("\\.");
         assertEquals(tokenParts.length, 3);
@@ -202,7 +205,7 @@ public class SessionTest5 {
     @Test
     public void checkCreateStaticV3TokenEncoding() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -213,7 +216,7 @@ public class SessionTest5 {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false, true, true);
+                userDataInDatabase, false, AccessToken.VERSION.V3, true);
 
         String[] tokenParts = sessionInfo.accessToken.token.split("\\.");
         assertEquals(tokenParts.length, 3);
@@ -258,10 +261,11 @@ public class SessionTest5 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
     }
+
     @Test
     public void checkRefreshV3TokenEncoding() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -272,8 +276,9 @@ public class SessionTest5 {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder createInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false, true, false);
-        SessionInformationHolder sessionInfo = Session.refreshSession(process.getProcess(), createInfo.refreshToken.token, null, false, true);
+                userDataInDatabase, false, AccessToken.getLatestVersion(), false);
+        SessionInformationHolder sessionInfo = Session.refreshSession(process.getProcess(),
+                createInfo.refreshToken.token, null, false, AccessToken.getLatestVersion());
 
         String[] tokenParts = sessionInfo.accessToken.token.split("\\.");
         assertEquals(tokenParts.length, 3);
@@ -292,7 +297,7 @@ public class SessionTest5 {
     public void checkRefreshKidChangesAfterDynamicSigningKeyChange() throws Exception {
         Utils.setValueInConfig("access_token_dynamic_signing_key_update_interval", "0.00027"); // 1 second
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -303,14 +308,16 @@ public class SessionTest5 {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder createInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false, true, false);
+                userDataInDatabase, false, AccessToken.getLatestVersion(), false);
         SessionInformationHolder createInfoStatic = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false, true, true);
+                userDataInDatabase, false, AccessToken.getLatestVersion(), true);
 
         Thread.sleep(1500);
 
-        SessionInformationHolder sessionInfo = Session.refreshSession(process.getProcess(), createInfo.refreshToken.token, null, false, true);
-        SessionInformationHolder sessionInfoStatic = Session.refreshSession(process.getProcess(), createInfoStatic.refreshToken.token, null, false, true);
+        SessionInformationHolder sessionInfo = Session.refreshSession(process.getProcess(),
+                createInfo.refreshToken.token, null, false, AccessToken.getLatestVersion());
+        SessionInformationHolder sessionInfoStatic = Session.refreshSession(process.getProcess(),
+                createInfoStatic.refreshToken.token, null, false, AccessToken.getLatestVersion());
 
         JWT.JWTPreParseInfo preParseInfoCreate = JWT.preParseJWTInfo(createInfo.accessToken.token);
         JWT.JWTPreParseInfo preParseInfoRefresh = JWT.preParseJWTInfo(sessionInfo.accessToken.token);
@@ -332,7 +339,7 @@ public class SessionTest5 {
     public void checkDynamicKeyOverlap() throws Exception {
         Utils.setValueInConfig("access_token_dynamic_signing_key_update_interval", "0.00081"); // 3 seconds
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -348,23 +355,25 @@ public class SessionTest5 {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder createInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false, true, false);
+                userDataInDatabase, false, AccessToken.getLatestVersion(), false);
         JWT.JWTPreParseInfo preParseInfoCreate = JWT.preParseJWTInfo(createInfo.accessToken.token);
 
         Thread.sleep(2000);
         assertEquals(3, signingKeysInstance.getAllKeys().size());
         assertEquals(2, signingKeysInstance.getDynamicKeys().size());
 
-        SessionInformationHolder createInfoDuringOverlap = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false, true, false);
-        JWT.JWTPreParseInfo preParseInfoCreateDuringOverlap = JWT.preParseJWTInfo(createInfoDuringOverlap.accessToken.token);
+        SessionInformationHolder createInfoDuringOverlap = Session.createNewSession(process.getProcess(), userId,
+                userDataInJWT,
+                userDataInDatabase, false, AccessToken.getLatestVersion(), false);
+        JWT.JWTPreParseInfo preParseInfoCreateDuringOverlap = JWT.preParseJWTInfo(
+                createInfoDuringOverlap.accessToken.token);
 
         Thread.sleep(1000);
         assertEquals(2, signingKeysInstance.getDynamicKeys().size());
         assertEquals(3, signingKeysInstance.getAllKeys().size());
 
         SessionInformationHolder createInfoAfterOverlap = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false, true, false);
+                userDataInDatabase, false, AccessToken.getLatestVersion(), false);
         JWT.JWTPreParseInfo preParseInfoAfterOverlap = JWT.preParseJWTInfo(createInfoAfterOverlap.accessToken.token);
 
         assertEquals(preParseInfoCreate.kid, preParseInfoCreateDuringOverlap.kid);

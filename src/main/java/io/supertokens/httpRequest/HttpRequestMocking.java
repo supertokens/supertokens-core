@@ -19,6 +19,8 @@ package io.supertokens.httpRequest;
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.ResourceDistributor.SingletonResource;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -35,9 +37,17 @@ public class HttpRequestMocking extends ResourceDistributor.SingletonResource {
     }
 
     public static HttpRequestMocking getInstance(Main main) {
-        SingletonResource instance = main.getResourceDistributor().getResource(RESOURCE_KEY);
+        SingletonResource instance = null;
+        try {
+            instance = main.getResourceDistributor()
+                    .getResource(new TenantIdentifier(null, null, null), RESOURCE_KEY);
+        } catch (TenantOrAppNotFoundException e) {
+            instance = main.getResourceDistributor()
+                    .setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY, new HttpRequestMocking());
+        }
         if (instance == null) {
-            instance = main.getResourceDistributor().setResource(RESOURCE_KEY, new HttpRequestMocking());
+            instance = main.getResourceDistributor()
+                    .setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY, new HttpRequestMocking());
         }
         return (HttpRequestMocking) instance;
     }

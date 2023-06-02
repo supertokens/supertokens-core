@@ -18,6 +18,8 @@ package io.supertokens.config;
 
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -33,11 +35,24 @@ public class CoreConfigTestContent extends ResourceDistributor.SingletonResource
     }
 
     public static CoreConfigTestContent getInstance(Main main) {
-        ResourceDistributor.SingletonResource resource = main.getResourceDistributor().getResource(RESOURCE_ID);
+        ResourceDistributor.SingletonResource resource = null;
+        try {
+            resource = main.getResourceDistributor()
+                    .getResource(new TenantIdentifier(null, null, null), RESOURCE_ID);
+        } catch (TenantOrAppNotFoundException e) {
+            return loadBaseCoreConfigTestContent(main);
+        }
         if (resource == null) {
-            resource = main.getResourceDistributor().setResource(RESOURCE_ID, new CoreConfigTestContent());
+            resource = main.getResourceDistributor()
+                    .setResource(new TenantIdentifier(null, null, null), RESOURCE_ID, new CoreConfigTestContent());
         }
         return (CoreConfigTestContent) resource;
+    }
+
+    public static CoreConfigTestContent loadBaseCoreConfigTestContent(Main main) {
+        return (CoreConfigTestContent) main.getResourceDistributor()
+                .setResource(new TenantIdentifier(null, null, null), RESOURCE_ID, new CoreConfigTestContent());
+
     }
 
     public void setKeyValue(String key, Object value) {

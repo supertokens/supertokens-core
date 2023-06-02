@@ -19,7 +19,6 @@ package io.supertokens.cronjobs.telemetry;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
-import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
@@ -28,9 +27,15 @@ import io.supertokens.httpRequest.HttpRequestMocking;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
 import io.supertokens.version.Version;
+import org.jetbrains.annotations.TestOnly;
+
+import java.util.List;
 
 public class Telemetry extends CronTask {
 
@@ -40,31 +45,39 @@ public class Telemetry extends CronTask {
 
     public static final String RESOURCE_KEY = "io.supertokens.cronjobs.telemetry.Telemetry";
 
-    private Telemetry(Main main) {
-        super("Telemetry", main);
+    private Telemetry(Main main, List<List<TenantIdentifier>> tenants) {
+        super("Telemetry", main, tenants, true);
     }
 
+    @TestOnly
     public static Telemetry getInstance(Main main) {
-        ResourceDistributor.SingletonResource instance = main.getResourceDistributor().getResource(RESOURCE_KEY);
-        if (instance == null) {
-            instance = main.getResourceDistributor().setResource(RESOURCE_KEY, new Telemetry(main));
+        try {
+            return (Telemetry) main.getResourceDistributor()
+                    .getResource(new TenantIdentifier(null, null, null), RESOURCE_KEY);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new IllegalStateException(e);
         }
-        return (Telemetry) instance;
+    }
+
+    public static Telemetry init(Main main, List<List<TenantIdentifier>> tenantsInfo) {
+        return (Telemetry) main.getResourceDistributor()
+                .setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY,
+                        new Telemetry(main, tenantsInfo));
     }
 
     @Override
-    protected void doTask() throws Exception {
-        if (StorageLayer.getInstance(main).isInMemDb() || Config.getConfig(main).isTelemetryDisabled()) {
-            // we do not send any info in this case since it's not under development / production env or the user has
+    protected void doTaskPerApp(AppIdentifier app) throws Exception {
+        if (StorageLayer.isInMemDb(main) ||
+                Config.getConfig(app.getAsPublicTenantIdentifier(), main).isTelemetryDisabled()) {
+            // we do not send any info in this case since it's not under development / production env or the user
+            // has
             // disabled Telemetry
             return;
         }
 
         ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.SENDING_TELEMETRY, null);
 
-        Storage storage = StorageLayer.getStorage(main);
-
-        KeyValueInfo telemetryId = Telemetry.getTelemetryId(main);
+        KeyValueInfo telemetryId = Telemetry.getTelemetryId(main, app);
 
         String coreVersion = Version.getVersion(main).getCoreVersion();
 
@@ -77,7 +90,8 @@ public class Telemetry extends CronTask {
 
         String url = "https://api.supertokens.io/0/st/telemetry";
 
-        // we call the API only if we are not testing the core, of if the request can be mocked (in case a test wants
+        // we call the API only if we are not testing the core, of if the request can be mocked (in case a test
+        // wants
         // to use this)
         if (!Main.isTesting || HttpRequestMocking.getInstance(main).getMockURL(REQUEST_ID, url) != null) {
             HttpRequest.sendJsonPOSTRequest(main, REQUEST_ID, url, json, 10000, 10000, 0);
@@ -85,17 +99,20 @@ public class Telemetry extends CronTask {
         }
     }
 
-    public static KeyValueInfo getTelemetryId(Main main) throws StorageQueryException {
-        if (StorageLayer.getInstance(main).isInMemDb()) {
+    public static KeyValueInfo getTelemetryId(Main main, AppIdentifier appIdentifier)
+            throws StorageQueryException, TenantOrAppNotFoundException {
+        if (StorageLayer.isInMemDb(main) ||
+                Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).isTelemetryDisabled()) {
             return null;
         }
-        Storage storage = StorageLayer.getStorage(main);
+        Storage storage = StorageLayer.getStorage(appIdentifier.getAsPublicTenantIdentifier(), main);
 
-        KeyValueInfo telemetryId = storage.getKeyValue(TELEMETRY_ID_DB_KEY);
+        KeyValueInfo telemetryId = storage.getKeyValue(appIdentifier.getAsPublicTenantIdentifier(),
+                TELEMETRY_ID_DB_KEY);
 
         if (telemetryId == null) {
             telemetryId = new KeyValueInfo(Utils.getUUID());
-            storage.setKeyValue(TELEMETRY_ID_DB_KEY, telemetryId);
+            storage.setKeyValue(appIdentifier.getAsPublicTenantIdentifier(), TELEMETRY_ID_DB_KEY, telemetryId);
         }
         return telemetryId;
     }

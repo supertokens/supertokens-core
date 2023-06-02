@@ -19,16 +19,17 @@ package io.supertokens.webserver.api.userroles;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.userroles.UserRoles;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.io.Serial;
 
@@ -48,6 +49,7 @@ public class CreateRoleAPI extends WebserverAPI {
 
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is app specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
         String role = InputParser.parseStringOrThrowError(input, "role", false);
@@ -78,14 +80,15 @@ public class CreateRoleAPI extends WebserverAPI {
         }
 
         try {
-            boolean createdNewRole = UserRoles.createNewRoleOrModifyItsPermissions(main, role, permissions);
+            boolean createdNewRole = UserRoles.createNewRoleOrModifyItsPermissions(
+                    this.getAppIdentifierWithStorage(req), role, permissions);
 
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             response.addProperty("createdNewRole", createdNewRole);
             super.sendJsonResponse(200, response, resp);
 
-        } catch (StorageQueryException | StorageTransactionLogicException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

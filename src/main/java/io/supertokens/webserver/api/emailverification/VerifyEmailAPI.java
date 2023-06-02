@@ -21,6 +21,8 @@ import io.supertokens.Main;
 import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.emailverification.User;
 import io.supertokens.emailverification.exception.EmailVerificationInvalidTokenException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -28,10 +30,10 @@ import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicExceptio
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 
@@ -49,6 +51,7 @@ public class VerifyEmailAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String method = InputParser.parseStringOrThrowError(input, "method", false);
         String token = InputParser.parseStringOrThrowError(input, "token", false);
@@ -62,8 +65,15 @@ public class VerifyEmailAPI extends WebserverAPI {
             throw new ServletException(new BadRequestException("Unsupported method for email verification"));
         }
 
+        TenantIdentifierWithStorage tenantIdentifierWithStorage = null;
         try {
-            User user = EmailVerification.verifyEmail(super.main, token);
+            tenantIdentifierWithStorage = this.getTenantIdentifierWithStorageFromRequest(req);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new ServletException(e);
+        }
+
+        try {
+            User user = EmailVerification.verifyEmail(tenantIdentifierWithStorage, token);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
@@ -72,11 +82,11 @@ public class VerifyEmailAPI extends WebserverAPI {
             super.sendJsonResponse(200, result, resp);
 
         } catch (EmailVerificationInvalidTokenException e) {
-            Logging.debug(main, Utils.exceptionStacktraceToString(e));
+            Logging.debug(main, tenantIdentifierWithStorage, Utils.exceptionStacktraceToString(e));
             JsonObject result = new JsonObject();
             result.addProperty("status", "EMAIL_VERIFICATION_INVALID_TOKEN_ERROR");
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | NoSuchAlgorithmException | StorageTransactionLogicException e) {
+        } catch (StorageQueryException | NoSuchAlgorithmException | StorageTransactionLogicException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
 
@@ -84,20 +94,22 @@ public class VerifyEmailAPI extends WebserverAPI {
 
     @Override
     public void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        // API is app specific
         String userId = InputParser.getQueryParamOrThrowError(req, "userId", false);
         String email = InputParser.getQueryParamOrThrowError(req, "email", false);
         assert userId != null;
         assert email != null;
 
         try {
-            boolean isVerified = EmailVerification.isEmailVerified(super.main, userId, email);
+            boolean isVerified = EmailVerification.isEmailVerified(this.getAppIdentifierWithStorage(req), userId,
+                    email);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             result.addProperty("isVerified", isVerified);
             super.sendJsonResponse(200, result, resp);
 
-        } catch (StorageQueryException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
 

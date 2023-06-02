@@ -19,12 +19,14 @@ package io.supertokens.webserver.api.core;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.utils.RateLimiter;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 // the point of this API is only to test that the server is up and running.
@@ -54,31 +56,47 @@ public class HelloAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        handleRequest(resp);
+        handleRequest(req, resp);
     }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        handleRequest(resp);
+        handleRequest(req, resp);
     }
 
     @Override
     protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        handleRequest(resp);
+        handleRequest(req, resp);
     }
 
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        handleRequest(resp);
+        handleRequest(req, resp);
     }
 
-    private void handleRequest(HttpServletResponse resp) throws IOException, ServletException {
+    private void handleRequest(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is app specific
 
-        Storage storage = StorageLayer.getStorage(main);
         try {
-            storage.getKeyValue("Test");
+            RateLimiter rateLimiter = RateLimiter.getInstance(getAppIdentifierWithStorage(req), super.main, 200);
+            if (!rateLimiter.checkRequest()) {
+                if (Main.isTesting) {
+                    super.sendTextResponse(200, "RateLimitedHello", resp);
+                } else {
+                    super.sendTextResponse(200, "Hello", resp);
+                }
+                return;
+            }
+
+            AppIdentifierWithStorage appIdentifierWithStorage =  getAppIdentifierWithStorage(req);
+
+            for (Storage storage : appIdentifierWithStorage.getStorages()) {
+                // even if the public tenant does not exist, the following function will return a null
+                // idea here is to test that the storage is working
+                storage.getKeyValue(appIdentifierWithStorage.getAsPublicTenantIdentifier(), "Test");
+            }
             super.sendTextResponse(200, "Hello", resp);
-        } catch (StorageQueryException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             // we send 500 status code
             throw new ServletException(e);
         }

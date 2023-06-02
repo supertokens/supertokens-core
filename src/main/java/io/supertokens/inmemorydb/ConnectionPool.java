@@ -16,7 +16,6 @@
 
 package io.supertokens.inmemorydb;
 
-import io.supertokens.ResourceDistributor;
 import org.sqlite.SQLiteConfig;
 
 import java.sql.Connection;
@@ -38,8 +37,13 @@ public class ConnectionPool extends ResourceDistributor.SingletonResource {
         this.alwaysAlive = DriverManager.getConnection(URL, config.toProperties());
     }
 
-    static void initPool(Start start) throws SQLException {
-        start.getResourceDistributor().setResource(RESOURCE_KEY, new ConnectionPool());
+    static boolean isAlreadyInitialised(Start start) {
+        return getInstance(start) != null;
+    }
+
+    static void initPool(Start start, boolean ignored) throws SQLException {
+        start.getResourceDistributor()
+                .setResource(RESOURCE_KEY, new ConnectionPool());
     }
 
     public static Connection getConnection(Start start) throws SQLException {
@@ -53,7 +57,8 @@ public class ConnectionPool extends ResourceDistributor.SingletonResource {
     }
 
     private static ConnectionPool getInstance(Start start) {
-        return (ConnectionPool) start.getResourceDistributor().getResource(RESOURCE_KEY);
+        return (ConnectionPool) start.getResourceDistributor()
+                .getResource(RESOURCE_KEY);
     }
 
     static void close(Start start) {

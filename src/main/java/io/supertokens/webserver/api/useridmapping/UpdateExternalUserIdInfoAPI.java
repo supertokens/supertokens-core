@@ -18,16 +18,19 @@ package io.supertokens.webserver.api.useridmapping;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.io.Serial;
 
@@ -46,6 +49,7 @@ public class UpdateExternalUserIdInfoAPI extends WebserverAPI {
 
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // this API is app specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
@@ -89,7 +93,11 @@ public class UpdateExternalUserIdInfoAPI extends WebserverAPI {
         }
 
         try {
-            if (UserIdMapping.updateOrDeleteExternalUserIdInfo(main, userId, userIdType, externalUserIdInfo)) {
+            AppIdentifierWithStorageAndUserIdMapping appIdentifierWithStorageAndUserIdMapping =
+                    this.getAppIdentifierWithStorageAndUserIdMappingFromRequest(req, userId, userIdType);
+
+            if (UserIdMapping.updateOrDeleteExternalUserIdInfo(
+                    appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage, userId, userIdType, externalUserIdInfo)) {
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "OK");
                 super.sendJsonResponse(200, response, resp);
@@ -99,8 +107,14 @@ public class UpdateExternalUserIdInfoAPI extends WebserverAPI {
             JsonObject response = new JsonObject();
             response.addProperty("status", "UNKNOWN_MAPPING_ERROR");
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException e) {
+
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
+
+        } catch (UnknownUserIdException e) {
+            JsonObject response = new JsonObject();
+            response.addProperty("status", "UNKNOWN_MAPPING_ERROR");
+            super.sendJsonResponse(200, response, resp);
         }
     }
 }

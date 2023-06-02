@@ -17,48 +17,56 @@
 package io.supertokens.cronjobs.deleteExpiredAccessTokenSigningKeys;
 
 import io.supertokens.Main;
-import io.supertokens.ResourceDistributor;
-import io.supertokens.config.Config;
-import io.supertokens.config.CoreConfig;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.signingkeys.AccessTokenSigningKey;
+import org.jetbrains.annotations.TestOnly;
+
+import java.util.List;
 
 public class DeleteExpiredAccessTokenSigningKeys extends CronTask {
 
-    public static final String RESOURCE_KEY = "io.supertokens.cronjobs.deleteExpiredAccessTokenSigningKeys.DeleteExpiredAccessTokenSigningKeys";
+    public static final String RESOURCE_KEY = "io.supertokens.cronjobs.deleteExpiredAccessTokenSigningKeys" +
+            ".DeleteExpiredAccessTokenSigningKeys";
 
-    private DeleteExpiredAccessTokenSigningKeys(Main main) {
-        super("DeleteExpiredAccessTokenSigningKeys", main);
+    private DeleteExpiredAccessTokenSigningKeys(Main main, List<List<TenantIdentifier>> tenantsInfo) {
+        super("DeleteExpiredAccessTokenSigningKeys", main, tenantsInfo, true);
     }
 
+    public static DeleteExpiredAccessTokenSigningKeys init(Main main, List<List<TenantIdentifier>> tenantsInfo) {
+        return (DeleteExpiredAccessTokenSigningKeys) main.getResourceDistributor()
+                .setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY,
+                        new DeleteExpiredAccessTokenSigningKeys(main, tenantsInfo));
+    }
+
+    @TestOnly
     public static DeleteExpiredAccessTokenSigningKeys getInstance(Main main) {
-        ResourceDistributor.SingletonResource instance = main.getResourceDistributor().getResource(RESOURCE_KEY);
-        if (instance == null) {
-            instance = main.getResourceDistributor().setResource(RESOURCE_KEY,
-                    new DeleteExpiredAccessTokenSigningKeys(main));
+        try {
+            return (DeleteExpiredAccessTokenSigningKeys) main.getResourceDistributor()
+                    .getResource(new TenantIdentifier(null, null, null), RESOURCE_KEY);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new IllegalStateException(e);
         }
-        return (DeleteExpiredAccessTokenSigningKeys) instance;
     }
 
     @Override
-    protected void doTask() throws Exception {
-        AccessTokenSigningKey.getInstance(main).cleanExpiredAccessTokenSigningKeys();
+    protected void doTaskPerApp(AppIdentifier app) throws Exception {
+        AccessTokenSigningKey.getInstance(app, main).cleanExpiredAccessTokenSigningKeys();
     }
 
     @Override
     public int getIntervalTimeSeconds() {
-        CoreConfig config = Config.getConfig(main);
         if (Main.isTesting) {
             Integer interval = CronTaskTest.getInstance(main).getIntervalInSeconds(RESOURCE_KEY);
             if (interval != null) {
                 return interval;
             }
         }
-
-        // This can get out of sync with the keys expiring, but this shouldn't be an issue. We never use the expired
-        // keys anyway.
-        return Math.max((int) (config.getAccessTokenDynamicSigningKeyUpdateInterval() / 1000), 1);
+        // Every 24 hours.
+        return 24 * 3600;
     }
 
     @Override

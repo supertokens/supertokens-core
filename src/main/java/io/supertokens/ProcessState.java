@@ -16,7 +16,8 @@
 
 package io.supertokens;
 
-import io.supertokens.ResourceDistributor.SingletonResource;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,11 +32,13 @@ public class ProcessState extends ResourceDistributor.SingletonResource {
     }
 
     public static ProcessState getInstance(Main main) {
-        SingletonResource instance = main.getResourceDistributor().getResource(RESOURCE_KEY);
-        if (instance == null) {
-            instance = main.getResourceDistributor().setResource(RESOURCE_KEY, new ProcessState());
+        try {
+            return (ProcessState) main.getResourceDistributor()
+                    .getResource(new TenantIdentifier(null, null, null), RESOURCE_KEY);
+        } catch (TenantOrAppNotFoundException e) {
+            return (ProcessState) main.getResourceDistributor()
+                    .setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY, new ProcessState());
         }
-        return (ProcessState) instance;
     }
 
     public synchronized EventAndException getLastEventByName(PROCESS_STATE processState) {
@@ -76,6 +79,11 @@ public class ProcessState extends ResourceDistributor.SingletonResource {
      * INVALID_LICENSE_KEY: Called when the licens key check failed
      * SERVER_ERROR_DURING_LICENSE_KEY_CHECK_FAIL: Added when the server request failed during license key check
      * INIT_FAILURE_DUE_TO_LICENSE_KEY_DB_CHECK: Added if license key check in db failed on core start
+     * LOADING_ALL_TENANT_CONFIG: Added when the Config.loadAllTenantConfig function is called, either on core start,
+     * or during API call which adds / modifies tenant
+     * LOADING_ALL_TENANT_STORAGE: Added when the StorageLayer.loadAllTenantStorage function is called, either on
+     * core start,
+     * * or during API call which adds / modifies tenant
      */
     public enum PROCESS_STATE {
         INIT, INIT_FAILURE, STARTED, SHUTTING_DOWN, STOPPED, RETRYING_ACCESS_TOKEN_JWT_VERIFICATION,
@@ -83,7 +91,8 @@ public class ProcessState extends ResourceDistributor.SingletonResource {
         CREATING_NEW_TABLE, SENDING_TELEMETRY, SENT_TELEMETRY, UPDATING_ACCESS_TOKEN_SIGNING_KEYS,
         PASSWORD_HASH_BCRYPT, PASSWORD_HASH_ARGON, PASSWORD_VERIFY_BCRYPT, PASSWORD_VERIFY_ARGON,
         PASSWORD_VERIFY_FIREBASE_SCRYPT, ADDING_REMOTE_ADDRESS_FILTER, LICENSE_KEY_CHECK_NETWORK_CALL,
-        INVALID_LICENSE_KEY, SERVER_ERROR_DURING_LICENSE_KEY_CHECK_FAIL
+        INVALID_LICENSE_KEY, SERVER_ERROR_DURING_LICENSE_KEY_CHECK_FAIL, LOADING_ALL_TENANT_CONFIG,
+        LOADING_ALL_TENANT_STORAGE, TENANTS_CHANGED_DURING_REFRESH_FROM_DB
     }
 
     public static class EventAndException {

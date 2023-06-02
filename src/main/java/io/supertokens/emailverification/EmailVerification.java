@@ -20,11 +20,16 @@ import io.supertokens.Main;
 import io.supertokens.config.Config;
 import io.supertokens.emailverification.exception.EmailAlreadyVerifiedException;
 import io.supertokens.emailverification.exception.EmailVerificationInvalidTokenException;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.emailverification.EmailVerificationTokenInfo;
 import io.supertokens.pluginInterface.emailverification.exception.DuplicateEmailVerificationTokenException;
 import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerificationSQLStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
 import org.jetbrains.annotations.TestOnly;
@@ -37,21 +42,41 @@ public class EmailVerification {
 
     @TestOnly
     public static long getEmailVerificationTokenLifetimeForTests(Main main) {
-        return getEmailVerificationTokenLifetime(main);
-    }
-
-    private static long getEmailVerificationTokenLifetime(Main main) {
-        if (Main.isTesting) {
-            return EmailVerificationTest.getInstance(main).getEmailVerificationTokenLifetime();
+        try {
+            Storage storage = StorageLayer.getStorage(main);
+            return getEmailVerificationTokenLifetime(
+                    new TenantIdentifierWithStorage(null, null, null, storage), main);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new IllegalStateException(e);
         }
-        return Config.getConfig(main).getEmailVerificationTokenLifetime();
     }
 
+    private static long getEmailVerificationTokenLifetime(TenantIdentifier tenantIdentifier, Main main)
+            throws TenantOrAppNotFoundException {
+        return Config.getConfig(tenantIdentifier, main).getEmailVerificationTokenLifetime();
+    }
+
+    @TestOnly
     public static String generateEmailVerificationToken(Main main, String userId, String email)
             throws InvalidKeySpecException, NoSuchAlgorithmException, StorageQueryException,
             EmailAlreadyVerifiedException {
+        try {
+            Storage storage = StorageLayer.getStorage(main);
+            return generateEmailVerificationToken(
+                    new TenantIdentifierWithStorage(null, null, null, storage),
+                    main, userId, email);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new IllegalStateException(e);
+        }
+    }
 
-        if (StorageLayer.getEmailVerificationStorage(main).isEmailVerified(userId, email)) {
+    public static String generateEmailVerificationToken(TenantIdentifierWithStorage tenantIdentifierWithStorage, Main main,
+                                                        String userId, String email)
+            throws InvalidKeySpecException, NoSuchAlgorithmException, StorageQueryException,
+            EmailAlreadyVerifiedException, TenantOrAppNotFoundException {
+
+        if (tenantIdentifierWithStorage.getEmailVerificationStorage()
+                .isEmailVerified(tenantIdentifierWithStorage.toAppIdentifier(), userId, email)) {
             throw new EmailAlreadyVerifiedException();
         }
 
@@ -77,23 +102,40 @@ public class EmailVerification {
             String hashedToken = getHashedToken(token);
 
             try {
-                StorageLayer.getEmailVerificationStorage(main)
-                        .addEmailVerificationToken(new EmailVerificationTokenInfo(userId, hashedToken,
-                                System.currentTimeMillis() + getEmailVerificationTokenLifetime(main), email));
+                tenantIdentifierWithStorage.getEmailVerificationStorage()
+                        .addEmailVerificationToken(tenantIdentifierWithStorage,
+                                new EmailVerificationTokenInfo(userId, hashedToken,
+                                        System.currentTimeMillis() +
+                                                getEmailVerificationTokenLifetime(tenantIdentifierWithStorage, main), email));
                 return token;
             } catch (DuplicateEmailVerificationTokenException ignored) {
             }
         }
     }
 
-    public static User verifyEmail(Main main, String token) throws StorageQueryException,
+    @TestOnly
+    public static User verifyEmail(Main main, String token)
+            throws StorageQueryException,
             EmailVerificationInvalidTokenException, NoSuchAlgorithmException, StorageTransactionLogicException {
+        try {
+            Storage storage = StorageLayer.getStorage(main);
+            return verifyEmail(new TenantIdentifierWithStorage(null, null, null, storage), token);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    public static User verifyEmail(TenantIdentifierWithStorage tenantIdentifierWithStorage, String token)
+            throws StorageQueryException,
+            EmailVerificationInvalidTokenException, NoSuchAlgorithmException, StorageTransactionLogicException,
+            TenantOrAppNotFoundException {
 
         String hashedToken = getHashedToken(token);
 
-        EmailVerificationSQLStorage storage = StorageLayer.getEmailVerificationStorage(main);
+        EmailVerificationSQLStorage storage = tenantIdentifierWithStorage.getEmailVerificationStorage();
 
-        final EmailVerificationTokenInfo tokenInfo = storage.getEmailVerificationTokenInfo(hashedToken);
+        final EmailVerificationTokenInfo tokenInfo = storage.getEmailVerificationTokenInfo(
+                tenantIdentifierWithStorage, hashedToken);
         if (tokenInfo == null) {
             throw new EmailVerificationInvalidTokenException();
         }
@@ -104,7 +146,8 @@ public class EmailVerification {
             return storage.startTransaction(con -> {
 
                 EmailVerificationTokenInfo[] allTokens = storage
-                        .getAllEmailVerificationTokenInfoForUser_Transaction(con, userId, tokenInfo.email);
+                        .getAllEmailVerificationTokenInfoForUser_Transaction(tenantIdentifierWithStorage, con,
+                                userId, tokenInfo.email);
 
                 EmailVerificationTokenInfo matchedToken = null;
                 for (EmailVerificationTokenInfo tok : allTokens) {
@@ -118,14 +161,20 @@ public class EmailVerification {
                     throw new StorageTransactionLogicException(new EmailVerificationInvalidTokenException());
                 }
 
-                storage.deleteAllEmailVerificationTokensForUser_Transaction(con, userId, tokenInfo.email);
+                storage.deleteAllEmailVerificationTokensForUser_Transaction(tenantIdentifierWithStorage, con,
+                        userId, tokenInfo.email);
 
                 if (matchedToken.tokenExpiry < System.currentTimeMillis()) {
                     storage.commitTransaction(con);
                     throw new StorageTransactionLogicException(new EmailVerificationInvalidTokenException());
                 }
 
-                storage.updateIsEmailVerified_Transaction(con, userId, tokenInfo.email, true);
+                try {
+                    storage.updateIsEmailVerified_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con, userId,
+                            tokenInfo.email, true);
+                } catch (TenantOrAppNotFoundException e) {
+                    throw new StorageTransactionLogicException(e);
+                }
 
                 storage.commitTransaction(con);
 
@@ -134,21 +183,57 @@ public class EmailVerification {
         } catch (StorageTransactionLogicException e) {
             if (e.actualException instanceof EmailVerificationInvalidTokenException) {
                 throw (EmailVerificationInvalidTokenException) e.actualException;
+            } else if (e.actualException instanceof TenantOrAppNotFoundException) {
+                throw (TenantOrAppNotFoundException) e.actualException;
             }
             throw e;
         }
     }
 
-    public static boolean isEmailVerified(Main main, String userId, String email) throws StorageQueryException {
-        return StorageLayer.getEmailVerificationStorage(main).isEmailVerified(userId, email);
+    @TestOnly
+    public static boolean isEmailVerified(Main main, String userId,
+                                          String email) throws StorageQueryException {
+        Storage storage = StorageLayer.getStorage(main);
+        return isEmailVerified(new AppIdentifierWithStorage(null, null, storage),
+                userId, email);
     }
 
-    public static void revokeAllTokens(Main main, String userId, String email) throws StorageQueryException {
-        StorageLayer.getEmailVerificationStorage(main).revokeAllTokens(userId, email);
+    public static boolean isEmailVerified(AppIdentifierWithStorage appIdentifierWithStorage, String userId,
+                                          String email) throws StorageQueryException {
+        return appIdentifierWithStorage.getEmailVerificationStorage()
+                .isEmailVerified(appIdentifierWithStorage, userId, email);
     }
 
-    public static void unverifyEmail(Main main, String userId, String email) throws StorageQueryException {
-        StorageLayer.getEmailVerificationStorage(main).unverifyEmail(userId, email);
+    @TestOnly
+    public static void revokeAllTokens(Main main, String userId,
+                                       String email) throws StorageQueryException {
+        Storage storage = StorageLayer.getStorage(main);
+        revokeAllTokens(new TenantIdentifierWithStorage(null, null, null, storage),
+                userId, email);
+    }
+
+    public static void revokeAllTokens(TenantIdentifierWithStorage tenantIdentifierWithStorage, String userId,
+                                       String email) throws StorageQueryException {
+        tenantIdentifierWithStorage.getEmailVerificationStorage()
+                .revokeAllTokens(tenantIdentifierWithStorage, userId, email);
+    }
+
+    @TestOnly
+    public static void unverifyEmail(Main main, String userId,
+                                     String email) throws StorageQueryException {
+        try {
+            Storage storage = StorageLayer.getStorage(main);
+            unverifyEmail(new AppIdentifierWithStorage(null, null, storage),
+                    userId, email);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    public static void unverifyEmail(AppIdentifierWithStorage appIdentifierWithStorage, String userId,
+                                     String email) throws StorageQueryException, TenantOrAppNotFoundException {
+        appIdentifierWithStorage.getEmailVerificationStorage()
+                .unverifyEmail(appIdentifierWithStorage, userId, email);
     }
 
     private static String getHashedToken(String token) throws NoSuchAlgorithmException {

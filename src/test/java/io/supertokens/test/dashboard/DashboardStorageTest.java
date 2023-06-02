@@ -26,6 +26,7 @@ import io.supertokens.pluginInterface.dashboard.exceptions.DuplicateUserIdExcept
 import io.supertokens.pluginInterface.dashboard.exceptions.UserIdNotFoundException;
 import io.supertokens.pluginInterface.dashboard.sqlStorage.DashboardSQLStorage;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -69,14 +70,14 @@ public class DashboardStorageTest {
         String email = "test@example.com";
         String passwordHash = "testPasswordHash";
 
-        DashboardSQLStorage dashboardSQLStorage = StorageLayer.getDashboardStorage(process.getProcess());
+        DashboardSQLStorage dashboardSQLStorage = (DashboardSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         {
             DashboardUser user = new DashboardUser(userId, email, passwordHash, System.currentTimeMillis());
-            dashboardSQLStorage.createNewDashboardUser(user);
+            dashboardSQLStorage.createNewDashboardUser(new AppIdentifier(null, null), user);
 
             // get dashboard users to verify that user was created
-            DashboardUser[] users = dashboardSQLStorage.getAllDashboardUsers();
+            DashboardUser[] users = dashboardSQLStorage.getAllDashboardUsers(new AppIdentifier(null, null));
             assertEquals(1, users.length);
             assertEquals(user, users[0]);
         }
@@ -87,14 +88,13 @@ public class DashboardStorageTest {
                     System.currentTimeMillis());
             Exception error = null;
             try {
-                dashboardSQLStorage.createNewDashboardUser(user);
+                dashboardSQLStorage.createNewDashboardUser(new AppIdentifier(null, null), user);
                 throw new Exception("Should never come here");
             } catch (DuplicateUserIdException e) {
                 error = e;
             }
 
             assertNotNull(error);
-            assertTrue(error instanceof DuplicateUserIdException);
         }
 
         {
@@ -103,14 +103,13 @@ public class DashboardStorageTest {
                     System.currentTimeMillis());
             Exception error = null;
             try {
-                dashboardSQLStorage.createNewDashboardUser(user);
+                dashboardSQLStorage.createNewDashboardUser(new AppIdentifier(null, null), user);
                 throw new Exception("Should never come here");
             } catch (DuplicateEmailException e) {
                 error = e;
             }
 
             assertNotNull(error);
-            assertTrue(error instanceof DuplicateEmailException);
 
         }
 
@@ -134,21 +133,23 @@ public class DashboardStorageTest {
         String email = "test@example.com";
         String passwordHash = "testPasswordHash";
 
-        DashboardSQLStorage dashboardSQLStorage = StorageLayer.getDashboardStorage(process.getProcess());
+        DashboardSQLStorage dashboardSQLStorage = (DashboardSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         // create a dashboardUser
         DashboardUser user = new DashboardUser(userId, email, passwordHash, System.currentTimeMillis());
-        dashboardSQLStorage.createNewDashboardUser(user);
+        dashboardSQLStorage.createNewDashboardUser(new AppIdentifier(null, null), user);
 
         {
             // retrieve user with email
-            DashboardUser retrievedUser = dashboardSQLStorage.getDashboardUserByEmail(email);
+            DashboardUser retrievedUser = dashboardSQLStorage.getDashboardUserByEmail(new AppIdentifier(null, null),
+                    email);
             assertEquals(user, retrievedUser);
         }
 
         {
             // retrieve user with userId
-            DashboardUser retrievedUser = dashboardSQLStorage.getDashboardUserByUserId(userId);
+            DashboardUser retrievedUser = dashboardSQLStorage.getDashboardUserByUserId(new AppIdentifier(null, null),
+                    userId);
             assertEquals(user, retrievedUser);
         }
 
@@ -173,14 +174,16 @@ public class DashboardStorageTest {
 
             DashboardUser user = new DashboardUser(io.supertokens.utils.Utils.getUUID(), "test" + i + "@example.com",
                     "testPasswordHash", System.currentTimeMillis());
-            StorageLayer.getDashboardStorage(process.getProcess()).createNewDashboardUser(user);
+            ((DashboardSQLStorage) StorageLayer.getStorage(process.getProcess()))
+                    .createNewDashboardUser(new AppIdentifier(null, null), user);
             Thread.sleep(2);
         }
 
         // retrieve all dashboard users, check that correctly created and returned in
         // the correct order.
 
-        DashboardUser[] users = StorageLayer.getDashboardStorage(process.getProcess()).getAllDashboardUsers();
+        DashboardUser[] users = ((DashboardSQLStorage) StorageLayer.getStorage(process.getProcess()))
+                .getAllDashboardUsers(new AppIdentifier(null, null));
         assertEquals(10, users.length);
 
         for (int i = 0; i < 10; i++) {
@@ -203,23 +206,23 @@ public class DashboardStorageTest {
             return;
         }
 
-        DashboardSQLStorage dashboardSQLStorage = StorageLayer.getDashboardStorage(process.getProcess());
+        DashboardSQLStorage dashboardSQLStorage = (DashboardSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         // check no user exists
-        assertEquals(0, dashboardSQLStorage.getAllDashboardUsers().length);
+        assertEquals(0, dashboardSQLStorage.getAllDashboardUsers(new AppIdentifier(null, null)).length);
 
         // create a user
         DashboardUser user = Dashboard.signUpDashboardUser(process.getProcess(), "test@example.com", "testPass123");
         assertNotNull(user);
 
         // check that user was created
-        assertEquals(1, dashboardSQLStorage.getAllDashboardUsers().length);
+        assertEquals(1, dashboardSQLStorage.getAllDashboardUsers(new AppIdentifier(null, null)).length);
 
         // delete dashboard user
-        assertTrue(dashboardSQLStorage.deleteDashboardUserWithUserId(user.userId));
+        assertTrue(dashboardSQLStorage.deleteDashboardUserWithUserId(new AppIdentifier(null, null), user.userId));
 
         // check that no users exist
-        assertEquals(0, dashboardSQLStorage.getAllDashboardUsers().length);
+        assertEquals(0, dashboardSQLStorage.getAllDashboardUsers(new AppIdentifier(null, null)).length);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
@@ -236,27 +239,29 @@ public class DashboardStorageTest {
             return;
         }
 
-        DashboardSQLStorage dashboardSQLStorage = StorageLayer.getDashboardStorage(process.getProcess());
+        DashboardSQLStorage dashboardSQLStorage = (DashboardSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         // create a dashboard session for a user that does not exist
         Exception error = null;
         try {
-            dashboardSQLStorage.createNewDashboardUserSession("unknownUserId", "testSessionId", 0, 0);
+            dashboardSQLStorage.createNewDashboardUserSession(new AppIdentifier(null, null), "unknownUserId",
+                    "testSessionId", 0, 0);
             throw new Exception("Should never come here");
         } catch (UserIdNotFoundException e) {
             error = e;
         }
 
         assertNotNull(error);
-        assertTrue(error instanceof UserIdNotFoundException);
 
         // create a user and create a session for the user
         DashboardUser user = Dashboard.signUpDashboardUser(process.getProcess(), "test@example.com", "password123");
 
-        dashboardSQLStorage.createNewDashboardUserSession(user.userId, io.supertokens.utils.Utils.getUUID(), 0, 0);
+        dashboardSQLStorage.createNewDashboardUserSession(new AppIdentifier(null, null), user.userId,
+                io.supertokens.utils.Utils.getUUID(), 0, 0);
 
         // check that the session was successfully created
-        DashboardSessionInfo[] sessionInfo = dashboardSQLStorage.getAllSessionsForUserId(user.userId);
+        DashboardSessionInfo[] sessionInfo = dashboardSQLStorage.getAllSessionsForUserId(new AppIdentifier(null, null),
+                user.userId);
         assertEquals(1, sessionInfo.length);
         assertEquals(user.userId, sessionInfo[0].userId);
 
@@ -275,7 +280,7 @@ public class DashboardStorageTest {
             return;
         }
 
-        DashboardSQLStorage dashboardSQLStorage = StorageLayer.getDashboardStorage(process.getProcess());
+        DashboardSQLStorage dashboardSQLStorage = (DashboardSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         // create a user
         DashboardUser user = Dashboard.signUpDashboardUser(process.getProcess(), "test@example.com", "password123");
@@ -285,31 +290,36 @@ public class DashboardStorageTest {
         for (int i = 0; i < 5; i++) {
             String sessionId = io.supertokens.utils.Utils.getUUID();
             sessionIds.add(sessionId);
-            dashboardSQLStorage.createNewDashboardUserSession(user.userId, sessionId, 0, 0);
+            dashboardSQLStorage.createNewDashboardUserSession(new AppIdentifier(null, null), user.userId, sessionId, 0,
+                    0);
         }
 
         // get all sessions for userId
-        DashboardSessionInfo[] sessionInfoArray = dashboardSQLStorage.getAllSessionsForUserId(user.userId);
+        DashboardSessionInfo[] sessionInfoArray = dashboardSQLStorage.getAllSessionsForUserId(
+                new AppIdentifier(null, null), user.userId);
         assertEquals(5, sessionInfoArray.length);
 
         // test retrieving sessions
         for (int i = 0; i < 2; i++) {
-            DashboardSessionInfo sessionInfo = dashboardSQLStorage.getSessionInfoWithSessionId(sessionIds.get(i));
+            DashboardSessionInfo sessionInfo = dashboardSQLStorage.getSessionInfoWithSessionId(
+                    new AppIdentifier(null, null), sessionIds.get(i));
             assertNotNull(sessionInfo);
             assertEquals(user.userId, sessionInfo.userId);
         }
 
         // delete some user sessions
-        dashboardSQLStorage.revokeSessionWithSessionId(sessionIds.get(0));
-        dashboardSQLStorage.revokeSessionWithSessionId(sessionIds.get(1));
+        dashboardSQLStorage.revokeSessionWithSessionId(new AppIdentifier(null, null), sessionIds.get(0));
+        dashboardSQLStorage.revokeSessionWithSessionId(new AppIdentifier(null, null), sessionIds.get(1));
 
         // retrieve all sessions
-        DashboardSessionInfo[] dashboardSessionInfo = dashboardSQLStorage.getAllSessionsForUserId(user.userId);
+        DashboardSessionInfo[] dashboardSessionInfo = dashboardSQLStorage.getAllSessionsForUserId(
+                new AppIdentifier(null, null), user.userId);
         assertEquals(3, dashboardSessionInfo.length);
 
         // check that two sessions were deleted
         for (int i = 0; i < 2; i++) {
-            assertNull(dashboardSQLStorage.getSessionInfoWithSessionId(sessionIds.get(i)));
+            assertNull(
+                    dashboardSQLStorage.getSessionInfoWithSessionId(new AppIdentifier(null, null), sessionIds.get(i)));
         }
 
         process.kill();
@@ -327,7 +337,7 @@ public class DashboardStorageTest {
             return;
         }
 
-        DashboardSQLStorage dashboardSQLStorage = StorageLayer.getDashboardStorage(process.getProcess());
+        DashboardSQLStorage dashboardSQLStorage = (DashboardSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         // create a user
         DashboardUser user = Dashboard.signUpDashboardUser(process.getProcess(), "test@example.com", "password123");
@@ -337,7 +347,8 @@ public class DashboardStorageTest {
         for (int i = 0; i < 3; i++) {
             String sessionId = io.supertokens.utils.Utils.getUUID();
             sessionIds.add(sessionId);
-            dashboardSQLStorage.createNewDashboardUserSession(user.userId, sessionId, System.currentTimeMillis(),
+            dashboardSQLStorage.createNewDashboardUserSession(new AppIdentifier(null, null), user.userId, sessionId,
+                    System.currentTimeMillis(),
                     System.currentTimeMillis() + 3000);
         }
 
@@ -345,12 +356,13 @@ public class DashboardStorageTest {
         for (int i = 0; i < 3; i++) {
             String sessionId = io.supertokens.utils.Utils.getUUID();
             sessionIds.add(sessionId);
-            dashboardSQLStorage.createNewDashboardUserSession(user.userId, sessionId, System.currentTimeMillis(),
+            dashboardSQLStorage.createNewDashboardUserSession(new AppIdentifier(null, null), user.userId, sessionId,
+                    System.currentTimeMillis(),
                     System.currentTimeMillis() + Dashboard.DASHBOARD_SESSION_DURATION);
         }
 
         // check that sessions were successfully created
-        assertEquals(6, dashboardSQLStorage.getAllSessionsForUserId(user.userId).length);
+        assertEquals(6, dashboardSQLStorage.getAllSessionsForUserId(new AppIdentifier(null, null), user.userId).length);
 
         // wait for 5 seconds so sessions expire
         try {
@@ -363,13 +375,15 @@ public class DashboardStorageTest {
         dashboardSQLStorage.revokeExpiredSessions();
 
         // check that half the sessions were revoked
-        assertEquals(3, dashboardSQLStorage.getAllSessionsForUserId(user.userId).length);
+        assertEquals(3, dashboardSQLStorage.getAllSessionsForUserId(new AppIdentifier(null, null), user.userId).length);
 
         for (int i = 0; i < sessionIds.size(); i++) {
             if (i < 3) {
-                assertNull(dashboardSQLStorage.getSessionInfoWithSessionId(sessionIds.get(i)));
+                assertNull(dashboardSQLStorage.getSessionInfoWithSessionId(new AppIdentifier(null, null),
+                        sessionIds.get(i)));
             } else {
-                assertNotNull(dashboardSQLStorage.getSessionInfoWithSessionId(sessionIds.get(i)));
+                assertNotNull(dashboardSQLStorage.getSessionInfoWithSessionId(new AppIdentifier(null, null),
+                        sessionIds.get(i)));
             }
         }
 
@@ -388,7 +402,7 @@ public class DashboardStorageTest {
             return;
         }
 
-        DashboardSQLStorage dashboardSQLStorage = StorageLayer.getDashboardStorage(process.getProcess());
+        DashboardSQLStorage dashboardSQLStorage = (DashboardSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         {
             // try updating the email for a user that does not exist
@@ -396,7 +410,8 @@ public class DashboardStorageTest {
             try {
                 dashboardSQLStorage.startTransaction(transaction -> {
                     try {
-                        dashboardSQLStorage.updateDashboardUsersEmailWithUserId_Transaction(transaction,
+                        dashboardSQLStorage.updateDashboardUsersEmailWithUserId_Transaction(
+                                new AppIdentifier(null, null), transaction,
                                 "unknownUserId", "test@example.com");
                         return null;
                     } catch (Exception e) {
@@ -420,7 +435,8 @@ public class DashboardStorageTest {
         try {
             dashboardSQLStorage.startTransaction(transaction -> {
                 try {
-                    dashboardSQLStorage.updateDashboardUsersEmailWithUserId_Transaction(transaction,
+                    dashboardSQLStorage.updateDashboardUsersEmailWithUserId_Transaction(new AppIdentifier(null, null),
+                            transaction,
                             user.userId, newEmail);
                     return null;
                 } catch (Exception e) {
@@ -432,22 +448,23 @@ public class DashboardStorageTest {
         }
 
         // check that the retrieving the user with the original email does not work
-        assertNull(dashboardSQLStorage.getDashboardUserByEmail(user.email));
+        assertNull(dashboardSQLStorage.getDashboardUserByEmail(new AppIdentifier(null, null), user.email));
 
         // check that retrieving the user with the new email works
-        DashboardUser updatedUser = dashboardSQLStorage.getDashboardUserByEmail(newEmail);
+        DashboardUser updatedUser = dashboardSQLStorage.getDashboardUserByEmail(new AppIdentifier(null, null),
+                newEmail);
         assertNotNull(updatedUser);
 
         // check that the userIds are the same
         assertEquals(user.userId, updatedUser.userId);
 
         // check that no additional users have been created.
-        assertEquals(1, dashboardSQLStorage.getAllDashboardUsers().length);
+        assertEquals(1, dashboardSQLStorage.getAllDashboardUsers(new AppIdentifier(null, null)).length);
 
         // create another user 
         DashboardUser user2 = new DashboardUser(io.supertokens.utils.Utils.getUUID(), "test2@example.com",
                 "testpassword", System.currentTimeMillis());
-        dashboardSQLStorage.createNewDashboardUser(user2);
+        dashboardSQLStorage.createNewDashboardUser(new AppIdentifier(null, null), user2);
 
         // try updating user2s email with the user1s email
 
@@ -457,7 +474,8 @@ public class DashboardStorageTest {
             try {
                 dashboardSQLStorage.startTransaction(transaction -> {
                     try {
-                        dashboardSQLStorage.updateDashboardUsersEmailWithUserId_Transaction(transaction,
+                        dashboardSQLStorage.updateDashboardUsersEmailWithUserId_Transaction(
+                                new AppIdentifier(null, null), transaction,
                                 user2.userId, newEmail);
                         return null;
                     } catch (Exception e) {

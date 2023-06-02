@@ -18,10 +18,15 @@ package io.supertokens.test.session;
 
 import io.supertokens.ProcessState.EventAndException;
 import io.supertokens.ProcessState.PROCESS_STATE;
+import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.pluginInterface.KeyValueInfo;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.signingkeys.AccessTokenSigningKey;
 import io.supertokens.signingkeys.SigningKeys;
@@ -61,8 +66,9 @@ public class AccessTokenSigningKeyTest {
 
     @Test
     public void legacySigningKeysAreMigratedProperly() throws InterruptedException, NoSuchAlgorithmException,
-            StorageQueryException, StorageTransactionLogicException {
-        String[] args = { "../" };
+            StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException,
+            UnsupportedJWTSigningAlgorithmException {
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
 
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
@@ -71,8 +77,9 @@ public class AccessTokenSigningKeyTest {
         io.supertokens.utils.Utils.PubPriKey rsaKeys = io.supertokens.utils.Utils.generateNewPubPriKey();
         String signingKey = rsaKeys.toString();
         KeyValueInfo newKey = new KeyValueInfo(signingKey, System.currentTimeMillis());
-        SessionStorage sessionStorage = StorageLayer.getSessionStorage(process.getProcess());
-        sessionStorage.setKeyValue("access_token_signing_key", newKey);
+        SessionStorage sessionStorage = (SessionStorage) StorageLayer.getStorage(process.getProcess());
+        sessionStorage.removeAccessTokenSigningKeysBefore(new AppIdentifier(null, null), System.currentTimeMillis() + 1000);
+        sessionStorage.setKeyValue(new TenantIdentifier(null, null, null), "access_token_signing_key", newKey);
         AccessTokenSigningKey accessTokenSigningKeyInstance = AccessTokenSigningKey.getInstance(process.getProcess());
         accessTokenSigningKeyInstance.transferLegacyKeyToNewTable();
         assertEquals(SigningKeys.getInstance(process.getProcess()).getAllKeys().size(), 2);
@@ -80,7 +87,7 @@ public class AccessTokenSigningKeyTest {
         assertEquals(keys.size(), 1);
         assertEquals(keys.get(0).createdAtTime, newKey.createdAtTime);
         assertEquals(keys.get(0).value, newKey.value);
-        assertEquals(sessionStorage.getKeyValue("access_token_signing_key"), null);
+        assertNull(sessionStorage.getKeyValue(new TenantIdentifier(null, null, null), "access_token_signing_key"));
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
     }
@@ -89,7 +96,7 @@ public class AccessTokenSigningKeyTest {
     public void getDynamicKeysReturnsOrdered() throws Exception {
         Utils.setValueInConfig("access_token_dynamic_signing_key_update_interval", "0.00027"); // 1 seconds
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
 
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
@@ -100,8 +107,9 @@ public class AccessTokenSigningKeyTest {
         KeyValueInfo legacyKey = new KeyValueInfo(signingKey, System.currentTimeMillis() - 2000);
         // 2 seconds in the past
 
-        SessionStorage sessionStorage = StorageLayer.getSessionStorage(process.getProcess());
-        sessionStorage.setKeyValue("access_token_signing_key", legacyKey);
+        SessionStorage sessionStorage = (SessionStorage) StorageLayer.getStorage(process.getProcess());
+        sessionStorage.removeAccessTokenSigningKeysBefore(new AppIdentifier(null, null), System.currentTimeMillis() + 1000);
+        sessionStorage.setKeyValue(new TenantIdentifier(null, null, null), "access_token_signing_key", legacyKey);
 
         AccessTokenSigningKey accessTokenSigningKeyInstance = AccessTokenSigningKey.getInstance(process.getProcess());
         accessTokenSigningKeyInstance.transferLegacyKeyToNewTable();
@@ -136,11 +144,12 @@ public class AccessTokenSigningKeyTest {
     @Test
     public void getAllKeysFiltersOldKeys()
             throws IOException, InterruptedException, InvalidKeyException, NoSuchAlgorithmException,
-            StorageQueryException, StorageTransactionLogicException, InvalidKeySpecException, SignatureException {
+            StorageQueryException, StorageTransactionLogicException, InvalidKeySpecException, SignatureException,
+            TenantOrAppNotFoundException, UnsupportedJWTSigningAlgorithmException {
         Utils.setValueInConfig("access_token_dynamic_signing_key_update_interval", "0.00027"); // 1 seconds
         Utils.setValueInConfig("access_token_validity", "1");
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
 
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
@@ -167,7 +176,7 @@ public class AccessTokenSigningKeyTest {
     public void migratingStaticSigningKeys() throws Exception {
         Utils.setValueInConfig("access_token_signing_key_dynamic", "false");
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
 
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
@@ -177,8 +186,13 @@ public class AccessTokenSigningKeyTest {
         String signingKey = rsaKeys.toString();
         KeyValueInfo legacyKey = new KeyValueInfo(signingKey, System.currentTimeMillis() - 2629743830l); // 1 month old
 
-        SessionStorage sessionStorage = StorageLayer.getSessionStorage(process.getProcess());
-        sessionStorage.setKeyValue("access_token_signing_key", legacyKey);
+        SessionStorage sessionStorage = (SessionStorage) StorageLayer.getStorage(process.getProcess());
+        int expectedSize = 2;
+        if (sessionStorage.getType() == STORAGE_TYPE.NOSQL_1) {
+            sessionStorage.deleteAllInformation();
+            expectedSize = 1;
+        }
+        sessionStorage.setKeyValue(new TenantIdentifier(null, null, null), "access_token_signing_key", legacyKey);
 
         AccessTokenSigningKey accessTokenSigningKeyInstance = AccessTokenSigningKey.getInstance(process.getProcess());
         accessTokenSigningKeyInstance.transferLegacyKeyToNewTable();
@@ -186,10 +200,10 @@ public class AccessTokenSigningKeyTest {
         accessTokenSigningKeyInstance.cleanExpiredAccessTokenSigningKeys();
         List<JWTSigningKeyInfo> keys = SigningKeys.getInstance(process.getProcess()).getStaticKeys();
 
-        assertEquals(keys.size(), 1);
+        assertEquals(keys.size(), expectedSize);
 
-        assertEquals(legacyKey.value, keys.get(0).keyString);
-        assertEquals(keys.get(0).keyId.substring(0, 2), "s-");
+        assertEquals(legacyKey.value, keys.get(expectedSize - 1).keyString);
+        assertEquals(keys.get(expectedSize - 1).keyId.substring(0, 2), "s-");
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
     }

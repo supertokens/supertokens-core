@@ -54,7 +54,7 @@ public class APIKeysTest {
     // * - set API key and check that config.getAPIKeys() does not return null
     @Test
     public void testGetApiKeysDoesNotReturnNullWhenAPIKeyIsSet() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         Utils.setValueInConfig("api_keys", "abctijenbogweg=-2438243u98"); // set api_keys
 
@@ -73,7 +73,7 @@ public class APIKeysTest {
     // * - don't set API key and check that config.getAPIKeys() returns null
     @Test
     public void testGetApiKeysReturnsNullWhenAPIKeyIsNotSet() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -87,7 +87,7 @@ public class APIKeysTest {
     // * - set an invalid API key and check that an error is thrown.
     @Test
     public void testErrorIsThrownWhenInvalidApiKeyIsSet() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         // api key length less that minimum length 20
         Utils.setValueInConfig("api_keys", "abc"); // set api_keys
@@ -95,7 +95,7 @@ public class APIKeysTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         ProcessState.EventAndException event = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
         assertNotNull(event);
-        assertEquals(event.exception.getMessage(),
+        assertEquals(event.exception.getCause().getMessage(),
                 "One of the API keys is too short. Please use at least 20 characters");
 
         process.kill();
@@ -109,7 +109,7 @@ public class APIKeysTest {
 
         event = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
         assertNotNull(event);
-        assertEquals(event.exception.getMessage(),
+        assertEquals(event.exception.getCause().getMessage(),
                 "Invalid characters in API key. Please only use '=', '-' and alpha-numeric (including capitals)");
 
         process.kill();
@@ -120,7 +120,7 @@ public class APIKeysTest {
     // * - set one valid, and one invalid API key and check error is thrown
     @Test
     public void testSettingValidAndInvalidApiKeysAndErrorIsThrown() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         String validKey = "abdein30934=-DJNIigwe39";
         String invalidKey = "%93*4=JN39";
 
@@ -129,7 +129,7 @@ public class APIKeysTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         ProcessState.EventAndException event = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
         assertNotNull(event);
-        assertEquals(event.exception.getMessage(),
+        assertEquals(event.exception.getCause().getMessage(),
                 "One of the API keys is too short. Please use at least 20 characters");
 
         process.kill();
@@ -141,7 +141,7 @@ public class APIKeysTest {
     // * with key and it should succeed and then send with wrong key and check it fails).
     @Test
     public void testCreatingSessionWithAndWithoutAPIKey() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         String apiKey = "hg40239oirjgBHD9450=Beew123-";
         Utils.setValueInConfig("api_keys", apiKey); // set api_keys
@@ -192,7 +192,7 @@ public class APIKeysTest {
     // * - set API key and check that you can still call /config and /hello without it
     @Test
     public void testSettingAPIKeyAndCallingConfigAndHelloWithoutIt() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         String apiKey = "hg40239oirjgBHD9450=Beew123-";
         Utils.setValueInConfig("api_keys", apiKey); // set api_keys
@@ -224,7 +224,7 @@ public class APIKeysTest {
     // * key, it fails
     @Test
     public void testSettingMultipleAPIKeys() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         String apiKey1 = "hg40239oirjgBHD9450=Beew123-1";
         String apiKey2 = "hg40239oirjgBHD9450=Beew123-2";
@@ -294,7 +294,7 @@ public class APIKeysTest {
     // * - set API key and check that request with " key ", " key" and "key" work
     @Test
     public void testSettingMultipleAPIKeysWithSpacing() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         String apiKey1 = "hg40239oirjgBHD9450=Beew123-1";
         String apiKey2 = "hg40239oirjgBHD9450=Beew123-2";
@@ -302,7 +302,7 @@ public class APIKeysTest {
         String apiKey4 = "hg40239oirjgBHD9450=Beew123-4";
 
         Utils.setValueInConfig("api_keys", " " + apiKey1 + ", " + apiKey2 + ", " + apiKey3 + "," + apiKey4); // set
-                                                                                                             // api_keys
+        // api_keys
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -354,7 +354,7 @@ public class APIKeysTest {
     }
 
     public static void checkSessionResponse(JsonObject response, TestingProcessManager.TestingProcess process,
-            String userId, JsonObject userDataInJWT) {
+                                            String userId, JsonObject userDataInJWT) {
         assertNotNull(response.get("session").getAsJsonObject().get("handle").getAsString());
         assertEquals(response.get("session").getAsJsonObject().get("userId").getAsString(), userId);
         assertEquals(response.get("session").getAsJsonObject().get("userDataInJWT").getAsJsonObject().toString(),

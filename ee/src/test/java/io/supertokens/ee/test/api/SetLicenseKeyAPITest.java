@@ -1,32 +1,23 @@
 package io.supertokens.ee.test.api;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestRule;
-
 import com.google.gson.JsonObject;
-
 import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.ee.EEFeatureFlag;
 import io.supertokens.ee.test.EETest;
 import io.supertokens.ee.test.TestingProcessManager;
 import io.supertokens.ee.test.Utils;
-import io.supertokens.ee.test.TestingProcessManager.TestingProcess;
 import io.supertokens.ee.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.ee.test.httpRequest.HttpResponseException;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.pluginInterface.KeyValueInfo;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.webserver.WebserverAPI;
+import org.junit.*;
+import org.junit.rules.TestRule;
+
+import static org.junit.Assert.*;
 
 public class SetLicenseKeyAPITest {
     @Rule
@@ -44,7 +35,7 @@ public class SetLicenseKeyAPITest {
 
     @Test
     public void testSettingBadInput() throws Exception {
-        String[] args = { "../../" };
+        String[] args = {"../../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         Assert.assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -71,7 +62,8 @@ public class SetLicenseKeyAPITest {
 
     @Test
     public void testSettingLicenseKeyWhenEEFolderDoesNotExist() throws Exception {
-        String[] args = { "../../" };
+        FeatureFlag.clearURLClassLoader();
+        String[] args = {"../../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
 
@@ -101,7 +93,7 @@ public class SetLicenseKeyAPITest {
 
     @Test
     public void testSettingLicenseKeySuccessfully() throws Exception {
-        String[] args = { "../../" };
+        String[] args = {"../../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         Assert.assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -124,14 +116,15 @@ public class SetLicenseKeyAPITest {
 
     @Test
     public void testCallingAPIToSyncLicenseKey() throws Exception {
-        String[] args = { "../../" };
+        String[] args = {"../../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         Assert.assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         // set licenseKey in db
-        StorageLayer.getStorage(process.getProcess()).setKeyValue(EEFeatureFlag.LICENSE_KEY_IN_DB,
-                new KeyValueInfo(EETest.STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_NO_EXP));
+        StorageLayer.getStorage(process.getProcess())
+                .setKeyValue(new TenantIdentifier(null, null, null), EEFeatureFlag.LICENSE_KEY_IN_DB,
+                        new KeyValueInfo(EETest.STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_NO_EXP));
 
         // check that licenseKey is not present
         assertFalse(FeatureFlag.getInstance(process.getProcess()).getEeFeatureFlagInstance().getIsLicenseKeyPresent());
@@ -151,7 +144,7 @@ public class SetLicenseKeyAPITest {
 
     @Test
     public void testSettingInvalidLicenseKey() throws Exception {
-        String[] args = { "../../" };
+        String[] args = {"../../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         Assert.assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));

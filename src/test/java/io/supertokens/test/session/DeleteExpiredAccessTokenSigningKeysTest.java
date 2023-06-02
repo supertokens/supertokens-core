@@ -22,6 +22,8 @@ import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.cronjobs.deleteExpiredAccessTokenSigningKeys.DeleteExpiredAccessTokenSigningKeys;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
@@ -33,8 +35,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 public class DeleteExpiredAccessTokenSigningKeysTest {
     @Rule
@@ -52,13 +53,13 @@ public class DeleteExpiredAccessTokenSigningKeysTest {
 
     @Test
     public void intervalTimeSecondsCleanExpiredAccessTokenSigningKeysTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         assertEquals(DeleteExpiredAccessTokenSigningKeys.getInstance(process.getProcess()).getIntervalTimeSeconds(),
-                Config.getConfig(process.getProcess()).getAccessTokenDynamicSigningKeyUpdateInterval() / 1000);
+                86400);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -66,7 +67,7 @@ public class DeleteExpiredAccessTokenSigningKeysTest {
 
     @Test
     public void jobCleansOldKeysTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         CronTaskTest.getInstance(process.getProcess())
@@ -75,36 +76,46 @@ public class DeleteExpiredAccessTokenSigningKeysTest {
 
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        SessionStorage sessionStorage = StorageLayer.getSessionStorage(process.getProcess());
+        SessionStorage sessionStorage = (SessionStorage) StorageLayer.getStorage(process.getProcess());
 
         if (sessionStorage.getType() != STORAGE_TYPE.SQL) {
             return;
         }
         long accessTokenValidity = Config.getConfig(process.getProcess()).getAccessTokenValidity();
-        long signingKeyUpdateInterval = Config.getConfig(process.getProcess()).getAccessTokenDynamicSigningKeyUpdateInterval();
+        long signingKeyUpdateInterval = Config.getConfig(process.getProcess())
+                .getAccessTokenDynamicSigningKeyUpdateInterval();
 
         SessionSQLStorage sqlStorage = (SessionSQLStorage) sessionStorage;
         sqlStorage.startTransaction(con -> {
-            sqlStorage.addAccessTokenSigningKey_Transaction(con, new KeyValueInfo("clean!", 100));
-            sqlStorage.addAccessTokenSigningKey_Transaction(con, new KeyValueInfo("clean!",
-                    System.currentTimeMillis() - signingKeyUpdateInterval - 3 * accessTokenValidity));
-            sqlStorage.addAccessTokenSigningKey_Transaction(con, new KeyValueInfo("clean!",
-                    System.currentTimeMillis() - signingKeyUpdateInterval - 2 * accessTokenValidity));
-            sqlStorage.addAccessTokenSigningKey_Transaction(con, new KeyValueInfo("keep!",
-                    System.currentTimeMillis() - signingKeyUpdateInterval - 1 * accessTokenValidity));
-            sqlStorage.addAccessTokenSigningKey_Transaction(con,
-                    new KeyValueInfo("keep!", System.currentTimeMillis() - signingKeyUpdateInterval));
-            sqlStorage.addAccessTokenSigningKey_Transaction(con, new KeyValueInfo("keep!", System.currentTimeMillis()));
+            try {
+                sqlStorage.addAccessTokenSigningKey_Transaction(new AppIdentifier(null, null), con,
+                        new KeyValueInfo("clean!", 100));
+                sqlStorage.addAccessTokenSigningKey_Transaction(new AppIdentifier(null, null), con,
+                        new KeyValueInfo("clean!",
+                                System.currentTimeMillis() - signingKeyUpdateInterval - 3 * accessTokenValidity));
+                sqlStorage.addAccessTokenSigningKey_Transaction(new AppIdentifier(null, null), con,
+                        new KeyValueInfo("clean!",
+                                System.currentTimeMillis() - signingKeyUpdateInterval - 2 * accessTokenValidity));
+                sqlStorage.addAccessTokenSigningKey_Transaction(new AppIdentifier(null, null), con,
+                        new KeyValueInfo("keep!",
+                                System.currentTimeMillis() - signingKeyUpdateInterval - 1 * accessTokenValidity));
+                sqlStorage.addAccessTokenSigningKey_Transaction(new AppIdentifier(null, null), con,
+                        new KeyValueInfo("keep!", System.currentTimeMillis() - signingKeyUpdateInterval));
+                sqlStorage.addAccessTokenSigningKey_Transaction(new AppIdentifier(null, null), con,
+                        new KeyValueInfo("keep!", System.currentTimeMillis()));
+            } catch (TenantOrAppNotFoundException e) {
+                throw new IllegalStateException(e);
+            }
             return true;
         });
 
         Thread.sleep(1500);
 
         sqlStorage.startTransaction(con -> {
-            KeyValueInfo[] keys = sqlStorage.getAccessTokenSigningKeys_Transaction(con);
-            assertEquals(keys.length, 3);
+            KeyValueInfo[] keys = sqlStorage.getAccessTokenSigningKeys_Transaction(new AppIdentifier(null, null), con);
+            assertEquals(keys.length, 4);
             for (KeyValueInfo key : keys) {
-                assertEquals("keep!", key.value);
+                assertNotEquals("clean!", key.value);
             }
             return true;
         });

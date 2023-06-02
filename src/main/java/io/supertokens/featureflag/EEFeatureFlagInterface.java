@@ -22,6 +22,8 @@ import io.supertokens.featureflag.exceptions.InvalidLicenseKeyException;
 import io.supertokens.featureflag.exceptions.NoLicenseKeyFoundException;
 import io.supertokens.httpRequest.HttpResponseException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import org.jetbrains.annotations.TestOnly;
 
 import java.io.IOException;
@@ -30,22 +32,24 @@ public interface EEFeatureFlagInterface {
     @TestOnly
     void updateEnabledFeaturesValueReadFromDbTime(long newTime);
 
-    void constructor(Main main);
+    void constructor(Main main, AppIdentifier appIdentifier);
 
-    EE_FEATURES[] getEnabledFeatures() throws StorageQueryException;
+    EE_FEATURES[] getEnabledFeatures() throws StorageQueryException, TenantOrAppNotFoundException;
 
     void syncFeatureFlagWithLicenseKey() throws StorageQueryException, HttpResponseException, IOException,
-            InvalidLicenseKeyException;
+            InvalidLicenseKeyException, TenantOrAppNotFoundException;
 
     void setLicenseKeyAndSyncFeatures(String licenseKey)
-            throws StorageQueryException, HttpResponseException, IOException, InvalidLicenseKeyException;
+            throws StorageQueryException, HttpResponseException, IOException, InvalidLicenseKeyException,
+            TenantOrAppNotFoundException;
 
-    void removeLicenseKeyAndSyncFeatures() throws StorageQueryException, HttpResponseException, IOException;
+    void removeLicenseKeyAndSyncFeatures()
+            throws StorageQueryException, HttpResponseException, IOException, TenantOrAppNotFoundException;
 
-    String getLicenseKeyFromDb() throws NoLicenseKeyFoundException, StorageQueryException;
+    String getLicenseKeyFromDb() throws NoLicenseKeyFoundException, StorageQueryException, TenantOrAppNotFoundException;
 
     @TestOnly
     Boolean getIsLicenseKeyPresent();
 
-    JsonObject getPaidFeatureStats() throws StorageQueryException;
+    JsonObject getPaidFeatureStats() throws StorageQueryException, TenantOrAppNotFoundException;
 }

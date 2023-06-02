@@ -18,6 +18,9 @@ package io.supertokens.featureflag;
 
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import org.jetbrains.annotations.TestOnly;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -36,11 +39,13 @@ public class FeatureFlagTestContent extends ResourceDistributor.SingletonResourc
     }
 
     public static FeatureFlagTestContent getInstance(Main main) {
-        ResourceDistributor.SingletonResource resource = main.getResourceDistributor().getResource(RESOURCE_ID);
-        if (resource == null) {
-            resource = main.getResourceDistributor().setResource(RESOURCE_ID, new FeatureFlagTestContent());
+        try {
+            return (FeatureFlagTestContent) main.getResourceDistributor()
+                    .getResource(new TenantIdentifier(null, null, null), RESOURCE_ID);
+        } catch (TenantOrAppNotFoundException ignored) {
+            return (FeatureFlagTestContent) main.getResourceDistributor()
+                    .setResource(new TenantIdentifier(null, null, null), RESOURCE_ID, new FeatureFlagTestContent());
         }
-        return (FeatureFlagTestContent) resource;
     }
 
     @TestOnly

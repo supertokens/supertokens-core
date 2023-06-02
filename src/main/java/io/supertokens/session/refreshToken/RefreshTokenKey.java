@@ -25,47 +25,86 @@ import io.supertokens.pluginInterface.KeyValueInfoWithLastUpdated;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.session.noSqlStorage.SessionNoSQLStorage_1;
 import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
+import org.jetbrains.annotations.TestOnly;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
+import java.util.List;
+import java.util.Map;
 
 public class RefreshTokenKey extends ResourceDistributor.SingletonResource {
 
     private static final String RESOURCE_KEY = "io.supertokens.session.refreshToken.RefreshTokenKey";
     private final Main main;
     private String key;
+    private final AppIdentifier appIdentifier;
 
-    private RefreshTokenKey(Main main) {
+    private RefreshTokenKey(AppIdentifier appIdentifier, Main main) throws
+            TenantOrAppNotFoundException {
         this.main = main;
+        this.appIdentifier = appIdentifier;
         try {
             this.getKey();
         } catch (StorageQueryException | StorageTransactionLogicException e) {
-            Logging.error(main, "Error while fetching refresh token key", false, e);
+            Logging.error(main, appIdentifier.getAsPublicTenantIdentifier(), "Error while fetching refresh token key", false, e);
         }
     }
 
-    public static void init(Main main) {
-        RefreshTokenKey instance = (RefreshTokenKey) main.getResourceDistributor().getResource(RESOURCE_KEY);
-        if (instance != null) {
-            return;
-        }
-        main.getResourceDistributor().setResource(RESOURCE_KEY, new RefreshTokenKey(main));
+    public static RefreshTokenKey getInstance(AppIdentifier appIdentifier, Main main)
+            throws TenantOrAppNotFoundException {
+        return (RefreshTokenKey) main.getResourceDistributor()
+                .getResource(appIdentifier, RESOURCE_KEY);
     }
 
+    @TestOnly
     public static RefreshTokenKey getInstance(Main main) {
-        RefreshTokenKey instance = (RefreshTokenKey) main.getResourceDistributor().getResource(RESOURCE_KEY);
-        if (instance == null) {
-            init(main);
+        try {
+            return getInstance(new AppIdentifier(null, null), main);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new IllegalStateException(e);
         }
-        return (RefreshTokenKey) main.getResourceDistributor().getResource(RESOURCE_KEY);
     }
 
-    public String getKey() throws StorageQueryException, StorageTransactionLogicException {
+    public static void loadForAllTenants(Main main, List<AppIdentifier> apps, List<TenantIdentifier> tenantsThatChanged) {
+        try {
+            main.getResourceDistributor().withResourceDistributorLock(() -> {
+                Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingResources =
+                        main.getResourceDistributor()
+                                .getAllResourcesWithResourceKey(RESOURCE_KEY);
+                main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
+                for (AppIdentifier app : apps) {
+                    ResourceDistributor.SingletonResource resource = existingResources.get(
+                            new ResourceDistributor.KeyClass(app, RESOURCE_KEY));
+                    if (resource != null && !tenantsThatChanged.contains(app.getAsPublicTenantIdentifier())) {
+                        main.getResourceDistributor().setResource(app, RESOURCE_KEY,
+                                resource);
+                    } else {
+                        try {
+                            main.getResourceDistributor()
+                                    .setResource(app, RESOURCE_KEY,
+                                            new RefreshTokenKey(app, main));
+                        } catch (TenantOrAppNotFoundException e) {
+                            throw new IllegalStateException(e);
+                        }
+                    }
+                }
+                return null;
+            });
+        } catch (ResourceDistributor.FuncException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public String getKey() throws StorageQueryException, StorageTransactionLogicException,
+            TenantOrAppNotFoundException {
         if (this.key == null) {
             this.key = maybeGenerateNewKeyAndUpdateInDb();
         }
@@ -73,35 +112,48 @@ public class RefreshTokenKey extends ResourceDistributor.SingletonResource {
         return this.key;
     }
 
-    private String maybeGenerateNewKeyAndUpdateInDb() throws StorageQueryException, StorageTransactionLogicException {
-        SessionStorage storage = StorageLayer.getSessionStorage(main);
+    private String maybeGenerateNewKeyAndUpdateInDb()
+            throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException {
+        SessionStorage storage = (SessionStorage) StorageLayer.getStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main);
 
         if (storage.getType() == STORAGE_TYPE.SQL) {
 
             SessionSQLStorage sqlStorage = (SessionSQLStorage) storage;
 
-            // start transaction
-            return sqlStorage.startTransaction(con -> {
-                String key = null;
-                KeyValueInfo keyFromStorage = sqlStorage.getRefreshTokenSigningKey_Transaction(con);
-                if (keyFromStorage != null) {
-                    key = keyFromStorage.value;
-                }
-
-                if (key == null) {
-                    try {
-                        key = Utils.generateNewSigningKey();
-                    } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
-                        throw new StorageTransactionLogicException(e);
+            try {
+                // start transaction
+                return sqlStorage.startTransaction(con -> {
+                    String key = null;
+                    KeyValueInfo keyFromStorage = sqlStorage.getRefreshTokenSigningKey_Transaction(appIdentifier, con);
+                    if (keyFromStorage != null) {
+                        key = keyFromStorage.value;
                     }
-                    sqlStorage.setRefreshTokenSigningKey_Transaction(con,
-                            new KeyValueInfo(key, System.currentTimeMillis()));
+
+                    if (key == null) {
+                        try {
+                            key = Utils.generateNewSigningKey();
+                        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+                            throw new StorageTransactionLogicException(e);
+                        }
+                        try {
+                            sqlStorage.setRefreshTokenSigningKey_Transaction(appIdentifier, con,
+                                    new KeyValueInfo(key, System.currentTimeMillis()));
+                        } catch (TenantOrAppNotFoundException e) {
+                            throw new StorageTransactionLogicException(e);
+                        }
+                    }
+
+                    sqlStorage.commitTransaction(con);
+                    return key;
+
+                });
+            } catch (StorageTransactionLogicException e) {
+                if (e.actualException instanceof TenantOrAppNotFoundException) {
+                    throw (TenantOrAppNotFoundException) e.actualException;
                 }
+                throw e;
+            }
 
-                sqlStorage.commitTransaction(con);
-                return key;
-
-            });
         } else if (storage.getType() == STORAGE_TYPE.NOSQL_1) {
             SessionNoSQLStorage_1 noSQLStorage = (SessionNoSQLStorage_1) storage;
 

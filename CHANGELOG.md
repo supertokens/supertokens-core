@@ -7,6 +7,1407 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+## [6.0.0] - 2023-06-02
+
+### Changes
+
+- Modifies the `/recipe/dashboard/session/verify` API to include the user's email in the response
+- Support for multitenancy
+  - New APIs to manage apps and tenants
+    - `/recipe/multitenancy/connectionuridomain` PUT
+    - `/recipe/multitenancy/connectionuridomain/remove` POST
+    - `/recipe/multitenancy/connectionuridomain/list` GET
+    - `/recipe/multitenancy/app` PUT
+    - `/recipe/multitenancy/app/remove` POST
+    - `/recipe/multitenancy/app/list` GET
+    - `/appid-<appid>/recipe/multitenancy/tenant` PUT
+    - `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant` GET
+    - `/appid-<appid>/recipe/multitenancy/tenant/remove` POST
+    - `/appid-<appid>/recipe/multitenancy/tenant/list` GET
+    - `/appid-<appid>/recipe/multitenancy/config/thirdparty` PUT
+    - `/appid-<appid>/recipe/multitenancy/config/thirdparty/remove` POST
+    - `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant/user` POST
+    - `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant/user/remove` POST
+  - API paths can be prefixed with `/appid-<appid>/<tenantid>` to perform app or tenant specific operations.
+
+### Migration steps for SQL
+
+<details>
+
+<summary>If using PostgreSQL</summary>
+
+#### Run the following SQL script
+
+```sql
+-- General Tables
+
+CREATE TABLE IF NOT EXISTS apps  (
+  app_id VARCHAR(64) NOT NULL DEFAULT 'public',
+  created_at_time BIGINT,
+  CONSTRAINT apps_pkey PRIMARY KEY(app_id)
+);
+
+INSERT INTO apps (app_id, created_at_time) 
+  VALUES ('public', 0);
+
+------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS tenants (
+  app_id VARCHAR(64) NOT NULL DEFAULT 'public',
+  tenant_id VARCHAR(64) NOT NULL DEFAULT 'public',
+  created_at_time BIGINT ,
+  CONSTRAINT tenants_pkey
+    PRIMARY KEY (app_id, tenant_id),
+  CONSTRAINT tenants_app_id_fkey FOREIGN KEY(app_id)
+    REFERENCES apps (app_id) ON DELETE CASCADE
+);
+
+INSERT INTO tenants (app_id, tenant_id, created_at_time) 
+  VALUES ('public', 'public', 0);
+
+------------------------------------------------------------
+
+ALTER TABLE key_value
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public',
+  ADD COLUMN tenant_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE key_value
+  DROP CONSTRAINT key_value_pkey;
+
+ALTER TABLE key_value
+  ADD CONSTRAINT key_value_pkey 
+    PRIMARY KEY (app_id, tenant_id, name);
+
+ALTER TABLE key_value
+  ADD CONSTRAINT key_value_tenant_id_fkey 
+    FOREIGN KEY (app_id, tenant_id)
+    REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE;
+
+------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS app_id_to_user_id (
+  app_id VARCHAR(64) NOT NULL DEFAULT 'public',
+  user_id CHAR(36) NOT NULL,
+  recipe_id VARCHAR(128) NOT NULL,
+  CONSTRAINT app_id_to_user_id_pkey
+    PRIMARY KEY (app_id, user_id),
+  CONSTRAINT app_id_to_user_id_app_id_fkey
+    FOREIGN KEY(app_id) REFERENCES apps (app_id) ON DELETE CASCADE
+);
+
+INSERT INTO app_id_to_user_id (user_id, recipe_id) 
+  SELECT user_id, recipe_id
+  FROM all_auth_recipe_users;
+
+------------------------------------------------------------
+
+ALTER TABLE all_auth_recipe_users
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public',
+  ADD COLUMN tenant_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE all_auth_recipe_users
+  DROP CONSTRAINT all_auth_recipe_users_pkey CASCADE;
+
+ALTER TABLE all_auth_recipe_users
+  ADD CONSTRAINT all_auth_recipe_users_pkey 
+    PRIMARY KEY (app_id, tenant_id, user_id);
+
+ALTER TABLE all_auth_recipe_users
+  ADD CONSTRAINT all_auth_recipe_users_tenant_id_fkey 
+    FOREIGN KEY (app_id, tenant_id)
+    REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE;
+
+ALTER TABLE all_auth_recipe_users
+  ADD CONSTRAINT all_auth_recipe_users_user_id_fkey 
+    FOREIGN KEY (app_id, user_id)
+    REFERENCES app_id_to_user_id (app_id, user_id) ON DELETE CASCADE;
+
+DROP INDEX all_auth_recipe_users_pagination_index;
+
+CREATE INDEX all_auth_recipe_users_pagination_index ON all_auth_recipe_users (time_joined DESC, user_id DESC, tenant_id DESC, app_id DESC);
+
+-- Multitenancy
+
+CREATE TABLE IF NOT EXISTS tenant_configs (
+  connection_uri_domain VARCHAR(256) DEFAULT '',
+  app_id VARCHAR(64) DEFAULT 'public',
+  tenant_id VARCHAR(64) DEFAULT 'public',
+  core_config TEXT,
+  email_password_enabled BOOLEAN,
+  passwordless_enabled BOOLEAN,
+  third_party_enabled BOOLEAN,
+  CONSTRAINT tenant_configs_pkey
+    PRIMARY KEY (connection_uri_domain, app_id, tenant_id)
+);
+
+------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS tenant_thirdparty_providers (
+  connection_uri_domain VARCHAR(256) DEFAULT '',
+  app_id VARCHAR(64) DEFAULT 'public',
+  tenant_id VARCHAR(64) DEFAULT 'public',
+  third_party_id VARCHAR(28) NOT NULL,
+  name VARCHAR(64),
+  authorization_endpoint TEXT,
+  authorization_endpoint_query_params TEXT,
+  token_endpoint TEXT,
+  token_endpoint_body_params TEXT,
+  user_info_endpoint TEXT,
+  user_info_endpoint_query_params TEXT,
+  user_info_endpoint_headers TEXT,
+  jwks_uri TEXT,
+  oidc_discovery_endpoint TEXT,
+  require_email BOOLEAN,
+  user_info_map_from_id_token_payload_user_id VARCHAR(64),
+  user_info_map_from_id_token_payload_email VARCHAR(64),
+  user_info_map_from_id_token_payload_email_verified VARCHAR(64),
+  user_info_map_from_user_info_endpoint_user_id VARCHAR(64),
+  user_info_map_from_user_info_endpoint_email VARCHAR(64),
+  user_info_map_from_user_info_endpoint_email_verified VARCHAR(64),
+  CONSTRAINT tenant_thirdparty_providers_pkey
+    PRIMARY KEY (connection_uri_domain, app_id, tenant_id, third_party_id),
+  CONSTRAINT tenant_thirdparty_providers_tenant_id_fkey
+    FOREIGN KEY(connection_uri_domain, app_id, tenant_id)
+    REFERENCES tenant_configs (connection_uri_domain, app_id, tenant_id) ON DELETE CASCADE
+);
+
+------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS tenant_thirdparty_provider_clients (
+  connection_uri_domain VARCHAR(256) DEFAULT '',
+  app_id VARCHAR(64) DEFAULT 'public',
+  tenant_id VARCHAR(64) DEFAULT 'public',
+  third_party_id VARCHAR(28) NOT NULL,
+  client_type VARCHAR(64) NOT NULL DEFAULT '',
+  client_id VARCHAR(256) NOT NULL,
+  client_secret TEXT,
+  scope VARCHAR(128)[],
+  force_pkce BOOLEAN,
+  additional_config TEXT,
+  CONSTRAINT tenant_thirdparty_provider_clients_pkey
+    PRIMARY KEY (connection_uri_domain, app_id, tenant_id, third_party_id, client_type),
+  CONSTRAINT tenant_thirdparty_provider_clients_third_party_id_fkey
+    FOREIGN KEY (connection_uri_domain, app_id, tenant_id, third_party_id)
+    REFERENCES tenant_thirdparty_providers (connection_uri_domain, app_id, tenant_id, third_party_id) ON DELETE CASCADE
+);
+
+-- Session
+
+ALTER TABLE session_info
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public',
+  ADD COLUMN tenant_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE session_info
+  DROP CONSTRAINT session_info_pkey CASCADE;
+
+ALTER TABLE session_info
+  ADD CONSTRAINT session_info_pkey 
+    PRIMARY KEY (app_id, tenant_id, session_handle);
+
+ALTER TABLE session_info
+  ADD CONSTRAINT session_info_tenant_id_fkey 
+    FOREIGN KEY (app_id, tenant_id)
+    REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE;
+
+CREATE INDEX session_expiry_index ON session_info (expires_at);
+
+------------------------------------------------------------
+
+ALTER TABLE session_access_token_signing_keys
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE session_access_token_signing_keys
+  DROP CONSTRAINT session_access_token_signing_keys_pkey CASCADE;
+
+ALTER TABLE session_access_token_signing_keys
+  ADD CONSTRAINT session_access_token_signing_keys_pkey 
+    PRIMARY KEY (app_id, created_at_time);
+
+ALTER TABLE session_access_token_signing_keys
+  ADD CONSTRAINT session_access_token_signing_keys_app_id_fkey 
+    FOREIGN KEY (app_id)
+    REFERENCES apps (app_id) ON DELETE CASCADE;
+
+-- JWT
+
+ALTER TABLE jwt_signing_keys
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE jwt_signing_keys
+  DROP CONSTRAINT jwt_signing_keys_pkey CASCADE;
+
+ALTER TABLE jwt_signing_keys
+  ADD CONSTRAINT jwt_signing_keys_pkey 
+    PRIMARY KEY (app_id, key_id);
+
+ALTER TABLE jwt_signing_keys
+  ADD CONSTRAINT jwt_signing_keys_app_id_fkey 
+    FOREIGN KEY (app_id)
+    REFERENCES apps (app_id) ON DELETE CASCADE;
+
+-- EmailVerification
+
+ALTER TABLE emailverification_verified_emails
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE emailverification_verified_emails
+  DROP CONSTRAINT emailverification_verified_emails_pkey CASCADE;
+
+ALTER TABLE emailverification_verified_emails
+  ADD CONSTRAINT emailverification_verified_emails_pkey 
+    PRIMARY KEY (app_id, user_id, email);
+
+ALTER TABLE emailverification_verified_emails
+  ADD CONSTRAINT emailverification_verified_emails_app_id_fkey 
+    FOREIGN KEY (app_id)
+    REFERENCES apps (app_id) ON DELETE CASCADE;
+
+------------------------------------------------------------
+
+ALTER TABLE emailverification_tokens
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public',
+  ADD COLUMN tenant_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE emailverification_tokens
+  DROP CONSTRAINT emailverification_tokens_pkey CASCADE;
+
+ALTER TABLE emailverification_tokens
+  ADD CONSTRAINT emailverification_tokens_pkey 
+    PRIMARY KEY (app_id, tenant_id, user_id, email, token);
+
+ALTER TABLE emailverification_tokens
+  ADD CONSTRAINT emailverification_tokens_tenant_id_fkey 
+    FOREIGN KEY (app_id, tenant_id)
+    REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE;
+
+
+-- EmailPassword
+
+ALTER TABLE emailpassword_users
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE emailpassword_users
+  DROP CONSTRAINT emailpassword_users_pkey CASCADE;
+
+ALTER TABLE emailpassword_users
+  DROP CONSTRAINT emailpassword_users_email_key CASCADE;
+
+ALTER TABLE emailpassword_users
+  ADD CONSTRAINT emailpassword_users_pkey 
+    PRIMARY KEY (app_id, user_id);
+
+ALTER TABLE emailpassword_users
+  ADD CONSTRAINT emailpassword_users_user_id_fkey 
+    FOREIGN KEY (app_id, user_id)
+    REFERENCES app_id_to_user_id (app_id, user_id) ON DELETE CASCADE;
+
+------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS emailpassword_user_to_tenant (
+  app_id VARCHAR(64) DEFAULT 'public',
+  tenant_id VARCHAR(64) DEFAULT 'public',
+  user_id CHAR(36) NOT NULL,
+  email VARCHAR(256) NOT NULL,
+  CONSTRAINT emailpassword_user_to_tenant_email_key
+    UNIQUE (app_id, tenant_id, email),
+  CONSTRAINT emailpassword_user_to_tenant_pkey
+    PRIMARY KEY (app_id, tenant_id, user_id),
+  CONSTRAINT emailpassword_user_to_tenant_user_id_fkey
+    FOREIGN KEY (app_id, tenant_id, user_id)
+    REFERENCES all_auth_recipe_users (app_id, tenant_id, user_id) ON DELETE CASCADE
+);
+
+INSERT INTO emailpassword_user_to_tenant (user_id, email)
+  SELECT user_id, email FROM emailpassword_users;
+
+------------------------------------------------------------
+
+ALTER TABLE emailpassword_pswd_reset_tokens
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE emailpassword_pswd_reset_tokens
+  DROP CONSTRAINT emailpassword_pswd_reset_tokens_pkey CASCADE;
+
+ALTER TABLE emailpassword_pswd_reset_tokens
+  ADD CONSTRAINT emailpassword_pswd_reset_tokens_pkey 
+    PRIMARY KEY (app_id, user_id, token);
+
+ALTER TABLE emailpassword_pswd_reset_tokens
+  DROP CONSTRAINT IF EXISTS emailpassword_pswd_reset_tokens_user_id_fkey;
+
+ALTER TABLE emailpassword_pswd_reset_tokens
+  ADD CONSTRAINT emailpassword_pswd_reset_tokens_user_id_fkey 
+    FOREIGN KEY (app_id, user_id)
+    REFERENCES emailpassword_users (app_id, user_id) ON DELETE CASCADE;
+
+-- Passwordless
+
+ALTER TABLE passwordless_users
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE passwordless_users
+  DROP CONSTRAINT passwordless_users_pkey CASCADE;
+
+ALTER TABLE passwordless_users
+  ADD CONSTRAINT passwordless_users_pkey 
+    PRIMARY KEY (app_id, user_id);
+
+ALTER TABLE passwordless_users
+  DROP CONSTRAINT passwordless_users_email_key;
+
+ALTER TABLE passwordless_users
+  DROP CONSTRAINT passwordless_users_phone_number_key;
+
+ALTER TABLE passwordless_users
+  ADD CONSTRAINT passwordless_users_user_id_fkey 
+    FOREIGN KEY (app_id, user_id)
+    REFERENCES app_id_to_user_id (app_id, user_id) ON DELETE CASCADE;
+
+------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS passwordless_user_to_tenant (
+  app_id VARCHAR(64) DEFAULT 'public',
+  tenant_id VARCHAR(64) DEFAULT 'public',
+  user_id CHAR(36) NOT NULL,
+  email VARCHAR(256),
+  phone_number VARCHAR(256),
+  CONSTRAINT passwordless_user_to_tenant_email_key
+    UNIQUE (app_id, tenant_id, email),
+  CONSTRAINT passwordless_user_to_tenant_phone_number_key
+    UNIQUE (app_id, tenant_id, phone_number),
+  CONSTRAINT passwordless_user_to_tenant_pkey
+    PRIMARY KEY (app_id, tenant_id, user_id),
+  CONSTRAINT passwordless_user_to_tenant_user_id_fkey
+    FOREIGN KEY (app_id, tenant_id, user_id)
+    REFERENCES all_auth_recipe_users (app_id, tenant_id, user_id) ON DELETE CASCADE
+);
+
+INSERT INTO passwordless_user_to_tenant (user_id, email, phone_number)
+  SELECT user_id, email, phone_number FROM passwordless_users;
+
+------------------------------------------------------------
+
+ALTER TABLE passwordless_devices
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public',
+  ADD COLUMN tenant_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE passwordless_devices
+  DROP CONSTRAINT passwordless_devices_pkey CASCADE;
+
+ALTER TABLE passwordless_devices
+  ADD CONSTRAINT passwordless_devices_pkey 
+    PRIMARY KEY (app_id, tenant_id, device_id_hash);
+
+ALTER TABLE passwordless_devices
+  ADD CONSTRAINT passwordless_devices_tenant_id_fkey 
+    FOREIGN KEY (app_id, tenant_id)
+    REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE;
+
+DROP INDEX passwordless_devices_email_index;
+
+CREATE INDEX passwordless_devices_email_index ON passwordless_devices (app_id, tenant_id, email);
+
+DROP INDEX passwordless_devices_phone_number_index;
+
+CREATE INDEX passwordless_devices_phone_number_index ON passwordless_devices (app_id, tenant_id, phone_number);
+
+------------------------------------------------------------
+
+ALTER TABLE passwordless_codes
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public',
+  ADD COLUMN tenant_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE passwordless_codes
+  DROP CONSTRAINT passwordless_codes_pkey CASCADE;
+
+ALTER TABLE passwordless_codes
+  ADD CONSTRAINT passwordless_codes_pkey 
+    PRIMARY KEY (app_id, tenant_id, code_id);
+
+ALTER TABLE passwordless_codes
+  DROP CONSTRAINT IF EXISTS passwordless_codes_device_id_hash_fkey;
+
+ALTER TABLE passwordless_codes
+  ADD CONSTRAINT passwordless_codes_device_id_hash_fkey 
+    FOREIGN KEY (app_id, tenant_id, device_id_hash)
+    REFERENCES passwordless_devices (app_id, tenant_id, device_id_hash) ON DELETE CASCADE;
+
+ALTER TABLE passwordless_codes
+  DROP CONSTRAINT passwordless_codes_link_code_hash_key;
+
+ALTER TABLE passwordless_codes
+  ADD CONSTRAINT passwordless_codes_link_code_hash_key
+    UNIQUE (app_id, tenant_id, link_code_hash);
+
+DROP INDEX passwordless_codes_created_at_index;
+
+CREATE INDEX passwordless_codes_created_at_index ON passwordless_codes (app_id, tenant_id, created_at);
+
+DROP INDEX passwordless_codes_device_id_hash_index;
+CREATE INDEX passwordless_codes_device_id_hash_index ON passwordless_codes (app_id, tenant_id, device_id_hash);
+
+-- ThirdParty
+
+ALTER TABLE thirdparty_users
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE thirdparty_users
+  DROP CONSTRAINT thirdparty_users_pkey CASCADE;
+
+ALTER TABLE thirdparty_users
+  DROP CONSTRAINT thirdparty_users_user_id_key CASCADE;
+
+ALTER TABLE thirdparty_users
+  ADD CONSTRAINT thirdparty_users_pkey 
+    PRIMARY KEY (app_id, user_id);
+
+ALTER TABLE thirdparty_users
+  ADD CONSTRAINT thirdparty_users_user_id_fkey 
+    FOREIGN KEY (app_id, user_id)
+    REFERENCES app_id_to_user_id (app_id, user_id) ON DELETE CASCADE;
+
+DROP INDEX IF EXISTS thirdparty_users_thirdparty_user_id_index;
+
+CREATE INDEX thirdparty_users_thirdparty_user_id_index ON thirdparty_users (app_id, third_party_id, third_party_user_id);
+
+DROP INDEX IF EXISTS thirdparty_users_email_index;
+
+CREATE INDEX thirdparty_users_email_index ON thirdparty_users (app_id, email);
+
+------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS thirdparty_user_to_tenant (
+  app_id VARCHAR(64) DEFAULT 'public',
+  tenant_id VARCHAR(64) DEFAULT 'public',
+  user_id CHAR(36) NOT NULL,
+  third_party_id VARCHAR(28) NOT NULL,
+  third_party_user_id VARCHAR(256) NOT NULL,
+  CONSTRAINT thirdparty_user_to_tenant_third_party_user_id_key
+    UNIQUE (app_id, tenant_id, third_party_id, third_party_user_id),
+  CONSTRAINT thirdparty_user_to_tenant_pkey
+    PRIMARY KEY (app_id, tenant_id, user_id),
+  CONSTRAINT thirdparty_user_to_tenant_user_id_fkey
+    FOREIGN KEY (app_id, tenant_id, user_id)
+    REFERENCES all_auth_recipe_users (app_id, tenant_id, user_id) ON DELETE CASCADE
+);
+
+INSERT INTO thirdparty_user_to_tenant (user_id, third_party_id, third_party_user_id)
+  SELECT user_id, third_party_id, third_party_user_id FROM thirdparty_users;
+
+-- UserIdMapping
+
+ALTER TABLE userid_mapping
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE userid_mapping
+  DROP CONSTRAINT userid_mapping_pkey CASCADE;
+
+ALTER TABLE userid_mapping
+  ADD CONSTRAINT userid_mapping_pkey 
+    PRIMARY KEY (app_id, supertokens_user_id, external_user_id);
+
+ALTER TABLE userid_mapping
+  DROP CONSTRAINT userid_mapping_supertokens_user_id_key;
+
+ALTER TABLE userid_mapping
+  ADD CONSTRAINT userid_mapping_supertokens_user_id_key
+    UNIQUE (app_id, supertokens_user_id);
+
+ALTER TABLE userid_mapping
+  DROP CONSTRAINT userid_mapping_external_user_id_key;
+
+ALTER TABLE userid_mapping
+  ADD CONSTRAINT userid_mapping_external_user_id_key
+    UNIQUE (app_id, external_user_id);
+
+ALTER TABLE userid_mapping
+  DROP CONSTRAINT IF EXISTS userid_mapping_supertokens_user_id_fkey;
+
+ALTER TABLE userid_mapping
+  ADD CONSTRAINT userid_mapping_supertokens_user_id_fkey 
+    FOREIGN KEY (app_id, supertokens_user_id)
+    REFERENCES app_id_to_user_id (app_id, user_id) ON DELETE CASCADE;
+
+-- UserRoles
+
+ALTER TABLE roles
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE roles
+  DROP CONSTRAINT roles_pkey CASCADE;
+
+ALTER TABLE roles
+  ADD CONSTRAINT roles_pkey 
+    PRIMARY KEY (app_id, role);
+
+ALTER TABLE roles
+  ADD CONSTRAINT roles_app_id_fkey 
+    FOREIGN KEY (app_id)
+    REFERENCES apps (app_id) ON DELETE CASCADE;
+
+------------------------------------------------------------
+
+ALTER TABLE role_permissions
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE role_permissions
+  DROP CONSTRAINT role_permissions_pkey CASCADE;
+
+ALTER TABLE role_permissions
+  ADD CONSTRAINT role_permissions_pkey 
+    PRIMARY KEY (app_id, role, permission);
+
+ALTER TABLE role_permissions
+  DROP CONSTRAINT IF EXISTS role_permissions_role_fkey;
+
+ALTER TABLE role_permissions
+  ADD CONSTRAINT role_permissions_role_fkey 
+    FOREIGN KEY (app_id, role)
+    REFERENCES roles (app_id, role) ON DELETE CASCADE;
+
+DROP INDEX role_permissions_permission_index;
+
+CREATE INDEX role_permissions_permission_index ON role_permissions (app_id, permission);
+
+------------------------------------------------------------
+
+ALTER TABLE user_roles
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public',
+  ADD COLUMN tenant_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE user_roles
+  DROP CONSTRAINT user_roles_pkey CASCADE;
+
+ALTER TABLE user_roles
+  ADD CONSTRAINT user_roles_pkey 
+    PRIMARY KEY (app_id, tenant_id, user_id, role);
+
+ALTER TABLE user_roles
+  ADD CONSTRAINT user_roles_tenant_id_fkey 
+    FOREIGN KEY (app_id, tenant_id)
+    REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE;
+
+ALTER TABLE user_roles
+  DROP CONSTRAINT IF EXISTS user_roles_role_fkey;
+
+ALTER TABLE user_roles
+  ADD CONSTRAINT user_roles_role_fkey 
+    FOREIGN KEY (app_id, role)
+    REFERENCES roles (app_id, role) ON DELETE CASCADE;
+
+DROP INDEX user_roles_role_index;
+
+CREATE INDEX user_roles_role_index ON user_roles (app_id, tenant_id, role);
+
+-- UserMetadata
+
+ALTER TABLE user_metadata
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE user_metadata
+  DROP CONSTRAINT user_metadata_pkey CASCADE;
+
+ALTER TABLE user_metadata
+  ADD CONSTRAINT user_metadata_pkey 
+    PRIMARY KEY (app_id, user_id);
+
+ALTER TABLE user_metadata
+  ADD CONSTRAINT user_metadata_app_id_fkey 
+    FOREIGN KEY (app_id)
+    REFERENCES apps (app_id) ON DELETE CASCADE;
+
+-- Dashboard
+
+ALTER TABLE dashboard_users
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE dashboard_users
+  DROP CONSTRAINT dashboard_users_pkey CASCADE;
+
+ALTER TABLE dashboard_users
+  ADD CONSTRAINT dashboard_users_pkey 
+    PRIMARY KEY (app_id, user_id);
+
+ALTER TABLE dashboard_users
+  DROP CONSTRAINT dashboard_users_email_key;
+
+ALTER TABLE dashboard_users
+  ADD CONSTRAINT dashboard_users_email_key
+    UNIQUE (app_id, email);
+
+ALTER TABLE dashboard_users
+  ADD CONSTRAINT dashboard_users_app_id_fkey 
+    FOREIGN KEY (app_id)
+    REFERENCES apps (app_id) ON DELETE CASCADE;
+
+------------------------------------------------------------
+
+ALTER TABLE dashboard_user_sessions
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE dashboard_user_sessions
+  DROP CONSTRAINT dashboard_user_sessions_pkey CASCADE;
+
+ALTER TABLE dashboard_user_sessions
+  ADD CONSTRAINT dashboard_user_sessions_pkey 
+    PRIMARY KEY (app_id, session_id);
+
+ALTER TABLE dashboard_user_sessions
+  DROP CONSTRAINT IF EXISTS dashboard_user_sessions_user_id_fkey;
+
+ALTER TABLE dashboard_user_sessions
+  ADD CONSTRAINT dashboard_user_sessions_user_id_fkey 
+    FOREIGN KEY (app_id, user_id)
+    REFERENCES dashboard_users (app_id, user_id) ON DELETE CASCADE;
+
+-- TOTP
+
+ALTER TABLE totp_users
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE totp_users
+  DROP CONSTRAINT totp_users_pkey CASCADE;
+
+ALTER TABLE totp_users
+  ADD CONSTRAINT totp_users_pkey 
+    PRIMARY KEY (app_id, user_id);
+
+ALTER TABLE totp_users
+  ADD CONSTRAINT totp_users_app_id_fkey 
+    FOREIGN KEY (app_id)
+    REFERENCES apps (app_id) ON DELETE CASCADE;
+
+------------------------------------------------------------
+
+ALTER TABLE totp_user_devices
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE totp_user_devices
+  DROP CONSTRAINT totp_user_devices_pkey;
+
+ALTER TABLE totp_user_devices
+  ADD CONSTRAINT totp_user_devices_pkey 
+    PRIMARY KEY (app_id, user_id, device_name);
+
+ALTER TABLE totp_user_devices
+  DROP CONSTRAINT IF EXISTS totp_user_devices_user_id_fkey;
+
+ALTER TABLE totp_user_devices
+  ADD CONSTRAINT totp_user_devices_user_id_fkey 
+    FOREIGN KEY (app_id, user_id)
+    REFERENCES totp_users (app_id, user_id) ON DELETE CASCADE;
+
+------------------------------------------------------------
+
+ALTER TABLE totp_used_codes
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public',
+  ADD COLUMN tenant_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE totp_used_codes
+  DROP CONSTRAINT totp_used_codes_pkey CASCADE;
+
+ALTER TABLE totp_used_codes
+  ADD CONSTRAINT totp_used_codes_pkey 
+    PRIMARY KEY (app_id, tenant_id, user_id, created_time_ms);
+
+ALTER TABLE totp_used_codes
+  DROP CONSTRAINT IF EXISTS totp_used_codes_user_id_fkey;
+
+ALTER TABLE totp_used_codes
+  ADD CONSTRAINT totp_used_codes_user_id_fkey 
+    FOREIGN KEY (app_id, user_id)
+    REFERENCES totp_users (app_id, user_id) ON DELETE CASCADE;
+
+ALTER TABLE totp_used_codes
+  ADD CONSTRAINT totp_used_codes_tenant_id_fkey 
+    FOREIGN KEY (app_id, tenant_id)
+    REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE;
+
+DROP INDEX totp_used_codes_expiry_time_ms_index;
+
+CREATE INDEX totp_used_codes_expiry_time_ms_index ON totp_used_codes (app_id, tenant_id, expiry_time_ms);
+
+-- ActiveUsers
+
+ALTER TABLE user_last_active
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE user_last_active
+  DROP CONSTRAINT user_last_active_pkey CASCADE;
+
+ALTER TABLE user_last_active
+  ADD CONSTRAINT user_last_active_pkey 
+    PRIMARY KEY (app_id, user_id);
+```
+
+</details>
+
+<details>
+
+<summary>If using MySQL</summary>
+
+#### Run the following SQL script
+
+```sql
+-- Drop Foreign keys
+
+ALTER TABLE emailpassword_pswd_reset_tokens
+  DROP FOREIGN KEY emailpassword_pswd_reset_tokens_ibfk_1;
+
+ALTER TABLE passwordless_codes
+  DROP FOREIGN KEY passwordless_codes_ibfk_1;
+
+ALTER TABLE userid_mapping
+  DROP FOREIGN KEY userid_mapping_ibfk_1;
+
+ALTER TABLE role_permissions
+  DROP FOREIGN KEY role_permissions_ibfk_1;
+
+ALTER TABLE user_roles
+  DROP FOREIGN KEY user_roles_ibfk_1;
+
+ALTER TABLE dashboard_user_sessions
+  DROP FOREIGN KEY dashboard_user_sessions_ibfk_1;
+
+ALTER TABLE totp_user_devices
+  DROP FOREIGN KEY totp_user_devices_ibfk_1;
+
+ALTER TABLE totp_used_codes
+  DROP FOREIGN KEY totp_used_codes_ibfk_1;
+
+-- General Tables
+
+CREATE TABLE IF NOT EXISTS apps  (
+  app_id VARCHAR(64) NOT NULL DEFAULT 'public',
+  created_at_time BIGINT UNSIGNED,
+  PRIMARY KEY(app_id)
+);
+
+INSERT INTO apps (app_id, created_at_time) 
+  VALUES ('public', 0);
+
+------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS tenants (
+  app_id VARCHAR(64) NOT NULL DEFAULT 'public',
+  tenant_id VARCHAR(64) NOT NULL DEFAULT 'public',
+  created_at_time BIGINT UNSIGNED,
+  PRIMARY KEY (app_id, tenant_id),
+  FOREIGN KEY(app_id)
+    REFERENCES apps (app_id) ON DELETE CASCADE
+);
+
+INSERT INTO tenants (app_id, tenant_id, created_at_time) 
+  VALUES ('public', 'public', 0);
+
+------------------------------------------------------------
+
+ALTER TABLE key_value
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public',
+  ADD COLUMN tenant_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE key_value
+  DROP PRIMARY KEY;
+
+ALTER TABLE key_value
+  ADD PRIMARY KEY (app_id, tenant_id, name);
+
+ALTER TABLE key_value
+  ADD FOREIGN KEY (app_id, tenant_id)
+    REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE;
+
+-- CREATE INDEX key_value_tenant_id_index ON key_value (app_id, tenant_id);
+
+------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS app_id_to_user_id (
+  app_id VARCHAR(64) NOT NULL DEFAULT 'public',
+  user_id CHAR(36) NOT NULL,
+  recipe_id VARCHAR(128) NOT NULL,
+  PRIMARY KEY (app_id, user_id),
+  FOREIGN KEY(app_id) REFERENCES apps (app_id) ON DELETE CASCADE
+);
+
+INSERT INTO app_id_to_user_id (user_id, recipe_id) 
+  SELECT user_id, recipe_id
+  FROM all_auth_recipe_users;
+
+------------------------------------------------------------
+
+ALTER TABLE all_auth_recipe_users
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public',
+  ADD COLUMN tenant_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE all_auth_recipe_users
+  DROP PRIMARY KEY;
+
+ALTER TABLE all_auth_recipe_users
+  ADD PRIMARY KEY (app_id, tenant_id, user_id);
+
+ALTER TABLE all_auth_recipe_users
+  ADD FOREIGN KEY (app_id, tenant_id)
+    REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE;
+
+ALTER TABLE all_auth_recipe_users
+  ADD FOREIGN KEY (app_id, user_id)
+    REFERENCES app_id_to_user_id (app_id, user_id) ON DELETE CASCADE;
+
+ALTER TABLE all_auth_recipe_users
+  DROP INDEX all_auth_recipe_users_pagination_index;
+
+CREATE INDEX all_auth_recipe_users_pagination_index ON all_auth_recipe_users (time_joined DESC, user_id DESC, tenant_id DESC, app_id DESC);
+
+-- Multitenancy
+
+CREATE TABLE IF NOT EXISTS tenant_configs (
+  connection_uri_domain VARCHAR(256) DEFAULT '',
+  app_id VARCHAR(64) DEFAULT 'public',
+  tenant_id VARCHAR(64) DEFAULT 'public',
+  core_config TEXT,
+  email_password_enabled BOOLEAN,
+  passwordless_enabled BOOLEAN,
+  third_party_enabled BOOLEAN,
+  PRIMARY KEY (connection_uri_domain, app_id, tenant_id)
+);
+
+------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS tenant_thirdparty_providers (
+  connection_uri_domain VARCHAR(256) DEFAULT '',
+  app_id VARCHAR(64) DEFAULT 'public',
+  tenant_id VARCHAR(64) DEFAULT 'public',
+  third_party_id VARCHAR(28) NOT NULL,
+  name VARCHAR(64),
+  authorization_endpoint TEXT,
+  authorization_endpoint_query_params TEXT,
+  token_endpoint TEXT,
+  token_endpoint_body_params TEXT,
+  user_info_endpoint TEXT,
+  user_info_endpoint_query_params TEXT,
+  user_info_endpoint_headers TEXT,
+  jwks_uri TEXT,
+  oidc_discovery_endpoint TEXT,
+  require_email BOOLEAN,
+  user_info_map_from_id_token_payload_user_id VARCHAR(64),
+  user_info_map_from_id_token_payload_email VARCHAR(64),
+  user_info_map_from_id_token_payload_email_verified VARCHAR(64),
+  user_info_map_from_user_info_endpoint_user_id VARCHAR(64),
+  user_info_map_from_user_info_endpoint_email VARCHAR(64),
+  user_info_map_from_user_info_endpoint_email_verified VARCHAR(64),
+  PRIMARY KEY (connection_uri_domain, app_id, tenant_id, third_party_id),
+  FOREIGN KEY(connection_uri_domain, app_id, tenant_id)
+    REFERENCES tenant_configs (connection_uri_domain, app_id, tenant_id) ON DELETE CASCADE
+);
+
+------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS tenant_thirdparty_provider_clients (
+  connection_uri_domain VARCHAR(256) DEFAULT '',
+  app_id VARCHAR(64) DEFAULT 'public',
+  tenant_id VARCHAR(64) DEFAULT 'public',
+  third_party_id VARCHAR(28) NOT NULL,
+  client_type VARCHAR(64) NOT NULL DEFAULT '',
+  client_id VARCHAR(256) NOT NULL,
+  client_secret TEXT,
+  scope TEXT,
+  force_pkce BOOLEAN,
+  additional_config TEXT,
+  PRIMARY KEY (connection_uri_domain, app_id, tenant_id, third_party_id, client_type),
+  FOREIGN KEY (connection_uri_domain, app_id, tenant_id, third_party_id)
+    REFERENCES tenant_thirdparty_providers (connection_uri_domain, app_id, tenant_id, third_party_id) ON DELETE CASCADE
+);
+
+
+-- Session
+
+ALTER TABLE session_info
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public',
+  ADD COLUMN tenant_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE session_info
+  DROP PRIMARY KEY;
+
+ALTER TABLE session_info
+  ADD PRIMARY KEY (app_id, tenant_id, session_handle);
+
+ALTER TABLE session_info
+  ADD FOREIGN KEY (app_id, tenant_id)
+    REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE;
+
+CREATE INDEX session_expiry_index ON session_info (expires_at);
+
+------------------------------------------------------------
+
+ALTER TABLE session_access_token_signing_keys
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE session_access_token_signing_keys
+  DROP PRIMARY KEY;
+
+ALTER TABLE session_access_token_signing_keys
+  ADD PRIMARY KEY (app_id, created_at_time);
+
+ALTER TABLE session_access_token_signing_keys
+  ADD FOREIGN KEY (app_id)
+    REFERENCES apps (app_id) ON DELETE CASCADE;
+
+-- JWT
+
+ALTER TABLE jwt_signing_keys
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE jwt_signing_keys
+  DROP PRIMARY KEY;
+
+ALTER TABLE jwt_signing_keys
+  ADD PRIMARY KEY (app_id, key_id);
+
+ALTER TABLE jwt_signing_keys
+  ADD FOREIGN KEY (app_id)
+    REFERENCES apps (app_id) ON DELETE CASCADE;
+
+-- EmailVerification
+
+ALTER TABLE emailverification_verified_emails
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE emailverification_verified_emails
+  DROP PRIMARY KEY;
+
+ALTER TABLE emailverification_verified_emails
+  ADD PRIMARY KEY (app_id, user_id, email);
+
+ALTER TABLE emailverification_verified_emails
+  ADD FOREIGN KEY (app_id)
+    REFERENCES apps (app_id) ON DELETE CASCADE;
+
+------------------------------------------------------------
+
+ALTER TABLE emailverification_tokens
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public',
+  ADD COLUMN tenant_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE emailverification_tokens
+  DROP PRIMARY KEY;
+
+ALTER TABLE emailverification_tokens
+  ADD PRIMARY KEY (app_id, tenant_id, user_id, email, token);
+
+ALTER TABLE emailverification_tokens
+  ADD FOREIGN KEY (app_id, tenant_id)
+    REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE;
+
+-- EmailPassword
+
+ALTER TABLE emailpassword_users
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE emailpassword_users
+  DROP PRIMARY KEY;
+
+ALTER TABLE emailpassword_users
+  DROP INDEX email;
+
+ALTER TABLE emailpassword_users
+  ADD PRIMARY KEY (app_id, user_id);
+
+ALTER TABLE emailpassword_users
+  ADD FOREIGN KEY (app_id, user_id)
+    REFERENCES app_id_to_user_id (app_id, user_id) ON DELETE CASCADE;
+
+-- ------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS emailpassword_user_to_tenant (
+  app_id VARCHAR(64) DEFAULT 'public',
+  tenant_id VARCHAR(64) DEFAULT 'public',
+  user_id CHAR(36) NOT NULL,
+  email VARCHAR(256) NOT NULL,
+  CONSTRAINT email
+    UNIQUE (app_id, tenant_id, email),
+  PRIMARY KEY (app_id, tenant_id, user_id),
+  CONSTRAINT FOREIGN KEY (app_id, tenant_id, user_id)
+    REFERENCES all_auth_recipe_users (app_id, tenant_id, user_id) ON DELETE CASCADE
+);
+
+INSERT INTO emailpassword_user_to_tenant (user_id, email)
+  SELECT user_id, email FROM emailpassword_users;
+
+------------------------------------------------------------
+
+ALTER TABLE emailpassword_pswd_reset_tokens
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE emailpassword_pswd_reset_tokens
+  DROP PRIMARY KEY;
+
+ALTER TABLE emailpassword_pswd_reset_tokens
+  ADD PRIMARY KEY (app_id, user_id, token);
+
+ALTER TABLE emailpassword_pswd_reset_tokens
+  ADD FOREIGN KEY (app_id, user_id)
+    REFERENCES emailpassword_users (app_id, user_id) ON DELETE CASCADE;
+
+-- Passwordless
+
+ALTER TABLE passwordless_users
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE passwordless_users
+  DROP PRIMARY KEY;
+
+ALTER TABLE passwordless_users
+  ADD PRIMARY KEY (app_id, user_id);
+
+ALTER TABLE passwordless_users
+  DROP INDEX email;
+
+ALTER TABLE passwordless_users
+  DROP INDEX phone_number;
+
+ALTER TABLE passwordless_users
+  ADD FOREIGN KEY (app_id, user_id)
+    REFERENCES app_id_to_user_id (app_id, user_id) ON DELETE CASCADE;
+
+------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS passwordless_user_to_tenant (
+  app_id VARCHAR(64) DEFAULT 'public',
+  tenant_id VARCHAR(64) DEFAULT 'public',
+  user_id CHAR(36) NOT NULL,
+  email VARCHAR(256),
+  phone_number VARCHAR(256),
+  CONSTRAINT email
+    UNIQUE (app_id, tenant_id, email),
+  CONSTRAINT phone_number
+    UNIQUE (app_id, tenant_id, phone_number),
+  PRIMARY KEY (app_id, tenant_id, user_id),
+  FOREIGN KEY (app_id, tenant_id, user_id)
+    REFERENCES all_auth_recipe_users (app_id, tenant_id, user_id) ON DELETE CASCADE
+);
+
+INSERT INTO passwordless_user_to_tenant (user_id, email, phone_number)
+  SELECT user_id, email, phone_number FROM passwordless_users;
+
+------------------------------------------------------------
+
+ALTER TABLE passwordless_devices
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public',
+  ADD COLUMN tenant_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE passwordless_devices
+  DROP PRIMARY KEY;
+
+ALTER TABLE passwordless_devices
+  ADD PRIMARY KEY (app_id, tenant_id, device_id_hash);
+
+ALTER TABLE passwordless_devices
+  ADD FOREIGN KEY (app_id, tenant_id)
+    REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE;
+
+ALTER TABLE passwordless_devices
+  DROP INDEX passwordless_devices_email_index;
+
+CREATE INDEX passwordless_devices_email_index ON passwordless_devices (app_id, tenant_id, email);
+
+ALTER TABLE passwordless_devices
+  DROP INDEX passwordless_devices_phone_number_index;
+
+CREATE INDEX passwordless_devices_phone_number_index ON passwordless_devices (app_id, tenant_id, phone_number);
+
+------------------------------------------------------------
+
+ALTER TABLE passwordless_codes
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public',
+  ADD COLUMN tenant_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE passwordless_codes
+  DROP PRIMARY KEY;
+
+ALTER TABLE passwordless_codes
+  ADD PRIMARY KEY (app_id, tenant_id, code_id);
+
+ALTER TABLE passwordless_codes 
+  DROP INDEX device_id_hash;
+
+ALTER TABLE passwordless_codes
+  ADD FOREIGN KEY (app_id, tenant_id, device_id_hash)
+    REFERENCES passwordless_devices (app_id, tenant_id, device_id_hash) ON DELETE CASCADE;
+
+ALTER TABLE passwordless_codes
+  DROP INDEX link_code_hash;
+
+ALTER TABLE passwordless_codes
+  ADD CONSTRAINT link_code_hash
+    UNIQUE (app_id, tenant_id, link_code_hash);
+
+ALTER TABLE passwordless_codes
+  DROP INDEX passwordless_codes_created_at_index;
+
+CREATE INDEX passwordless_codes_created_at_index ON passwordless_codes (app_id, tenant_id, created_at);
+
+-- ThirdParty
+
+ALTER TABLE thirdparty_users
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE thirdparty_users
+  DROP PRIMARY KEY;
+
+ALTER TABLE thirdparty_users
+  DROP INDEX user_id;
+
+ALTER TABLE thirdparty_users
+  ADD PRIMARY KEY (app_id, user_id);
+
+ALTER TABLE thirdparty_users
+  ADD FOREIGN KEY (app_id, user_id)
+    REFERENCES app_id_to_user_id (app_id, user_id) ON DELETE CASCADE;
+
+-- ALTER TABLE thirdparty_users
+--   DROP INDEX thirdparty_users_thirdparty_user_id_index;
+
+CREATE INDEX thirdparty_users_thirdparty_user_id_index ON thirdparty_users (app_id, third_party_id, third_party_user_id);
+
+-- ALTER TABLE thirdparty_users
+--   DROP INDEX thirdparty_users_email_index;
+
+CREATE INDEX thirdparty_users_email_index ON thirdparty_users (app_id, email);
+
+------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS thirdparty_user_to_tenant (
+  app_id VARCHAR(64) DEFAULT 'public',
+  tenant_id VARCHAR(64) DEFAULT 'public',
+  user_id CHAR(36) NOT NULL,
+  third_party_id VARCHAR(28) NOT NULL,
+  third_party_user_id VARCHAR(256) NOT NULL,
+  CONSTRAINT third_party_user_id
+    UNIQUE (app_id, tenant_id, third_party_id, third_party_user_id),
+  PRIMARY KEY (app_id, tenant_id, user_id),
+  FOREIGN KEY (app_id, tenant_id, user_id)
+    REFERENCES all_auth_recipe_users (app_id, tenant_id, user_id) ON DELETE CASCADE
+);
+
+INSERT INTO thirdparty_user_to_tenant (user_id, third_party_id, third_party_user_id)
+  SELECT user_id, third_party_id, third_party_user_id FROM thirdparty_users;
+
+-- UserIdMapping
+
+ALTER TABLE userid_mapping
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE userid_mapping
+  DROP PRIMARY KEY;
+
+ALTER TABLE userid_mapping
+  ADD PRIMARY KEY (app_id, supertokens_user_id, external_user_id);
+
+ALTER TABLE userid_mapping
+  DROP INDEX supertokens_user_id;
+
+ALTER TABLE userid_mapping
+  ADD CONSTRAINT supertokens_user_id
+    UNIQUE (app_id, supertokens_user_id);
+
+ALTER TABLE userid_mapping
+  DROP INDEX external_user_id;
+
+ALTER TABLE userid_mapping
+  ADD CONSTRAINT external_user_id
+    UNIQUE (app_id, external_user_id);
+
+ALTER TABLE userid_mapping
+  ADD FOREIGN KEY (app_id, supertokens_user_id)
+    REFERENCES app_id_to_user_id (app_id, user_id) ON DELETE CASCADE;
+
+-- UserRoles
+
+ALTER TABLE roles
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE roles
+  DROP PRIMARY KEY;
+
+ALTER TABLE roles
+  ADD PRIMARY KEY (app_id, role);
+
+ALTER TABLE roles
+  ADD FOREIGN KEY (app_id)
+    REFERENCES apps (app_id) ON DELETE CASCADE;
+
+------------------------------------------------------------
+
+ALTER TABLE role_permissions
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE role_permissions
+  DROP PRIMARY KEY;
+
+ALTER TABLE role_permissions
+  ADD PRIMARY KEY (app_id, role, permission);
+
+ALTER TABLE role_permissions
+  ADD FOREIGN KEY (app_id, role)
+    REFERENCES roles (app_id, role) ON DELETE CASCADE;
+
+ALTER TABLE role_permissions
+  DROP INDEX role_permissions_permission_index;
+
+CREATE INDEX role_permissions_permission_index ON role_permissions (app_id, permission);
+
+------------------------------------------------------------
+
+ALTER TABLE user_roles
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public',
+  ADD COLUMN tenant_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE user_roles
+  DROP PRIMARY KEY;
+
+ALTER TABLE user_roles
+  ADD PRIMARY KEY (app_id, tenant_id, user_id, role);
+
+ALTER TABLE user_roles
+  ADD FOREIGN KEY (app_id, role)
+    REFERENCES roles (app_id, role) ON DELETE CASCADE;
+
+ALTER TABLE user_roles
+  ADD FOREIGN KEY (app_id, tenant_id)
+    REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE;
+
+ALTER TABLE user_roles
+  DROP INDEX user_roles_role_index;
+
+CREATE INDEX user_roles_role_index ON user_roles (app_id, tenant_id, role);
+
+-- UserMetadata
+
+ALTER TABLE user_metadata
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE user_metadata
+  DROP PRIMARY KEY;
+
+ALTER TABLE user_metadata
+  ADD PRIMARY KEY (app_id, user_id);
+
+ALTER TABLE user_metadata
+  ADD FOREIGN KEY (app_id)
+    REFERENCES apps (app_id) ON DELETE CASCADE;
+
+-- Dashboard
+
+ALTER TABLE dashboard_users
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE dashboard_users
+  DROP PRIMARY KEY;
+
+ALTER TABLE dashboard_users
+  ADD PRIMARY KEY (app_id, user_id);
+
+ALTER TABLE dashboard_users
+  DROP INDEX email;
+
+ALTER TABLE dashboard_users
+  ADD CONSTRAINT email
+    UNIQUE (app_id, email);
+
+ALTER TABLE dashboard_users
+  ADD FOREIGN KEY (app_id)
+    REFERENCES apps (app_id) ON DELETE CASCADE;
+
+------------------------------------------------------------
+
+ALTER TABLE dashboard_user_sessions
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE dashboard_user_sessions
+  DROP PRIMARY KEY;
+
+ALTER TABLE dashboard_user_sessions
+  ADD PRIMARY KEY (app_id, session_id);
+
+ALTER TABLE dashboard_user_sessions
+  DROP INDEX user_id;
+
+ALTER TABLE dashboard_user_sessions
+  ADD FOREIGN KEY (app_id, user_id)
+    REFERENCES dashboard_users (app_id, user_id) ON DELETE CASCADE;
+
+-- TOTP
+
+ALTER TABLE totp_users
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE totp_users
+  DROP PRIMARY KEY;
+
+ALTER TABLE totp_users
+  ADD PRIMARY KEY (app_id, user_id);
+
+ALTER TABLE totp_users
+  ADD FOREIGN KEY (app_id)
+    REFERENCES apps (app_id) ON DELETE CASCADE;
+
+------------------------------------------------------------
+
+ALTER TABLE totp_user_devices
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE totp_user_devices
+  DROP PRIMARY KEY;
+
+ALTER TABLE totp_user_devices
+  ADD PRIMARY KEY (app_id, user_id, device_name);
+
+ALTER TABLE totp_user_devices
+  ADD FOREIGN KEY (app_id, user_id)
+    REFERENCES totp_users (app_id, user_id) ON DELETE CASCADE;
+
+------------------------------------------------------------
+
+ALTER TABLE totp_used_codes
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public',
+  ADD COLUMN tenant_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE totp_used_codes
+  DROP PRIMARY KEY;
+
+ALTER TABLE totp_used_codes
+  ADD PRIMARY KEY (app_id, tenant_id, user_id, created_time_ms);
+
+ALTER TABLE totp_used_codes
+  ADD FOREIGN KEY (app_id, user_id)
+    REFERENCES totp_users (app_id, user_id) ON DELETE CASCADE;
+
+ALTER TABLE totp_used_codes
+  ADD FOREIGN KEY (app_id, tenant_id)
+    REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE;
+
+ALTER TABLE totp_used_codes
+  DROP INDEX totp_used_codes_expiry_time_ms_index;
+
+CREATE INDEX totp_used_codes_expiry_time_ms_index ON totp_used_codes (app_id, tenant_id, expiry_time_ms);
+
+-- ActiveUsers
+
+ALTER TABLE user_last_active
+  ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
+
+ALTER TABLE user_last_active
+  DROP PRIMARY KEY;
+
+ALTER TABLE user_last_active
+  ADD PRIMARY KEY (app_id, user_id);
+
+ALTER TABLE user_last_active
+  ADD FOREIGN KEY (app_id)
+    REFERENCES apps (app_id) ON DELETE CASCADE;
+```
+
+</details>
+
 ## [5.0.0] - 2023-04-05
 
 ### Changes
@@ -22,28 +1423,28 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Using an internal `SemVer` class to handle version numbers. This will make handling CDI version ranges easier.
 - Support for CDI version `2.21`
-    - Removed POST `/recipe/handshake`
-    - Added `useDynamicSigningKey` into `createNewSession` (POST `/recipe/session`), replacing
-      `access_token_signing_key_dynamic` used in CDI<=2.18
-    - Added `useStaticSigningKey` into `createSignedJWT` (POST `/recipe/jwt`)
-    - Added `checkDatabase` into `verifySession` (POST `/recipe/session/verify`), replacing
-      `access_token_blacklisting` used in CDI<=2.18
-    - Removed `idRefreshToken`, `jwtSigningPublicKey`, `jwtSigningPublicKeyExpiryTime` and `jwtSigningPublicKeyList`
-      from responses
-    - Deprecated GET `/recipe/jwt/jwks`
-    - Added GET `/.well-known/jwks.json`: a standard jwks
+  - Removed POST `/recipe/handshake`
+  - Added `useDynamicSigningKey` into `createNewSession` (POST `/recipe/session`), replacing 
+    `access_token_signing_key_dynamic` used in CDI<=2.18
+  - Added `useStaticSigningKey` into `createSignedJWT` (POST `/recipe/jwt`)
+  - Added `checkDatabase` into `verifySession` (POST `/recipe/session/verify`), replacing 
+    `access_token_blacklisting` used in CDI<=2.18
+  - Removed `idRefreshToken`, `jwtSigningPublicKey`, `jwtSigningPublicKeyExpiryTime` and `jwtSigningPublicKeyList` 
+    from responses
+  - Deprecated GET `/recipe/jwt/jwks`
+  - Added GET `/.well-known/jwks.json`: a standard jwks
 - Added new access token version
-    - Uses standard prop names (i.e.: `sub` instead of `userId`)
-    - Contains the id of the signing key in the header (as `kid`)
-    - Stores the user payload merged into the root level, instead of the `userData` prop
-- Session handling function now throw if the user payload contains protected props (`sub`, `iat`, `exp`,
+  - Uses standard prop names (i.e.: `sub` instead of `userId`)
+  - Contains the id of the signing key in the header (as `kid`)
+  - Stores the user payload merged into the root level, instead of the `userData` prop
+- Session handling function now throw if the user payload contains protected props (`sub`, `iat`, `exp`, 
   `sessionHandle`, `refreshTokenHash1`, `parentRefreshTokenHash1`, `antiCsrfToken`)
-    - A related exception type was added as `AccessTokenPayloadError`
+  - A related exception type was added as `AccessTokenPayloadError`
 - Refactored the handling of signing keys
-- `createNewSession` now takes a `useStaticKey` parameter instead of depending on the
+- `createNewSession` now takes a `useStaticKey` parameter instead of depending on the 
   `access_token_signing_key_dynamic` config value
 - `createJWTToken` now supports signing by a dynamic key
-- `getSession` now takes a `checkDatabase` parameter instead of using the `access_token_blacklisting` config value
+- `getSession` now takes a `checkDatabase` parameter instead of using the `access_token_blacklisting` config value 
 - Updated plugin interface version to 2.21
 
 ### Configuration Changes
@@ -60,11 +1461,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 #### Migration steps for SQL
 
 - If using `access_token_signing_key_dynamic` false:
-    ```sql
+  - ```sql
     ALTER TABLE session_info ADD COLUMN use_static_key BOOLEAN NOT NULL DEFAULT(true);
     ALTER TABLE session_info ALTER COLUMN use_static_key DROP DEFAULT;
     ```
-    ```sql
+  - ```sql
     INSERT INTO jwt_signing_keys(key_id, key_string, algorithm, created_at)
       select CONCAT('s-', created_at_time) as key_id, value as key_string, 'RS256' as algorithm, created_at_time as created_at
       from session_access_token_signing_keys;
@@ -78,7 +1479,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 #### Migration steps for MongoDB
 
 - If using `access_token_signing_key_dynamic` false:
-    ```
+  - ```
     db.session_info.update({},
       {
         "$set": {
@@ -86,7 +1487,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
         }
       });
     ```
-    ```
+  - ```
     db.key_value.aggregate([
       {
         "$match": {
@@ -131,7 +1532,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     ```
 
 - If using `access_token_signing_key_dynamic` true or not set:
-    ```
+  - ```
     db.session_info.update({},
       {
         "$set": {
@@ -145,8 +1546,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Add Optional Search Tags to Pagination API to enable dashboard search
 
 ### New APIs:
+  - `GET /user/search/tags` retrieves the available search tags 
 
-- `GET /user/search/tags` retrieves the available search tags
 
 ## [4.5.0] - 2023-03-27
 

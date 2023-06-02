@@ -9,6 +9,8 @@ import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.version.Version;
 import org.junit.*;
@@ -32,7 +34,7 @@ public class CronjobTest {
 
     @Test
     public void cronjobUpdatesStatefulKey()
-            throws InterruptedException, StorageQueryException {
+            throws InterruptedException, StorageQueryException, TenantOrAppNotFoundException {
         String[] args = {"../../"};
 
         {
@@ -40,7 +42,7 @@ public class CronjobTest {
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
             StorageLayer.getStorage(process.main)
-                    .setKeyValue(EEFeatureFlag.LICENSE_KEY_IN_DB,
+                    .setKeyValue(new TenantIdentifier(null, null, null), EEFeatureFlag.LICENSE_KEY_IN_DB,
                             new KeyValueInfo(EETest.OPAQUE_LICENSE_KEY_WITH_TEST_FEATURE));
 
             process.kill();
@@ -58,7 +60,7 @@ public class CronjobTest {
                 Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 1);
 
                 StorageLayer.getStorage(process.main)
-                        .setKeyValue(EEFeatureFlag.LICENSE_KEY_IN_DB,
+                        .setKeyValue(new TenantIdentifier(null, null, null), EEFeatureFlag.LICENSE_KEY_IN_DB,
                                 new KeyValueInfo(EETest.OPAQUE_INVALID_LICENSE_KEY));
 
                 // wait for cronjob to run once which could clear the features cause the new key is invalid
@@ -75,7 +77,7 @@ public class CronjobTest {
 
     @Test
     public void cronjobDoesNotUpdatesStatefulKeyIfItDoesntRun()
-            throws InterruptedException, StorageQueryException {
+            throws InterruptedException, StorageQueryException, TenantOrAppNotFoundException {
         String[] args = {"../../"};
 
         {
@@ -83,7 +85,7 @@ public class CronjobTest {
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
             StorageLayer.getStorage(process.main)
-                    .setKeyValue(EEFeatureFlag.LICENSE_KEY_IN_DB,
+                    .setKeyValue(new TenantIdentifier(null, null, null), EEFeatureFlag.LICENSE_KEY_IN_DB,
                             new KeyValueInfo(EETest.OPAQUE_LICENSE_KEY_WITH_TEST_FEATURE));
 
             process.kill();
@@ -100,7 +102,7 @@ public class CronjobTest {
                 Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 1);
 
                 StorageLayer.getStorage(process.main)
-                        .setKeyValue(EEFeatureFlag.LICENSE_KEY_IN_DB,
+                        .setKeyValue(new TenantIdentifier(null, null, null), EEFeatureFlag.LICENSE_KEY_IN_DB,
                                 new KeyValueInfo(EETest.OPAQUE_INVALID_LICENSE_KEY));
 
                 // the cronjob shouldn't run so there should be no change in the feature flag
@@ -118,7 +120,7 @@ public class CronjobTest {
 
     @Test
     public void cronjobUpdatesStatelessKey()
-            throws InterruptedException, StorageQueryException {
+            throws InterruptedException, StorageQueryException, TenantOrAppNotFoundException {
         String[] args = {"../../"};
 
         {
@@ -126,7 +128,7 @@ public class CronjobTest {
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
             StorageLayer.getStorage(process.main)
-                    .setKeyValue(EEFeatureFlag.LICENSE_KEY_IN_DB,
+                    .setKeyValue(new TenantIdentifier(null, null, null), EEFeatureFlag.LICENSE_KEY_IN_DB,
                             new KeyValueInfo(EETest.STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_NO_EXP));
 
             process.kill();
@@ -144,7 +146,7 @@ public class CronjobTest {
                 Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 1);
 
                 StorageLayer.getStorage(process.main)
-                        .setKeyValue(EEFeatureFlag.LICENSE_KEY_IN_DB,
+                        .setKeyValue(new TenantIdentifier(null, null, null), EEFeatureFlag.LICENSE_KEY_IN_DB,
                                 new KeyValueInfo(EETest.STATELESS_INVALID_LICENSE_KEY));
 
                 // wait for cronjob to run once which could clear the features cause the new key is invalid
@@ -161,7 +163,7 @@ public class CronjobTest {
 
     @Test
     public void cronjobDoesNotUpdatesStatelessKeyIfItDoesntRun()
-            throws InterruptedException, StorageQueryException {
+            throws InterruptedException, StorageQueryException, TenantOrAppNotFoundException {
         String[] args = {"../../"};
 
         {
@@ -169,7 +171,7 @@ public class CronjobTest {
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
             StorageLayer.getStorage(process.main)
-                    .setKeyValue(EEFeatureFlag.LICENSE_KEY_IN_DB,
+                    .setKeyValue(new TenantIdentifier(null, null, null), EEFeatureFlag.LICENSE_KEY_IN_DB,
                             new KeyValueInfo(EETest.STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_NO_EXP));
 
             process.kill();
@@ -186,7 +188,7 @@ public class CronjobTest {
                 Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 1);
 
                 StorageLayer.getStorage(process.main)
-                        .setKeyValue(EEFeatureFlag.LICENSE_KEY_IN_DB,
+                        .setKeyValue(new TenantIdentifier(null, null, null), EEFeatureFlag.LICENSE_KEY_IN_DB,
                                 new KeyValueInfo(EETest.STATELESS_INVALID_LICENSE_KEY));
 
                 // the cronjob shouldn't run so there should be no change in the feature flag
@@ -221,7 +223,8 @@ public class CronjobTest {
             Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures()[0], EE_FEATURES.TEST);
 
             StorageLayer.getStorage(process.main)
-                    .setKeyValue(EEFeatureFlag.LICENSE_KEY_IN_DB, new KeyValueInfo(EETest.OPAQUE_INVALID_LICENSE_KEY));
+                    .setKeyValue(new TenantIdentifier(null, null, null), EEFeatureFlag.LICENSE_KEY_IN_DB,
+                            new KeyValueInfo(EETest.OPAQUE_INVALID_LICENSE_KEY));
 
             Thread.sleep(5000);
 
@@ -249,7 +252,7 @@ public class CronjobTest {
             Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures()[0], EE_FEATURES.TEST);
 
             StorageLayer.getStorage(process.main)
-                    .setKeyValue(EEFeatureFlag.LICENSE_KEY_IN_DB,
+                    .setKeyValue(new TenantIdentifier(null, null, null), EEFeatureFlag.LICENSE_KEY_IN_DB,
                             new KeyValueInfo(EETest.STATELESS_INVALID_LICENSE_KEY));
 
             Thread.sleep(5000);
@@ -278,7 +281,7 @@ public class CronjobTest {
             Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures()[0], EE_FEATURES.TEST);
 
             StorageLayer.getStorage(process.main)
-                    .setKeyValue(EEFeatureFlag.LICENSE_KEY_IN_DB,
+                    .setKeyValue(new TenantIdentifier(null, null, null), EEFeatureFlag.LICENSE_KEY_IN_DB,
                             new KeyValueInfo(EETest.STATELESS_LICENSE_KEY_EXPIRED));
 
             Thread.sleep(5000);

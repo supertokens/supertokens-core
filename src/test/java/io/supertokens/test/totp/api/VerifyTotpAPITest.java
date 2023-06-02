@@ -1,9 +1,13 @@
 package io.supertokens.test.totp.api;
 
 import com.google.gson.JsonObject;
+
 import io.supertokens.ProcessState;
 import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.FeatureFlagTestContent;
+import io.supertokens.test.httpRequest.HttpResponseException;
+import io.supertokens.test.totp.TOTPRecipeTest;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.totp.TOTPDevice;
 import io.supertokens.storageLayer.StorageLayer;
@@ -11,6 +15,7 @@ import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
+import io.supertokens.test.totp.TotpLicenseTest;
 import io.supertokens.test.totp.TOTPRecipeTest;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -67,7 +72,7 @@ public class VerifyTotpAPITest {
 
     @Test
     public void testApi() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         // Trigger rate limiting on 1 wrong attempts:
         Utils.setValueInConfig("totp_max_attempts", "1");
@@ -191,7 +196,7 @@ public class VerifyTotpAPITest {
             assert res.get("status").getAsString().equals("OK");
 
             // try to reuse the same code (replay attack)
-            body.addProperty("totp", validTotp);
+            body.addProperty("totp", "mycode");
             JsonObject res2 = HttpRequestForTesting.sendJsonPOSTRequest(
                     process.getProcess(),
                     "",

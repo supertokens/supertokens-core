@@ -6,6 +6,9 @@ import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.totp.TOTPDevice;
 import io.supertokens.pluginInterface.totp.TOTPUsedCode;
 import io.supertokens.pluginInterface.totp.exception.TotpNotEnabledException;
@@ -41,11 +44,13 @@ public class StorageLayerTest {
         try {
             storage.startTransaction(con -> {
                 try {
-                    storage.insertUsedCode_Transaction(con, usedCode);
+                    storage.insertUsedCode_Transaction(con, new TenantIdentifier(null, null, null), usedCode);
                     storage.commitTransaction(con);
                     return null;
                 } catch (TotpNotEnabledException | UsedCodeAlreadyExistsException e) {
                     throw new StorageTransactionLogicException(e);
+                } catch (TenantOrAppNotFoundException e) {
+                    throw new IllegalStateException(e);
                 }
             });
         } catch (StorageTransactionLogicException e) {
@@ -63,21 +68,22 @@ public class StorageLayerTest {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
-        process.getProcess().setForceInMemoryDB(); // this test is for SQLite. We have different versions for PSQL and MySQL
+        process.getProcess()
+                .setForceInMemoryDB(); // this test is for SQLite. We have different versions for PSQL and MySQL
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
-        TOTPSQLStorage storage = StorageLayer.getTOTPStorage(process.getProcess());
+        TOTPSQLStorage storage = (TOTPSQLStorage) StorageLayer.getStorage(process.getProcess());
         long now = System.currentTimeMillis();
         long nextDay = now + 1000 * 60 * 60 * 24; // 1 day from now
 
         Start start = (Start) StorageLayer.getStorage(process.getProcess());
 
         TOTPDevice d1 = new TOTPDevice("user", "d1", "secret", 30, 1, false);
-        storage.createDevice(d1);
+        storage.createDevice(new AppIdentifier(null, null), d1);
 
         // Try code with length > 8
         try {

@@ -40,7 +40,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 public class RefreshSessionAPITest2_7 {
-        @Rule
+    @Rule
     public TestRule watchman = Utils.getOnFailure();
 
     @AfterClass
@@ -56,7 +56,7 @@ public class RefreshSessionAPITest2_7 {
     @Test
     public void refreshWithAntiCsrfOffOn() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -111,7 +111,7 @@ public class RefreshSessionAPITest2_7 {
     @Test
     public void refreshWithAntiCsrfOnOffOn() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -187,7 +187,7 @@ public class RefreshSessionAPITest2_7 {
 
     @Test
     public void badInputErrorTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -201,7 +201,6 @@ public class RefreshSessionAPITest2_7 {
             assertEquals("Http error. Status Code: 400. Message: Invalid Json Input", e.getMessage());
         }
 
-        
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
@@ -289,7 +288,7 @@ public class RefreshSessionAPITest2_7 {
 
     @Test
     public void successOutputWithInvalidRefreshTokenTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         JsonObject jsonBody = new JsonObject();
         jsonBody.addProperty("refreshToken", "");
@@ -327,12 +326,13 @@ public class RefreshSessionAPITest2_7 {
 
     @Test
     public void successOutputWithInvalidRefresh2TokenTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         JsonObject jsonBody = new JsonObject();
         jsonBody.addProperty("refreshToken", "MAKE_INVALID4dx2zJTl67cLnPHj2nrYNPJkYWRhRb1BZtiy4DtZ"
                 + "/bfGZHM0DEy9xX8nXkzdRYjQfYLGlcteX7noVxuCRk0zeewXGTG+fvnkAgPE8SK62X/U4VX5LsHKAxDsiFw"
-                + "+eh5mxuJE9DrPCjPk2ObkTMgRaA7TSzMInPt1OWZHhx8FvbQjgskwalYuptk4RdVMX7I6hwjflyCQ8kxhdZOAWzNati1ROyGmchQ5x6sIMIhpc0YzMi/BRfBpEIGSuXMHtxQuR/swvUbXlzpxDD375S1EDzQeW9ghXOt1AJDMCbVuIdXb4MEwqIWa473yYi6XujwUCbHo/3tNWtmn6tOh7w==.ef2c9aab475728ec8817813c5e02077af30425562341289b5a3e1c67122ea853.V2");
+                +
+                "+eh5mxuJE9DrPCjPk2ObkTMgRaA7TSzMInPt1OWZHhx8FvbQjgskwalYuptk4RdVMX7I6hwjflyCQ8kxhdZOAWzNati1ROyGmchQ5x6sIMIhpc0YzMi/BRfBpEIGSuXMHtxQuR/swvUbXlzpxDD375S1EDzQeW9ghXOt1AJDMCbVuIdXb4MEwqIWa473yYi6XujwUCbHo/3tNWtmn6tOh7w==.ef2c9aab475728ec8817813c5e02077af30425562341289b5a3e1c67122ea853.V2");
         jsonBody.addProperty("enableAntiCsrf", false);
 
         String userId = "userId";
@@ -364,7 +364,7 @@ public class RefreshSessionAPITest2_7 {
 
     @Test
     public void successOutputWithValidRefreshTokenTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -402,7 +402,7 @@ public class RefreshSessionAPITest2_7 {
 
     @Test
     public void activeUsersTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -466,14 +466,15 @@ public class RefreshSessionAPITest2_7 {
         activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
         assert (activeUsers == 1);
 
-        int activeUsersAfterSessionCreate = ActiveUsers.countUsersActiveSince(process.getProcess(), afterSessionCreateTs);
+        int activeUsersAfterSessionCreate = ActiveUsers.countUsersActiveSince(process.getProcess(),
+                afterSessionCreateTs);
         assert (activeUsersAfterSessionCreate == 1);
     }
 
     @Test
     public void refreshWithAntiCsrfOn() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -550,7 +551,7 @@ public class RefreshSessionAPITest2_7 {
 
     @Test
     public void successOutputWithValidRefreshTokenInvalidAntiCsrfTokenTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -591,7 +592,7 @@ public class RefreshSessionAPITest2_7 {
 
     @Test
     public void successOutputWithValidRefreshTokenWithWithCookieDomainTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         Utils.setValueInConfig("cookie_domain", "localhost");
 
@@ -632,7 +633,7 @@ public class RefreshSessionAPITest2_7 {
     }
 
     private static void checkRefreshSessionResponse(JsonObject response, TestingProcessManager.TestingProcess process,
-            String userId, JsonObject userDataInJWT, boolean hasAntiCsrf) {
+                                                    String userId, JsonObject userDataInJWT, boolean hasAntiCsrf) {
 
         assertNotNull(response.get("session").getAsJsonObject().get("handle").getAsString());
         assertEquals(response.get("session").getAsJsonObject().get("userId").getAsString(), userId);

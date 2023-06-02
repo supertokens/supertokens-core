@@ -16,14 +16,13 @@
 
 package io.supertokens.webserver.api.dashboard;
 
-import java.io.IOException;
-
 import com.google.gson.JsonObject;
-
 import io.supertokens.Main;
 import io.supertokens.dashboard.Dashboard;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.Utils;
 import io.supertokens.webserver.WebserverAPI;
@@ -31,7 +30,9 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-public class RevokeSessionAPI extends WebserverAPI{
+import java.io.IOException;
+
+public class RevokeSessionAPI extends WebserverAPI {
 
     private static final long serialVersionUID = -3243982612346134273L;
 
@@ -46,17 +47,18 @@ public class RevokeSessionAPI extends WebserverAPI{
 
     @Override
     protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-
+        // API is app specific
         String sessionId = InputParser.getQueryParamOrThrowError(req, "sessionId", false);
         sessionId = Utils.normalizeAndValidateStringParam(sessionId, "sessionId");
 
         try {
-            Dashboard.revokeSessionWithSessionId(main, sessionId);
+            Dashboard.revokeSessionWithSessionId(
+                    super.getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(req), sessionId);
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
-    }    
+    }
 }

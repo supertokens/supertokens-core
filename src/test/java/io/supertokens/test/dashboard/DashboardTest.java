@@ -16,38 +16,34 @@
 
 package io.supertokens.test.dashboard;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
-import java.util.ArrayList;
-
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestRule;
-
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-
 import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.cronjobs.deleteExpiredDashboardSessions.DeleteExpiredDashboardSessions;
 import io.supertokens.dashboard.Dashboard;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
-import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.dashboard.DashboardSessionInfo;
 import io.supertokens.pluginInterface.dashboard.DashboardUser;
 import io.supertokens.pluginInterface.dashboard.exceptions.DuplicateEmailException;
+import io.supertokens.pluginInterface.dashboard.sqlStorage.DashboardSQLStorage;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.webserver.WebserverAPI;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestRule;
+
+import java.util.ArrayList;
+
+import static org.junit.Assert.*;
 
 public class DashboardTest {
     @Rule
@@ -63,11 +59,13 @@ public class DashboardTest {
         Utils.reset();
     }
 
-    private final String OPAQUE_KEY_WITH_DASHBOARD_FEATURE = "EBy9Z4IRJ7BYyLP8AXxjq997o3RPaDekAE4CMGxduglUaEH9hugXzIduxvHIjpkFccVCZaHJIacMi8NJJg4I=ruc3bZbT43QOLJbGu01cgACmVu2VOjQzFbT3lXiAKOR";
+    private final String OPAQUE_KEY_WITH_DASHBOARD_FEATURE =
+            "EBy9Z4IRJ7BYyLP8AXxjq997o3RPaDekAE4CMGxduglUaEH9hugXzIduxvHIjpkFccVCZaHJIacMi8NJJg4I" +
+                    "=ruc3bZbT43QOLJbGu01cgACmVu2VOjQzFbT3lXiAKOR";
 
     @Test
     public void testCreatingDashboardUsers() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -96,7 +94,7 @@ public class DashboardTest {
 
     @Test
     public void testCreatingDashboardUsersWithDuplicateEmail() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -136,7 +134,7 @@ public class DashboardTest {
     @Test
     public void testCreatingAUserAndSessionAndDeletingTheUserDeletesTheSession() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -176,7 +174,7 @@ public class DashboardTest {
     @Test
     public void testDashboardCronjob() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         CronTaskTest.getInstance(process.getProcess()).setIntervalInSeconds(DeleteExpiredDashboardSessions.RESOURCE_KEY,
@@ -199,8 +197,9 @@ public class DashboardTest {
         String sessionId = "test";
 
         // create a session with low expiry
-        StorageLayer.getDashboardStorage(process.getProcess()).createNewDashboardUserSession(user.userId, sessionId,
-                System.currentTimeMillis(), 0);
+        ((DashboardSQLStorage) StorageLayer.getStorage(process.getProcess()))
+                .createNewDashboardUserSession(new AppIdentifier(null, null), user.userId, sessionId,
+                        System.currentTimeMillis(), 0);
 
         // check that session exists
         assertEquals(1, Dashboard.getAllDashboardSessionsForUser(process.getProcess(), user.userId).length);
@@ -218,7 +217,7 @@ public class DashboardTest {
     @Test
     public void testUpdatingDashboardUsersCredentialsShouldRevokeSessions() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -268,7 +267,7 @@ public class DashboardTest {
     @Test
     public void testDashboardUsageStats() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));

@@ -25,6 +25,8 @@ import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.noSqlStorage.NoSQLStorage_1;
 import io.supertokens.pluginInterface.sqlStorage.SQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
@@ -69,7 +71,7 @@ public class StorageTest {
 
     @Test
     public void transactionIsolationWithoutAnInitialRowTesting() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -104,7 +106,8 @@ public class StorageTest {
                         sqlStorage.startTransaction(con -> {
                             numberOfIterations.getAndIncrement();
 
-                            KeyValueInfo info = sqlStorage.getKeyValue_Transaction(con, key);
+                            KeyValueInfo info = sqlStorage.getKeyValue_Transaction(
+                                    new TenantIdentifier(null, null, null), con, key);
 
                             try {
                                 Thread.sleep(300);
@@ -112,7 +115,12 @@ public class StorageTest {
                             }
 
                             if (info == null) {
-                                sqlStorage.setKeyValue_Transaction(con, key, new KeyValueInfo("Value1"));
+                                try {
+                                    sqlStorage.setKeyValue_Transaction(new TenantIdentifier(null, null, null), con, key,
+                                            new KeyValueInfo("Value1"));
+                                } catch (TenantOrAppNotFoundException e) {
+                                    throw new IllegalStateException(e);
+                                }
                             } else {
                                 endValueOfCon1.set(info.value);
                                 return null;
@@ -130,7 +138,8 @@ public class StorageTest {
                         sqlStorage.startTransaction(con -> {
                             numberOfIterations.getAndIncrement();
 
-                            KeyValueInfo info = sqlStorage.getKeyValue_Transaction(con, key);
+                            KeyValueInfo info = sqlStorage.getKeyValue_Transaction(
+                                    new TenantIdentifier(null, null, null), con, key);
 
                             if (numberOfIterations.get() != 1) {
                                 assert (info == null);
@@ -144,7 +153,12 @@ public class StorageTest {
                             }
 
                             if (info == null) {
-                                sqlStorage.setKeyValue_Transaction(con, key, new KeyValueInfo("Value2"));
+                                try {
+                                    sqlStorage.setKeyValue_Transaction(new TenantIdentifier(null, null, null), con, key,
+                                            new KeyValueInfo("Value2"));
+                                } catch (TenantOrAppNotFoundException e) {
+                                    throw new IllegalStateException(e);
+                                }
                             } else {
                                 endValueOfCon2.set(info.value);
                                 return null;
@@ -180,7 +194,7 @@ public class StorageTest {
     @Test
     public void transactionIsolationWithAnInitialRowTesting()
             throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -190,7 +204,12 @@ public class StorageTest {
             if (storage.getType() == STORAGE_TYPE.SQL) {
                 SQLStorage sqlStorage = (SQLStorage) storage;
                 sqlStorage.startTransaction(con -> {
-                    sqlStorage.setKeyValue_Transaction(con, "Key", new KeyValueInfo("Value"));
+                    try {
+                        sqlStorage.setKeyValue_Transaction(new TenantIdentifier(null, null, null), con, "Key",
+                                new KeyValueInfo("Value"));
+                    } catch (TenantOrAppNotFoundException e) {
+                        throw new IllegalStateException(e);
+                    }
                     sqlStorage.commitTransaction(con);
                     return null;
                 });
@@ -204,10 +223,16 @@ public class StorageTest {
                         sqlStorage.startTransaction(con -> {
                             numberOfIterations.getAndIncrement();
 
-                            KeyValueInfo info = sqlStorage.getKeyValue_Transaction(con, "Key");
+                            KeyValueInfo info = sqlStorage.getKeyValue_Transaction(
+                                    new TenantIdentifier(null, null, null), con, "Key");
 
                             if (info.value.equals("Value")) {
-                                sqlStorage.setKeyValue_Transaction(con, "Key", new KeyValueInfo("Value1"));
+                                try {
+                                    sqlStorage.setKeyValue_Transaction(new TenantIdentifier(null, null, null), con, "Key",
+                                            new KeyValueInfo("Value1"));
+                                } catch (TenantOrAppNotFoundException e) {
+                                    throw new IllegalStateException(e);
+                                }
                             } else {
                                 endValueOfCon1.set(info.value);
                                 return null;
@@ -225,10 +250,16 @@ public class StorageTest {
                         sqlStorage.startTransaction(con -> {
                             numberOfIterations.getAndIncrement();
 
-                            KeyValueInfo info = sqlStorage.getKeyValue_Transaction(con, "Key");
+                            KeyValueInfo info = sqlStorage.getKeyValue_Transaction(
+                                    new TenantIdentifier(null, null, null), con, "Key");
 
                             if (info.value.equals("Value")) {
-                                sqlStorage.setKeyValue_Transaction(con, "Key", new KeyValueInfo("Value2"));
+                                try {
+                                    sqlStorage.setKeyValue_Transaction(new TenantIdentifier(null, null, null), con, "Key",
+                                            new KeyValueInfo("Value2"));
+                                } catch (TenantOrAppNotFoundException e) {
+                                    throw new IllegalStateException(e);
+                                }
                             } else {
                                 endValueOfCon2.set(info.value);
                                 return null;
@@ -270,7 +301,7 @@ public class StorageTest {
     @Test
     public void transactionIsolationTesting()
             throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -278,7 +309,12 @@ public class StorageTest {
         if (storage.getType() == STORAGE_TYPE.SQL) {
             SQLStorage sqlStorage = (SQLStorage) storage;
             sqlStorage.startTransaction(con -> {
-                sqlStorage.setKeyValue_Transaction(con, "Key", new KeyValueInfo("Value"));
+                try {
+                    sqlStorage.setKeyValue_Transaction(new TenantIdentifier(null, null, null), con, "Key",
+                            new KeyValueInfo("Value"));
+                } catch (TenantOrAppNotFoundException e) {
+                    throw new IllegalStateException(e);
+                }
                 sqlStorage.commitTransaction(con);
                 return null;
             });
@@ -294,14 +330,19 @@ public class StorageTest {
                 try {
                     sqlStorage.startTransaction(con -> {
 
-                        sqlStorage.getKeyValue_Transaction(con, "Key");
+                        sqlStorage.getKeyValue_Transaction(new TenantIdentifier(null, null, null), con, "Key");
 
                         synchronized (syncObject) {
                             t1State.set("read");
                             syncObject.notifyAll();
                         }
 
-                        sqlStorage.setKeyValue_Transaction(con, "Key", new KeyValueInfo("Value2"));
+                        try {
+                            sqlStorage.setKeyValue_Transaction(new TenantIdentifier(null, null, null), con, "Key",
+                                    new KeyValueInfo("Value2"));
+                        } catch (TenantOrAppNotFoundException e) {
+                            throw new IllegalStateException(e);
+                        }
 
                         try {
                             Thread.sleep(1500);
@@ -345,7 +386,8 @@ public class StorageTest {
                             t2State.set("before_read");
                         }
 
-                        KeyValueInfo val = sqlStorage.getKeyValue_Transaction(con, "Key");
+                        KeyValueInfo val = sqlStorage.getKeyValue_Transaction(new TenantIdentifier(null, null, null),
+                                con, "Key");
 
                         synchronized (syncObject) {
                             t2State.set("after_read");
@@ -484,7 +526,7 @@ public class StorageTest {
 
     @Test
     public void transactionTest() throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -492,32 +534,37 @@ public class StorageTest {
         if (storage.getType() == STORAGE_TYPE.SQL) {
             SQLStorage sqlStorage = (SQLStorage) storage;
             String returnedValue = sqlStorage.startTransaction(con -> {
-                sqlStorage.setKeyValue_Transaction(con, "Key", new KeyValueInfo("Value"));
+                try {
+                    sqlStorage.setKeyValue_Transaction(new TenantIdentifier(null, null, null), con, "Key",
+                            new KeyValueInfo("Value"));
+                } catch (TenantOrAppNotFoundException e) {
+                    throw new IllegalStateException(e);
+                }
                 sqlStorage.commitTransaction(con);
                 return "returned value";
             });
             assertEquals(returnedValue, "returned value");
-            KeyValueInfo value = storage.getKeyValue("Key");
+            KeyValueInfo value = storage.getKeyValue(new TenantIdentifier(null, null, null), "Key");
             assertEquals(value.value, "Value");
         } else if (storage.getType() == STORAGE_TYPE.NOSQL_1) {
             NoSQLStorage_1 noSqlStorage = (NoSQLStorage_1) storage;
             {
                 noSqlStorage.setKeyValue_Transaction("Key", new KeyValueInfoWithLastUpdated("Value", null));
-                KeyValueInfo value = noSqlStorage.getKeyValue("Key");
+                KeyValueInfo value = noSqlStorage.getKeyValue(new TenantIdentifier(null, null, null), "Key");
                 assertEquals(value.value, "Value");
             }
             {
                 KeyValueInfoWithLastUpdated newKey = noSqlStorage.getKeyValue_Transaction("Key");
                 noSqlStorage.setKeyValue_Transaction("Key",
                         new KeyValueInfoWithLastUpdated("Value2", newKey.lastUpdatedSign));
-                KeyValueInfo value = noSqlStorage.getKeyValue("Key");
+                KeyValueInfo value = noSqlStorage.getKeyValue(new TenantIdentifier(null, null, null), "Key");
                 assertEquals(value.value, "Value2");
             }
             {
                 KeyValueInfoWithLastUpdated newKey = noSqlStorage.getKeyValue_Transaction("Key");
                 noSqlStorage.setKeyValue_Transaction("Key",
                         new KeyValueInfoWithLastUpdated("Value3", "someRandomLastUpdatedSign"));
-                KeyValueInfo value = noSqlStorage.getKeyValue("Key");
+                KeyValueInfo value = noSqlStorage.getKeyValue(new TenantIdentifier(null, null, null), "Key");
                 assertEquals(value.value, "Value2");
             }
         } else {
@@ -531,7 +578,7 @@ public class StorageTest {
     @Test
     public void transactionDoNotCommitButStillCommitsTest()
             throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -539,10 +586,15 @@ public class StorageTest {
         if (storage.getType() == STORAGE_TYPE.SQL) {
             SQLStorage sqlStorage = (SQLStorage) storage;
             sqlStorage.startTransaction(con -> {
-                sqlStorage.setKeyValue_Transaction(con, "Key", new KeyValueInfo("Value"));
+                try {
+                    sqlStorage.setKeyValue_Transaction(new TenantIdentifier(null, null, null), con, "Key",
+                            new KeyValueInfo("Value"));
+                } catch (TenantOrAppNotFoundException e) {
+                    throw new IllegalStateException(e);
+                }
                 return null;
             });
-            KeyValueInfo value = storage.getKeyValue("Key");
+            KeyValueInfo value = storage.getKeyValue(new TenantIdentifier(null, null, null), "Key");
             assertEquals(value.value, "Value");
         } else if (storage.getType() == STORAGE_TYPE.NOSQL_1) {
             // not applicable
@@ -556,7 +608,7 @@ public class StorageTest {
 
     @Test
     public void transactionDoNotInsertIfAlreadyExistsForNoSQL() throws InterruptedException, StorageQueryException {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -586,7 +638,7 @@ public class StorageTest {
     @Test
     public void transactionThrowCompileTimeErrorAndExpectRollbackTest()
             throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -595,7 +647,12 @@ public class StorageTest {
             SQLStorage sqlStorage = (SQLStorage) storage;
             try {
                 sqlStorage.startTransaction(con -> {
-                    sqlStorage.setKeyValue_Transaction(con, "Key", new KeyValueInfo("Value"));
+                    try {
+                        sqlStorage.setKeyValue_Transaction(new TenantIdentifier(null, null, null), con, "Key",
+                                new KeyValueInfo("Value"));
+                    } catch (TenantOrAppNotFoundException e) {
+                        throw new IllegalStateException(e);
+                    }
                     throw new StorageTransactionLogicException(new Exception("error message"));
                 });
             } catch (StorageTransactionLogicException e) {
@@ -603,7 +660,7 @@ public class StorageTest {
                     throw e;
                 }
             }
-            KeyValueInfo value = storage.getKeyValue("Key");
+            KeyValueInfo value = storage.getKeyValue(new TenantIdentifier(null, null, null), "Key");
             assertNull(value);
         } else if (storage.getType() == STORAGE_TYPE.NOSQL_1) {
             // not applicable
@@ -618,7 +675,7 @@ public class StorageTest {
     @Test
     public void transactionThrowRunTimeErrorAndExpectRollbackTest()
             throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -627,7 +684,12 @@ public class StorageTest {
             SQLStorage sqlStorage = (SQLStorage) storage;
             try {
                 sqlStorage.startTransaction(con -> {
-                    sqlStorage.setKeyValue_Transaction(con, "Key", new KeyValueInfo("Value"));
+                    try {
+                        sqlStorage.setKeyValue_Transaction(new TenantIdentifier(null, null, null), con, "Key",
+                                new KeyValueInfo("Value"));
+                    } catch (TenantOrAppNotFoundException e) {
+                        throw new IllegalStateException(e);
+                    }
                     throw new RuntimeException("error message");
                 });
             } catch (RuntimeException e) {
@@ -635,7 +697,7 @@ public class StorageTest {
                     throw e;
                 }
             }
-            KeyValueInfo value = storage.getKeyValue("Key");
+            KeyValueInfo value = storage.getKeyValue(new TenantIdentifier(null, null, null), "Key");
             assertNull(value);
         } else if (storage.getType() == STORAGE_TYPE.NOSQL_1) {
             // not applicable
@@ -649,7 +711,7 @@ public class StorageTest {
 
     @Test
     public void storageDeadAndAlive() throws InterruptedException, IOException, HttpResponseException {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         String userId = "userId";
         JsonObject userDataInJWT = new JsonObject();

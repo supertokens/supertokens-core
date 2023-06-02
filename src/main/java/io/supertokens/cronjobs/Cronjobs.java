@@ -18,6 +18,9 @@ package io.supertokens.cronjobs;
 
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import org.jetbrains.annotations.TestOnly;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,15 +39,17 @@ public class Cronjobs extends ResourceDistributor.SingletonResource {
         this.executor = Executors.newScheduledThreadPool(5);
     }
 
-    private static Cronjobs getInstance(Main main) {
-        return (Cronjobs) main.getResourceDistributor().getResource(RESOURCE_KEY);
+    public static Cronjobs getInstance(Main main) {
+        try {
+            return (Cronjobs) main.getResourceDistributor()
+                    .getResource(new TenantIdentifier(null, null, null), RESOURCE_KEY);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     public static void init(Main main) {
-        if (getInstance(main) != null) {
-            return;
-        }
-        main.getResourceDistributor().setResource(RESOURCE_KEY, new Cronjobs());
+        main.getResourceDistributor().setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY, new Cronjobs());
     }
 
     public static void shutdownAndAwaitTermination(Main main) {
@@ -65,6 +70,21 @@ public class Cronjobs extends ResourceDistributor.SingletonResource {
         }
     }
 
+    public void setTenantsInfo(List<List<TenantIdentifier>> tenantsInfo) {
+        this.tasks.forEach(cronTask -> {
+            cronTask.setTenantsInfo(tenantsInfo);
+        });
+    }
+
+    public static void removeCronjob(Main main, CronTask task) {
+        Cronjobs instance = Cronjobs.getInstance(main);
+        if (instance != null) {
+            synchronized (instance.lock) {
+                instance.tasks.remove(task);
+            }
+        }
+    }
+
     public static void addCronjob(Main main, CronTask task) {
         if (getInstance(main) == null) {
             init(main);
@@ -73,8 +93,14 @@ public class Cronjobs extends ResourceDistributor.SingletonResource {
         synchronized (instance.lock) {
             instance.executor.scheduleWithFixedDelay(task, task.getInitialWaitTimeSeconds(),
                     task.getIntervalTimeSeconds(), TimeUnit.SECONDS);
-            instance.tasks.add(task);
+            if (!instance.tasks.contains(task)) {
+                instance.tasks.add(task);
+            }
         }
     }
 
+    @TestOnly
+    public List<CronTask> getTasks() {
+        return this.tasks;
+    }
 }

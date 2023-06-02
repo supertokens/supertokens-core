@@ -31,13 +31,16 @@ import io.supertokens.cronjobs.telemetry.Telemetry;
 import io.supertokens.emailpassword.PasswordHashing;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.featureflag.FeatureFlag;
-import io.supertokens.inmemorydb.Start;
-import io.supertokens.signingkeys.JWTSigningKey;
+import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
+import io.supertokens.multitenancy.MultitenancyHelper;
 import io.supertokens.output.Logging;
-import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.exceptions.DbInitException;
+import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.signingkeys.AccessTokenSigningKey;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.session.refreshToken.RefreshTokenKey;
+import io.supertokens.signingkeys.AccessTokenSigningKey;
+import io.supertokens.signingkeys.JWTSigningKey;
 import io.supertokens.signingkeys.SigningKeys;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.version.Version;
@@ -52,6 +55,8 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 public class Main {
@@ -74,7 +79,7 @@ public class Main {
 
     private long PROCESS_START_TIME = System.currentTimeMillis();
 
-    private ResourceDistributor resourceDistributor = new ResourceDistributor();
+    private ResourceDistributor resourceDistributor = new ResourceDistributor(this);
 
     private String startedFileName = null;
 
@@ -119,12 +124,12 @@ public class Main {
                 ProcessState.getInstance(this).addState(ProcessState.PROCESS_STATE.SHUTTING_DOWN, null);
                 stopApp();
 
-                Logging.info(this, "Goodbye", true);
+                Logging.info(this, TenantIdentifier.BASE_TENANT, "Goodbye", true);
             } catch (Exception e) {
 
                 ProcessState.getInstance(this).addState(ProcessState.PROCESS_STATE.SHUTTING_DOWN, null);
                 stopApp();
-                Logging.error(this, "What caused the crash: " + e.getMessage(), true, e);
+                Logging.error(this, TenantIdentifier.BASE_TENANT, "What caused the crash: " + e.getMessage(), true, e);
                 exitCode = 1;
             }
             ProcessState.getInstance(this).addState(ProcessState.PROCESS_STATE.STOPPED, null);
@@ -139,24 +144,27 @@ public class Main {
         }
     }
 
-    private void init() throws IOException {
+    private void init() throws IOException, StorageQueryException {
 
         // Handle kill signal gracefully
         handleKillSignalForWhenItHappens();
 
-        // loading configs for core.
-        Config.loadConfig(this,
-                CLIOptions.get(this).getConfigFilePath() == null
-                        ? CLIOptions.get(this).getInstallationPath() + "config.yaml"
-                        : CLIOptions.get(this).getConfigFilePath());
+        // loading configs for core from config.yaml file.
+        try {
+            Config.loadBaseConfig(this);
+        } catch (InvalidConfigException e) {
+            throw new QuitProgramException(e);
+        }
 
-        Logging.info(this, "Completed config.yaml loading.", true);
+        Logging.info(this, TenantIdentifier.BASE_TENANT, "Completed config.yaml loading.", true);
 
         // loading storage layer
-        StorageLayer.init(this, CLIOptions.get(this).getInstallationPath() + "plugin/",
-                CLIOptions.get(this).getConfigFilePath() == null
-                        ? CLIOptions.get(this).getInstallationPath() + "config.yaml"
-                        : CLIOptions.get(this).getConfigFilePath());
+        try {
+            StorageLayer.initPrimary(this, CLIOptions.get(this).getInstallationPath() + "plugin/",
+                    Config.getBaseConfigAsJsonObject(this));
+        } catch (InvalidConfigException e) {
+            throw new QuitProgramException(e);
+        }
 
         // loading version file
         Version.loadVersion(this, CLIOptions.get(this).getInstallationPath() + "version.yaml");
@@ -177,7 +185,11 @@ public class Main {
                 }
             }
         }
-        StorageLayer.getStorage(this).initStorage();
+        try {
+            StorageLayer.getBaseStorage(this).initStorage(true);
+        } catch (DbInitException e) {
+            throw new QuitProgramException(e);
+        }
 
         // enable ee features if license key is provided.
         synchronized (waitToEnableFeatureFlagLock) {
@@ -188,39 +200,57 @@ public class Main {
                 }
             }
         }
-        FeatureFlag.init(this, CLIOptions.get(this).getInstallationPath() + "ee/");
+        FeatureFlag.initForBaseTenant(this, CLIOptions.get(this).getInstallationPath() + "ee/");
+
+        MultitenancyHelper.init(this);
+
+        try {
+            // load all configs for each of the tenants.
+            MultitenancyHelper.getInstance(this).loadConfig(new ArrayList<>());
+
+            // init storage layers for each unique db connection based on unique (user pool ID, connection pool ID).
+            MultitenancyHelper.getInstance(this).loadStorageLayer();
+        } catch (InvalidConfigException e) {
+            throw new QuitProgramException(e);
+        }
+
+        // load feature flag for all loaded apps
+        MultitenancyHelper.getInstance(this).loadFeatureFlag(new ArrayList<>());
 
         // init signing keys
-        AccessTokenSigningKey.init(this);
-        RefreshTokenKey.init(this);
-        JWTSigningKey.init(this);
-        SigningKeys.init(this);
+        try {
+            MultitenancyHelper.getInstance(this).loadSigningKeys(new ArrayList<>());
+        } catch (UnsupportedJWTSigningAlgorithmException e) {
+            throw new QuitProgramException(e);
+        }
 
         // starts removing old session cronjob
-        Cronjobs.addCronjob(this, DeleteExpiredSessions.getInstance(this));
+        List<List<TenantIdentifier>> uniqueUserPoolIdsTenants = StorageLayer.getTenantsWithUniqueUserPoolId(this);
+
+        Cronjobs.addCronjob(this, DeleteExpiredSessions.init(this, uniqueUserPoolIdsTenants));
 
         // starts removing old password reset tokens
-        Cronjobs.addCronjob(this, DeleteExpiredPasswordResetTokens.getInstance(this));
+        Cronjobs.addCronjob(this, DeleteExpiredPasswordResetTokens.init(this, uniqueUserPoolIdsTenants));
 
         // starts removing expired email verification tokens
-        Cronjobs.addCronjob(this, DeleteExpiredEmailVerificationTokens.getInstance(this));
+        Cronjobs.addCronjob(this, DeleteExpiredEmailVerificationTokens.init(this, uniqueUserPoolIdsTenants));
 
         // removes passwordless devices with only expired codes
-        Cronjobs.addCronjob(this, DeleteExpiredPasswordlessDevices.getInstance(this));
+        Cronjobs.addCronjob(this, DeleteExpiredPasswordlessDevices.init(this, uniqueUserPoolIdsTenants));
 
         // removes expired TOTP used tokens
-        Cronjobs.addCronjob(this, DeleteExpiredTotpTokens.getInstance(this));
+        Cronjobs.addCronjob(this, DeleteExpiredTotpTokens.init(this, uniqueUserPoolIdsTenants));
 
         // removes expired dashboard session
-        Cronjobs.addCronjob(this, DeleteExpiredDashboardSessions.getInstance(this));
+        Cronjobs.addCronjob(this, DeleteExpiredDashboardSessions.init(this, uniqueUserPoolIdsTenants));
 
         // starts Telemetry cronjob if the user has not disabled it
-        if (!Config.getConfig(this).isTelemetryDisabled()) {
-            Cronjobs.addCronjob(this, Telemetry.getInstance(this));
+        if (!Config.getBaseConfig(this).isTelemetryDisabled()) {
+            Cronjobs.addCronjob(this, Telemetry.init(this, uniqueUserPoolIdsTenants));
         }
 
         // starts DeleteExpiredAccessTokenSigningKeys cronjob if the access token signing keys can change
-        Cronjobs.addCronjob(this, DeleteExpiredAccessTokenSigningKeys.getInstance(this));
+        Cronjobs.addCronjob(this, DeleteExpiredAccessTokenSigningKeys.init(this, uniqueUserPoolIdsTenants));
 
         // creates password hashing pool
         PasswordHashing.init(this);
@@ -233,8 +263,14 @@ public class Main {
 
         // NOTE: If the message below is changed, make sure to also change the corresponding check in the CLI program
         // for start command
-        Logging.info(this, "Started SuperTokens on " + Config.getConfig(this).getHost(this) + ":"
-                + Config.getConfig(this).getPort(this) + " with PID: " + ProcessHandle.current().pid(), true);
+        Logging.info(this, TenantIdentifier.BASE_TENANT, "Started SuperTokens on " + Config.getBaseConfig(this).
+
+                getHost(this) + ":"
+                + Config.getBaseConfig(this).
+
+                getPort(this) + " with PID: " + ProcessHandle.current().
+
+                pid(), true);
     }
 
     @TestOnly
@@ -301,7 +337,7 @@ public class Main {
     }
 
     private void createDotStartedFileForThisProcess() throws IOException {
-        CoreConfig config = Config.getConfig(this);
+        CoreConfig config = Config.getBaseConfig(this);
         String fileName = OperatingSystem.getOS() == OperatingSystem.OS.WINDOWS
                 ? CLIOptions.get(this).getInstallationPath() + ".started\\" + config.getHost(this) + "-"
                 + config.getPort(this)
@@ -318,7 +354,7 @@ public class Main {
         boolean ignored = dotStarted.setWritable(true, false);
         this.startedFileName = fileName;
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(dotStarted))) { // overwrite mode
-            writer.write(ProcessHandle.current().pid() + "\n" + Config.getConfig(this).getBasePath());
+            writer.write(ProcessHandle.current().pid() + "\n" + Config.getBaseConfig(this).getBasePath());
         }
     }
 
@@ -328,7 +364,7 @@ public class Main {
                 Files.deleteIfExists(Paths.get(startedFileName));
             }
         } catch (Exception e) {
-            Logging.error(this, "Error while removing .started file", false, e);
+            Logging.error(this, TenantIdentifier.BASE_TENANT, "Error while removing .started file", false, e);
         }
     }
 
@@ -336,15 +372,17 @@ public class Main {
         return resourceDistributor;
     }
 
+    @TestOnly
     public void deleteAllInformationForTesting() throws Exception {
         assertIsTesting();
         try {
-            StorageLayer.getStorage(this).deleteAllInformation();
+            StorageLayer.deleteAllInformation(this);
         } catch (StorageQueryException e) {
             throw new Exception(e);
         }
     }
 
+    @TestOnly
     public void killForTestingAndWaitForShutdown() throws InterruptedException {
         assertIsTesting();
         wakeUpMainThreadToShutdown();
@@ -371,31 +409,10 @@ public class Main {
             // since we load config before loading anything else
             // below this, and this whole block is surrounded in a
             // try / catch.
-            Logging.info(this, "Stopping SuperTokens...", true);
+            Logging.info(this, TenantIdentifier.BASE_TENANT, "Stopping SuperTokens...", true);
             Webserver.getInstance(this).stop();
             Cronjobs.shutdownAndAwaitTermination(this);
-            if (!Main.isTesting) {
-                StorageLayer.close(this);
-            } else {
-                if (StorageLayer.getStorage(this).getType() == STORAGE_TYPE.NOSQL_1
-                        || StorageLayer.getStorage(this) instanceof Start) {
-                    // we close mongodb storage and in mem db storage during testing everytime as well cause it
-                    // doesn't take time for it to connect during each test.
-                    StorageLayer.close(this);
-                } else {
-                    // We don't close SQL storage layers during testing cause the same storage layer can be resued
-                    // across tests to save testing time.
-
-                    /*
-                     * Instead, during testing, we close it when:
-                     * - We are force using an in mem db
-                     * - Any config.yaml info changes across tests via setValueInConfig and commentConfigValue functions
-                     * - Between tests, if the test had modified the config file (which then got loaded). So we close
-                     * the storage layer in the reset function so that in the next test, the default configs are loaded
-                     * again.
-                     */
-                }
-            }
+            StorageLayer.close(this);
             removeDotStartedFileForThisProcess();
             Logging.stopLogging(this);
             // uncomment this when you want to confirm that processes are actually shut.

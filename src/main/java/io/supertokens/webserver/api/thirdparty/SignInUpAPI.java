@@ -19,11 +19,12 @@ package io.supertokens.webserver.api.thirdparty;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-
 import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
@@ -52,6 +53,7 @@ public class SignInUpAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific
         if (super.getVersionFromRequest(req).equals(SemVer.v2_7)) {
             JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
             String thirdPartyId = InputParser.parseStringOrThrowError(input, "thirdPartyId", false);
@@ -65,15 +67,18 @@ public class SignInUpAPI extends WebserverAPI {
             assert email != null;
             assert isEmailVerified != null;
 
-            // logic according to https://github.com/supertokens/supertokens-core/issues/190#issuecomment-774671873
+            // logic according to
+            // https://github.com/supertokens/supertokens-core/issues/190#issuecomment-774671873
 
             email = Utils.normaliseEmail(email);
 
             try {
-                ThirdParty.SignInUpResponse response = ThirdParty.signInUp2_7(super.main, thirdPartyId,
+                ThirdParty.SignInUpResponse response = ThirdParty.signInUp2_7(
+                        this.getTenantIdentifierWithStorageFromRequest(req), super.main,
+                        thirdPartyId,
                         thirdPartyUserId, email, isEmailVerified);
 
-                ActiveUsers.updateLastActive(main, response.user.id);
+                ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main, response.user.id);
 
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
@@ -82,7 +87,7 @@ public class SignInUpAPI extends WebserverAPI {
                 result.add("user", userJson);
                 super.sendJsonResponse(200, result, resp);
 
-            } catch (StorageQueryException e) {
+            } catch (StorageQueryException | TenantOrAppNotFoundException e) {
                 throw new ServletException(e);
             }
         } else {
@@ -96,20 +101,24 @@ public class SignInUpAPI extends WebserverAPI {
             assert thirdPartyUserId != null;
             assert email != null;
 
-            // logic according to https://github.com/supertokens/supertokens-core/issues/190#issuecomment-774671873
-            // and modifed according to https://github.com/supertokens/supertokens-core/issues/295
+            // logic according to
+            // https://github.com/supertokens/supertokens-core/issues/190#issuecomment-774671873
+            // and modifed according to
+            // https://github.com/supertokens/supertokens-core/issues/295
 
             email = Utils.normaliseEmail(email);
 
             try {
-                ThirdParty.SignInUpResponse response = ThirdParty.signInUp(super.main, thirdPartyId, thirdPartyUserId,
+                ThirdParty.SignInUpResponse response = ThirdParty.signInUp(
+                        this.getTenantIdentifierWithStorageFromRequest(req), super.main, thirdPartyId, thirdPartyUserId,
                         email);
 
-                ActiveUsers.updateLastActive(main, response.user.id);
+                ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main, response.user.id);
 
                 //
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                        .getUserIdMapping(main, response.user.id, UserIdType.ANY);
+                        .getUserIdMapping(this.getAppIdentifierWithStorage(req), response.user.id,
+                                UserIdType.SUPERTOKENS);
                 if (userIdMapping != null) {
                     response.user.id = userIdMapping.externalUserId;
                 }
@@ -121,7 +130,7 @@ public class SignInUpAPI extends WebserverAPI {
                 result.add("user", userJson);
                 super.sendJsonResponse(200, result, resp);
 
-            } catch (StorageQueryException e) {
+            } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
                 throw new ServletException(e);
             }
         }

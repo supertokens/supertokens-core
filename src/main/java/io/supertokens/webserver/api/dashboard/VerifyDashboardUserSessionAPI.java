@@ -16,22 +16,25 @@
 
 package io.supertokens.webserver.api.dashboard;
 
-import java.io.IOException;
-import java.io.Serial;
-
 import com.google.gson.JsonObject;
-
 import io.supertokens.Main;
 import io.supertokens.dashboard.Dashboard;
 import io.supertokens.dashboard.exceptions.UserSuspendedException;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.Utils;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
+import java.io.IOException;
+import java.io.Serial;
 
 public class VerifyDashboardUserSessionAPI extends WebserverAPI {
 
@@ -49,20 +52,37 @@ public class VerifyDashboardUserSessionAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is app specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
         String sessionId = InputParser.parseStringOrThrowError(input, "sessionId", false);
 
         sessionId = Utils.normalizeAndValidateStringParam(sessionId, "sessionId");
         try {
-            if (Dashboard.isValidUserSession(main, sessionId)) {
-                JsonObject response = new JsonObject();
-                response.addProperty("status", "OK");
-                super.sendJsonResponse(200, response, resp);
+            JsonObject invalidSessionResp = new JsonObject();
+            invalidSessionResp.addProperty("status", "INVALID_SESSION_ERROR");
+            AppIdentifierWithStorage identifierWithStorage = super.getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(req);
+
+            if (Dashboard.isValidUserSession(identifierWithStorage, main, sessionId)) {
+                String email = Dashboard.getEmailFromSessionId(identifierWithStorage, main, sessionId);
+
+                if (email == null) {
+                    super.sendJsonResponse(200, invalidSessionResp, resp);
+                } else {
+                    JsonObject response = new JsonObject();
+                    response.addProperty("status", "OK");
+
+                    SemVer cdiVersion = getVersionFromRequest(req);
+
+                    // We only add email for CDI version 2.22 and above
+                    if (cdiVersion.greaterThanOrEqualTo(SemVer.v3_0)) {
+                        response.addProperty("email", email);
+                    }
+
+                    super.sendJsonResponse(200, response, resp);
+                }
             } else {
-                JsonObject response = new JsonObject();
-                response.addProperty("status", "INVALID_SESSION_ERROR");
-                super.sendJsonResponse(200, response, resp);
+                super.sendJsonResponse(200, invalidSessionResp, resp);
             }
 
         } catch (UserSuspendedException e) {
@@ -71,7 +91,7 @@ public class VerifyDashboardUserSessionAPI extends WebserverAPI {
             response.addProperty("message",
                     "User is suspended.");
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
 

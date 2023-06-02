@@ -21,13 +21,14 @@ import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.userroles.UserRoles;
-import jdk.jshell.execution.Util;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -57,7 +58,7 @@ public class UserRolesTest {
     // Call setRole with only role and check it works. Call it again the same role and check it returns OK
     @Test
     public void testCreatingTheSameRoleTwice() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -66,9 +67,9 @@ public class UserRolesTest {
             return;
         }
 
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
         String role = "role";
-        String[] permissions = new String[] { "permission" };
+        String[] permissions = new String[]{"permission"};
 
         {
             // create a new role
@@ -76,10 +77,10 @@ public class UserRolesTest {
 
             // check if role is created
             assertTrue(wasRoleCreated);
-            assertTrue(storage.doesRoleExist(role));
+            assertTrue(storage.doesRoleExist(new AppIdentifier(null, null), role));
 
             // check if permissions are created
-            assertArrayEquals(storage.getPermissionsForRole(role), permissions);
+            assertArrayEquals(storage.getPermissionsForRole(new AppIdentifier(null, null), role), permissions);
 
         }
 
@@ -88,8 +89,8 @@ public class UserRolesTest {
             boolean wasRoleCreated = UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, permissions);
             assertFalse(wasRoleCreated);
             // check that roles and permissions still exist
-            assertTrue(storage.doesRoleExist(role));
-            checkThatArraysAreEqual(permissions, storage.getPermissionsForRole(role));
+            assertTrue(storage.doesRoleExist(new AppIdentifier(null, null), role));
+            checkThatArraysAreEqual(permissions, storage.getPermissionsForRole(new AppIdentifier(null, null), role));
         }
 
         process.kill();
@@ -100,7 +101,7 @@ public class UserRolesTest {
     // one added, and check it returns OK + that the new permission was added.
     @Test
     public void testAddingPermissionsToARoleWithExistingPermissions() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -109,9 +110,9 @@ public class UserRolesTest {
             return;
         }
 
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
 
-        String[] oldPermissions = new String[] { "permission1", "permission2" };
+        String[] oldPermissions = new String[]{"permission1", "permission2"};
         String role = "role";
 
         {
@@ -122,22 +123,22 @@ public class UserRolesTest {
             // check that role and permissions were created
 
             // check if role is created
-            assertTrue(storage.doesRoleExist(role));
+            assertTrue(storage.doesRoleExist(new AppIdentifier(null, null), role));
 
             // check if permissions are created
-            String[] createdPermissions_1 = storage.getPermissionsForRole(role);
+            String[] createdPermissions_1 = storage.getPermissionsForRole(new AppIdentifier(null, null), role);
             checkThatArraysAreEqual(oldPermissions, createdPermissions_1);
         }
 
         {
             // modify role with a new permission
-            String[] newPermissions = new String[] { "permission1", "permission2", "permission3" };
+            String[] newPermissions = new String[]{"permission1", "permission2", "permission3"};
 
             boolean wasRoleCreated = UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, newPermissions);
             // since only permissions were modified and no role was created, this should be false
             assertFalse(wasRoleCreated);
 
-            String[] createdPermissions_2 = storage.getPermissionsForRole(role);
+            String[] createdPermissions_2 = storage.getPermissionsForRole(new AppIdentifier(null, null), role);
             Arrays.sort(newPermissions);
             Arrays.sort(createdPermissions_2);
 
@@ -152,7 +153,7 @@ public class UserRolesTest {
     // Call setRole with a role and null (or empty array) permissions, it should work as expected.
     @Test
     public void createRoleWithNullOrEmptyPermissions() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -161,7 +162,7 @@ public class UserRolesTest {
             return;
         }
 
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
 
         {
             // create a role with null permissions
@@ -172,19 +173,19 @@ public class UserRolesTest {
 
             // check if role is created
             assertTrue(wasRoleCreated);
-            assertTrue(storage.doesRoleExist(role));
+            assertTrue(storage.doesRoleExist(new AppIdentifier(null, null), role));
             // check that no permissions exist for the role
-            assertEquals(0, storage.getPermissionsForRole(role).length);
+            assertEquals(0, storage.getPermissionsForRole(new AppIdentifier(null, null), role).length);
         }
 
         {
             // create role with empty array permissions
             String role = "role2";
-            UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, new String[] {});
+            UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, new String[]{});
             // check if role is created
-            assertTrue(storage.doesRoleExist(role));
+            assertTrue(storage.doesRoleExist(new AppIdentifier(null, null), role));
             // check that no permissions exist for the role
-            assertEquals(0, storage.getPermissionsForRole(role).length);
+            assertEquals(0, storage.getPermissionsForRole(new AppIdentifier(null, null), role).length);
         }
 
         process.kill();
@@ -196,7 +197,7 @@ public class UserRolesTest {
 
     @Test
     public void testCreatingARoleWithPermissionsAndAddingOneMorePermission() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -205,22 +206,22 @@ public class UserRolesTest {
             return;
         }
 
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
         String role = "role";
 
         {
             // create a new role
-            String[] oldPermissions = new String[] { "permission1", "permission2" };
+            String[] oldPermissions = new String[]{"permission1", "permission2"};
 
             boolean wasRoleCreated = UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, oldPermissions);
             // check that role and permissions were created
 
             // check if role is created
             assertTrue(wasRoleCreated);
-            assertTrue(storage.doesRoleExist(role));
+            assertTrue(storage.doesRoleExist(new AppIdentifier(null, null), role));
 
             // retrieve permissions for role
-            String[] createdPermissions = storage.getPermissionsForRole(role);
+            String[] createdPermissions = storage.getPermissionsForRole(new AppIdentifier(null, null), role);
 
             // check that permissions are the same
             checkThatArraysAreEqual(oldPermissions, createdPermissions);
@@ -228,20 +229,20 @@ public class UserRolesTest {
 
         {
             // add a new permission to the role
-            String[] newPermission = new String[] { "permission3" };
+            String[] newPermission = new String[]{"permission3"};
 
             // add additional permission to role
             boolean wasRoleCreated = UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, newPermission);
             assertFalse(wasRoleCreated);
 
             // check that the role still exists
-            assertTrue(storage.doesRoleExist(role));
+            assertTrue(storage.doesRoleExist(new AppIdentifier(null, null), role));
 
             // retrieve permissions for role
-            String[] createdPermissions = storage.getPermissionsForRole(role);
+            String[] createdPermissions = storage.getPermissionsForRole(new AppIdentifier(null, null), role);
 
             // check that newly added permission is added
-            String[] allPermissions = new String[] { "permission1", "permission2", "permission3" };
+            String[] allPermissions = new String[]{"permission1", "permission2", "permission3"};
             checkThatArraysAreEqual(allPermissions, createdPermissions);
 
         }
@@ -252,7 +253,7 @@ public class UserRolesTest {
 
     @Test
     public void testAddRoleToUserResponses() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -260,9 +261,9 @@ public class UserRolesTest {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
-        String[] roles = new String[] { "role" };
+        String[] roles = new String[]{"role"};
         String userId = "userId";
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
 
         // assign an unknown role to a user, it should throw UNKNOWN_ROLE_EXCEPTION
         {
@@ -287,7 +288,7 @@ public class UserRolesTest {
             assertTrue(wasRoleAddedToUser);
 
             // check that the user actually has the role
-            String[] userRoles = storage.getRolesForUser(userId);
+            String[] userRoles = storage.getRolesForUser(new TenantIdentifier(null, null, null), userId);
             Utils.checkThatArraysAreEqual(roles, userRoles);
         }
 
@@ -298,14 +299,14 @@ public class UserRolesTest {
             assertFalse(wasRoleAddedToUser);
 
             // check that the user still has the same role/ no additional role has been added
-            String[] userRoles = storage.getRolesForUser(userId);
+            String[] userRoles = storage.getRolesForUser(new TenantIdentifier(null, null, null), userId);
             Utils.checkThatArraysAreEqual(roles, userRoles);
 
         }
 
         // assign another role to the user, and check that the user has 2 roles
         {
-            String[] newRoles = new String[] { "role", "role2" };
+            String[] newRoles = new String[]{"role", "role2"};
 
             // create another role
             UserRoles.createNewRoleOrModifyItsPermissions(process.main, newRoles[1], null);
@@ -314,7 +315,7 @@ public class UserRolesTest {
             assertTrue(wasRoleAddedToUser);
 
             // check that user has two roles
-            String[] userRoles = storage.getRolesForUser(userId);
+            String[] userRoles = storage.getRolesForUser(new TenantIdentifier(null, null, null), userId);
             Utils.checkThatArraysAreEqual(newRoles, userRoles);
         }
 
@@ -324,7 +325,7 @@ public class UserRolesTest {
 
     @Test
     public void testRemovingAnUnknownRoleFromAUser() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -348,7 +349,7 @@ public class UserRolesTest {
 
     @Test
     public void testRemovingARoleFromAUser() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -358,8 +359,8 @@ public class UserRolesTest {
         }
 
         String userId = "userId";
-        String[] roles = new String[] { "role" };
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        String[] roles = new String[]{"role"};
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
 
         // create a role and assign the role to a user
         UserRoles.createNewRoleOrModifyItsPermissions(process.main, roles[0], null);
@@ -367,7 +368,7 @@ public class UserRolesTest {
 
         {
             // check that the user has roles
-            String[] userRoles = storage.getRolesForUser(userId);
+            String[] userRoles = storage.getRolesForUser(new TenantIdentifier(null, null, null), userId);
             Utils.checkThatArraysAreEqual(roles, userRoles);
         }
 
@@ -377,7 +378,7 @@ public class UserRolesTest {
             assertTrue(didUserHaveRole);
 
             // check that the user has no roles
-            String[] userRoles = storage.getRolesForUser(userId);
+            String[] userRoles = storage.getRolesForUser(new TenantIdentifier(null, null, null), userId);
             assertEquals(0, userRoles.length);
         }
         {
@@ -392,7 +393,7 @@ public class UserRolesTest {
 
     @Test
     public void testRemovingARoleFromAUserWhoHasMultipleRoles() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -401,9 +402,9 @@ public class UserRolesTest {
             return;
         }
 
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
 
-        String[] roles = new String[] { "role1", "role2", "role3" };
+        String[] roles = new String[]{"role1", "role2", "role3"};
         String userId = "userId";
 
         // create multiple roles and assign them to a user
@@ -414,7 +415,7 @@ public class UserRolesTest {
 
         {
             // check that the user actually has the roles
-            String[] userRoles = storage.getRolesForUser(userId);
+            String[] userRoles = storage.getRolesForUser(new TenantIdentifier(null, null, null), userId);
             Utils.checkThatArraysAreEqual(roles, userRoles);
         }
 
@@ -423,8 +424,8 @@ public class UserRolesTest {
         assertTrue(didUserHaveRole);
 
         {
-            String[] currentUserRoles = new String[] { "role2", "role3" };
-            String[] retrievedUserRoles = storage.getRolesForUser(userId);
+            String[] currentUserRoles = new String[]{"role2", "role3"};
+            String[] retrievedUserRoles = storage.getRolesForUser(new TenantIdentifier(null, null, null), userId);
 
             // check that the user has the correct roles
             Utils.checkThatArraysAreEqual(currentUserRoles, retrievedUserRoles);
@@ -437,7 +438,7 @@ public class UserRolesTest {
 
     @Test
     public void testRetrievingRolesForUser() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -446,10 +447,10 @@ public class UserRolesTest {
             return;
         }
 
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
 
         // create multiple roles and add them to a user
-        String[] roles = new String[] { "role1", "role2", "role3" };
+        String[] roles = new String[]{"role1", "role2", "role3"};
         String userId = "userId";
 
         for (String role : roles) {
@@ -469,7 +470,7 @@ public class UserRolesTest {
 
     @Test
     public void testRetrievingRolesForUserWithNoRoles() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -490,7 +491,7 @@ public class UserRolesTest {
 
     @Test
     public void testRetrievingUsersForRole() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -504,7 +505,7 @@ public class UserRolesTest {
         UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
 
         // add role to users
-        String[] userIds = new String[] { "user1", "user2", "user3" };
+        String[] userIds = new String[]{"user1", "user2", "user3"};
         for (String userId : userIds) {
             UserRoles.addRoleToUser(process.main, userId, role);
         }
@@ -519,7 +520,7 @@ public class UserRolesTest {
 
     @Test
     public void testRetrievingUsersForAnUnknownRole() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -545,7 +546,7 @@ public class UserRolesTest {
 
     @Test
     public void testRetrievingUserIdsForRoleWhichHasNoUsers() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -567,7 +568,7 @@ public class UserRolesTest {
 
     @Test
     public void testRetrievingPermissionsForARole() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -577,7 +578,7 @@ public class UserRolesTest {
 
         // create a role
         String role = "role";
-        String[] permissions = new String[] { "permission1", "permission2", "permission3" };
+        String[] permissions = new String[]{"permission1", "permission2", "permission3"};
         UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, permissions);
 
         // check that role has permissions
@@ -590,7 +591,7 @@ public class UserRolesTest {
 
     @Test
     public void testRetrievingPermissionsForARoleWithNoPermissions() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -611,7 +612,7 @@ public class UserRolesTest {
 
     @Test
     public void testRetrievingPermissionsWithUnknownRole() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -635,7 +636,7 @@ public class UserRolesTest {
 
     @Test
     public void testDeletingPermissionsFromARole() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -645,11 +646,11 @@ public class UserRolesTest {
 
         // create a role with permissions
         String role = "role";
-        String[] permissions = new String[] { "permission1", "permission2", "permission3" };
+        String[] permissions = new String[]{"permission1", "permission2", "permission3"};
         UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, permissions);
 
         // remove permissions from role
-        String[] permissionsToRemove = new String[] { "permission1", "permission2" };
+        String[] permissionsToRemove = new String[]{"permission1", "permission2"};
         UserRoles.deletePermissionsFromRole(process.main, role, permissionsToRemove);
 
         // check that permissions have been removed
@@ -663,7 +664,7 @@ public class UserRolesTest {
 
     @Test
     public void testDeletingAllPermissionsFromARole() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -673,7 +674,7 @@ public class UserRolesTest {
 
         // create a role with permissions
         String role = "role";
-        String[] permissions = new String[] { "permission1", "permission2", "permission3" };
+        String[] permissions = new String[]{"permission1", "permission2", "permission3"};
         UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, permissions);
 
         // remove all permissions from role
@@ -689,7 +690,7 @@ public class UserRolesTest {
 
     @Test
     public void testDeletingAPermissionWhichDoesNotExistFromARole() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -699,11 +700,11 @@ public class UserRolesTest {
 
         // create a role with permissions
         String role = "role";
-        String[] permissions = new String[] { "permission1", "permission2", "permission3" };
+        String[] permissions = new String[]{"permission1", "permission2", "permission3"};
         UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, permissions);
 
         // remove all permissions from role
-        String[] permissionToRemove = new String[] { "permission4" };
+        String[] permissionToRemove = new String[]{"permission4"};
         UserRoles.deletePermissionsFromRole(process.main, role, permissionToRemove);
 
         // check that no permissions have been removed
@@ -716,7 +717,7 @@ public class UserRolesTest {
 
     @Test
     public void testDeletingPermissionsFromAnUnknownRole() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -740,7 +741,7 @@ public class UserRolesTest {
 
     @Test
     public void testDeletingAPermissionsFromARoleWithAnEmptyArray() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -750,11 +751,11 @@ public class UserRolesTest {
 
         // create a role with permissions
         String role = "role";
-        String[] permissions = new String[] { "permission1", "permission2", "permission3" };
+        String[] permissions = new String[]{"permission1", "permission2", "permission3"};
         UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, permissions);
 
         // remove all permissions from role
-        UserRoles.deletePermissionsFromRole(process.main, role, new String[] {});
+        UserRoles.deletePermissionsFromRole(process.main, role, new String[]{});
 
         // check that no permissions have been removed
         String[] retrievedPermissions = UserRoles.getPermissionsForRole(process.main, role);
@@ -766,7 +767,7 @@ public class UserRolesTest {
 
     @Test
     public void testRetrievingRolesForPermissions() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -775,15 +776,15 @@ public class UserRolesTest {
         }
 
         // create two roles, assign [permission1] to role1 and [permission1, permission2] to role2
-        String[] roles = new String[] { "role1", "role2" };
+        String[] roles = new String[]{"role1", "role2"};
         String permission1 = "permission1";
         String permission2 = "permission2";
 
         // create role1 with permission [permission1]
-        UserRoles.createNewRoleOrModifyItsPermissions(process.main, roles[0], new String[] { permission1 });
+        UserRoles.createNewRoleOrModifyItsPermissions(process.main, roles[0], new String[]{permission1});
         // create role2 with permissions [permission1, permission2]
         UserRoles.createNewRoleOrModifyItsPermissions(process.main, roles[1],
-                new String[] { permission1, permission2 });
+                new String[]{permission1, permission2});
 
         {
             String[] retrievedRoles = UserRoles.getRolesThatHavePermission(process.main, permission1);
@@ -802,7 +803,7 @@ public class UserRolesTest {
 
     @Test
     public void testRetrievingRolesForAnUnknownPermission() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -820,7 +821,7 @@ public class UserRolesTest {
 
     @Test
     public void testDeletingARole() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -828,12 +829,12 @@ public class UserRolesTest {
             return;
         }
 
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
 
         // create a role with permissions and assign it to a user
         String role = "role";
         String userId = "userId";
-        String[] permissions = new String[] { "permission1", "permission2", "permission3" };
+        String[] permissions = new String[]{"permission1", "permission2", "permission3"};
 
         UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, permissions);
         UserRoles.addRoleToUser(process.main, userId, role);
@@ -854,7 +855,7 @@ public class UserRolesTest {
         assertTrue(error instanceof UnknownRoleException);
 
         // check that the role-permission mapping doesnt exist in the db
-        String[] retrievedPermissions = storage.getPermissionsForRole(role);
+        String[] retrievedPermissions = storage.getPermissionsForRole(new AppIdentifier(null, null), role);
         assertEquals(0, retrievedPermissions.length);
 
         // check that user has no roles
@@ -862,7 +863,7 @@ public class UserRolesTest {
         assertEquals(0, retrievedRoles.length);
 
         // check that the user-role mapping doesnt exist in the db
-        String[] retrievedRolesFromDb = storage.getRolesForUser(userId);
+        String[] retrievedRolesFromDb = storage.getRolesForUser(new TenantIdentifier(null, null, null), userId);
         assertEquals(0, retrievedRolesFromDb.length);
 
         // check that role doesnt exist
@@ -874,7 +875,7 @@ public class UserRolesTest {
 
     @Test
     public void testDeletingAnUnknownRole() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -891,7 +892,7 @@ public class UserRolesTest {
 
     @Test
     public void testGettingAllCreatedRoles() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -906,7 +907,7 @@ public class UserRolesTest {
         }
 
         // create roles
-        String[] roles = new String[] { "role1", "role2", "role3" };
+        String[] roles = new String[]{"role1", "role2", "role3"};
         for (String role : roles) {
             UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
         }
@@ -923,7 +924,7 @@ public class UserRolesTest {
 
     @Test
     public void testDeletingRolesFromAUserWhenMappingDoesExist() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -932,7 +933,7 @@ public class UserRolesTest {
         }
 
         // create roles
-        String[] roles = new String[] { "role1", "role2", "role3" };
+        String[] roles = new String[]{"role1", "role2", "role3"};
         for (String role : roles) {
             UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
         }
@@ -951,7 +952,7 @@ public class UserRolesTest {
 
     @Test
     public void testDeletingAllRolesForAUser() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -960,7 +961,7 @@ public class UserRolesTest {
         }
 
         // create roles and assign them to a user
-        String[] roles = new String[] { "role1", "role2", "role3" };
+        String[] roles = new String[]{"role1", "role2", "role3"};
         String userId = "user";
         for (String role : roles) {
             UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
@@ -989,7 +990,7 @@ public class UserRolesTest {
 
     @Test
     public void createAnAuthUserAssignRolesAndDeleteUser() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -997,7 +998,7 @@ public class UserRolesTest {
             return;
         }
 
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
 
         // create a role
         String role = "role";
@@ -1025,7 +1026,7 @@ public class UserRolesTest {
             assertEquals(0, retrievedRoles.length);
 
             // check that the mapping for user role doesnt exist
-            String[] roleUserMapping = storage.getRolesForUser(userInfo.id);
+            String[] roleUserMapping = storage.getRolesForUser(new TenantIdentifier(null, null, null), userInfo.id);
             assertEquals(0, roleUserMapping.length);
         }
 

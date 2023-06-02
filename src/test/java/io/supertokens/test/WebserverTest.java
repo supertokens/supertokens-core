@@ -81,7 +81,7 @@ public class WebserverTest extends Mockito {
     // * properly (for all HTTP methods).
     @Test
     public void testInitializeTwoRoutesAndCheckRouting() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -176,7 +176,7 @@ public class WebserverTest extends Mockito {
     // Use RecipeRouter in a way that the sub routes have different paths. This should throw an error
     @Test
     public void testRecipeRouterWhereSubRoutesHaveDifferentPaths() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -213,7 +213,7 @@ public class WebserverTest extends Mockito {
 // * - Give no version and makes sure it treats it as 1.0
     @Test
     public void testVersionSupport() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -261,7 +261,7 @@ public class WebserverTest extends Mockito {
     // * - Give no version and makes sure it treats it as the latest
     @Test
     public void testNoVersionGiven() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -288,7 +288,7 @@ public class WebserverTest extends Mockito {
 
     @Test
     public void testInvalidJSONBadInput() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -325,7 +325,7 @@ public class WebserverTest extends Mockito {
 
     @Test
     public void testValidJsonInput() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -358,7 +358,7 @@ public class WebserverTest extends Mockito {
 
     @Test
     public void testInvalidGetInput() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -411,7 +411,7 @@ public class WebserverTest extends Mockito {
 
     @Test
     public void testValidGetInput() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -450,7 +450,7 @@ public class WebserverTest extends Mockito {
     public void serverHelloWithoutDB() throws Exception {
         String hostName = "localhost";
         String port = "3567";
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
@@ -494,7 +494,7 @@ public class WebserverTest extends Mockito {
 
     private void hello(String hostName, String port) throws InterruptedException, IOException, HttpResponseException {
         {
-            String[] args = { "../" };
+            String[] args = {"../"};
             TestingProcess process = TestingProcessManager.start(args);
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
             try {
@@ -503,8 +503,12 @@ public class WebserverTest extends Mockito {
                         "http://" + hostName + ":" + port + "/hello", null, 1000, 1000, null);
                 assertEquals("Hello", response);
 
-                response = HttpRequest.sendJsonPOSTRequest(process.getProcess(), "",
+                response = HttpRequest.sendGETRequest(process.getProcess(), "",
                         "http://" + hostName + ":" + port + "/hello", null, 1000, 1000, null);
+                assertEquals("Hello", response);
+
+                response = HttpRequest.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://" + hostName + ":" + port + "/hello/", null, 1000, 1000, null);
                 assertEquals("Hello", response);
 
                 response = HttpRequest.sendJsonPUTRequest(process.getProcess(), "",
@@ -522,7 +526,7 @@ public class WebserverTest extends Mockito {
         }
 
         {
-            String[] args = { "../" };
+            String[] args = {"../"};
             TestingProcess process = TestingProcessManager.start(args);
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
             try {
@@ -553,7 +557,7 @@ public class WebserverTest extends Mockito {
 
     @Test
     public void serverQuitProgramException() throws InterruptedException, IOException {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
@@ -585,7 +589,7 @@ public class WebserverTest extends Mockito {
 
     @Test
     public void samePortTwoServersError() throws InterruptedException {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
@@ -662,7 +666,7 @@ public class WebserverTest extends Mockito {
         Utils.reset();
 
         Utils.setValueInConfig("host", "\"182.168.29.69\"");
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
         assertTrue(e != null && e.exception instanceof QuitProgramException && e.exception.getMessage().equals(
@@ -691,7 +695,7 @@ public class WebserverTest extends Mockito {
     public void serverThreadPoolSizeOne() throws InterruptedException, IOException {
         Utils.setValueInConfig("max_server_pool_size", "1");
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
@@ -738,7 +742,7 @@ public class WebserverTest extends Mockito {
     public void serverThreadPoolSizeTwo() throws InterruptedException, IOException {
         Utils.setValueInConfig("max_server_pool_size", "2");
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
@@ -782,7 +786,7 @@ public class WebserverTest extends Mockito {
 
     @Test
     public void notFoundTest() throws InterruptedException, IOException {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
@@ -822,7 +826,7 @@ public class WebserverTest extends Mockito {
 
     @Test
     public void invalidBasePathTest() throws InterruptedException, IOException {
-        String[] args = { "../" };
+        String[] args = {"../"};
         HashMap<String, String> tests = new HashMap<>();
         tests.put("somepath/", "/somepath");
         tests.put("somepath//", "/somepath");
@@ -854,7 +858,7 @@ public class WebserverTest extends Mockito {
         process = TestingProcessManager.start(args);
         e = process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
         assertTrue(e != null && e.exception instanceof QuitProgramException
-                && e.exception.getMessage().equals("Invalid characters in base_path config"));
+                && e.exception.getCause().getMessage().equals("Invalid characters in base_path config"));
         Utils.reset();
     }
 
@@ -862,7 +866,7 @@ public class WebserverTest extends Mockito {
     public void validBasePath() throws InterruptedException, IOException, HttpResponseException {
         {
             Utils.setValueInConfig("base_path", "/");
-            String[] args = { "../" };
+            String[] args = {"../"};
             TestingProcess process = TestingProcessManager.start(args);
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
@@ -877,7 +881,7 @@ public class WebserverTest extends Mockito {
 
         {
             Utils.setValueInConfig("base_path", "\"\"");
-            String[] args = { "../" };
+            String[] args = {"../"};
             TestingProcess process = TestingProcessManager.start(args);
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
@@ -892,7 +896,7 @@ public class WebserverTest extends Mockito {
 
         {
             Utils.setValueInConfig("base_path", "\"/test\"");
-            String[] args = { "../" };
+            String[] args = {"../"};
             TestingProcess process = TestingProcessManager.start(args);
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
@@ -907,7 +911,7 @@ public class WebserverTest extends Mockito {
 
         {
             Utils.setValueInConfig("base_path", "\"/test/path\"");
-            String[] args = { "../" };
+            String[] args = {"../"};
             TestingProcess process = TestingProcessManager.start(args);
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
@@ -921,7 +925,7 @@ public class WebserverTest extends Mockito {
 
         {
             Utils.setValueInConfig("base_path", "\"/te3st/Pa23th\"");
-            String[] args = { "../" };
+            String[] args = {"../"};
             TestingProcess process = TestingProcessManager.start(args);
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
@@ -945,11 +949,112 @@ public class WebserverTest extends Mockito {
 
         {
             Utils.setValueInConfig("base_path", "");
-            String[] args = { "../" };
+            String[] args = {"../"};
             TestingProcess process = TestingProcessManager.start(args);
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
             String response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/hello", null,
+                    1000, 1000, null);
+            assertEquals("Hello", response);
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+        }
+
+    }
+
+    @Test
+    public void validBasePathWithEmptyHelloPath() throws InterruptedException, IOException, HttpResponseException {
+        {
+            Utils.setValueInConfig("base_path", "/");
+            String[] args = {"../"};
+            TestingProcess process = TestingProcessManager.start(args);
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+            String response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/", null,
+                    1000, 1000, null);
+            assertEquals("Hello", response);
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+            Utils.reset();
+        }
+
+        {
+            Utils.setValueInConfig("base_path", "\"\"");
+            String[] args = {"../"};
+            TestingProcess process = TestingProcessManager.start(args);
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+            String response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/", null,
+                    1000, 1000, null);
+            assertEquals("Hello", response);
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+            Utils.reset();
+        }
+
+        {
+            Utils.setValueInConfig("base_path", "\"/test\"");
+            String[] args = {"../"};
+            TestingProcess process = TestingProcessManager.start(args);
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+            String response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/test",
+                    null, 1000, 1000, null);
+            assertEquals("Hello", response);
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+            Utils.reset();
+        }
+
+        {
+            Utils.setValueInConfig("base_path", "\"/test/path\"");
+            String[] args = {"../"};
+            TestingProcess process = TestingProcessManager.start(args);
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+            String response = HttpRequest.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/test/path/", null, 1000, 1000, null);
+            assertEquals("Hello", response);
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+        }
+
+        {
+            Utils.setValueInConfig("base_path", "\"/te3st/Pa23th\"");
+            String[] args = {"../"};
+            TestingProcess process = TestingProcessManager.start(args);
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+            {
+                String response = HttpRequest.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/te3st/Pa23th/", null, 1000, 1000, null);
+                assertEquals("Hello", response);
+            }
+
+            try {
+                HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/hello", null, 1000, 1000,
+                        null);
+                fail();
+            } catch (Exception e) {
+                assert (e.getMessage().startsWith("Http error. Status Code: 404"));
+            }
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+        }
+
+        {
+            Utils.setValueInConfig("base_path", "");
+            String[] args = {"../"};
+            TestingProcess process = TestingProcessManager.start(args);
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+            String response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567", null,
                     1000, 1000, null);
             assertEquals("Hello", response);
 
@@ -1051,5 +1156,4 @@ public class WebserverTest extends Mockito {
 
         }
     }
-
 }

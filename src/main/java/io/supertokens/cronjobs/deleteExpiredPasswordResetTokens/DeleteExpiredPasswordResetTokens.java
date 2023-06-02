@@ -17,36 +17,43 @@
 package io.supertokens.cronjobs.deleteExpiredPasswordResetTokens;
 
 import io.supertokens.Main;
-import io.supertokens.ResourceDistributor;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import org.jetbrains.annotations.TestOnly;
+
+import java.util.List;
 
 public class DeleteExpiredPasswordResetTokens extends CronTask {
 
     public static final String RESOURCE_KEY = "io.supertokens.cronjobs.deleteExpiredPasswordResetTokens"
             + ".DeleteExpiredPasswordResetTokens";
 
-    private DeleteExpiredPasswordResetTokens(Main main) {
-        super("RemoveOldPasswordResetTokens", main);
+    private DeleteExpiredPasswordResetTokens(Main main, List<List<TenantIdentifier>> tenantsInfo) {
+        super("RemoveOldPasswordResetTokens", main, tenantsInfo, false);
     }
 
+    public static DeleteExpiredPasswordResetTokens init(Main main,
+                                                        List<List<TenantIdentifier>> tenantsInfo) {
+        return (DeleteExpiredPasswordResetTokens) main.getResourceDistributor()
+                .setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY,
+                        new DeleteExpiredPasswordResetTokens(main, tenantsInfo));
+    }
+
+    @TestOnly
     public static DeleteExpiredPasswordResetTokens getInstance(Main main) {
-        ResourceDistributor.SingletonResource instance = main.getResourceDistributor().getResource(RESOURCE_KEY);
-        if (instance == null) {
-            instance = main.getResourceDistributor().setResource(RESOURCE_KEY,
-                    new DeleteExpiredPasswordResetTokens(main));
-        }
-        return (DeleteExpiredPasswordResetTokens) instance;
+        return (DeleteExpiredPasswordResetTokens) main.getResourceDistributor().getResource(RESOURCE_KEY);
     }
 
     @Override
-    protected void doTask() throws Exception {
-        if (StorageLayer.getStorage(this.main).getType() != STORAGE_TYPE.SQL) {
+    protected void doTaskPerStorage(Storage storage) throws Exception {
+        if (storage.getType() != STORAGE_TYPE.SQL) {
             return;
         }
-        StorageLayer.getEmailPasswordStorage(this.main).deleteExpiredPasswordResetTokens();
+        ((EmailPasswordSQLStorage) storage).deleteExpiredPasswordResetTokens();
     }
 
     @Override

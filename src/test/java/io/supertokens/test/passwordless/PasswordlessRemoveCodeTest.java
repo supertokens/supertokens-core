@@ -19,6 +19,7 @@ package io.supertokens.test.passwordless;
 import io.supertokens.ProcessState;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
 import io.supertokens.pluginInterface.passwordless.PasswordlessDevice;
 import io.supertokens.pluginInterface.passwordless.PasswordlessStorage;
@@ -31,9 +32,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import static io.supertokens.test.passwordless.PasswordlessUtility.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static io.supertokens.test.passwordless.PasswordlessUtility.EMAIL;
+import static io.supertokens.test.passwordless.PasswordlessUtility.PHONE_NUMBER;
+import static org.junit.Assert.*;
 
 /**
  * This UT encompasses all tests related to remove code
@@ -64,7 +65,7 @@ public class PasswordlessRemoveCodeTest {
 
         int NUMBER_OF_CODES_TO_GENERATE = 5;
 
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -73,7 +74,7 @@ public class PasswordlessRemoveCodeTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), null,
                 PHONE_NUMBER, null, null);
@@ -90,7 +91,8 @@ public class PasswordlessRemoveCodeTest {
 
         Passwordless.removeCode(process.getProcess(), createCodeResponse.codeId);
 
-        PasswordlessDevice[] devices = storage.getDevicesByPhoneNumber(PHONE_NUMBER);
+        PasswordlessDevice[] devices = storage.getDevicesByPhoneNumber(new TenantIdentifier(null, null, null),
+                PHONE_NUMBER);
 
         for (int counter = 0; counter < devices.length; counter++) {
             PasswordlessDevice device = devices[counter];
@@ -98,11 +100,12 @@ public class PasswordlessRemoveCodeTest {
             // verify device retrieved
             assertNotNull(device);
             assertEquals(createCodeResponse.deviceIdHash, device.deviceIdHash);
-            assertEquals(null, device.email);
+            assertNull(device.email);
             assertEquals(PHONE_NUMBER, device.phoneNumber);
             assertEquals(0, device.failedAttempts);
 
-            PasswordlessCode[] codes = storage.getCodesOfDevice(device.deviceIdHash);
+            PasswordlessCode[] codes = storage.getCodesOfDevice(new TenantIdentifier(null, null, null),
+                    device.deviceIdHash);
             assertEquals(NUMBER_OF_CODES_TO_GENERATE, codes.length);
 
             for (int counter_code = 0; counter_code < codes.length; counter_code++) {
@@ -126,7 +129,7 @@ public class PasswordlessRemoveCodeTest {
     @Test
     public void deleteCodeAndCleansDevice() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -135,7 +138,7 @@ public class PasswordlessRemoveCodeTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), null,
                 PHONE_NUMBER, null, null);
@@ -143,7 +146,8 @@ public class PasswordlessRemoveCodeTest {
 
         Passwordless.removeCode(process.getProcess(), createCodeResponse.codeId);
 
-        PasswordlessDevice[] devices = storage.getDevicesByPhoneNumber(PHONE_NUMBER);
+        PasswordlessDevice[] devices = storage.getDevicesByPhoneNumber(new TenantIdentifier(null, null, null),
+                PHONE_NUMBER);
         assertEquals(0, devices.length);
 
         process.kill();
@@ -159,7 +163,7 @@ public class PasswordlessRemoveCodeTest {
     @Test
     public void doNothingIfCodeDoesNotExist() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -168,7 +172,7 @@ public class PasswordlessRemoveCodeTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), null,
                 PHONE_NUMBER, null, null);
@@ -176,10 +180,12 @@ public class PasswordlessRemoveCodeTest {
 
         Passwordless.removeCode(process.getProcess(), "1234");
 
-        PasswordlessDevice[] devices = storage.getDevicesByPhoneNumber(PHONE_NUMBER);
+        PasswordlessDevice[] devices = storage.getDevicesByPhoneNumber(new TenantIdentifier(null, null, null),
+                PHONE_NUMBER);
         assertEquals(1, devices.length);
 
-        PasswordlessCode[] codes = storage.getCodesOfDevice(createCodeResponse.deviceIdHash);
+        PasswordlessCode[] codes = storage.getCodesOfDevice(new TenantIdentifier(null, null, null),
+                createCodeResponse.deviceIdHash);
         assertEquals(1, codes.length);
 
         process.kill();
@@ -189,9 +195,6 @@ public class PasswordlessRemoveCodeTest {
 
     /**
      * removeCodesByEmail
-     */
-
-    /**
      * removes devices with matching email (leaving others)
      *
      * @throws Exception
@@ -199,7 +202,7 @@ public class PasswordlessRemoveCodeTest {
     @Test
     public void removeDevicesFromEmail() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -208,7 +211,7 @@ public class PasswordlessRemoveCodeTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         String alternate_email = "alternateTest@example.com";
 
@@ -224,13 +227,14 @@ public class PasswordlessRemoveCodeTest {
 
         Passwordless.removeCodesByEmail(process.getProcess(), EMAIL);
 
-        PasswordlessDevice[] devices = storage.getDevicesByEmail(EMAIL);
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
         assertEquals(0, devices.length);
 
-        devices = storage.getDevicesByEmail(alternate_email);
+        devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), alternate_email);
         assertEquals(1, devices.length);
 
-        PasswordlessCode[] codes = storage.getCodesOfDevice(devices[0].deviceIdHash);
+        PasswordlessCode[] codes = storage.getCodesOfDevice(new TenantIdentifier(null, null, null),
+                devices[0].deviceIdHash);
         assertEquals(1, codes.length);
 
         process.kill();
@@ -240,9 +244,6 @@ public class PasswordlessRemoveCodeTest {
 
     /**
      * removeCodesByPhoneNumber
-     */
-
-    /**
      * removes devices with matching phone number (leaving others)
      *
      * @throws Exception
@@ -250,7 +251,7 @@ public class PasswordlessRemoveCodeTest {
     @Test
     public void removeDevicesFromPhoneNumber() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -259,7 +260,7 @@ public class PasswordlessRemoveCodeTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         String alternate_phoneNumber = "+442071838751";
 
@@ -275,13 +276,15 @@ public class PasswordlessRemoveCodeTest {
 
         Passwordless.removeCodesByPhoneNumber(process.getProcess(), PHONE_NUMBER);
 
-        PasswordlessDevice[] devices = storage.getDevicesByPhoneNumber(PHONE_NUMBER);
+        PasswordlessDevice[] devices = storage.getDevicesByPhoneNumber(new TenantIdentifier(null, null, null),
+                PHONE_NUMBER);
         assertEquals(0, devices.length);
 
-        devices = storage.getDevicesByPhoneNumber(alternate_phoneNumber);
+        devices = storage.getDevicesByPhoneNumber(new TenantIdentifier(null, null, null), alternate_phoneNumber);
         assertEquals(1, devices.length);
 
-        PasswordlessCode[] codes = storage.getCodesOfDevice(devices[0].deviceIdHash);
+        PasswordlessCode[] codes = storage.getCodesOfDevice(new TenantIdentifier(null, null, null),
+                devices[0].deviceIdHash);
         assertEquals(1, codes.length);
 
         process.kill();

@@ -24,6 +24,7 @@ import io.supertokens.emailpassword.ParsedFirebaseSCryptResponse;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -53,7 +54,7 @@ public class ImportUserWithPasswordHashAPITest {
 
     @Test
     public void badInputTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         Utils.setValueInConfig("firebase_password_hashing_signer_key",
                 "gRhC3eDeQOdyEn4bMd9c6kxguWVmcIVq/SKa0JDPFeM6TcEevkaW56sIWfx88OHbJKnCXdWscZx0l2WbCJ1wbg==");
@@ -222,7 +223,7 @@ public class ImportUserWithPasswordHashAPITest {
     @Test
     public void testSigningInWithFireBasePasswordWithInvalidSignerKey() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         Utils.setValueInConfig("firebase_password_hashing_signer_key", "invalidSignerkey");
 
@@ -240,7 +241,8 @@ public class ImportUserWithPasswordHashAPITest {
         String email = "test@example.com";
         String password = "testPass123";
         String salt = "/cj0jC1br5o4+w==";
-        String passwordHash = "qZM035es5AXYqavsKD6/rhtxg7t5PhcyRgv5blc3doYbChX8keMfQLq1ra96O2Pf2TP/eZrR5xtPCYN6mX3ESA==";
+        String passwordHash = "qZM035es5AXYqavsKD6/rhtxg7t5PhcyRgv5blc3doYbChX8keMfQLq1ra96O2Pf2TP/eZrR5xtPCYN6mX3ESA" +
+                "==";
         String combinedPasswordHash = "$" + ParsedFirebaseSCryptResponse.FIREBASE_SCRYPT_PREFIX + "$" + passwordHash
                 + "$" + salt + "$m=" + firebaseMemCost + "$r=" + firebaseRounds + "$s=" + firebaseSaltSeparator;
 
@@ -262,7 +264,7 @@ public class ImportUserWithPasswordHashAPITest {
 
     @Test
     public void testImportingAUsesrFromFirebaseWithoutSettingTheSignerKey() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -277,7 +279,8 @@ public class ImportUserWithPasswordHashAPITest {
 
         String email = "test@example.com";
         String salt = "/cj0jC1br5o4+w==";
-        String passwordHash = "qZM035es5AXYqavsKD6/rhtxg7t5PhcyRgv5blc3doYbChX8keMfQLq1ra96O2Pf2TP/eZrR5xtPCYN6mX3ESA==";
+        String passwordHash = "qZM035es5AXYqavsKD6/rhtxg7t5PhcyRgv5blc3doYbChX8keMfQLq1ra96O2Pf2TP/eZrR5xtPCYN6mX3ESA" +
+                "==";
         String combinedPasswordHash = "$" + ParsedFirebaseSCryptResponse.FIREBASE_SCRYPT_PREFIX + "$" + passwordHash
                 + "$" + salt + "$m=" + firebaseMemCost + "$r=" + firebaseRounds + "$s=" + firebaseSaltSeparator;
 
@@ -303,7 +306,7 @@ public class ImportUserWithPasswordHashAPITest {
 
     @Test
     public void testSigningInAUserWhenStoredPasswordHashIsIncorrect() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         Utils.setValueInConfig("firebase_password_hashing_signer_key",
                 "gRhC3eDeQOdyEn4bMd9c6kxguWVmcIVq/SKa0JDPFeM6TcEevkaW56sIWfx88OHbJKnCXdWscZx0l2WbCJ1wbg==");
@@ -328,10 +331,9 @@ public class ImportUserWithPasswordHashAPITest {
 
         long timeJoined = System.currentTimeMillis();
 
-        UserInfo userInfo = new UserInfo("userId", email, combinedPasswordHash, timeJoined);
-        EmailPasswordSQLStorage storage = StorageLayer.getEmailPasswordStorage(process.getProcess());
+        EmailPasswordSQLStorage storage = (EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess());
 
-        storage.signUp(userInfo);
+        storage.signUp(new TenantIdentifier(null, null, null), "userId", email, combinedPasswordHash, timeJoined);
 
         JsonObject signInRequestBody = new JsonObject();
         signInRequestBody.addProperty("email", email);
@@ -348,7 +350,7 @@ public class ImportUserWithPasswordHashAPITest {
 
     @Test
     public void testSigningInAUserWithFirebasePasswordHashWithoutSettingTheSignerKey() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -364,16 +366,16 @@ public class ImportUserWithPasswordHashAPITest {
         String email = "test@example.com";
         String password = "testPass123";
         String salt = "/cj0jC1br5o4+w==";
-        String passwordHash = "qZM035es5AXYqavsKD6/rhtxg7t5PhcyRgv5blc3doYbChX8keMfQLq1ra96O2Pf2TP/eZrR5xtPCYN6mX3ESA==";
+        String passwordHash = "qZM035es5AXYqavsKD6/rhtxg7t5PhcyRgv5blc3doYbChX8keMfQLq1ra96O2Pf2TP/eZrR5xtPCYN6mX3ESA" +
+                "==";
         String combinedPasswordHash = "$" + ParsedFirebaseSCryptResponse.FIREBASE_SCRYPT_PREFIX + "$" + passwordHash
                 + "$" + salt + "$m=" + firebaseMemCost + "$r=" + firebaseRounds + "$s=" + firebaseSaltSeparator;
 
         long timeJoined = System.currentTimeMillis();
 
-        UserInfo userInfo = new UserInfo("userId", email, combinedPasswordHash, timeJoined);
-        EmailPasswordSQLStorage storage = StorageLayer.getEmailPasswordStorage(process.getProcess());
+        EmailPasswordSQLStorage storage = (EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess());
 
-        storage.signUp(userInfo);
+        storage.signUp(new TenantIdentifier(null, null, null), "userId", email, combinedPasswordHash, timeJoined);
 
         // sign in should result in 500 error since the firebase signer key is not set
         JsonObject signInRequestBody = new JsonObject();
@@ -395,7 +397,7 @@ public class ImportUserWithPasswordHashAPITest {
 
     @Test
     public void testImportingAUserFromFireBaseWithFirebaseSCryptPasswordHash() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         Utils.setValueInConfig("firebase_password_hashing_signer_key",
                 "gRhC3eDeQOdyEn4bMd9c6kxguWVmcIVq/SKa0JDPFeM6TcEevkaW56sIWfx88OHbJKnCXdWscZx0l2WbCJ1wbg==");
@@ -414,7 +416,8 @@ public class ImportUserWithPasswordHashAPITest {
         String email = "test@example.com";
         String password = "testPass123";
         String salt = "/cj0jC1br5o4+w==";
-        String passwordHash = "qZM035es5AXYqavsKD6/rhtxg7t5PhcyRgv5blc3doYbChX8keMfQLq1ra96O2Pf2TP/eZrR5xtPCYN6mX3ESA==";
+        String passwordHash = "qZM035es5AXYqavsKD6/rhtxg7t5PhcyRgv5blc3doYbChX8keMfQLq1ra96O2Pf2TP/eZrR5xtPCYN6mX3ESA" +
+                "==";
         String combinedPasswordHash = "$" + ParsedFirebaseSCryptResponse.FIREBASE_SCRYPT_PREFIX + "$" + passwordHash
                 + "$" + salt + "$m=" + firebaseMemCost + "$r=" + firebaseRounds + "$s=" + firebaseSaltSeparator;
 
@@ -461,7 +464,7 @@ public class ImportUserWithPasswordHashAPITest {
     // migrate a user with email and password hash sign in and check that the user is created and the password works
     @Test
     public void testGoodInput() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -502,7 +505,7 @@ public class ImportUserWithPasswordHashAPITest {
 
     @Test
     public void testUpdatingAUsersPasswordHash() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -545,7 +548,7 @@ public class ImportUserWithPasswordHashAPITest {
 
     @Test
     public void testImportingUsersWithHashingAlgorithmFieldWithMixedLowerAndUpperCase() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -606,7 +609,7 @@ public class ImportUserWithPasswordHashAPITest {
 
     @Test
     public void testImportingUsersWithHashingAlgorithmField() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

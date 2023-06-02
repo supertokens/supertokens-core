@@ -20,16 +20,16 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.usermetadata.UserMetadata;
 import io.supertokens.userroles.UserRoles;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.io.Serial;
 
@@ -48,10 +48,12 @@ public class GetRolesForUserAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific
         String userId = InputParser.getQueryParamOrThrowError(req, "userId", false);
         try {
 
-            String[] userRoles = UserRoles.getRolesForUser(main, userId);
+            String[] userRoles = UserRoles.getRolesForUser(this.getTenantIdentifierWithStorageFromRequest(req),
+                    userId);
             JsonArray arr = new JsonArray();
             for (String s : userRoles) {
                 arr.add(new JsonPrimitive(s));
@@ -61,7 +63,7 @@ public class GetRolesForUserAPI extends WebserverAPI {
             response.add("roles", arr);
             response.addProperty("status", "OK");
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

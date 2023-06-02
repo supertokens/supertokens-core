@@ -28,6 +28,8 @@ import io.supertokens.httpRequest.HttpResponseException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.totp.TOTPDevice;
 import io.supertokens.pluginInterface.totp.TOTPStorage;
 import io.supertokens.pluginInterface.totp.TOTPUsedCode;
@@ -87,8 +89,7 @@ public class TOTPRecipeTest {
     }
 
     public TestSetupResult defaultInit()
-            throws InterruptedException, IOException, StorageQueryException, InvalidLicenseKeyException,
-            HttpResponseException {
+            throws InterruptedException {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -97,7 +98,7 @@ public class TOTPRecipeTest {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return null;
         }
-        TOTPStorage storage = StorageLayer.getTOTPStorage(process.getProcess());
+        TOTPStorage storage = (TOTPStorage) StorageLayer.getStorage(process.getProcess());
 
         FeatureFlagTestContent.getInstance(process.main)
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.TOTP});
@@ -130,7 +131,8 @@ public class TOTPRecipeTest {
         TOTPSQLStorage sqlStorage = (TOTPSQLStorage) storage;
 
         return (TOTPUsedCode[]) sqlStorage.startTransaction(con -> {
-            TOTPUsedCode[] usedCodes = sqlStorage.getAllUsedCodesDescOrder_Transaction(con, userId);
+            TOTPUsedCode[] usedCodes = sqlStorage.getAllUsedCodesDescOrder_Transaction(con,
+                    new TenantIdentifier(null, null, null), userId);
             sqlStorage.commitTransaction(con);
             return usedCodes;
         });

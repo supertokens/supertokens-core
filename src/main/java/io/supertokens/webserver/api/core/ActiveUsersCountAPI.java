@@ -19,7 +19,9 @@ package io.supertokens.webserver.api.core;
 import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -42,6 +44,7 @@ public class ActiveUsersCountAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is app specific
         Long sinceTimestamp = InputParser.getLongQueryParamOrThrowError(req, "since", false);
 
         if (sinceTimestamp < 0) {
@@ -49,12 +52,13 @@ public class ActiveUsersCountAPI extends WebserverAPI {
         }
 
         try {
-            int count = ActiveUsers.countUsersActiveSince(main, sinceTimestamp);
+            int count = ActiveUsers.countUsersActiveSince(
+                    this.getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(req), main, sinceTimestamp);
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             result.addProperty("count", count);
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
     }

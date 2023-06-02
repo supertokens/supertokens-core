@@ -17,36 +17,49 @@
 package io.supertokens.cronjobs.deleteExpiredEmailVerificationTokens;
 
 import io.supertokens.Main;
-import io.supertokens.ResourceDistributor;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerificationSQLStorage;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import org.jetbrains.annotations.TestOnly;
+
+import java.util.List;
 
 public class DeleteExpiredEmailVerificationTokens extends CronTask {
 
     public static final String RESOURCE_KEY = "io.supertokens.cronjobs.deleteExpiredEmailVerificationTokens"
             + ".DeleteExpiredEmailVerificationTokens";
 
-    private DeleteExpiredEmailVerificationTokens(Main main) {
-        super("RemoveOldEmailVerificationTokens", main);
+    private DeleteExpiredEmailVerificationTokens(Main main, List<List<TenantIdentifier>> tenantsInfo) {
+        super("RemoveOldEmailVerificationTokens", main, tenantsInfo, false);
     }
 
+    public static DeleteExpiredEmailVerificationTokens init(Main main,
+                                                            List<List<TenantIdentifier>> tenantsInfo) {
+        return (DeleteExpiredEmailVerificationTokens) main.getResourceDistributor()
+                .setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY,
+                        new DeleteExpiredEmailVerificationTokens(main, tenantsInfo));
+    }
+
+    @TestOnly
     public static DeleteExpiredEmailVerificationTokens getInstance(Main main) {
-        ResourceDistributor.SingletonResource instance = main.getResourceDistributor().getResource(RESOURCE_KEY);
-        if (instance == null) {
-            instance = main.getResourceDistributor().setResource(RESOURCE_KEY,
-                    new DeleteExpiredEmailVerificationTokens(main));
+        try {
+            return (DeleteExpiredEmailVerificationTokens) main.getResourceDistributor()
+                    .getResource(new TenantIdentifier(null, null, null), RESOURCE_KEY);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new IllegalStateException(e);
         }
-        return (DeleteExpiredEmailVerificationTokens) instance;
     }
 
     @Override
-    protected void doTask() throws Exception {
-        if (StorageLayer.getStorage(this.main).getType() != STORAGE_TYPE.SQL) {
+    protected void doTaskPerStorage(Storage storage) throws Exception {
+        if (storage.getType() != STORAGE_TYPE.SQL) {
             return;
         }
-        StorageLayer.getEmailVerificationStorage(this.main).deleteExpiredEmailVerificationTokens();
+        ((EmailVerificationSQLStorage) storage).deleteExpiredEmailVerificationTokens();
     }
 
     @Override

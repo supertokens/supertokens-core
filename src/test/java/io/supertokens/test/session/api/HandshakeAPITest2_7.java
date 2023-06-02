@@ -21,8 +21,10 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.ProcessState;
 import io.supertokens.config.Config;
+import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.signingkeys.AccessTokenSigningKey;
 import io.supertokens.signingkeys.SigningKeys;
 import io.supertokens.test.TestingProcessManager;
@@ -53,7 +55,7 @@ public class HandshakeAPITest2_7 {
 
     @Test
     public void inputErrorsInHandshakeAPITest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -74,7 +76,7 @@ public class HandshakeAPITest2_7 {
 
     @Test
     public void signingKeyHandshakeAPITest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -107,7 +109,7 @@ public class HandshakeAPITest2_7 {
 
     @Test
     public void signingKeyHandshakeAPIWithCookiesTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         Utils.setValueInConfig("cookie_domain", "localhost");
 
@@ -142,7 +144,7 @@ public class HandshakeAPITest2_7 {
 
     @Test
     public void changingSigningKeyHandshakeAPITest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         Utils.setValueInConfig("access_token_dynamic_signing_key_update_interval", "0.00081"); // 0.00027*3 = 3 seconds
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -174,14 +176,15 @@ public class HandshakeAPITest2_7 {
                 .equals(new io.supertokens.utils.Utils.PubPriKey(
                         SigningKeys.getInstance(process.main).getLatestIssuedDynamicKey().value).publicKey)
                 && !(changedResponse.get("jwtSigningPublicKey").getAsString()
-                        .equals(response.get("jwtSigningPublicKey").getAsString())));
+                .equals(response.get("jwtSigningPublicKey").getAsString())));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     private static void checkHandshakeAPIResponse(JsonObject response, TestingProcessManager.TestingProcess process)
-            throws StorageQueryException, StorageTransactionLogicException {
+            throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException,
+            UnsupportedJWTSigningAlgorithmException {
         // check status
         assertEquals(response.get("status").getAsString(), "OK");
 

@@ -22,8 +22,11 @@ import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
+import io.supertokens.pluginInterface.ActiveUsersStorage;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.nonAuthRecipe.NonAuthRecipeStorage;
 import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
 import io.supertokens.pluginInterface.useridmapping.exception.UnknownSuperTokensUserIdException;
@@ -34,7 +37,7 @@ import io.supertokens.test.Utils;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.usermetadata.UserMetadata;
-import io.supertokens.webserver.WebserverAPI;
+import jakarta.servlet.ServletException;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -42,14 +45,12 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.reflections.Reflections;
 
-import jakarta.servlet.ServletException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertFalse;
 
 public class UserIdMappingTest {
     @Rule
@@ -67,7 +68,7 @@ public class UserIdMappingTest {
 
     @Test
     public void testCreatingUserIdMappingWithUnknownSuperTokensUserId() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -93,7 +94,7 @@ public class UserIdMappingTest {
 
     @Test
     public void testDuplicateUserIdMapping() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -169,7 +170,7 @@ public class UserIdMappingTest {
 
     @Test
     public void testCreatingUserIdMapping() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -177,7 +178,7 @@ public class UserIdMappingTest {
             return;
         }
 
-        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
 
         // create a user
         UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPassword");
@@ -189,7 +190,8 @@ public class UserIdMappingTest {
         UserIdMapping.createUserIdMapping(process.getProcess(), userInfo.id, externalUserId, externalUserIdInfo, false);
 
         // check that the mapping exists
-        io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = storage.getUserIdMapping(userInfo.id,
+        io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = storage.getUserIdMapping(
+                new AppIdentifier(null, null), userInfo.id,
                 true);
         assertEquals(userInfo.id, userIdMapping.superTokensUserId);
         assertEquals(externalUserId, userIdMapping.externalUserId);
@@ -201,7 +203,7 @@ public class UserIdMappingTest {
 
     @Test
     public void testRetrievingUseridMappingWithUnknownId() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -224,7 +226,7 @@ public class UserIdMappingTest {
 
     @Test
     public void testRetrievingUserIdMapping() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -304,9 +306,9 @@ public class UserIdMappingTest {
                     .getUserIdMapping(process.main, newExternalUserId, UserIdType.ANY);
 
             // query with the storage layer and check that the db returns two entries
-            UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
+            UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
             io.supertokens.pluginInterface.useridmapping.UserIdMapping[] storageResponse = storage
-                    .getUserIdMapping(newExternalUserId);
+                    .getUserIdMapping(new AppIdentifier(null, null), newExternalUserId);
             assertEquals(2, storageResponse.length);
 
             assertNotNull(response);
@@ -332,7 +334,7 @@ public class UserIdMappingTest {
 
     @Test
     public void testDeletingUserIdMappingWithUnknownId() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -358,7 +360,7 @@ public class UserIdMappingTest {
 
     @Test
     public void testDeletingUserIdMapping() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -372,8 +374,9 @@ public class UserIdMappingTest {
         String externalUserId = "externalId";
         String externalUserIdInfo = "externalIdInfo";
 
-        io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping_1 = new io.supertokens.pluginInterface.useridmapping.UserIdMapping(
-                superTokensUserId, externalUserId, externalUserIdInfo);
+        io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping_1 =
+                new io.supertokens.pluginInterface.useridmapping.UserIdMapping(
+                        superTokensUserId, externalUserId, externalUserIdInfo);
 
         {
             UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, externalUserIdInfo,
@@ -460,7 +463,7 @@ public class UserIdMappingTest {
 
     @Test
     public void testDeletingUserIdMappingWithSharedId() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -473,8 +476,9 @@ public class UserIdMappingTest {
         // Create UserId mapping 1
 
         UserInfo userInfo_1 = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping_1 = new io.supertokens.pluginInterface.useridmapping.UserIdMapping(
-                userInfo_1.id, "externalUserId", "externalUserIdInfo");
+        io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping_1 =
+                new io.supertokens.pluginInterface.useridmapping.UserIdMapping(
+                        userInfo_1.id, "externalUserId", "externalUserIdInfo");
 
         // create the mapping and check that it exists
         {
@@ -488,8 +492,9 @@ public class UserIdMappingTest {
         // Create UserId mapping 2
 
         UserInfo userInfo_2 = EmailPassword.signUp(process.main, "test2@example.com", "testPass123");
-        io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping_2 = new io.supertokens.pluginInterface.useridmapping.UserIdMapping(
-                userInfo_2.id, userIdMapping_1.superTokensUserId, "externalUserIdInfo2");
+        io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping_2 =
+                new io.supertokens.pluginInterface.useridmapping.UserIdMapping(
+                        userInfo_2.id, userIdMapping_1.superTokensUserId, "externalUserIdInfo2");
 
         // create the mapping and check that it exists
         {
@@ -527,7 +532,7 @@ public class UserIdMappingTest {
 
     @Test
     public void testUpdatingExternalUserIdInfoWithUnknownUserId() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -556,7 +561,7 @@ public class UserIdMappingTest {
 
     @Test
     public void testUpdatingExternalUserIdInfo() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -649,7 +654,7 @@ public class UserIdMappingTest {
 
     @Test
     public void testUpdatingExternalUserIdInfoWithSharedUserIds() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -735,7 +740,7 @@ public class UserIdMappingTest {
 
     @Test
     public void testUpdatingTheExternalUserIdInfoOfAMappingWithTheSameValue() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -778,7 +783,7 @@ public class UserIdMappingTest {
 
     @Test
     public void checkThatCreateUserIdMappingHasAllNonAuthRecipeChecks() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -790,7 +795,7 @@ public class UserIdMappingTest {
 
         // this list contains the package names for recipes which dont use UserIdMapping
         ArrayList<String> nonAuthRecipesWhichDontNeedUserIdMapping = new ArrayList<>(
-                List.of("io.supertokens.pluginInterface.jwt.JWTRecipeStorage"));
+                List.of("io.supertokens.pluginInterface.jwt.JWTRecipeStorage", ActiveUsersStorage.class.getName()));
 
         Reflections reflections = new Reflections("io.supertokens.pluginInterface");
         Set<Class<? extends NonAuthRecipeStorage>> classes = reflections.getSubTypesOf(NonAuthRecipeStorage.class);
@@ -802,10 +807,12 @@ public class UserIdMappingTest {
             }
         }
 
-        String userId = "testUserId";
         for (String className : classNames) {
+            UserInfo user = EmailPassword.signUp(process.main, "test@example.com", "password");
+            String userId = user.id;
+
             // create entry in nonAuth table
-            StorageLayer.getStorage(process.main).addInfoToNonAuthRecipesBasedOnUserId(className, userId);
+            StorageLayer.getStorage(process.main).addInfoToNonAuthRecipesBasedOnUserId(TenantIdentifier.BASE_TENANT, className, userId);
             // try to create the mapping with superTokensId
             String errorMessage = null;
             try {
@@ -834,7 +841,7 @@ public class UserIdMappingTest {
 
     @Test
     public void checkThatAddInfoToNonAuthRecipesBasedOnUserIdThrowsAnErrorWithUnknownRecipe() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -844,7 +851,7 @@ public class UserIdMappingTest {
 
         Exception error = null;
         try {
-            StorageLayer.getStorage(process.main).addInfoToNonAuthRecipesBasedOnUserId("unknownRecipe", "testUserId");
+            StorageLayer.getStorage(process.main).addInfoToNonAuthRecipesBasedOnUserId(TenantIdentifier.BASE_TENANT, "unknownRecipe", "testUserId");
         } catch (IllegalStateException e) {
             error = e;
         }
@@ -858,7 +865,7 @@ public class UserIdMappingTest {
 
     @Test
     public void checkThatDeleteUserIdMappingHasAllNonAuthRecipeChecks() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -867,7 +874,7 @@ public class UserIdMappingTest {
         }
 
         ArrayList<String> nonAuthRecipesWhichDontNeedUserIdMapping = new ArrayList<>(
-                List.of("io.supertokens.pluginInterface.jwt.JWTRecipeStorage"));
+                List.of("io.supertokens.pluginInterface.jwt.JWTRecipeStorage", ActiveUsersStorage.class.getName()));
         Reflections reflections = new Reflections("io.supertokens.pluginInterface");
         Set<Class<? extends NonAuthRecipeStorage>> classes = reflections.getSubTypesOf(NonAuthRecipeStorage.class);
         List<String> names = classes.stream().map(Class::getCanonicalName).collect(Collectors.toList());
@@ -886,7 +893,7 @@ public class UserIdMappingTest {
             UserIdMapping.createUserIdMapping(process.main, user.id, externalId, null, false);
 
             // create entry in nonAuth table with externalId
-            StorageLayer.getStorage(process.main).addInfoToNonAuthRecipesBasedOnUserId(className, externalId);
+            StorageLayer.getStorage(process.main).addInfoToNonAuthRecipesBasedOnUserId(TenantIdentifier.BASE_TENANT, className, externalId);
 
             // try to delete UserIdMapping
             String errorMessage = null;
@@ -911,7 +918,7 @@ public class UserIdMappingTest {
     // check that we dont allow state A5 to be created when force is false
     @Test
     public void checkThatWeDontAllowDBStateA5FromBeingCreatedWhenForceIsFalse() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -948,7 +955,7 @@ public class UserIdMappingTest {
 
     @Test
     public void testThatWeDontAllowDBStateA6WithoutForce() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -986,7 +993,7 @@ public class UserIdMappingTest {
 
     @Test
     public void testDeleteMappingWithUser_1AndUserIdTypeAsAny() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -1030,7 +1037,7 @@ public class UserIdMappingTest {
     // should delete the mapping
     @Test
     public void testDeleteMappingWithUser_1AndUserIdTypeAsSUPERTOKENS() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 

@@ -18,20 +18,20 @@ package io.supertokens.test.userIdMapping.api;
 
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
-import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.usermetadata.UserMetadata;
+import io.supertokens.utils.SemVer;
 import io.supertokens.userroles.UserRoles;
 import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.WebserverAPI;
@@ -42,7 +42,6 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
 
 public class CreateUserIdMappingAPITest {
     @Rule
@@ -61,7 +60,7 @@ public class CreateUserIdMappingAPITest {
     @Test
     public void badInputTest() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -218,7 +217,7 @@ public class CreateUserIdMappingAPITest {
 
     @Test
     public void testCreatingAUserIdMappingWithAndWithoutForce() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -273,7 +272,7 @@ public class CreateUserIdMappingAPITest {
 
     @Test
     public void testCreatingAUserIdMapping() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -282,7 +281,7 @@ public class CreateUserIdMappingAPITest {
             return;
         }
 
-        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
 
         // create a User
         UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
@@ -305,7 +304,8 @@ public class CreateUserIdMappingAPITest {
 
         // check that userIdMapping was created
 
-        UserIdMapping userIdMapping = storage.getUserIdMapping(superTokensUserId, true);
+        UserIdMapping userIdMapping = storage.getUserIdMapping(new AppIdentifier(null, null),
+                superTokensUserId, true);
 
         assertEquals(superTokensUserId, userIdMapping.superTokensUserId);
         assertEquals(externalUserId, userIdMapping.externalUserId);
@@ -317,7 +317,7 @@ public class CreateUserIdMappingAPITest {
 
     @Test
     public void testCreatingAUserIdMappingWithAnUnknownSuperTokensUserId() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -347,7 +347,7 @@ public class CreateUserIdMappingAPITest {
 
     @Test
     public void testCreatingUserIdMappingWithExternalUserIdInfoAsNull() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -367,9 +367,10 @@ public class CreateUserIdMappingAPITest {
                 "http://localhost:3567/recipe/userid/map", requestBody, 1000, 1000, null,
                 SemVer.v2_15.get(), "useridmapping");
 
-        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
 
-        UserIdMapping userIdMapping = storage.getUserIdMapping(userInfo.id, true);
+        UserIdMapping userIdMapping = storage.getUserIdMapping(new AppIdentifier(null, null), userInfo.id,
+                true);
 
         assertNotNull(userIdMapping);
         assertEquals(userInfo.id, userIdMapping.superTokensUserId);
@@ -383,7 +384,7 @@ public class CreateUserIdMappingAPITest {
 
     @Test
     public void testCreatingDuplicateUserIdMapping() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

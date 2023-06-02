@@ -22,6 +22,7 @@ import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
 import io.supertokens.output.Logging;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.test.TestingProcessManager.TestingProcess;
 import org.apache.tomcat.util.http.fileupload.FileUtils;
 import org.junit.AfterClass;
@@ -52,12 +53,40 @@ public class LoggingTest {
     }
 
     @Test
-    public void defaultLogging() throws Exception {
-        String[] args = { "../" };
+    public void noErrorLogsOnCoreStart() throws Exception {
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
-        Logging.error(process.getProcess(), "From test", false);
+        boolean errorFlag = false;
+
+        File errorLog = new File(Config.getConfig(process.getProcess()).getErrorLogPath(process.getProcess()));
+
+        try (Scanner errorScanner = new Scanner(errorLog, StandardCharsets.UTF_8)) {
+            while (errorScanner.hasNextLine()) {
+                String line = errorScanner.nextLine();
+                if (line.contains(process.getProcess().getProcessId())) {
+                    errorFlag = true;
+                    break;
+                }
+            }
+        }
+
+        assertFalse(errorFlag);
+
+        process.kill();
+        EventAndException event1 = process.checkOrWaitForEvent(PROCESS_STATE.STOPPED);
+        assertNotNull(event1);
+
+    }
+
+    @Test
+    public void defaultLogging() throws Exception {
+        String[] args = {"../"};
+        TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        Logging.error(process.getProcess(), TenantIdentifier.BASE_TENANT, "From test", false);
 
         boolean infoFlag = false;
         boolean errorFlag = false;
@@ -96,7 +125,7 @@ public class LoggingTest {
     @Test
     public void customLogging() throws Exception {
         try {
-            String[] args = { "../" };
+            String[] args = {"../"};
 
             Utils.setValueInConfig("info_log_path", "\"tempLogging/info.log\"");
             Utils.setValueInConfig("error_log_path", "\"tempLogging/error.log\"");
@@ -104,8 +133,8 @@ public class LoggingTest {
             TestingProcess process = TestingProcessManager.start(args);
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
-            Logging.error(process.getProcess(), "From Test", false);
-            Logging.info(process.getProcess(), "From Test", true);
+            Logging.error(process.getProcess(), TenantIdentifier.BASE_TENANT, "From Test", false);
+            Logging.info(process.getProcess(), TenantIdentifier.BASE_TENANT, "From Test", true);
 
             boolean infoFlag = false;
             boolean errorFlag = false;
@@ -148,7 +177,7 @@ public class LoggingTest {
     @Test
     public void confirmLoggerClosed() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
 
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -170,7 +199,7 @@ public class LoggingTest {
 
     @Test
     public void testStandardOutLoggingWithNullStr() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         ByteArrayOutputStream stdOutput = new ByteArrayOutputStream();
         ByteArrayOutputStream errorOutput = new ByteArrayOutputStream();
 
@@ -187,8 +216,8 @@ public class LoggingTest {
             process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
-            Logging.debug(process.getProcess(), "outTest-dfkn3knsakn");
-            Logging.error(process.getProcess(), "errTest-sdvjovnoasid", true);
+            Logging.debug(process.getProcess(), TenantIdentifier.BASE_TENANT, "outTest-dfkn3knsakn");
+            Logging.error(process.getProcess(), TenantIdentifier.BASE_TENANT, "errTest-sdvjovnoasid", true);
 
             assertTrue(fileContainsString(stdOutput, "outTest-dfkn3knsakn"));
             assertTrue(fileContainsString(errorOutput, "errTest-sdvjovnoasid"));
@@ -204,7 +233,7 @@ public class LoggingTest {
 
     @Test
     public void testStandardOutLoggingWithNull() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         ByteArrayOutputStream stdOutput = new ByteArrayOutputStream();
         ByteArrayOutputStream errorOutput = new ByteArrayOutputStream();
 
@@ -221,8 +250,8 @@ public class LoggingTest {
             process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
-            Logging.debug(process.getProcess(), "outTest-dfkn3knsakn");
-            Logging.error(process.getProcess(), "errTest-sdvjovnoasid", true);
+            Logging.debug(process.getProcess(), TenantIdentifier.BASE_TENANT, "outTest-dfkn3knsakn");
+            Logging.error(process.getProcess(), TenantIdentifier.BASE_TENANT, "errTest-sdvjovnoasid", true);
 
             assertTrue(fileContainsString(stdOutput, "outTest-dfkn3knsakn"));
             assertTrue(fileContainsString(errorOutput, "errTest-sdvjovnoasid"));
@@ -238,7 +267,7 @@ public class LoggingTest {
 
     @Test
     public void testThatSubFoldersAreCreated() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcess process = TestingProcessManager.start(args, false);
         try {
@@ -267,7 +296,7 @@ public class LoggingTest {
 
     @Test
     public void testDefaultLoggingFilePath() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
 
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));

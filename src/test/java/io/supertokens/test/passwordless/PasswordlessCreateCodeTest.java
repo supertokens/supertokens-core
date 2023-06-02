@@ -24,6 +24,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.exceptions.RestartFlowException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
 import io.supertokens.pluginInterface.passwordless.PasswordlessDevice;
 import io.supertokens.pluginInterface.passwordless.PasswordlessStorage;
@@ -37,7 +38,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import static io.supertokens.test.passwordless.PasswordlessUtility.*;
+import static io.supertokens.test.passwordless.PasswordlessUtility.EMAIL;
+import static io.supertokens.test.passwordless.PasswordlessUtility.PHONE_NUMBER;
 import static org.junit.Assert.*;
 
 public class PasswordlessCreateCodeTest {
@@ -62,7 +64,7 @@ public class PasswordlessCreateCodeTest {
      */
     @Test
     public void testCreateCodeWithEmail() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -71,7 +73,7 @@ public class PasswordlessCreateCodeTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         // create code
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), EMAIL, null,
@@ -79,7 +81,7 @@ public class PasswordlessCreateCodeTest {
         assertNotNull(createCodeResponse);
 
         // verify single device created
-        PasswordlessDevice[] devices = storage.getDevicesByEmail(EMAIL);
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
         assertEquals(1, devices.length);
 
         // device assertions
@@ -90,7 +92,8 @@ public class PasswordlessCreateCodeTest {
         assertEquals(0, device.failedAttempts);
 
         // code assertions
-        PasswordlessCode[] codes = storage.getCodesOfDevice(device.deviceIdHash);
+        PasswordlessCode[] codes = storage.getCodesOfDevice(new TenantIdentifier(null, null, null),
+                device.deviceIdHash);
         assertEquals(1, codes.length);
 
         PasswordlessCode code = codes[0];
@@ -110,7 +113,7 @@ public class PasswordlessCreateCodeTest {
     public void testCreateCodeForMultipleDevicesWithSingleEmail() throws Exception {
         final int NUMBER_OF_DEVICES_TO_CREATE = 5;
 
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -118,7 +121,7 @@ public class PasswordlessCreateCodeTest {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         // create 'n' devices
         for (int counter = 1; counter <= NUMBER_OF_DEVICES_TO_CREATE; counter++) {
@@ -128,7 +131,7 @@ public class PasswordlessCreateCodeTest {
             assertNotNull(codeResponse);
 
         }
-        PasswordlessDevice[] devices = storage.getDevicesByEmail(EMAIL);
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
         assertEquals(NUMBER_OF_DEVICES_TO_CREATE, devices.length);
         for (int counter = 0; counter < NUMBER_OF_DEVICES_TO_CREATE; counter++) {
 
@@ -137,7 +140,8 @@ public class PasswordlessCreateCodeTest {
             assertNull(device.phoneNumber);
             assertEquals(0, device.failedAttempts);
 
-            PasswordlessCode[] codes = storage.getCodesOfDevice(device.deviceIdHash);
+            PasswordlessCode[] codes = storage.getCodesOfDevice(new TenantIdentifier(null, null, null),
+                    device.deviceIdHash);
             assertEquals(1, codes.length);
 
             PasswordlessCode code = codes[0];
@@ -156,7 +160,7 @@ public class PasswordlessCreateCodeTest {
     @Test
     public void testCreateCodeWithPhoneNumber() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -164,13 +168,14 @@ public class PasswordlessCreateCodeTest {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), null,
                 PHONE_NUMBER, null, null);
         assertNotNull(createCodeResponse);
 
-        PasswordlessDevice[] devices = storage.getDevicesByPhoneNumber(PHONE_NUMBER);
+        PasswordlessDevice[] devices = storage.getDevicesByPhoneNumber(new TenantIdentifier(null, null, null),
+                PHONE_NUMBER);
         assertEquals(1, devices.length);
 
         PasswordlessDevice device = devices[0];
@@ -179,7 +184,8 @@ public class PasswordlessCreateCodeTest {
         assertEquals(PHONE_NUMBER, device.phoneNumber);
         assertEquals(0, device.failedAttempts);
 
-        PasswordlessCode[] codes = storage.getCodesOfDevice(device.deviceIdHash);
+        PasswordlessCode[] codes = storage.getCodesOfDevice(new TenantIdentifier(null, null, null),
+                device.deviceIdHash);
         assertEquals(1, codes.length);
 
         PasswordlessCode code = codes[0];
@@ -200,7 +206,7 @@ public class PasswordlessCreateCodeTest {
     public void testCreateCodeForMultipleDevicesWithSinglePhoneNumber() throws Exception {
         final int NUMBER_OF_DEVICES_TO_CREATE = 5;
 
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -208,7 +214,7 @@ public class PasswordlessCreateCodeTest {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         for (int counter = 1; counter <= NUMBER_OF_DEVICES_TO_CREATE; counter++) {
 
@@ -217,7 +223,8 @@ public class PasswordlessCreateCodeTest {
             assertNotNull(codeResponse);
         }
 
-        PasswordlessDevice[] devices = storage.getDevicesByPhoneNumber(PHONE_NUMBER);
+        PasswordlessDevice[] devices = storage.getDevicesByPhoneNumber(new TenantIdentifier(null, null, null),
+                PHONE_NUMBER);
         assertEquals(NUMBER_OF_DEVICES_TO_CREATE, devices.length);
 
         for (int counter = 0; counter < NUMBER_OF_DEVICES_TO_CREATE; counter++) {
@@ -227,7 +234,8 @@ public class PasswordlessCreateCodeTest {
             assertEquals(PHONE_NUMBER, device.phoneNumber);
             assertEquals(0, device.failedAttempts);
 
-            PasswordlessCode[] codes = storage.getCodesOfDevice(device.deviceIdHash);
+            PasswordlessCode[] codes = storage.getCodesOfDevice(new TenantIdentifier(null, null, null),
+                    device.deviceIdHash);
             assertEquals(1, codes.length);
 
             PasswordlessCode code = codes[0];
@@ -246,7 +254,7 @@ public class PasswordlessCreateCodeTest {
     @Test
     public void testCreateCodeWithDeviceId() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -254,7 +262,7 @@ public class PasswordlessCreateCodeTest {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), null,
                 PHONE_NUMBER, null, null);
@@ -263,7 +271,8 @@ public class PasswordlessCreateCodeTest {
 
         assertNotNull(resendCodeResponse);
 
-        PasswordlessDevice[] devices = storage.getDevicesByPhoneNumber(PHONE_NUMBER);
+        PasswordlessDevice[] devices = storage.getDevicesByPhoneNumber(new TenantIdentifier(null, null, null),
+                PHONE_NUMBER);
         assertEquals(1, devices.length);
 
         PasswordlessDevice device = devices[0];
@@ -272,7 +281,8 @@ public class PasswordlessCreateCodeTest {
         assertEquals(PHONE_NUMBER, device.phoneNumber);
         assertEquals(0, device.failedAttempts);
 
-        PasswordlessCode[] codes = storage.getCodesOfDevice(device.deviceIdHash);
+        PasswordlessCode[] codes = storage.getCodesOfDevice(new TenantIdentifier(null, null, null),
+                device.deviceIdHash);
         assertEquals(2, codes.length);
 
         for (PasswordlessCode code : codes) {
@@ -290,7 +300,7 @@ public class PasswordlessCreateCodeTest {
      */
     @Test
     public void testCreateCodeWithSameDeviceIdAndUserInputCode() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -323,7 +333,7 @@ public class PasswordlessCreateCodeTest {
      */
     @Test
     public void testCreateCodeResendWithNotExistingDeviceId() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

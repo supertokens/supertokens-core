@@ -18,15 +18,20 @@ package io.supertokens.test;
 
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
-import io.supertokens.ResourceDistributor;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.Cronjobs;
 import io.supertokens.exceptions.QuitProgramException;
+import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -39,21 +44,27 @@ public class CronjobTest {
 
         private static final String RESOURCE_ID = "io.supertokens.test.CronjobTest" + ".QuitProgramExceptionCronjob";
 
-        private QuitProgramExceptionCronjob(Main main) {
-            super("QuitProgramExceptionCronjob", main);
+        private QuitProgramExceptionCronjob(Main main, List<List<TenantIdentifier>> tenants) {
+            super("QuitProgramExceptionCronjob", main, tenants, false);
         }
 
         public static QuitProgramExceptionCronjob getInstance(Main main) {
-            ResourceDistributor.SingletonResource instance = main.getResourceDistributor().getResource(RESOURCE_ID);
-            if (instance == null) {
-                instance = main.getResourceDistributor().setResource(RESOURCE_ID,
-                        new QuitProgramExceptionCronjob(main));
+            try {
+                return (QuitProgramExceptionCronjob) main.getResourceDistributor()
+                        .getResource(new TenantIdentifier(null, null, null), RESOURCE_ID);
+            } catch (TenantOrAppNotFoundException e) {
+                List<TenantIdentifier> tenants = new ArrayList<>();
+                tenants.add(new TenantIdentifier(null, null, null));
+                List<List<TenantIdentifier>> finalList = new ArrayList<>();
+                finalList.add(tenants);
+                return (QuitProgramExceptionCronjob) main.getResourceDistributor()
+                        .setResource(new TenantIdentifier(null, null, null), RESOURCE_ID,
+                                new QuitProgramExceptionCronjob(main, finalList));
             }
-            return (QuitProgramExceptionCronjob) instance;
         }
 
         @Override
-        protected void doTask() {
+        protected void doTaskPerStorage(Storage storage) {
             throw new QuitProgramException("Cronjob Threw QuitProgramException");
 
         }
@@ -73,20 +84,26 @@ public class CronjobTest {
 
         private static final String RESOURCE_ID = "io.supertokens.test.CronjobTest.ErrorCronjob";
 
-        private ErrorCronjob(Main main) {
-            super("ErrorCronjob", main);
+        private ErrorCronjob(Main main, List<List<TenantIdentifier>> tenants) {
+            super("ErrorCronjob", main, tenants, false);
         }
 
         public static ErrorCronjob getInstance(Main main) {
-            ResourceDistributor.SingletonResource instance = main.getResourceDistributor().getResource(RESOURCE_ID);
-            if (instance == null) {
-                instance = main.getResourceDistributor().setResource(RESOURCE_ID, new ErrorCronjob(main));
+            try {
+                return (ErrorCronjob) main.getResourceDistributor()
+                        .getResource(new TenantIdentifier(null, null, null), RESOURCE_ID);
+            } catch (TenantOrAppNotFoundException e) {
+                List<TenantIdentifier> tenants = new ArrayList<>();
+                tenants.add(new TenantIdentifier(null, null, null));
+                List<List<TenantIdentifier>> finalList = new ArrayList<>();
+                finalList.add(tenants);
+                return (ErrorCronjob) main.getResourceDistributor()
+                        .setResource(RESOURCE_ID, new ErrorCronjob(main, finalList));
             }
-            return (ErrorCronjob) instance;
         }
 
         @Override
-        protected void doTask() throws Exception {
+        protected void doTaskPerStorage(Storage s) throws Exception {
             errorCronjobCounter++;
             throw new Exception("ERROR thrown from ErrorCronjobTest");
 
@@ -107,20 +124,27 @@ public class CronjobTest {
 
         private static final String RESOURCE_ID = "io.supertokens.test.CronjobTest.NormalCronjob";
 
-        private NormalCronjob(Main main) {
-            super("NormalCronjob", main);
+        private NormalCronjob(Main main, List<List<TenantIdentifier>> tenants) {
+            super("NormalCronjob", main, tenants, false);
         }
 
         public static NormalCronjob getInstance(Main main) {
-            ResourceDistributor.SingletonResource instance = main.getResourceDistributor().getResource(RESOURCE_ID);
-            if (instance == null) {
-                instance = main.getResourceDistributor().setResource(RESOURCE_ID, new NormalCronjob(main));
+            try {
+                return (NormalCronjob) main.getResourceDistributor()
+                        .getResource(new TenantIdentifier(null, null, null), RESOURCE_ID);
+            } catch (TenantOrAppNotFoundException e) {
+                List<TenantIdentifier> tenants = new ArrayList<>();
+                tenants.add(new TenantIdentifier(null, null, null));
+                List<List<TenantIdentifier>> finalList = new ArrayList<>();
+                finalList.add(tenants);
+                return (NormalCronjob) main.getResourceDistributor()
+                        .setResource(new TenantIdentifier(null, null, null), RESOURCE_ID,
+                                new NormalCronjob(main, finalList));
             }
-            return (NormalCronjob) instance;
         }
 
         @Override
-        protected void doTask() {
+        protected void doTaskPerStorage(Storage s) {
             normalCronjobCounter++;
         }
 
@@ -150,7 +174,7 @@ public class CronjobTest {
 
     @Test
     public void testThatCronjobThrowsQuitProgramExceptionAndQuits() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
 
@@ -165,7 +189,7 @@ public class CronjobTest {
 
     @Test
     public void testThatCronjobThrowsError() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
 
@@ -190,7 +214,9 @@ public class CronjobTest {
 
     @Test
     public void testNormalCronjob() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
+
+        normalCronjobCounter = 0;
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -206,4 +232,22 @@ public class CronjobTest {
 
     }
 
+    @Test
+    public void testAddingCronJobTwice() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        int initialSize = Cronjobs.getInstance(process.getProcess()).getTasks().size();
+
+        Cronjobs.addCronjob(process.getProcess(), NormalCronjob.getInstance(process.getProcess()));
+        assertEquals(initialSize + 1, Cronjobs.getInstance(process.getProcess()).getTasks().size());
+
+        Cronjobs.addCronjob(process.getProcess(), NormalCronjob.getInstance(process.getProcess()));
+        assertEquals(initialSize + 1, Cronjobs.getInstance(process.getProcess()).getTasks().size());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }

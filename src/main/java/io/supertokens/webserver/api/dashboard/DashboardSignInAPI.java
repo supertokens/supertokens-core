@@ -20,8 +20,10 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.dashboard.Dashboard;
 import io.supertokens.dashboard.exceptions.UserSuspendedException;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.Utils;
 import io.supertokens.webserver.WebserverAPI;
@@ -44,6 +46,7 @@ public class DashboardSignInAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is app specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String email = InputParser.parseStringOrThrowError(input, "email", false);
 
@@ -57,7 +60,8 @@ public class DashboardSignInAPI extends WebserverAPI {
         password = Utils.normalizeAndValidateStringParam(password, "password");
 
         try {
-            String sessionId = Dashboard.signInDashboardUser(main, email, password);
+            String sessionId = Dashboard.signInDashboardUser(
+                    super.getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(req), main, email, password);
             if (sessionId == null) {
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "INVALID_CREDENTIALS_ERROR");
@@ -76,7 +80,7 @@ public class DashboardSignInAPI extends WebserverAPI {
                     "User is currently suspended, please sign in with another account, or reactivate the SuperTokens " +
                             "core license key");
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
 

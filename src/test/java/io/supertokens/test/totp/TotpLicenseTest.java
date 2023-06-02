@@ -77,7 +77,7 @@ public class TotpLicenseTest {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return null;
         }
-        TOTPStorage storage = StorageLayer.getTOTPStorage(process.getProcess());
+        TOTPStorage storage = (TOTPStorage) StorageLayer.getStorage(process.getProcess());
 
         return new TestSetupResult(storage, process);
     }

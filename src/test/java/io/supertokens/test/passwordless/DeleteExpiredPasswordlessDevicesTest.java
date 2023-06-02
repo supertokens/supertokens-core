@@ -21,6 +21,7 @@ import io.supertokens.config.Config;
 import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.cronjobs.deleteExpiredPasswordlessDevices.DeleteExpiredPasswordlessDevices;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
 import io.supertokens.pluginInterface.passwordless.PasswordlessStorage;
 import io.supertokens.storageLayer.StorageLayer;
@@ -51,7 +52,7 @@ public class DeleteExpiredPasswordlessDevicesTest {
 
     @Test
     public void jobDeletesDevicesWithOnlyExpiredCodesTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         CronTaskTest.getInstance(process.getProcess())
@@ -64,18 +65,19 @@ public class DeleteExpiredPasswordlessDevicesTest {
             return;
         }
 
-        PasswordlessStorage passwordlessStorage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage passwordlessStorage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         long codeLifetime = Config.getConfig(process.getProcess()).getPasswordlessCodeLifetime();
 
         String codeId = "deletedCode";
         String deviceIdHash = "deviceIdHash";
-        passwordlessStorage.createDeviceWithCode("test@example.com", null, "linkCodeSalt",
+        passwordlessStorage.createDeviceWithCode(new TenantIdentifier(null, null, null), "test@example.com", null,
+                "linkCodeSalt",
                 new PasswordlessCode(codeId, deviceIdHash, "linkCodeHash", System.currentTimeMillis() - codeLifetime));
 
         Thread.sleep(1500);
 
-        assertNull(passwordlessStorage.getDevice(deviceIdHash));
+        assertNull(passwordlessStorage.getDevice(new TenantIdentifier(null, null, null), deviceIdHash));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -83,7 +85,7 @@ public class DeleteExpiredPasswordlessDevicesTest {
 
     @Test
     public void jobKeepsDevicesWithActiveCodesTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         CronTaskTest.getInstance(process.getProcess())
@@ -96,20 +98,22 @@ public class DeleteExpiredPasswordlessDevicesTest {
             return;
         }
 
-        PasswordlessStorage passwordlessStorage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage passwordlessStorage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         long codeLifetime = Config.getConfig(process.getProcess()).getPasswordlessCodeLifetime();
 
         String codeId = "expiredCode";
         String deviceIdHash = "deviceIdHash";
-        passwordlessStorage.createDeviceWithCode("test@example.com", null, "linkCodeSalt",
+        passwordlessStorage.createDeviceWithCode(new TenantIdentifier(null, null, null), "test@example.com", null,
+                "linkCodeSalt",
                 new PasswordlessCode(codeId, deviceIdHash, "linkCodeHash", System.currentTimeMillis() - codeLifetime));
         passwordlessStorage
-                .createCode(new PasswordlessCode("id", deviceIdHash, "linkCodeHash2", System.currentTimeMillis()));
+                .createCode(new TenantIdentifier(null, null, null),
+                        new PasswordlessCode("id", deviceIdHash, "linkCodeHash2", System.currentTimeMillis()));
 
         Thread.sleep(1500);
 
-        assertNotNull(passwordlessStorage.getDevice(deviceIdHash));
+        assertNotNull(passwordlessStorage.getDevice(new TenantIdentifier(null, null, null), deviceIdHash));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

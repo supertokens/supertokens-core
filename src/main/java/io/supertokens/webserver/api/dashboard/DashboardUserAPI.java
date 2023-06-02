@@ -22,12 +22,15 @@ import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.dashboard.Dashboard;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.dashboard.DashboardUser;
 import io.supertokens.pluginInterface.dashboard.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.dashboard.exceptions.UserIdNotFoundException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.Utils;
 import io.supertokens.webserver.WebserverAPI;
@@ -54,7 +57,7 @@ public class DashboardUserAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-
+        // API is app specific
         try {
 
             JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
@@ -87,7 +90,9 @@ public class DashboardUserAPI extends WebserverAPI {
                 return;
             }
 
-            DashboardUser user = Dashboard.signUpDashboardUser(main, email, password);
+            DashboardUser user = Dashboard.signUpDashboardUser(
+                    this.getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(req),
+                    main, email, password);
             JsonObject userAsJsonObject = new JsonParser().parse(new Gson().toJson(user)).getAsJsonObject();
 
             JsonObject response = new JsonObject();
@@ -99,13 +104,15 @@ public class DashboardUserAPI extends WebserverAPI {
             JsonObject response = new JsonObject();
             response.addProperty("status", "EMAIL_ALREADY_EXISTS_ERROR");
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | FeatureNotEnabledException e) {
+        } catch (StorageQueryException | FeatureNotEnabledException | TenantOrAppNotFoundException |
+                 BadPermissionException e) {
             throw new ServletException(e);
         }
     }
 
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is app specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
         String newEmail = InputParser.parseStringOrThrowError(input, "newEmail", true);
@@ -139,13 +146,17 @@ public class DashboardUserAPI extends WebserverAPI {
         }
 
         try {
+            AppIdentifierWithStorage appIdentifierWithStorage =
+                    this.getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(
+                    req);
             String userId = InputParser.parseStringOrThrowError(input, "userId", true);
             if (userId != null) {
                 // normalize userId
                 userId = Utils.normalizeAndValidateStringParam(userId, "userId");
 
                 // retrieve updated user details
-                DashboardUser user = Dashboard.updateUsersCredentialsWithUserId(main, userId, newEmail, newPassword);
+                DashboardUser user = Dashboard.updateUsersCredentialsWithUserId(appIdentifierWithStorage,
+                        main, userId, newEmail, newPassword);
                 JsonObject userJsonObject = new JsonParser().parse(new Gson().toJson(user))
                         .getAsJsonObject();
                 JsonObject response = new JsonObject();
@@ -162,14 +173,14 @@ public class DashboardUserAPI extends WebserverAPI {
                 email = io.supertokens.utils.Utils.normaliseEmail(email);
 
                 // check if the user exists
-                DashboardUser user = Dashboard.getDashboardUserByEmail(main, email);
+                DashboardUser user = Dashboard.getDashboardUserByEmail(appIdentifierWithStorage, email);
                 if (user == null) {
                     throw new UserIdNotFoundException();
                 }
 
                 // retrieve updated user details
-                DashboardUser updatedUser = Dashboard.updateUsersCredentialsWithUserId(main, user.userId, newEmail,
-                        newPassword);
+                DashboardUser updatedUser = Dashboard.updateUsersCredentialsWithUserId(appIdentifierWithStorage,
+                        main, user.userId, newEmail, newPassword);
                 JsonObject userJsonObject = new JsonParser().parse(new Gson().toJson(updatedUser)).getAsJsonObject();
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "OK");
@@ -188,7 +199,7 @@ public class DashboardUserAPI extends WebserverAPI {
             response.addProperty("status", "UNKNOWN_USER_ERROR");
             super.sendJsonResponse(200, response, resp);
             return;
-        } catch (StorageQueryException | StorageTransactionLogicException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
         // Both email and userId are null
@@ -198,13 +209,14 @@ public class DashboardUserAPI extends WebserverAPI {
 
     @Override
     protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-
+        // API is app specific
         String userId = InputParser.getQueryParamOrThrowError(req, "userId", true);
         try {
             if (userId != null) {
                 // normalize userId
                 userId = Utils.normalizeAndValidateStringParam(userId, "userId");
-                boolean didUserExist = Dashboard.deleteUserWithUserId(main, userId);
+                boolean didUserExist = Dashboard.deleteUserWithUserId(
+                        super.getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(req), userId);
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "OK");
                 response.addProperty("didUserExist", didUserExist);
@@ -218,7 +230,9 @@ public class DashboardUserAPI extends WebserverAPI {
                 // normalize email
                 email = Utils.normalizeAndValidateStringParam(email, "email");
                 email = io.supertokens.utils.Utils.normaliseEmail(email);
-                boolean didUserExist = Dashboard.deleteUserWithEmail(main, email);
+
+                boolean didUserExist = Dashboard.deleteUserWithEmail(
+                        super.getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(req), email);
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "OK");
                 response.addProperty("didUserExist", didUserExist);
@@ -226,7 +240,7 @@ public class DashboardUserAPI extends WebserverAPI {
                 return;
             }
 
-        } catch (StorageQueryException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
 

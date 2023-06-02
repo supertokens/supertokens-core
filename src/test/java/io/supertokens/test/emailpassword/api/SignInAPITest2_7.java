@@ -156,7 +156,7 @@ public class SignInAPITest2_7 {
         assertEquals(signInResponse.get("user").getAsJsonObject().get("email").getAsString(),
                 userInfo.get("email").getAsString());
         signInResponse.get("user").getAsJsonObject().get("timeJoined").getAsLong();
-        assertEquals(signInResponse.get("user").getAsJsonObject().entrySet().size(), 3);
+        assertEquals(signInResponse.get("user").getAsJsonObject().entrySet().size(), 4);
 
         int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), beforeSignIn);
         assert (activeUsers == 1);
@@ -199,7 +199,7 @@ public class SignInAPITest2_7 {
         assertEquals(signInResponse.get("user").getAsJsonObject().get("email").getAsString(),
                 userInfo.get("email").getAsString());
         signInResponse.get("user").getAsJsonObject().get("timeJoined").getAsLong();
-        assertEquals(signInResponse.get("user").getAsJsonObject().entrySet().size(), 3);
+        assertEquals(signInResponse.get("user").getAsJsonObject().entrySet().size(), 4);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

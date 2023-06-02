@@ -33,6 +33,8 @@ import io.supertokens.dashboard.Dashboard;
 import io.supertokens.emailpassword.PasswordHashing;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.dashboard.DashboardUser;
+import io.supertokens.pluginInterface.dashboard.sqlStorage.DashboardSQLStorage;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -54,7 +56,7 @@ public class SignInAPITest {
 
     @Test
     public void testSigningInAUserAndVerifyingTheirSession() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -90,7 +92,7 @@ public class SignInAPITest {
 
     @Test
     public void testSigningInASuspendedUser() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -113,7 +115,8 @@ public class SignInAPITest {
         DashboardUser user = new DashboardUser(io.supertokens.utils.Utils.getUUID(), email,
                 PasswordHashing.getInstance(process.getProcess()).createHashWithSalt(password),
                 System.currentTimeMillis());
-        StorageLayer.getDashboardStorage(process.getProcess()).createNewDashboardUser(user);
+        ((DashboardSQLStorage) StorageLayer.getStorage(process.getProcess()))
+                .createNewDashboardUser(new AppIdentifier(null, null), user);
 
         // try signing in with the valid user
         {

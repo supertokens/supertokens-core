@@ -19,16 +19,22 @@ package io.supertokens.config;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.pluginInterface.LOG_LEVEL;
+import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
+import org.apache.catalina.filters.RemoteAddrFilter;
 import org.jetbrains.annotations.TestOnly;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
+import java.util.regex.PatternSyntaxException;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CoreConfig {
@@ -139,7 +145,24 @@ public class CoreConfig {
     @JsonProperty
     private String ip_deny_regex = null;
 
+    @JsonProperty
+    private String supertokens_saas_secret = null;
+
     private Set<LOG_LEVEL> allowedLogLevels = null;
+
+    public static Set<String> getValidFields() {
+        CoreConfig coreConfig = new CoreConfig();
+        JsonObject coreConfigObj = new GsonBuilder().serializeNulls().create().toJsonTree(coreConfig).getAsJsonObject();
+
+        Set<String> validFields = new HashSet<>();
+        for (Map.Entry<String, JsonElement> entry : coreConfigObj.entrySet()) {
+            validFields.add(entry.getKey());
+        }
+
+        // Adding the aliases
+        validFields.add("access_token_signing_key_update_interval");
+        return validFields;
+    }
 
     public String getIpAllowRegex() {
         if (ip_allow_regex != null && ip_allow_regex.trim().equals("")) {
@@ -283,7 +306,9 @@ public class CoreConfig {
         return totp_max_attempts;
     }
 
-    /** TOTP rate limit cooldown time (in seconds) */
+    /**
+     * TOTP rate limit cooldown time (in seconds)
+     */
     public int getTotpRateLimitCooldownTimeSec() {
         return totp_rate_limit_cooldown_sec;
     }
@@ -329,6 +354,13 @@ public class CoreConfig {
         return api_keys.trim().replaceAll("\\s", "").split(",");
     }
 
+    public String getSuperTokensSaaSSecret() {
+        if (supertokens_saas_secret != null) {
+            return supertokens_saas_secret.trim();
+        }
+        return null;
+    }
+
     public int getPort(Main main) {
         Integer cliPort = CLIOptions.get(main).getPort();
         if (cliPort != null) {
@@ -359,14 +391,14 @@ public class CoreConfig {
                 : CLIOptions.get(main).getConfigFilePath()).getAbsolutePath();
     }
 
-    void validateAndInitialise(Main main) throws IOException {
+    void validate(Main main) throws InvalidConfigException {
         if (getConfigVersion() == -1) {
-            throw new QuitProgramException(
+            throw new InvalidConfigException(
                     "'core_config_version' is not set in the config.yaml file. Please redownload and install "
                             + "SuperTokens");
         }
         if (access_token_validity < 1 || access_token_validity > 86400000) {
-            throw new QuitProgramException(
+            throw new InvalidConfigException(
                     "'access_token_validity' must be between 1 and 86400000 seconds inclusive. The config file can be"
                             + " found here: " + getConfigFileLocation(main));
         }
@@ -375,7 +407,7 @@ public class CoreConfig {
         validityTesting = validityTesting == null ? false : validityTesting;
         if ((refresh_token_validity * 60) <= access_token_validity) {
             if (!Main.isTesting || validityTesting) {
-                throw new QuitProgramException(
+                throw new InvalidConfigException(
                         "'refresh_token_validity' must be strictly greater than 'access_token_validity'. The config "
                                 + "file can be found here: " + getConfigFileLocation(main));
             }
@@ -383,39 +415,40 @@ public class CoreConfig {
 
         if (!Main.isTesting || validityTesting) { // since in testing we make this really small
             if (access_token_dynamic_signing_key_update_interval < 1) {
-                throw new QuitProgramException(
+                throw new InvalidConfigException(
                         "'access_token_dynamic_signing_key_update_interval' must be greater than, equal to 1 hour. The "
                                 + "config file can be found here: " + getConfigFileLocation(main));
             }
         }
 
         if (password_reset_token_lifetime <= 0) {
-            throw new QuitProgramException("'password_reset_token_lifetime' must be >= 0");
+            throw new InvalidConfigException("'password_reset_token_lifetime' must be >= 0");
         }
 
         if (email_verification_token_lifetime <= 0) {
-            throw new QuitProgramException("'email_verification_token_lifetime' must be >= 0");
+            throw new InvalidConfigException("'email_verification_token_lifetime' must be >= 0");
         }
 
         if (passwordless_code_lifetime <= 0) {
-            throw new QuitProgramException("'passwordless_code_lifetime' must be > 0");
+            throw new InvalidConfigException("'passwordless_code_lifetime' must be > 0");
         }
 
         if (passwordless_max_code_input_attempts <= 0) {
-            throw new QuitProgramException("'passwordless_max_code_input_attempts' must be > 0");
+            throw new InvalidConfigException("'passwordless_max_code_input_attempts' must be > 0");
         }
 
         if (totp_max_attempts <= 0) {
-            throw new QuitProgramException("'totp_max_attempts' must be > 0");
+            throw new InvalidConfigException("'totp_max_attempts' must be > 0");
         }
 
         if (totp_rate_limit_cooldown_sec <= 0) {
-            throw new QuitProgramException("'totp_rate_limit_cooldown_sec' must be > 0");
+            throw new InvalidConfigException("'totp_rate_limit_cooldown_sec' must be > 0");
         }
 
         if (max_server_pool_size <= 0) {
-            throw new QuitProgramException("'max_server_pool_size' must be >= 1. The config file can be found here: "
-                    + getConfigFileLocation(main));
+            throw new InvalidConfigException(
+                    "'max_server_pool_size' must be >= 1. The config file can be found here: "
+                            + getConfigFileLocation(main));
         }
 
         if (api_keys != null) {
@@ -423,14 +456,14 @@ public class CoreConfig {
             for (int i = 0; i < keys.length; i++) {
                 String currKey = keys[i].trim();
                 if (currKey.length() < 20) {
-                    throw new QuitProgramException(
+                    throw new InvalidConfigException(
                             "One of the API keys is too short. Please use at least 20 characters");
                 }
                 for (int y = 0; y < currKey.length(); y++) {
                     char currChar = currKey.charAt(y);
                     if (!(currChar == '=' || currChar == '-' || (currChar >= '0' && currChar <= '9')
                             || (currChar >= 'a' && currChar <= 'z') || (currChar >= 'A' && currChar <= 'Z'))) {
-                        throw new QuitProgramException(
+                        throw new InvalidConfigException(
                                 "Invalid characters in API key. Please only use '=', '-' and alpha-numeric (including"
                                         + " capitals)");
                     }
@@ -438,49 +471,92 @@ public class CoreConfig {
             }
         }
 
+        if (supertokens_saas_secret != null) {
+            if (api_keys == null) {
+                throw new InvalidConfigException(
+                        "supertokens_saas_secret can only be used when api_key is also defined");
+            }
+            if (supertokens_saas_secret.length() < 40) {
+                throw new InvalidConfigException(
+                        "supertokens_saas_secret is too short. Please use at least 40 characters");
+            }
+            for (int y = 0; y < supertokens_saas_secret.length(); y++) {
+                char currChar = supertokens_saas_secret.charAt(y);
+                if (!(currChar == '=' || currChar == '-' || (currChar >= '0' && currChar <= '9')
+                        || (currChar >= 'a' && currChar <= 'z') || (currChar >= 'A' && currChar <= 'Z'))) {
+                    throw new InvalidConfigException(
+                            "Invalid characters in supertokens_saas_secret key. Please only use '=', '-' and " +
+                                    "alpha-numeric (including"
+                                    + " capitals)");
+                }
+            }
+        }
+
         if (!password_hashing_alg.equalsIgnoreCase("ARGON2") && !password_hashing_alg.equalsIgnoreCase("BCRYPT")) {
-            throw new QuitProgramException("'password_hashing_alg' must be one of 'ARGON2' or 'BCRYPT'");
+            throw new InvalidConfigException("'password_hashing_alg' must be one of 'ARGON2' or 'BCRYPT'");
         }
 
         if (password_hashing_alg.equalsIgnoreCase("ARGON2")) {
             if (argon2_iterations <= 0) {
-                throw new QuitProgramException("'argon2_iterations' must be >= 1");
+                throw new InvalidConfigException("'argon2_iterations' must be >= 1");
             }
 
             if (argon2_parallelism <= 0) {
-                throw new QuitProgramException("'argon2_parallelism' must be >= 1");
+                throw new InvalidConfigException("'argon2_parallelism' must be >= 1");
             }
 
             if (argon2_memory_kb <= 0) {
-                throw new QuitProgramException("'argon2_memory_kb' must be >= 1");
+                throw new InvalidConfigException("'argon2_memory_kb' must be >= 1");
             }
 
             if (argon2_hashing_pool_size <= 0) {
-                throw new QuitProgramException("'argon2_hashing_pool_size' must be >= 1");
+                throw new InvalidConfigException("'argon2_hashing_pool_size' must be >= 1");
             }
 
             if (argon2_hashing_pool_size > max_server_pool_size) {
-                throw new QuitProgramException("'argon2_hashing_pool_size' must be <= 'max_server_pool_size'");
+                throw new InvalidConfigException(
+                        "'argon2_hashing_pool_size' must be <= 'max_server_pool_size'");
             }
         } else if (password_hashing_alg.equalsIgnoreCase("BCRYPT")) {
             if (bcrypt_log_rounds <= 0) {
-                throw new QuitProgramException("'bcrypt_log_rounds' must be >= 1");
+                throw new InvalidConfigException("'bcrypt_log_rounds' must be >= 1");
             }
         }
 
         if (base_path != null && !base_path.equals("") && !base_path.equals("/")) {
             if (base_path.contains(" ")) {
-                throw new QuitProgramException("Invalid characters in base_path config");
+                throw new InvalidConfigException("Invalid characters in base_path config");
             }
         }
 
         if (!log_level.equalsIgnoreCase("info") && !log_level.equalsIgnoreCase("none")
                 && !log_level.equalsIgnoreCase("error") && !log_level.equalsIgnoreCase("warn")
                 && !log_level.equalsIgnoreCase("debug")) {
-            throw new QuitProgramException(
+            throw new InvalidConfigException(
                     "'log_level' config must be one of \"NONE\",\"DEBUG\", \"INFO\", \"WARN\" or \"ERROR\".");
         }
 
+        {
+            // IP Filter validation
+            RemoteAddrFilter filter = new RemoteAddrFilter();
+            if (ip_allow_regex != null) {
+                try {
+                    filter.setAllow(ip_allow_regex);
+                } catch (PatternSyntaxException e) {
+                    throw new InvalidConfigException("Provided regular expression is invalid for ip_allow_regex config");
+                }
+            }
+            if (ip_deny_regex != null) {
+                try {
+                    filter.setDeny(ip_deny_regex);
+                } catch (PatternSyntaxException e) {
+                    throw new InvalidConfigException("Provided regular expression is invalid for ip_deny_regex config");
+                }
+            }
+        }
+    }
+
+    public void createLoggingFile(Main main) throws IOException {
         if (!getInfoLogPath(main).equals("null")) {
             File infoLog = new File(getInfoLogPath(main));
             if (!infoLog.exists()) {
@@ -504,4 +580,143 @@ public class CoreConfig {
         }
     }
 
+    static void assertThatCertainConfigIsNotSetForAppOrTenants(JsonObject config) throws InvalidConfigException {
+        // these are all configs that are per core. So we do not allow the developer to set these dynamically.
+        if (config.has("argon2_hashing_pool_size")) {
+            throw new InvalidConfigException(
+                    "argon2_hashing_pool_size can only be set via the core's base config setting");
+        }
+
+        if (config.has("firebase_password_hashing_pool_size")) {
+            throw new InvalidConfigException(
+                    "firebase_password_hashing_pool_size can only be set via the core's base config setting");
+        }
+
+        if (config.has("base_path")) {
+            throw new InvalidConfigException(
+                    "base_path can only be set via the core's base config setting");
+        }
+
+        if (config.has("log_level")) {
+            throw new InvalidConfigException(
+                    "log_level can only be set via the core's base config setting");
+        }
+
+        if (config.has("host")) {
+            throw new InvalidConfigException(
+                    "host can only be set via the core's base config setting");
+        }
+
+        if (config.has("port")) {
+            throw new InvalidConfigException(
+                    "port can only be set via the core's base config setting");
+        }
+
+        if (config.has("info_log_path")) {
+            throw new InvalidConfigException(
+                    "info_log_path can only be set via the core's base config setting");
+        }
+
+        if (config.has("error_log_path")) {
+            throw new InvalidConfigException(
+                    "error_log_path can only be set via the core's base config setting");
+        }
+
+        if (config.has("webserver_https_enabled")) {
+            throw new InvalidConfigException(
+                    "webserver_https_enabled can only be set via the core's base config setting");
+        }
+
+        if (config.has("max_server_pool_size")) {
+            throw new InvalidConfigException(
+                    "max_server_pool_size can only be set via the core's base config setting");
+        }
+
+        if (config.has("supertokens_saas_secret")) {
+            throw new InvalidConfigException(
+                    "supertokens_saas_secret can only be set via the core's base config setting");
+        }
+    }
+
+    void assertThatConfigFromSameAppIdAreNotConflicting(CoreConfig other) throws InvalidConfigException {
+        // we do not allow different values for this across tenants in the same app cause the keys are shared
+        // across all tenants
+        if (other.getAccessTokenSigningKeyDynamic() != this.getAccessTokenSigningKeyDynamic()) {
+            throw new InvalidConfigException(
+                    "You cannot set different values for access_token_signing_key_dynamic for the same appId");
+        }
+
+        // we do not allow different values for this across tenants in the same app cause the keys are shared
+        // across all tenants
+        if (other.getAccessTokenDynamicSigningKeyUpdateInterval() !=
+                this.getAccessTokenDynamicSigningKeyUpdateInterval()) {
+            throw new InvalidConfigException(
+                    "You cannot set different values for access_token_dynamic_signing_key_update_interval for the " +
+                            "same appId");
+        }
+
+        if (other.getAccessTokenValidity() != this.getAccessTokenValidity()) {
+            throw new InvalidConfigException(
+                    "You cannot set different values for access_token_validity for the same appId");
+        }
+
+        if (other.getRefreshTokenValidity() != this.getRefreshTokenValidity()) {
+            throw new InvalidConfigException(
+                    "You cannot set different values for refresh_token_validity for the same appId");
+        }
+
+        if (other.getAccessTokenBlacklisting() != this.getAccessTokenBlacklisting()) {
+            throw new InvalidConfigException(
+                    "You cannot set different values for access_token_blacklisting for the same appId");
+        }
+
+        if (!other.getPasswordHashingAlg().equals(this.getPasswordHashingAlg())) {
+            throw new InvalidConfigException(
+                    "You cannot set different values for password_hashing_alg for the same appId");
+        }
+
+        if (other.getArgon2Iterations() != this.getArgon2Iterations()) {
+            throw new InvalidConfigException(
+                    "You cannot set different values for argon2_iterations for the same appId");
+        }
+
+        if (other.getArgon2MemoryKb() != this.getArgon2MemoryKb()) {
+            throw new InvalidConfigException(
+                    "You cannot set different values for argon2_memory_kb for the same appId");
+        }
+
+        if (other.getArgon2Parallelism() != this.getArgon2Parallelism()) {
+            throw new InvalidConfigException(
+                    "You cannot set different values for argon2_parallelism for the same appId");
+        }
+
+        if (other.getBcryptLogRounds() != this.getBcryptLogRounds()) {
+            throw new InvalidConfigException(
+                    "You cannot set different values for bcrypt_log_rounds for the same appId");
+        }
+
+        if (!Objects.equals(other.firebase_password_hashing_signer_key, this.firebase_password_hashing_signer_key)) {
+            throw new InvalidConfigException(
+                    "You cannot set different values for firebase_password_hashing_signer_key for the same appId");
+        }
+
+        if (other.isTelemetryDisabled() != this.isTelemetryDisabled()) {
+            throw new InvalidConfigException(
+                    "You cannot set different values for disable_telemetry for the same appId");
+        }
+
+        // Check that the same set of API keys are present
+        {
+            String[] thisKeys = this.getAPIKeys() == null ? new String[0] : Arrays.copyOf(this.getAPIKeys(), this.getAPIKeys().length);
+            String[] otherKeys = other.getAPIKeys() == null ? new String[0] : Arrays.copyOf(other.getAPIKeys(), other.getAPIKeys().length);
+            Arrays.sort(thisKeys);
+            Arrays.sort(otherKeys);
+
+            if (!Arrays.equals(thisKeys, otherKeys)) {
+                throw new InvalidConfigException(
+                        "You cannot set different values for api_keys for the same appId");
+            }
+        }
+    }
 }
+

@@ -24,6 +24,7 @@ import io.supertokens.Main;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.session.Session;
 import io.supertokens.storageLayer.StorageLayer;
@@ -50,6 +51,7 @@ public class SessionRemoveAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
         String userId = InputParser.parseStringOrThrowError(input, "userId", true);
@@ -78,22 +80,23 @@ public class SessionRemoveAPI extends WebserverAPI {
 
         if (userId != null) {
             try {
-                String[] sessionHandlesRevoked = Session.revokeAllSessionsForUser(main, userId);
-
-                if (StorageLayer.getStorage(main).getType() == STORAGE_TYPE.SQL) {
+                String[] sessionHandlesRevoked = Session.revokeAllSessionsForUser(
+                        this.getTenantIdentifierWithStorageFromRequest(req), userId);
+                if (StorageLayer.getStorage(this.getTenantIdentifierWithStorageFromRequest(req), main).getType() ==
+                        STORAGE_TYPE.SQL) {
                     try {
                         UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                                super.main,
+                                this.getAppIdentifierWithStorage(req),
                                 userId, UserIdType.ANY);
                         if (userIdMapping != null) {
-                            ActiveUsers.updateLastActive(main, userIdMapping.superTokensUserId);
+                            ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main,
+                                    userIdMapping.superTokensUserId);
                         } else {
-                            ActiveUsers.updateLastActive(main, userId);
+                            ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main, userId);
                         }
                     } catch (StorageQueryException ignored) {
                     }
                 }
-
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
                 JsonArray sessionHandlesRevokedJSON = new JsonArray();
@@ -102,12 +105,13 @@ public class SessionRemoveAPI extends WebserverAPI {
                 }
                 result.add("sessionHandlesRevoked", sessionHandlesRevokedJSON);
                 super.sendJsonResponse(200, result, resp);
-            } catch (StorageQueryException e) {
+            } catch (StorageQueryException | TenantOrAppNotFoundException e) {
                 throw new ServletException(e);
             }
         } else {
             try {
-                String[] sessionHandlesRevoked = Session.revokeSessionUsingSessionHandles(main, sessionHandles);
+                String[] sessionHandlesRevoked = Session.revokeSessionUsingSessionHandles(
+                        this.getTenantIdentifierWithStorageFromRequest(req), sessionHandles);
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
                 JsonArray sessionHandlesRevokedJSON = new JsonArray();
@@ -116,7 +120,7 @@ public class SessionRemoveAPI extends WebserverAPI {
                 }
                 result.add("sessionHandlesRevoked", sessionHandlesRevokedJSON);
                 super.sendJsonResponse(200, result, resp);
-            } catch (StorageQueryException e) {
+            } catch (StorageQueryException | TenantOrAppNotFoundException e) {
                 throw new ServletException(e);
             }
         }

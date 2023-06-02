@@ -27,6 +27,8 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.jwt.JWTAsymmetricSigningKeyInfo;
 import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.signingkeys.JWTSigningKey;
 import io.supertokens.signingkeys.SigningKeys;
 import io.supertokens.signingkeys.SigningKeys.KeyInfo;
@@ -70,6 +72,7 @@ public class Utils {
     public static String convertToBase64Url(String str) {
         return new String(Base64.getUrlEncoder().encode(stringToBytes(str)), StandardCharsets.UTF_8);
     }
+
     public static String convertToBase64(String str) {
         return new String(Base64.getEncoder().encode(stringToBytes(str)), StandardCharsets.UTF_8);
     }
@@ -279,10 +282,12 @@ public class Utils {
 
         public PubPriKey(String s) {
             // We split by both | and ; because in old versions we used to use ";" in dynamic and "|" in static keys
-            // Now we are consolidating all of them to use "|", but by handling legacy keys, we can avoid the need for manual key migration.
-            // I.e.: this way only people who set access_token_signing_key_dynamic to false has to do manual migration instead of everyone.
+            // Now we are consolidating all of them to use "|", but by handling legacy keys, we can avoid the need
+            // for manual key migration.
+            // I.e.: this way only people who set access_token_signing_key_dynamic to false has to do manual
+            // migration instead of everyone.
             // for everyone else, the key rotation should get it done.
-            String[] parts =s.split("[|;]");
+            String[] parts = s.split("[|;]");
 
             this.publicKey = parts[0];
             this.privateKey = parts[1];
@@ -326,16 +331,18 @@ public class Utils {
         return baos.toString();
     }
 
-    public static JsonObject addLegacySigningKeyInfos(Main main, JsonObject result, boolean addKeyList)
-            throws StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException {
-        if (Config.getConfig(main).getAccessTokenSigningKeyDynamic()) {
+    public static JsonObject addLegacySigningKeyInfos(AppIdentifier appIdentifier, Main main, JsonObject result,
+                                                      boolean addKeyList)
+            throws StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException,
+            TenantOrAppNotFoundException {
+        if (Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getAccessTokenSigningKeyDynamic()) {
             result.addProperty("jwtSigningPublicKey",
-                    new Utils.PubPriKey(SigningKeys.getInstance(main).getLatestIssuedDynamicKey().value).publicKey);
+                    new Utils.PubPriKey(SigningKeys.getInstance(appIdentifier, main).getLatestIssuedDynamicKey().value).publicKey);
             result.addProperty("jwtSigningPublicKeyExpiryTime",
-                    SigningKeys.getInstance(main).getDynamicSigningKeyExpiryTime());
+                    SigningKeys.getInstance(appIdentifier, main).getDynamicSigningKeyExpiryTime());
 
             if (addKeyList) {
-                List<KeyInfo> keys = SigningKeys.getInstance(main).getDynamicKeys();
+                List<KeyInfo> keys = SigningKeys.getInstance(appIdentifier, main).getDynamicKeys();
 
                 JsonArray jwtSigningPublicKeyListJSON = new JsonArray();
                 for (KeyInfo keyInfo : keys) {
@@ -349,7 +356,8 @@ public class Utils {
                 result.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);
             }
         } else {
-            JWTSigningKeyInfo keyInfo = SigningKeys.getInstance(main).getStaticKeyForAlgorithm(JWTSigningKey.SupportedAlgorithms.RS256);
+            JWTSigningKeyInfo keyInfo = SigningKeys.getInstance(appIdentifier, main)
+                    .getStaticKeyForAlgorithm(JWTSigningKey.SupportedAlgorithms.RS256);
             result.addProperty("jwtSigningPublicKey", new Utils.PubPriKey(keyInfo.keyString).publicKey);
             result.addProperty("jwtSigningPublicKeyExpiryTime", 10L * 365 * 24 * 3600 * 1000);
 

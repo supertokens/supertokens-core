@@ -19,6 +19,8 @@ package io.supertokens.cliOptions;
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.exceptions.QuitProgramException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 
 import java.io.File;
 
@@ -70,13 +72,17 @@ public class CLIOptions extends ResourceDistributor.SingletonResource {
     }
 
     private static CLIOptions getInstance(Main main) {
-        return (CLIOptions) main.getResourceDistributor().getResource(RESOURCE_KEY);
+        try {
+            return (CLIOptions) main.getResourceDistributor()
+                    .getResource(new TenantIdentifier(null, null, null), RESOURCE_KEY);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new QuitProgramException(e);
+        }
     }
 
     public static void load(Main main, String[] args) {
-        if (getInstance(main) == null) {
-            main.getResourceDistributor().setResource(RESOURCE_KEY, new CLIOptions(args));
-        }
+        main.getResourceDistributor()
+                .setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY, new CLIOptions(args));
     }
 
     public static CLIOptions get(Main main) {

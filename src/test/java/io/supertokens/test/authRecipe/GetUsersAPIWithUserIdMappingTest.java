@@ -21,8 +21,8 @@ import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -38,7 +38,7 @@ import org.junit.rules.TestRule;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 public class GetUsersAPIWithUserIdMappingTest {
@@ -57,7 +57,7 @@ public class GetUsersAPIWithUserIdMappingTest {
 
     @Test
     public void createMultipleUsersAndMapTheirIdsRetrieveAllUsersAndCheckThatExternalIdIsReturned() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -65,7 +65,7 @@ public class GetUsersAPIWithUserIdMappingTest {
             return;
         }
 
-        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
         ArrayList<String> externalUserIdList = new ArrayList<>();
 
         for (int i = 1; i <= 10; i++) {
@@ -76,7 +76,8 @@ public class GetUsersAPIWithUserIdMappingTest {
             externalUserIdList.add(externalUserId);
 
             // create a userId mapping
-            storage.createUserIdMapping(superTokensUserId, externalUserId, null);
+            storage.createUserIdMapping(new AppIdentifier(null, null), superTokensUserId, externalUserId,
+                    null);
         }
 
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -96,7 +97,7 @@ public class GetUsersAPIWithUserIdMappingTest {
     @Test
     public void createMultipleUsersAndMapTheirIdsRetrieveUsersUsingPaginationTokenAndCheckThatExternalIdIsReturned()
             throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -104,7 +105,7 @@ public class GetUsersAPIWithUserIdMappingTest {
             return;
         }
 
-        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
         ArrayList<String> externalUserIdList = new ArrayList<>();
 
         for (int i = 1; i <= 20; i++) {
@@ -115,7 +116,8 @@ public class GetUsersAPIWithUserIdMappingTest {
             externalUserIdList.add(externalUserId);
 
             // create a userId mapping
-            storage.createUserIdMapping(superTokensUserId, externalUserId, null);
+            storage.createUserIdMapping(new AppIdentifier(null, null), superTokensUserId, externalUserId,
+                    null);
         }
 
         HashMap<String, String> queryParams = new HashMap<>();

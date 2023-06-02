@@ -21,6 +21,9 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.thirdparty.UserInfo;
@@ -50,18 +53,21 @@ public class GetUsersByEmailAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // this API is tenant specific
         try {
+            TenantIdentifierWithStorage tenantIdentifierWithStorage = this.getTenantIdentifierWithStorageFromRequest(req);
+            AppIdentifierWithStorage appIdentifierWithStorage = this.getAppIdentifierWithStorage(req);
+
             String email = InputParser.getQueryParamOrThrowError(req, "email", false);
             email = Utils.normaliseEmail(email);
-
-            UserInfo[] users = ThirdParty.getUsersByEmail(super.main, email);
+            UserInfo[] users = ThirdParty.getUsersByEmail(tenantIdentifierWithStorage, email);
 
             // return the externalUserId if a mapping exists for a user
             for (int i = 0; i < users.length; i++) {
                 // we intentionally do not use the function that accepts an array of user IDs to get the mapping cause
                 // this is simpler to use, and cause there shouldn't be that many userIds per email anyway
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                        .getUserIdMapping(super.main, users[i].id, UserIdType.ANY);
+                        .getUserIdMapping(appIdentifierWithStorage, users[i].id, UserIdType.SUPERTOKENS);
                 if (userIdMapping != null) {
                     users[i].id = userIdMapping.externalUserId;
                 }
@@ -73,7 +79,7 @@ public class GetUsersByEmailAPI extends WebserverAPI {
             result.add("users", usersJson);
 
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

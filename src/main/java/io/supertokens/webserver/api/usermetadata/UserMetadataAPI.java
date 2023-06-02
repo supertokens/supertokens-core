@@ -18,16 +18,17 @@ package io.supertokens.webserver.api.usermetadata;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.usermetadata.UserMetadata;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 public class UserMetadataAPI extends WebserverAPI {
@@ -44,30 +45,32 @@ public class UserMetadataAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is app specific
         String userId = InputParser.getQueryParamOrThrowError(req, "userId", false);
         try {
-            JsonObject metadata = UserMetadata.getUserMetadata(main, userId);
+            JsonObject metadata = UserMetadata.getUserMetadata(this.getAppIdentifierWithStorage(req), userId);
             JsonObject response = new JsonObject();
             response.add("metadata", metadata);
             response.addProperty("status", "OK");
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }
 
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is app specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
         JsonObject update = InputParser.parseJsonObjectOrThrowError(input, "metadataUpdate", false);
         try {
-            JsonObject metadata = UserMetadata.updateUserMetadata(main, userId, update);
+            JsonObject metadata = UserMetadata.updateUserMetadata(this.getAppIdentifierWithStorage(req), userId, update);
             JsonObject response = new JsonObject();
             response.add("metadata", metadata);
             response.addProperty("status", "OK");
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | StorageTransactionLogicException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

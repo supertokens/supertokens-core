@@ -21,9 +21,10 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
-import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.signingkeys.SigningKeys;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -47,7 +48,9 @@ public class JWKSPublicAPI extends WebserverAPI {
 
 
     @Override
-    protected boolean checkAPIKey(HttpServletRequest req) { return false; }
+    protected boolean checkAPIKey(HttpServletRequest req) {
+        return false;
+    }
 
 
     @Override
@@ -58,13 +61,13 @@ public class JWKSPublicAPI extends WebserverAPI {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         try {
-            List<JsonObject> jwks = SigningKeys.getInstance(main).getJWKS();
+            List<JsonObject> jwks = SigningKeys.getInstance(this.getAppIdentifierWithStorage(req), main).getJWKS();
             JsonObject reply = new JsonObject();
             JsonArray jwksJsonArray = new JsonParser().parse(new Gson().toJson(jwks)).getAsJsonArray();
             reply.add("keys", jwksJsonArray);
             super.sendJsonResponse(200, reply, resp);
         } catch (StorageQueryException | StorageTransactionLogicException | NoSuchAlgorithmException
-                | InvalidKeySpecException e) {
+                | InvalidKeySpecException | TenantOrAppNotFoundException | UnsupportedJWTSigningAlgorithmException e) {
             throw new ServletException(e);
         }
     }

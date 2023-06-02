@@ -19,6 +19,8 @@ package io.supertokens.test.userRoles.api;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
@@ -35,7 +37,6 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
 
 public class RemoveRoleAPITest {
     @Rule
@@ -53,7 +54,7 @@ public class RemoveRoleAPITest {
 
     @Test
     public void testBadInput() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -128,7 +129,7 @@ public class RemoveRoleAPITest {
 
     @Test
     public void testRemovingARole() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -139,10 +140,10 @@ public class RemoveRoleAPITest {
 
         String role = "role";
         String userId = "userId";
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
 
         // create a role
-        UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, new String[] { "permission" });
+        UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, new String[]{"permission"});
 
         // assign the role to a user
         UserRoles.addRoleToUser(process.main, userId, role);
@@ -159,7 +160,7 @@ public class RemoveRoleAPITest {
         assertTrue(response.get("didRoleExist").getAsBoolean());
 
         // check that user doesnt have any role
-        String[] userRoles = storage.getRolesForUser(userId);
+        String[] userRoles = storage.getRolesForUser(new TenantIdentifier(null, null, null), userId);
         assertEquals(0, userRoles.length);
 
         // check that unknownRoleException is thrown when retrieving the permissions
@@ -172,7 +173,7 @@ public class RemoveRoleAPITest {
         assertNotNull(error);
         assertTrue(error instanceof UnknownRoleException);
         // check that there are no permissions mapped to the role
-        String[] retrievedPermissions = storage.getPermissionsForRole(role);
+        String[] retrievedPermissions = storage.getPermissionsForRole(new AppIdentifier(null, null), role);
         assertEquals(0, retrievedPermissions.length);
 
         // check that role doesnt exist
@@ -184,7 +185,7 @@ public class RemoveRoleAPITest {
 
     @Test
     public void testRemovingARoleWhichDoesNotExist() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

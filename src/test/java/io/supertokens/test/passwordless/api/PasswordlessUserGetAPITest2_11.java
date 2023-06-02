@@ -19,8 +19,8 @@ package io.supertokens.test.passwordless.api;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.passwordless.PasswordlessStorage;
-import io.supertokens.pluginInterface.passwordless.UserInfo;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -55,7 +55,7 @@ public class PasswordlessUserGetAPITest2_11 {
 
     @Test
     public void testBadInput() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -151,7 +151,7 @@ public class PasswordlessUserGetAPITest2_11 {
 
     @Test
     public void testGoodInput() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -160,15 +160,17 @@ public class PasswordlessUserGetAPITest2_11 {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
-        // length of user ID needs to be 36 character long, otherwise it throws error with postgres DB
+        // length of user ID needs to be 36 character long, otherwise it throws error
+        // with postgres DB
         String userIdEmail = "pZ9SP0USbXbejGFO6qx7x3JBjupJZVtw4RkF";
         String userIdPhone = "pZ9SP0USbXbejGFO6qx7x3JBjupJZVtw4RkD";
         String email = "random@gmail.com";
         String phoneNumber = "1234";
 
-        storage.createUser(new UserInfo(userIdEmail, email, null, System.currentTimeMillis()));
+        storage.createUser(new TenantIdentifier(null, null, null),
+                userIdEmail, email, null, System.currentTimeMillis());
         {
             HashMap<String, String> map = new HashMap<>();
             map.put("userId", userIdEmail);
@@ -193,7 +195,8 @@ public class PasswordlessUserGetAPITest2_11 {
         /*
          * get user with phone number
          */
-        storage.createUser(new UserInfo(userIdPhone, null, phoneNumber, System.currentTimeMillis()));
+        storage.createUser(new TenantIdentifier(null, null, null),
+                userIdPhone, null, phoneNumber, System.currentTimeMillis());
         {
             HashMap<String, String> map = new HashMap<>();
             map.put("phoneNumber", phoneNumber);
@@ -228,6 +231,6 @@ public class PasswordlessUserGetAPITest2_11 {
 
         assert (user.has("timeJoined"));
         assert (System.currentTimeMillis() - 10000 < user.get("timeJoined").getAsLong());
-        assertEquals(3, user.entrySet().size());
+        assertEquals(4, user.entrySet().size());
     }
 }

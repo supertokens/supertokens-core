@@ -18,17 +18,17 @@ package io.supertokens.webserver.api.userroles;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
-import io.supertokens.inmemorydb.queries.UserRoleQueries;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.userroles.UserRoles;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.io.Serial;
 
@@ -48,6 +48,7 @@ public class AddUserRoleAPI extends WebserverAPI {
 
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
         String role = InputParser.parseStringOrThrowError(input, "role", false);
@@ -59,7 +60,8 @@ public class AddUserRoleAPI extends WebserverAPI {
         }
 
         try {
-            boolean didUserAlreadyHaveRole = !UserRoles.addRoleToUser(main, userId, role);
+            boolean didUserAlreadyHaveRole = !UserRoles.addRoleToUser(
+                    this.getTenantIdentifierWithStorageFromRequest(req), userId, role);
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             response.addProperty("didUserAlreadyHaveRole", didUserAlreadyHaveRole);
@@ -68,7 +70,7 @@ public class AddUserRoleAPI extends WebserverAPI {
             JsonObject response = new JsonObject();
             response.addProperty("status", "UNKNOWN_ROLE_ERROR");
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

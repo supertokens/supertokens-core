@@ -17,30 +17,43 @@
 package io.supertokens.cronjobs.deleteExpiredSessions;
 
 import io.supertokens.Main;
-import io.supertokens.ResourceDistributor;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
-import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.session.SessionStorage;
+import org.jetbrains.annotations.TestOnly;
+
+import java.util.List;
 
 public class DeleteExpiredSessions extends CronTask {
 
     public static final String RESOURCE_KEY = "io.supertokens.cronjobs.deleteExpiredSessions.DeleteExpiredSessions";
 
-    private DeleteExpiredSessions(Main main) {
-        super("RemoveOldSessions", main);
+    private DeleteExpiredSessions(Main main, List<List<TenantIdentifier>> tenantsInfo) {
+        super("RemoveOldSessions", main, tenantsInfo, false);
     }
 
+    public static DeleteExpiredSessions init(Main main, List<List<TenantIdentifier>> tenantsInfo) {
+        return (DeleteExpiredSessions) main.getResourceDistributor()
+                .setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY,
+                        new DeleteExpiredSessions(main, tenantsInfo));
+    }
+
+    @TestOnly
     public static DeleteExpiredSessions getInstance(Main main) {
-        ResourceDistributor.SingletonResource instance = main.getResourceDistributor().getResource(RESOURCE_KEY);
-        if (instance == null) {
-            instance = main.getResourceDistributor().setResource(RESOURCE_KEY, new DeleteExpiredSessions(main));
+        try {
+            return (DeleteExpiredSessions) main.getResourceDistributor()
+                    .getResource(new TenantIdentifier(null, null, null), RESOURCE_KEY);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new IllegalStateException(e);
         }
-        return (DeleteExpiredSessions) instance;
     }
 
     @Override
-    protected void doTask() throws Exception {
-        StorageLayer.getSessionStorage(this.main).deleteAllExpiredSessions();
+    protected void doTaskPerStorage(Storage storage) throws Exception {
+        ((SessionStorage) storage).deleteAllExpiredSessions();
     }
 
     @Override

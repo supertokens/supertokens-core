@@ -25,7 +25,10 @@ import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.session.Session;
+import io.supertokens.session.accessToken.AccessToken;
 import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -84,14 +87,16 @@ public class SessionTest3 {
 
         Session.createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase);
 
-        assertEquals(StorageLayer.getSessionStorage(process.getProcess()).getNumberOfSessions(), 2);
+        assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
+                .getNumberOfSessions(new TenantIdentifier(null, null, null)), 2);
 
-        Session.revokeSessionUsingSessionHandles(process.getProcess(), new String[] { sessionInfo.session.handle });
-        assertEquals(StorageLayer.getSessionStorage(process.getProcess()).getNumberOfSessions(), 1);
+        Session.revokeSessionUsingSessionHandles(process.getProcess(), new String[]{sessionInfo.session.handle});
+        assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
+                .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
 
         try {
             Session.refreshSession(process.getProcess(), sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken,
-                    false, true);
+                    false, AccessToken.getLatestVersion());
             fail();
         } catch (UnauthorisedException e) {
 
@@ -114,7 +119,7 @@ public class SessionTest3 {
 
         Utils.setValueInConfig("access_token_validity", "2"); // 1 second
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -130,7 +135,7 @@ public class SessionTest3 {
         assert sessionInfo.accessToken != null;
 
         assertEquals(Session.revokeSessionUsingSessionHandles(process.getProcess(),
-                new String[] { sessionInfo.session.handle })[0], sessionInfo.session.handle);
+                new String[]{sessionInfo.session.handle})[0], sessionInfo.session.handle);
 
         Session.getSession(process.getProcess(), sessionInfo.accessToken.token, sessionInfo.antiCsrfToken, false, true, false);
 
@@ -146,7 +151,7 @@ public class SessionTest3 {
 
         try {
             Session.refreshSession(process.getProcess(), sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken,
-                    false, true);
+                    false, AccessToken.getLatestVersion());
             fail();
         } catch (UnauthorisedException ignored) {
 
@@ -160,7 +165,7 @@ public class SessionTest3 {
     @Test
     public void revokeAllSessionsForUserWithoutBlacklisting() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -187,11 +192,13 @@ public class SessionTest3 {
 
         Session.createNewSession(process.getProcess(), "userId2", userDataInJWT, userDataInDatabase);
 
-        assertEquals(StorageLayer.getSessionStorage(process.getProcess()).getNumberOfSessions(), 4);
+        assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
+                .getNumberOfSessions(new TenantIdentifier(null, null, null)), 4);
 
         assertEquals(Session.revokeAllSessionsForUser(process.getProcess(), userId).length, 3);
 
-        assertEquals(StorageLayer.getSessionStorage(process.getProcess()).getNumberOfSessions(), 1);
+        assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
+                .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
 
         Session.getSession(process.getProcess(), sessionInfo.accessToken.token, sessionInfo.antiCsrfToken, false, true, false);
         Session.getSession(process.getProcess(), sessionInfo2.accessToken.token, sessionInfo2.antiCsrfToken, false,
@@ -209,7 +216,7 @@ public class SessionTest3 {
 
         Utils.setValueInConfig("refresh_token_validity", "" + 1.0 / 60.0);
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
 
         CronTaskTest.getInstance(process.getProcess()).setIntervalInSeconds(DeleteExpiredSessions.RESOURCE_KEY, 1);
@@ -238,12 +245,14 @@ public class SessionTest3 {
         assert sessionInfo3.refreshToken != null;
         assert sessionInfo3.accessToken != null;
 
-        assertEquals(StorageLayer.getSessionStorage(process.getProcess()).getNumberOfSessions(), 3);
+        assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
+                .getNumberOfSessions(new TenantIdentifier(null, null, null)), 3);
 
         Thread.sleep(2500);
         Session.createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase);
 
-        assertEquals(StorageLayer.getSessionStorage(process.getProcess()).getNumberOfSessions(), 1);
+        assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
+                .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

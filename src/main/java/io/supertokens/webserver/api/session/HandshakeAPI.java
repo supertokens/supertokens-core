@@ -23,13 +23,14 @@ import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 @Deprecated
@@ -47,6 +48,7 @@ public class HandshakeAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific
         if (super.getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_21)) {
             super.sendTextResponse(404, "Not found", resp);
             return;
@@ -55,13 +57,20 @@ public class HandshakeAPI extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
 
-            Utils.addLegacySigningKeyInfos(main, result, super.getVersionFromRequest(req).betweenInclusive(SemVer.v2_9, SemVer.v2_21));
+            Utils.addLegacySigningKeyInfos(this.getAppIdentifierWithStorage(req), main, result,
+                    super.getVersionFromRequest(req).betweenInclusive(SemVer.v2_9, SemVer.v2_21));
 
-            result.addProperty("accessTokenBlacklistingEnabled", Config.getConfig(main).getAccessTokenBlacklisting());
-            result.addProperty("accessTokenValidity", Config.getConfig(main).getAccessTokenValidity());
-            result.addProperty("refreshTokenValidity", Config.getConfig(main).getRefreshTokenValidity());
+            result.addProperty("accessTokenBlacklistingEnabled",
+                    Config.getConfig(this.getTenantIdentifierWithStorageFromRequest(req), main)
+                            .getAccessTokenBlacklisting());
+            result.addProperty("accessTokenValidity",
+                    Config.getConfig(this.getTenantIdentifierWithStorageFromRequest(req), main)
+                            .getAccessTokenValidity());
+            result.addProperty("refreshTokenValidity",
+                    Config.getConfig(this.getTenantIdentifierWithStorageFromRequest(req), main)
+                            .getRefreshTokenValidity());
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | StorageTransactionLogicException | UnsupportedJWTSigningAlgorithmException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException | UnsupportedJWTSigningAlgorithmException e) {
             throw new ServletException(e);
         }
     }

@@ -21,6 +21,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
 import io.supertokens.pluginInterface.passwordless.PasswordlessStorage;
 import io.supertokens.storageLayer.StorageLayer;
@@ -57,7 +58,7 @@ public class PasswordlessGetCodesAPITest2_11 {
 
     @Test
     public void testBadInput() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -127,7 +128,7 @@ public class PasswordlessGetCodesAPITest2_11 {
 
     @Test
     public void testGetCodesNoMatch() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -153,7 +154,7 @@ public class PasswordlessGetCodesAPITest2_11 {
 
     @Test
     public void testGetCodes() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -162,7 +163,7 @@ public class PasswordlessGetCodesAPITest2_11 {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         String email = "test@example.com";
         String codeId = io.supertokens.utils.Utils.getUUID();
@@ -185,9 +186,9 @@ public class PasswordlessGetCodesAPITest2_11 {
             assertEquals(0, response.get("devices").getAsJsonArray().size());
         }
 
-        storage.createDeviceWithCode(email, null, "linkCodeSalt",
+        storage.createDeviceWithCode(new TenantIdentifier(null, null, null), email, null, "linkCodeSalt",
                 new PasswordlessCode(codeId, deviceIdHash, linkCodeHash, System.currentTimeMillis()));
-        assertEquals(1, storage.getDevicesByEmail(email).length);
+        assertEquals(1, storage.getDevicesByEmail(new TenantIdentifier(null, null, null), email).length);
 
         // match
 
@@ -204,7 +205,7 @@ public class PasswordlessGetCodesAPITest2_11 {
             JsonArray jsonDeviceList = response.get("devices").getAsJsonArray();
             assertEquals(1, jsonDeviceList.size());
 
-            checkDevice(jsonDeviceList, 0, email, null, deviceIdHash, new String[]{codeId});
+            checkDevice(jsonDeviceList, 0, email, null, deviceIdHash, new String[] { codeId });
         }
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -212,7 +213,7 @@ public class PasswordlessGetCodesAPITest2_11 {
 
     @Test
     public void testGetCodesWithEmail() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -221,7 +222,7 @@ public class PasswordlessGetCodesAPITest2_11 {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
         String email = "test@example.com";
         String codeId = io.supertokens.utils.Utils.getUUID();
 
@@ -244,9 +245,9 @@ public class PasswordlessGetCodesAPITest2_11 {
 
         // OK with matching codes
         {
-            storage.createDeviceWithCode(email, null, "linkCodeSalt",
+            storage.createDeviceWithCode(new TenantIdentifier(null, null, null), email, null, "linkCodeSalt",
                     new PasswordlessCode(codeId, deviceIdHash, linkCodeHash, System.currentTimeMillis()));
-            assertEquals(1, storage.getDevicesByEmail(email).length);
+            assertEquals(1, storage.getDevicesByEmail(new TenantIdentifier(null, null, null), email).length);
 
             {
                 HashMap<String, String> map = new HashMap<>();
@@ -260,7 +261,7 @@ public class PasswordlessGetCodesAPITest2_11 {
                 assert (response.has("devices"));
                 JsonArray jsonDeviceList = response.get("devices").getAsJsonArray();
                 assertEquals(1, jsonDeviceList.size());
-                checkDevice(jsonDeviceList, 0, email, null, deviceIdHash, new String[]{codeId});
+                checkDevice(jsonDeviceList, 0, email, null, deviceIdHash, new String[] { codeId });
             }
         }
         process.kill();
@@ -269,7 +270,7 @@ public class PasswordlessGetCodesAPITest2_11 {
 
     @Test
     public void testGetCodesWithPhoneNumber() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -278,7 +279,7 @@ public class PasswordlessGetCodesAPITest2_11 {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
         String phoneNumber = "+918989898989";
         String codeId = io.supertokens.utils.Utils.getUUID();
 
@@ -301,9 +302,10 @@ public class PasswordlessGetCodesAPITest2_11 {
 
         // OK with matching codes
         {
-            storage.createDeviceWithCode(null, phoneNumber, "linkCodeSalt",
+            storage.createDeviceWithCode(new TenantIdentifier(null, null, null), null, phoneNumber, "linkCodeSalt",
                     new PasswordlessCode(codeId, deviceIdHash, linkCodeHash, System.currentTimeMillis()));
-            assertEquals(1, storage.getDevicesByPhoneNumber(phoneNumber).length);
+            assertEquals(1,
+                    storage.getDevicesByPhoneNumber(new TenantIdentifier(null, null, null), phoneNumber).length);
 
             {
                 HashMap<String, String> map = new HashMap<>();
@@ -317,7 +319,7 @@ public class PasswordlessGetCodesAPITest2_11 {
                 assert (response.has("devices"));
                 JsonArray jsonDeviceList = response.get("devices").getAsJsonArray();
                 assertEquals(1, jsonDeviceList.size());
-                checkDevice(jsonDeviceList, 0, null, phoneNumber, deviceIdHash, new String[]{codeId});
+                checkDevice(jsonDeviceList, 0, null, phoneNumber, deviceIdHash, new String[] { codeId });
             }
         }
         process.kill();
@@ -326,7 +328,7 @@ public class PasswordlessGetCodesAPITest2_11 {
 
     @Test
     public void testGetCodesWithDeviceID() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -335,7 +337,7 @@ public class PasswordlessGetCodesAPITest2_11 {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
         String deviceID = "randomDeviceID";
         String phoneNumber = "+918989898989";
 
@@ -361,7 +363,8 @@ public class PasswordlessGetCodesAPITest2_11 {
 
             deviceID = createCodeResponse.deviceId;
 
-            assertEquals(1, storage.getDevicesByPhoneNumber(phoneNumber).length);
+            assertEquals(1,
+                    storage.getDevicesByPhoneNumber(new TenantIdentifier(null, null, null), phoneNumber).length);
             // TODO: deviceID =
             {
                 HashMap<String, String> map = new HashMap<>();
@@ -376,7 +379,7 @@ public class PasswordlessGetCodesAPITest2_11 {
                 JsonArray jsonDeviceList = response.get("devices").getAsJsonArray();
                 assertEquals(1, jsonDeviceList.size());
                 checkDevice(jsonDeviceList, 0, null, phoneNumber, createCodeResponse.deviceIdHash,
-                        new String[]{createCodeResponse.codeId});
+                        new String[] { createCodeResponse.codeId });
             }
         }
         process.kill();
@@ -384,7 +387,7 @@ public class PasswordlessGetCodesAPITest2_11 {
     }
 
     private void checkDevice(JsonArray jsonDeviceList, int ind, String email, String phoneNumber, String deviceIdHash,
-                             String[] codeIds) {
+            String[] codeIds) {
         JsonObject device = jsonDeviceList.get(ind).getAsJsonObject();
 
         assertEquals(deviceIdHash, device.get("preAuthSessionId").getAsString());

@@ -19,6 +19,7 @@ package io.supertokens.test.passwordless.api;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
 import io.supertokens.pluginInterface.passwordless.sqlStorage.PasswordlessSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
@@ -158,7 +159,7 @@ public class PasswordlessDeleteCodesAPITest2_11 {
             return;
         }
 
-        PasswordlessSQLStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessSQLStorage storage = (PasswordlessSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         String email = "test@example.com";
         String codeId = "codeId";
@@ -168,9 +169,10 @@ public class PasswordlessDeleteCodesAPITest2_11 {
         String linkCodeHash = "wo5UcFFVSblZEd1KOUOl-dpJ5zpSr_Qsor1Eg4TzDRE";
         String linkCodeHash2 = "F0aZHCBYSJIghP5e0flGa8gvoUYEgGus2yIJYmdpFY4";
 
-        storage.createDeviceWithCode(email, null, "linkCodeSalt",
+        storage.createDeviceWithCode(new TenantIdentifier(null, null, null), email, null, "linkCodeSalt",
                 new PasswordlessCode(codeId, deviceIdHash, linkCodeHash, System.currentTimeMillis()));
-        storage.createCode(new PasswordlessCode(codeId2, deviceIdHash, linkCodeHash2, System.currentTimeMillis()));
+        storage.createCode(new TenantIdentifier(null, null, null),
+                new PasswordlessCode(codeId2, deviceIdHash, linkCodeHash2, System.currentTimeMillis()));
 
         JsonObject createCodeRequestBody = new JsonObject();
         createCodeRequestBody.addProperty("email", "test@examplE.com");
@@ -181,9 +183,9 @@ public class PasswordlessDeleteCodesAPITest2_11 {
 
         assertEquals("OK", response.get("status").getAsString());
 
-        assertNull(storage.getDevice(deviceIdHash));
-        assertNull(storage.getCode(codeId));
-        assertNull(storage.getCode(codeId2));
+        assertNull(storage.getDevice(new TenantIdentifier(null, null, null), deviceIdHash));
+        assertNull(storage.getCode(new TenantIdentifier(null, null, null), codeId));
+        assertNull(storage.getCode(new TenantIdentifier(null, null, null), codeId2));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -200,7 +202,7 @@ public class PasswordlessDeleteCodesAPITest2_11 {
             return;
         }
 
-        PasswordlessSQLStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessSQLStorage storage = (PasswordlessSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         String phoneNumber = "+442071838750";
         String codeId = "codeId";
@@ -210,9 +212,10 @@ public class PasswordlessDeleteCodesAPITest2_11 {
         String linkCodeHash = "wo5UcFFVSblZEd1KOUOl-dpJ5zpSr_Qsor1Eg4TzDRE";
         String linkCodeHash2 = "F0aZHCBYSJIghP5e0flGa8gvoUYEgGus2yIJYmdpFY4";
 
-        storage.createDeviceWithCode(null, phoneNumber, "linkCodeSalt",
+        storage.createDeviceWithCode(new TenantIdentifier(null, null, null), null, phoneNumber, "linkCodeSalt",
                 new PasswordlessCode(codeId, deviceIdHash, linkCodeHash, System.currentTimeMillis()));
-        storage.createCode(new PasswordlessCode(codeId2, deviceIdHash, linkCodeHash2, System.currentTimeMillis()));
+        storage.createCode(new TenantIdentifier(null, null, null),
+                new PasswordlessCode(codeId2, deviceIdHash, linkCodeHash2, System.currentTimeMillis()));
 
         JsonObject createCodeRequestBody = new JsonObject();
         createCodeRequestBody.addProperty("phoneNumber", phoneNumber);
@@ -223,9 +226,9 @@ public class PasswordlessDeleteCodesAPITest2_11 {
 
         assertEquals("OK", response.get("status").getAsString());
 
-        assertNull(storage.getDevice(deviceIdHash));
-        assertNull(storage.getCode(codeId));
-        assertNull(storage.getCode(codeId2));
+        assertNull(storage.getDevice(new TenantIdentifier(null, null, null), deviceIdHash));
+        assertNull(storage.getCode(new TenantIdentifier(null, null, null), codeId));
+        assertNull(storage.getCode(new TenantIdentifier(null, null, null), codeId2));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

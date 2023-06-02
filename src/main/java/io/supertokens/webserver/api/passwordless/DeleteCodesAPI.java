@@ -18,6 +18,7 @@ package io.supertokens.webserver.api.passwordless;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -46,6 +47,7 @@ public class DeleteCodesAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific
         // Logic based on: https://app.code2flow.com/0493FY2rkyZm
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
@@ -62,11 +64,11 @@ public class DeleteCodesAPI extends WebserverAPI {
         try {
             if (email != null) {
                 email = Utils.normaliseEmail(email);
-                Passwordless.removeCodesByEmail(main, email);
+                Passwordless.removeCodesByEmail(this.getTenantIdentifierWithStorageFromRequest(req), email);
             } else {
-                Passwordless.removeCodesByPhoneNumber(main, phoneNumber);
+                Passwordless.removeCodesByPhoneNumber(this.getTenantIdentifierWithStorageFromRequest(req), phoneNumber);
             }
-        } catch (StorageTransactionLogicException | StorageQueryException e) {
+        } catch (StorageTransactionLogicException | StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
         JsonObject result = new JsonObject();

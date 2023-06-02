@@ -21,7 +21,9 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.exceptions.QuitProgramException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.output.Logging;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,14 +44,17 @@ public class Version extends ResourceDistributor.SingletonResource {
     }
 
     private static Version getInstance(Main main) {
-        return (Version) main.getResourceDistributor().getResource(RESOURCE_KEY);
+        try {
+            return (Version) main.getResourceDistributor()
+                    .getResource(new TenantIdentifier(null, null, null), RESOURCE_KEY);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     public static void loadVersion(Main main, String versionFilePath) {
-        if (getInstance(main) != null) {
-            return;
-        }
-        main.getResourceDistributor().setResource(RESOURCE_KEY, new Version(main, versionFilePath));
+        main.getResourceDistributor()
+                .setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY, new Version(main, versionFilePath));
     }
 
     public static VersionFile getVersion(Main main) {
@@ -60,7 +65,7 @@ public class Version extends ResourceDistributor.SingletonResource {
     }
 
     private VersionFile loadVersionFile(String versionFilePath) throws IOException {
-        Logging.info(main, "Loading supertokens version.yaml file.", true);
+        Logging.info(main, TenantIdentifier.BASE_TENANT, "Loading supertokens version.yaml file.", true);
         final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
         VersionFile version = mapper.readValue(new File(versionFilePath), VersionFile.class);
         version.validate();

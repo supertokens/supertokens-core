@@ -21,6 +21,7 @@ import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
 import io.supertokens.output.Logging;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.test.TestingProcessManager.TestingProcess;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -150,13 +151,13 @@ public class CLIOptionsTest {
             assertEquals(Config.getConfig(process1.getProcess()).getErrorLogPath(process1.getProcess()),
                     Config.getConfig(process2.getProcess()).getErrorLogPath(process2.getProcess()));
 
-            Logging.debug(process.getProcess(), "test");
-            Logging.debug(process1.getProcess(), "test1");
-            Logging.debug(process2.getProcess(), "test2");
+            Logging.debug(process.getProcess(), TenantIdentifier.BASE_TENANT, "test");
+            Logging.debug(process1.getProcess(), TenantIdentifier.BASE_TENANT, "test1");
+            Logging.debug(process2.getProcess(), TenantIdentifier.BASE_TENANT, "test2");
 
-            Logging.error(process.getProcess(), "test", false);
-            Logging.error(process1.getProcess(), "test1", false);
-            Logging.error(process2.getProcess(), "test2", false);
+            Logging.error(process.getProcess(), TenantIdentifier.BASE_TENANT, "test", false);
+            Logging.error(process1.getProcess(), TenantIdentifier.BASE_TENANT, "test1", false);
+            Logging.error(process2.getProcess(), TenantIdentifier.BASE_TENANT, "test2", false);
 
             boolean processInfoLog = false;
             boolean process1InfoLog = false;

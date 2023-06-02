@@ -18,13 +18,13 @@ package io.supertokens.webserver.api.passwordless;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -46,19 +46,20 @@ public class DeleteCodeAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific
         // Logic based on: https://app.code2flow.com/DDhe9U1rsFsQ
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
         String codeId = InputParser.parseStringOrThrowError(input, "codeId", false);
 
         try {
-            Passwordless.removeCode(main, codeId);
+            Passwordless.removeCode(this.getTenantIdentifierWithStorageFromRequest(req), codeId);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
 
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageTransactionLogicException | StorageQueryException e) {
+        } catch (StorageTransactionLogicException | StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

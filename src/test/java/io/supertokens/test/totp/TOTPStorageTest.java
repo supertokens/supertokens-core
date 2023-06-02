@@ -4,11 +4,12 @@ import io.supertokens.ProcessState;
 import io.supertokens.cronjobs.deleteExpiredTotpTokens.DeleteExpiredTotpTokens;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
-import io.supertokens.featureflag.exceptions.InvalidLicenseKeyException;
-import io.supertokens.httpRequest.HttpResponseException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.totp.TOTPDevice;
 import io.supertokens.pluginInterface.totp.TOTPStorage;
 import io.supertokens.pluginInterface.totp.TOTPUsedCode;
@@ -57,8 +58,7 @@ public class TOTPStorageTest {
     }
 
     public TestSetupResult initSteps()
-            throws InterruptedException, StorageQueryException, InvalidLicenseKeyException, HttpResponseException,
-            IOException {
+            throws InterruptedException {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -67,7 +67,7 @@ public class TOTPStorageTest {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return null;
         }
-        TOTPSQLStorage storage = StorageLayer.getTOTPStorage(process.getProcess());
+        TOTPSQLStorage storage = (TOTPSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         FeatureFlagTestContent.getInstance(process.main)
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.TOTP});
@@ -80,8 +80,9 @@ public class TOTPStorageTest {
         assert storage instanceof TOTPSQLStorage;
         TOTPSQLStorage sqlStorage = (TOTPSQLStorage) storage;
 
-        return (TOTPUsedCode[]) sqlStorage.startTransaction(con -> {
-            TOTPUsedCode[] usedCodes = sqlStorage.getAllUsedCodesDescOrder_Transaction(con, userId);
+        return sqlStorage.startTransaction(con -> {
+            TOTPUsedCode[] usedCodes = sqlStorage.getAllUsedCodesDescOrder_Transaction(con,
+                    new TenantIdentifier(null, null, null), userId);
             sqlStorage.commitTransaction(con);
             return usedCodes;
         });
@@ -94,10 +95,12 @@ public class TOTPStorageTest {
             storage.startTransaction(con -> {
                 try {
                     for (TOTPUsedCode usedCode : usedCodes) {
-                        storage.insertUsedCode_Transaction(con, usedCode);
+                        storage.insertUsedCode_Transaction(con, new TenantIdentifier(null, null, null), usedCode);
                     }
                 } catch (TotpNotEnabledException | UsedCodeAlreadyExistsException e) {
                     throw new StorageTransactionLogicException(e);
+                } catch (TenantOrAppNotFoundException e) {
+                    throw new IllegalStateException(e);
                 }
                 storage.commitTransaction(con);
 
@@ -126,20 +129,21 @@ public class TOTPStorageTest {
         TOTPDevice device2 = new TOTPDevice("user", "d2", "secret", 30, 1, true);
         TOTPDevice device2Duplicate = new TOTPDevice("user", "d2", "new-secret", 30, 1, false);
 
-        storage.createDevice(device1);
+        storage.createDevice(new AppIdentifier(null, null), device1);
 
-        TOTPDevice[] storedDevices = storage.getDevices("user");
+        TOTPDevice[] storedDevices = storage.getDevices(new AppIdentifier(null, null), "user");
         assert (storedDevices.length == 1);
         assert storedDevices[0].equals(device1);
 
-        storage.createDevice(device2);
-        storedDevices = storage.getDevices("user");
+        storage.createDevice(new AppIdentifier(null, null), device2);
+        storedDevices = storage.getDevices(new AppIdentifier(null, null), "user");
 
         assert (storedDevices.length == 2);
         assert storedDevices[0].equals(device1);
         assert storedDevices[1].equals(device2);
 
-        assertThrows(DeviceAlreadyExistsException.class, () -> storage.createDevice(device2Duplicate));
+        assertThrows(DeviceAlreadyExistsException.class,
+                () -> storage.createDevice(new AppIdentifier(null, null), device2Duplicate));
 
         result.process.kill();
         assertNotNull(result.process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -154,24 +158,25 @@ public class TOTPStorageTest {
         TOTPSQLStorage storage = result.storage;
 
         TOTPDevice device = new TOTPDevice("user", "device", "secretKey", 30, 1, false);
-        storage.createDevice(device);
+        storage.createDevice(new AppIdentifier(null, null), device);
 
-        TOTPDevice[] storedDevices = storage.getDevices("user");
+        TOTPDevice[] storedDevices = storage.getDevices(new AppIdentifier(null, null), "user");
         assert (storedDevices.length == 1);
         assert (!storedDevices[0].verified);
 
         // Verify the device:
-        storage.markDeviceAsVerified("user", "device");
+        storage.markDeviceAsVerified(new AppIdentifier(null, null), "user", "device");
 
-        storedDevices = storage.getDevices("user");
+        storedDevices = storage.getDevices(new AppIdentifier(null, null), "user");
         assert (storedDevices.length == 1);
         assert (storedDevices[0].verified);
 
         // Try to verify the device again:
-        storage.markDeviceAsVerified("user", "device");
+        storage.markDeviceAsVerified(new AppIdentifier(null, null), "user", "device");
 
         // Try to verify a device that doesn't exist:
-        assertThrows(UnknownDeviceException.class, () -> storage.markDeviceAsVerified("user", "non-existent-device"));
+        assertThrows(UnknownDeviceException.class,
+                () -> storage.markDeviceAsVerified(new AppIdentifier(null, null), "user", "non-existent-device"));
     }
 
     @Test
@@ -185,7 +190,8 @@ public class TOTPStorageTest {
         // Try to get the count for a user that doesn't exist (Should pass because
         // this is DB level txn that doesn't throw TotpNotEnabledException):
         int devicesCount = storage.startTransaction(con -> {
-            TOTPDevice[] devices = storage.getDevices_Transaction(con, "non-existent-user");
+            TOTPDevice[] devices = storage.getDevices_Transaction(con, new AppIdentifier(null, null),
+                    "non-existent-user");
             storage.commitTransaction(con);
             return devices.length;
         });
@@ -194,11 +200,11 @@ public class TOTPStorageTest {
         TOTPDevice device1 = new TOTPDevice("user", "device1", "sk1", 30, 1, false);
         TOTPDevice device2 = new TOTPDevice("user", "device2", "sk2", 30, 1, false);
 
-        storage.createDevice(device1);
-        storage.createDevice(device2);
+        storage.createDevice(new AppIdentifier(null, null), device1);
+        storage.createDevice(new AppIdentifier(null, null), device2);
 
         devicesCount = storage.startTransaction(con -> {
-            TOTPDevice[] devices = storage.getDevices_Transaction(con, "user");
+            TOTPDevice[] devices = storage.getDevices_Transaction(con, new AppIdentifier(null, null), "user");
             storage.commitTransaction(con);
             return devices.length;
         });
@@ -216,7 +222,7 @@ public class TOTPStorageTest {
         // Try to remove a user that doesn't exist (Should pass because
         // this is DB level txn that doesn't throw TotpNotEnabledException):
         storage.startTransaction(con -> {
-            storage.removeUser_Transaction(con, "non-existent-user");
+            storage.removeUser_Transaction(con, new AppIdentifier(null, null), "non-existent-user");
             storage.commitTransaction(con);
             return null;
         });
@@ -224,8 +230,8 @@ public class TOTPStorageTest {
         TOTPDevice device1 = new TOTPDevice("user", "device1", "sk1", 30, 1, false);
         TOTPDevice device2 = new TOTPDevice("user", "device2", "sk2", 30, 1, false);
 
-        storage.createDevice(device1);
-        storage.createDevice(device2);
+        storage.createDevice(new AppIdentifier(null, null), device1);
+        storage.createDevice(new AppIdentifier(null, null), device2);
 
         long now = System.currentTimeMillis();
         long expiryAfter10mins = now + 10 * 60 * 1000;
@@ -235,19 +241,19 @@ public class TOTPStorageTest {
 
         insertUsedCodesUtil(storage, new TOTPUsedCode[]{usedCode1, usedCode2});
 
-        TOTPDevice[] storedDevices = storage.getDevices("user");
+        TOTPDevice[] storedDevices = storage.getDevices(new AppIdentifier(null, null), "user");
         assert (storedDevices.length == 2);
 
         TOTPUsedCode[] storedUsedCodes = getAllUsedCodesUtil(storage, "user");
         assert (storedUsedCodes.length == 2);
 
         storage.startTransaction(con -> {
-            storage.removeUser_Transaction(con, "user");
+            storage.removeUser_Transaction(con, new AppIdentifier(null, null), "user");
             storage.commitTransaction(con);
             return null;
         });
 
-        storedDevices = storage.getDevices("user");
+        storedDevices = storage.getDevices(new AppIdentifier(null, null), "user");
         assert (storedDevices.length == 0);
 
         storedUsedCodes = getAllUsedCodesUtil(storage, "user");
@@ -265,39 +271,40 @@ public class TOTPStorageTest {
         TOTPDevice device1 = new TOTPDevice("user", "device1", "sk1", 30, 1, false);
         TOTPDevice device2 = new TOTPDevice("user", "device2", "sk2", 30, 1, false);
 
-        storage.createDevice(device1);
-        storage.createDevice(device2);
+        storage.createDevice(new AppIdentifier(null, null), device1);
+        storage.createDevice(new AppIdentifier(null, null), device2);
 
-        TOTPDevice[] storedDevices = storage.getDevices("user");
+        TOTPDevice[] storedDevices = storage.getDevices(new AppIdentifier(null, null), "user");
         assert (storedDevices.length == 2);
 
         // Try to delete a device for a user that doesn't exist (Should pass because
         // this is DB level txn that doesn't throw TotpNotEnabledException):
         storage.startTransaction(con -> {
-            storage.deleteDevice_Transaction(con, "non-existent-user", "device1");
+            int deletedCount = storage.deleteDevice_Transaction(con, new AppIdentifier(null, null), "non-existent-user",
+                    "device1");
+            assert deletedCount == 0;
             storage.commitTransaction(con);
             return null;
         });
 
         // Try to delete a device that doesn't exist:
-        try {
-            storage.startTransaction(con -> {
-                storage.deleteDevice_Transaction(con, "user", "non-existent-device");
-                storage.commitTransaction(con);
-                return null;
-            });
-        } catch (Exception e) {
-            assert (e instanceof UnknownDeviceException) ? true : false;
-        }
-
-        // Successfully delete device1:
         storage.startTransaction(con -> {
-            storage.deleteDevice_Transaction(con, "user", "device1");
+            int deletedCount = storage.deleteDevice_Transaction(con, new AppIdentifier(null, null), "user",
+                    "non-existent-device");
+            assert deletedCount == 0;
             storage.commitTransaction(con);
             return null;
         });
 
-        storedDevices = storage.getDevices("user");
+        // Successfully delete device1:
+        storage.startTransaction(con -> {
+            int deletedCount = storage.deleteDevice_Transaction(con, new AppIdentifier(null, null), "user", "device1");
+            assert deletedCount == 1;
+            storage.commitTransaction(con);
+            return null;
+        });
+
+        storedDevices = storage.getDevices(new AppIdentifier(null, null), "user");
         assert (storedDevices.length == 1); // device2 should still be there
     }
 
@@ -310,33 +317,35 @@ public class TOTPStorageTest {
         TOTPSQLStorage storage = result.storage;
 
         TOTPDevice device = new TOTPDevice("user", "device", "secretKey", 30, 1, false);
-        storage.createDevice(device);
+        storage.createDevice(new AppIdentifier(null, null), device);
 
-        TOTPDevice[] storedDevices = storage.getDevices("user");
+        TOTPDevice[] storedDevices = storage.getDevices(new AppIdentifier(null, null), "user");
         assert (storedDevices.length == 1);
         assert (storedDevices[0].deviceName.equals("device"));
 
         // Try to update a device that doesn't exist:
         assertThrows(UnknownDeviceException.class,
-                () -> storage.updateDeviceName("user", "non-existent-device", "new-device-name"));
+                () -> storage.updateDeviceName(new AppIdentifier(null, null), "user", "non-existent-device",
+                        "new-device-name"));
 
         // Update the device name:
-        storage.updateDeviceName("user", "device", "updated-device-name");
+        storage.updateDeviceName(new AppIdentifier(null, null), "user", "device", "updated-device-name");
 
-        storedDevices = storage.getDevices("user");
+        storedDevices = storage.getDevices(new AppIdentifier(null, null), "user");
         assert (storedDevices.length == 1);
         assert (storedDevices[0].deviceName.equals("updated-device-name"));
 
         // Try to create a new device and rename it to the same name as an existing
         // device:
         TOTPDevice newDevice = new TOTPDevice("user", "new-device", "secretKey", 30, 1, false);
-        storage.createDevice(newDevice);
+        storage.createDevice(new AppIdentifier(null, null), newDevice);
 
         assertThrows(DeviceAlreadyExistsException.class,
-                () -> storage.updateDeviceName("user", "new-device", "updated-device-name"));
+                () -> storage.updateDeviceName(new AppIdentifier(null, null), "user", "new-device",
+                        "updated-device-name"));
 
         // Try to rename the device the same name (Should work at database level):
-        storage.updateDeviceName("user", "updated-device-name", "updated-device-name");
+        storage.updateDeviceName(new AppIdentifier(null, null), "user", "updated-device-name", "updated-device-name");
     }
 
     @Test
@@ -350,16 +359,16 @@ public class TOTPStorageTest {
         TOTPDevice device1 = new TOTPDevice("user", "d1", "secretKey", 30, 1, false);
         TOTPDevice device2 = new TOTPDevice("user", "d2", "secretKey", 30, 1, false);
 
-        storage.createDevice(device1);
-        storage.createDevice(device2);
+        storage.createDevice(new AppIdentifier(null, null), device1);
+        storage.createDevice(new AppIdentifier(null, null), device2);
 
-        TOTPDevice[] storedDevices = storage.getDevices("user");
+        TOTPDevice[] storedDevices = storage.getDevices(new AppIdentifier(null, null), "user");
 
         assert (storedDevices.length == 2);
         assert (storedDevices[0].deviceName.equals("d1"));
         assert (storedDevices[1].deviceName.equals("d2"));
 
-        storedDevices = storage.getDevices("non-existent-user");
+        storedDevices = storage.getDevices(new AppIdentifier(null, null), "non-existent-user");
         assert (storedDevices.length == 0);
     }
 
@@ -378,7 +387,7 @@ public class TOTPStorageTest {
             TOTPDevice device = new TOTPDevice("user", "device", "secretKey", 30, 1, false);
             TOTPUsedCode code = new TOTPUsedCode("user", "1234", true, nextDay, now);
 
-            storage.createDevice(device);
+            storage.createDevice(new AppIdentifier(null, null), device);
             insertUsedCodesUtil(storage, new TOTPUsedCode[]{code});
             TOTPUsedCode[] usedCodes = getAllUsedCodesUtil(storage, "user");
 
@@ -405,7 +414,7 @@ public class TOTPStorageTest {
         // Try to insert code after user has atleast one device (i.e. TOTP enabled)
         {
             TOTPDevice newDevice = new TOTPDevice("user", "new-device", "secretKey", 30, 1, false);
-            storage.createDevice(newDevice);
+            storage.createDevice(new AppIdentifier(null, null), newDevice);
             insertUsedCodesUtil(
                     storage,
                     new TOTPUsedCode[]{
@@ -444,7 +453,7 @@ public class TOTPStorageTest {
         TOTPUsedCode validCode2 = new TOTPUsedCode("user", "valid2", true, nextDay, now + 5);
         TOTPUsedCode validCode3 = new TOTPUsedCode("user", "valid3", true, nextDay, now + 6);
 
-        storage.createDevice(device);
+        storage.createDevice(new AppIdentifier(null, null), device);
         insertUsedCodesUtil(storage, new TOTPUsedCode[]{
                 validCode1, invalidCode,
                 expiredCode, expiredInvalidCode,
@@ -488,7 +497,7 @@ public class TOTPStorageTest {
         TOTPUsedCode validCodeToExpire = new TOTPUsedCode("user", "valid", true, hundredMs, now + 2);
         TOTPUsedCode invalidCodeToExpire = new TOTPUsedCode("user", "invalid", false, hundredMs, now + 3);
 
-        storage.createDevice(device);
+        storage.createDevice(new AppIdentifier(null, null), device);
         insertUsedCodesUtil(storage, new TOTPUsedCode[]{
                 validCodeToLive, invalidCodeToLive,
                 validCodeToExpire, invalidCodeToExpire
@@ -501,7 +510,7 @@ public class TOTPStorageTest {
         Thread.sleep(250);
 
         now = System.currentTimeMillis();
-        storage.removeExpiredCodes(now);
+        storage.removeExpiredCodes(new TenantIdentifier(null, null, null), now);
 
         usedCodes = getAllUsedCodesUtil(storage, "user");
         assert (usedCodes.length == 2);

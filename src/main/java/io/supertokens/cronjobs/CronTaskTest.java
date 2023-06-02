@@ -18,6 +18,9 @@ package io.supertokens.cronjobs;
 
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor.SingletonResource;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import org.jetbrains.annotations.TestOnly;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -31,13 +34,16 @@ public class CronTaskTest extends SingletonResource {
     }
 
     public static CronTaskTest getInstance(Main main) {
-        SingletonResource resource = main.getResourceDistributor().getResource(RESOURCE_ID);
-        if (resource == null) {
-            resource = main.getResourceDistributor().setResource(RESOURCE_ID, new CronTaskTest());
+        try {
+            return (CronTaskTest) main.getResourceDistributor()
+                    .getResource(new TenantIdentifier(null, null, null), RESOURCE_ID);
+        } catch (TenantOrAppNotFoundException ignored) {
+            return (CronTaskTest) main.getResourceDistributor()
+                    .setResource(new TenantIdentifier(null, null, null), RESOURCE_ID, new CronTaskTest());
         }
-        return (CronTaskTest) resource;
     }
 
+    @TestOnly
     public void setIntervalInSeconds(String resourceId, int interval) {
         cronTaskToInterval.put(resourceId, interval);
     }

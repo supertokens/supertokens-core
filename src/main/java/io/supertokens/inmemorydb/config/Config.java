@@ -16,9 +16,11 @@
 
 package io.supertokens.inmemorydb.config;
 
-import io.supertokens.ResourceDistributor;
+import io.supertokens.inmemorydb.ResourceDistributor;
 import io.supertokens.inmemorydb.Start;
-import io.supertokens.pluginInterface.exceptions.QuitProgramFromPluginException;
+import io.supertokens.pluginInterface.LOG_LEVEL;
+
+import java.util.Set;
 
 public class Config extends ResourceDistributor.SingletonResource {
 
@@ -30,21 +32,22 @@ public class Config extends ResourceDistributor.SingletonResource {
     }
 
     private static Config getInstance(Start start) {
-        return (Config) start.getResourceDistributor().getResource(RESOURCE_KEY);
+        return (Config) start.getResourceDistributor()
+                .getResource(RESOURCE_KEY);
     }
 
     public static void loadConfig(Start start) {
-        if (getInstance(start) != null) {
-            return;
-        }
         start.getResourceDistributor().setResource(RESOURCE_KEY, new Config());
     }
 
     public static SQLiteConfig getConfig(Start start) {
         if (getInstance(start) == null) {
-            throw new QuitProgramFromPluginException("Please call loadConfig() before calling getConfig()");
+            throw new IllegalStateException("Please call loadConfig() before calling getConfig()");
         }
         return getInstance(start).config;
     }
 
+    public static void setLogLevels(Start start, Set<LOG_LEVEL> logLevels) {
+        // no-op
+    }
 }

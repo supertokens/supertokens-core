@@ -20,21 +20,21 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
-import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.emailpassword.EmailPassword;
-import io.supertokens.emailpassword.ParsedFirebaseSCryptResponse;
 import io.supertokens.emailpassword.exceptions.UnsupportedPasswordHashingFormatException;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.io.Serial;
 
@@ -53,7 +53,7 @@ public class ImportUserWithPasswordHashAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-
+        // API is tenant specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String email = InputParser.parseStringOrThrowError(input, "email", false);
         String passwordHash = InputParser.parseStringOrThrowError(input, "passwordHash", false);
@@ -92,7 +92,8 @@ public class ImportUserWithPasswordHashAPI extends WebserverAPI {
         }
 
         try {
-            EmailPassword.ImportUserResponse importUserResponse = EmailPassword.importUserWithPasswordHash(main, email,
+            EmailPassword.ImportUserResponse importUserResponse = EmailPassword.importUserWithPasswordHash(
+                    this.getTenantIdentifierWithStorageFromRequest(req), main, email,
                     passwordHash, passwordHashingAlgorithm);
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
@@ -100,7 +101,7 @@ public class ImportUserWithPasswordHashAPI extends WebserverAPI {
             response.add("user", userJson);
             response.addProperty("didUserAlreadyExist", importUserResponse.didUserAlreadyExist);
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | StorageTransactionLogicException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         } catch (UnsupportedPasswordHashingFormatException e) {
             throw new ServletException(new WebserverAPI.BadRequestException(e.getMessage()));

@@ -20,6 +20,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
@@ -48,6 +49,7 @@ public class GetUsersForRoleAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific
         String role = InputParser.getQueryParamOrThrowError(req, "role", false);
 
         // normalize roles
@@ -59,7 +61,7 @@ public class GetUsersForRoleAPI extends WebserverAPI {
 
         try {
 
-            String[] roleUsers = UserRoles.getUsersForRole(main, role);
+            String[] roleUsers = UserRoles.getUsersForRole(this.getTenantIdentifierWithStorageFromRequest(req), role);
             JsonArray arr = new JsonArray();
 
             for (String s : roleUsers) {
@@ -77,7 +79,7 @@ public class GetUsersForRoleAPI extends WebserverAPI {
             response.addProperty("status", "UNKNOWN_ROLE_ERROR");
             super.sendJsonResponse(200, response, resp);
 
-        } catch (StorageQueryException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

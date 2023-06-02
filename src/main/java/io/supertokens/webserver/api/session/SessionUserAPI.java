@@ -20,15 +20,16 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.session.Session;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 public class SessionUserAPI extends WebserverAPI {
@@ -46,11 +47,13 @@ public class SessionUserAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific
         String userId = InputParser.getQueryParamOrThrowError(req, "userId", false);
         assert userId != null;
 
         try {
-            String[] sessionHandles = Session.getAllNonExpiredSessionHandlesForUser(main, userId);
+            String[] sessionHandles = Session.getAllNonExpiredSessionHandlesForUser(
+                    this.getTenantIdentifierWithStorageFromRequest(req), userId);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
@@ -61,7 +64,7 @@ public class SessionUserAPI extends WebserverAPI {
             result.add("sessionHandles", arr);
             super.sendJsonResponse(200, result, resp);
 
-        } catch (StorageQueryException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

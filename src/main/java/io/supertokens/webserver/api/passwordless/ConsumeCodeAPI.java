@@ -19,20 +19,20 @@ package io.supertokens.webserver.api.passwordless;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-
 import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.Passwordless.ConsumeCodeResponse;
 import io.supertokens.passwordless.exceptions.*;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -56,6 +56,7 @@ public class ConsumeCodeAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific
         // Logic based on: https://app.code2flow.com/OFxcbh1FNLXd
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
@@ -80,12 +81,15 @@ public class ConsumeCodeAPI extends WebserverAPI {
         }
 
         try {
-            ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(main, deviceId, deviceIdHash,
+            ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(
+                    this.getTenantIdentifierWithStorageFromRequest(req), main,
+                    deviceId, deviceIdHash,
                     userInputCode, linkCode);
 
-            ActiveUsers.updateLastActive(main, consumeCodeResponse.user.id);
-
-            UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main,
+            ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main, consumeCodeResponse.user.id);
+            
+            UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+                    this.getAppIdentifierWithStorage(req),
                     consumeCodeResponse.user.id, UserIdType.ANY);
             if (userIdMapping != null) {
                 consumeCodeResponse.user.id = userIdMapping.externalUserId;
@@ -118,8 +122,7 @@ public class ConsumeCodeAPI extends WebserverAPI {
             super.sendJsonResponse(200, result, resp);
         } catch (DeviceIdHashMismatchException ex) {
             throw new ServletException(new BadRequestException("preAuthSessionId and deviceId doesn't match"));
-        } catch (StorageTransactionLogicException | StorageQueryException | NoSuchAlgorithmException
-                | InvalidKeyException e) {
+        } catch (StorageTransactionLogicException | StorageQueryException | NoSuchAlgorithmException | InvalidKeyException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         } catch (Base64EncodingException ex) {
             throw new ServletException(new BadRequestException("Input encoding error in " + ex.source));

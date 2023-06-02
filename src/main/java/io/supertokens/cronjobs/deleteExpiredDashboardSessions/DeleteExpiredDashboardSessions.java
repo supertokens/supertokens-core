@@ -17,36 +17,49 @@
 package io.supertokens.cronjobs.deleteExpiredDashboardSessions;
 
 import io.supertokens.Main;
-import io.supertokens.ResourceDistributor;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.dashboard.sqlStorage.DashboardSQLStorage;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import org.jetbrains.annotations.TestOnly;
+
+import java.util.List;
 
 public class DeleteExpiredDashboardSessions extends CronTask {
 
-    public static final String RESOURCE_KEY = "io.supertokens.cronjobs.deleteExpiredDashboardSessions.DeleteExpiredDashboardSessions";
+    public static final String RESOURCE_KEY = "io.supertokens.cronjobs.deleteExpiredDashboardSessions" +
+            ".DeleteExpiredDashboardSessions";
 
-    private DeleteExpiredDashboardSessions(Main main) {
-        super("RemoveExpiredDashboardSessions", main);
+    private DeleteExpiredDashboardSessions(Main main, List<List<TenantIdentifier>> tenantsInfo) {
+        super("RemoveExpiredDashboardSessions", main, tenantsInfo, false);
     }
 
-    public static DeleteExpiredDashboardSessions getInstance(Main main){
-        ResourceDistributor.SingletonResource instance = main.getResourceDistributor().getResource(RESOURCE_KEY);
-        if(instance ==  null){
-            instance = main.getResourceDistributor().setResource(RESOURCE_KEY, new DeleteExpiredDashboardSessions(main));
-        }
+    public static DeleteExpiredDashboardSessions init(Main main,
+                                                      List<List<TenantIdentifier>> tenantsInfo) {
+        return (DeleteExpiredDashboardSessions) main.getResourceDistributor()
+                .setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY,
+                        new DeleteExpiredDashboardSessions(main, tenantsInfo));
+    }
 
-        return (DeleteExpiredDashboardSessions) instance;
+    @TestOnly
+    public static DeleteExpiredDashboardSessions getInstance(Main main) {
+        try {
+            return (DeleteExpiredDashboardSessions) main.getResourceDistributor()
+                    .getResource(new TenantIdentifier(null, null, null), RESOURCE_KEY);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     @Override
-    protected void doTask() throws Exception {
-        if (StorageLayer.getStorage(this.main).getType() != STORAGE_TYPE.SQL) {
+    protected void doTaskPerStorage(Storage storage) throws Exception {
+        if (storage.getType() != STORAGE_TYPE.SQL) {
             return;
         }
-        StorageLayer.getDashboardStorage(this.main).revokeExpiredSessions();
-        
+        ((DashboardSQLStorage) storage).revokeExpiredSessions();
     }
 
     @Override
@@ -68,5 +81,5 @@ public class DeleteExpiredDashboardSessions extends CronTask {
             return 0;
         }
     }
-    
+
 }

@@ -24,6 +24,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.jwt.JWTAsymmetricSigningKeyInfo;
 import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
 import io.supertokens.pluginInterface.jwt.JWTSymmetricSigningKeyInfo;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -48,23 +49,33 @@ public class JWTSigningQueries {
          * keys in the future.
          */
         return "CREATE TABLE IF NOT EXISTS " + Config.getConfig(start).getJWTSigningKeysTable() + " ("
-                + "key_id VARCHAR(255) NOT NULL," + "key_string TEXT NOT NULL," + "algorithm VARCHAR(10) NOT NULL,"
-                + "created_at BIGINT UNSIGNED," + "PRIMARY KEY(key_id));";
+                + "app_id VARCHAR(64) DEFAULT 'public',"
+                + "key_id VARCHAR(255) NOT NULL,"
+                + "key_string TEXT NOT NULL,"
+                + "algorithm VARCHAR(10) NOT NULL,"
+                + "created_at BIGINT UNSIGNED,"
+                + "PRIMARY KEY(app_id, key_id),"
+                + "FOREIGN KEY (app_id) REFERENCES " + Config.getConfig(start).getAppsTable()
+                + " (app_id) ON DELETE CASCADE"
+                + ");";
     }
 
-    public static List<JWTSigningKeyInfo> getJWTSigningKeys_Transaction(Start start, Connection con)
+    public static List<JWTSigningKeyInfo> getJWTSigningKeys_Transaction(Start start, Connection con,
+                                                                        AppIdentifier appIdentifier)
             throws SQLException, StorageQueryException {
 
-        ((ConnectionWithLocks) con).lock(LOCK_STRING);
+        ((ConnectionWithLocks) con).lock(appIdentifier.getAppId() + Config.getConfig(start).getJWTSigningKeysTable());
 
-        String QUERY = "SELECT * FROM " + getConfig(start).getJWTSigningKeysTable() + " ORDER BY created_at DESC;";
+        String QUERY = "SELECT * FROM " + getConfig(start).getJWTSigningKeysTable()
+                + " WHERE app_id = ? ORDER BY created_at DESC";
 
-        return execute(con, QUERY, NO_OP_SETTER, result -> {
+        return execute(con, QUERY, pst -> pst.setString(1, appIdentifier.getAppId()), result -> {
             List<JWTSigningKeyInfo> keys = new ArrayList<>();
 
             while (result.next()) {
                 keys.add(JWTSigningKeyInfoRowMapper.getInstance().mapOrThrow(result));
             }
+
             return keys;
         });
     }
@@ -94,17 +105,19 @@ public class JWTSigningQueries {
         }
     }
 
-    public static void setJWTSigningKeyInfo_Transaction(Start start, Connection con, JWTSigningKeyInfo info)
+    public static void setJWTSigningKeyInfo_Transaction(Start start, Connection con, AppIdentifier appIdentifier,
+                                                        JWTSigningKeyInfo info)
             throws SQLException, StorageQueryException {
 
         String QUERY = "INSERT INTO " + getConfig(start).getJWTSigningKeysTable()
-                + "(key_id, key_string, created_at, algorithm) VALUES(?, ?, ?, ?)";
+                + "(app_id, key_id, key_string, created_at, algorithm) VALUES(?, ?, ?, ?, ?)";
 
         update(con, QUERY, pst -> {
-            pst.setString(1, info.keyId);
-            pst.setString(2, info.keyString);
-            pst.setLong(3, info.createdAtTime);
-            pst.setString(4, info.algorithm);
+            pst.setString(1, appIdentifier.getAppId());
+            pst.setString(2, info.keyId);
+            pst.setString(3, info.keyString);
+            pst.setLong(4, info.createdAtTime);
+            pst.setString(5, info.algorithm);
         });
     }
 }

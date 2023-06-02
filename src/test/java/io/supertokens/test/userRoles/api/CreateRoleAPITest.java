@@ -20,6 +20,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -32,10 +33,10 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
+
 import java.util.Arrays;
 
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
 
 public class CreateRoleAPITest {
     @Rule
@@ -53,7 +54,7 @@ public class CreateRoleAPITest {
 
     @Test
     public void badInputTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -76,7 +77,7 @@ public class CreateRoleAPITest {
 
         {
             // role is missing in request
-            String[] permissions = new String[] { "testPermission" };
+            String[] permissions = new String[]{"testPermission"};
             String permissionsString = "{ permissions : " + Arrays.toString(permissions) + " }";
 
             JsonObject requestBody = new JsonParser().parse(permissionsString).getAsJsonObject();
@@ -110,7 +111,7 @@ public class CreateRoleAPITest {
         {
             // set role as a number
 
-            String[] permissions = new String[] { "testPermission" };
+            String[] permissions = new String[]{"testPermission"};
             String permissionsString = "{ permissions : " + Arrays.toString(permissions) + " }";
 
             JsonObject requestBody = new JsonParser().parse(permissionsString).getAsJsonObject();
@@ -148,7 +149,7 @@ public class CreateRoleAPITest {
 
     @Test
     public void createTheSameRoleTwiceTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -169,8 +170,8 @@ public class CreateRoleAPITest {
             assertTrue(response.get("createdNewRole").getAsBoolean());
 
             // retrieve all roles and check that the newly created role is returned
-            UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
-            String[] roles = storage.getRoles();
+            UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
+            String[] roles = storage.getRoles(new AppIdentifier(null, null));
             assertEquals(1, roles.length);
             assertEquals(roles[0], role);
         }
@@ -189,8 +190,8 @@ public class CreateRoleAPITest {
             assertFalse(response.get("createdNewRole").getAsBoolean());
 
             // retrieve all roles and check that no new role has been created
-            UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
-            String[] roles = storage.getRoles();
+            UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
+            String[] roles = storage.getRoles(new AppIdentifier(null, null));
             assertEquals(1, roles.length);
             assertEquals(roles[0], role);
         }
@@ -201,7 +202,7 @@ public class CreateRoleAPITest {
 
     @Test
     public void createANewRoleWithoutPermissionsTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -223,8 +224,8 @@ public class CreateRoleAPITest {
         assertTrue(response.get("createdNewRole").getAsBoolean());
 
         // retrieve all roles and check that the newly created role is returned
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
-        String[] roles = storage.getRoles();
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
+        String[] roles = storage.getRoles(new AppIdentifier(null, null));
         assertEquals(1, roles.length);
         assertEquals(roles[0], role);
 
@@ -234,7 +235,7 @@ public class CreateRoleAPITest {
 
     @Test
     public void createANewRoleWithPermissionsTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -245,7 +246,7 @@ public class CreateRoleAPITest {
 
         // create a new role with permissions
         String role = "testRole";
-        String[] permissions = new String[] { "testPermissions1", "testPermission2" };
+        String[] permissions = new String[]{"testPermissions1", "testPermission2"};
         String permissionsString = "{ permissions: " + Arrays.toString(permissions) + "}";
         JsonObject requestBody = new JsonParser().parse(permissionsString).getAsJsonObject();
         requestBody.addProperty("role", role);
@@ -259,13 +260,13 @@ public class CreateRoleAPITest {
         assertTrue(response.get("createdNewRole").getAsBoolean());
 
         // check if role is created
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
-        String[] roles = storage.getRoles();
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
+        String[] roles = storage.getRoles(new AppIdentifier(null, null));
         assertEquals(1, roles.length);
         assertEquals(roles[0], role);
 
         // check if permissions have been added
-        String[] rolePermissions = storage.getPermissionsForRole(role);
+        String[] rolePermissions = storage.getPermissionsForRole(new AppIdentifier(null, null), role);
 
         Utils.checkThatArraysAreEqual(permissions, rolePermissions);
 

@@ -24,6 +24,8 @@ import io.supertokens.pluginInterface.jwt.JWTSymmetricSigningKeyInfo;
 import io.supertokens.pluginInterface.jwt.exceptions.DuplicateKeyIdException;
 import io.supertokens.pluginInterface.jwt.nosqlstorage.JWTRecipeNoSQLStorage_1;
 import io.supertokens.pluginInterface.jwt.sqlstorage.JWTRecipeSQLStorage;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -58,21 +60,21 @@ public class JWTKeyStorageTest {
 
     /**
      * Test that if a keyId is set when it already exists in storage, a DuplicateKeyIdException should be thrown
-     *
+     * <p>
      * For NoSQL
      * - Test that when trying to set with different information (key string in this case) but same algorithm returns
      * false. This is because findOneAndUpdate
      * will not throw an exception in this case, but we should treat it as a failure and retry
-     *
+     * <p>
      * - Test that when trying to set with a duplicate key but different algorithm throws a DuplicateKeyIdException.
      */
     @Test
     public void testThatWhenSettingKeysWithSameIdDuplicateExceptionIsThrown() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        JWTRecipeStorage storage = StorageLayer.getJWTRecipeStorage(process.getProcess());
+        JWTRecipeStorage storage = (JWTRecipeStorage) StorageLayer.getStorage(process.getProcess());
 
         if (storage.getType() == STORAGE_TYPE.SQL) {
             JWTRecipeSQLStorage sqlStorage = (JWTRecipeSQLStorage) storage;
@@ -80,16 +82,20 @@ public class JWTKeyStorageTest {
 
             boolean success = sqlStorage.startTransaction(con -> {
                 try {
-                    sqlStorage.setJWTSigningKey_Transaction(con, keyToSet);
+                    sqlStorage.setJWTSigningKey_Transaction(new AppIdentifier(null, null), con, keyToSet);
                 } catch (DuplicateKeyIdException e) {
                     return false;
+                } catch (TenantOrAppNotFoundException e) {
+                    throw new IllegalStateException(e);
                 }
 
                 try {
-                    sqlStorage.setJWTSigningKey_Transaction(con, keyToSet);
+                    sqlStorage.setJWTSigningKey_Transaction(new AppIdentifier(null, null), con, keyToSet);
                     return false;
                 } catch (DuplicateKeyIdException e) {
                     return true;
+                } catch (TenantOrAppNotFoundException e) {
+                    throw new IllegalStateException(e);
                 }
             });
 
@@ -135,11 +141,11 @@ public class JWTKeyStorageTest {
 
     /**
      * For NoSQL only
-     *
+     * <p>
      * Note we do not test for SQL, because for SQL plugins in the case of parallel writes a deadlock is encountered and
      * the current
      * transaction logic handles it (as tested in StorageTest.java) and causes the transaction to be retried
-     *
+     * <p>
      * Simulate a race condition for parallel threads trying to read from the database (which results in no rows being
      * found initially)
      * and writing to storage and make sure that at the end of execution both threads used the same key and only one
@@ -148,14 +154,14 @@ public class JWTKeyStorageTest {
      */
     @Test
     public void testThatSettingJWTKeysInParallelWorksAsExpectedForNoSQL() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         for (int i = 0; i < 10; i++) {
             String algorithm = "alg" + i;
 
-            JWTRecipeStorage storage = StorageLayer.getJWTRecipeStorage(process.getProcess());
+            JWTRecipeStorage storage = (JWTRecipeStorage) StorageLayer.getStorage(process.getProcess());
 
             if (storage.getType() != STORAGE_TYPE.NOSQL_1) {
                 return;

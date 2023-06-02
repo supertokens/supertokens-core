@@ -18,18 +18,17 @@ package io.supertokens.webserver.api.core;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.cronjobs.telemetry.Telemetry;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.KeyValueInfo;
-import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
 
-import static io.supertokens.cronjobs.telemetry.Telemetry.TELEMETRY_ID_DB_KEY;
+import java.io.IOException;
 
 public class TelemetryAPI extends WebserverAPI {
     private static final long serialVersionUID = -5175334869851577653L;
@@ -45,9 +44,10 @@ public class TelemetryAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is app specific
         try {
-            Storage storage = StorageLayer.getStorage(main);
-            KeyValueInfo telemetryId = storage.getKeyValue(TELEMETRY_ID_DB_KEY);
+            KeyValueInfo telemetryId = Telemetry.getTelemetryId(main,
+                    this.getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(req));
 
             JsonObject result = new JsonObject();
             if (telemetryId == null) {
@@ -57,7 +57,7 @@ public class TelemetryAPI extends WebserverAPI {
                 result.addProperty("telemetryId", telemetryId.value);
             }
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
     }
