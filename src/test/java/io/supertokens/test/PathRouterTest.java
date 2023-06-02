@@ -27,6 +27,7 @@ import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
@@ -77,6 +78,10 @@ public class PathRouterTest extends Mockito {
         String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
@@ -251,6 +256,10 @@ public class PathRouterTest extends Mockito {
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
                 new TenantConfig(
@@ -423,6 +432,10 @@ public class PathRouterTest extends Mockito {
         Utils.setValueInConfig("base_path", "base_path");
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
@@ -606,6 +619,10 @@ public class PathRouterTest extends Mockito {
         Utils.setValueInConfig("base_path", "/base/path");
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
@@ -791,6 +808,10 @@ public class PathRouterTest extends Mockito {
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
                 new TenantConfig(
@@ -971,6 +992,10 @@ public class PathRouterTest extends Mockito {
         String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
@@ -1290,6 +1315,10 @@ public class PathRouterTest extends Mockito {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         if (StorageLayer.isInMemDb(process.getProcess())) {
             return;
         }
@@ -1410,6 +1439,10 @@ public class PathRouterTest extends Mockito {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         if (StorageLayer.isInMemDb(process.getProcess())) {
             return;
         }
@@ -1523,6 +1556,10 @@ public class PathRouterTest extends Mockito {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         if (StorageLayer.isInMemDb(process.getProcess())) {
             return;
         }
@@ -1586,6 +1623,10 @@ public class PathRouterTest extends Mockito {
         String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
@@ -1889,6 +1930,10 @@ public class PathRouterTest extends Mockito {
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
                 new TenantConfig(
@@ -2174,6 +2219,10 @@ public class PathRouterTest extends Mockito {
         Utils.setValueInConfig("base_path", "appid-path");
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
@@ -2467,6 +2516,10 @@ public class PathRouterTest extends Mockito {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         if (StorageLayer.isInMemDb(process.getProcess())) {
             return;
         }
@@ -2588,6 +2641,10 @@ public class PathRouterTest extends Mockito {
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         if (StorageLayer.isInMemDb(process.getProcess())) {
             return;
@@ -2732,6 +2789,10 @@ public class PathRouterTest extends Mockito {
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         if (StorageLayer.isInMemDb(process.getProcess())) {
             return;

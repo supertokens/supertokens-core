@@ -27,6 +27,7 @@ import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.exception.*;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
@@ -189,6 +190,14 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             throws CannotModifyBaseConfigException, BadPermissionException,
             StorageQueryException, FeatureNotEnabledException, IOException, InvalidConfigException,
             InvalidProviderConfigException, TenantOrAppNotFoundException {
+
+        if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL) {
+            if (newTenant.tenantIdentifier.equals(TenantIdentifier.BASE_TENANT)) {
+                return true;
+            } else {
+                throw new UnsupportedOperationException();
+            }
+        }
 
         // TODO: adding a new tenant is not thread safe here - for example, one can add a new connectionuridomain
         //  such that they both point to the same user pool ID by trying to add them in parallel. This is not such

@@ -24,6 +24,7 @@ import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
@@ -73,6 +74,10 @@ public class MultitenantAPITest {
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         createTenants();
     }
@@ -199,6 +204,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testSameEmailAcrossDifferentUserPoolNeedsToBeVerifiedSeparately() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         if (StorageLayer.isInMemDb(process.getProcess())) {
             return;
         }
@@ -211,6 +220,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testSameEmailAcrossDifferentTenantButSameUserPoolDoesNotNeedVerificationAgain() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         verifyEmail(t2, "userid", "test@example.com");
         assertTrue(isEmailVerified(t2, "userid", "test@example.com"));
         assertTrue(isEmailVerified(t3, "userid", "test@example.com"));

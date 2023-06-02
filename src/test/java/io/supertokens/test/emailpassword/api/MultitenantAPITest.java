@@ -26,6 +26,7 @@ import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -336,6 +337,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testSameEmailWithDifferentPasswordsOnDifferentTenantsWorksCorrectly() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         createTenants();
 
         JsonObject user1 = signUp(t1, "user@example.com", "password1");
@@ -349,6 +354,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testUserWithSameEmailCannotLoginFromDifferentTenantInSharedUserPool() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         createTenants();
 
         // User pool 2 - (null, a1, t1), (null, a1, t2)
@@ -365,6 +374,10 @@ public class MultitenantAPITest {
     @Test
     public void testGetUserUsingIdReturnsUserFromTheRightTenantWhileQueryingFromAnyTenantInTheSameApp()
             throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         createTenants();
 
         JsonObject user1 = signUp(t1, "user@example.com", "password1");
@@ -380,6 +393,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testGetUserUsingEmailReturnsTenantSpecificUser() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         createTenants();
 
         JsonObject user1 = signUp(t1, "user@example.com", "password1");
@@ -393,6 +410,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testUpdatePasswordWorksCorrectlyAcrossTenants() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         createTenants();
 
         JsonObject user1 = signUp(t1, "user@example.com", "password1");
@@ -423,6 +444,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testUpdateEmailWorksCorrectlyAcrossTenants() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         createTenants();
 
         JsonObject user1 = signUp(t1, "user@example.com", "password");
@@ -455,6 +480,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testUpdateEmailAndPasswordWorksCorrectlyAcrossTenants() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         createTenants();
 
         JsonObject user1 = signUp(t1, "user@example.com", "password1");
@@ -489,6 +518,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testResetPasswordWorksCorrectlyAcrossTenants() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         createTenants();
 
         JsonObject user1 = signUp(t1, "user@example.com", "password1");
@@ -519,6 +552,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testCrossTenantPasswordResetCombinations() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         createTenants();
 
         JsonObject user1 = signUp(t1, "user@example.com", "password1");
@@ -629,6 +666,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testImportUsersWorksCorrectlyAcrossTenants() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         createTenants(true);
 
         int firebaseMemCost = 14;
@@ -656,6 +697,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testThatTenantIdIsNotAllowedForOlderCDIVersion() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         createTenants(false);
 
         JsonObject requestBody = new JsonObject();

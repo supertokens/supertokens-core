@@ -21,6 +21,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
@@ -71,6 +72,10 @@ public class TestLicenseBehaviour {
 
     @Test
     public void testAllowLicenseRemovalForCoreWithMultitenancy() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         TestMultitenancyAPIHelper.addLicense(OPAQUE_KEY_WITH_MULTITENANCY_FEATURE, process.getProcess());
 
         JsonObject coreConfig = new JsonObject();
@@ -99,6 +104,10 @@ public class TestLicenseBehaviour {
 
     @Test
     public void testThatCreationOfNewTenantIsNotAllowedAfterLicenseRemoval() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         TestMultitenancyAPIHelper.addLicense(OPAQUE_KEY_WITH_MULTITENANCY_FEATURE, process.getProcess());
 
         JsonObject coreConfig = new JsonObject();
@@ -133,6 +142,10 @@ public class TestLicenseBehaviour {
 
     @Test
     public void testThatCoreCanRestartWithAllTheTenantsWithoutLicenseKey() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         if (StorageLayer.isInMemDb(process.getProcess())) {
             return;
         }
@@ -189,6 +202,10 @@ public class TestLicenseBehaviour {
 
     @Test
     public void testThatAddingThirdPartyConfigIsNotAllowedAfterLicenseRemoval() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         TestMultitenancyAPIHelper.addLicense(OPAQUE_KEY_WITH_MULTITENANCY_FEATURE, process.getProcess());
 
         JsonObject coreConfig = new JsonObject();
@@ -224,6 +241,10 @@ public class TestLicenseBehaviour {
 
     @Test
     public void testThatAssociationOfUserWithAnotherTenantIsNotAllowedAfterLicenseRemoval() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         TestMultitenancyAPIHelper.addLicense(OPAQUE_KEY_WITH_MULTITENANCY_FEATURE, process.getProcess());
 
         JsonObject coreConfig = new JsonObject();
@@ -262,6 +283,10 @@ public class TestLicenseBehaviour {
 
     @Test
     public void testUpdationOfBaseTenantIsAllowedWithoutLicense() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         TestMultitenancyAPIHelper.addLicense(OPAQUE_KEY_WITH_MULTITENANCY_FEATURE, process.getProcess());
 
         JsonObject coreConfig = new JsonObject();
