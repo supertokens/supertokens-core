@@ -31,6 +31,7 @@ import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailExc
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -85,6 +86,11 @@ public class SignUpAPI extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             JsonObject userJson = new JsonParser().parse(new Gson().toJson(user)).getAsJsonObject();
+
+            if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
+                userJson.remove("tenantIds");
+            }
+
             result.add("user", userJson);
             super.sendJsonResponse(200, result, resp);
 
