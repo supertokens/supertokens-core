@@ -28,6 +28,7 @@ import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -98,6 +99,11 @@ public class ImportUserWithPasswordHashAPI extends WebserverAPI {
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             JsonObject userJson = new JsonParser().parse(new Gson().toJson(importUserResponse.user)).getAsJsonObject();
+
+            if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
+                userJson.remove("tenantIds");
+            }
+
             response.add("user", userJson);
             response.addProperty("didUserAlreadyExist", importUserResponse.didUserAlreadyExist);
             super.sendJsonResponse(200, response, resp);

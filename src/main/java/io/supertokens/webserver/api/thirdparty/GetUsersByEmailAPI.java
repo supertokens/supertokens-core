@@ -16,10 +16,7 @@
 
 package io.supertokens.webserver.api.thirdparty;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.google.gson.*;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
@@ -30,6 +27,7 @@ import io.supertokens.pluginInterface.thirdparty.UserInfo;
 import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
+import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -76,6 +74,13 @@ public class GetUsersByEmailAPI extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             JsonArray usersJson = new JsonParser().parse(new Gson().toJson(users)).getAsJsonArray();
+
+            if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
+                for (JsonElement user : usersJson) {
+                    user.getAsJsonObject().remove("tenantIds");
+                }
+            }
+
             result.add("users", usersJson);
 
             super.sendJsonResponse(200, result, resp);

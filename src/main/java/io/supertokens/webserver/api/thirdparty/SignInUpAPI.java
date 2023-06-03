@@ -84,6 +84,11 @@ public class SignInUpAPI extends WebserverAPI {
                 result.addProperty("status", "OK");
                 result.addProperty("createdNewUser", response.createdNewUser);
                 JsonObject userJson = new JsonParser().parse(new Gson().toJson(response.user)).getAsJsonObject();
+
+                if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
+                    userJson.remove("tenantIds");
+                }
+
                 result.add("user", userJson);
                 super.sendJsonResponse(200, result, resp);
 

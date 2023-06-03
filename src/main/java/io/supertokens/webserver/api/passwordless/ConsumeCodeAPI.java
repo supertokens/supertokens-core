@@ -31,6 +31,7 @@ import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicExceptio
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
+import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -98,6 +99,10 @@ public class ConsumeCodeAPI extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             JsonObject userJson = new JsonParser().parse(new Gson().toJson(consumeCodeResponse.user)).getAsJsonObject();
+
+            if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
+                userJson.remove("tenantIds");
+            }
 
             result.addProperty("createdNewUser", consumeCodeResponse.createdNewUser);
             result.add("user", userJson);
