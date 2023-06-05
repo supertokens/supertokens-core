@@ -11,7 +11,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Adds
 
-- New config `supertokens_saas_secret` to support multitenancy in Saas
+- New config `supertokens_saas_secret` to support multitenancy in SaaS
 - `DEFAULT_CDI_VERSION_IF_NOT_PRESENT_IN_REQUEST` env variable to specify default CDI version, when CDI version is
   not specified in the request
 
