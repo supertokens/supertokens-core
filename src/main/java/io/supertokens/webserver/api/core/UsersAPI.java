@@ -187,7 +187,7 @@ public class UsersAPI extends WebserverAPI {
 
             if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
                 for (JsonElement user : usersJson) {
-                    user.getAsJsonObject().remove("tenantIds");
+                    user.getAsJsonObject().get("user").getAsJsonObject().remove("tenantIds");
                 }
             }
 

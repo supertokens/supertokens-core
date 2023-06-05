@@ -484,6 +484,6 @@ public class PasswordlessConsumeCodeAPITest2_11 {
         } else if (phoneNumber != null) {
             assertEquals(phoneNumber, userJson.get("phoneNumber").getAsString());
         }
-        assertEquals(4, userJson.entrySet().size());
+        assertEquals(3, userJson.entrySet().size());
     }
 }

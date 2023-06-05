@@ -29,6 +29,7 @@ import io.supertokens.pluginInterface.thirdparty.UserInfo;
 import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
+import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -110,6 +111,11 @@ public class UserAPI extends WebserverAPI {
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
                 JsonObject userJson = new JsonParser().parse(new Gson().toJson(user)).getAsJsonObject();
+
+                if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
+                    userJson.remove("tenantIds");
+                }
+
                 result.add("user", userJson);
                 super.sendJsonResponse(200, result, resp);
             }
