@@ -89,16 +89,23 @@ public class JWT {
             throw new JWTException("JWT header mismatch - alg");
         }
 
-        JsonPrimitive version = parsedHeader.get("version").getAsJsonPrimitive();
-        if (!version.isString() || version.getAsString().equals("1") || version.getAsString().equals("2")) {
-            throw new JWTException("JWT header mismatch - version");
+        JsonElement versionElement = parsedHeader.get("version");
+        String versionString = AccessToken.getVersionStringFromAccessTokenVersion(AccessToken.getLatestVersion());
+
+        if (versionElement != null) {
+            JsonPrimitive version = versionElement.getAsJsonPrimitive();
+            if (!version.isString() || version.getAsString().equals("1") || version.getAsString().equals("2")) {
+                throw new JWTException("JWT header mismatch - version");
+            }
+
+            versionString = version.getAsString();
         }
 
         JsonPrimitive kid = parsedHeader.get("kid").getAsJsonPrimitive();
         if (!kid.isString()) {
             throw new JWTException("JWT header mismatch - kid");
         }
-        return new JWTPreParseInfo(splittedInput, AccessToken.getVersionFromString(version.getAsString()), kid.getAsString());
+        return new JWTPreParseInfo(splittedInput, AccessToken.getVersionFromString(versionString), kid.getAsString());
     }
 
     public static JWTInfo verifyJWTAndGetPayload(JWTPreParseInfo jwt, String publicSigningKey)
