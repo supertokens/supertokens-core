@@ -523,6 +523,6 @@ public class AccessTokenTest {
         assertNull(headerObject.get("version"));
 
         JWT.JWTPreParseInfo info =  JWT.preParseJWTInfo(jwt);
-        assert info.version == AccessToken.VERSION.V4;
+        assert info.version == AccessToken.getLatestVersion();
     }
 }
