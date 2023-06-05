@@ -90,6 +90,7 @@ public class JWT {
         }
 
         JsonElement versionElement = parsedHeader.get("version");
+        // We default to using the latest access token version here for JWTs not created by the session recipe
         String versionString = AccessToken.getVersionStringFromAccessTokenVersion(AccessToken.getLatestVersion());
 
         if (versionElement != null) {
