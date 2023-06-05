@@ -252,7 +252,7 @@ public class AccessToken {
         String token;
         if (version != VERSION.V1 && version != VERSION.V2) {
             HashMap<String, Object> headers = new HashMap<>();
-            headers.put("version", version.toString().substring(1));
+            headers.put("version", getVersionStringFromAccessTokenVersion(version));
             token = JWTSigningFunctions.createJWTToken(JWTSigningKey.SupportedAlgorithms.RS256, headers,
                     accessToken.toJSON(), null, expires, now, keyToUse);
         } else {
@@ -520,9 +520,12 @@ public class AccessToken {
         }
     }
 
-    @TestOnly
     public static VERSION getLatestVersion() {
         return VERSION.V4;
+    }
+
+    public static String getVersionStringFromAccessTokenVersion(VERSION version) {
+        return version.toString().substring(1);
     }
 
     public enum VERSION {

@@ -9,6 +9,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [6.0.0] - 2023-06-02
 
+### Fixes
+
+- Fixes an issue where session verification would fail for JWTs created using the JWT recipe
+
 ### Changes
 
 - Modifies the `/recipe/dashboard/session/verify` API to include the user's email in the response

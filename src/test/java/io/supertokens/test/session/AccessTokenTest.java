@@ -16,10 +16,12 @@
 
 package io.supertokens.test.session;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState.EventAndException;
 import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.exceptions.TryRefreshTokenException;
+import io.supertokens.jwt.JWTSigningFunctions;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -47,6 +49,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Base64;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -485,5 +488,41 @@ public class AccessTokenTest {
         assert (!hasNullPointerException.get());
 
         process.kill();
+    }
+
+    @Test
+    public void testThatWeUseLatestVersionIfHeaderHasNoVersion() throws Exception {
+        String[] args = {"../"};
+        TestingProcess process = TestingProcessManager.start(args);
+        EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
+        assertNotNull(e);
+
+        String userId = "userId";
+        JsonObject userDataInJWT = new JsonObject();
+        JsonObject userDataInDatabase = new JsonObject();
+        SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
+                userDataInDatabase);
+
+        String accessToken = sessionInfo.accessToken.token;
+        String payloadString = accessToken.split("\\.")[1];
+        String decodedPayload = new String(Base64.getUrlDecoder().decode(payloadString));
+        JsonObject accessTokenPayload = new Gson().fromJson(decodedPayload, JsonObject.class);
+        accessTokenPayload.remove("iat");
+        accessTokenPayload.remove("exp");
+
+        String algorithm = "RS256";
+        String jwksDomain = "http://localhost";
+        long validity = 3600;
+
+        String jwt = JWTSigningFunctions.createJWTToken(process.main, algorithm, accessTokenPayload, jwksDomain, validity, false);
+
+        String header = jwt.split("\\.")[0];
+        String decodedHeader = new String(Base64.getUrlDecoder().decode(header));
+        JsonObject headerObject = new Gson().fromJson(decodedHeader, JsonObject.class);
+        // Verify that by default the version is not present
+        assertNull(headerObject.get("version"));
+
+        JWT.JWTPreParseInfo info =  JWT.preParseJWTInfo(jwt);
+        assert info.version == AccessToken.getLatestVersion();
     }
 }
