@@ -124,7 +124,7 @@ public class EmailPasswordGetUserAPITest2_7 {
             assertEquals(signUpUser.get("email").getAsString(), userInfo.get("email").getAsString());
             assertEquals(signUpUser.get("id").getAsString(), userInfo.get("id").getAsString());
             signUpUser.get("timeJoined").getAsLong();
-            assertEquals(signUpUser.entrySet().size(), 4);
+            assertEquals(signUpUser.entrySet().size(), 3);
         }
 
         {
@@ -149,7 +149,7 @@ public class EmailPasswordGetUserAPITest2_7 {
             assertEquals(signUpUser.get("email").getAsString(), userInfo.get("email").getAsString());
             assertEquals(signUpUser.get("id").getAsString(), userInfo.get("id").getAsString());
             signUpUser.get("timeJoined").getAsLong();
-            assertEquals(signUpUser.entrySet().size(), 4);
+            assertEquals(signUpUser.entrySet().size(), 3);
         }
 
         process.kill();
