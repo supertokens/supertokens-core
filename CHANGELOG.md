@@ -43,7 +43,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Migration steps for SQL
 
-1. Ensure that the core is already upgraded to version 5.0.0
+1. Ensure that the core is already upgraded to version 5.0.0 (CDI version 2.21)
 2. Stop the core instance(s)
 3. Run the migration script
 
