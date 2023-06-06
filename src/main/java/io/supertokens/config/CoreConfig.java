@@ -148,6 +148,9 @@ public class CoreConfig {
     @JsonProperty
     private String supertokens_saas_secret = null;
 
+    @JsonProperty
+    private String supertokens_default_cdi_version = null;
+
     private Set<LOG_LEVEL> allowedLogLevels = null;
 
     public static Set<String> getValidFields() {
@@ -636,6 +639,11 @@ public class CoreConfig {
             throw new InvalidConfigException(
                     "supertokens_saas_secret can only be set via the core's base config setting");
         }
+
+        if (config.has("supertokens_default_cdi_version")) {
+            throw new InvalidConfigException(
+                    "supertokens_default_cdi_version can only be set via the core's base config setting");
+        }
     }
 
     void assertThatConfigFromSameAppIdAreNotConflicting(CoreConfig other) throws InvalidConfigException {
@@ -717,6 +725,10 @@ public class CoreConfig {
                         "You cannot set different values for api_keys for the same appId");
             }
         }
+    }
+
+    public String getDefaultCDIVersion() {
+        return this.supertokens_default_cdi_version;
     }
 }
 

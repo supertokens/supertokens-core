@@ -466,7 +466,7 @@ public abstract class WebserverAPI extends HttpServlet {
             return new SemVer(version);
         }
 
-        String defaultCDIVersion = System.getenv("DEFAULT_CDI_VERSION_IF_NOT_PRESENT_IN_REQUEST");
+        String defaultCDIVersion = Config.getBaseConfig(main).getDefaultCDIVersion();
         if (defaultCDIVersion != null) {
             return new SemVer(defaultCDIVersion);
         }

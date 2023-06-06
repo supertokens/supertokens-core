@@ -341,7 +341,7 @@ public class TestTenantIdIsNotPresentForOlderCDI {
         }
         JsonObject response = HttpRequestForTesting.sendGETRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/users"),
-                params, 1000000, 1000000, null,
+                params, 1000, 1000, null,
                 SemVer.v2_21.get(), null);
 
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
