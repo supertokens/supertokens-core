@@ -28,6 +28,8 @@ import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.pluginInterface.LOG_LEVEL;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
+import io.supertokens.utils.SemVer;
+import io.supertokens.webserver.WebserverAPI;
 import org.apache.catalina.filters.RemoteAddrFilter;
 import org.jetbrains.annotations.TestOnly;
 
@@ -147,6 +149,9 @@ public class CoreConfig {
 
     @JsonProperty
     private String supertokens_saas_secret = null;
+
+    @JsonProperty
+    private String supertokens_default_cdi_version = null;
 
     private Set<LOG_LEVEL> allowedLogLevels = null;
 
@@ -554,6 +559,18 @@ public class CoreConfig {
                 }
             }
         }
+
+        if (supertokens_default_cdi_version != null) {
+            try {
+                SemVer version = new SemVer(supertokens_default_cdi_version);
+
+                if (!WebserverAPI.supportedVersions.contains(version)) {
+                    throw new InvalidConfigException("supertokens_default_cdi_version is not a supported version");
+                }
+            } catch (IllegalArgumentException e) {
+                throw new InvalidConfigException("supertokens_default_cdi_version is not a valid semantic version");
+            }
+        }
     }
 
     public void createLoggingFile(Main main) throws IOException {
@@ -636,6 +653,11 @@ public class CoreConfig {
             throw new InvalidConfigException(
                     "supertokens_saas_secret can only be set via the core's base config setting");
         }
+
+        if (config.has("supertokens_default_cdi_version")) {
+            throw new InvalidConfigException(
+                    "supertokens_default_cdi_version can only be set via the core's base config setting");
+        }
     }
 
     void assertThatConfigFromSameAppIdAreNotConflicting(CoreConfig other) throws InvalidConfigException {
@@ -717,6 +739,10 @@ public class CoreConfig {
                         "You cannot set different values for api_keys for the same appId");
             }
         }
+    }
+
+    public String getDefaultCDIVersion() {
+        return this.supertokens_default_cdi_version;
     }
 }
 

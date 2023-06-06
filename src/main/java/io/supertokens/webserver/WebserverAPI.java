@@ -461,10 +461,17 @@ public abstract class WebserverAPI extends HttpServlet {
 
     protected SemVer getVersionFromRequest(HttpServletRequest req) {
         String version = req.getHeader("cdi-version");
-        if (version == null) {
-            return getLatestCDIVersion();
+
+        if (version != null) {
+            return new SemVer(version);
         }
-        return new SemVer(version);
+
+        String defaultCDIVersion = Config.getBaseConfig(main).getDefaultCDIVersion();
+        if (defaultCDIVersion != null) {
+            return new SemVer(defaultCDIVersion);
+        }
+
+        return getLatestCDIVersion();
     }
 
     public static class BadRequestException extends Exception {
