@@ -920,6 +920,10 @@ public class ConfigTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
