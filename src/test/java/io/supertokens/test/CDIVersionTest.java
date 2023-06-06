@@ -280,5 +280,36 @@ public class CDIVersionTest {
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
         }
     }
+    
+    @Test
+    public void testInvalidSemanticVersion() throws Exception {
+        String[] args = {"../"};
 
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        Utils.setValueInConfig("supertokens_default_cdi_version", "2.x");
+        process.startProcess();
+
+        ProcessState.EventAndException state = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
+        assertNotNull(state);
+
+        assertEquals("supertokens_default_cdi_version is not a valid semantic version", state.exception.getCause().getMessage());
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testUnsupportedVersion() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        Utils.setValueInConfig("supertokens_default_cdi_version", "2.1");
+        process.startProcess();
+
+        ProcessState.EventAndException state = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
+        assertNotNull(state);
+
+        assertEquals("supertokens_default_cdi_version is not a supported version", state.exception.getCause().getMessage());
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }

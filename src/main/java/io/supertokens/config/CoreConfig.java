@@ -28,6 +28,8 @@ import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.pluginInterface.LOG_LEVEL;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
+import io.supertokens.utils.SemVer;
+import io.supertokens.webserver.WebserverAPI;
 import org.apache.catalina.filters.RemoteAddrFilter;
 import org.jetbrains.annotations.TestOnly;
 
@@ -555,6 +557,18 @@ public class CoreConfig {
                 } catch (PatternSyntaxException e) {
                     throw new InvalidConfigException("Provided regular expression is invalid for ip_deny_regex config");
                 }
+            }
+        }
+
+        if (supertokens_default_cdi_version != null) {
+            try {
+                SemVer version = new SemVer(supertokens_default_cdi_version);
+
+                if (!WebserverAPI.supportedVersions.contains(version)) {
+                    throw new InvalidConfigException("supertokens_default_cdi_version is not a supported version");
+                }
+            } catch (IllegalArgumentException e) {
+                throw new InvalidConfigException("supertokens_default_cdi_version is not a valid semantic version");
             }
         }
     }
