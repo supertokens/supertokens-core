@@ -84,7 +84,7 @@ public class HttpRequestForTesting {
         try {
             con = (HttpURLConnection) obj.openConnection();
             con.setConnectTimeout(connectionTimeoutMS);
-            con.setReadTimeout(readTimeoutMS);
+            con.setReadTimeout(readTimeoutMS + 1000);
             if (version != null) {
                 con.setRequestProperty("api-version", version + "");
             }
@@ -139,7 +139,7 @@ public class HttpRequestForTesting {
             con = (HttpURLConnection) obj.openConnection();
             con.setRequestMethod(method);
             con.setConnectTimeout(connectionTimeoutMS);
-            con.setReadTimeout(readTimeoutMS);
+            con.setReadTimeout(readTimeoutMS + 1000);
             con.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
             if (version != null) {
                 con.setRequestProperty("api-version", version + "");
@@ -249,7 +249,7 @@ public class HttpRequestForTesting {
                     con = (HttpURLConnection) obj.openConnection();
                     con.setRequestMethod("DELETE");
                     con.setConnectTimeout(connectionTimeoutMS);
-                    con.setReadTimeout(readTimeoutMS);
+                    con.setReadTimeout(readTimeoutMS + 1000);
                     if (version != null) {
                         con.setRequestProperty("api-version", version + "");
                     }
