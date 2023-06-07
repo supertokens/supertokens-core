@@ -147,8 +147,13 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> resources =
                 main.getResourceDistributor()
                         .getAllResourcesWithResourceKey(RESOURCE_KEY);
+        Set<Storage> uniqueStorages = new HashSet<>();
         for (ResourceDistributor.SingletonResource resource : resources.values()) {
-            ((StorageLayer) resource).storage.deleteAllInformation();
+            uniqueStorages.add(((StorageLayer) resource).storage);
+        }
+
+        for (Storage storage : uniqueStorages) {
+            storage.deleteAllInformation();
         }
     }
 
