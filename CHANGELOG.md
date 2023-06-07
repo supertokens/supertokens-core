@@ -923,7 +923,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     ```sql
     -- helper stored procedures
 
-    CREATE PROCEDURE IF NOT EXISTS st_drop_all_fkeys()
+    CREATE PROCEDURE st_drop_all_fkeys()
     BEGIN
       DECLARE done INT DEFAULT FALSE;
       DECLARE dropCommand VARCHAR(255);
@@ -956,7 +956,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
     ---
 
-    CREATE PROCEDURE IF NOT EXISTS st_drop_all_pkeys()
+    CREATE PROCEDURE st_drop_all_pkeys()
     BEGIN
       DECLARE done INT DEFAULT FALSE;
       DECLARE dropCommand VARCHAR(255);
@@ -989,7 +989,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
     ---
 
-    CREATE PROCEDURE IF NOT EXISTS st_drop_all_keys()
+    CREATE PROCEDURE st_drop_all_keys()
     BEGIN
       DECLARE done INT DEFAULT FALSE;
       DECLARE dropCommand VARCHAR(255);
@@ -1022,7 +1022,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
     ---
 
-    CREATE PROCEDURE IF NOT EXISTS st_drop_all_indexes()
+    CREATE PROCEDURE st_drop_all_indexes()
     BEGIN
       DECLARE done INT DEFAULT FALSE;
       DECLARE dropCommand VARCHAR(255);
@@ -1054,7 +1054,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
     ---
 
-    CREATE PROCEDURE IF NOT EXISTS st_add_column_if_not_exists(
+    CREATE PROCEDURE st_add_column_if_not_exists(
     IN p_table_name varchar(50), 
     IN p_column_name varchar(50),
     IN p_column_type varchar(50),
@@ -1616,6 +1616,17 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
       ADD FOREIGN KEY (app_id)
         REFERENCES apps (app_id) ON DELETE CASCADE;
 
+    -- Drop procedures
+
+    DROP PROCEDURE st_drop_all_fkeys;
+
+    DROP PROCEDURE st_drop_all_keys;
+
+    DROP PROCEDURE st_drop_all_pkeys;
+
+    DROP PROCEDURE st_drop_all_indexes;
+
+    DROP PROCEDURE st_add_column_if_not_exists;
     ```
 
     </details>
