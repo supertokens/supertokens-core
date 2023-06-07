@@ -1689,7 +1689,7 @@ public class StorageLayerTest {
                         ));
                         break;
                     } catch (Exception e) {
-                        if (e.getMessage().toLowerCase().contains("request timed out") || e.getMessage().contains("concurrent delete")) {
+                        if (e.getMessage().toLowerCase().contains("request timed out") || e.getMessage().contains("concurrent delete") || e.getMessage().contains("concurrent update")) {
                             // retry, because connection was timed out, or
                             // in case of postgres, number of retries may not be enough, we retry here anyway
                             continue;

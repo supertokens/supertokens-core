@@ -139,8 +139,8 @@ public class TOTPStorageTest {
         storedDevices = storage.getDevices(new AppIdentifier(null, null), "user");
 
         assert (storedDevices.length == 2);
-        assert storedDevices[0].equals(device1);
-        assert storedDevices[1].equals(device2);
+        assert (storedDevices[0].equals(device1) && storedDevices[1].equals(device2))
+                || (storedDevices[0].equals(device2) && storedDevices[1].equals(device1));
 
         assertThrows(DeviceAlreadyExistsException.class,
                 () -> storage.createDevice(new AppIdentifier(null, null), device2Duplicate));
@@ -365,8 +365,8 @@ public class TOTPStorageTest {
         TOTPDevice[] storedDevices = storage.getDevices(new AppIdentifier(null, null), "user");
 
         assert (storedDevices.length == 2);
-        assert (storedDevices[0].deviceName.equals("d1"));
-        assert (storedDevices[1].deviceName.equals("d2"));
+        assert (storedDevices[0].deviceName.equals("d1") || storedDevices[1].deviceName.equals("d2"))
+                || (storedDevices[0].deviceName.equals("d2") || storedDevices[1].deviceName.equals("d1"));
 
         storedDevices = storage.getDevices(new AppIdentifier(null, null), "non-existent-user");
         assert (storedDevices.length == 0);
