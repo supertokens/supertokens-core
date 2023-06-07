@@ -12,7 +12,7 @@ jobs:
     resource_class: large
     steps:
       - checkout
-      - run: echo $'\n[mysqld]\ncharacter_set_server=utf8mb4' >> /etc/mysql/mysql.cnf
+      - run: echo $'\n[mysqld]\ncharacter_set_server=utf8mb4\nmax_connections=10000' >> /etc/mysql/mysql.cnf
       - run: (cd .circleci/ && ./doTests.sh)
       - slack/status
 
