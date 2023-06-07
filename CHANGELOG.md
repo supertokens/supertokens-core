@@ -921,116 +921,258 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     #### Run the following SQL script
     
     ```sql
-    -- Drop Foreign keys
-    
-    ALTER TABLE emailpassword_pswd_reset_tokens
-      DROP FOREIGN KEY emailpassword_pswd_reset_tokens_ibfk_1;
-    
-    ALTER TABLE passwordless_codes
-      DROP FOREIGN KEY passwordless_codes_ibfk_1;
-    
-    ALTER TABLE userid_mapping
-      DROP FOREIGN KEY userid_mapping_ibfk_1;
-    
-    ALTER TABLE role_permissions
-      DROP FOREIGN KEY role_permissions_ibfk_1;
-    
-    ALTER TABLE user_roles
-      DROP FOREIGN KEY user_roles_ibfk_1;
-    
-    ALTER TABLE dashboard_user_sessions
-      DROP FOREIGN KEY dashboard_user_sessions_ibfk_1;
-    
-    ALTER TABLE totp_user_devices
-      DROP FOREIGN KEY totp_user_devices_ibfk_1;
-    
-    ALTER TABLE totp_used_codes
-      DROP FOREIGN KEY totp_used_codes_ibfk_1;
-    
+    -- helper stored procedures
+
+    CREATE PROCEDURE IF NOT EXISTS st_drop_all_fkeys()
+    BEGIN
+      DECLARE done INT DEFAULT FALSE;
+      DECLARE dropCommand VARCHAR(255);
+      DECLARE dropCur CURSOR for 
+              SELECT concat('ALTER TABLE ', table_schema,'.',table_name,' DROP FOREIGN KEY ', constraint_name, ';') 
+              FROM information_schema.table_constraints
+              WHERE constraint_type='FOREIGN KEY' 
+                  AND table_schema = DATABASE();
+
+      DECLARE CONTINUE handler for NOT found SET done = true;
+        OPEN dropCur;
+
+        read_loop: LOOP
+            FETCH dropCur INTO dropCommand;
+            IF done THEN
+                leave read_loop;
+            END IF;
+
+            SET @sdropCommand = dropCommand;
+
+            PREPARE dropClientUpdateKeyStmt FROM @sdropCommand;
+
+            EXECUTE dropClientUpdateKeyStmt;
+
+            DEALLOCATE prepare dropClientUpdateKeyStmt;
+        END LOOP;
+
+        CLOSE dropCur;
+    END
+
+    ---
+
+    CREATE PROCEDURE IF NOT EXISTS st_drop_all_pkeys()
+    BEGIN
+      DECLARE done INT DEFAULT FALSE;
+      DECLARE dropCommand VARCHAR(255);
+      DECLARE dropCur CURSOR for 
+              SELECT concat('ALTER TABLE ', table_schema,'.',table_name,' DROP PRIMARY KEY ', ';') 
+              FROM information_schema.table_constraints
+              WHERE constraint_type='PRIMARY KEY' 
+                  AND table_schema = DATABASE();
+
+      DECLARE CONTINUE handler for NOT found SET done = true;
+        OPEN dropCur;
+
+        read_loop: LOOP
+            FETCH dropCur INTO dropCommand;
+            IF done THEN
+                leave read_loop;
+            END IF;
+
+            SET @sdropCommand = dropCommand;
+
+            PREPARE dropClientUpdateKeyStmt FROM @sdropCommand;
+
+            EXECUTE dropClientUpdateKeyStmt;
+
+            DEALLOCATE prepare dropClientUpdateKeyStmt;
+        END LOOP;
+
+        CLOSE dropCur;
+    END
+
+    ---
+
+    CREATE PROCEDURE IF NOT EXISTS st_drop_all_keys()
+    BEGIN
+      DECLARE done INT DEFAULT FALSE;
+      DECLARE dropCommand VARCHAR(255);
+      DECLARE dropCur CURSOR for 
+              SELECT concat('ALTER TABLE ', table_schema,'.',table_name,' DROP INDEX ', constraint_name, ';') 
+              FROM information_schema.table_constraints
+              WHERE constraint_type='UNIQUE' 
+                  AND table_schema = DATABASE();
+
+      DECLARE CONTINUE handler for NOT found SET done = true;
+        OPEN dropCur;
+
+        read_loop: LOOP
+            FETCH dropCur INTO dropCommand;
+            IF done THEN
+                leave read_loop;
+            END IF;
+
+            SET @sdropCommand = dropCommand;
+
+            PREPARE dropClientUpdateKeyStmt FROM @sdropCommand;
+
+            EXECUTE dropClientUpdateKeyStmt;
+
+            DEALLOCATE prepare dropClientUpdateKeyStmt;
+        END LOOP;
+
+        CLOSE dropCur;
+    END
+
+    ---
+
+    CREATE PROCEDURE IF NOT EXISTS st_drop_all_indexes()
+    BEGIN
+      DECLARE done INT DEFAULT FALSE;
+      DECLARE dropCommand VARCHAR(255);
+      DECLARE dropCur CURSOR for 
+              SELECT DISTINCT concat('ALTER TABLE ', table_schema, '.', table_name, ' DROP INDEX ', index_name, ';')
+              FROM information_schema.statistics
+              WHERE NON_UNIQUE = 1 AND table_schema = database();
+
+      DECLARE CONTINUE handler for NOT found SET done = true;
+        OPEN dropCur;
+
+        read_loop: LOOP
+            FETCH dropCur INTO dropCommand;
+            IF done THEN
+                leave read_loop;
+            END IF;
+
+            SET @sdropCommand = dropCommand;
+
+            PREPARE dropClientUpdateKeyStmt FROM @sdropCommand;
+
+            EXECUTE dropClientUpdateKeyStmt;
+
+            DEALLOCATE prepare dropClientUpdateKeyStmt;
+        END LOOP;
+
+        CLOSE dropCur;
+    END
+
+    ---
+
+    CREATE PROCEDURE IF NOT EXISTS st_add_column_if_not_exists(
+    IN p_table_name varchar(50), 
+    IN p_column_name varchar(50),
+    IN p_column_type varchar(50),
+    IN p_additional varchar(100),
+    OUT p_status_message varchar(100))
+        READS SQL DATA
+    BEGIN
+        DECLARE v_count INT;
+        
+        # Check wether column exist or not
+        SELECT count(*) INTO v_count
+        FROM information_schema.columns
+        WHERE table_schema = database()
+            AND table_name   = p_table_name
+            AND column_name  = p_column_name;
+            
+        IF v_count > 0 THEN
+          # Return column already exists message
+          SELECT 'Column already Exists' INTO p_status_message;
+        ELSE
+            # Add Column and return success message
+          set @ddl_addcolumn=CONCAT('ALTER TABLE ',database(),'.',p_table_name,
+          ' ADD COLUMN ',p_column_name,' ',p_column_type,' ',p_additional);
+        prepare add_column_sql from @ddl_addcolumn;
+        execute add_column_sql;
+          SELECT 'Column Successfully  Created!' INTO p_status_message;
+        END IF;
+    END
+
+    -- Drop constraints and indexes
+
+    CALL st_drop_all_fkeys();
+    CALL st_drop_all_keys();
+    CALL st_drop_all_pkeys();
+    CALL st_drop_all_indexes(); 
+
     -- General Tables
-    
+
     CREATE TABLE IF NOT EXISTS apps  (
       app_id VARCHAR(64) NOT NULL DEFAULT 'public',
-      created_at_time BIGINT UNSIGNED,
-      PRIMARY KEY(app_id)
+      created_at_time BIGINT UNSIGNED
     );
-    
-    INSERT INTO apps (app_id, created_at_time) 
+
+    ALTER TABLE apps
+      ADD PRIMARY KEY(app_id);
+
+    INSERT IGNORE INTO apps (app_id, created_at_time) 
       VALUES ('public', 0);
-    
+
     ------------------------------------------------------------
-    
+
     CREATE TABLE IF NOT EXISTS tenants (
       app_id VARCHAR(64) NOT NULL DEFAULT 'public',
       tenant_id VARCHAR(64) NOT NULL DEFAULT 'public',
-      created_at_time BIGINT UNSIGNED,
-      PRIMARY KEY (app_id, tenant_id),
-      FOREIGN KEY(app_id)
-        REFERENCES apps (app_id) ON DELETE CASCADE
+      created_at_time BIGINT UNSIGNED
     );
-    
-    INSERT INTO tenants (app_id, tenant_id, created_at_time) 
+
+    ALTER TABLE tenants
+      ADD PRIMARY KEY(app_id, tenant_id);
+
+    ALTER TABLE tenants
+      ADD FOREIGN KEY (app_id)
+        REFERENCES apps (app_id) ON DELETE CASCADE;
+
+    INSERT IGNORE INTO tenants (app_id, tenant_id, created_at_time) 
       VALUES ('public', 'public', 0);
-    
+
     ------------------------------------------------------------
-    
-    ALTER TABLE key_value
-      ADD COLUMN app_id VARCHAR(64) DEFAULT 'public',
-      ADD COLUMN tenant_id VARCHAR(64) DEFAULT 'public';
-    
-    ALTER TABLE key_value
-      DROP PRIMARY KEY;
-    
+
+    CALL st_add_column_if_not_exists('key_value', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
+    CALL st_add_column_if_not_exists('key_value', 'tenant_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
+
     ALTER TABLE key_value
       ADD PRIMARY KEY (app_id, tenant_id, name);
-    
+
     ALTER TABLE key_value
       ADD FOREIGN KEY (app_id, tenant_id)
         REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE;
-    
-    -- CREATE INDEX key_value_tenant_id_index ON key_value (app_id, tenant_id);
-    
+
     ------------------------------------------------------------
-    
+
     CREATE TABLE IF NOT EXISTS app_id_to_user_id (
       app_id VARCHAR(64) NOT NULL DEFAULT 'public',
       user_id CHAR(36) NOT NULL,
-      recipe_id VARCHAR(128) NOT NULL,
-      PRIMARY KEY (app_id, user_id),
-      FOREIGN KEY(app_id) REFERENCES apps (app_id) ON DELETE CASCADE
+      recipe_id VARCHAR(128) NOT NULL
     );
-    
-    INSERT INTO app_id_to_user_id (user_id, recipe_id) 
+
+    ALTER TABLE app_id_to_user_id
+      ADD PRIMARY KEY (app_id, user_id);
+
+    ALTER TABLE app_id_to_user_id
+      ADD FOREIGN KEY (app_id)
+        REFERENCES apps (app_id) ON DELETE CASCADE;
+
+    INSERT IGNORE INTO app_id_to_user_id (user_id, recipe_id) 
       SELECT user_id, recipe_id
       FROM all_auth_recipe_users;
-    
+
     ------------------------------------------------------------
-    
-    ALTER TABLE all_auth_recipe_users
-      ADD COLUMN app_id VARCHAR(64) DEFAULT 'public',
-      ADD COLUMN tenant_id VARCHAR(64) DEFAULT 'public';
-    
-    ALTER TABLE all_auth_recipe_users
-      DROP PRIMARY KEY;
-    
+
+    CALL st_add_column_if_not_exists('all_auth_recipe_users', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
+    CALL st_add_column_if_not_exists('all_auth_recipe_users', 'tenant_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
+
     ALTER TABLE all_auth_recipe_users
       ADD PRIMARY KEY (app_id, tenant_id, user_id);
-    
+
     ALTER TABLE all_auth_recipe_users
       ADD FOREIGN KEY (app_id, tenant_id)
         REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE;
-    
+
     ALTER TABLE all_auth_recipe_users
       ADD FOREIGN KEY (app_id, user_id)
         REFERENCES app_id_to_user_id (app_id, user_id) ON DELETE CASCADE;
-    
-    ALTER TABLE all_auth_recipe_users
-      DROP INDEX all_auth_recipe_users_pagination_index;
-    
+
     CREATE INDEX all_auth_recipe_users_pagination_index ON all_auth_recipe_users (time_joined DESC, user_id DESC, tenant_id DESC, app_id DESC);
-    
+
     -- Multitenancy
-    
+
     CREATE TABLE IF NOT EXISTS tenant_configs (
       connection_uri_domain VARCHAR(256) DEFAULT '',
       app_id VARCHAR(64) DEFAULT 'public',
@@ -1038,12 +1180,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
       core_config TEXT,
       email_password_enabled BOOLEAN,
       passwordless_enabled BOOLEAN,
-      third_party_enabled BOOLEAN,
-      PRIMARY KEY (connection_uri_domain, app_id, tenant_id)
+      third_party_enabled BOOLEAN
     );
-    
+
+    ALTER TABLE tenant_configs
+      ADD PRIMARY KEY (connection_uri_domain, app_id, tenant_id);
+
     ------------------------------------------------------------
-    
+
     CREATE TABLE IF NOT EXISTS tenant_thirdparty_providers (
       connection_uri_domain VARCHAR(256) DEFAULT '',
       app_id VARCHAR(64) DEFAULT 'public',
@@ -1065,14 +1209,18 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
       user_info_map_from_id_token_payload_email_verified VARCHAR(64),
       user_info_map_from_user_info_endpoint_user_id VARCHAR(64),
       user_info_map_from_user_info_endpoint_email VARCHAR(64),
-      user_info_map_from_user_info_endpoint_email_verified VARCHAR(64),
-      PRIMARY KEY (connection_uri_domain, app_id, tenant_id, third_party_id),
-      FOREIGN KEY(connection_uri_domain, app_id, tenant_id)
-        REFERENCES tenant_configs (connection_uri_domain, app_id, tenant_id) ON DELETE CASCADE
+      user_info_map_from_user_info_endpoint_email_verified VARCHAR(64)
     );
-    
+
+    ALTER TABLE tenant_thirdparty_providers
+      ADD PRIMARY KEY (connection_uri_domain, app_id, tenant_id, third_party_id);
+
+    ALTER TABLE tenant_thirdparty_providers
+      ADD FOREIGN KEY (connection_uri_domain, app_id, tenant_id)
+        REFERENCES tenant_configs (connection_uri_domain, app_id, tenant_id) ON DELETE CASCADE;
+
     ------------------------------------------------------------
-    
+
     CREATE TABLE IF NOT EXISTS tenant_thirdparty_provider_clients (
       connection_uri_domain VARCHAR(256) DEFAULT '',
       app_id VARCHAR(64) DEFAULT 'public',
@@ -1083,501 +1231,393 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
       client_secret TEXT,
       scope TEXT,
       force_pkce BOOLEAN,
-      additional_config TEXT,
-      PRIMARY KEY (connection_uri_domain, app_id, tenant_id, third_party_id, client_type),
-      FOREIGN KEY (connection_uri_domain, app_id, tenant_id, third_party_id)
-        REFERENCES tenant_thirdparty_providers (connection_uri_domain, app_id, tenant_id, third_party_id) ON DELETE CASCADE
+      additional_config TEXT
     );
-    
-    
+
+    ALTER TABLE tenant_thirdparty_provider_clients
+      ADD PRIMARY KEY (connection_uri_domain, app_id, tenant_id, third_party_id, client_type);
+
+    ALTER TABLE tenant_thirdparty_provider_clients
+      ADD FOREIGN KEY (connection_uri_domain, app_id, tenant_id, third_party_id)
+        REFERENCES tenant_thirdparty_providers (connection_uri_domain, app_id, tenant_id, third_party_id) ON DELETE CASCADE;
+
+
     -- Session
-    
-    ALTER TABLE session_info
-      ADD COLUMN app_id VARCHAR(64) DEFAULT 'public',
-      ADD COLUMN tenant_id VARCHAR(64) DEFAULT 'public';
-    
-    ALTER TABLE session_info
-      DROP PRIMARY KEY;
-    
+
+    CALL st_add_column_if_not_exists('session_info', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
+    CALL st_add_column_if_not_exists('session_info', 'tenant_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
+
     ALTER TABLE session_info
       ADD PRIMARY KEY (app_id, tenant_id, session_handle);
-    
+
     ALTER TABLE session_info
       ADD FOREIGN KEY (app_id, tenant_id)
         REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE;
-    
+
     CREATE INDEX session_expiry_index ON session_info (expires_at);
-    
+
     ------------------------------------------------------------
-    
-    ALTER TABLE session_access_token_signing_keys
-      ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
-    
-    ALTER TABLE session_access_token_signing_keys
-      DROP PRIMARY KEY;
-    
+
+    CALL st_add_column_if_not_exists('session_access_token_signing_keys', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
+
     ALTER TABLE session_access_token_signing_keys
       ADD PRIMARY KEY (app_id, created_at_time);
-    
+
     ALTER TABLE session_access_token_signing_keys
       ADD FOREIGN KEY (app_id)
         REFERENCES apps (app_id) ON DELETE CASCADE;
-    
+
     -- JWT
-    
-    ALTER TABLE jwt_signing_keys
-      ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
-    
-    ALTER TABLE jwt_signing_keys
-      DROP PRIMARY KEY;
-    
+
+    CALL st_add_column_if_not_exists('jwt_signing_keys', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
+
     ALTER TABLE jwt_signing_keys
       ADD PRIMARY KEY (app_id, key_id);
-    
+
     ALTER TABLE jwt_signing_keys
       ADD FOREIGN KEY (app_id)
         REFERENCES apps (app_id) ON DELETE CASCADE;
-    
+
     -- EmailVerification
-    
-    ALTER TABLE emailverification_verified_emails
-      ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
-    
-    ALTER TABLE emailverification_verified_emails
-      DROP PRIMARY KEY;
-    
+
+    CALL st_add_column_if_not_exists('emailverification_verified_emails', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
+
     ALTER TABLE emailverification_verified_emails
       ADD PRIMARY KEY (app_id, user_id, email);
-    
+
     ALTER TABLE emailverification_verified_emails
       ADD FOREIGN KEY (app_id)
         REFERENCES apps (app_id) ON DELETE CASCADE;
-    
+
     ------------------------------------------------------------
-    
-    ALTER TABLE emailverification_tokens
-      ADD COLUMN app_id VARCHAR(64) DEFAULT 'public',
-      ADD COLUMN tenant_id VARCHAR(64) DEFAULT 'public';
-    
-    ALTER TABLE emailverification_tokens
-      DROP PRIMARY KEY;
-    
+
+    CALL st_add_column_if_not_exists('emailverification_tokens', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
+    CALL st_add_column_if_not_exists('emailverification_tokens', 'tenant_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
+
     ALTER TABLE emailverification_tokens
       ADD PRIMARY KEY (app_id, tenant_id, user_id, email, token);
-    
+
     ALTER TABLE emailverification_tokens
       ADD FOREIGN KEY (app_id, tenant_id)
         REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE;
-    
+
+    ALTER TABLE emailverification_tokens
+      ADD CONSTRAINT token UNIQUE (token);
+
+    CREATE INDEX emailverification_tokens_index ON emailverification_tokens(token_expiry);
+
     -- EmailPassword
-    
-    ALTER TABLE emailpassword_users
-      ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
-    
-    ALTER TABLE emailpassword_users
-      DROP PRIMARY KEY;
-    
-    ALTER TABLE emailpassword_users
-      DROP INDEX email;
-    
+
+    CALL st_add_column_if_not_exists('emailpassword_users', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
+
     ALTER TABLE emailpassword_users
       ADD PRIMARY KEY (app_id, user_id);
-    
+
     ALTER TABLE emailpassword_users
       ADD FOREIGN KEY (app_id, user_id)
         REFERENCES app_id_to_user_id (app_id, user_id) ON DELETE CASCADE;
-    
+
     -- ------------------------------------------------------------
-    
+
     CREATE TABLE IF NOT EXISTS emailpassword_user_to_tenant (
       app_id VARCHAR(64) DEFAULT 'public',
       tenant_id VARCHAR(64) DEFAULT 'public',
       user_id CHAR(36) NOT NULL,
-      email VARCHAR(256) NOT NULL,
-      CONSTRAINT email
-        UNIQUE (app_id, tenant_id, email),
-      PRIMARY KEY (app_id, tenant_id, user_id),
-      CONSTRAINT FOREIGN KEY (app_id, tenant_id, user_id)
-        REFERENCES all_auth_recipe_users (app_id, tenant_id, user_id) ON DELETE CASCADE
+      email VARCHAR(256) NOT NULL
     );
-    
-    INSERT INTO emailpassword_user_to_tenant (user_id, email)
+
+    ALTER TABLE emailpassword_user_to_tenant
+      ADD PRIMARY KEY (app_id, tenant_id, user_id);
+
+    ALTER TABLE emailpassword_user_to_tenant
+      ADD CONSTRAINT email UNIQUE (app_id, tenant_id, email);
+
+    ALTER TABLE emailpassword_user_to_tenant
+      ADD CONSTRAINT FOREIGN KEY (app_id, tenant_id, user_id)
+        REFERENCES all_auth_recipe_users (app_id, tenant_id, user_id) ON DELETE CASCADE;
+
+    INSERT IGNORE INTO emailpassword_user_to_tenant (user_id, email)
       SELECT user_id, email FROM emailpassword_users;
-    
+
     ------------------------------------------------------------
-    
-    ALTER TABLE emailpassword_pswd_reset_tokens
-      ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
-    
-    ALTER TABLE emailpassword_pswd_reset_tokens
-      DROP PRIMARY KEY;
-    
+
+    CALL st_add_column_if_not_exists('emailpassword_pswd_reset_tokens', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
+
     ALTER TABLE emailpassword_pswd_reset_tokens
       ADD PRIMARY KEY (app_id, user_id, token);
-    
+
     ALTER TABLE emailpassword_pswd_reset_tokens
       ADD FOREIGN KEY (app_id, user_id)
         REFERENCES emailpassword_users (app_id, user_id) ON DELETE CASCADE;
-    
+
+    ALTER TABLE emailpassword_pswd_reset_tokens
+      ADD CONSTRAINT token UNIQUE (token);
+
+    CREATE INDEX emailpassword_password_reset_token_expiry_index ON emailpassword_pswd_reset_tokens (token_expiry);
+
     -- Passwordless
-    
-    ALTER TABLE passwordless_users
-      ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
-    
-    ALTER TABLE passwordless_users
-      DROP PRIMARY KEY;
-    
+
+    CALL st_add_column_if_not_exists('passwordless_users', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
+
     ALTER TABLE passwordless_users
       ADD PRIMARY KEY (app_id, user_id);
-    
-    ALTER TABLE passwordless_users
-      DROP INDEX email;
-    
-    ALTER TABLE passwordless_users
-      DROP INDEX phone_number;
-    
+
     ALTER TABLE passwordless_users
       ADD FOREIGN KEY (app_id, user_id)
         REFERENCES app_id_to_user_id (app_id, user_id) ON DELETE CASCADE;
-    
+
     ------------------------------------------------------------
-    
+
     CREATE TABLE IF NOT EXISTS passwordless_user_to_tenant (
       app_id VARCHAR(64) DEFAULT 'public',
       tenant_id VARCHAR(64) DEFAULT 'public',
       user_id CHAR(36) NOT NULL,
       email VARCHAR(256),
-      phone_number VARCHAR(256),
-      CONSTRAINT email
-        UNIQUE (app_id, tenant_id, email),
-      CONSTRAINT phone_number
-        UNIQUE (app_id, tenant_id, phone_number),
-      PRIMARY KEY (app_id, tenant_id, user_id),
-      FOREIGN KEY (app_id, tenant_id, user_id)
-        REFERENCES all_auth_recipe_users (app_id, tenant_id, user_id) ON DELETE CASCADE
+      phone_number VARCHAR(256)
     );
-    
-    INSERT INTO passwordless_user_to_tenant (user_id, email, phone_number)
+
+    ALTER TABLE passwordless_user_to_tenant
+      ADD PRIMARY KEY (app_id, tenant_id, user_id);
+
+    ALTER TABLE passwordless_user_to_tenant
+      ADD CONSTRAINT email UNIQUE (app_id, tenant_id, email);
+
+    ALTER TABLE passwordless_user_to_tenant
+      ADD CONSTRAINT phone_number UNIQUE (app_id, tenant_id, phone_number);
+
+    ALTER TABLE passwordless_user_to_tenant
+      ADD FOREIGN KEY (app_id, tenant_id, user_id)
+        REFERENCES all_auth_recipe_users (app_id, tenant_id, user_id) ON DELETE CASCADE;
+
+    INSERT IGNORE INTO passwordless_user_to_tenant (user_id, email, phone_number)
       SELECT user_id, email, phone_number FROM passwordless_users;
-    
+
     ------------------------------------------------------------
-    
-    ALTER TABLE passwordless_devices
-      ADD COLUMN app_id VARCHAR(64) DEFAULT 'public',
-      ADD COLUMN tenant_id VARCHAR(64) DEFAULT 'public';
-    
-    ALTER TABLE passwordless_devices
-      DROP PRIMARY KEY;
-    
+
+    CALL st_add_column_if_not_exists('passwordless_devices', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
+    CALL st_add_column_if_not_exists('passwordless_devices', 'tenant_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
+
     ALTER TABLE passwordless_devices
       ADD PRIMARY KEY (app_id, tenant_id, device_id_hash);
-    
+
     ALTER TABLE passwordless_devices
       ADD FOREIGN KEY (app_id, tenant_id)
         REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE;
-    
-    ALTER TABLE passwordless_devices
-      DROP INDEX passwordless_devices_email_index;
-    
+
     CREATE INDEX passwordless_devices_email_index ON passwordless_devices (app_id, tenant_id, email);
-    
-    ALTER TABLE passwordless_devices
-      DROP INDEX passwordless_devices_phone_number_index;
-    
+
     CREATE INDEX passwordless_devices_phone_number_index ON passwordless_devices (app_id, tenant_id, phone_number);
-    
+
     ------------------------------------------------------------
-    
-    ALTER TABLE passwordless_codes
-      ADD COLUMN app_id VARCHAR(64) DEFAULT 'public',
-      ADD COLUMN tenant_id VARCHAR(64) DEFAULT 'public';
-    
-    ALTER TABLE passwordless_codes
-      DROP PRIMARY KEY;
-    
+
+    CALL st_add_column_if_not_exists('passwordless_codes', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
+    CALL st_add_column_if_not_exists('passwordless_codes', 'tenant_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
+
     ALTER TABLE passwordless_codes
       ADD PRIMARY KEY (app_id, tenant_id, code_id);
-    
-    ALTER TABLE passwordless_codes 
-      DROP INDEX device_id_hash;
-    
+
     ALTER TABLE passwordless_codes
       ADD FOREIGN KEY (app_id, tenant_id, device_id_hash)
         REFERENCES passwordless_devices (app_id, tenant_id, device_id_hash) ON DELETE CASCADE;
-    
-    ALTER TABLE passwordless_codes
-      DROP INDEX link_code_hash;
-    
+
     ALTER TABLE passwordless_codes
       ADD CONSTRAINT link_code_hash
         UNIQUE (app_id, tenant_id, link_code_hash);
-    
-    ALTER TABLE passwordless_codes
-      DROP INDEX passwordless_codes_created_at_index;
-    
+
     CREATE INDEX passwordless_codes_created_at_index ON passwordless_codes (app_id, tenant_id, created_at);
-    
+
     -- ThirdParty
-    
-    ALTER TABLE thirdparty_users
-      ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
-    
-    ALTER TABLE thirdparty_users
-      DROP PRIMARY KEY;
-    
-    ALTER TABLE thirdparty_users
-      DROP INDEX user_id;
-    
+
+    CALL st_add_column_if_not_exists('thirdparty_users', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
+
     ALTER TABLE thirdparty_users
       ADD PRIMARY KEY (app_id, user_id);
-    
+
     ALTER TABLE thirdparty_users
       ADD FOREIGN KEY (app_id, user_id)
         REFERENCES app_id_to_user_id (app_id, user_id) ON DELETE CASCADE;
-    
-    -- ALTER TABLE thirdparty_users
-    --   DROP INDEX thirdparty_users_thirdparty_user_id_index;
-    
+
     CREATE INDEX thirdparty_users_thirdparty_user_id_index ON thirdparty_users (app_id, third_party_id, third_party_user_id);
-    
-    -- ALTER TABLE thirdparty_users
-    --   DROP INDEX thirdparty_users_email_index;
-    
+
     CREATE INDEX thirdparty_users_email_index ON thirdparty_users (app_id, email);
-    
+
     ------------------------------------------------------------
-    
+
     CREATE TABLE IF NOT EXISTS thirdparty_user_to_tenant (
       app_id VARCHAR(64) DEFAULT 'public',
       tenant_id VARCHAR(64) DEFAULT 'public',
       user_id CHAR(36) NOT NULL,
       third_party_id VARCHAR(28) NOT NULL,
-      third_party_user_id VARCHAR(256) NOT NULL,
-      CONSTRAINT third_party_user_id
-        UNIQUE (app_id, tenant_id, third_party_id, third_party_user_id),
-      PRIMARY KEY (app_id, tenant_id, user_id),
-      FOREIGN KEY (app_id, tenant_id, user_id)
-        REFERENCES all_auth_recipe_users (app_id, tenant_id, user_id) ON DELETE CASCADE
+      third_party_user_id VARCHAR(256) NOT NULL
     );
-    
-    INSERT INTO thirdparty_user_to_tenant (user_id, third_party_id, third_party_user_id)
+
+    ALTER TABLE thirdparty_user_to_tenant
+      ADD PRIMARY KEY (app_id, tenant_id, user_id);
+
+    ALTER TABLE thirdparty_user_to_tenant
+      ADD CONSTRAINT third_party_user_id
+        UNIQUE (app_id, tenant_id, third_party_id, third_party_user_id);
+
+    ALTER TABLE thirdparty_user_to_tenant
+      ADD FOREIGN KEY (app_id, tenant_id, user_id)
+        REFERENCES all_auth_recipe_users (app_id, tenant_id, user_id) ON DELETE CASCADE;
+
+    INSERT IGNORE INTO thirdparty_user_to_tenant (user_id, third_party_id, third_party_user_id)
       SELECT user_id, third_party_id, third_party_user_id FROM thirdparty_users;
-    
+
     -- UserIdMapping
-    
-    ALTER TABLE userid_mapping
-      ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
-    
-    ALTER TABLE userid_mapping
-      DROP PRIMARY KEY;
-    
+
+    CALL st_add_column_if_not_exists('userid_mapping', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
+
     ALTER TABLE userid_mapping
       ADD PRIMARY KEY (app_id, supertokens_user_id, external_user_id);
-    
-    ALTER TABLE userid_mapping
-      DROP INDEX supertokens_user_id;
-    
+
     ALTER TABLE userid_mapping
       ADD CONSTRAINT supertokens_user_id
         UNIQUE (app_id, supertokens_user_id);
-    
-    ALTER TABLE userid_mapping
-      DROP INDEX external_user_id;
-    
+
     ALTER TABLE userid_mapping
       ADD CONSTRAINT external_user_id
         UNIQUE (app_id, external_user_id);
-    
+
     ALTER TABLE userid_mapping
       ADD FOREIGN KEY (app_id, supertokens_user_id)
         REFERENCES app_id_to_user_id (app_id, user_id) ON DELETE CASCADE;
-    
+
     -- UserRoles
-    
-    ALTER TABLE roles
-      ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
-    
-    ALTER TABLE roles
-      DROP PRIMARY KEY;
-    
+
+    CALL st_add_column_if_not_exists('roles', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
+
     ALTER TABLE roles
       ADD PRIMARY KEY (app_id, role);
-    
+
     ALTER TABLE roles
       ADD FOREIGN KEY (app_id)
         REFERENCES apps (app_id) ON DELETE CASCADE;
-    
+
     ------------------------------------------------------------
-    
-    ALTER TABLE role_permissions
-      ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
-    
-    ALTER TABLE role_permissions
-      DROP PRIMARY KEY;
-    
+
+    CALL st_add_column_if_not_exists('role_permissions', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
+
     ALTER TABLE role_permissions
       ADD PRIMARY KEY (app_id, role, permission);
-    
+
     ALTER TABLE role_permissions
       ADD FOREIGN KEY (app_id, role)
         REFERENCES roles (app_id, role) ON DELETE CASCADE;
-    
-    ALTER TABLE role_permissions
-      DROP INDEX role_permissions_permission_index;
-    
+
     CREATE INDEX role_permissions_permission_index ON role_permissions (app_id, permission);
-    
+
     ------------------------------------------------------------
-    
-    ALTER TABLE user_roles
-      ADD COLUMN app_id VARCHAR(64) DEFAULT 'public',
-      ADD COLUMN tenant_id VARCHAR(64) DEFAULT 'public';
-    
-    ALTER TABLE user_roles
-      DROP PRIMARY KEY;
-    
+
+    CALL st_add_column_if_not_exists('user_roles', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
+    CALL st_add_column_if_not_exists('user_roles', 'tenant_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
+
     ALTER TABLE user_roles
       ADD PRIMARY KEY (app_id, tenant_id, user_id, role);
-    
+
     ALTER TABLE user_roles
       ADD FOREIGN KEY (app_id, role)
         REFERENCES roles (app_id, role) ON DELETE CASCADE;
-    
+
     ALTER TABLE user_roles
       ADD FOREIGN KEY (app_id, tenant_id)
         REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE;
-    
-    ALTER TABLE user_roles
-      DROP INDEX user_roles_role_index;
-    
+
     CREATE INDEX user_roles_role_index ON user_roles (app_id, tenant_id, role);
-    
+
     -- UserMetadata
-    
-    ALTER TABLE user_metadata
-      ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
-    
-    ALTER TABLE user_metadata
-      DROP PRIMARY KEY;
-    
+
+    CALL st_add_column_if_not_exists('user_metadata', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
+
     ALTER TABLE user_metadata
       ADD PRIMARY KEY (app_id, user_id);
-    
+
     ALTER TABLE user_metadata
       ADD FOREIGN KEY (app_id)
         REFERENCES apps (app_id) ON DELETE CASCADE;
-    
+
     -- Dashboard
-    
-    ALTER TABLE dashboard_users
-      ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
-    
-    ALTER TABLE dashboard_users
-      DROP PRIMARY KEY;
-    
+
+    CALL st_add_column_if_not_exists('dashboard_users', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
+
     ALTER TABLE dashboard_users
       ADD PRIMARY KEY (app_id, user_id);
-    
-    ALTER TABLE dashboard_users
-      DROP INDEX email;
-    
+
     ALTER TABLE dashboard_users
       ADD CONSTRAINT email
         UNIQUE (app_id, email);
-    
+
     ALTER TABLE dashboard_users
       ADD FOREIGN KEY (app_id)
         REFERENCES apps (app_id) ON DELETE CASCADE;
-    
+
     ------------------------------------------------------------
-    
-    ALTER TABLE dashboard_user_sessions
-      ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
-    
-    ALTER TABLE dashboard_user_sessions
-      DROP PRIMARY KEY;
-    
+
+    CALL st_add_column_if_not_exists('dashboard_user_sessions', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
+
     ALTER TABLE dashboard_user_sessions
       ADD PRIMARY KEY (app_id, session_id);
-    
-    ALTER TABLE dashboard_user_sessions
-      DROP INDEX user_id;
-    
+
     ALTER TABLE dashboard_user_sessions
       ADD FOREIGN KEY (app_id, user_id)
         REFERENCES dashboard_users (app_id, user_id) ON DELETE CASCADE;
-    
+
+    CREATE INDEX dashboard_user_sessions_expiry_index ON dashboard_user_sessions (expiry);
+
     -- TOTP
-    
-    ALTER TABLE totp_users
-      ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
-    
-    ALTER TABLE totp_users
-      DROP PRIMARY KEY;
-    
+
+    CALL st_add_column_if_not_exists('totp_users', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
+
     ALTER TABLE totp_users
       ADD PRIMARY KEY (app_id, user_id);
-    
+
     ALTER TABLE totp_users
       ADD FOREIGN KEY (app_id)
         REFERENCES apps (app_id) ON DELETE CASCADE;
-    
+
     ------------------------------------------------------------
-    
-    ALTER TABLE totp_user_devices
-      ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
-    
-    ALTER TABLE totp_user_devices
-      DROP PRIMARY KEY;
-    
+
+    CALL st_add_column_if_not_exists('totp_user_devices', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
+
     ALTER TABLE totp_user_devices
       ADD PRIMARY KEY (app_id, user_id, device_name);
-    
+
     ALTER TABLE totp_user_devices
       ADD FOREIGN KEY (app_id, user_id)
         REFERENCES totp_users (app_id, user_id) ON DELETE CASCADE;
-    
+
     ------------------------------------------------------------
-    
-    ALTER TABLE totp_used_codes
-      ADD COLUMN app_id VARCHAR(64) DEFAULT 'public',
-      ADD COLUMN tenant_id VARCHAR(64) DEFAULT 'public';
-    
-    ALTER TABLE totp_used_codes
-      DROP PRIMARY KEY;
-    
+
+    CALL st_add_column_if_not_exists('totp_used_codes', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
+    CALL st_add_column_if_not_exists('totp_used_codes', 'tenant_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
+
     ALTER TABLE totp_used_codes
       ADD PRIMARY KEY (app_id, tenant_id, user_id, created_time_ms);
-    
+
     ALTER TABLE totp_used_codes
       ADD FOREIGN KEY (app_id, user_id)
         REFERENCES totp_users (app_id, user_id) ON DELETE CASCADE;
-    
+
     ALTER TABLE totp_used_codes
       ADD FOREIGN KEY (app_id, tenant_id)
         REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE;
-    
-    ALTER TABLE totp_used_codes
-      DROP INDEX totp_used_codes_expiry_time_ms_index;
-    
+
     CREATE INDEX totp_used_codes_expiry_time_ms_index ON totp_used_codes (app_id, tenant_id, expiry_time_ms);
-    
+
     -- ActiveUsers
-    
-    ALTER TABLE user_last_active
-      ADD COLUMN app_id VARCHAR(64) DEFAULT 'public';
-    
-    ALTER TABLE user_last_active
-      DROP PRIMARY KEY;
-    
+
+    CALL st_add_column_if_not_exists('user_last_active', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
+
     ALTER TABLE user_last_active
       ADD PRIMARY KEY (app_id, user_id);
-    
+
     ALTER TABLE user_last_active
       ADD FOREIGN KEY (app_id)
         REFERENCES apps (app_id) ON DELETE CASCADE;
+
     ```
-    
+
     </details>
 
 4. Start the new instance(s) of the core (version 6.0.0)
