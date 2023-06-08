@@ -205,8 +205,14 @@ public class TestMultitenancyAPIHelper {
 
     public static JsonObject addOrUpdateThirdPartyProviderConfig(TenantIdentifier tenantIdentifier, ThirdPartyConfig.Provider provider, Main main)
             throws HttpResponseException, IOException {
+        return addOrUpdateThirdPartyProviderConfig(tenantIdentifier, provider, false, main);
+    }
+
+    public static JsonObject addOrUpdateThirdPartyProviderConfig(TenantIdentifier tenantIdentifier, ThirdPartyConfig.Provider provider, boolean skipValidation, Main main)
+            throws HttpResponseException, IOException {
         Gson gson = new Gson();
         JsonObject requestBody = gson.toJsonTree(provider).getAsJsonObject();
+        requestBody.addProperty("skipValidation", skipValidation);
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/multitenancy/config/thirdparty"),
