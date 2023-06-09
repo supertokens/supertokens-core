@@ -33,6 +33,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -893,6 +894,44 @@ public class GeneralQueries {
         }
 
         return new HashMap<>();
+    }
+
+    public static String[] getAllTablesInTheDatabase(Start start) throws SQLException, StorageQueryException {
+        String QUERY = "SELECT name FROM sqlite_schema "
+                + " WHERE type ='table' AND name NOT LIKE 'sqlite_%'";
+
+        List<String> tableNames = new ArrayList<>();
+        try (Connection con = ConnectionPool.getConnection(start)) {
+            DatabaseMetaData metadata = con.getMetaData();
+            ResultSet resultSet = metadata.getTables(null, null, null, new String[] { "TABLE" });
+            while (resultSet.next()) {
+                String tableName = resultSet.getString("TABLE_NAME");
+                tableNames.add(tableName);
+            }
+        }
+
+        return tableNames.toArray(new String[0]);
+    }
+
+    public static String[] getAllTablesInTheDatabaseThatHasDataForAppId(Start start, String appId)
+            throws SQLException, StorageQueryException {
+        String[] tableNames = getAllTablesInTheDatabase(start);
+
+        List<String> result = new ArrayList<>();
+        for (String tableName : tableNames) {
+            String QUERY = "SELECT 1 FROM " + tableName + " WHERE app_id = ?";
+
+            boolean hasRows = execute(start, QUERY, pst -> {
+                pst.setString(1, appId);
+            }, res -> {
+                return res.next();
+            });
+            if (hasRows) {
+                result.add(tableName);
+            }
+        }
+
+        return result.toArray(new String[0]);
     }
 
     private static class UserInfoPaginationResultHolder {

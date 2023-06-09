@@ -2710,11 +2710,19 @@ public class Start
 
     @Override
     public String[] getAllTablesInTheDatabase() throws StorageQueryException {
-        return new String[0]; // TODO
+        try {
+            return GeneralQueries.getAllTablesInTheDatabase(this);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
     public String[] getAllTablesInTheDatabaseThatHasDataForAppId(String appId) throws StorageQueryException {
-        return new String[0]; // TODO
+        try {
+            return GeneralQueries.getAllTablesInTheDatabaseThatHasDataForAppId(this, appId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 }
