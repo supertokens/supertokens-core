@@ -29,6 +29,7 @@ import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.multitenancy.MultitenancyHelper;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
@@ -1706,4 +1707,178 @@ public class ConfigTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    @Test
+    public void testLoadAllTenantConfigWithDifferentConfigSavedInTheDb() throws Exception {
+        // What is saved in db is not overwritten
+        // New apps/tenants are added to the loaded config
+
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // Save in db
+        JsonObject config = new JsonObject();
+        config.addProperty("email_verification_token_lifetime", 100);
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                new TenantIdentifier(null, "a1", null),
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                config
+        ), false);
+
+        // Now load a new set of configs
+        JsonObject config1 = new JsonObject();
+        config1.addProperty("email_verification_token_lifetime", 200);
+        JsonObject config2 = new JsonObject();
+        config2.addProperty("email_verification_token_lifetime", 300);
+        JsonObject config3 = new JsonObject();
+        config3.addProperty("email_verification_token_lifetime", 400);
+        JsonObject config4 = new JsonObject();
+        config4.addProperty("email_verification_token_lifetime", 500);
+
+        TenantConfig[] tenantConfigs = new TenantConfig[]{
+                new TenantConfig(
+                        new TenantIdentifier(null, null, null),
+                        new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(false, null),
+                        new PasswordlessConfig(true),
+                        config1
+                ),
+                new TenantConfig(
+                        new TenantIdentifier(null, "a2", null),
+                        new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(false, null),
+                        new PasswordlessConfig(true),
+                        config2
+                ),
+                new TenantConfig(
+                        new TenantIdentifier(null, "a2", "t1"),
+                        new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true),
+                        config3
+                ),
+                new TenantConfig(
+                        new TenantIdentifier(null, "a1", null),
+                        new EmailPasswordConfig(false),
+                        new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true),
+                        config4
+                ),
+        };
+        Config.loadAllTenantConfig(process.getProcess(), tenantConfigs);
+
+        assertEquals(
+                300,
+                Config.getConfig(new TenantIdentifier(null, "a2", null), process.getProcess()).getEmailVerificationTokenLifetime()
+        );
+        assertEquals(
+                400,
+                Config.getConfig(new TenantIdentifier(null, "a2", "t1"), process.getProcess()).getEmailVerificationTokenLifetime()
+        );
+        assertEquals(
+                100,
+                Config.getConfig(new TenantIdentifier(null, "a1", null), process.getProcess()).getEmailVerificationTokenLifetime()
+        );
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testThatMistypedConfigThrowsError() throws Exception {
+        String[] args = {"../"};
+
+        Utils.setValueInConfig("email_verification_token_lifetime", "144001");
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        JsonObject mistypedConfig = new JsonObject();
+        mistypedConfig.addProperty("foo", "bar");
+
+        try {
+            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                    new TenantIdentifier(null, "a1", null),
+                    new EmailPasswordConfig(true),
+                    new ThirdPartyConfig(true, null),
+                    new PasswordlessConfig(true),
+                    mistypedConfig
+            ), false);
+            fail();
+        } catch (InvalidConfigException e) {
+            assertTrue(e.getMessage().contains("Invalid config key: foo"));
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testCoreSpecificConfigIsNotAllowedForNewTenants() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        String[] disallowedConfigs = new String[]{
+                "port",
+                "host",
+                "info_log_path",
+                "error_log_path",
+                "max_server_pool_size",
+                "base_path",
+                "argon2_hashing_pool_size",
+                "log_level",
+                "firebase_password_hashing_pool_size",
+                "supertokens_saas_secret",
+                "supertokens_default_cdi_version"
+        };
+
+        for (String disallowedConfig : disallowedConfigs) {
+            JsonObject config = new JsonObject();
+            if (disallowedConfig.contains("size") || disallowedConfig.contains("port")) {
+                config.addProperty(disallowedConfig, 1000);
+            } else {
+                config.addProperty(disallowedConfig, "somevalue");
+            }
+
+            try {
+                Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                        new TenantIdentifier(null, "a1", null),
+                        new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true),
+                        config
+                ), false);
+                fail();
+            } catch (InvalidConfigException e) {
+                assertTrue(e.getMessage().contains(disallowedConfig));
+            }
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }

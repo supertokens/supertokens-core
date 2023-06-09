@@ -122,7 +122,8 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         }
     }
 
-    private static void validateTenantConfig(Main main, TenantConfig targetTenantConfig, boolean shouldPreventDbConfigUpdate)
+    private static void validateTenantConfig(Main main, TenantConfig targetTenantConfig, boolean shouldPreventDbConfigUpdate,
+                                             boolean skipThirdPartyConfigValidation)
             throws IOException, InvalidConfigException, InvalidProviderConfigException, BadPermissionException,
             TenantOrAppNotFoundException, CannotModifyBaseConfigException {
 
@@ -172,7 +173,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         }
 
         // validate third party config
-        {
+        if (!skipThirdPartyConfigValidation) {
             ThirdParty.verifyThirdPartyProvidersArray(targetTenantConfig.thirdPartyConfig.providers);
         }
     }
@@ -190,6 +191,13 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             throws CannotModifyBaseConfigException, BadPermissionException,
             StorageQueryException, FeatureNotEnabledException, IOException, InvalidConfigException,
             InvalidProviderConfigException, TenantOrAppNotFoundException {
+        return addNewOrUpdateAppOrTenant(main, newTenant, shouldPreventDbConfigUpdate, false);
+    }
+
+    public static boolean addNewOrUpdateAppOrTenant(Main main, TenantConfig newTenant, boolean shouldPreventDbConfigUpdate, boolean skipThirdPartyConfigValidation)
+            throws CannotModifyBaseConfigException, BadPermissionException,
+            StorageQueryException, FeatureNotEnabledException, IOException, InvalidConfigException,
+            InvalidProviderConfigException, TenantOrAppNotFoundException {
 
         if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL) {
             if (newTenant.tenantIdentifier.equals(TenantIdentifier.BASE_TENANT)) {
@@ -204,7 +212,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         //  a big issue at the moment, but we want to solve this by taking appropriate database locks on
         //  connectionuridomain, appid and tenantid.
 
-        validateTenantConfig(main, newTenant, shouldPreventDbConfigUpdate);
+        validateTenantConfig(main, newTenant, shouldPreventDbConfigUpdate, skipThirdPartyConfigValidation);
 
         boolean creationInSharedDbSucceeded = false;
         List<TenantIdentifier> tenantsThatChanged = new ArrayList<>();

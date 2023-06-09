@@ -379,4 +379,58 @@ public class TestTenantUserAssociation {
         user = ThirdParty.getUser(t1WithStorage.toAppIdentifierWithStorage(), signInUpResponse.user.id);
         assertArrayEquals(new String[]{"t2"}, user.tenantIds);
     }
+
+    @Test
+    public void testThatDisassociateUserFromWrongTenantDoesNotWork() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        createTenants();
+        JsonObject user = TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", "t1"), "user@example.com", "password", process.getProcess());
+        String userId = user.get("id").getAsString();
+
+        JsonObject response = TestMultitenancyAPIHelper.disassociateUserFromTenant(new TenantIdentifier(null, "a1", "t2"), userId, process.getProcess());
+        assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
+        assertFalse(response.get("wasAssociated").getAsBoolean());
+    }
+
+    @Test
+    public void testThatDisassociateUserWithUseridMappingFromWrongTenantDoesNotWork() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        createTenants();
+        JsonObject user = TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", "t1"), "user@example.com", "password", process.getProcess());
+        String userId = user.get("id").getAsString();
+
+        TestMultitenancyAPIHelper.createUserIdMapping(new TenantIdentifier(null, "a1", "t1"), userId, "externalid", process.getProcess());
+
+        JsonObject response = TestMultitenancyAPIHelper.disassociateUserFromTenant(new TenantIdentifier(null, "a1", "t2"), "externalid", process.getProcess());
+        assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
+        assertFalse(response.get("wasAssociated").getAsBoolean());
+    }
+
+    @Test
+    public void testAssociateAndDisassociateWithUseridMapping() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        createTenants();
+        JsonObject user = TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", "t1"), "user@example.com", "password", process.getProcess());
+        String userId = user.get("id").getAsString();
+
+        TestMultitenancyAPIHelper.createUserIdMapping(new TenantIdentifier(null, "a1", "t1"), userId, "externalid", process.getProcess());
+
+        JsonObject response = TestMultitenancyAPIHelper.associateUserToTenant(new TenantIdentifier(null, "a1", "t2"), "externalid", process.getProcess());
+        assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
+        assertFalse(response.get("wasAlreadyAssociated").getAsBoolean());
+
+        response = TestMultitenancyAPIHelper.disassociateUserFromTenant(new TenantIdentifier(null, "a1", "t2"), "externalid", process.getProcess());
+        assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
+        assertTrue(response.get("wasAssociated").getAsBoolean());
+
+    }
 }

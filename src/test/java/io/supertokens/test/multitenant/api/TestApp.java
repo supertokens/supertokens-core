@@ -252,4 +252,43 @@ public class TestApp {
                 process.getProcess());
         assertFalse(response.get("didExist").getAsBoolean());
     }
+
+    @Test
+    public void testAddingWithDifferentConnectionURIAddsToNullConnectionURI() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        TestMultitenancyAPIHelper.createApp(
+                process.getProcess(),
+                new TenantIdentifier("localhost:3567", null, null),
+                "a1", true, true, true,
+                new JsonObject());
+
+        TestMultitenancyAPIHelper.createApp(
+                process.getProcess(),
+                new TenantIdentifier("127.0.0.1:3567", null, null),
+                "a2", true, true, true,
+                new JsonObject());
+
+        JsonObject result = TestMultitenancyAPIHelper.listApps(new TenantIdentifier(null, null, null), process.getProcess());
+        assertTrue(result.has("apps"));
+        assertEquals(3, result.get("apps").getAsJsonArray().size());
+
+        boolean foundA1 = false;
+        boolean foundA2 = false;
+
+        for (JsonElement app : result.get("apps").getAsJsonArray()) {
+            JsonObject appObj = app.getAsJsonObject();
+
+            if (appObj.get("appId").getAsString().equals("a1")) {
+                foundA1 = true;
+            } else if (appObj.get("appId").getAsString().equals("a2")) {
+                foundA2 = true;
+            }
+        }
+
+        assertTrue(foundA1);
+        assertTrue(foundA2);
+    }
 }
