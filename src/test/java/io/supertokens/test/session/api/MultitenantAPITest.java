@@ -29,6 +29,7 @@ import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.session.jwt.JWT;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -403,5 +404,24 @@ public class MultitenantAPITest {
         JsonObject sessionResponse = refreshSession(new TenantIdentifier(null, null, null),
                 session.get("refreshToken").getAsJsonObject().get("token").getAsString());
         assertEquals("UNAUTHORISED", sessionResponse.get("status").getAsString());
+    }
+
+    @Test
+    public void testAccessTokensContainsTid() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        {
+            JsonObject session = createSession(t1, "userid", new JsonObject(), new JsonObject());
+            JWT.JWTInfo accessTokenInfo = JWT.getPayloadWithoutVerifying(session.get("accessToken").getAsJsonObject().get("token").getAsString());
+            assertEquals(t1.getTenantId(), accessTokenInfo.payload.get("tId").getAsString());
+        }
+
+        {
+            JsonObject session = createSession(t2, "userid", new JsonObject(), new JsonObject());
+            JWT.JWTInfo accessTokenInfo = JWT.getPayloadWithoutVerifying(session.get("accessToken").getAsJsonObject().get("token").getAsString());
+            assertEquals(t2.getTenantId(), accessTokenInfo.payload.get("tId").getAsString());
+        }
     }
 }
