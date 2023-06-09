@@ -31,6 +31,7 @@ import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.TestOnly;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -896,7 +897,11 @@ public class GeneralQueries {
         return new HashMap<>();
     }
 
+    @TestOnly
     public static String[] getAllTablesInTheDatabase(Start start) throws SQLException, StorageQueryException {
+        if (!Start.isTesting) {
+            throw new UnsupportedOperationException();
+        }
         List<String> tableNames = new ArrayList<>();
         try (Connection con = ConnectionPool.getConnection(start)) {
             DatabaseMetaData metadata = con.getMetaData();
@@ -910,8 +915,12 @@ public class GeneralQueries {
         return tableNames.toArray(new String[0]);
     }
 
+    @TestOnly
     public static String[] getAllTablesInTheDatabaseThatHasDataForAppId(Start start, String appId)
             throws SQLException, StorageQueryException {
+        if (!Start.isTesting) {
+            throw new UnsupportedOperationException();
+        }
         String[] tableNames = getAllTablesInTheDatabase(start);
 
         List<String> result = new ArrayList<>();
