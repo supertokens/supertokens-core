@@ -321,4 +321,17 @@ public class TestMultitenancyAPIHelper {
         assertEquals("OK", userResponse.getAsJsonPrimitive("status").getAsString());
         return userResponse.getAsJsonObject("user");
     }
+
+    public static void createUserIdMapping(TenantIdentifier tenantIdentifier, String supertokensUserId, String externalUserId, Main main)
+            throws HttpResponseException, IOException {
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("superTokensUserId", supertokensUserId);
+        requestBody.addProperty("externalUserId", externalUserId);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/userid/map"), requestBody,
+                1000, 1000, null,
+                SemVer.v3_0.get(), "useridmapping");
+        assertEquals("OK", response.get("status").getAsString());
+    }
 }
