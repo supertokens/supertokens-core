@@ -79,7 +79,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                 result = new Start(main);
             }
         }
-        result.constructor(main.getProcessId(), Main.makeConsolePrintSilent);
+        result.constructor(main.getProcessId(), Main.makeConsolePrintSilent, Main.isTesting);
 
         Set<LOG_LEVEL> logLevels = null;
         if (doNotLog) {

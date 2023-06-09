@@ -58,7 +58,7 @@ public class SessionQueries {
                 + "use_static_key BOOLEAN NOT NULL,"
                 + "PRIMARY KEY (app_id, tenant_id, session_handle),"
                 + "FOREIGN KEY (app_id, tenant_id) REFERENCES " + Config.getConfig(start).getTenantsTable()
-                + " (app_id, tenant_id)"
+                + " (app_id, tenant_id) ON DELETE CASCADE"
                 + " );";
     }
 
