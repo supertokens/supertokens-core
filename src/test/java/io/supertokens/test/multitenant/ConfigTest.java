@@ -1792,4 +1792,93 @@ public class ConfigTest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    @Test
+    public void testThatMistypedConfigThrowsError() throws Exception {
+        String[] args = {"../"};
+
+        Utils.setValueInConfig("email_verification_token_lifetime", "144001");
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        JsonObject mistypedConfig = new JsonObject();
+        mistypedConfig.addProperty("foo", "bar");
+
+        try {
+            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                    new TenantIdentifier(null, "a1", null),
+                    new EmailPasswordConfig(true),
+                    new ThirdPartyConfig(true, null),
+                    new PasswordlessConfig(true),
+                    mistypedConfig
+            ), false);
+            fail();
+        } catch (InvalidConfigException e) {
+            assertTrue(e.getMessage().contains("Invalid config key: foo"));
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testCoreSpecificConfigIsNotAllowedForNewTenants() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        String[] disallowedConfigs = new String[]{
+                "port",
+                "host",
+                "info_log_path",
+                "error_log_path",
+                "max_server_pool_size",
+                "base_path",
+                "argon2_hashing_pool_size",
+                "log_level",
+                "firebase_password_hashing_pool_size",
+                "supertokens_saas_secret",
+                "supertokens_default_cdi_version"
+        };
+
+        for (String disallowedConfig : disallowedConfigs) {
+            JsonObject config = new JsonObject();
+            if (disallowedConfig.contains("size") || disallowedConfig.contains("port")) {
+                config.addProperty(disallowedConfig, 1000);
+            } else {
+                config.addProperty(disallowedConfig, "somevalue");
+            }
+
+            try {
+                Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                        new TenantIdentifier(null, "a1", null),
+                        new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true),
+                        config
+                ), false);
+                fail();
+            } catch (InvalidConfigException e) {
+                assertTrue(e.getMessage().contains(disallowedConfig));
+            }
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }
