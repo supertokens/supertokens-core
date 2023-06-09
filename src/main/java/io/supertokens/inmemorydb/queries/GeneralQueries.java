@@ -897,9 +897,6 @@ public class GeneralQueries {
     }
 
     public static String[] getAllTablesInTheDatabase(Start start) throws SQLException, StorageQueryException {
-        String QUERY = "SELECT name FROM sqlite_schema "
-                + " WHERE type ='table' AND name NOT LIKE 'sqlite_%'";
-
         List<String> tableNames = new ArrayList<>();
         try (Connection con = ConnectionPool.getConnection(start)) {
             DatabaseMetaData metadata = con.getMetaData();
