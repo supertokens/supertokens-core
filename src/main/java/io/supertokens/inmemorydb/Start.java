@@ -2710,6 +2710,9 @@ public class Start
 
     @Override
     public String[] getAllTablesInTheDatabase() throws StorageQueryException {
+        if (!Main.isTesting) {
+            throw new UnsupportedOperationException();
+        }
         try {
             return GeneralQueries.getAllTablesInTheDatabase(this);
         } catch (SQLException e) {
@@ -2719,6 +2722,9 @@ public class Start
 
     @Override
     public String[] getAllTablesInTheDatabaseThatHasDataForAppId(String appId) throws StorageQueryException {
+        if (!Main.isTesting) {
+            throw new UnsupportedOperationException();
+        }
         try {
             return GeneralQueries.getAllTablesInTheDatabaseThatHasDataForAppId(this, appId);
         } catch (SQLException e) {
