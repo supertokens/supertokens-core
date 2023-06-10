@@ -242,6 +242,8 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                 }
                 main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
 
+                Set<String> userPoolsInUse = new HashSet<>();
+
                 for (ResourceDistributor.KeyClass key : resourceKeyToStorageMap.keySet()) {
                     Storage currStorage = resourceKeyToStorageMap.get(key);
                     String userPoolId = currStorage.getUserPoolId();
@@ -256,12 +258,15 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
                     main.getResourceDistributor().setResource(key.getTenantIdentifier(), RESOURCE_KEY,
                             new StorageLayer(resourceKeyToStorageMap.get(key)));
+
+                    userPoolsInUse.add(userPoolId);
                 }
 
                 // TODO: should the below code be outside of this locked code cause it takes time
                 //  and any other thread that will want access to the resource distributor will have
                 //  to wait for this?
                 // we remove storage layers that are no longer being used
+
                 for (ResourceDistributor.KeyClass key : existingStorageMap.keySet()) {
                     try {
                         if (((StorageLayer) main.getResourceDistributor()
@@ -272,7 +277,11 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                             ((StorageLayer) existingStorageMap.get(key)).storage.stopLogging();
                         }
                     } catch (TenantOrAppNotFoundException e) {
-                        throw new IllegalStateException(e);
+                        // this means a tenant has been removed but the storage may need closing
+                        if (!userPoolsInUse.contains(((StorageLayer) existingStorageMap.get(key)).storage.getUserPoolId())) {
+                            ((StorageLayer) existingStorageMap.get(key)).storage.close();
+                            ((StorageLayer) existingStorageMap.get(key)).storage.stopLogging();
+                        }
                     }
                 }
 
