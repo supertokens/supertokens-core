@@ -21,6 +21,7 @@ import com.google.gson.JsonPrimitive;
 import io.supertokens.ProcessState;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
+import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
@@ -1816,6 +1817,109 @@ public class StorageLayerTest {
             }
         }
 
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testThatStorageIsClosedAfterTenantDeletion() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
+        JsonObject config = new JsonObject();
+        StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                .modifyConfigToAddANewUserPoolForTesting(config, 1);
+
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                new TenantIdentifier(null, null, "t1"),
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                config
+        ), false);
+
+        Storage storage = StorageLayer.getStorage(new TenantIdentifier(null, null, "t1"), process.getProcess());
+
+        Multitenancy.deleteTenant(new TenantIdentifier(null, null, "t1"), process.getProcess());
+
+        // Should not be able to query from the storage
+        try {
+            storage.getKeyValue(new TenantIdentifier(null, null, "t1"), "somekey");
+            fail();
+        } catch (IllegalStateException e) {
+            assertTrue(e.getMessage().contains("call initPool before getConnection"));
+        }
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testThatStorageIsClosedOnlyWhenNoMoreTenantsArePointingToIt() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
+        JsonObject config = new JsonObject();
+        StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                .modifyConfigToAddANewUserPoolForTesting(config, 1);
+
+        // 2 tenants using the same storage
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                new TenantIdentifier(null, null, "t1"),
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                config
+        ), false);
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                new TenantIdentifier(null, null, "t2"),
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                config
+        ), false);
+
+        Storage storage = StorageLayer.getStorage(new TenantIdentifier(null, null, "t1"), process.getProcess());
+
+        Multitenancy.deleteTenant(new TenantIdentifier(null, null, "t1"), process.getProcess());
+
+        // Storage should still be active
+        storage.getKeyValue(new TenantIdentifier(null, null, "t1"), "somekey");
+
+        Multitenancy.deleteTenant(new TenantIdentifier(null, null, "t2"), process.getProcess());
+
+        // Storage should be closed now
+        try {
+            storage.getKeyValue(new TenantIdentifier(null, null, "t1"), "somekey");
+            fail();
+        } catch (IllegalStateException e) {
+            assertTrue(e.getMessage().contains("call initPool before getConnection"));
+        }
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
