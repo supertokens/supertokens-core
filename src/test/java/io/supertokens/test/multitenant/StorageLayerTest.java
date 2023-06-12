@@ -1928,7 +1928,6 @@ public class StorageLayerTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-
     @Test
     public void testStorageDoesNotLoadAgainAfterTenantDeletionWhenRefreshedFromDb() throws Exception {
         String[] args = {"../"};
