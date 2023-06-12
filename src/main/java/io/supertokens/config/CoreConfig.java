@@ -19,13 +19,14 @@ package io.supertokens.config;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.cliOptions.CLIOptions;
-import io.supertokens.exceptions.QuitProgramException;
+import io.supertokens.config.annotations.ConfigYamlOnly;
+import io.supertokens.config.annotations.IgnoreForAnnotationCheck;
+import io.supertokens.config.annotations.NotConflictingInApp;
 import io.supertokens.pluginInterface.LOG_LEVEL;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.utils.SemVer;
@@ -35,89 +36,118 @@ import org.jetbrains.annotations.TestOnly;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.*;
 import java.util.regex.PatternSyntaxException;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CoreConfig {
 
+    @IgnoreForAnnotationCheck
     @JsonProperty
     private int core_config_version = -1;
 
+    @NotConflictingInApp
     @JsonProperty
     private long access_token_validity = 3600; // in seconds
 
+    @NotConflictingInApp
     @JsonProperty
     private boolean access_token_blacklisting = false;
 
+    @NotConflictingInApp
     @JsonProperty
     private double refresh_token_validity = 60 * 2400; // in mins
 
+    @IgnoreForAnnotationCheck
     @JsonProperty
     private long password_reset_token_lifetime = 3600000; // in MS
 
+    @IgnoreForAnnotationCheck
     @JsonProperty
     private long email_verification_token_lifetime = 24 * 3600 * 1000; // in MS
 
+    @IgnoreForAnnotationCheck
     @JsonProperty
     private int passwordless_max_code_input_attempts = 5;
 
+    @IgnoreForAnnotationCheck
     @JsonProperty
     private long passwordless_code_lifetime = 900000; // in MS
 
+    @IgnoreForAnnotationCheck
     @JsonProperty
     private int totp_max_attempts = 5;
 
+    @IgnoreForAnnotationCheck
     @JsonProperty
     private int totp_rate_limit_cooldown_sec = 900; // in seconds (Default 15 mins)
 
+    @IgnoreForAnnotationCheck
     private final String logDefault = "asdkfahbdfk3kjHS";
+
+    @ConfigYamlOnly
     @JsonProperty
     private String info_log_path = logDefault;
 
+    @ConfigYamlOnly
     @JsonProperty
     private String error_log_path = logDefault;
 
+    @NotConflictingInApp
     @JsonProperty
     private boolean access_token_signing_key_dynamic = true;
 
+    @NotConflictingInApp
     @JsonProperty("access_token_dynamic_signing_key_update_interval")
     @JsonAlias({"access_token_dynamic_signing_key_update_interval", "access_token_signing_key_update_interval"})
     private double access_token_dynamic_signing_key_update_interval = 168; // in hours
 
+    @ConfigYamlOnly
     @JsonProperty
     private int port = 3567;
 
+    @ConfigYamlOnly
     @JsonProperty
     private String host = "localhost";
 
+    @ConfigYamlOnly
     @JsonProperty
     private int max_server_pool_size = 10;
 
+    @NotConflictingInApp
     @JsonProperty
     private String api_keys = null;
 
+    @NotConflictingInApp
     @JsonProperty
     private boolean disable_telemetry = false;
 
+    @NotConflictingInApp
     @JsonProperty
     private String password_hashing_alg = "BCRYPT";
 
+    @NotConflictingInApp
     @JsonProperty
     private int argon2_iterations = 1;
 
+    @NotConflictingInApp
     @JsonProperty
     private int argon2_memory_kb = 87795; // 85 mb
 
+    @NotConflictingInApp
     @JsonProperty
     private int argon2_parallelism = 2;
 
+    @ConfigYamlOnly
     @JsonProperty
     private int argon2_hashing_pool_size = 1;
 
+    @ConfigYamlOnly
     @JsonProperty
     private int firebase_password_hashing_pool_size = 1;
 
+    @NotConflictingInApp
     @JsonProperty
     private int bcrypt_log_rounds = 11;
 
@@ -129,30 +159,39 @@ public class CoreConfig {
     // # example if you are using multiple cloud vendors, then it is recommended to
     // set this to true.
     // # webserver_https_enabled:
+    @ConfigYamlOnly
     @JsonProperty
     private boolean webserver_https_enabled = false;
 
+    @ConfigYamlOnly
     @JsonProperty
     private String base_path = "";
 
+    @ConfigYamlOnly
     @JsonProperty
     private String log_level = "INFO";
 
+    @NotConflictingInApp
     @JsonProperty
     private String firebase_password_hashing_signer_key = null;
 
+    @IgnoreForAnnotationCheck
     @JsonProperty
     private String ip_allow_regex = null;
 
+    @IgnoreForAnnotationCheck
     @JsonProperty
     private String ip_deny_regex = null;
 
+    @ConfigYamlOnly
     @JsonProperty
     private String supertokens_saas_secret = null;
 
+    @ConfigYamlOnly
     @JsonProperty
     private String supertokens_default_cdi_version = null;
 
+    @IgnoreForAnnotationCheck
     private Set<LOG_LEVEL> allowedLogLevels = null;
 
     public static Set<String> getValidFields() {
@@ -360,25 +399,14 @@ public class CoreConfig {
     }
 
     public String getSuperTokensSaaSSecret() {
-        if (supertokens_saas_secret != null) {
-            return supertokens_saas_secret.trim();
-        }
-        return null;
+        return supertokens_saas_secret;
     }
 
     public int getPort(Main main) {
-        Integer cliPort = CLIOptions.get(main).getPort();
-        if (cliPort != null) {
-            return cliPort;
-        }
         return port;
     }
 
     public String getHost(Main main) {
-        String cliHost = CLIOptions.get(main).getHost();
-        if (cliHost != null) {
-            return cliHost;
-        }
         return host;
     }
 
@@ -396,7 +424,7 @@ public class CoreConfig {
                 : CLIOptions.get(main).getConfigFilePath()).getAbsolutePath();
     }
 
-    void validate(Main main) throws InvalidConfigException {
+    void validateAndNormalize(Main main) throws InvalidConfigException {
         if (getConfigVersion() == -1) {
             throw new InvalidConfigException(
                     "'core_config_version' is not set in the config.yaml file. Please redownload and install "
@@ -571,6 +599,26 @@ public class CoreConfig {
                 throw new InvalidConfigException("supertokens_default_cdi_version is not a valid semantic version");
             }
         }
+
+        // Normalize
+        if (api_keys != null) {
+            String[] apiKeys = api_keys.trim().replaceAll("\\s", "").split(",");
+            Arrays.sort(apiKeys);
+            api_keys = String.join(",", apiKeys);
+        }
+        if (supertokens_saas_secret != null) {
+            supertokens_saas_secret = supertokens_saas_secret.trim();
+        }
+
+        Integer cliPort = CLIOptions.get(main).getPort();
+        if (cliPort != null) {
+            port = cliPort;
+        }
+
+        String cliHost = CLIOptions.get(main).getHost();
+        if (cliHost != null) {
+            host = cliHost;
+        }
     }
 
     public void createLoggingFile(Main main) throws IOException {
@@ -599,144 +647,28 @@ public class CoreConfig {
 
     static void assertThatCertainConfigIsNotSetForAppOrTenants(JsonObject config) throws InvalidConfigException {
         // these are all configs that are per core. So we do not allow the developer to set these dynamically.
-        if (config.has("argon2_hashing_pool_size")) {
-            throw new InvalidConfigException(
-                    "argon2_hashing_pool_size can only be set via the core's base config setting");
-        }
-
-        if (config.has("firebase_password_hashing_pool_size")) {
-            throw new InvalidConfigException(
-                    "firebase_password_hashing_pool_size can only be set via the core's base config setting");
-        }
-
-        if (config.has("base_path")) {
-            throw new InvalidConfigException(
-                    "base_path can only be set via the core's base config setting");
-        }
-
-        if (config.has("log_level")) {
-            throw new InvalidConfigException(
-                    "log_level can only be set via the core's base config setting");
-        }
-
-        if (config.has("host")) {
-            throw new InvalidConfigException(
-                    "host can only be set via the core's base config setting");
-        }
-
-        if (config.has("port")) {
-            throw new InvalidConfigException(
-                    "port can only be set via the core's base config setting");
-        }
-
-        if (config.has("info_log_path")) {
-            throw new InvalidConfigException(
-                    "info_log_path can only be set via the core's base config setting");
-        }
-
-        if (config.has("error_log_path")) {
-            throw new InvalidConfigException(
-                    "error_log_path can only be set via the core's base config setting");
-        }
-
-        if (config.has("webserver_https_enabled")) {
-            throw new InvalidConfigException(
-                    "webserver_https_enabled can only be set via the core's base config setting");
-        }
-
-        if (config.has("max_server_pool_size")) {
-            throw new InvalidConfigException(
-                    "max_server_pool_size can only be set via the core's base config setting");
-        }
-
-        if (config.has("supertokens_saas_secret")) {
-            throw new InvalidConfigException(
-                    "supertokens_saas_secret can only be set via the core's base config setting");
-        }
-
-        if (config.has("supertokens_default_cdi_version")) {
-            throw new InvalidConfigException(
-                    "supertokens_default_cdi_version can only be set via the core's base config setting");
+        for (Field field : CoreConfig.class.getDeclaredFields()) {
+            if (field.isAnnotationPresent(ConfigYamlOnly.class)) {
+                if (config.has(field.getName())) {
+                    throw new InvalidConfigException(field.getName() + " can only be set via the core's base config setting");
+                }
+            }
         }
     }
 
     void assertThatConfigFromSameAppIdAreNotConflicting(CoreConfig other) throws InvalidConfigException {
-        // we do not allow different values for this across tenants in the same app cause the keys are shared
-        // across all tenants
-        if (other.getAccessTokenSigningKeyDynamic() != this.getAccessTokenSigningKeyDynamic()) {
-            throw new InvalidConfigException(
-                    "You cannot set different values for access_token_signing_key_dynamic for the same appId");
-        }
-
-        // we do not allow different values for this across tenants in the same app cause the keys are shared
-        // across all tenants
-        if (other.getAccessTokenDynamicSigningKeyUpdateInterval() !=
-                this.getAccessTokenDynamicSigningKeyUpdateInterval()) {
-            throw new InvalidConfigException(
-                    "You cannot set different values for access_token_dynamic_signing_key_update_interval for the " +
-                            "same appId");
-        }
-
-        if (other.getAccessTokenValidity() != this.getAccessTokenValidity()) {
-            throw new InvalidConfigException(
-                    "You cannot set different values for access_token_validity for the same appId");
-        }
-
-        if (other.getRefreshTokenValidity() != this.getRefreshTokenValidity()) {
-            throw new InvalidConfigException(
-                    "You cannot set different values for refresh_token_validity for the same appId");
-        }
-
-        if (other.getAccessTokenBlacklisting() != this.getAccessTokenBlacklisting()) {
-            throw new InvalidConfigException(
-                    "You cannot set different values for access_token_blacklisting for the same appId");
-        }
-
-        if (!other.getPasswordHashingAlg().equals(this.getPasswordHashingAlg())) {
-            throw new InvalidConfigException(
-                    "You cannot set different values for password_hashing_alg for the same appId");
-        }
-
-        if (other.getArgon2Iterations() != this.getArgon2Iterations()) {
-            throw new InvalidConfigException(
-                    "You cannot set different values for argon2_iterations for the same appId");
-        }
-
-        if (other.getArgon2MemoryKb() != this.getArgon2MemoryKb()) {
-            throw new InvalidConfigException(
-                    "You cannot set different values for argon2_memory_kb for the same appId");
-        }
-
-        if (other.getArgon2Parallelism() != this.getArgon2Parallelism()) {
-            throw new InvalidConfigException(
-                    "You cannot set different values for argon2_parallelism for the same appId");
-        }
-
-        if (other.getBcryptLogRounds() != this.getBcryptLogRounds()) {
-            throw new InvalidConfigException(
-                    "You cannot set different values for bcrypt_log_rounds for the same appId");
-        }
-
-        if (!Objects.equals(other.firebase_password_hashing_signer_key, this.firebase_password_hashing_signer_key)) {
-            throw new InvalidConfigException(
-                    "You cannot set different values for firebase_password_hashing_signer_key for the same appId");
-        }
-
-        if (other.isTelemetryDisabled() != this.isTelemetryDisabled()) {
-            throw new InvalidConfigException(
-                    "You cannot set different values for disable_telemetry for the same appId");
-        }
-
-        // Check that the same set of API keys are present
-        {
-            String[] thisKeys = this.getAPIKeys() == null ? new String[0] : Arrays.copyOf(this.getAPIKeys(), this.getAPIKeys().length);
-            String[] otherKeys = other.getAPIKeys() == null ? new String[0] : Arrays.copyOf(other.getAPIKeys(), other.getAPIKeys().length);
-            Arrays.sort(thisKeys);
-            Arrays.sort(otherKeys);
-
-            if (!Arrays.equals(thisKeys, otherKeys)) {
-                throw new InvalidConfigException(
-                        "You cannot set different values for api_keys for the same appId");
+        // we do not allow different values for this across tenants in the same app
+        for (Field field : CoreConfig.class.getDeclaredFields()) {
+            if (field.isAnnotationPresent(NotConflictingInApp.class)) {
+                try {
+                    if (!Objects.equals(field.get(this), field.get(other))) {
+                        throw new InvalidConfigException(
+                                "You cannot set different values for " + field.getName() +
+                                        " for the same appId");
+                    }
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException(e);
+                }
             }
         }
     }

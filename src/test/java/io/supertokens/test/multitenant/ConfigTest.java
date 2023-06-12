@@ -24,12 +24,14 @@ import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.config.CoreConfigTestContent;
+import io.supertokens.config.annotations.ConfigYamlOnly;
+import io.supertokens.config.annotations.IgnoreForAnnotationCheck;
+import io.supertokens.config.annotations.NotConflictingInApp;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.Multitenancy;
-import io.supertokens.multitenancy.MultitenancyHelper;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
@@ -52,6 +54,7 @@ import org.junit.rules.TestRule;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 
 import static junit.framework.TestCase.assertEquals;
@@ -1880,5 +1883,192 @@ public class ConfigTest {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testAllConflictingConfigs() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        String[] disallowed = new String[]{
+                "port",
+                "host",
+                "info_log_path",
+                "error_log_path",
+                "max_server_pool_size",
+                "base_path",
+                "argon2_hashing_pool_size",
+                "log_level",
+                "firebase_password_hashing_pool_size",
+                "supertokens_saas_secret",
+                "supertokens_default_cdi_version"
+        };
+        Object[] disallowedValues = new Object[]{
+                3567,
+                "localhost",
+                "info.log",
+                "error.log",
+                15,
+                "/new-base",
+                12,
+                "DEBUG",
+                12,
+                "abcd1234abcd1234",
+                "3.0"
+        };
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
+        for (int i=0; i<disallowed.length; i++) {
+            process = TestingProcessManager.start(args, false);
+            FeatureFlagTestContent.getInstance(process.getProcess())
+                    .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+            process.startProcess();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            JsonObject config = new JsonObject();
+            String property = disallowed[i];
+            Object value = disallowedValues[i];
+
+            if (value instanceof Integer) {
+                config.addProperty(disallowed[i], (Integer) disallowedValues[i]);
+            } else if (value instanceof String) {
+                config.addProperty(disallowed[i], (String) disallowedValues[i]);
+            } else if (value instanceof Boolean) {
+                config.addProperty(disallowed[i], (Boolean) disallowedValues[i]);
+            } else {
+                throw new Exception("Unknown type");
+            }
+
+            try {
+                Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                        new TenantIdentifier(null, "a1", null),
+                        new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true),
+                        config
+                ), false);
+                fail();
+            } catch (InvalidConfigException e) {
+                assertTrue(e.getMessage().contains(property));
+            }
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+
+        String[] conflictingInSameUserPool = new String[]{
+                "access_token_validity",
+                "access_token_blacklisting",
+                "refresh_token_validity",
+                "access_token_signing_key_dynamic",
+                "access_token_dynamic_signing_key_update_interval",
+                "api_keys",
+                "disable_telemetry",
+                "password_hashing_alg",
+                "argon2_iterations",
+                "argon2_memory_kb",
+                "argon2_parallelism",
+                "bcrypt_log_rounds",
+                "firebase_password_hashing_signer_key",
+        };
+        Object[][] conflictingValues = new Object[][]{
+                new Object[]{3600, 3601}, // access_token_validity
+                new Object[]{true, false}, // access_token_blacklisting
+                new Object[]{60 * 2400, 61 * 2400}, // refresh_token_validity
+                new Object[]{true, false}, // access_token_signing_key_dynamic
+                new Object[]{168, 169}, // access_token_dynamic_signing_key_update_interval
+                new Object[]{"abcd1234abcd1234abcd1234abcd1234", "qwer1234qwer1234qwer1234qwer1234"}, // api_keys
+                new Object[]{true, false}, // disable_telemetry
+                new Object[]{"BCRYPT", "ARGON2"}, // password_hashing_alg
+                new Object[]{1, 2}, // argon2_iterations
+                new Object[]{87795, 88795}, // argon2_memory_kb
+                new Object[]{2, 3}, // argon2_parallelism
+                new Object[]{11, 12}, // bcrypt_log_rounds
+                new Object[]{"abcd1234abcd1234abcd1234abcd1234", "qwer1234qwer1234qwer1234qwer1234"}, // firebase_password_hashing_signer_key
+        };
+
+        for (int i=0; i<conflictingInSameUserPool.length; i++) {
+            process = TestingProcessManager.start(args, false);
+            FeatureFlagTestContent.getInstance(process.getProcess())
+                    .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+            process.startProcess();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            JsonObject config = new JsonObject();
+            String property = conflictingInSameUserPool[i];
+            Object[] values = conflictingValues[i];
+
+
+            if (values[0] instanceof Integer) {
+                config.addProperty(conflictingInSameUserPool[i], (Integer) values[0]);
+            } else if (values[0] instanceof String) {
+                config.addProperty(conflictingInSameUserPool[i], (String) values[0]);
+            } else if (values[0] instanceof Boolean) {
+                config.addProperty(conflictingInSameUserPool[i], (Boolean) values[0]);
+            } else {
+                throw new Exception("Unknown type");
+            }
+
+            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                    new TenantIdentifier(null, "a1", null),
+                    new EmailPasswordConfig(true),
+                    new ThirdPartyConfig(true, null),
+                    new PasswordlessConfig(true),
+                    config
+            ), false);
+
+            JsonObject config2 = new JsonObject();
+
+            if (values[1] instanceof Integer) {
+                config2.addProperty(conflictingInSameUserPool[i], (Integer) values[1]);
+            } else if (values[1] instanceof String) {
+                config2.addProperty(conflictingInSameUserPool[i], (String) values[1]);
+            } else if (values[1] instanceof Boolean) {
+                config2.addProperty(conflictingInSameUserPool[i], (Boolean) values[1]);
+            } else {
+                throw new Exception("Unknown type");
+            }
+
+            try {
+                Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                        new TenantIdentifier(null, "a1", "t1"),
+                        new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true),
+                        config2
+                ), false);
+                fail();
+            } catch (InvalidConfigException e) {
+                assertTrue(e.getMessage().contains(property));
+                assertTrue(e.getMessage().contains("same appId"));
+            }
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+    }
+
+    @Test
+    public void testAllConfigFieldsAreAnnotated() throws Exception {
+        for (Field field : CoreConfig.class.getDeclaredFields()) {
+            if (field.isAnnotationPresent(IgnoreForAnnotationCheck.class)) {
+                continue;
+            }
+
+            if (!(field.isAnnotationPresent(ConfigYamlOnly.class) || field.isAnnotationPresent(NotConflictingInApp.class))) {
+                fail(field.getName() + " does not have ConfigYamlOnly or NotConflictingInApp annotation");
+            }
+        }
     }
 }
