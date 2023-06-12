@@ -194,6 +194,9 @@ public class CoreConfig {
     @IgnoreForAnnotationCheck
     private Set<LOG_LEVEL> allowedLogLevels = null;
 
+    @IgnoreForAnnotationCheck
+    private boolean isNormalizedAndValid = false;
+
     public static Set<String> getValidFields() {
         CoreConfig coreConfig = new CoreConfig();
         JsonObject coreConfigObj = new GsonBuilder().serializeNulls().create().toJsonTree(coreConfig).getAsJsonObject();
@@ -294,7 +297,7 @@ public class CoreConfig {
     }
 
     public long getAccessTokenValidity() {
-        return access_token_validity * 1000;
+        return access_token_validity;
     }
 
     public boolean getAccessTokenBlacklisting() {
@@ -302,7 +305,7 @@ public class CoreConfig {
     }
 
     public long getRefreshTokenValidity() {
-        return (long) (refresh_token_validity * 60 * 1000);
+        return (long) (refresh_token_validity);
     }
 
     public long getPasswordResetTokenLifetime() {
@@ -341,13 +344,6 @@ public class CoreConfig {
     }
 
     public String getErrorLogPath(Main main) {
-        if (error_log_path == null || error_log_path.equalsIgnoreCase("null")) {
-            return "null";
-        }
-        if (error_log_path.equals(logDefault)) {
-            // this works for windows as well
-            return CLIOptions.get(main).getInstallationPath() + "logs/error.log";
-        }
         return error_log_path;
     }
 
@@ -356,7 +352,7 @@ public class CoreConfig {
     }
 
     public long getAccessTokenDynamicSigningKeyUpdateInterval() {
-        return (long) (access_token_dynamic_signing_key_update_interval * 3600 * 1000);
+        return (long) (access_token_dynamic_signing_key_update_interval);
     }
 
     public String[] getAPIKeys() {
@@ -393,6 +389,10 @@ public class CoreConfig {
     }
 
     void normalizeAndValidate(Main main) throws InvalidConfigException {
+        if (isNormalizedAndValid) {
+            return;
+        }
+
         // Normalize
         if (ip_allow_regex != null) {
             ip_allow_regex = ip_allow_regex.trim();
@@ -479,6 +479,10 @@ public class CoreConfig {
         if (cliHost != null) {
             host = cliHost;
         }
+
+        access_token_validity = access_token_validity * 1000;
+        access_token_dynamic_signing_key_update_interval = access_token_dynamic_signing_key_update_interval * 3600 * 1000;
+        refresh_token_validity = refresh_token_validity * 60 * 1000;
 
         // Validate
         if (core_config_version == -1) {
@@ -656,6 +660,8 @@ public class CoreConfig {
                 throw new InvalidConfigException("supertokens_default_cdi_version is not a valid semantic version");
             }
         }
+
+        isNormalizedAndValid = true;
     }
 
     public void createLoggingFile(Main main) throws IOException {
