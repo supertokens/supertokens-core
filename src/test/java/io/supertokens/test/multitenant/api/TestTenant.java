@@ -32,7 +32,14 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
+import io.supertokens.webserver.Webserver;
+import io.supertokens.webserver.WebserverAPI;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -242,5 +249,73 @@ public class TestTenant {
         response = TestMultitenancyAPIHelper.deleteTenant(new TenantIdentifier(null, null, null), "t1",
                 process.getProcess());
         assertFalse(response.get("didExist").getAsBoolean());
+    }
+
+    @Test
+    public void testDifferentValuesForTenantIdThatShouldWork() throws Exception {
+
+        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
+
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            public boolean checkAPIKey(HttpServletRequest req) {
+                return false;
+            }
+
+            @Override
+            public String getPath() {
+                return "/get-tenant-id";
+            }
+
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException,
+                    ServletException {
+                try {
+                    super.sendTextResponse(200, this.getTenantIdentifierWithStorageFromRequest(req).getTenantId(), resp);
+                } catch (TenantOrAppNotFoundException e) {
+                    throw new ServletException(e);
+                }
+            }
+        });
+
+        String[] valueForCreate = new String[]{"a1", "a-1", "a-B-1", "CAPS1", "MixedCase", "capsinquery", "mixedcaseinquery"};
+        String[] valueForQuery  = new String[]{"a1", "a-1", "A-b-1", "CAPS1", "MixedCase", "CAPSINQUERY", "MixedCaseInQuery"};
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        for (int i = 0; i < valueForCreate.length; i++) {
+            TestMultitenancyAPIHelper.createTenant(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    valueForCreate[i], true, true, true,
+                    new JsonObject());
+
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/" + valueForQuery[i] + "/get-tenant-id", null, 1000, 1000,
+                    null, WebserverAPI.getLatestCDIVersion().get(), null);
+
+            assertEquals(valueForCreate[i].toLowerCase(), response);
+        }
+    }
+
+    @Test
+    public void testDifferentValuesForTenantIdThatShouldNotWork() throws Exception {
+        String[] valueForCreate = new String[]{"a_b", "1", "1a", "appid-hello", "AppId-Hello", "recipe", "reCipe", "CONFIG", "users", "Users"};
+        for (int i = 0; i < valueForCreate.length; i++) {
+            try {
+                TestMultitenancyAPIHelper.createTenant(
+                        process.getProcess(),
+                        new TenantIdentifier(null, null, null),
+                        valueForCreate[i], true, true, true,
+                        new JsonObject());
+            } catch (HttpResponseException e) {
+                assertTrue(e.getMessage().contains("tenantId can only contain letters, numbers and hyphens")
+                        || e.getMessage().contains("tenantId must not start with 'appid-'")
+                        || e.getMessage().contains("Cannot use"));
+            }
+        }
     }
 }
