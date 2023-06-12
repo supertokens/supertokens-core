@@ -25,6 +25,7 @@ import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -36,7 +37,9 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.Assert.*;
 
@@ -164,6 +167,144 @@ public class CronjobTest {
         }
     }
 
+    static class TargetTenantCronjob extends CronTask {
+        private static final String RESOURCE_ID = "io.supertokens.test.CronjobTest.NormalCronjob";
+
+        private TargetTenantCronjob(Main main, TenantIdentifier tenantIdentifier) {
+            super("TargetTenantCronjob", main, tenantIdentifier);
+        }
+
+        private boolean wasCalled = false;
+
+        public static TargetTenantCronjob getInstance(Main main, TenantIdentifier tenantIdentifier) {
+            try {
+                return (TargetTenantCronjob) main.getResourceDistributor().getResource(tenantIdentifier, RESOURCE_ID);
+            } catch (TenantOrAppNotFoundException e) {
+                return (TargetTenantCronjob) main.getResourceDistributor()
+                        .setResource(tenantIdentifier, RESOURCE_ID, new TargetTenantCronjob(main, tenantIdentifier));
+            }
+        }
+
+        @Override
+        public int getIntervalTimeSeconds() {
+            return 1;
+        }
+
+        @Override
+        public int getInitialWaitTimeSeconds() {
+            return 0;
+        }
+
+        @Override
+        protected void doTaskForTargetTenant(TenantIdentifier targetTenant) throws Exception {
+            wasCalled = true;
+        }
+
+    }
+
+    static class PerTenantCronjob extends CronTask {
+        private static final String RESOURCE_ID = "io.supertokens.test.CronjobTest.NormalCronjob";
+
+        private PerTenantCronjob(Main main, List<List<TenantIdentifier>> tenantsInfo) {
+            super("PerTenantCronjob", main, tenantsInfo, false);
+        }
+
+        Set<TenantIdentifier> tenantIdentifiers = new HashSet<>();
+
+        public static PerTenantCronjob getInstance(Main main, List<List<TenantIdentifier>> tenantsInfo) {
+            try {
+                return (PerTenantCronjob) main.getResourceDistributor().getResource(new TenantIdentifier(null, null, null), RESOURCE_ID);
+            } catch (TenantOrAppNotFoundException e) {
+                return (PerTenantCronjob) main.getResourceDistributor()
+                        .setResource(new TenantIdentifier(null, null, null), RESOURCE_ID, new PerTenantCronjob(main, tenantsInfo));
+            }
+        }
+
+        @Override
+        public int getIntervalTimeSeconds() {
+            return 1;
+        }
+
+        @Override
+        public int getInitialWaitTimeSeconds() {
+            return 0;
+        }
+
+        @Override
+        protected void doTaskPerTenant(TenantIdentifier tenant) throws Exception {
+            tenantIdentifiers.add(tenant);
+        }
+
+    }
+
+    static class PerAppCronjob extends CronTask {
+        private static final String RESOURCE_ID = "io.supertokens.test.CronjobTest.NormalCronjob";
+
+        private PerAppCronjob(Main main, List<List<TenantIdentifier>> tenantsInfo) {
+            super("PerTenantCronjob", main, tenantsInfo, true);
+        }
+
+        Set<AppIdentifier> appIdentifiers = new HashSet<>();
+
+        public static PerAppCronjob getInstance(Main main, List<List<TenantIdentifier>> tenantsInfo) {
+            try {
+                return (PerAppCronjob) main.getResourceDistributor().getResource(new TenantIdentifier(null, null, null), RESOURCE_ID);
+            } catch (TenantOrAppNotFoundException e) {
+                return (PerAppCronjob) main.getResourceDistributor()
+                        .setResource(new TenantIdentifier(null, null, null), RESOURCE_ID, new PerAppCronjob(main, tenantsInfo));
+            }
+        }
+
+        @Override
+        public int getIntervalTimeSeconds() {
+            return 1;
+        }
+
+        @Override
+        public int getInitialWaitTimeSeconds() {
+            return 0;
+        }
+
+        @Override
+        protected void doTaskPerApp(AppIdentifier app) throws Exception {
+            appIdentifiers.add(app);
+        }
+    }
+
+    static class PerUserPoolCronjob extends CronTask {
+        private static final String RESOURCE_ID = "io.supertokens.test.CronjobTest.NormalCronjob";
+
+        private PerUserPoolCronjob(Main main, List<List<TenantIdentifier>> tenantsInfo) {
+            super("PerTenantCronjob", main, tenantsInfo, false);
+        }
+
+        Set<Storage> storages = new HashSet<>();
+
+        public static PerUserPoolCronjob getInstance(Main main, List<List<TenantIdentifier>> tenantsInfo) {
+            try {
+                return (PerUserPoolCronjob) main.getResourceDistributor().getResource(new TenantIdentifier(null, null, null), RESOURCE_ID);
+            } catch (TenantOrAppNotFoundException e) {
+                return (PerUserPoolCronjob) main.getResourceDistributor()
+                        .setResource(new TenantIdentifier(null, null, null), RESOURCE_ID, new PerUserPoolCronjob(main, tenantsInfo));
+            }
+        }
+
+        @Override
+        public int getIntervalTimeSeconds() {
+            return 1;
+        }
+
+        @Override
+        public int getInitialWaitTimeSeconds() {
+            return 0;
+        }
+
+        @Override
+        protected void doTaskPerStorage(Storage storage) throws Exception {
+            storages.add(storage);
+        }
+    }
+
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
@@ -189,7 +330,6 @@ public class CronjobTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
         process.kill();
-
     }
 
     @Test
@@ -266,6 +406,10 @@ public class CronjobTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         int initialSize = Cronjobs.getInstance(process.getProcess()).getTasks().size();
 
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
@@ -333,6 +477,224 @@ public class CronjobTest {
         ), false);
 
         assertEquals(initialSize, Cronjobs.getInstance(process.getProcess()).getTasks().size());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testTargetTenantCronTask() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                new TenantIdentifier(null, "a1", null),
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                new JsonObject()
+        ), false);
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                new TenantIdentifier(null, "a1", "t1"),
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                new JsonObject()
+        ), false);
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                new TenantIdentifier(null, "a2", null),
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                new JsonObject()
+        ), false);
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                new TenantIdentifier(null, "a2", "t2"),
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                new JsonObject()
+        ), false);
+
+        Cronjobs.addCronjob(process.getProcess(), TargetTenantCronjob.getInstance(process.getProcess(), new TenantIdentifier(null, "a1", "t1")));
+
+        Thread.sleep(1100);
+        assertTrue(TargetTenantCronjob.getInstance(process.getProcess(), new TenantIdentifier(null, "a1", "t1")).wasCalled);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testPerTenantCronTask() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                new TenantIdentifier(null, "a1", null),
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                new JsonObject()
+        ), false);
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                new TenantIdentifier(null, "a1", "t1"),
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                new JsonObject()
+        ), false);
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                new TenantIdentifier(null, "a2", null),
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                new JsonObject()
+        ), false);
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                new TenantIdentifier(null, "a2", "t2"),
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                new JsonObject()
+        ), false);
+
+        List<List<TenantIdentifier>> uniqueUserPoolIdsTenants = StorageLayer.getTenantsWithUniqueUserPoolId(process.getProcess());
+        Cronjobs.addCronjob(process.getProcess(), PerTenantCronjob.getInstance(process.getProcess(), uniqueUserPoolIdsTenants));
+
+        Thread.sleep(1100);
+        assertEquals(5, PerTenantCronjob.getInstance(process.getProcess(), uniqueUserPoolIdsTenants).tenantIdentifiers.size());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testPerAppCronTask() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                new TenantIdentifier(null, "a1", null),
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                new JsonObject()
+        ), false);
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                new TenantIdentifier(null, "a1", "t1"),
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                new JsonObject()
+        ), false);
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                new TenantIdentifier(null, "a2", null),
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                new JsonObject()
+        ), false);
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                new TenantIdentifier(null, "a2", "t2"),
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                new JsonObject()
+        ), false);
+
+        List<List<TenantIdentifier>> uniqueUserPoolIdsTenants = StorageLayer.getTenantsWithUniqueUserPoolId(process.getProcess());
+        Cronjobs.addCronjob(process.getProcess(), PerAppCronjob.getInstance(process.getProcess(), uniqueUserPoolIdsTenants));
+
+        Thread.sleep(1100);
+        assertEquals(3, PerAppCronjob.getInstance(process.getProcess(), uniqueUserPoolIdsTenants).appIdentifiers.size());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testPerUserPoolCronTask() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                new TenantIdentifier(null, "a1", null),
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                new JsonObject()
+        ), false);
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                new TenantIdentifier(null, "a1", "t1"),
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                new JsonObject()
+        ), false);
+        JsonObject config = new JsonObject();
+        StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
+
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                new TenantIdentifier(null, "a2", null),
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                config
+        ), false);
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                new TenantIdentifier(null, "a2", "t2"),
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                config
+        ), false);
+
+        List<List<TenantIdentifier>> uniqueUserPoolIdsTenants = StorageLayer.getTenantsWithUniqueUserPoolId(process.getProcess());
+        Cronjobs.addCronjob(process.getProcess(), PerUserPoolCronjob.getInstance(process.getProcess(), uniqueUserPoolIdsTenants));
+
+        Thread.sleep(1100);
+        assertEquals(2, PerUserPoolCronjob.getInstance(process.getProcess(), uniqueUserPoolIdsTenants).storages.size());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
