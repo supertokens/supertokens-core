@@ -228,7 +228,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         // now we loop through existing storage objects in the main resource distributor and reuse them
         // if the unique ID is the same as the storage objects created above.
         try {
-            List<Storage> storagesToClose = main.getResourceDistributor().withResourceDistributorLock(() -> {
+            main.getResourceDistributor().withResourceDistributorLock(() -> {
                 Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingStorageMap =
                         main.getResourceDistributor()
                                 .getAllResourcesWithResourceKey(RESOURCE_KEY);
@@ -262,41 +262,36 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                     userPoolsInUse.add(userPoolId);
                 }
 
-                List<Storage> storagesToBeClosed = new ArrayList<>();
-
                 for (ResourceDistributor.KeyClass key : existingStorageMap.keySet()) {
                     if (!userPoolsInUse.contains(((StorageLayer) existingStorageMap.get(key)).storage.getUserPoolId())) {
-                        storagesToBeClosed.add(((StorageLayer) existingStorageMap.get(key)).storage);
+                        ((StorageLayer) existingStorageMap.get(key)).storage.close();
+                        ((StorageLayer) existingStorageMap.get(key)).storage.stopLogging();
                     }
                 }
 
-                return storagesToBeClosed;
+                // we call init on all the newly saved storage objects.
+                Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> resources =
+                        main.getResourceDistributor()
+                                .getAllResourcesWithResourceKey(RESOURCE_KEY);
+                for (ResourceDistributor.SingletonResource resource : resources.values()) {
+                    try {
+                        ((StorageLayer) resource).storage.initStorage(false);
+                        ((StorageLayer) resource).storage.initFileLogging(
+                                Config.getBaseConfig(main).getInfoLogPath(main),
+                                Config.getBaseConfig(main).getErrorLogPath(main));
+                    } catch (DbInitException e) {
+
+                        Logging.error(main, TenantIdentifier.BASE_TENANT, e.getMessage(), false, e);
+                        // we ignore any exceptions from db here cause it's not the base tenant's db that
+                        // would throw and only tenants belonging to a specific tenant / app. In this case,
+                        // we still want other tenants to continue to work
+                    }
+                }
+
+                return null;
             });
 
-            for (Storage storage : storagesToClose) {
-                // this means that this storage layer is not being used anymore
-                storage.close();
-                storage.stopLogging();
-            }
 
-            // we call init on all the newly saved storage objects.
-            Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> resources =
-                    main.getResourceDistributor()
-                            .getAllResourcesWithResourceKey(RESOURCE_KEY);
-            for (ResourceDistributor.SingletonResource resource : resources.values()) {
-                try {
-                    ((StorageLayer) resource).storage.initStorage(false);
-                    ((StorageLayer) resource).storage.initFileLogging(
-                            Config.getBaseConfig(main).getInfoLogPath(main),
-                            Config.getBaseConfig(main).getErrorLogPath(main));
-                } catch (DbInitException e) {
-
-                    Logging.error(main, TenantIdentifier.BASE_TENANT, e.getMessage(), false, e);
-                    // we ignore any exceptions from db here cause it's not the base tenant's db that
-                    // would throw and only tenants belonging to a specific tenant / app. In this case,
-                    // we still want other tenants to continue to work
-                }
-            }
         } catch (ResourceDistributor.FuncException e) {
             throw new RuntimeException(e);
         }
