@@ -228,7 +228,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         // now we loop through existing storage objects in the main resource distributor and reuse them
         // if the unique ID is the same as the storage objects created above.
         try {
-            main.getResourceDistributor().withResourceDistributorLock(() -> {
+            List<Storage> storagesToClose = main.getResourceDistributor().withResourceDistributorLock(() -> {
                 Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingStorageMap =
                         main.getResourceDistributor()
                                 .getAllResourcesWithResourceKey(RESOURCE_KEY);
@@ -262,52 +262,41 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                     userPoolsInUse.add(userPoolId);
                 }
 
-                // TODO: should the below code be outside of this locked code cause it takes time
-                //  and any other thread that will want access to the resource distributor will have
-                //  to wait for this?
-                // we remove storage layers that are no longer being used
+                List<Storage> storagesToBeClosed = new ArrayList<>();
 
                 for (ResourceDistributor.KeyClass key : existingStorageMap.keySet()) {
-                    try {
-                        if (((StorageLayer) main.getResourceDistributor()
-                                .getResource(key.getTenantIdentifier(), RESOURCE_KEY)).storage !=
-                                ((StorageLayer) existingStorageMap.get(key)).storage) {
-                            // this means that this storage layer is changed, and we may need to close it if not in use
-                            // by any other app or tenant
-                            if (!userPoolsInUse.contains(((StorageLayer) existingStorageMap.get(key)).storage.getUserPoolId())) {
-                                ((StorageLayer) existingStorageMap.get(key)).storage.close();
-                                ((StorageLayer) existingStorageMap.get(key)).storage.stopLogging();
-                            }
-                        }
-                    } catch (TenantOrAppNotFoundException e) {
-                        // this means a tenant has been removed but the storage may need closing
-                        if (!userPoolsInUse.contains(((StorageLayer) existingStorageMap.get(key)).storage.getUserPoolId())) {
-                            ((StorageLayer) existingStorageMap.get(key)).storage.close();
-                            ((StorageLayer) existingStorageMap.get(key)).storage.stopLogging();
-                        }
+                    if (!userPoolsInUse.contains(((StorageLayer) existingStorageMap.get(key)).storage.getUserPoolId())) {
+                        storagesToBeClosed.add(((StorageLayer) existingStorageMap.get(key)).storage);
                     }
                 }
 
-                // we call init on all the newly saved storage objects.
-                Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> resources =
-                        main.getResourceDistributor()
-                                .getAllResourcesWithResourceKey(RESOURCE_KEY);
-                for (ResourceDistributor.SingletonResource resource : resources.values()) {
-                    try {
-                        ((StorageLayer) resource).storage.initStorage(false);
-                        ((StorageLayer) resource).storage.initFileLogging(
-                                Config.getBaseConfig(main).getInfoLogPath(main),
-                                Config.getBaseConfig(main).getErrorLogPath(main));
-                    } catch (DbInitException e) {
-
-                        Logging.error(main, TenantIdentifier.BASE_TENANT, e.getMessage(), false, e);
-                        // we ignore any exceptions from db here cause it's not the base tenant's db that
-                        // would throw and only tenants belonging to a specific tenant / app. In this case,
-                        // we still want other tenants to continue to work
-                    }
-                }
-                return null;
+                return storagesToBeClosed;
             });
+
+            for (Storage storage : storagesToClose) {
+                // this means that this storage layer is not being used anymore
+                storage.close();
+                storage.stopLogging();
+            }
+
+            // we call init on all the newly saved storage objects.
+            Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> resources =
+                    main.getResourceDistributor()
+                            .getAllResourcesWithResourceKey(RESOURCE_KEY);
+            for (ResourceDistributor.SingletonResource resource : resources.values()) {
+                try {
+                    ((StorageLayer) resource).storage.initStorage(false);
+                    ((StorageLayer) resource).storage.initFileLogging(
+                            Config.getBaseConfig(main).getInfoLogPath(main),
+                            Config.getBaseConfig(main).getErrorLogPath(main));
+                } catch (DbInitException e) {
+
+                    Logging.error(main, TenantIdentifier.BASE_TENANT, e.getMessage(), false, e);
+                    // we ignore any exceptions from db here cause it's not the base tenant's db that
+                    // would throw and only tenants belonging to a specific tenant / app. In this case,
+                    // we still want other tenants to continue to work
+                }
+            }
         } catch (ResourceDistributor.FuncException e) {
             throw new RuntimeException(e);
         }
