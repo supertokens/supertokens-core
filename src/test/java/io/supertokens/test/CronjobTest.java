@@ -728,12 +728,16 @@ public class CronjobTest {
                 new JsonObject()
         ), false);
 
+        boolean found = false;
+
         TenantConfig[] allTenants = MultitenancyHelper.getInstance(process.getProcess()).getAllTenants();
         for (TenantConfig tenant : allTenants) {
             if (tenant.tenantIdentifier.equals(t1)) {
                 assertFalse(tenant.emailPasswordConfig.enabled);
+                found = true;
             }
         }
+        assertTrue(found);
 
         MultitenancyStorage storage = (MultitenancyStorage) StorageLayer.getStorage(process.getProcess());
         storage.overwriteTenantConfig(new TenantConfig(
@@ -745,23 +749,29 @@ public class CronjobTest {
         ));
 
         // Check that it was not updated in memory yet
+        found = false;
         allTenants = MultitenancyHelper.getInstance(process.getProcess()).getAllTenants();
         for (TenantConfig tenant : allTenants) {
             if (tenant.tenantIdentifier.equals(t1)) {
                 assertFalse(tenant.emailPasswordConfig.enabled);
+                found = true;
             }
         }
+        assertTrue(found);
 
         // Wait for the cronjob to run
         Thread.sleep(61000);
 
         // Check that it was updated in memory by now
+        found = false;
         allTenants = MultitenancyHelper.getInstance(process.getProcess()).getAllTenants();
         for (TenantConfig tenant : allTenants) {
             if (tenant.tenantIdentifier.equals(t1)) {
                 assertTrue(tenant.emailPasswordConfig.enabled);
+                found = true;
             }
         }
+        assertTrue(found);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
