@@ -272,9 +272,12 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                         if (((StorageLayer) main.getResourceDistributor()
                                 .getResource(key.getTenantIdentifier(), RESOURCE_KEY)).storage !=
                                 ((StorageLayer) existingStorageMap.get(key)).storage) {
-                            // this means that this storage layer is no longer being used, so we close it
-                            ((StorageLayer) existingStorageMap.get(key)).storage.close();
-                            ((StorageLayer) existingStorageMap.get(key)).storage.stopLogging();
+                            // this means that this storage layer is changed, and we may need to close it if not in use
+                            // by any other app or tenant
+                            if (!userPoolsInUse.contains(((StorageLayer) existingStorageMap.get(key)).storage.getUserPoolId())) {
+                                ((StorageLayer) existingStorageMap.get(key)).storage.close();
+                                ((StorageLayer) existingStorageMap.get(key)).storage.stopLogging();
+                            }
                         }
                     } catch (TenantOrAppNotFoundException e) {
                         // this means a tenant has been removed but the storage may need closing
