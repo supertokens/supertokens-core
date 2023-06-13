@@ -18,6 +18,7 @@ package io.supertokens.cronjobs.syncCoreConfigWithDb;
 
 import io.supertokens.Main;
 import io.supertokens.cronjobs.CronTask;
+import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.cronjobs.deleteExpiredSessions.DeleteExpiredSessions;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.MultitenancyHelper;
@@ -44,11 +45,20 @@ public class SyncCoreConfigWithDb extends CronTask {
 
     @Override
     public int getIntervalTimeSeconds() {
+        if (Main.isTesting) {
+            Integer interval = CronTaskTest.getInstance(main).getIntervalInSeconds(RESOURCE_KEY);
+            if (interval != null) {
+                return interval;
+            }
+        }
         return 60;
     }
 
     @Override
     public int getInitialWaitTimeSeconds() {
+        if (Main.isTesting) {
+            return 0;
+        }
         return 60;
     }
 
