@@ -25,6 +25,7 @@ import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.multitenancy.MultitenancyHelper;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.multitenancy.*;
@@ -695,6 +696,72 @@ public class CronjobTest {
 
         Thread.sleep(1100);
         assertEquals(2, PerUserPoolCronjob.getInstance(process.getProcess(), uniqueUserPoolIdsTenants).storages.size());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testThatCoreAutomaticallySyncsToConfigChangesInDb() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
+        TenantIdentifier t1 = new TenantIdentifier(null, "a1", null);
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                t1,
+                new EmailPasswordConfig(false),
+                new ThirdPartyConfig(false, null),
+                new PasswordlessConfig(false),
+                new JsonObject()
+        ), false);
+
+        TenantConfig[] allTenants = MultitenancyHelper.getInstance(process.getProcess()).getAllTenants();
+        for (TenantConfig tenant : allTenants) {
+            if (tenant.tenantIdentifier.equals(t1)) {
+                assertFalse(tenant.emailPasswordConfig.enabled);
+            }
+        }
+
+        MultitenancyStorage storage = (MultitenancyStorage) StorageLayer.getStorage(process.getProcess());
+        storage.overwriteTenantConfig(new TenantConfig(
+                t1,
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(false, null),
+                new PasswordlessConfig(false),
+                new JsonObject()
+        ));
+
+        // Check that it was not updated in memory yet
+        allTenants = MultitenancyHelper.getInstance(process.getProcess()).getAllTenants();
+        for (TenantConfig tenant : allTenants) {
+            if (tenant.tenantIdentifier.equals(t1)) {
+                assertFalse(tenant.emailPasswordConfig.enabled);
+            }
+        }
+
+        // Wait for the cronjob to run
+        Thread.sleep(61000);
+
+        // Check that it was updated in memory by now
+        allTenants = MultitenancyHelper.getInstance(process.getProcess()).getAllTenants();
+        for (TenantConfig tenant : allTenants) {
+            if (tenant.tenantIdentifier.equals(t1)) {
+                assertTrue(tenant.emailPasswordConfig.enabled);
+            }
+        }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
