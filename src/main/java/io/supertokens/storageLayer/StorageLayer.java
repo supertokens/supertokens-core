@@ -262,26 +262,10 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                     userPoolsInUse.add(userPoolId);
                 }
 
-                // TODO: should the below code be outside of this locked code cause it takes time
-                //  and any other thread that will want access to the resource distributor will have
-                //  to wait for this?
-                // we remove storage layers that are no longer being used
-
                 for (ResourceDistributor.KeyClass key : existingStorageMap.keySet()) {
-                    try {
-                        if (((StorageLayer) main.getResourceDistributor()
-                                .getResource(key.getTenantIdentifier(), RESOURCE_KEY)).storage !=
-                                ((StorageLayer) existingStorageMap.get(key)).storage) {
-                            // this means that this storage layer is no longer being used, so we close it
-                            ((StorageLayer) existingStorageMap.get(key)).storage.close();
-                            ((StorageLayer) existingStorageMap.get(key)).storage.stopLogging();
-                        }
-                    } catch (TenantOrAppNotFoundException e) {
-                        // this means a tenant has been removed but the storage may need closing
-                        if (!userPoolsInUse.contains(((StorageLayer) existingStorageMap.get(key)).storage.getUserPoolId())) {
-                            ((StorageLayer) existingStorageMap.get(key)).storage.close();
-                            ((StorageLayer) existingStorageMap.get(key)).storage.stopLogging();
-                        }
+                    if (!userPoolsInUse.contains(((StorageLayer) existingStorageMap.get(key)).storage.getUserPoolId())) {
+                        ((StorageLayer) existingStorageMap.get(key)).storage.close();
+                        ((StorageLayer) existingStorageMap.get(key)).storage.stopLogging();
                     }
                 }
 
@@ -303,8 +287,11 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                         // we still want other tenants to continue to work
                     }
                 }
+
                 return null;
             });
+
+
         } catch (ResourceDistributor.FuncException e) {
             throw new RuntimeException(e);
         }
