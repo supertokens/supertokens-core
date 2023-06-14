@@ -41,6 +41,7 @@ import io.supertokens.test.multitenant.api.TestMultitenancyAPIHelper;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
 import io.supertokens.webserver.Webserver;
 import io.supertokens.webserver.WebserverAPI;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.AfterClass;
@@ -87,7 +88,8 @@ public class RequestConnectionUriDomainTest {
             }
 
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException,
+                    ServletException {
                 super.sendTextResponse(200, getTenantIdentifierFromRequest(req).getConnectionUriDomain(), resp);
             }
         });
@@ -157,7 +159,8 @@ public class RequestConnectionUriDomainTest {
             }
 
             @Override
-            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException,
+                    ServletException {
                 super.sendTextResponse(200,
                         super.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
                                 super.getTenantIdentifierFromRequest(req).getTenantId(), resp);
@@ -282,7 +285,8 @@ public class RequestConnectionUriDomainTest {
             }
 
             @Override
-            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException,
+                    ServletException {
                 super.sendTextResponse(200,
                         super.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
                                 super.getTenantIdentifierFromRequest(req).getTenantId(), resp);

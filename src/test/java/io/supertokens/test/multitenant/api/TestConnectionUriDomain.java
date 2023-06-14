@@ -391,7 +391,6 @@ public class TestConnectionUriDomain {
                     valueForCreate[i], true, true, true,
                     config);
 
-            System.out.println("http://" + valueForQuery[i] + "/get-cud");
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://" + valueForQuery[i] + "/get-cud", null, 1000, 1000,
                     null, WebserverAPI.getLatestCDIVersion().get(), null);
@@ -431,7 +430,7 @@ public class TestConnectionUriDomain {
 
     @Test
     public void testDifferentValuesForCUDThatShouldNotWork() throws Exception {
-        String[] valueForCreate = new String[]{"localhost_com", "localhost:", "abc.example.1com", "domain.com:abcd"};
+        String[] valueForCreate = new String[]{"http://localhost_com", "localhost:", "abc.example.1com", "domain.com:abcd"};
         for (int i = 0; i < valueForCreate.length; i++) {
             try {
                 JsonObject config = new JsonObject();
@@ -442,7 +441,7 @@ public class TestConnectionUriDomain {
                         new TenantIdentifier(null, null, null),
                         valueForCreate[i], true, true, true,
                         config);
-                fail();
+                fail(valueForCreate[i]);
             } catch (HttpResponseException e) {
                 assertTrue(e.getMessage().contains("connectionUriDomain is invalid"));
             }
