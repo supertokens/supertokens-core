@@ -300,6 +300,7 @@ public class HttpRequestForTesting {
         } else {
             sb.append("http://");
             sb.append(tenantIdentifier.getConnectionUriDomain());
+            sb.append(":3567");
         }
 
         if (!tenantIdentifier.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)) {

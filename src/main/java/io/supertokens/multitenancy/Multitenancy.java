@@ -331,6 +331,12 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                             "delete API.");
         }
         try {
+            if (StorageLayer.getStorage(
+                    new TenantIdentifier(connectionUriDomain, null, null), main) == StorageLayer.getBaseStorage(main)) {
+                // This means that the CUD does not exist, and nothing needs to be done
+                return false;
+            }
+
             ((MultitenancyStorage) StorageLayer.getStorage(
                     new TenantIdentifier(connectionUriDomain, null, null), main))
                     .deleteTenantIdInTargetStorage(new TenantIdentifier(connectionUriDomain, null, null));

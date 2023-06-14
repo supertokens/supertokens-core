@@ -18,6 +18,8 @@ package io.supertokens.webserver;
 
 import jakarta.servlet.ServletException;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.List;
 
 public class Utils {
@@ -41,7 +43,19 @@ public class Utils {
             throw new ServletException(new WebserverAPI.BadRequestException("connectionUriDomain should not be an empty String"));
         }
 
-        if (!connectionUriDomain.matches("^[a-z0-9-]+(\\.[a-z0-9-]+)*(:[0-9]+)?$")) {
+        try {
+            URL url = new URL("http://" + connectionUriDomain);
+
+            if (url.getPath() != null && url.getPath().length() > 0) {
+                throw new ServletException(new WebserverAPI.BadRequestException("connectionUriDomain is invalid"));
+            }
+
+            if (url.getAuthority() != null && url.getAuthority().length() > 0) {
+                throw new ServletException(new WebserverAPI.BadRequestException("connectionUriDomain is invalid"));
+            }
+
+            connectionUriDomain = url.getHost();
+        } catch (MalformedURLException e) {
             throw new ServletException(new WebserverAPI.BadRequestException("connectionUriDomain is invalid"));
         }
 

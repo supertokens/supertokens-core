@@ -129,10 +129,7 @@ public class TestingProcessManager {
             if (killed) {
                 return;
             }
-            // we check if there are multiple user pool IDs loaded, and if there are,
-            // we clear all the info before killing cause otherwise those extra dbs will retain info
-            // across tests
-            if (removeAllInfo && StorageLayer.hasMultipleUserPools(this.main)) {
+            if (removeAllInfo) {
                 try {
                     main.deleteAllInformationForTesting();
                 } catch (Exception e) {

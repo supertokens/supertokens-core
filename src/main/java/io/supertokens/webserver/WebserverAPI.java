@@ -271,8 +271,10 @@ public abstract class WebserverAPI extends HttpServlet {
         return null;
     }
 
-    private String getConnectionUriDomain(HttpServletRequest req) {
-        String connectionUriDomain = req.getServerName() + ":" + req.getServerPort();
+    private String getConnectionUriDomain(HttpServletRequest req) throws ServletException {
+        String connectionUriDomain = req.getServerName();
+        connectionUriDomain = Utils.normalizeAndValidateConnectionUriDomain(connectionUriDomain);
+
         try {
             if (Config.getConfig(new TenantIdentifier(connectionUriDomain, null, null), main) ==
                     Config.getConfig(new TenantIdentifier(null, null, null), main)) {
@@ -285,12 +287,12 @@ public abstract class WebserverAPI extends HttpServlet {
     }
 
     @TestOnly
-    protected TenantIdentifier getTenantIdentifierFromRequest(HttpServletRequest req) {
+    protected TenantIdentifier getTenantIdentifierFromRequest(HttpServletRequest req) throws ServletException {
         return new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req), this.getTenantId(req));
     }
 
     protected TenantIdentifierWithStorage getTenantIdentifierWithStorageFromRequest(HttpServletRequest req)
-            throws TenantOrAppNotFoundException {
+            throws TenantOrAppNotFoundException, ServletException {
         TenantIdentifier tenantIdentifier = new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req),
                 this.getTenantId(req));
         Storage storage = StorageLayer.getStorage(tenantIdentifier, main);
@@ -298,7 +300,7 @@ public abstract class WebserverAPI extends HttpServlet {
     }
 
     protected AppIdentifierWithStorage getAppIdentifierWithStorage(HttpServletRequest req)
-            throws TenantOrAppNotFoundException {
+            throws TenantOrAppNotFoundException, ServletException {
         TenantIdentifier tenantIdentifier = new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req),
                 this.getTenantId(req));
 
@@ -311,7 +313,7 @@ public abstract class WebserverAPI extends HttpServlet {
 
     protected AppIdentifierWithStorage getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(
             HttpServletRequest req)
-            throws TenantOrAppNotFoundException, BadPermissionException {
+            throws TenantOrAppNotFoundException, BadPermissionException, ServletException {
         TenantIdentifier tenantIdentifier = new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req),
                 this.getTenantId(req));
 
@@ -327,7 +329,7 @@ public abstract class WebserverAPI extends HttpServlet {
 
     protected TenantIdentifierWithStorageAndUserIdMapping getTenantIdentifierWithStorageAndUserIdMappingFromRequest(
             HttpServletRequest req, String userId, UserIdType userIdType)
-            throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException {
+            throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException, ServletException {
         TenantIdentifier tenantIdentifier = new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req),
                 this.getTenantId(req));
         return StorageLayer.getTenantIdentifierWithStorageAndUserIdMappingForUser(main, tenantIdentifier, userId,
@@ -336,7 +338,7 @@ public abstract class WebserverAPI extends HttpServlet {
 
     protected AppIdentifierWithStorageAndUserIdMapping getAppIdentifierWithStorageAndUserIdMappingFromRequest(
             HttpServletRequest req, String userId, UserIdType userIdType)
-            throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException {
+            throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException, ServletException {
         // This function uses storage of the tenent from which the request came from as a priorityStorage
         // while searching for the user across all storages for the app
         AppIdentifierWithStorage appIdentifierWithStorage = getAppIdentifierWithStorage(req);

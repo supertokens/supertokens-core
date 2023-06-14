@@ -32,7 +32,14 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
+import io.supertokens.webserver.Webserver;
+import io.supertokens.webserver.WebserverAPI;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -98,7 +105,7 @@ public class TestConnectionUriDomain {
         boolean found = false;
         for (JsonElement cud : result.get("connectionUriDomains").getAsJsonArray()) {
             JsonObject cudObj = cud.getAsJsonObject();
-            if (cudObj.get("connectionUriDomain").getAsString().equals("127.0.0.1:3567")) {
+            if (cudObj.get("connectionUriDomain").getAsString().equals("127.0.0.1")) {
                 found = true;
 
                 for (JsonElement app : cudObj.get("apps").getAsJsonArray()) {
@@ -156,7 +163,7 @@ public class TestConnectionUriDomain {
         boolean found = false;
         for (JsonElement cud : result.get("connectionUriDomains").getAsJsonArray()) {
             JsonObject cudObj = cud.getAsJsonObject();
-            if (cudObj.get("connectionUriDomain").getAsString().equals("127.0.0.1:3567")) {
+            if (cudObj.get("connectionUriDomain").getAsString().equals("127.0.0.1")) {
                 found = true;
 
                 for (JsonElement app : cudObj.get("apps").getAsJsonArray()) {
@@ -204,8 +211,8 @@ public class TestConnectionUriDomain {
         // Update
         TestMultitenancyAPIHelper.createConnectionUriDomain(
                 process.getProcess(),
-                new TenantIdentifier("127.0.0.1:3567", null, null),
-                "127.0.0.1:3567", true, true, true,
+                new TenantIdentifier("127.0.0.1", null, null),
+                "127.0.0.1", true, true, true,
                 newConfig);
 
         JsonObject result = TestMultitenancyAPIHelper.listConnectionUriDomains(new TenantIdentifier(null, null, null), process.getProcess());
@@ -214,7 +221,7 @@ public class TestConnectionUriDomain {
         boolean found = false;
         for (JsonElement cud : result.get("connectionUriDomains").getAsJsonArray()) {
             JsonObject cudObj = cud.getAsJsonObject();
-            if (cudObj.get("connectionUriDomain").getAsString().equals("127.0.0.1:3567")) {
+            if (cudObj.get("connectionUriDomain").getAsString().equals("127.0.0.1")) {
                 found = true;
 
                 for (JsonElement app : cudObj.get("apps").getAsJsonArray()) {
@@ -273,7 +280,7 @@ public class TestConnectionUriDomain {
         boolean found = false;
         for (JsonElement cud : result.get("connectionUriDomains").getAsJsonArray()) {
             JsonObject cudObj = cud.getAsJsonObject();
-            if (cudObj.get("connectionUriDomain").getAsString().equals("127.0.0.1:3567")) {
+            if (cudObj.get("connectionUriDomain").getAsString().equals("127.0.0.1")) {
                 found = true;
 
                 for (JsonElement app : cudObj.get("apps").getAsJsonArray()) {
@@ -328,5 +335,116 @@ public class TestConnectionUriDomain {
         response = TestMultitenancyAPIHelper.deleteConnectionUriDomain(new TenantIdentifier(null, null, null),
                 "127.0.0.1:3567", process.getProcess());
         assertFalse(response.get("didExist").getAsBoolean());
+    }
+
+    @Test
+    public void testDifferentValuesForCUDThatShouldWork() throws Exception {
+        String[] valueForCreate = new String[]{"localhost:3567", "LOCALHOST:3567", "loCalHost:3567", "127.0.0.1:3567"};
+        String[] valueForQuery  = new String[]{"localhost:3567", "LOCALHOST:3567", "LOCALhoST:3567", "127.0.0.1:3567"};
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        JsonObject config = new JsonObject();
+        StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
+        for (int i = 0; i < valueForCreate.length; i++) {
+            String[] args = {"../"};
+            this.process = TestingProcessManager.start(args);
+            FeatureFlagTestContent.getInstance(process.getProcess())
+                    .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+            process.startProcess();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
+
+                private static final long serialVersionUID = 1L;
+
+                @Override
+                public boolean checkAPIKey(HttpServletRequest req) {
+                    return false;
+                }
+
+                @Override
+                public String getPath() {
+                    return "/get-cud";
+                }
+
+                @Override
+                protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException,
+                        ServletException {
+                    try {
+                        super.sendTextResponse(200, this.getAppIdentifierWithStorage(req).getConnectionUriDomain(), resp);
+                    } catch (TenantOrAppNotFoundException e) {
+                        throw new ServletException(e);
+                    }
+                }
+            });
+
+            TestMultitenancyAPIHelper.createConnectionUriDomain(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    valueForCreate[i], true, true, true,
+                    config);
+
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://" + valueForQuery[i] + "/get-cud", null, 1000, 1000,
+                    null, WebserverAPI.getLatestCDIVersion().get(), null);
+
+            assertEquals(valueForCreate[i].toLowerCase().split(":")[0], response);
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+    }
+
+    @Test
+    public void testCUDsThatAreSame() throws Exception {
+        String[] valueForCreate = new String[]{"localhost:3567", "LOCALHOST:3567", "loCalHost:3567", "localhost", "localhost:12345"};
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        JsonObject config = new JsonObject();
+        StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
+
+        for (int i = 0; i < valueForCreate.length; i++) {
+            JsonObject response = TestMultitenancyAPIHelper.createConnectionUriDomain(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    valueForCreate[i], true, true, true,
+                    config);
+
+            if (i == 0) {
+                assertTrue(response.get("createdNew").getAsBoolean());
+            } else {
+                assertFalse(response.get("createdNew").getAsBoolean());
+            }
+        }
+    }
+
+    @Test
+    public void testDifferentValuesForCUDThatShouldNotWork() throws Exception {
+        String[] valueForCreate = new String[]{"http://localhost_com", "localhost:", "abc.example.1com", "domain.com:abcd"};
+        for (int i = 0; i < valueForCreate.length; i++) {
+            try {
+                JsonObject config = new JsonObject();
+                StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
+
+                TestMultitenancyAPIHelper.createConnectionUriDomain(
+                        process.getProcess(),
+                        new TenantIdentifier(null, null, null),
+                        valueForCreate[i], true, true, true,
+                        config);
+                fail(valueForCreate[i]);
+            } catch (HttpResponseException e) {
+                assertTrue(e.getMessage().contains("connectionUriDomain is invalid"));
+            }
+        }
     }
 }
