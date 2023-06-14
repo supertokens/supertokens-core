@@ -32,9 +32,9 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 
 public class TestMultitenancyAPIHelper {
-    public static void createConnectionUriDomain(Main main, TenantIdentifier sourceTenant, String connectionUriDomain, boolean emailPasswordEnabled,
-                                             boolean thirdPartyEnabled, boolean passwordlessEnabled,
-                                             JsonObject coreConfig) throws HttpResponseException, IOException {
+    public static JsonObject createConnectionUriDomain(Main main, TenantIdentifier sourceTenant, String connectionUriDomain, boolean emailPasswordEnabled,
+                                                       boolean thirdPartyEnabled, boolean passwordlessEnabled,
+                                                       JsonObject coreConfig) throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
         if (connectionUriDomain != null) {
             requestBody.addProperty("connectionUriDomain", connectionUriDomain);
@@ -50,6 +50,8 @@ public class TestMultitenancyAPIHelper {
                 SemVer.v3_0.get(), "multitenancy");
 
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
+
+        return response;
     }
 
     public static JsonObject listConnectionUriDomains(TenantIdentifier sourceTenant, Main main)

@@ -272,7 +272,13 @@ public abstract class WebserverAPI extends HttpServlet {
     }
 
     private String getConnectionUriDomain(HttpServletRequest req) {
-        String connectionUriDomain = req.getServerName() + ":" + req.getServerPort();
+        String connectionUriDomain = req.getServerName();
+        try {
+            connectionUriDomain = Utils.normalizeAndValidateConnectionUriDomain(connectionUriDomain);
+        } catch (ServletException e) {
+            throw new IllegalStateException("should never come here");
+        }
+
         try {
             if (Config.getConfig(new TenantIdentifier(connectionUriDomain, null, null), main) ==
                     Config.getConfig(new TenantIdentifier(null, null, null), main)) {

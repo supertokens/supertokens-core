@@ -270,13 +270,13 @@ public class TestApp {
 
         TestMultitenancyAPIHelper.createApp(
                 process.getProcess(),
-                new TenantIdentifier("localhost:3567", null, null),
+                new TenantIdentifier("localhost", null, null),
                 "a1", true, true, true,
                 new JsonObject());
 
         TestMultitenancyAPIHelper.createApp(
                 process.getProcess(),
-                new TenantIdentifier("127.0.0.1:3567", null, null),
+                new TenantIdentifier("127.0.0.1", null, null),
                 "a2", true, true, true,
                 new JsonObject());
 
