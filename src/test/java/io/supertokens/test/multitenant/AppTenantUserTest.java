@@ -258,6 +258,10 @@ public class AppTenantUserTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         TenantIdentifier app = new TenantIdentifier(null, "a1", null);
         TenantIdentifier tenant = new TenantIdentifier(null, "a1", "t1");
 

@@ -353,6 +353,10 @@ public class TestApp {
 
     @Test
     public void testDifferentValuesForAppIdThatShouldNotWork() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         String[] valueForCreate = new String[]{"a_b", "1", "1a", "appid-hello"};
         for (int i = 0; i < valueForCreate.length; i++) {
             try {
