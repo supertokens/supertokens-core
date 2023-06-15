@@ -393,97 +393,6 @@ public class CoreConfig {
             return;
         }
 
-        // Normalize
-        if (ip_allow_regex != null) {
-            ip_allow_regex = ip_allow_regex.trim();
-            if (ip_allow_regex.equals("")) {
-                ip_allow_regex = null;
-            }
-        }
-        if (ip_deny_regex != null) {
-            ip_deny_regex = ip_deny_regex.trim();
-            if (ip_deny_regex.equals("")) {
-                ip_deny_regex = null;
-            }
-        }
-
-        if (log_level != null) {
-            log_level = log_level.trim().toUpperCase();
-        }
-
-        { // info_log_path
-            if (info_log_path == null || info_log_path.equalsIgnoreCase("null")) {
-                info_log_path = "null";
-            } else {
-                if (info_log_path.equals(logDefault)) {
-                    // this works for windows as well
-                    info_log_path = CLIOptions.get(main).getInstallationPath() + "logs/info.log";
-                }
-            }
-        }
-
-        { // error_log_path
-            if (error_log_path == null || error_log_path.equalsIgnoreCase("null")) {
-                error_log_path = "null";
-            } else {
-                if (error_log_path.equals(logDefault)) {
-                    // this works for windows as well
-                    error_log_path = CLIOptions.get(main).getInstallationPath() + "logs/error.log";
-                }
-            }
-        }
-
-        { // base_path
-            String n_base_path = this.base_path; // Don't modify the original value from the config
-            if (n_base_path == null || n_base_path.equals("/") || n_base_path.isEmpty()) {
-                base_path = "";
-            } else {
-                while (n_base_path.contains("//")) { // Catch corner case where there are multiple '/' together
-                    n_base_path = n_base_path.replace("//", "/");
-                }
-                if (!n_base_path.startsWith("/")) { // Add leading '/'
-                    n_base_path = "/" + n_base_path;
-                }
-                if (n_base_path.endsWith("/")) { // Remove trailing '/'
-                    n_base_path = n_base_path.substring(0, n_base_path.length() - 1);
-                }
-                base_path = n_base_path;
-            }
-        }
-
-        // the reason we do Math.max below is that if the password hashing algo is
-        // bcrypt,
-        // then we don't check the argon2 hashing pool size config at all. In this case,
-        // if the user gives a <= 0 number, it crashes the core (since it creates a
-        // blockedqueue in PaswordHashing
-        // .java with length <= 0). So we do a Math.max
-        argon2_hashing_pool_size = Math.max(1, argon2_hashing_pool_size);
-
-        firebase_password_hashing_pool_size = Math.max(1, firebase_password_hashing_pool_size);
-
-        if (api_keys != null) {
-            String[] apiKeys = api_keys.trim().replaceAll("\\s", "").split(",");
-            Arrays.sort(apiKeys);
-            api_keys = String.join(",", apiKeys);
-        }
-        if (supertokens_saas_secret != null) {
-            supertokens_saas_secret = supertokens_saas_secret.trim();
-        }
-
-        Integer cliPort = CLIOptions.get(main).getPort();
-        if (cliPort != null) {
-            port = cliPort;
-        }
-
-        String cliHost = CLIOptions.get(main).getHost();
-        if (cliHost != null) {
-            host = cliHost;
-        }
-
-        access_token_validity = access_token_validity * 1000;
-        access_token_dynamic_signing_key_update_interval = access_token_dynamic_signing_key_update_interval * 3600 * 1000;
-        refresh_token_validity = refresh_token_validity * 60 * 1000;
-
         // Validate
         if (core_config_version == -1) {
             throw new InvalidConfigException(
@@ -660,6 +569,97 @@ public class CoreConfig {
                 throw new InvalidConfigException("supertokens_default_cdi_version is not a valid semantic version");
             }
         }
+
+        // Normalize
+        if (ip_allow_regex != null) {
+            ip_allow_regex = ip_allow_regex.trim();
+            if (ip_allow_regex.equals("")) {
+                ip_allow_regex = null;
+            }
+        }
+        if (ip_deny_regex != null) {
+            ip_deny_regex = ip_deny_regex.trim();
+            if (ip_deny_regex.equals("")) {
+                ip_deny_regex = null;
+            }
+        }
+
+        if (log_level != null) {
+            log_level = log_level.trim().toUpperCase();
+        }
+
+        { // info_log_path
+            if (info_log_path == null || info_log_path.equalsIgnoreCase("null")) {
+                info_log_path = "null";
+            } else {
+                if (info_log_path.equals(logDefault)) {
+                    // this works for windows as well
+                    info_log_path = CLIOptions.get(main).getInstallationPath() + "logs/info.log";
+                }
+            }
+        }
+
+        { // error_log_path
+            if (error_log_path == null || error_log_path.equalsIgnoreCase("null")) {
+                error_log_path = "null";
+            } else {
+                if (error_log_path.equals(logDefault)) {
+                    // this works for windows as well
+                    error_log_path = CLIOptions.get(main).getInstallationPath() + "logs/error.log";
+                }
+            }
+        }
+
+        { // base_path
+            String n_base_path = this.base_path; // Don't modify the original value from the config
+            if (n_base_path == null || n_base_path.equals("/") || n_base_path.isEmpty()) {
+                base_path = "";
+            } else {
+                while (n_base_path.contains("//")) { // Catch corner case where there are multiple '/' together
+                    n_base_path = n_base_path.replace("//", "/");
+                }
+                if (!n_base_path.startsWith("/")) { // Add leading '/'
+                    n_base_path = "/" + n_base_path;
+                }
+                if (n_base_path.endsWith("/")) { // Remove trailing '/'
+                    n_base_path = n_base_path.substring(0, n_base_path.length() - 1);
+                }
+                base_path = n_base_path;
+            }
+        }
+
+        // the reason we do Math.max below is that if the password hashing algo is
+        // bcrypt,
+        // then we don't check the argon2 hashing pool size config at all. In this case,
+        // if the user gives a <= 0 number, it crashes the core (since it creates a
+        // blockedqueue in PaswordHashing
+        // .java with length <= 0). So we do a Math.max
+        argon2_hashing_pool_size = Math.max(1, argon2_hashing_pool_size);
+
+        firebase_password_hashing_pool_size = Math.max(1, firebase_password_hashing_pool_size);
+
+        if (api_keys != null) {
+            String[] apiKeys = api_keys.trim().replaceAll("\\s", "").split(",");
+            Arrays.sort(apiKeys);
+            api_keys = String.join(",", apiKeys);
+        }
+        if (supertokens_saas_secret != null) {
+            supertokens_saas_secret = supertokens_saas_secret.trim();
+        }
+
+        Integer cliPort = CLIOptions.get(main).getPort();
+        if (cliPort != null) {
+            port = cliPort;
+        }
+
+        String cliHost = CLIOptions.get(main).getHost();
+        if (cliHost != null) {
+            host = cliHost;
+        }
+
+        access_token_validity = access_token_validity * 1000;
+        access_token_dynamic_signing_key_update_interval = access_token_dynamic_signing_key_update_interval * 3600 * 1000;
+        refresh_token_validity = refresh_token_validity * 60 * 1000;
 
         isNormalizedAndValid = true;
     }
