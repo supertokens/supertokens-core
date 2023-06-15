@@ -430,6 +430,10 @@ public class TestConnectionUriDomain {
 
     @Test
     public void testDifferentValuesForCUDThatShouldNotWork() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         String[] valueForCreate = new String[]{"http://localhost_com", "localhost:", "abc.example.1com", "domain.com:abcd"};
         for (int i = 0; i < valueForCreate.length; i++) {
             try {

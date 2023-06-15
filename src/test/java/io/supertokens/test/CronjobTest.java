@@ -332,7 +332,6 @@ public class CronjobTest {
         Cronjobs.addCronjob(process.getProcess(), QuitProgramExceptionCronjob.getInstance(process.getProcess()));
 
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-
         process.kill();
     }
 
