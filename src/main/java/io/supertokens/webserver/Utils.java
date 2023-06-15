@@ -43,14 +43,17 @@ public class Utils {
             throw new ServletException(new WebserverAPI.BadRequestException("connectionUriDomain should not be an empty String"));
         }
 
+        String hostnameRegex = "^[a-z][a-z0-9-]+(\\.[a-z][a-z0-9-]+)*(:[0-9]+)?$";
+        String ipRegex = "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(:[0-9]+)?$";
+
+        if (!connectionUriDomain.matches(hostnameRegex) && !connectionUriDomain.matches(ipRegex)) {
+            throw new ServletException(new WebserverAPI.BadRequestException("connectionUriDomain is invalid"));
+        }
+
         try {
             URL url = new URL("http://" + connectionUriDomain);
 
             if (url.getPath() != null && url.getPath().length() > 0) {
-                throw new ServletException(new WebserverAPI.BadRequestException("connectionUriDomain is invalid"));
-            }
-
-            if (url.getAuthority() != null && url.getAuthority().length() > 0) {
                 throw new ServletException(new WebserverAPI.BadRequestException("connectionUriDomain is invalid"));
             }
 
