@@ -206,7 +206,7 @@ public class TelemetryTest extends Mockito {
 
             telemetryId = telemetryData.get("telemetryId").getAsString();
 
-            process.kill();
+            process.kill(false);
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
         }
 
