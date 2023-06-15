@@ -155,6 +155,10 @@ public class CLIOptionsTest {
             Logging.debug(process1.getProcess(), TenantIdentifier.BASE_TENANT, "test1");
             Logging.debug(process2.getProcess(), TenantIdentifier.BASE_TENANT, "test2");
 
+            Logging.info(process.getProcess(), TenantIdentifier.BASE_TENANT, "test", false);
+            Logging.info(process1.getProcess(), TenantIdentifier.BASE_TENANT, "test1", false);
+            Logging.info(process2.getProcess(), TenantIdentifier.BASE_TENANT, "test2", false);
+
             Logging.error(process.getProcess(), TenantIdentifier.BASE_TENANT, "test", false);
             Logging.error(process1.getProcess(), TenantIdentifier.BASE_TENANT, "test1", false);
             Logging.error(process2.getProcess(), TenantIdentifier.BASE_TENANT, "test2", false);
