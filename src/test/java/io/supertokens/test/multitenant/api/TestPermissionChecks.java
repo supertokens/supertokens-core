@@ -515,6 +515,10 @@ public class TestPermissionChecks {
             } catch (Exception ignored) {
             }
         }
+
+        for (String domain : invalidDomains) {
+            assertNull(io.supertokens.webserver.Utils.normalizeAndValidateConnectionUriDomain(domain, false));
+        }
     }
 
     @Test
