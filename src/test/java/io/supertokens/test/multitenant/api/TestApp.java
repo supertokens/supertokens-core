@@ -25,6 +25,7 @@ import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
@@ -36,6 +37,7 @@ import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
+import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.Webserver;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -382,11 +384,20 @@ public class TestApp {
         StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
                 .modifyConfigToAddANewUserPoolForTesting(coreConfig, 1000); // This db should not exist
 
-        TestMultitenancyAPIHelper.createApp(
-                process.getProcess(),
-                new TenantIdentifier(null, null, null),
-                "a1", true, true, true,
-                coreConfig);
+        try {
+            TestMultitenancyAPIHelper.createApp(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    "a1", true, true, true,
+                    coreConfig);
+            fail();
+        } catch (HttpResponseException e) {
+            assertEquals(500, e.statusCode);
+        }
+
+        // Ensure storage is created
+        Storage errorStorage = StorageLayer.getStorage(new TenantIdentifier(null, "a1", null), process.getProcess());
+        assertNotNull(errorStorage);
 
         {
             JsonObject result = TestMultitenancyAPIHelper.listApps(new TenantIdentifier(null, null, null),
@@ -412,6 +423,16 @@ public class TestApp {
             }
 
             assertTrue(found);
+        }
+
+        { // test that api fails
+            try {
+                TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", null),
+                        "test@example.com", "password", process.getProcess());
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(500, e.statusCode);
+            }
         }
 
         StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
@@ -447,6 +468,15 @@ public class TestApp {
             }
 
             assertTrue(found);
+        }
+
+        Storage workingStorage = StorageLayer.getStorage(new TenantIdentifier(null, "a1", null), process.getProcess());
+        assertNotNull(workingStorage);
+        assertNotEquals(errorStorage, workingStorage);
+
+        { // test that api passes
+            TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", null),
+                    "test@example.com", "password", process.getProcess());
         }
     }
 }

@@ -231,8 +231,6 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             } catch (TenantOrAppNotFoundException e) {
                 // it should never come here, since we just added the tenant above.. but just in case.
                 return addNewOrUpdateAppOrTenant(main, newTenant, shouldPreventDbConfigUpdate);
-            } catch (StorageQueryException e) {
-                // this can happen if the storage for new tenant is not initialised yet, ignore
             }
             return true;
         } catch (DuplicateTenantException e) {

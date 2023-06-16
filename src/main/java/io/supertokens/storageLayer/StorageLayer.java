@@ -274,20 +274,12 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                 Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> resources =
                         main.getResourceDistributor()
                                 .getAllResourcesWithResourceKey(RESOURCE_KEY);
-                for (ResourceDistributor.KeyClass key : resources.keySet()) {
-                    ResourceDistributor.SingletonResource resource = resources.get(key);
+                for (ResourceDistributor.SingletonResource resource : resources.values()) {
                     try {
                         ((StorageLayer) resource).storage.initStorage(false);
                         ((StorageLayer) resource).storage.initFileLogging(
                                 Config.getBaseConfig(main).getInfoLogPath(main),
                                 Config.getBaseConfig(main).getErrorLogPath(main));
-
-                        // Also ensure app/tenant is added in target tenant
-                        try {
-                            ((MultitenancyStorage) ((StorageLayer) resource).storage).addTenantIdInTargetStorage(key.getTenantIdentifier());
-                        } catch (Exception e) {
-                            // we can ignore, either it is already added or db is not ready to handle this
-                        }
                     } catch (DbInitException e) {
 
                         Logging.error(main, TenantIdentifier.BASE_TENANT, e.getMessage(), false, e);
