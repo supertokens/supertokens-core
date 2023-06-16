@@ -25,6 +25,7 @@ import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
@@ -36,6 +37,7 @@ import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
+import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.Webserver;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -368,6 +370,113 @@ public class TestApp {
             } catch (HttpResponseException e) {
                 assertTrue(e.getMessage().contains("appId can only contain letters, numbers and hyphens") || e.getMessage().contains("appId must not start with 'appid-'"));
             }
+        }
+    }
+
+    @Test
+    public void testCreationOfAppWithWrongDbSettingsAndLaterUpdateIt() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        JsonObject coreConfig = new JsonObject();
+
+        StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                .modifyConfigToAddANewUserPoolForTesting(coreConfig, 1000); // This db should not exist
+
+        try {
+            TestMultitenancyAPIHelper.createApp(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    "a1", true, true, true,
+                    coreConfig);
+            fail();
+        } catch (HttpResponseException e) {
+            assertEquals(500, e.statusCode);
+        }
+
+        // Ensure storage is created
+        Storage errorStorage = StorageLayer.getStorage(new TenantIdentifier(null, "a1", null), process.getProcess());
+        assertNotNull(errorStorage);
+
+        {
+            JsonObject result = TestMultitenancyAPIHelper.listApps(new TenantIdentifier(null, null, null),
+                    process.getProcess());
+            assertTrue(result.has("apps"));
+
+            boolean found = false;
+
+            for (JsonElement app : result.get("apps").getAsJsonArray()) {
+                JsonObject appObj = app.getAsJsonObject();
+
+                if (appObj.get("appId").getAsString().equals("a1")) {
+                    found = true;
+
+                    for (JsonElement tenant : appObj.get("tenants").getAsJsonArray()) {
+                        JsonObject tenantObj = tenant.getAsJsonObject();
+                        assertTrue(tenantObj.get("emailPassword").getAsJsonObject().get("enabled").getAsBoolean());
+                        assertTrue(tenantObj.get("thirdParty").getAsJsonObject().get("enabled").getAsBoolean());
+                        assertTrue(tenantObj.get("passwordless").getAsJsonObject().get("enabled").getAsBoolean());
+                        assertEquals(coreConfig, tenantObj.get("coreConfig").getAsJsonObject());
+                    }
+                }
+            }
+
+            assertTrue(found);
+        }
+
+        { // test that api fails
+            try {
+                TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", null),
+                        "test@example.com", "password", process.getProcess());
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(500, e.statusCode);
+            }
+        }
+
+        StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                .modifyConfigToAddANewUserPoolForTesting(coreConfig, 1); // This db should exist
+
+        TestMultitenancyAPIHelper.createApp(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "a1", true, true, true,
+                coreConfig);
+
+        {
+            JsonObject result = TestMultitenancyAPIHelper.listApps(new TenantIdentifier(null, null, null),
+                    process.getProcess());
+            assertTrue(result.has("apps"));
+
+            boolean found = false;
+
+            for (JsonElement app : result.get("apps").getAsJsonArray()) {
+                JsonObject appObj = app.getAsJsonObject();
+
+                if (appObj.get("appId").getAsString().equals("a1")) {
+                    found = true;
+
+                    for (JsonElement tenant : appObj.get("tenants").getAsJsonArray()) {
+                        JsonObject tenantObj = tenant.getAsJsonObject();
+                        assertTrue(tenantObj.get("emailPassword").getAsJsonObject().get("enabled").getAsBoolean());
+                        assertTrue(tenantObj.get("thirdParty").getAsJsonObject().get("enabled").getAsBoolean());
+                        assertTrue(tenantObj.get("passwordless").getAsJsonObject().get("enabled").getAsBoolean());
+                        assertEquals(coreConfig, tenantObj.get("coreConfig").getAsJsonObject());
+                    }
+                }
+            }
+
+            assertTrue(found);
+        }
+
+        Storage workingStorage = StorageLayer.getStorage(new TenantIdentifier(null, "a1", null), process.getProcess());
+        assertNotNull(workingStorage);
+        assertNotEquals(errorStorage, workingStorage);
+
+        { // test that api passes
+            TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", null),
+                    "test@example.com", "password", process.getProcess());
         }
     }
 }
