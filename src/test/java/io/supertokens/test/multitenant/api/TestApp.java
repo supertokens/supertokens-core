@@ -370,4 +370,83 @@ public class TestApp {
             }
         }
     }
+
+    @Test
+    public void testCreationOfAppWithWrongDbSettingsAndLaterUpdateIt() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        JsonObject coreConfig = new JsonObject();
+
+        StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                .modifyConfigToAddANewUserPoolForTesting(coreConfig, 1000); // This db should not exist
+
+        TestMultitenancyAPIHelper.createApp(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "a1", true, true, true,
+                coreConfig);
+
+        {
+            JsonObject result = TestMultitenancyAPIHelper.listApps(new TenantIdentifier(null, null, null),
+                    process.getProcess());
+            assertTrue(result.has("apps"));
+
+            boolean found = false;
+
+            for (JsonElement app : result.get("apps").getAsJsonArray()) {
+                JsonObject appObj = app.getAsJsonObject();
+
+                if (appObj.get("appId").getAsString().equals("a1")) {
+                    found = true;
+
+                    for (JsonElement tenant : appObj.get("tenants").getAsJsonArray()) {
+                        JsonObject tenantObj = tenant.getAsJsonObject();
+                        assertTrue(tenantObj.get("emailPassword").getAsJsonObject().get("enabled").getAsBoolean());
+                        assertTrue(tenantObj.get("thirdParty").getAsJsonObject().get("enabled").getAsBoolean());
+                        assertTrue(tenantObj.get("passwordless").getAsJsonObject().get("enabled").getAsBoolean());
+                        assertEquals(coreConfig, tenantObj.get("coreConfig").getAsJsonObject());
+                    }
+                }
+            }
+
+            assertTrue(found);
+        }
+
+        StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                .modifyConfigToAddANewUserPoolForTesting(coreConfig, 1); // This db should exist
+
+        TestMultitenancyAPIHelper.createApp(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "a1", true, true, true,
+                coreConfig);
+
+        {
+            JsonObject result = TestMultitenancyAPIHelper.listApps(new TenantIdentifier(null, null, null),
+                    process.getProcess());
+            assertTrue(result.has("apps"));
+
+            boolean found = false;
+
+            for (JsonElement app : result.get("apps").getAsJsonArray()) {
+                JsonObject appObj = app.getAsJsonObject();
+
+                if (appObj.get("appId").getAsString().equals("a1")) {
+                    found = true;
+
+                    for (JsonElement tenant : appObj.get("tenants").getAsJsonArray()) {
+                        JsonObject tenantObj = tenant.getAsJsonObject();
+                        assertTrue(tenantObj.get("emailPassword").getAsJsonObject().get("enabled").getAsBoolean());
+                        assertTrue(tenantObj.get("thirdParty").getAsJsonObject().get("enabled").getAsBoolean());
+                        assertTrue(tenantObj.get("passwordless").getAsJsonObject().get("enabled").getAsBoolean());
+                        assertEquals(coreConfig, tenantObj.get("coreConfig").getAsJsonObject());
+                    }
+                }
+            }
+
+            assertTrue(found);
+        }
+    }
 }
