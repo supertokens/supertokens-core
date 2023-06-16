@@ -1909,8 +1909,7 @@ public class ConfigTest {
                 "argon2_hashing_pool_size",
                 "log_level",
                 "firebase_password_hashing_pool_size",
-                "supertokens_saas_secret",
-                "supertokens_default_cdi_version"
+                "supertokens_saas_secret"
         };
         Object[] disallowedValues = new Object[]{
                 3567,
@@ -1922,8 +1921,7 @@ public class ConfigTest {
                 12,
                 "DEBUG",
                 12,
-                "abcd1234abcd1234",
-                "3.0"
+                "abcd1234abcd1234"
         };
 
         process.kill();
@@ -1981,6 +1979,7 @@ public class ConfigTest {
                 "argon2_parallelism",
                 "bcrypt_log_rounds",
                 "firebase_password_hashing_signer_key",
+                "supertokens_default_cdi_version",
         };
         Object[][] conflictingValues = new Object[][]{
                 new Object[]{3600, 3601}, // access_token_validity
@@ -1996,6 +1995,7 @@ public class ConfigTest {
                 new Object[]{2, 3}, // argon2_parallelism
                 new Object[]{11, 12}, // bcrypt_log_rounds
                 new Object[]{"abcd1234abcd1234abcd1234abcd1234", "qwer1234qwer1234qwer1234qwer1234"}, // firebase_password_hashing_signer_key
+                new Object[]{"2.21", "3.0"} // supertokens_default_cdi_version
         };
 
         for (int i=0; i<conflictingInSameUserPool.length; i++) {
