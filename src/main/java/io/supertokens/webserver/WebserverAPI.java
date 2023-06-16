@@ -273,7 +273,7 @@ public abstract class WebserverAPI extends HttpServlet {
 
     private String getConnectionUriDomain(HttpServletRequest req) throws ServletException {
         String connectionUriDomain = req.getServerName();
-        connectionUriDomain = Utils.normalizeAndValidateConnectionUriDomain(connectionUriDomain);
+        connectionUriDomain = Utils.normalizeAndValidateConnectionUriDomain(connectionUriDomain, false);
 
         try {
             if (Config.getConfig(new TenantIdentifier(connectionUriDomain, null, null), main) ==

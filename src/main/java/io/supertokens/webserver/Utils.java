@@ -36,6 +36,10 @@ public class Utils {
     }
 
     public static String normalizeAndValidateConnectionUriDomain(String connectionUriDomain) throws ServletException {
+        return normalizeAndValidateConnectionUriDomain(connectionUriDomain, true);
+    }
+
+    public static String normalizeAndValidateConnectionUriDomain(String connectionUriDomain, boolean throwExceptionIfInvalid) throws ServletException {
         connectionUriDomain = connectionUriDomain.trim();
         connectionUriDomain = connectionUriDomain.toLowerCase();
 
@@ -47,7 +51,9 @@ public class Utils {
         String ipRegex = "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(:[0-9]+)?$";
 
         if (!connectionUriDomain.matches(hostnameRegex) && !connectionUriDomain.matches(ipRegex)) {
-            throw new ServletException(new WebserverAPI.BadRequestException("connectionUriDomain is invalid"));
+            if (throwExceptionIfInvalid) {
+                throw new ServletException(new WebserverAPI.BadRequestException("connectionUriDomain is invalid"));
+            }
         }
 
         try {
@@ -58,8 +64,10 @@ public class Utils {
             }
 
             connectionUriDomain = url.getHost();
-        } catch (MalformedURLException e) {
-            throw new ServletException(new WebserverAPI.BadRequestException("connectionUriDomain is invalid"));
+        } catch (Exception e) {
+            if (throwExceptionIfInvalid) {
+                throw new ServletException(new WebserverAPI.BadRequestException("connectionUriDomain is invalid"));
+            }
         }
 
         return connectionUriDomain;

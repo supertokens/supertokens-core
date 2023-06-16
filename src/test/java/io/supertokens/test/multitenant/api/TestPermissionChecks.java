@@ -515,6 +515,9 @@ public class TestPermissionChecks {
             } catch (Exception ignored) {
             }
         }
+
+        assertEquals("abccom", io.supertokens.webserver.Utils.normalizeAndValidateConnectionUriDomain("abccom", false));
+        assertEquals("local_host", io.supertokens.webserver.Utils.normalizeAndValidateConnectionUriDomain("local_host", false));
     }
 
     @Test
