@@ -461,16 +461,21 @@ public abstract class WebserverAPI extends HttpServlet {
         return req.getHeader("rId");
     }
 
-    protected SemVer getVersionFromRequest(HttpServletRequest req) {
+    protected SemVer getVersionFromRequest(HttpServletRequest req) throws ServletException {
         String version = req.getHeader("cdi-version");
 
         if (version != null) {
             return new SemVer(version);
         }
 
-        String defaultCDIVersion = Config.getBaseConfig(main).getDefaultCDIVersion();
-        if (defaultCDIVersion != null) {
-            return new SemVer(defaultCDIVersion);
+        try {
+            String defaultCDIVersion = Config.getConfig(
+                    getAppIdentifierWithStorage(req).getAsPublicTenantIdentifier(), main).getDefaultCDIVersion();
+            if (defaultCDIVersion != null) {
+                return new SemVer(defaultCDIVersion);
+            }
+        } catch (TenantOrAppNotFoundException e) {
+            throw new ServletException(e);
         }
 
         return getLatestCDIVersion();

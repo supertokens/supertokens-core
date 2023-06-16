@@ -19,11 +19,17 @@ package io.supertokens.test;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.httpRequest.HttpRequest;
+import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.pluginInterface.multitenancy.*;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.Webserver;
 import io.supertokens.webserver.WebserverAPI;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.AfterClass;
@@ -33,6 +39,7 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import java.io.IOException;
+import java.rmi.ServerException;
 import java.util.HashMap;
 
 import static junit.framework.TestCase.assertEquals;
@@ -73,7 +80,8 @@ public class CDIVersionTest {
             }
 
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException,
+                    ServletException {
                 SemVer version = getVersionFromRequest(req);
 
                 super.sendTextResponse(200, version.toString(), resp);
@@ -110,7 +118,8 @@ public class CDIVersionTest {
             }
 
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException,
+                    ServletException {
                 SemVer version = getVersionFromRequest(req);
 
                 super.sendTextResponse(200, version.toString(), resp);
@@ -156,7 +165,8 @@ public class CDIVersionTest {
             }
 
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException,
+                    ServletException {
                 SemVer version = getVersionFromRequest(req);
 
                 super.sendTextResponse(200, version.toString(), resp);
@@ -197,7 +207,8 @@ public class CDIVersionTest {
             }
 
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException,
+                    ServletException {
                 SemVer version = getVersionFromRequest(req);
 
                 super.sendTextResponse(200, version.toString(), resp);
@@ -211,6 +222,78 @@ public class CDIVersionTest {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testCDIVersionWorksPerApp() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        Utils.setValueInConfig("supertokens_default_cdi_version", "2.21");
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
+
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            public boolean checkAPIKey(HttpServletRequest req) {
+                return false;
+            }
+
+            @Override
+            public String getPath() {
+                return "/version-test";
+            }
+
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException,
+                    ServletException {
+                SemVer version = getVersionFromRequest(req);
+
+                super.sendTextResponse(200, version.toString(), resp);
+            }
+        });
+
+        JsonObject config = new JsonObject();
+        config.addProperty("supertokens_default_cdi_version", "3.0");
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                new TenantIdentifier(null, "a1", null),
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                config
+        ), false);
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                new TenantIdentifier(null, "a1", "t1"),
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                new JsonObject()
+        ), false);
+
+        String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/version-test", new HashMap<>(), 1000, 1000, null,
+                null, "");
+        assertEquals("2.21", response);
+
+        response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/appid-a1/version-test", new HashMap<>(), 1000, 1000, null,
+                null, "");
+        assertEquals("3.0", response);
+
+        response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/appid-a1/t1/version-test", new HashMap<>(), 1000, 1000, null,
+                null, "");
+        assertEquals("3.0", response);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
     }
 
     @Test

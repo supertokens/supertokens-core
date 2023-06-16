@@ -187,7 +187,7 @@ public class CoreConfig {
     @JsonProperty
     private String supertokens_saas_secret = null;
 
-    @ConfigYamlOnly
+    @NotConflictingInApp
     @JsonProperty
     private String supertokens_default_cdi_version = null;
 
