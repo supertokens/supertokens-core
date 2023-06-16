@@ -379,6 +379,10 @@ public class TestApp {
             return;
         }
 
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         JsonObject coreConfig = new JsonObject();
 
         StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
