@@ -516,9 +516,8 @@ public class TestPermissionChecks {
             }
         }
 
-        for (String domain : invalidDomains) {
-            assertNull(io.supertokens.webserver.Utils.normalizeAndValidateConnectionUriDomain(domain, false));
-        }
+        assertEquals("abccom", io.supertokens.webserver.Utils.normalizeAndValidateConnectionUriDomain("abccom", false));
+        assertEquals("local_host", io.supertokens.webserver.Utils.normalizeAndValidateConnectionUriDomain("local_host", false));
     }
 
     @Test

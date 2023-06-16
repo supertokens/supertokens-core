@@ -54,7 +54,6 @@ public class Utils {
             if (throwExceptionIfInvalid) {
                 throw new ServletException(new WebserverAPI.BadRequestException("connectionUriDomain is invalid"));
             }
-            return null;
         }
 
         try {
@@ -69,7 +68,6 @@ public class Utils {
             if (throwExceptionIfInvalid) {
                 throw new ServletException(new WebserverAPI.BadRequestException("connectionUriDomain is invalid"));
             }
-            return null;
         }
 
         return connectionUriDomain;
