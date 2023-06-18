@@ -51,14 +51,16 @@ public class JWT {
         }
     }
 
-    public static String createAndSignLegacyAccessToken(JsonElement jsonObj, String privateSigningKey, AccessToken.VERSION version)
+    public static String createAndSignLegacyAccessToken(JsonElement jsonObj, String privateSigningKey,
+                                                        AccessToken.VERSION version)
             throws InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, SignatureException {
         initHeader();
         String payload;
         String header;
         header = version == AccessToken.VERSION.V1 ? JWT.HEADERv1 : JWT.HEADERv2;
         payload = Utils.convertToBase64(jsonObj.toString());
-        String signature = Utils.signWithPrivateKey(header + "." + payload, privateSigningKey, version != AccessToken.VERSION.V1 && version != AccessToken.VERSION.V2);
+        String signature = Utils.signWithPrivateKey(header + "." + payload, privateSigningKey,
+                version != AccessToken.VERSION.V1 && version != AccessToken.VERSION.V2);
         return header + "." + payload + "." + signature;
     }
 
@@ -79,11 +81,17 @@ public class JWT {
 
         JsonObject parsedHeader = new JsonParser().parse(Utils.convertFromBase64(splittedInput[0])).getAsJsonObject();
 
+        if (parsedHeader.get("typ") == null) {
+            throw new JWTException("JWT header missing - typ");
+        }
         JsonPrimitive typ = parsedHeader.get("typ").getAsJsonPrimitive();
         if (!typ.isString() || !typ.getAsString().equals("JWT")) {
             throw new JWTException("JWT header mismatch - typ");
         }
 
+        if (parsedHeader.get("alg") == null) {
+            throw new JWTException("JWT header missing - alg");
+        }
         JsonPrimitive alg = parsedHeader.get("alg").getAsJsonPrimitive();
         if (!alg.isString() || !alg.getAsString().equals("RS256")) {
             throw new JWTException("JWT header mismatch - alg");
@@ -103,6 +111,9 @@ public class JWT {
         }
 
         JsonPrimitive kid = parsedHeader.get("kid").getAsJsonPrimitive();
+        if (parsedHeader.get("kid") == null) {
+            throw new JWTException("JWT header missing - kid");
+        }
         if (!kid.isString()) {
             throw new JWTException("JWT header mismatch - kid");
         }
@@ -113,7 +124,8 @@ public class JWT {
             throws InvalidKeyException, NoSuchAlgorithmException, JWTException {
 
         try {
-            if (!Utils.verifyWithPublicKey(jwt.header + "." + jwt.payload, jwt.signature, publicSigningKey, jwt.version != AccessToken.VERSION.V1 && jwt.version != AccessToken.VERSION.V2)) {
+            if (!Utils.verifyWithPublicKey(jwt.header + "." + jwt.payload, jwt.signature, publicSigningKey,
+                    jwt.version != AccessToken.VERSION.V1 && jwt.version != AccessToken.VERSION.V2)) {
                 throw new JWTException("JWT verification failed");
             }
         } catch (InvalidKeySpecException | SignatureException e) {
@@ -124,7 +136,8 @@ public class JWT {
 
     public static JWTInfo getPayloadWithoutVerifying(String jwt) throws JWTException {
         JWTPreParseInfo jwtInfo = preParseJWTInfo(jwt);
-        return new JWTInfo(new JsonParser().parse(Utils.convertFromBase64(jwtInfo.payload)).getAsJsonObject(), jwtInfo.version);
+        return new JWTInfo(new JsonParser().parse(Utils.convertFromBase64(jwtInfo.payload)).getAsJsonObject(),
+                jwtInfo.version);
     }
 
     public static class JWTException extends Exception {
@@ -150,7 +163,7 @@ public class JWT {
         @Nullable
         public final String kid;
 
-        public JWTPreParseInfo(String[] splittedInput, AccessToken.VERSION version, String kid) throws JWTException{
+        public JWTPreParseInfo(String[] splittedInput, AccessToken.VERSION version, String kid) throws JWTException {
             if (splittedInput.length != 3) {
                 throw new JWTException("Invalid JWT");
             }
