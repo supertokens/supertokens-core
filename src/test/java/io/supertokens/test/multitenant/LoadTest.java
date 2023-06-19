@@ -56,7 +56,7 @@ public class LoadTest {
     }
 
     @Test
-    public void testCreating100StorageLayersUsage()
+    public void testCreating100TenantsAndCheckOnlyOneInstanceOfStorageLayerIsCreated()
             throws InterruptedException {
         String[] args = {"../"};
 
