@@ -180,7 +180,8 @@ public class RemoveTotpDeviceAPITest {
                     null,
                     Utils.getCdiVersionStringLatestForTests(),
                     "totp");
-            assert res3.get("status").getAsString().equals("TOTP_NOT_ENABLED_ERROR");
+            assert res3.get("status").getAsString().equals("OK");
+            assert res3.get("didDeviceExist").getAsBoolean() == false;
         }
 
         process.kill();

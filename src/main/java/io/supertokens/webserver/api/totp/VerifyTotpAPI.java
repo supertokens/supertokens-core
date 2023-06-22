@@ -4,7 +4,6 @@ import java.io.IOException;
 
 import com.google.gson.JsonObject;
 
-import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
 import io.supertokens.TenantIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
@@ -12,11 +11,8 @@ import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.totp.exception.TotpNotEnabledException;
-import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.totp.Totp;
 import io.supertokens.totp.exceptions.InvalidTotpException;
 import io.supertokens.totp.exceptions.LimitReachedException;
@@ -79,9 +75,6 @@ public class VerifyTotpAPI extends WebserverAPI {
             Totp.verifyCode(tenantIdentifierWithStorage, main, userId, totp, allowUnverifiedDevices);
 
             result.addProperty("status", "OK");
-            super.sendJsonResponse(200, result, resp);
-        } catch (TotpNotEnabledException e) {
-            result.addProperty("status", "TOTP_NOT_ENABLED_ERROR");
             super.sendJsonResponse(200, result, resp);
         } catch (InvalidTotpException e) {
             result.addProperty("status", "INVALID_TOTP_ERROR");

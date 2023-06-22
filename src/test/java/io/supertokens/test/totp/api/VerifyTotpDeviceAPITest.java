@@ -238,7 +238,7 @@ public class VerifyTotpDeviceAPITest {
                     null,
                     Utils.getCdiVersionStringLatestForTests(),
                     "totp");
-            assert res5.get("status").getAsString().equals("TOTP_NOT_ENABLED_ERROR");
+            assert res5.get("status").getAsString().equals("UNKNOWN_DEVICE_ERROR");
         }
 
         process.kill();

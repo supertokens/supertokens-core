@@ -167,7 +167,7 @@ public class TOTPRecipeTest {
         TOTPDevice device = Totp.registerDevice(main, "user", "device1", 1, 1);
 
         // Try login with non-existent user:
-        assertThrows(TotpNotEnabledException.class,
+        assertThrows(InvalidTotpException.class, // TODO: Can we throw a better error?
                 () -> Totp.verifyCode(main, "non-existent-user", "any-code", true));
 
         // {Code: [INVALID, VALID]} * {Devices: [VERIFIED_ONLY, ALL]}
@@ -378,7 +378,7 @@ public class TOTPRecipeTest {
         TOTPDevice device = Totp.registerDevice(main, "user", "deviceName", 1, 30);
 
         // Try verify non-existent user:
-        assertThrows(TotpNotEnabledException.class,
+        assertThrows(UnknownDeviceException.class,
                 () -> Totp.verifyDevice(main, "non-existent-user", "deviceName", "XXXX"));
 
         // Try verify non-existent device
@@ -428,7 +428,7 @@ public class TOTPRecipeTest {
         assert (devices.length == 2);
 
         // Try to delete device for non-existent user:
-        assertThrows(TotpNotEnabledException.class, () -> Totp.removeDevice(main, "non-existent-user", "device1"));
+        assertThrows(UnknownDeviceException.class, () -> Totp.removeDevice(main, "non-existent-user", "device1"));
 
         // Try to delete non-existent device:
         assertThrows(UnknownDeviceException.class, () -> Totp.removeDevice(main, "user", "non-existent-device"));
@@ -462,8 +462,8 @@ public class TOTPRecipeTest {
             // Delete device2
             Totp.removeDevice(main, "user", "device2");
 
-            // TOTP has ben disabled for the user:
-            assertThrows(TotpNotEnabledException.class, () -> Totp.getDevices(main, "user"));
+            // No more devices are left for the user:
+            assert (Totp.getDevices(main, "user").length == 0);
 
             // No device left so all codes of the user should be deleted:
             TOTPUsedCode[] usedCodes = getAllUsedCodesUtil(storage, "user");
@@ -490,7 +490,7 @@ public class TOTPRecipeTest {
         Totp.registerDevice(main, "user", "device2", 1, 30);
 
         // Try update non-existent user:
-        assertThrows(TotpNotEnabledException.class,
+        assertThrows(UnknownDeviceException.class,
                 () -> Totp.updateDeviceName(main, "non-existent-user", "device1", "new-device-name"));
 
         // Try update non-existent device:
@@ -526,7 +526,7 @@ public class TOTPRecipeTest {
         Main main = result.process.getProcess();
 
         // Try get devices for non-existent user:
-        assertThrows(TotpNotEnabledException.class, () -> Totp.getDevices(main, "non-existent-user"));
+        assert (Totp.getDevices(main, "non-existent-user").length == 0);
 
         TOTPDevice device1 = Totp.registerDevice(main, "user", "device1", 2, 30);
         TOTPDevice device2 = Totp.registerDevice(main, "user", "device2", 1, 10);

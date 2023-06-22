@@ -9,7 +9,6 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.totp.exception.TotpNotEnabledException;
 import io.supertokens.pluginInterface.totp.exception.UnknownDeviceException;
 import io.supertokens.totp.Totp;
 import io.supertokens.useridmapping.UserIdType;
@@ -75,12 +74,9 @@ public class RemoveTotpDeviceAPI extends WebserverAPI {
             result.addProperty("status", "OK");
             result.addProperty("didDeviceExist", true);
             super.sendJsonResponse(200, result, resp);
-        } catch (TotpNotEnabledException e) {
-            result.addProperty("status", "TOTP_NOT_ENABLED_ERROR");
-            super.sendJsonResponse(200, result, resp);
         } catch (UnknownDeviceException e) {
             result.addProperty("status", "OK");
-            result.addProperty("didDeviceExist", false);
+            result.addProperty("didDeviceExist", false); // Pattern not consistent with PUT API. We should fix?
             super.sendJsonResponse(200, result, resp);
         } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);

@@ -284,7 +284,7 @@ public class Totp {
     @TestOnly
     public static boolean verifyDevice(Main main,
                                        String userId, String deviceName, String code)
-            throws TotpNotEnabledException, UnknownDeviceException, InvalidTotpException,
+            throws UnknownDeviceException, InvalidTotpException,
             LimitReachedException, StorageQueryException, StorageTransactionLogicException {
         try {
             return verifyDevice(new TenantIdentifierWithStorage(null, null, null, StorageLayer.getStorage(main)), main,
@@ -296,7 +296,7 @@ public class Totp {
 
     public static boolean verifyDevice(TenantIdentifierWithStorage tenantIdentifierWithStorage, Main main,
                                        String userId, String deviceName, String code)
-            throws TotpNotEnabledException, UnknownDeviceException, InvalidTotpException,
+            throws UnknownDeviceException, InvalidTotpException,
             LimitReachedException, StorageQueryException, StorageTransactionLogicException,
             TenantOrAppNotFoundException {
         // Here boolean return value tells whether the device has been
@@ -312,7 +312,7 @@ public class Totp {
         // Check if the user has any devices:
         TOTPDevice[] devices = totpStorage.getDevices(tenantIdentifierWithStorage.toAppIdentifier(), userId);
         if (devices.length == 0) {
-            throw new TotpNotEnabledException();
+            throw new UnknownDeviceException();
         }
 
         // Check if the requested device exists:
@@ -337,8 +337,11 @@ public class Totp {
         // verified in the devices table (because it was deleted/renamed). So the user
         // gets a UnknownDevceException.
         // This behaviour is okay so we can ignore it.
-        checkAndStoreCode(tenantIdentifierWithStorage, main, userId, new TOTPDevice[]{matchingDevice},
-                code);
+        try{
+            checkAndStoreCode(tenantIdentifierWithStorage, main, userId, new TOTPDevice[]{matchingDevice}, code);
+        } catch (TotpNotEnabledException e) {
+            throw new UnknownDeviceException();
+        }
         // Will reach here only if the code is valid:
         totpStorage.markDeviceAsVerified(tenantIdentifierWithStorage.toAppIdentifier(), userId, deviceName);
         return true; // Newly verified
@@ -347,7 +350,7 @@ public class Totp {
     @TestOnly
     public static void verifyCode(Main main, String userId,
                                   String code, boolean allowUnverifiedDevices)
-            throws TotpNotEnabledException, InvalidTotpException, LimitReachedException,
+            throws InvalidTotpException, LimitReachedException,
             StorageQueryException, StorageTransactionLogicException, FeatureNotEnabledException {
         try {
             verifyCode(new TenantIdentifierWithStorage(null, null, null, StorageLayer.getStorage(main)), main,
@@ -359,7 +362,7 @@ public class Totp {
 
     public static void verifyCode(TenantIdentifierWithStorage tenantIdentifierWithStorage, Main main, String userId,
                                   String code, boolean allowUnverifiedDevices)
-            throws TotpNotEnabledException, InvalidTotpException, LimitReachedException,
+            throws InvalidTotpException, LimitReachedException,
             StorageQueryException, StorageTransactionLogicException, FeatureNotEnabledException,
             TenantOrAppNotFoundException {
 
@@ -374,7 +377,7 @@ public class Totp {
         // Check if the user has any devices:
         TOTPDevice[] devices = totpStorage.getDevices(tenantIdentifierWithStorage.toAppIdentifier(), userId);
         if (devices.length == 0) {
-            throw new TotpNotEnabledException();
+            throw new InvalidTotpException();
         }
 
         // Filter out unverified devices:
@@ -386,13 +389,17 @@ public class Totp {
         // another API call. We will still check the code against the updated set of
         // devices and store it in the used codes table. This behaviour is okay so we
         // can ignore it.
-        checkAndStoreCode(tenantIdentifierWithStorage, main, userId, devices, code);
+        try{
+            checkAndStoreCode(tenantIdentifierWithStorage, main, userId, devices, code);
+        } catch (TotpNotEnabledException e) {
+            throw new InvalidTotpException();
+        }
     }
 
     @TestOnly
     public static void removeDevice(Main main, String userId,
                                     String deviceName)
-            throws StorageQueryException, UnknownDeviceException, TotpNotEnabledException,
+            throws StorageQueryException, UnknownDeviceException,
             StorageTransactionLogicException {
         try {
             removeDevice(new AppIdentifierWithStorage(null, null, StorageLayer.getStorage(main)),
@@ -407,7 +414,7 @@ public class Totp {
      */
     public static void removeDevice(AppIdentifierWithStorage appIdentifierWithStorage, String userId,
                                     String deviceName)
-            throws StorageQueryException, UnknownDeviceException, TotpNotEnabledException,
+            throws StorageQueryException, UnknownDeviceException,
             StorageTransactionLogicException, TenantOrAppNotFoundException {
         TOTPSQLStorage storage = appIdentifierWithStorage.getTOTPStorage();
 
@@ -432,12 +439,6 @@ public class Totp {
             return;
         } catch (StorageTransactionLogicException e) {
             if (e.actualException instanceof UnknownDeviceException) {
-                // Check if any device exists for the user:
-                TOTPDevice[] devices = storage.getDevices(appIdentifierWithStorage, userId);
-                if (devices.length == 0) {
-                    throw new TotpNotEnabledException();
-                }
-
                 throw (UnknownDeviceException) e.actualException;
             }
 
@@ -460,25 +461,14 @@ public class Totp {
 
     public static void updateDeviceName(AppIdentifierWithStorage appIdentifierWithStorage, String userId,
                                         String oldDeviceName, String newDeviceName)
-            throws StorageQueryException, DeviceAlreadyExistsException, UnknownDeviceException,
-            TotpNotEnabledException, TenantOrAppNotFoundException {
+            throws StorageQueryException, DeviceAlreadyExistsException, UnknownDeviceException, TenantOrAppNotFoundException {
         TOTPSQLStorage totpStorage = appIdentifierWithStorage.getTOTPStorage();
-        try {
-            totpStorage.updateDeviceName(appIdentifierWithStorage, userId, oldDeviceName, newDeviceName);
-        } catch (UnknownDeviceException e) {
-            // Check if any device exists for the user:
-            TOTPDevice[] devices = totpStorage.getDevices(appIdentifierWithStorage, userId);
-            if (devices.length == 0) {
-                throw new TotpNotEnabledException();
-            } else {
-                throw e;
-            }
-        }
+        totpStorage.updateDeviceName(appIdentifierWithStorage, userId, oldDeviceName, newDeviceName);
     }
 
     @TestOnly
     public static TOTPDevice[] getDevices(Main main, String userId)
-            throws StorageQueryException, TotpNotEnabledException {
+            throws StorageQueryException {
         try {
             return getDevices(new AppIdentifierWithStorage(null, null, StorageLayer.getStorage(main)),
                     userId);
@@ -488,13 +478,10 @@ public class Totp {
     }
 
     public static TOTPDevice[] getDevices(AppIdentifierWithStorage appIdentifierWithStorage, String userId)
-            throws StorageQueryException, TotpNotEnabledException, TenantOrAppNotFoundException {
+            throws StorageQueryException, TenantOrAppNotFoundException {
         TOTPSQLStorage totpStorage = appIdentifierWithStorage.getTOTPStorage();
 
         TOTPDevice[] devices = totpStorage.getDevices(appIdentifierWithStorage, userId);
-        if (devices.length == 0) {
-            throw new TotpNotEnabledException();
-        }
         return devices;
     }
 

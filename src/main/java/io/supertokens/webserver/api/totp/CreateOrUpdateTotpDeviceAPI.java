@@ -11,7 +11,6 @@ import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.totp.TOTPDevice;
 import io.supertokens.pluginInterface.totp.exception.DeviceAlreadyExistsException;
-import io.supertokens.pluginInterface.totp.exception.TotpNotEnabledException;
 import io.supertokens.pluginInterface.totp.exception.UnknownDeviceException;
 import io.supertokens.totp.Totp;
 import io.supertokens.useridmapping.UserIdType;
@@ -142,9 +141,6 @@ public class CreateOrUpdateTotpDeviceAPI extends WebserverAPI {
             Totp.updateDeviceName(appIdentifierWithStorage, userId, existingDeviceName, newDeviceName);
 
             result.addProperty("status", "OK");
-            super.sendJsonResponse(200, result, resp);
-        } catch (TotpNotEnabledException e) {
-            result.addProperty("status", "TOTP_NOT_ENABLED_ERROR");
             super.sendJsonResponse(200, result, resp);
         } catch (UnknownDeviceException e) {
             result.addProperty("status", "UNKNOWN_DEVICE_ERROR");
