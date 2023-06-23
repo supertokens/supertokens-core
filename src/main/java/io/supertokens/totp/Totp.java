@@ -340,6 +340,7 @@ public class Totp {
         try{
             checkAndStoreCode(tenantIdentifierWithStorage, main, userId, new TOTPDevice[]{matchingDevice}, code);
         } catch (TotpNotEnabledException e) {
+            // User must have deleted the device in parallel.
             throw new UnknownDeviceException();
         }
         // Will reach here only if the code is valid:
@@ -377,6 +378,7 @@ public class Totp {
         // Check if the user has any devices:
         TOTPDevice[] devices = totpStorage.getDevices(tenantIdentifierWithStorage.toAppIdentifier(), userId);
         if (devices.length == 0) {
+            // No devices found. So we can't verify the code anyway.
             throw new InvalidTotpException();
         }
 
@@ -392,6 +394,8 @@ public class Totp {
         try{
             checkAndStoreCode(tenantIdentifierWithStorage, main, userId, devices, code);
         } catch (TotpNotEnabledException e) {
+            // User must have deleted the device in parallel
+            // since they cannot un-verify a device (no API exists)
             throw new InvalidTotpException();
         }
     }
@@ -449,8 +453,7 @@ public class Totp {
     @TestOnly
     public static void updateDeviceName(Main main, String userId,
                                         String oldDeviceName, String newDeviceName)
-            throws StorageQueryException, DeviceAlreadyExistsException, UnknownDeviceException,
-            TotpNotEnabledException {
+            throws StorageQueryException, DeviceAlreadyExistsException, UnknownDeviceException {
         try {
             updateDeviceName(new AppIdentifierWithStorage(null, null, StorageLayer.getStorage(main)),
                     userId, oldDeviceName, newDeviceName);
