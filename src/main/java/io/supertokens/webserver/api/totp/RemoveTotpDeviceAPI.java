@@ -76,7 +76,7 @@ public class RemoveTotpDeviceAPI extends WebserverAPI {
             super.sendJsonResponse(200, result, resp);
         } catch (UnknownDeviceException e) {
             result.addProperty("status", "OK");
-            result.addProperty("didDeviceExist", false); // Pattern not consistent with PUT API. We should fix?
+            result.addProperty("didDeviceExist", false);
             super.sendJsonResponse(200, result, resp);
         } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);

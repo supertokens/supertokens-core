@@ -167,7 +167,7 @@ public class TOTPRecipeTest {
         TOTPDevice device = Totp.registerDevice(main, "user", "device1", 1, 1);
 
         // Try login with non-existent user:
-        assertThrows(InvalidTotpException.class, // TODO: Can we throw a better error?
+        assertThrows(InvalidTotpException.class,
                 () -> Totp.verifyCode(main, "non-existent-user", "any-code", true));
 
         // {Code: [INVALID, VALID]} * {Devices: [VERIFIED_ONLY, ALL]}
