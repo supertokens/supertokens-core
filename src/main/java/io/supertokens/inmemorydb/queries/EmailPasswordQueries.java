@@ -300,8 +300,6 @@ public class EmailPasswordQueries {
                 throw new StorageTransactionLogicException(throwables);
             }
         });
-
-        return new UserInfo(userId, email, passwordHash, timeJoined, null); // TODO tenantids
     }
 
     public static void deleteUser(Start start, AppIdentifier appIdentifier, String userId)

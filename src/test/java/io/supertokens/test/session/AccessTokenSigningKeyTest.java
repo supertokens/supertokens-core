@@ -82,9 +82,9 @@ public class AccessTokenSigningKeyTest {
         sessionStorage.setKeyValue(new TenantIdentifier(null, null, null), "access_token_signing_key", newKey);
         AccessTokenSigningKey accessTokenSigningKeyInstance = AccessTokenSigningKey.getInstance(process.getProcess());
         accessTokenSigningKeyInstance.transferLegacyKeyToNewTable();
-        assertEquals(SigningKeys.getInstance(process.getProcess()).getAllKeys().size(), 3);
+        assertEquals(SigningKeys.getInstance(process.getProcess()).getAllKeys().size(), 2);
         List<KeyInfo> keys = SigningKeys.getInstance(process.getProcess()).getDynamicKeys();
-        assertEquals(keys.size(), 2);
+        assertEquals(keys.size(), 1);
         assertEquals(keys.get(0).createdAtTime, newKey.createdAtTime);
         assertEquals(keys.get(0).value, newKey.value);
         assertNull(sessionStorage.getKeyValue(new TenantIdentifier(null, null, null), "access_token_signing_key"));

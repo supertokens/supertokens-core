@@ -244,7 +244,7 @@ public class HttpRequestForTesting {
                 URL obj = getURL(main, requestID, url);
                 InputStream inputStream = null;
                 HttpURLConnection con = null;
-
+        
                 try {
                     con = (HttpURLConnection) obj.openConnection();
                     con.setRequestMethod("DELETE");
@@ -259,15 +259,15 @@ public class HttpRequestForTesting {
                     if (rid != null) {
                         con.setRequestProperty("rId", rid);
                     }
-
+        
                     int responseCode = con.getResponseCode();
-
+        
                     if (responseCode < STATUS_CODE_ERROR_THRESHOLD) {
                         inputStream = con.getInputStream();
                     } else {
                         inputStream = con.getErrorStream();
                     }
-
+        
                     StringBuilder response = new StringBuilder();
                     try (BufferedReader in = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
                         String inputLine;
@@ -286,7 +286,7 @@ public class HttpRequestForTesting {
                     if (inputStream != null) {
                         inputStream.close();
                     }
-
+        
                     if (con != null) {
                         con.disconnect();
                     }

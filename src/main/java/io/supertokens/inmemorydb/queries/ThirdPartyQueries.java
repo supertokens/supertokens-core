@@ -26,6 +26,7 @@ import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicExceptio
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.thirdparty.UserInfo;
+import org.jetbrains.annotations.NotNull;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -448,7 +449,7 @@ public class ThirdPartyQueries {
             return new UserInfoPartial(result.getString("user_id"), result.getString("email"),
                     new UserInfo.ThirdParty(result.getString("third_party_id"),
                             result.getString("third_party_user_id")),
-                    result.getLong("time_joined"), null); // TODO
+                    result.getLong("time_joined"));
         }
     }
 }

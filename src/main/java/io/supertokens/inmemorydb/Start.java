@@ -50,9 +50,6 @@ import io.supertokens.pluginInterface.jwt.exceptions.DuplicateKeyIdException;
 import io.supertokens.pluginInterface.jwt.sqlstorage.JWTRecipeSQLStorage;
 import io.supertokens.pluginInterface.mfa.MfaStorage;
 import io.supertokens.pluginInterface.multitenancy.*;
-import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateTenantException;
-import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateClientTypeException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateTenantException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateThirdPartyIdException;
@@ -99,7 +96,7 @@ import java.util.*;
 public class Start
         implements SessionSQLStorage, EmailPasswordSQLStorage, EmailVerificationSQLStorage, ThirdPartySQLStorage,
         JWTRecipeSQLStorage, PasswordlessSQLStorage, UserMetadataSQLStorage, UserRolesSQLStorage, UserIdMappingStorage,
-        MultitenancyStorage, TOTPSQLStorage, MfaStorage, ActiveUsersStorage, DashboardSQLStorage {
+        MultitenancyStorage, TOTPSQLStorage, ActiveUsersStorage, DashboardSQLStorage, MfaStorage {
 
     private static final Object appenderLock = new Object();
     private static final String APP_ID_KEY_NAME = "app_id";
@@ -250,7 +247,6 @@ public class Start
     public KeyValueInfo getLegacyAccessTokenSigningKey_Transaction(AppIdentifier appIdentifier,
                                                                    TransactionConnection con)
             throws StorageQueryException {
-        // TODO..
         Connection sqlCon = (Connection) con.getConnection();
         try {
             return GeneralQueries.getKeyValue_Transaction(this, sqlCon, appIdentifier.getAsPublicTenantIdentifier(), ACCESS_TOKEN_SIGNING_KEY_NAME);
@@ -263,7 +259,6 @@ public class Start
     public void removeLegacyAccessTokenSigningKey_Transaction(AppIdentifier appIdentifier,
                                                               TransactionConnection con) throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
-        // TODO..
         try {
             GeneralQueries.deleteKeyValue_Transaction(this, sqlCon,
                     appIdentifier.getAsPublicTenantIdentifier(), ACCESS_TOKEN_SIGNING_KEY_NAME);
@@ -276,7 +271,6 @@ public class Start
     public KeyValueInfo[] getAccessTokenSigningKeys_Transaction(AppIdentifier appIdentifier,
                                                                 TransactionConnection con)
             throws StorageQueryException {
-        // TODO..
         Connection sqlCon = (Connection) con.getConnection();
         try {
             return SessionQueries.getAccessTokenSigningKeys_Transaction(this, sqlCon, appIdentifier);
@@ -313,6 +307,13 @@ public class Start
     @Override
     public void removeAccessTokenSigningKeysBefore(AppIdentifier appIdentifier, long time)
             throws StorageQueryException {
+        try {
+            SessionQueries.removeAccessTokenSigningKeysBefore(this, appIdentifier, time);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
     @Override
     public KeyValueInfo getRefreshTokenSigningKey_Transaction(AppIdentifier appIdentifier,
                                                               TransactionConnection con) throws StorageQueryException {
@@ -330,7 +331,6 @@ public class Start
                                                       KeyValueInfo info)
             throws StorageQueryException, TenantOrAppNotFoundException {
         Connection sqlCon = (Connection) con.getConnection();
-        // TODO..
         try {
             GeneralQueries.setKeyValue_Transaction(this, sqlCon,
                     appIdentifier.getAsPublicTenantIdentifier(), REFRESH_TOKEN_KEY_NAME, info);
@@ -349,7 +349,6 @@ public class Start
     public void close() {
         ConnectionPool.close(this);
     }
-
 
     @Override
     public void createNewSession(TenantIdentifier tenantIdentifier, String sessionHandle, String userId,
@@ -416,7 +415,6 @@ public class Start
     @Override
     public String[] getAllNonExpiredSessionHandlesForUser(TenantIdentifier tenantIdentifier, String userId)
             throws StorageQueryException {
-        // TODO..
         try {
             return SessionQueries.getAllNonExpiredSessionHandlesForUser(this, tenantIdentifier, userId);
         } catch (SQLException e) {
@@ -424,7 +422,7 @@ public class Start
         }
     }
 
-    private String[] getAllNonExpiredSesssionHandlesForUser(AppIdentifier appIdentifier, String userId)
+    private String[] getAllNonExpiredSessionHandlesForUser(AppIdentifier appIdentifier, String userId)
             throws StorageQueryException {
         try {
             return SessionQueries.getAllNonExpiredSessionHandlesForUser(this, appIdentifier, userId);
@@ -481,7 +479,6 @@ public class Start
     @Override
     public SessionInfo getSession(TenantIdentifier tenantIdentifier, String sessionHandle)
             throws StorageQueryException {
-        // TODO..
         try {
             return SessionQueries.getSession(this, tenantIdentifier, sessionHandle);
         } catch (SQLException e) {
@@ -777,7 +774,6 @@ public class Start
     @Override
     public void addPasswordResetToken(AppIdentifier appIdentifier, PasswordResetTokenInfo passwordResetTokenInfo)
             throws StorageQueryException, UnknownUserIdException, DuplicatePasswordResetTokenException {
-        // TODO..
         try {
             EmailPasswordQueries.addPasswordResetToken(this, appIdentifier, passwordResetTokenInfo.userId,
                     passwordResetTokenInfo.token, passwordResetTokenInfo.tokenExpiry);
@@ -824,7 +820,6 @@ public class Start
                                                                                     TransactionConnection con,
                                                                                     String userId)
             throws StorageQueryException {
-        // TODO..
         Connection sqlCon = (Connection) con.getConnection();
         try {
             return EmailPasswordQueries.getAllPasswordResetTokenInfoForUser_Transaction(this, sqlCon, appIdentifier,
@@ -838,7 +833,6 @@ public class Start
     public void deleteAllPasswordResetTokensForUser_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
                                                                 String userId)
             throws StorageQueryException {
-        // TODO..
         Connection sqlCon = (Connection) con.getConnection();
         try {
             EmailPasswordQueries.deleteAllPasswordResetTokensForUser_Transaction(this, sqlCon, appIdentifier, userId);
@@ -851,7 +845,6 @@ public class Start
     public void updateUsersPassword_Transaction(AppIdentifier appIdentifier, TransactionConnection con, String userId,
                                                 String newPassword)
             throws StorageQueryException {
-        // TODO..
         Connection sqlCon = (Connection) con.getConnection();
         try {
             EmailPasswordQueries.updateUsersPassword_Transaction(this, sqlCon, appIdentifier, userId, newPassword);
@@ -880,7 +873,6 @@ public class Start
     public UserInfo getUserInfoUsingId_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
                                                    String userId)
             throws StorageQueryException {
-        // TODO..
         Connection sqlCon = (Connection) con.getConnection();
         try {
             return EmailPasswordQueries.getUserInfoUsingId_Transaction(this, sqlCon, appIdentifier, userId);
@@ -904,7 +896,6 @@ public class Start
             TransactionConnection con,
             String userId, String email)
             throws StorageQueryException {
-        // TODO..
         Connection sqlCon = (Connection) con.getConnection();
         try {
             return EmailVerificationQueries.getAllEmailVerificationTokenInfoForUser_Transaction(this, sqlCon,
@@ -928,6 +919,12 @@ public class Start
     }
 
     @Override
+    public void updateIsEmailVerified_Transaction(AppIdentifier appIdentifier, TransactionConnection con, String userId,
+                                                  String email,
+                                                  boolean isEmailVerified)
+            throws StorageQueryException, TenantOrAppNotFoundException {
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
             EmailVerificationQueries.updateUsersIsEmailVerified_Transaction(this, sqlCon, appIdentifier, userId,
                     email, isEmailVerified);
         } catch (SQLException e) {
@@ -1008,7 +1005,6 @@ public class Start
     @Override
     public EmailVerificationTokenInfo getEmailVerificationTokenInfo(TenantIdentifier tenantIdentifier, String token)
             throws StorageQueryException {
-        // TODO..
         try {
             return EmailVerificationQueries.getEmailVerificationTokenInfo(this, tenantIdentifier, token);
         } catch (SQLException e) {
@@ -1040,7 +1036,6 @@ public class Start
                                                                                         tenantIdentifier,
                                                                                 String userId, String email)
             throws StorageQueryException {
-        // TODO..
         try {
             return EmailVerificationQueries.getAllEmailVerificationTokenInfoForUser(this, tenantIdentifier, userId,
                     email);
@@ -1052,14 +1047,12 @@ public class Start
     @Override
     public boolean isEmailVerified(AppIdentifier appIdentifier, String userId, String email)
             throws StorageQueryException {
-        // TODO..
         try {
             return EmailVerificationQueries.isEmailVerified(this, appIdentifier, userId, email);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
     }
-
 
     @Override
     public void deleteExpiredPasswordResetTokens() throws StorageQueryException {
@@ -1593,24 +1586,6 @@ public class Start
     public void createCode(TenantIdentifier tenantIdentifier, PasswordlessCode code) throws StorageQueryException, UnknownDeviceIdHash,
             DuplicateCodeIdException, DuplicateLinkCodeHashException {
 
-    @Override
-    public void deleteDevicesByEmail_Transaction(AppIdentifier
-                                                         appIdentifier, TransactionConnection con, String email,
-                                                 String userId) throws StorageQueryException {
-        // TODO..
-        Connection sqlCon = (Connection) con.getConnection();
-        try {
-            PasswordlessQueries.deleteDevicesByEmail_Transaction(this, sqlCon, email);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
-    public void createCode(TenantIdentifier tenantIdentifier, PasswordlessCode code)
-            throws StorageQueryException, UnknownDeviceIdHash,
-            DuplicateCodeIdException, DuplicateLinkCodeHashException {
-        // TODO..
         try {
             PasswordlessQueries.createCode(this, tenantIdentifier, code);
         } catch (StorageTransactionLogicException e) {
@@ -2050,7 +2025,6 @@ public class Start
     @Override
     public boolean deletePermissionForRole_Transaction(AppIdentifier appIdentifier, TransactionConnection con, String role, String permission)
             throws StorageQueryException {
-        // TODO..
         Connection sqlCon = (Connection) con.getConnection();
         try {
             return UserRoleQueries.deletePermissionForRole_Transaction(this, sqlCon, appIdentifier, role,
@@ -2063,7 +2037,6 @@ public class Start
     @Override
     public int deleteAllPermissionsForRole_Transaction(AppIdentifier appIdentifier, TransactionConnection con, String role)
             throws StorageQueryException {
-        // TODO..
         Connection sqlCon = (Connection) con.getConnection();
         try {
             return UserRoleQueries.deleteAllPermissionsForRole_Transaction(this, sqlCon, appIdentifier,
@@ -2184,78 +2157,6 @@ public class Start
     @Override
     public HashMap<String, String> getUserIdMappingForSuperTokensIds(ArrayList<String> userIds)
             throws StorageQueryException {
-        // TODO..
-        try {
-            if (isSuperTokensUserId) {
-                return UserIdMappingQueries.deleteUserIdMappingWithSuperTokensUserId(
-                        this, userId);
-            } else {
-                return UserIdMappingQueries.deleteUserIdMappingWithExternalUserId(this,
-                        userId);
-            }
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
-    public UserIdMapping getUserIdMapping(AppIdentifier appIdentifier, String userId,
-                                          boolean isSuperTokensUserId)
-            throws StorageQueryException {
-        // TODO..
-        try {
-            if (isSuperTokensUserId) {
-                return UserIdMappingQueries.getUserIdMappingWithSuperTokensUserId(this,
-                        userId);
-            } else {
-                return UserIdMappingQueries.getUserIdMappingWithExternalUserId(this,
-                        userId);
-            }
-
-        } catch (SQLException e) {
-
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
-    public UserIdMapping[] getUserIdMapping(AppIdentifier appIdentifier, String userId)
-            throws StorageQueryException {
-        // TODO..
-        try {
-            return UserIdMappingQueries.getUserIdMappingWithEitherSuperTokensUserIdOrExternalUserId(
-                    this, userId);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
-    public boolean updateOrDeleteExternalUserIdInfo(AppIdentifier appIdentifier, String
-            userId, boolean isSuperTokensUserId, @Nullable String externalUserIdInfo) throws
-            StorageQueryException {
-        // TODO..
-        try {
-            if (isSuperTokensUserId) {
-                return UserIdMappingQueries.updateOrDeleteExternalUserIdInfoWithSuperTokensUserId(
-                        this, userId,
-                        externalUserIdInfo);
-            } else {
-                return UserIdMappingQueries.updateOrDeleteExternalUserIdInfoWithExternalUserId(
-                        this, userId,
-                        externalUserIdInfo);
-            }
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-
-    }
-
-    @Override
-    public HashMap<String, String> getUserIdMappingForSuperTokensIds
-            (ArrayList<String> userIds)
-            throws StorageQueryException {
-        // TODO..
         try {
             return UserIdMappingQueries.getUserIdMappingWithUserIds(this, userIds);
         } catch (SQLException e) {
@@ -2554,7 +2455,6 @@ public class Start
                                                                    TransactionConnection con, String userId,
                                                                    String newPassword)
             throws StorageQueryException, UserIdNotFoundException {
-        // TODO..
         Connection sqlCon = (Connection) con.getConnection();
         try {
             if (!DashboardQueries.updateDashboardUsersPasswordWithUserId_Transaction(this,
@@ -2681,7 +2581,6 @@ public class Start
     public int deleteDevice_Transaction(TransactionConnection con, AppIdentifier appIdentifier, String userId,
                                         String deviceName)
             throws StorageQueryException {
-        // TODO..
         Connection sqlCon = (Connection) con.getConnection();
         try {
             return TOTPQueries.deleteDevice_Transaction(this, sqlCon, appIdentifier, userId, deviceName);
@@ -2693,7 +2592,6 @@ public class Start
     @Override
     public void removeUser_Transaction(TransactionConnection con, AppIdentifier appIdentifier, String userId)
             throws StorageQueryException {
-        // TODO..
         Connection sqlCon = (Connection) con.getConnection();
         try {
             TOTPQueries.removeUser_Transaction(this, sqlCon, appIdentifier, userId);
@@ -2716,7 +2614,6 @@ public class Start
     public void updateDeviceName(AppIdentifier appIdentifier, String userId, String oldDeviceName, String newDeviceName)
             throws StorageQueryException, DeviceAlreadyExistsException,
             UnknownDeviceException {
-        // TODO..
         try {
             int updatedCount = TOTPQueries.updateDeviceName(this, appIdentifier, userId, oldDeviceName, newDeviceName);
             if (updatedCount == 0) {
@@ -2736,7 +2633,6 @@ public class Start
     @Override
     public TOTPDevice[] getDevices(AppIdentifier appIdentifier, String userId)
             throws StorageQueryException {
-        // TODO..
         try {
             return TOTPQueries.getDevices(this, appIdentifier, userId);
         } catch (SQLException e) {
@@ -2747,7 +2643,6 @@ public class Start
     @Override
     public TOTPDevice[] getDevices_Transaction(TransactionConnection con, AppIdentifier appIdentifier, String userId)
             throws StorageQueryException {
-        // TODO..
         Connection sqlCon = (Connection) con.getConnection();
         try {
             return TOTPQueries.getDevices_Transaction(this, sqlCon, appIdentifier, userId);
@@ -2791,7 +2686,6 @@ public class Start
     public TOTPUsedCode[] getAllUsedCodesDescOrder_Transaction(TransactionConnection con,
                                                                TenantIdentifier tenantIdentifier, String userId)
             throws StorageQueryException {
-        // TODO..
         Connection sqlCon = (Connection) con.getConnection();
         try {
             return TOTPQueries.getAllUsedCodesDescOrder_Transaction(this, sqlCon, tenantIdentifier, userId);
@@ -2810,41 +2704,6 @@ public class Start
         }
     }
 
-    @Override
-    public Set<String> getValidFieldsInConfig() {
-        return SQLiteConfig.getValidFields();
-    }
-
-    @Override
-    public void setLogLevels(Set<LOG_LEVEL> logLevels) {
-        Config.setLogLevels(this, logLevels);
-    }
-
-    @TestOnly
-    @Override
-    public String[] getAllTablesInTheDatabase() throws StorageQueryException {
-        if (!isTesting) {
-            throw new UnsupportedOperationException();
-        }
-        try {
-            return GeneralQueries.getAllTablesInTheDatabase(this);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @TestOnly
-    @Override
-    public String[] getAllTablesInTheDatabaseThatHasDataForAppId(String appId) throws StorageQueryException {
-        if (!isTesting) {
-            throw new UnsupportedOperationException();
-        }
-        try {
-            return GeneralQueries.getAllTablesInTheDatabaseThatHasDataForAppId(this, appId);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
 
     // MFA recipe:
     @Override
@@ -2912,14 +2771,39 @@ public class Start
         }
     }
 
-
     @Override
     public Set<String> getValidFieldsInConfig() {
-        return new HashSet<>(); // TODO
+        return SQLiteConfig.getValidFields();
     }
 
     @Override
     public void setLogLevels(Set<LOG_LEVEL> logLevels) {
-        // TODO
+        Config.setLogLevels(this, logLevels);
+    }
+
+    @TestOnly
+    @Override
+    public String[] getAllTablesInTheDatabase() throws StorageQueryException {
+        if (!isTesting) {
+            throw new UnsupportedOperationException();
+        }
+        try {
+            return GeneralQueries.getAllTablesInTheDatabase(this);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @TestOnly
+    @Override
+    public String[] getAllTablesInTheDatabaseThatHasDataForAppId(String appId) throws StorageQueryException {
+        if (!isTesting) {
+            throw new UnsupportedOperationException();
+        }
+        try {
+            return GeneralQueries.getAllTablesInTheDatabaseThatHasDataForAppId(this, appId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 }

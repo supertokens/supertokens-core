@@ -205,6 +205,16 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         totpStats.addProperty("total_users", totpTotalUsers);
         return totpStats;
     }
+    
+    private boolean isEnterpriseThirdPartyId(String thirdPartyId) {
+        for (String enterpriseThirdPartyId : ENTERPRISE_THIRD_PARTY_IDS) {
+            if (thirdPartyId.startsWith(enterpriseThirdPartyId)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
 
     private JsonObject getMFAStats() throws StorageQueryException, TenantOrAppNotFoundException{
         JsonObject mfaStats = new JsonObject();
@@ -294,15 +304,6 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
             mauArr.add(new JsonPrimitive(mau));
         }
         return mauArr;
-    }
-
-    private boolean isEnterpriseThirdPartyId(String thirdPartyId) {
-        for (String enterpriseThirdPartyId : ENTERPRISE_THIRD_PARTY_IDS) {
-            if (thirdPartyId.startsWith(enterpriseThirdPartyId)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     @Override

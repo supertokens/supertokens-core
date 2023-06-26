@@ -341,22 +341,10 @@ public class GeneralQueries {
             // index:
             update(start, TOTPQueries.getQueryToCreateUsedCodesExpiryTimeIndex(start), NO_OP_SETTER);
         }
-
+        
         if (!doesTableExists(start, Config.getConfig(start).getMfaUserFactorsTable())) {
             getInstance(main).addState(CREATING_NEW_TABLE, null);
             update(start, MfaQueries.getQueryToCreateUserFactorsTable(start), NO_OP_SETTER);
-        }
-
-        if (!doesTableExists(start, Config.getConfig(start).getDashboardUsersTable())) {
-            getInstance(main).addState(CREATING_NEW_TABLE, null);
-            update(start, DashboardQueries.getQueryToCreateDashboardUsersTable(start), NO_OP_SETTER);
-        }
-
-        if (!doesTableExists(start, Config.getConfig(start).getDashboardSessionsTable())) {
-            getInstance(main).addState(CREATING_NEW_TABLE, null);
-            update(start, DashboardQueries.getQueryToCreateDashboardUserSessionsTable(start), NO_OP_SETTER);
-            // index
-            update(start, DashboardQueries.getQueryToCreateDashboardUserSessionsExpiryIndex(start), NO_OP_SETTER);
         }
 
     }
