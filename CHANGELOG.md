@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+### Adds:
+
+- Support for multi factor authentication recipe (MFA)
+
 ## [6.0.0] - 2023-06-02
 
 ### Adds
@@ -48,9 +52,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 3. Run the migration script
 
     <details>
-    
+
     <summary>If using PostgreSQL</summary>
-    
+
     #### Run the following SQL script
 
     ```sql
@@ -62,7 +66,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
       CONSTRAINT apps_pkey PRIMARY KEY(app_id)
     );
 
-    INSERT INTO apps (app_id, created_at_time) 
+    INSERT INTO apps (app_id, created_at_time)
       VALUES ('public', 0) ON CONFLICT DO NOTHING;
 
     ------------------------------------------------------------
@@ -77,7 +81,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
         REFERENCES apps (app_id) ON DELETE CASCADE
     );
 
-    INSERT INTO tenants (app_id, tenant_id, created_at_time) 
+    INSERT INTO tenants (app_id, tenant_id, created_at_time)
       VALUES ('public', 'public', 0) ON CONFLICT DO NOTHING;
 
     CREATE INDEX IF NOT EXISTS tenants_app_id_index ON tenants (app_id);
@@ -92,14 +96,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
       DROP CONSTRAINT key_value_pkey;
 
     ALTER TABLE key_value
-      ADD CONSTRAINT key_value_pkey 
+      ADD CONSTRAINT key_value_pkey
         PRIMARY KEY (app_id, tenant_id, name);
 
     ALTER TABLE key_value
       DROP CONSTRAINT IF EXISTS key_value_tenant_id_fkey;
 
     ALTER TABLE key_value
-      ADD CONSTRAINT key_value_tenant_id_fkey 
+      ADD CONSTRAINT key_value_tenant_id_fkey
         FOREIGN KEY (app_id, tenant_id)
         REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE;
 
@@ -117,7 +121,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
         FOREIGN KEY(app_id) REFERENCES apps (app_id) ON DELETE CASCADE
     );
 
-    INSERT INTO app_id_to_user_id (user_id, recipe_id) 
+    INSERT INTO app_id_to_user_id (user_id, recipe_id)
       SELECT user_id, recipe_id
       FROM all_auth_recipe_users ON CONFLICT DO NOTHING;
 
@@ -133,14 +137,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
       DROP CONSTRAINT all_auth_recipe_users_pkey CASCADE;
 
     ALTER TABLE all_auth_recipe_users
-      ADD CONSTRAINT all_auth_recipe_users_pkey 
+      ADD CONSTRAINT all_auth_recipe_users_pkey
         PRIMARY KEY (app_id, tenant_id, user_id);
 
     ALTER TABLE all_auth_recipe_users
       DROP CONSTRAINT IF EXISTS all_auth_recipe_users_tenant_id_fkey;
 
     ALTER TABLE all_auth_recipe_users
-      ADD CONSTRAINT all_auth_recipe_users_tenant_id_fkey 
+      ADD CONSTRAINT all_auth_recipe_users_tenant_id_fkey
         FOREIGN KEY (app_id, tenant_id)
         REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE;
 
@@ -148,7 +152,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
       DROP CONSTRAINT IF EXISTS all_auth_recipe_users_user_id_fkey;
 
     ALTER TABLE all_auth_recipe_users
-      ADD CONSTRAINT all_auth_recipe_users_user_id_fkey 
+      ADD CONSTRAINT all_auth_recipe_users_user_id_fkey
         FOREIGN KEY (app_id, user_id)
         REFERENCES app_id_to_user_id (app_id, user_id) ON DELETE CASCADE;
 
@@ -239,14 +243,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
       DROP CONSTRAINT session_info_pkey CASCADE;
 
     ALTER TABLE session_info
-      ADD CONSTRAINT session_info_pkey 
+      ADD CONSTRAINT session_info_pkey
         PRIMARY KEY (app_id, tenant_id, session_handle);
 
     ALTER TABLE session_info
       DROP CONSTRAINT IF EXISTS session_info_tenant_id_fkey;
 
     ALTER TABLE session_info
-      ADD CONSTRAINT session_info_tenant_id_fkey 
+      ADD CONSTRAINT session_info_tenant_id_fkey
         FOREIGN KEY (app_id, tenant_id)
         REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE;
 
@@ -263,14 +267,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
       DROP CONSTRAINT session_access_token_signing_keys_pkey CASCADE;
 
     ALTER TABLE session_access_token_signing_keys
-      ADD CONSTRAINT session_access_token_signing_keys_pkey 
+      ADD CONSTRAINT session_access_token_signing_keys_pkey
         PRIMARY KEY (app_id, created_at_time);
 
     ALTER TABLE session_access_token_signing_keys
       DROP CONSTRAINT IF EXISTS session_access_token_signing_keys_app_id_fkey;
 
     ALTER TABLE session_access_token_signing_keys
-      ADD CONSTRAINT session_access_token_signing_keys_app_id_fkey 
+      ADD CONSTRAINT session_access_token_signing_keys_app_id_fkey
         FOREIGN KEY (app_id)
         REFERENCES apps (app_id) ON DELETE CASCADE;
 
@@ -285,14 +289,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
       DROP CONSTRAINT jwt_signing_keys_pkey CASCADE;
 
     ALTER TABLE jwt_signing_keys
-      ADD CONSTRAINT jwt_signing_keys_pkey 
+      ADD CONSTRAINT jwt_signing_keys_pkey
         PRIMARY KEY (app_id, key_id);
 
     ALTER TABLE jwt_signing_keys
       DROP CONSTRAINT IF EXISTS jwt_signing_keys_app_id_fkey;
 
     ALTER TABLE jwt_signing_keys
-      ADD CONSTRAINT jwt_signing_keys_app_id_fkey 
+      ADD CONSTRAINT jwt_signing_keys_app_id_fkey
         FOREIGN KEY (app_id)
         REFERENCES apps (app_id) ON DELETE CASCADE;
 
@@ -307,14 +311,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
       DROP CONSTRAINT emailverification_verified_emails_pkey CASCADE;
 
     ALTER TABLE emailverification_verified_emails
-      ADD CONSTRAINT emailverification_verified_emails_pkey 
+      ADD CONSTRAINT emailverification_verified_emails_pkey
         PRIMARY KEY (app_id, user_id, email);
 
     ALTER TABLE emailverification_verified_emails
       DROP CONSTRAINT IF EXISTS emailverification_verified_emails_app_id_fkey;
 
     ALTER TABLE emailverification_verified_emails
-      ADD CONSTRAINT emailverification_verified_emails_app_id_fkey 
+      ADD CONSTRAINT emailverification_verified_emails_app_id_fkey
         FOREIGN KEY (app_id)
         REFERENCES apps (app_id) ON DELETE CASCADE;
 
@@ -330,14 +334,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
       DROP CONSTRAINT emailverification_tokens_pkey CASCADE;
 
     ALTER TABLE emailverification_tokens
-      ADD CONSTRAINT emailverification_tokens_pkey 
+      ADD CONSTRAINT emailverification_tokens_pkey
         PRIMARY KEY (app_id, tenant_id, user_id, email, token);
 
     ALTER TABLE emailverification_tokens
       DROP CONSTRAINT IF EXISTS emailverification_tokens_tenant_id_fkey;
 
     ALTER TABLE emailverification_tokens
-      ADD CONSTRAINT emailverification_tokens_tenant_id_fkey 
+      ADD CONSTRAINT emailverification_tokens_tenant_id_fkey
         FOREIGN KEY (app_id, tenant_id)
         REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE;
 
@@ -355,14 +359,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
       DROP CONSTRAINT IF EXISTS emailpassword_users_email_key CASCADE;
 
     ALTER TABLE emailpassword_users
-      ADD CONSTRAINT emailpassword_users_pkey 
+      ADD CONSTRAINT emailpassword_users_pkey
         PRIMARY KEY (app_id, user_id);
 
     ALTER TABLE emailpassword_users
       DROP CONSTRAINT IF EXISTS emailpassword_users_user_id_fkey;
 
     ALTER TABLE emailpassword_users
-      ADD CONSTRAINT emailpassword_users_user_id_fkey 
+      ADD CONSTRAINT emailpassword_users_user_id_fkey
         FOREIGN KEY (app_id, user_id)
         REFERENCES app_id_to_user_id (app_id, user_id) ON DELETE CASCADE;
 
@@ -409,14 +413,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
       DROP CONSTRAINT emailpassword_pswd_reset_tokens_pkey CASCADE;
 
     ALTER TABLE emailpassword_pswd_reset_tokens
-      ADD CONSTRAINT emailpassword_pswd_reset_tokens_pkey 
+      ADD CONSTRAINT emailpassword_pswd_reset_tokens_pkey
         PRIMARY KEY (app_id, user_id, token);
 
     ALTER TABLE emailpassword_pswd_reset_tokens
       DROP CONSTRAINT IF EXISTS emailpassword_pswd_reset_tokens_user_id_fkey;
 
     ALTER TABLE emailpassword_pswd_reset_tokens
-      ADD CONSTRAINT emailpassword_pswd_reset_tokens_user_id_fkey 
+      ADD CONSTRAINT emailpassword_pswd_reset_tokens_user_id_fkey
         FOREIGN KEY (app_id, user_id)
         REFERENCES emailpassword_users (app_id, user_id) ON DELETE CASCADE;
 
@@ -431,7 +435,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
       DROP CONSTRAINT passwordless_users_pkey CASCADE;
 
     ALTER TABLE passwordless_users
-      ADD CONSTRAINT passwordless_users_pkey 
+      ADD CONSTRAINT passwordless_users_pkey
         PRIMARY KEY (app_id, user_id);
 
     ALTER TABLE passwordless_users
@@ -444,7 +448,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
       DROP CONSTRAINT IF EXISTS passwordless_users_user_id_fkey;
 
     ALTER TABLE passwordless_users
-      ADD CONSTRAINT passwordless_users_user_id_fkey 
+      ADD CONSTRAINT passwordless_users_user_id_fkey
         FOREIGN KEY (app_id, user_id)
         REFERENCES app_id_to_user_id (app_id, user_id) ON DELETE CASCADE;
 
@@ -488,14 +492,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
       DROP CONSTRAINT passwordless_devices_pkey CASCADE;
 
     ALTER TABLE passwordless_devices
-      ADD CONSTRAINT passwordless_devices_pkey 
+      ADD CONSTRAINT passwordless_devices_pkey
         PRIMARY KEY (app_id, tenant_id, device_id_hash);
 
     ALTER TABLE passwordless_devices
       DROP CONSTRAINT IF EXISTS passwordless_devices_tenant_id_fkey;
 
     ALTER TABLE passwordless_devices
-      ADD CONSTRAINT passwordless_devices_tenant_id_fkey 
+      ADD CONSTRAINT passwordless_devices_tenant_id_fkey
         FOREIGN KEY (app_id, tenant_id)
         REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE;
 
@@ -519,14 +523,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
       DROP CONSTRAINT passwordless_codes_pkey CASCADE;
 
     ALTER TABLE passwordless_codes
-      ADD CONSTRAINT passwordless_codes_pkey 
+      ADD CONSTRAINT passwordless_codes_pkey
         PRIMARY KEY (app_id, tenant_id, code_id);
 
     ALTER TABLE passwordless_codes
       DROP CONSTRAINT IF EXISTS passwordless_codes_device_id_hash_fkey;
 
     ALTER TABLE passwordless_codes
-      ADD CONSTRAINT passwordless_codes_device_id_hash_fkey 
+      ADD CONSTRAINT passwordless_codes_device_id_hash_fkey
         FOREIGN KEY (app_id, tenant_id, device_id_hash)
         REFERENCES passwordless_devices (app_id, tenant_id, device_id_hash) ON DELETE CASCADE;
 
@@ -559,14 +563,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
       DROP CONSTRAINT IF EXISTS thirdparty_users_user_id_key CASCADE;
 
     ALTER TABLE thirdparty_users
-      ADD CONSTRAINT thirdparty_users_pkey 
+      ADD CONSTRAINT thirdparty_users_pkey
         PRIMARY KEY (app_id, user_id);
 
     ALTER TABLE thirdparty_users
       DROP CONSTRAINT IF EXISTS thirdparty_users_user_id_fkey;
 
     ALTER TABLE thirdparty_users
-      ADD CONSTRAINT thirdparty_users_user_id_fkey 
+      ADD CONSTRAINT thirdparty_users_user_id_fkey
         FOREIGN KEY (app_id, user_id)
         REFERENCES app_id_to_user_id (app_id, user_id) ON DELETE CASCADE;
 
@@ -622,7 +626,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
       DROP CONSTRAINT IF EXISTS userid_mapping_pkey CASCADE;
 
     ALTER TABLE userid_mapping
-      ADD CONSTRAINT userid_mapping_pkey 
+      ADD CONSTRAINT userid_mapping_pkey
         PRIMARY KEY (app_id, supertokens_user_id, external_user_id);
 
     ALTER TABLE userid_mapping
@@ -643,7 +647,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
       DROP CONSTRAINT IF EXISTS userid_mapping_supertokens_user_id_fkey;
 
     ALTER TABLE userid_mapping
-      ADD CONSTRAINT userid_mapping_supertokens_user_id_fkey 
+      ADD CONSTRAINT userid_mapping_supertokens_user_id_fkey
         FOREIGN KEY (app_id, supertokens_user_id)
         REFERENCES app_id_to_user_id (app_id, user_id) ON DELETE CASCADE;
 
@@ -658,14 +662,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
       DROP CONSTRAINT roles_pkey CASCADE;
 
     ALTER TABLE roles
-      ADD CONSTRAINT roles_pkey 
+      ADD CONSTRAINT roles_pkey
         PRIMARY KEY (app_id, role);
 
     ALTER TABLE roles
       DROP CONSTRAINT IF EXISTS roles_app_id_fkey;
 
     ALTER TABLE roles
-      ADD CONSTRAINT roles_app_id_fkey 
+      ADD CONSTRAINT roles_app_id_fkey
         FOREIGN KEY (app_id)
         REFERENCES apps (app_id) ON DELETE CASCADE;
 
@@ -680,14 +684,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
       DROP CONSTRAINT role_permissions_pkey CASCADE;
 
     ALTER TABLE role_permissions
-      ADD CONSTRAINT role_permissions_pkey 
+      ADD CONSTRAINT role_permissions_pkey
         PRIMARY KEY (app_id, role, permission);
 
     ALTER TABLE role_permissions
       DROP CONSTRAINT IF EXISTS role_permissions_role_fkey;
 
     ALTER TABLE role_permissions
-      ADD CONSTRAINT role_permissions_role_fkey 
+      ADD CONSTRAINT role_permissions_role_fkey
         FOREIGN KEY (app_id, role)
         REFERENCES roles (app_id, role) ON DELETE CASCADE;
 
@@ -707,14 +711,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
       DROP CONSTRAINT user_roles_pkey CASCADE;
 
     ALTER TABLE user_roles
-      ADD CONSTRAINT user_roles_pkey 
+      ADD CONSTRAINT user_roles_pkey
         PRIMARY KEY (app_id, tenant_id, user_id, role);
 
     ALTER TABLE user_roles
       DROP CONSTRAINT IF EXISTS user_roles_tenant_id_fkey;
 
     ALTER TABLE user_roles
-      ADD CONSTRAINT user_roles_tenant_id_fkey 
+      ADD CONSTRAINT user_roles_tenant_id_fkey
         FOREIGN KEY (app_id, tenant_id)
         REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE;
 
@@ -722,7 +726,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
       DROP CONSTRAINT IF EXISTS user_roles_role_fkey;
 
     ALTER TABLE user_roles
-      ADD CONSTRAINT user_roles_role_fkey 
+      ADD CONSTRAINT user_roles_role_fkey
         FOREIGN KEY (app_id, role)
         REFERENCES roles (app_id, role) ON DELETE CASCADE;
 
@@ -743,14 +747,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
       DROP CONSTRAINT user_metadata_pkey CASCADE;
 
     ALTER TABLE user_metadata
-      ADD CONSTRAINT user_metadata_pkey 
+      ADD CONSTRAINT user_metadata_pkey
         PRIMARY KEY (app_id, user_id);
 
     ALTER TABLE user_metadata
       DROP CONSTRAINT IF EXISTS user_metadata_app_id_fkey;
 
     ALTER TABLE user_metadata
-      ADD CONSTRAINT user_metadata_app_id_fkey 
+      ADD CONSTRAINT user_metadata_app_id_fkey
         FOREIGN KEY (app_id)
         REFERENCES apps (app_id) ON DELETE CASCADE;
 
@@ -765,7 +769,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
       DROP CONSTRAINT dashboard_users_pkey CASCADE;
 
     ALTER TABLE dashboard_users
-      ADD CONSTRAINT dashboard_users_pkey 
+      ADD CONSTRAINT dashboard_users_pkey
         PRIMARY KEY (app_id, user_id);
 
     ALTER TABLE dashboard_users
@@ -779,7 +783,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
       DROP CONSTRAINT IF EXISTS dashboard_users_app_id_fkey;
 
     ALTER TABLE dashboard_users
-      ADD CONSTRAINT dashboard_users_app_id_fkey 
+      ADD CONSTRAINT dashboard_users_app_id_fkey
         FOREIGN KEY (app_id)
         REFERENCES apps (app_id) ON DELETE CASCADE;
 
@@ -794,14 +798,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
       DROP CONSTRAINT dashboard_user_sessions_pkey CASCADE;
 
     ALTER TABLE dashboard_user_sessions
-      ADD CONSTRAINT dashboard_user_sessions_pkey 
+      ADD CONSTRAINT dashboard_user_sessions_pkey
         PRIMARY KEY (app_id, session_id);
 
     ALTER TABLE dashboard_user_sessions
       DROP CONSTRAINT IF EXISTS dashboard_user_sessions_user_id_fkey;
 
     ALTER TABLE dashboard_user_sessions
-      ADD CONSTRAINT dashboard_user_sessions_user_id_fkey 
+      ADD CONSTRAINT dashboard_user_sessions_user_id_fkey
         FOREIGN KEY (app_id, user_id)
         REFERENCES dashboard_users (app_id, user_id) ON DELETE CASCADE;
 
@@ -816,14 +820,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
       DROP CONSTRAINT totp_users_pkey CASCADE;
 
     ALTER TABLE totp_users
-      ADD CONSTRAINT totp_users_pkey 
+      ADD CONSTRAINT totp_users_pkey
         PRIMARY KEY (app_id, user_id);
 
     ALTER TABLE totp_users
       DROP CONSTRAINT IF EXISTS totp_users_app_id_fkey;
 
     ALTER TABLE totp_users
-      ADD CONSTRAINT totp_users_app_id_fkey 
+      ADD CONSTRAINT totp_users_app_id_fkey
         FOREIGN KEY (app_id)
         REFERENCES apps (app_id) ON DELETE CASCADE;
 
@@ -838,14 +842,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
       DROP CONSTRAINT totp_user_devices_pkey;
 
     ALTER TABLE totp_user_devices
-      ADD CONSTRAINT totp_user_devices_pkey 
+      ADD CONSTRAINT totp_user_devices_pkey
         PRIMARY KEY (app_id, user_id, device_name);
 
     ALTER TABLE totp_user_devices
       DROP CONSTRAINT IF EXISTS totp_user_devices_user_id_fkey;
 
     ALTER TABLE totp_user_devices
-      ADD CONSTRAINT totp_user_devices_user_id_fkey 
+      ADD CONSTRAINT totp_user_devices_user_id_fkey
         FOREIGN KEY (app_id, user_id)
         REFERENCES totp_users (app_id, user_id) ON DELETE CASCADE;
 
@@ -861,14 +865,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
       DROP CONSTRAINT totp_used_codes_pkey CASCADE;
 
     ALTER TABLE totp_used_codes
-      ADD CONSTRAINT totp_used_codes_pkey 
+      ADD CONSTRAINT totp_used_codes_pkey
         PRIMARY KEY (app_id, tenant_id, user_id, created_time_ms);
 
     ALTER TABLE totp_used_codes
       DROP CONSTRAINT IF EXISTS totp_used_codes_user_id_fkey;
 
     ALTER TABLE totp_used_codes
-      ADD CONSTRAINT totp_used_codes_user_id_fkey 
+      ADD CONSTRAINT totp_used_codes_user_id_fkey
         FOREIGN KEY (app_id, user_id)
         REFERENCES totp_users (app_id, user_id) ON DELETE CASCADE;
 
@@ -876,7 +880,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
       DROP CONSTRAINT IF EXISTS totp_used_codes_tenant_id_fkey;
 
     ALTER TABLE totp_used_codes
-      ADD CONSTRAINT totp_used_codes_tenant_id_fkey 
+      ADD CONSTRAINT totp_used_codes_tenant_id_fkey
         FOREIGN KEY (app_id, tenant_id)
         REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE;
 
@@ -897,29 +901,29 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
       DROP CONSTRAINT user_last_active_pkey CASCADE;
 
     ALTER TABLE user_last_active
-      ADD CONSTRAINT user_last_active_pkey 
+      ADD CONSTRAINT user_last_active_pkey
         PRIMARY KEY (app_id, user_id);
 
     ALTER TABLE user_last_active
       DROP CONSTRAINT IF EXISTS user_last_active_app_id_fkey;
 
     ALTER TABLE user_last_active
-      ADD CONSTRAINT user_last_active_app_id_fkey 
+      ADD CONSTRAINT user_last_active_app_id_fkey
         FOREIGN KEY (app_id)
         REFERENCES apps (app_id) ON DELETE CASCADE;
 
     CREATE INDEX IF NOT EXISTS user_last_active_app_id_index ON user_last_active (app_id);
 
     ```
-    
+
     </details>
-    
+
     <details>
-    
+
     <summary>If using MySQL</summary>
-    
+
     #### Run the following SQL script
-    
+
     ```sql
     -- helper stored procedures
 
@@ -927,10 +931,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     BEGIN
       DECLARE done INT DEFAULT FALSE;
       DECLARE dropCommand VARCHAR(255);
-      DECLARE dropCur CURSOR for 
-              SELECT concat('ALTER TABLE ', table_schema,'.',table_name,' DROP FOREIGN KEY ', constraint_name, ';') 
+      DECLARE dropCur CURSOR for
+              SELECT concat('ALTER TABLE ', table_schema,'.',table_name,' DROP FOREIGN KEY ', constraint_name, ';')
               FROM information_schema.table_constraints
-              WHERE constraint_type='FOREIGN KEY' 
+              WHERE constraint_type='FOREIGN KEY'
                   AND table_schema = DATABASE();
 
       DECLARE CONTINUE handler for NOT found SET done = true;
@@ -960,10 +964,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     BEGIN
       DECLARE done INT DEFAULT FALSE;
       DECLARE dropCommand VARCHAR(255);
-      DECLARE dropCur CURSOR for 
-              SELECT concat('ALTER TABLE ', table_schema,'.',table_name,' DROP PRIMARY KEY ', ';') 
+      DECLARE dropCur CURSOR for
+              SELECT concat('ALTER TABLE ', table_schema,'.',table_name,' DROP PRIMARY KEY ', ';')
               FROM information_schema.table_constraints
-              WHERE constraint_type='PRIMARY KEY' 
+              WHERE constraint_type='PRIMARY KEY'
                   AND table_schema = DATABASE();
 
       DECLARE CONTINUE handler for NOT found SET done = true;
@@ -993,10 +997,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     BEGIN
       DECLARE done INT DEFAULT FALSE;
       DECLARE dropCommand VARCHAR(255);
-      DECLARE dropCur CURSOR for 
-              SELECT concat('ALTER TABLE ', table_schema,'.',table_name,' DROP INDEX ', constraint_name, ';') 
+      DECLARE dropCur CURSOR for
+              SELECT concat('ALTER TABLE ', table_schema,'.',table_name,' DROP INDEX ', constraint_name, ';')
               FROM information_schema.table_constraints
-              WHERE constraint_type='UNIQUE' 
+              WHERE constraint_type='UNIQUE'
                   AND table_schema = DATABASE();
 
       DECLARE CONTINUE handler for NOT found SET done = true;
@@ -1026,7 +1030,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     BEGIN
       DECLARE done INT DEFAULT FALSE;
       DECLARE dropCommand VARCHAR(255);
-      DECLARE dropCur CURSOR for 
+      DECLARE dropCur CURSOR for
               SELECT DISTINCT concat('ALTER TABLE ', table_schema, '.', table_name, ' DROP INDEX ', index_name, ';')
               FROM information_schema.statistics
               WHERE NON_UNIQUE = 1 AND table_schema = database();
@@ -1055,7 +1059,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     ---
 
     CREATE PROCEDURE st_add_column_if_not_exists(
-    IN p_table_name varchar(50), 
+    IN p_table_name varchar(50),
     IN p_column_name varchar(50),
     IN p_column_type varchar(50),
     IN p_additional varchar(100),
@@ -1063,14 +1067,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
         READS SQL DATA
     BEGIN
         DECLARE v_count INT;
-        
+
         # Check wether column exist or not
         SELECT count(*) INTO v_count
         FROM information_schema.columns
         WHERE table_schema = database()
             AND table_name   = p_table_name
             AND column_name  = p_column_name;
-            
+
         IF v_count > 0 THEN
           # Return column already exists message
           SELECT 'Column already Exists' INTO p_status_message;
@@ -1089,7 +1093,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     CALL st_drop_all_fkeys();
     CALL st_drop_all_keys();
     CALL st_drop_all_pkeys();
-    CALL st_drop_all_indexes(); 
+    CALL st_drop_all_indexes();
 
     -- General Tables
 
@@ -1101,7 +1105,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     ALTER TABLE apps
       ADD PRIMARY KEY(app_id);
 
-    INSERT IGNORE INTO apps (app_id, created_at_time) 
+    INSERT IGNORE INTO apps (app_id, created_at_time)
       VALUES ('public', 0);
 
     ------------------------------------------------------------
@@ -1119,7 +1123,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
       ADD FOREIGN KEY (app_id)
         REFERENCES apps (app_id) ON DELETE CASCADE;
 
-    INSERT IGNORE INTO tenants (app_id, tenant_id, created_at_time) 
+    INSERT IGNORE INTO tenants (app_id, tenant_id, created_at_time)
       VALUES ('public', 'public', 0);
 
     ------------------------------------------------------------
@@ -1149,7 +1153,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
       ADD FOREIGN KEY (app_id)
         REFERENCES apps (app_id) ON DELETE CASCADE;
 
-    INSERT IGNORE INTO app_id_to_user_id (user_id, recipe_id) 
+    INSERT IGNORE INTO app_id_to_user_id (user_id, recipe_id)
       SELECT user_id, recipe_id
       FROM all_auth_recipe_users;
 
@@ -1649,12 +1653,12 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Using an internal `SemVer` class to handle version numbers. This will make handling CDI version ranges easier.
 - Support for CDI version `2.21`
   - Removed POST `/recipe/handshake`
-  - Added `useDynamicSigningKey` into `createNewSession` (POST `/recipe/session`), replacing 
+  - Added `useDynamicSigningKey` into `createNewSession` (POST `/recipe/session`), replacing
     `access_token_signing_key_dynamic` used in CDI<=2.18
   - Added `useStaticSigningKey` into `createSignedJWT` (POST `/recipe/jwt`)
-  - Added `checkDatabase` into `verifySession` (POST `/recipe/session/verify`), replacing 
+  - Added `checkDatabase` into `verifySession` (POST `/recipe/session/verify`), replacing
     `access_token_blacklisting` used in CDI<=2.18
-  - Removed `idRefreshToken`, `jwtSigningPublicKey`, `jwtSigningPublicKeyExpiryTime` and `jwtSigningPublicKeyList` 
+  - Removed `idRefreshToken`, `jwtSigningPublicKey`, `jwtSigningPublicKeyExpiryTime` and `jwtSigningPublicKeyList`
     from responses
   - Deprecated GET `/recipe/jwt/jwks`
   - Added GET `/.well-known/jwks.json`: a standard jwks
@@ -1662,14 +1666,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   - Uses standard prop names (i.e.: `sub` instead of `userId`)
   - Contains the id of the signing key in the header (as `kid`)
   - Stores the user payload merged into the root level, instead of the `userData` prop
-- Session handling function now throw if the user payload contains protected props (`sub`, `iat`, `exp`, 
+- Session handling function now throw if the user payload contains protected props (`sub`, `iat`, `exp`,
   `sessionHandle`, `refreshTokenHash1`, `parentRefreshTokenHash1`, `antiCsrfToken`)
   - A related exception type was added as `AccessTokenPayloadError`
 - Refactored the handling of signing keys
-- `createNewSession` now takes a `useStaticKey` parameter instead of depending on the 
+- `createNewSession` now takes a `useStaticKey` parameter instead of depending on the
   `access_token_signing_key_dynamic` config value
 - `createJWTToken` now supports signing by a dynamic key
-- `getSession` now takes a `checkDatabase` parameter instead of using the `access_token_blacklisting` config value 
+- `getSession` now takes a `checkDatabase` parameter instead of using the `access_token_blacklisting` config value
 - Updated plugin interface version to 2.21
 
 ### Configuration Changes
@@ -1738,19 +1742,19 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
           "key_string": "$keys.value",
           "algorithm": "RS256",
           "created_at": "$keys.created_at_time",
-          
+
         }
       },
       {
         "$project": {
           "keys": 0,
-          
+
         }
       },
       {
         "$merge": {
           "into": "jwt_signing_keys",
-          
+
         }
       }
     ]);
@@ -1771,7 +1775,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Add Optional Search Tags to Pagination API to enable dashboard search
 
 ### New APIs:
-  - `GET /user/search/tags` retrieves the available search tags 
+  - `GET /user/search/tags` retrieves the available search tags
 
 
 ## [4.5.0] - 2023-03-27
