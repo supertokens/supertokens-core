@@ -32,9 +32,9 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 
 public class TestMultitenancyAPIHelper {
-    public static void createConnectionUriDomain(Main main, TenantIdentifier sourceTenant, String connectionUriDomain, boolean emailPasswordEnabled,
-                                             boolean thirdPartyEnabled, boolean passwordlessEnabled,
-                                             JsonObject coreConfig) throws HttpResponseException, IOException {
+    public static JsonObject createConnectionUriDomain(Main main, TenantIdentifier sourceTenant, String connectionUriDomain, boolean emailPasswordEnabled,
+                                                       boolean thirdPartyEnabled, boolean passwordlessEnabled,
+                                                       JsonObject coreConfig) throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
         if (connectionUriDomain != null) {
             requestBody.addProperty("connectionUriDomain", connectionUriDomain);
@@ -46,10 +46,12 @@ public class TestMultitenancyAPIHelper {
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/connectionuridomain"),
-                requestBody, 1000, 1000, null,
-                SemVer.v2_22.get(), "multitenancy");
+                requestBody, 1000, 2500, null,
+                SemVer.v3_0.get(), "multitenancy");
 
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
+
+        return response;
     }
 
     public static JsonObject listConnectionUriDomains(TenantIdentifier sourceTenant, Main main)
@@ -57,7 +59,7 @@ public class TestMultitenancyAPIHelper {
         JsonObject response = HttpRequestForTesting.sendGETRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/connectionuridomain/list"),
                 null, 1000, 1000, null,
-                SemVer.v2_22.get(), "multitenancy");
+                SemVer.v3_0.get(), "multitenancy");
 
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
         return response;
@@ -71,8 +73,8 @@ public class TestMultitenancyAPIHelper {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/connectionuridomain/remove"),
-                requestBody, 1000, 1000, null,
-                SemVer.v2_22.get(), "multitenancy");
+                requestBody, 1000, 2500, null,
+                SemVer.v3_0.get(), "multitenancy");
 
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
         return response;
@@ -90,8 +92,8 @@ public class TestMultitenancyAPIHelper {
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/app"),
-                requestBody, 1000, 1000, null,
-                SemVer.v2_22.get(), "multitenancy");
+                requestBody, 1000, 2500, null,
+                SemVer.v3_0.get(), "multitenancy");
 
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
     }
@@ -101,7 +103,7 @@ public class TestMultitenancyAPIHelper {
         JsonObject response = HttpRequestForTesting.sendGETRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/app/list"),
                 null, 1000, 1000, null,
-                SemVer.v2_22.get(), "multitenancy");
+                SemVer.v3_0.get(), "multitenancy");
 
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
         return response;
@@ -114,8 +116,8 @@ public class TestMultitenancyAPIHelper {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/app/remove"),
-                requestBody, 1000, 1000, null,
-                SemVer.v2_22.get(), "multitenancy");
+                requestBody, 1000, 2500, null,
+                SemVer.v3_0.get(), "multitenancy");
 
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
         return response;
@@ -133,8 +135,8 @@ public class TestMultitenancyAPIHelper {
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/tenant"),
-                requestBody, 1000, 1000, null,
-                SemVer.v2_22.get(), "multitenancy");
+                requestBody, 1000, 2500, null,
+                SemVer.v3_0.get(), "multitenancy");
 
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
     }
@@ -144,7 +146,7 @@ public class TestMultitenancyAPIHelper {
         JsonObject response = HttpRequestForTesting.sendGETRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/tenant/list"),
                 null, 1000, 1000, null,
-                SemVer.v2_22.get(), "multitenancy");
+                SemVer.v3_0.get(), "multitenancy");
 
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
         return response;
@@ -157,8 +159,8 @@ public class TestMultitenancyAPIHelper {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/tenant/remove"),
-                requestBody, 1000, 1000, null,
-                SemVer.v2_22.get(), "multitenancy");
+                requestBody, 1000, 2500, null,
+                SemVer.v3_0.get(), "multitenancy");
 
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
         return response;
@@ -170,7 +172,7 @@ public class TestMultitenancyAPIHelper {
         JsonObject response = HttpRequestForTesting.sendGETRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/multitenancy/tenant"),
                 null, 1000, 1000, null,
-                SemVer.v2_22.get(), "multitenancy");
+                SemVer.v3_0.get(), "multitenancy");
 
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
         return response;
@@ -184,7 +186,7 @@ public class TestMultitenancyAPIHelper {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/multitenancy/tenant/user"),
                 requestBody, 1000, 1000, null,
-                SemVer.v2_22.get(), "multitenancy");
+                SemVer.v3_0.get(), "multitenancy");
 
         return response;
     }
@@ -197,7 +199,7 @@ public class TestMultitenancyAPIHelper {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/multitenancy/tenant/user/remove"),
                 requestBody, 1000, 1000, null,
-                SemVer.v2_22.get(), "multitenancy");
+                SemVer.v3_0.get(), "multitenancy");
 
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
         return response;
@@ -205,13 +207,19 @@ public class TestMultitenancyAPIHelper {
 
     public static JsonObject addOrUpdateThirdPartyProviderConfig(TenantIdentifier tenantIdentifier, ThirdPartyConfig.Provider provider, Main main)
             throws HttpResponseException, IOException {
+        return addOrUpdateThirdPartyProviderConfig(tenantIdentifier, provider, false, main);
+    }
+
+    public static JsonObject addOrUpdateThirdPartyProviderConfig(TenantIdentifier tenantIdentifier, ThirdPartyConfig.Provider provider, boolean skipValidation, Main main)
+            throws HttpResponseException, IOException {
         Gson gson = new Gson();
         JsonObject requestBody = gson.toJsonTree(provider).getAsJsonObject();
+        requestBody.addProperty("skipValidation", skipValidation);
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/multitenancy/config/thirdparty"),
-                requestBody, 1000, 1000, null,
-                SemVer.v2_22.get(), "multitenancy");
+                requestBody, 1000, 2500, null,
+                SemVer.v3_0.get(), "multitenancy");
 
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
         return response;
@@ -224,8 +232,8 @@ public class TestMultitenancyAPIHelper {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/multitenancy/config/thirdparty/remove"),
-                requestBody, 1000, 1000, null,
-                SemVer.v2_22.get(), "multitenancy");
+                requestBody, 1000, 2500, null,
+                SemVer.v3_0.get(), "multitenancy");
 
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
         return response;
@@ -246,7 +254,7 @@ public class TestMultitenancyAPIHelper {
         JsonObject response = HttpRequestForTesting.sendGETRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/users"),
                 params, 1000, 1000, null,
-                SemVer.v2_22.get(), null);
+                SemVer.v3_0.get(), null);
 
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
         return response;
@@ -260,7 +268,7 @@ public class TestMultitenancyAPIHelper {
         JsonObject signUpResponse = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/signup"),
                 requestBody, 1000, 1000, null,
-                SemVer.v2_22.get(), "emailpassword");
+                SemVer.v3_0.get(), "emailpassword");
         assertEquals("OK", signUpResponse.getAsJsonPrimitive("status").getAsString());
         return signUpResponse.getAsJsonObject("user");
     }
@@ -278,7 +286,7 @@ public class TestMultitenancyAPIHelper {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/signinup"), signUpRequestBody,
                 1000, 1000, null,
-                SemVer.v2_22.get(), "thirdparty");
+                SemVer.v3_0.get(), "thirdparty");
         assertEquals("OK", response.get("status").getAsString());
         assertEquals(3, response.entrySet().size());
 
@@ -292,7 +300,7 @@ public class TestMultitenancyAPIHelper {
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
                 "http://localhost:3567/ee/license", licenseKeyRequest,
                 2000, 2000, null,
-                SemVer.v2_22.get(), null);
+                SemVer.v3_0.get(), null);
         assertEquals("OK", response.get("status").getAsString());
     }
 
@@ -300,7 +308,7 @@ public class TestMultitenancyAPIHelper {
         JsonObject response = HttpRequestForTesting.sendJsonDELETERequest(main, "",
                 "http://localhost:3567/ee/license", null,
                 1000, 1000, null,
-                SemVer.v2_22.get(), null);
+                SemVer.v3_0.get(), null);
         assertEquals("OK", response.get("status").getAsString());
     }
 
@@ -310,9 +318,22 @@ public class TestMultitenancyAPIHelper {
         map.put("userId", userId);
         JsonObject userResponse = HttpRequestForTesting.sendGETRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user"),
-                map, 1000, 1000, null, SemVer.v2_22.get(),
+                map, 1000, 1000, null, SemVer.v3_0.get(),
                 "emailpassword");
         assertEquals("OK", userResponse.getAsJsonPrimitive("status").getAsString());
         return userResponse.getAsJsonObject("user");
+    }
+
+    public static void createUserIdMapping(TenantIdentifier tenantIdentifier, String supertokensUserId, String externalUserId, Main main)
+            throws HttpResponseException, IOException {
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("superTokensUserId", supertokensUserId);
+        requestBody.addProperty("externalUserId", externalUserId);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/userid/map"), requestBody,
+                1000, 1000, null,
+                SemVer.v3_0.get(), "useridmapping");
+        assertEquals("OK", response.get("status").getAsString());
     }
 }

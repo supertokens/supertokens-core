@@ -195,7 +195,9 @@ public class GetUsersWithSearchTagsAPITest {
         // create emailpassword user
         ArrayList<String> userIds = new ArrayList<>();
         userIds.add(EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123").id);
+        Thread.sleep(50);
         userIds.add(EmailPassword.signUp(process.getProcess(), "abc@example.com", "testPass123").id);
+        Thread.sleep(50);
 
         // search with multiple inputs to email
         {
@@ -216,7 +218,9 @@ public class GetUsersWithSearchTagsAPITest {
 
         // create thirdparty user
         userIds.add(ThirdParty.signInUp(process.getProcess(), "testpid", "test", "test@example.com").user.id);
+        Thread.sleep(50);
         userIds.add(ThirdParty.signInUp(process.getProcess(), "newtestpid", "test123", "test@example.com").user.id);
+        Thread.sleep(50);
         // search with multiple inputs to provider
         {
             HashMap<String, String> params = new HashMap<>();
@@ -243,6 +247,7 @@ public class GetUsersWithSearchTagsAPITest {
                     createCodeResponse.deviceIdHash,
                     createCodeResponse.userInputCode, null).user.id);
         }
+        Thread.sleep(50);
         {
             CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), "test2@example.com",
                     "+911987654321",
@@ -251,6 +256,7 @@ public class GetUsersWithSearchTagsAPITest {
                     createCodeResponse.deviceIdHash,
                     createCodeResponse.userInputCode, null).user.id);
         }
+        Thread.sleep(50);
 
         // search with multiple inputs to phone
         {

@@ -24,6 +24,7 @@ import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
@@ -76,6 +77,10 @@ public class MultitenantAPITest {
                         EE_FEATURES.MULTI_TENANCY, EE_FEATURES.TOTP});
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         createTenants();
     }
@@ -168,7 +173,7 @@ public class MultitenantAPITest {
                 1000,
                 1000,
                 null,
-                SemVer.v2_22.get(),
+                SemVer.v3_0.get(),
                 "totp");
         assertEquals("OK", res.get("status").getAsString());
         return res;
@@ -190,7 +195,7 @@ public class MultitenantAPITest {
                 1000,
                 1000,
                 null,
-                SemVer.v2_22.get(),
+                SemVer.v3_0.get(),
                 "totp");
         assertEquals("DEVICE_ALREADY_EXISTS_ERROR", res.get("status").getAsString());
     }
@@ -209,7 +214,7 @@ public class MultitenantAPITest {
                 1000,
                 1000,
                 null,
-                SemVer.v2_22.get(),
+                SemVer.v3_0.get(),
                 "totp");
         assert res.get("status").getAsString().equals("OK");
     }
@@ -229,13 +234,17 @@ public class MultitenantAPITest {
                 1000,
                 1000,
                 null,
-                SemVer.v2_22.get(),
+                SemVer.v3_0.get(),
                 "totp");
         assertEquals("OK", res.get("status").getAsString());
     }
 
     @Test
     public void testDevicesWorkAppWide() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         TenantIdentifier[] tenants = new TenantIdentifier[]{t1, t2, t3};
         int userCount = 1;
         for (TenantIdentifier tenant1 : tenants) {
@@ -251,6 +260,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testSameCodeUsedOnDifferentTenantsIsAllowed() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         TenantIdentifier[] tenants = new TenantIdentifier[]{t2, t3};
         int userCount = 1;
         for (TenantIdentifier tenant1 : tenants) {

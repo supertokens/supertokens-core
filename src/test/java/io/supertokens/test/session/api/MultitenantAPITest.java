@@ -24,10 +24,12 @@ import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.session.jwt.JWT;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -74,6 +76,10 @@ public class MultitenantAPITest {
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         createTenants();
     }
@@ -162,7 +168,7 @@ public class MultitenantAPITest {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/session"), request,
-                1000, 1000, null, SemVer.v2_22.get(),
+                1000, 1000, null, SemVer.v3_0.get(),
                 "session");
 
         return response;
@@ -174,7 +180,7 @@ public class MultitenantAPITest {
         map.put("sessionHandle", sessionHandle);
         JsonObject sessionResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/session"),
-                map, 1000, 1000, null, SemVer.v2_22.get(),
+                map, 1000, 1000, null, SemVer.v3_0.get(),
                 "session");
 
         assertEquals("OK", sessionResponse.getAsJsonPrimitive("status").getAsString());
@@ -187,7 +193,7 @@ public class MultitenantAPITest {
         map.put("sessionHandle", sessionHandle);
         JsonObject sessionResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/session"),
-                map, 1000, 1000, null, SemVer.v2_22.get(),
+                map, 1000, 1000, null, SemVer.v3_0.get(),
                 "session");
 
         assertEquals("UNAUTHORISED", sessionResponse.getAsJsonPrimitive("status").getAsString());
@@ -202,7 +208,7 @@ public class MultitenantAPITest {
         JsonObject sessionRegenerateResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/session/regenerate"),
                 sessionRegenerateRequest, 1000, 1000, null,
-                SemVer.v2_22.get(), "session");
+                SemVer.v3_0.get(), "session");
 
         assertEquals(sessionRegenerateResponse.get("status").getAsString(), "OK");
     }
@@ -217,7 +223,7 @@ public class MultitenantAPITest {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/session/verify"), request,
                 1000, 1000, null,
-                SemVer.v2_22.get(), "session");
+                SemVer.v3_0.get(), "session");
         return response;
     }
 
@@ -231,12 +237,16 @@ public class MultitenantAPITest {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/session/refresh"),
                 sessionRefreshBody, 1000, 1000, null,
-                SemVer.v2_22.get(), "session");
+                SemVer.v3_0.get(), "session");
         return response;
     }
 
     @Test
     public void testSessionCreatedIsAccessableFromTheSameTenantOnly() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         JsonObject user1DataInJWT = new JsonObject();
         user1DataInJWT.addProperty("foo", "val1");
         JsonObject user1DataInDb = new JsonObject();
@@ -286,6 +296,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testSessionFromOneTenantCannotBeFetchedFromAnother() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         TenantIdentifier[] tenants = new TenantIdentifier[]{t1, t2, t3};
 
         for (TenantIdentifier tenant1 : tenants) {
@@ -307,6 +321,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testRegenerateSessionWorksFromAnyTenantButUpdatesTheRightSession() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         TenantIdentifier[] tenants = new TenantIdentifier[]{t1, t2, t3};
 
         for (TenantIdentifier tenant1 : tenants) {
@@ -331,6 +349,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testVerifySessionWorksFromAnyTenantInTheApp() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         TenantIdentifier[] tenants = new TenantIdentifier[]{t1, t2, t3};
 
         for (TenantIdentifier tenant1 : tenants) {
@@ -352,6 +374,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testVerifySessionDoesNotWorkFromDifferentApp() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         JsonObject userDataInJWT = new JsonObject();
         userDataInJWT.addProperty("foo", "val1");
         JsonObject userDataInDb = new JsonObject();
@@ -365,6 +391,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testRefreshSessionDoesNotWorkFromDifferentApp() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         JsonObject userDataInJWT = new JsonObject();
         userDataInJWT.addProperty("foo", "val1");
         JsonObject userDataInDb = new JsonObject();
@@ -374,5 +404,24 @@ public class MultitenantAPITest {
         JsonObject sessionResponse = refreshSession(new TenantIdentifier(null, null, null),
                 session.get("refreshToken").getAsJsonObject().get("token").getAsString());
         assertEquals("UNAUTHORISED", sessionResponse.get("status").getAsString());
+    }
+
+    @Test
+    public void testAccessTokensContainsTid() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        {
+            JsonObject session = createSession(t1, "userid", new JsonObject(), new JsonObject());
+            JWT.JWTInfo accessTokenInfo = JWT.getPayloadWithoutVerifying(session.get("accessToken").getAsJsonObject().get("token").getAsString());
+            assertEquals(t1.getTenantId(), accessTokenInfo.payload.get("tId").getAsString());
+        }
+
+        {
+            JsonObject session = createSession(t2, "userid", new JsonObject(), new JsonObject());
+            JWT.JWTInfo accessTokenInfo = JWT.getPayloadWithoutVerifying(session.get("accessToken").getAsJsonObject().get("token").getAsString());
+            assertEquals(t2.getTenantId(), accessTokenInfo.payload.get("tId").getAsString());
+        }
     }
 }

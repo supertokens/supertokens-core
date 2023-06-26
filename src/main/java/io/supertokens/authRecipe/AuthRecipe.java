@@ -26,6 +26,7 @@ import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.dashboard.DashboardSearchTags;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -192,6 +193,16 @@ public class AuthRecipe {
         deleteUser(appIdentifier, userId, mapping);
     }
 
+    @TestOnly
+    public static void deleteUser(AppIdentifierWithStorage appIdentifierWithStorage, String userId)
+            throws StorageQueryException, StorageTransactionLogicException {
+        Storage storage = appIdentifierWithStorage.getStorage();
+        UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(appIdentifierWithStorage,
+                userId, UserIdType.ANY);
+
+        deleteUser(appIdentifierWithStorage, userId, mapping);
+    }
+
     private static void deleteNonAuthRecipeUser(AppIdentifierWithStorage
                                                         appIdentifierWithStorage, String userId)
             throws StorageQueryException, StorageTransactionLogicException {
@@ -203,15 +214,15 @@ public class AuthRecipe {
                 .deleteEmailVerificationUserInfo(appIdentifierWithStorage, userId);
         appIdentifierWithStorage.getUserRolesStorage()
                 .deleteAllRolesForUser(appIdentifierWithStorage, userId);
-        appIdentifierWithStorage.getMfaStorage()
-                .deleteMfaInfoForUser(appIdentifierWithStorage, userId);
         appIdentifierWithStorage.getActiveUsersStorage()
                 .deleteUserActive(appIdentifierWithStorage, userId);
+        appIdentifierWithStorage.getMfaStorage()
+                .deleteMfaInfoForUser(appIdentifierWithStorage, userId);
 
-        TOTPSQLStorage totpStorage = appIdentifierWithStorage.getTOTPStorage();
-        totpStorage.startTransaction(con -> {
-            totpStorage.removeUser_Transaction(con, appIdentifierWithStorage, userId);
-            totpStorage.commitTransaction(con);
+        TOTPSQLStorage storage = appIdentifierWithStorage.getTOTPStorage();
+        storage.startTransaction(con -> {
+            storage.removeUser_Transaction(con, appIdentifierWithStorage, userId);
+            storage.commitTransaction(con);
             return null;
         });
     }

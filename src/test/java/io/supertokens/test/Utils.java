@@ -39,8 +39,7 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 public abstract class Utils extends Mockito {
 
@@ -251,5 +250,11 @@ public abstract class Utils extends Mockito {
         UserIdMapping retrievedMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main,
                 userIdMapping.superTokensUserId, UserIdType.SUPERTOKENS);
         assertEquals(userIdMapping, retrievedMapping);
+    }
+
+    public static <T> void assertArrayEqualsIgnoreOrder(T[] array1, T[] array2) {
+        assertTrue(
+                array1.length == array2.length && Arrays.asList(array1).containsAll(Arrays.asList(array2))
+                        && Arrays.asList(array2).containsAll(Arrays.asList(array1)));
     }
 }

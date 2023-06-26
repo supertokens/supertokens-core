@@ -28,6 +28,8 @@ import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
 import io.supertokens.output.Logging;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
@@ -82,6 +84,17 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
     }
 
     private TenantConfig[] getAllTenantsFromDb() throws StorageQueryException {
+        if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL) {
+            return new TenantConfig[]{
+                    new TenantConfig(
+                            TenantIdentifier.BASE_TENANT,
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(true),
+                            new JsonObject()
+                    )
+            };
+        }
         return StorageLayer.getMultitenancyStorage(main).getAllTenants();
     }
 

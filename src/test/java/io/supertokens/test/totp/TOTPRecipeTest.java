@@ -503,8 +503,8 @@ public class TOTPRecipeTest {
         // Verify that the device name has been updated:
         TOTPDevice[] devices = Totp.getDevices(main, "user");
         assert (devices.length == 2);
-        assert (devices[0].deviceName.equals("device2"));
-        assert (devices[1].deviceName.equals("new-device-name"));
+        assert (devices[0].deviceName.equals("device2") && devices[1].deviceName.equals("new-device-name")
+                || devices[0].deviceName.equals("new-device-name") && devices[1].deviceName.equals("device2"));
 
         // Verify that TOTP verification still works:
         Totp.verifyDevice(main, "user", devices[0].deviceName, generateTotpCode(main, devices[0]));
@@ -533,8 +533,7 @@ public class TOTPRecipeTest {
 
         TOTPDevice[] devices = Totp.getDevices(main, "user");
         assert (devices.length == 2);
-        assert devices[0].equals(device1);
-        assert devices[1].equals(device2);
+        assert (devices[0].equals(device1) && devices[1].equals(device2)) || (devices[1].equals(device1) && devices[0].equals(device2));
     }
 
     @Test

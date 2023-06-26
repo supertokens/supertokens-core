@@ -25,14 +25,14 @@ import java.sql.SQLException;
 
 public interface QueryExecutorTemplate {
 
-    static <T> T execute(Start start, String QUERY, PreparedStatementValueSetter setter,
+    public static <T> T execute(Start start, String QUERY, PreparedStatementValueSetter setter,
             ResultSetValueExtractor<T> mapper) throws SQLException, StorageQueryException {
         try (Connection con = ConnectionPool.getConnection(start)) {
             return execute(con, QUERY, setter, mapper);
         }
     }
 
-    static <T> T execute(Connection con, String QUERY, PreparedStatementValueSetter setter,
+    public static <T> T execute(Connection con, String QUERY, PreparedStatementValueSetter setter,
             ResultSetValueExtractor<T> mapper) throws SQLException, StorageQueryException {
         if (setter == null)
             setter = PreparedStatementValueSetter.NO_OP_SETTER;
@@ -44,14 +44,14 @@ public interface QueryExecutorTemplate {
         }
     }
 
-    static int update(Start start, String QUERY, PreparedStatementValueSetter setter)
+    public static int update(Start start, String QUERY, PreparedStatementValueSetter setter)
             throws SQLException, StorageQueryException {
         try (Connection con = ConnectionPool.getConnection(start)) {
             return update(con, QUERY, setter);
         }
     }
 
-    static int update(Connection con, String QUERY, PreparedStatementValueSetter setter)
+    public static int update(Connection con, String QUERY, PreparedStatementValueSetter setter)
             throws SQLException, StorageQueryException {
         try (PreparedStatement pst = con.prepareStatement(QUERY)) {
             setter.setValues(pst);

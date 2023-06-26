@@ -16,10 +16,7 @@
 
 package io.supertokens.webserver.api.core;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.google.gson.*;
 import io.supertokens.Main;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.authRecipe.UserPaginationContainer;
@@ -31,6 +28,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.useridmapping.UserIdMapping;
+import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -186,6 +184,13 @@ public class UsersAPI extends WebserverAPI {
             result.addProperty("status", "OK");
 
             JsonArray usersJson = new JsonParser().parse(new Gson().toJson(users.users)).getAsJsonArray();
+
+            if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
+                for (JsonElement user : usersJson) {
+                    user.getAsJsonObject().get("user").getAsJsonObject().remove("tenantIds");
+                }
+            }
+
             result.add("users", usersJson);
 
             if (users.nextPaginationToken != null) {

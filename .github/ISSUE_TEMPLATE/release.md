@@ -85,6 +85,7 @@ labels:
    - [ ] comparison chart in the pricing page
    - [ ] product roadmap page
    - [ ] Update API key code snippet in SaaS dashboard
+   - [ ] Update recipe list and links to the docs for supertokens.com dashboard
 
 ## 🔥 Production 
 

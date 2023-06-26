@@ -16,7 +16,14 @@
 
 package io.supertokens.inmemorydb.config;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class SQLiteConfig {
+
+    public static Set<String> getValidFields() {
+        return new HashSet<>();
+    }
 
     public String getKeyValueTable() {
         return "key_value";
@@ -24,6 +31,30 @@ public class SQLiteConfig {
 
     public String getUsersTable() {
         return "all_auth_recipe_users";
+    }
+
+    public String getAppsTable() {
+        return "apps";
+    }
+
+    public String getTenantsTable() {
+        return "tenants";
+    }
+
+    public String getTenantConfigsTable() {
+        return "tenant_configs";
+    }
+
+    public String getTenantThirdPartyProvidersTable() {
+        return "tenant_thirdparty_providers";
+    }
+
+    public String getTenantThirdPartyProviderClientsTable() {
+        return "tenant_thirdparty_provider_clients";
+    }
+
+    public String getAppIdToUserIdTable() {
+        return "app_id_to_user_id";
     }
 
     public String getUserLastActiveTable() {
@@ -42,6 +73,10 @@ public class SQLiteConfig {
         return "emailpassword_users";
     }
 
+    public String getEmailPasswordUserToTenantTable() {
+        return "emailpassword_user_to_tenant";
+    }
+
     public String getPasswordResetTokensTable() {
         return "emailpassword_pswd_reset_tokens";
     }
@@ -58,12 +93,20 @@ public class SQLiteConfig {
         return "thirdparty_users";
     }
 
+    public String getThirdPartyUserToTenantTable() {
+        return "thirdparty_user_to_tenant";
+    }
+
     public String getJWTSigningKeysTable() {
         return "jwt_signing_keys";
     }
 
     public String getPasswordlessUsersTable() {
         return "passwordless_users";
+    }
+
+    public String getPasswordlessUserToTenantTable() {
+        return "passwordless_user_to_tenant";
     }
 
     public String getPasswordlessDevicesTable() {

@@ -32,7 +32,6 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.session.Session;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
-import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.webserver.WebserverAPI;
 import org.junit.*;
 import org.junit.rules.TestRule;
@@ -352,6 +351,10 @@ public class FeatureFlagTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(OPAQUE_KEY_WITH_MULTITENANCY_FEATURE);
 
         for (int i=0; i<500; i++) {
@@ -403,6 +406,10 @@ public class FeatureFlagTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(OPAQUE_KEY_WITH_MULTITENANCY_FEATURE);
 
@@ -459,16 +466,17 @@ public class FeatureFlagTest {
         JsonArray multitenancyStats = response.get("usageStats").getAsJsonObject().get("multi_tenancy").getAsJsonObject().get("tenants").getAsJsonArray();
         assertEquals(6, multitenancyStats.size());
 
-
         Set<String> userPoolIds = new HashSet<>();
         for (JsonElement tenantStat : multitenancyStats) {
             JsonObject tenantStatObj = tenantStat.getAsJsonObject();
             String tenantId = tenantStatObj.get("tenantId").getAsString();
 
-            // Ensure each userPoolId is unique
-            String userPoolId = tenantStatObj.get("userPoolId").getAsString();
-            assertFalse(userPoolIds.contains(userPoolId));
-            userPoolIds.add(userPoolId);
+            if (!StorageLayer.isInMemDb(process.getProcess())) {
+                // Ensure each userPoolId is unique
+                String userPoolId = tenantStatObj.get("userPoolId").getAsString();
+                assertFalse(userPoolIds.contains(userPoolId));
+                userPoolIds.add(userPoolId);
+            }
 
             if (tenantId.equals("public")) {
                 assertFalse(tenantStatObj.get("hasUsersOrSessions").getAsBoolean());
@@ -484,6 +492,7 @@ public class FeatureFlagTest {
                 assertTrue(tenantStatObj.get("hasEnterpriseLogin").getAsBoolean());
             }
         }
+
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }

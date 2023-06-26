@@ -18,6 +18,8 @@ package io.supertokens.webserver;
 
 import jakarta.servlet.ServletException;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.List;
 
 public class Utils {
@@ -34,6 +36,10 @@ public class Utils {
     }
 
     public static String normalizeAndValidateConnectionUriDomain(String connectionUriDomain) throws ServletException {
+        return normalizeAndValidateConnectionUriDomain(connectionUriDomain, true);
+    }
+
+    public static String normalizeAndValidateConnectionUriDomain(String connectionUriDomain, boolean throwExceptionIfInvalid) throws ServletException {
         connectionUriDomain = connectionUriDomain.trim();
         connectionUriDomain = connectionUriDomain.toLowerCase();
 
@@ -41,8 +47,27 @@ public class Utils {
             throw new ServletException(new WebserverAPI.BadRequestException("connectionUriDomain should not be an empty String"));
         }
 
-        if (!connectionUriDomain.matches("^[a-z0-9-]+(\\.[a-z0-9-]+)*(:[0-9]+)?$")) {
-            throw new ServletException(new WebserverAPI.BadRequestException("connectionUriDomain is invalid"));
+        String hostnameRegex = "^[a-z][a-z0-9-]+(\\.[a-z][a-z0-9-]+)*(:[0-9]+)?$";
+        String ipRegex = "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(:[0-9]+)?$";
+
+        if (!connectionUriDomain.matches(hostnameRegex) && !connectionUriDomain.matches(ipRegex)) {
+            if (throwExceptionIfInvalid) {
+                throw new ServletException(new WebserverAPI.BadRequestException("connectionUriDomain is invalid"));
+            }
+        }
+
+        try {
+            URL url = new URL("http://" + connectionUriDomain);
+
+            if (url.getPath() != null && url.getPath().length() > 0) {
+                throw new ServletException(new WebserverAPI.BadRequestException("connectionUriDomain is invalid"));
+            }
+
+            connectionUriDomain = url.getHost();
+        } catch (Exception e) {
+            if (throwExceptionIfInvalid) {
+                throw new ServletException(new WebserverAPI.BadRequestException("connectionUriDomain is invalid"));
+            }
         }
 
         return connectionUriDomain;

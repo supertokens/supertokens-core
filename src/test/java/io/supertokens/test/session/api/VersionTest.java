@@ -57,7 +57,7 @@ public class VersionTest {
         return switch (version) {
             case "2" -> SemVer.v2_9;
             case "3" -> SemVer.v2_21;
-            case "4" -> SemVer.v2_22;
+            case "4" -> SemVer.v3_0;
             default -> throw new IllegalStateException("Unexpected value: " + version);
         };
     }

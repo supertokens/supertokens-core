@@ -234,6 +234,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new GetDashboardUsersAPI(main));
         addAPI(new GetDashboardSessionsForUserAPI(main));
         addAPI(new SearchTagsAPI(main));
+
         addAPI(new ListFactorsAPI(main));
         addAPI(new EnableFactorAPI(main));
         addAPI(new DisableFactorAPI(main));

@@ -27,6 +27,7 @@ import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.exception.*;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
@@ -121,7 +122,8 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         }
     }
 
-    private static void validateTenantConfig(Main main, TenantConfig targetTenantConfig, boolean shouldPreventDbConfigUpdate)
+    private static void validateTenantConfig(Main main, TenantConfig targetTenantConfig, boolean shouldPreventDbConfigUpdate,
+                                             boolean skipThirdPartyConfigValidation)
             throws IOException, InvalidConfigException, InvalidProviderConfigException, BadPermissionException,
             TenantOrAppNotFoundException, CannotModifyBaseConfigException {
 
@@ -171,7 +173,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         }
 
         // validate third party config
-        {
+        if (!skipThirdPartyConfigValidation) {
             ThirdParty.verifyThirdPartyProvidersArray(targetTenantConfig.thirdPartyConfig.providers);
         }
     }
@@ -189,13 +191,28 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             throws CannotModifyBaseConfigException, BadPermissionException,
             StorageQueryException, FeatureNotEnabledException, IOException, InvalidConfigException,
             InvalidProviderConfigException, TenantOrAppNotFoundException {
+        return addNewOrUpdateAppOrTenant(main, newTenant, shouldPreventDbConfigUpdate, false);
+    }
+
+    public static boolean addNewOrUpdateAppOrTenant(Main main, TenantConfig newTenant, boolean shouldPreventDbConfigUpdate, boolean skipThirdPartyConfigValidation)
+            throws CannotModifyBaseConfigException, BadPermissionException,
+            StorageQueryException, FeatureNotEnabledException, IOException, InvalidConfigException,
+            InvalidProviderConfigException, TenantOrAppNotFoundException {
+
+        if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL) {
+            if (newTenant.tenantIdentifier.equals(TenantIdentifier.BASE_TENANT)) {
+                return true;
+            } else {
+                throw new UnsupportedOperationException();
+            }
+        }
 
         // TODO: adding a new tenant is not thread safe here - for example, one can add a new connectionuridomain
         //  such that they both point to the same user pool ID by trying to add them in parallel. This is not such
         //  a big issue at the moment, but we want to solve this by taking appropriate database locks on
         //  connectionuridomain, appid and tenantid.
 
-        validateTenantConfig(main, newTenant, shouldPreventDbConfigUpdate);
+        validateTenantConfig(main, newTenant, shouldPreventDbConfigUpdate, skipThirdPartyConfigValidation);
 
         boolean creationInSharedDbSucceeded = false;
         List<TenantIdentifier> tenantsThatChanged = new ArrayList<>();
@@ -314,6 +331,12 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                             "delete API.");
         }
         try {
+            if (StorageLayer.getStorage(
+                    new TenantIdentifier(connectionUriDomain, null, null), main) == StorageLayer.getBaseStorage(main)) {
+                // This means that the CUD does not exist, and nothing needs to be done
+                return false;
+            }
+
             ((MultitenancyStorage) StorageLayer.getStorage(
                     new TenantIdentifier(connectionUriDomain, null, null), main))
                     .deleteTenantIdInTargetStorage(new TenantIdentifier(connectionUriDomain, null, null));

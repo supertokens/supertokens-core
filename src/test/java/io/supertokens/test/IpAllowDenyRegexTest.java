@@ -26,7 +26,9 @@ import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.httpRequest.HttpRequest;
 import io.supertokens.httpRequest.HttpResponseException;
 import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.multitenancy.*;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager.TestingProcess;
 import org.junit.*;
 import org.junit.rules.TestRule;
@@ -372,6 +374,10 @@ public class IpAllowDenyRegexTest extends Mockito {
                     .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
             process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
 
             JsonObject coreConfig = new JsonObject();
             coreConfig.addProperty("ip_allow_regex", "192.123.3.4");

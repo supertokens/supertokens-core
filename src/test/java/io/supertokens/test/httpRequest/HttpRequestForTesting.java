@@ -84,7 +84,7 @@ public class HttpRequestForTesting {
         try {
             con = (HttpURLConnection) obj.openConnection();
             con.setConnectTimeout(connectionTimeoutMS);
-            con.setReadTimeout(readTimeoutMS);
+            con.setReadTimeout(readTimeoutMS + 1000);
             if (version != null) {
                 con.setRequestProperty("api-version", version + "");
             }
@@ -139,7 +139,7 @@ public class HttpRequestForTesting {
             con = (HttpURLConnection) obj.openConnection();
             con.setRequestMethod(method);
             con.setConnectTimeout(connectionTimeoutMS);
-            con.setReadTimeout(readTimeoutMS);
+            con.setReadTimeout(readTimeoutMS + 1000);
             con.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
             if (version != null) {
                 con.setRequestProperty("api-version", version + "");
@@ -244,12 +244,12 @@ public class HttpRequestForTesting {
                 URL obj = getURL(main, requestID, url);
                 InputStream inputStream = null;
                 HttpURLConnection con = null;
-        
+
                 try {
                     con = (HttpURLConnection) obj.openConnection();
                     con.setRequestMethod("DELETE");
                     con.setConnectTimeout(connectionTimeoutMS);
-                    con.setReadTimeout(readTimeoutMS);
+                    con.setReadTimeout(readTimeoutMS + 1000);
                     if (version != null) {
                         con.setRequestProperty("api-version", version + "");
                     }
@@ -259,15 +259,15 @@ public class HttpRequestForTesting {
                     if (rid != null) {
                         con.setRequestProperty("rId", rid);
                     }
-        
+
                     int responseCode = con.getResponseCode();
-        
+
                     if (responseCode < STATUS_CODE_ERROR_THRESHOLD) {
                         inputStream = con.getInputStream();
                     } else {
                         inputStream = con.getErrorStream();
                     }
-        
+
                     StringBuilder response = new StringBuilder();
                     try (BufferedReader in = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
                         String inputLine;
@@ -286,7 +286,7 @@ public class HttpRequestForTesting {
                     if (inputStream != null) {
                         inputStream.close();
                     }
-        
+
                     if (con != null) {
                         con.disconnect();
                     }
@@ -300,6 +300,7 @@ public class HttpRequestForTesting {
         } else {
             sb.append("http://");
             sb.append(tenantIdentifier.getConnectionUriDomain());
+            sb.append(":3567");
         }
 
         if (!tenantIdentifier.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)) {

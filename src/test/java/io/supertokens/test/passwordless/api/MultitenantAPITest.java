@@ -25,6 +25,7 @@ import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
@@ -76,6 +77,10 @@ public class MultitenantAPITest {
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         createTenants();
     }
@@ -187,7 +192,7 @@ public class MultitenantAPITest {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/signinup/code"),
                 createCodeRequestBody, 1000, 1000, null,
-                SemVer.v2_22.get(), "passwordless");
+                SemVer.v3_0.get(), "passwordless");
 
         assertEquals("OK", response.get("status").getAsString());
         assertEquals(8, response.entrySet().size());
@@ -203,7 +208,7 @@ public class MultitenantAPITest {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/signinup/code"),
                 createCodeRequestBody, 1000, 1000, null,
-                SemVer.v2_22.get(), "passwordless");
+                SemVer.v3_0.get(), "passwordless");
 
         assertEquals("OK", response.get("status").getAsString());
         assertEquals(8, response.entrySet().size());
@@ -220,7 +225,7 @@ public class MultitenantAPITest {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/signinup/code/consume"),
                 consumeCodeRequestBody, 1000, 1000, null,
-                SemVer.v2_22.get(), "passwordless");
+                SemVer.v3_0.get(), "passwordless");
 
         assertEquals("OK", response.get("status").getAsString());
         return response.get("user").getAsJsonObject();
@@ -235,7 +240,7 @@ public class MultitenantAPITest {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/signinup/code/consume"),
                 consumeCodeRequestBody, 1000, 1000, null,
-                SemVer.v2_22.get(), "passwordless");
+                SemVer.v3_0.get(), "passwordless");
 
         assertEquals("RESTART_FLOW_ERROR", response.get("status").getAsString());
     }
@@ -250,7 +255,7 @@ public class MultitenantAPITest {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/signinup/code/consume"),
                 consumeCodeRequestBody, 1000, 1000, null,
-                SemVer.v2_22.get(), "passwordless");
+                SemVer.v3_0.get(), "passwordless");
         assertEquals("OK", response.get("status").getAsString());
         return response.get("user").getAsJsonObject();
     }
@@ -265,7 +270,7 @@ public class MultitenantAPITest {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/signinup/code/consume"),
                 consumeCodeRequestBody, 1000, 1000, null,
-                SemVer.v2_22.get(), "passwordless");
+                SemVer.v3_0.get(), "passwordless");
         assertEquals("RESTART_FLOW_ERROR", response.get("status").getAsString());
     }
 
@@ -299,7 +304,7 @@ public class MultitenantAPITest {
         map.put("userId", userId);
         JsonObject userResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user"),
-                map, 1000, 1000, null, SemVer.v2_22.get(),
+                map, 1000, 1000, null, SemVer.v3_0.get(),
                 "passwordless");
         assertEquals("OK", userResponse.getAsJsonPrimitive("status").getAsString());
         return userResponse.getAsJsonObject("user");
@@ -311,7 +316,7 @@ public class MultitenantAPITest {
         map.put("email", email);
         JsonObject userResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user"),
-                map, 1000, 1000, null, SemVer.v2_22.get(),
+                map, 1000, 1000, null, SemVer.v3_0.get(),
                 "passwordless");
         assertEquals("OK", userResponse.getAsJsonPrimitive("status").getAsString());
         return userResponse.getAsJsonObject("user");
@@ -323,7 +328,7 @@ public class MultitenantAPITest {
         map.put("phoneNumber", phoneNumber);
         JsonObject userResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user"),
-                map, 1000, 1000, null, SemVer.v2_22.get(),
+                map, 1000, 1000, null, SemVer.v3_0.get(),
                 "passwordless");
         assertEquals("OK", userResponse.getAsJsonPrimitive("status").getAsString());
         return userResponse.getAsJsonObject("user");
@@ -337,7 +342,7 @@ public class MultitenantAPITest {
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user"), body,
-                1000, 1000, null, SemVer.v2_22.get(),
+                1000, 1000, null, SemVer.v3_0.get(),
                 RECIPE_ID.PASSWORDLESS.toString());
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
     }
@@ -350,13 +355,17 @@ public class MultitenantAPITest {
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user"), body,
-                1000, 1000, null, SemVer.v2_22.get(),
+                1000, 1000, null, SemVer.v3_0.get(),
                 RECIPE_ID.PASSWORDLESS.toString());
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
     }
 
     @Test
     public void testUserWithSameEmailCanLoginAcrossTenants() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         {
             JsonObject user1 = signInUpEmailUsingLinkCode(t1, "user1@example.com");
             JsonObject user2 = signInUpEmailUsingLinkCode(t2, "user1@example.com");
@@ -379,6 +388,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testUserWithSameNumberCanLoginAcrossTenants() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         {
             JsonObject user1 = signInUpNumberUsingLinkCode(t1, "+442071838750");
             JsonObject user2 = signInUpNumberUsingLinkCode(t2, "+442071838750");
@@ -401,6 +414,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testCreateCodeOnOneTenantAndConsumeOnAnotherDoesNotWork() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         TenantIdentifier[] tenants = new TenantIdentifier[]{t1, t2, t3};
         for (TenantIdentifier createTenant : tenants) {
             for (TenantIdentifier consumeTenant: tenants) {
@@ -446,6 +463,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testGetUserUsingIdReturnsUserFromTheRightTenantWhileQueryingFromAnyTenantInTheSameApp() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         {
             JsonObject user1 = signInUpEmailUsingLinkCode(t1, "user1@example.com");
             JsonObject user2 = signInUpEmailUsingLinkCode(t2, "user1@example.com");
@@ -473,6 +494,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testGetUserByEmailReturnsTenantSpecificUser() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         JsonObject user1 = signInUpEmailUsingLinkCode(t1, "user1@example.com");
         JsonObject user2 = signInUpEmailUsingLinkCode(t2, "user1@example.com");
         JsonObject user3 = signInUpEmailUsingLinkCode(t3, "user1@example.com");
@@ -484,6 +509,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testGetUserByNumberReturnsTenantSpecificUser() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         JsonObject user1 = signInUpNumberUsingUserInputCode(t1, "+442071838750");
         JsonObject user2 = signInUpNumberUsingUserInputCode(t2, "+442071838750");
         JsonObject user3 = signInUpNumberUsingUserInputCode(t3, "+442071838750");
@@ -495,6 +524,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testUpdateEmail() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         JsonObject user1 = signInUpEmailUsingLinkCode(t1, "user1@example.com");
         JsonObject user2 = signInUpEmailUsingLinkCode(t2, "user1@example.com");
         JsonObject user3 = signInUpEmailUsingLinkCode(t3, "user1@example.com");
@@ -519,6 +552,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testUpdateNumber() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         JsonObject user1 = signInUpNumberUsingUserInputCode(t1, "+442071838750");
         JsonObject user2 = signInUpNumberUsingUserInputCode(t2, "+442071838750");
         JsonObject user3 = signInUpNumberUsingUserInputCode(t3, "+442071838750");

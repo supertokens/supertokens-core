@@ -24,11 +24,13 @@ import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
@@ -72,6 +74,10 @@ public class TestThirdPartyProvider {
 
     @Test
     public void testAddThirdPartyConfig() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         ThirdPartyConfig.Provider provider = new ThirdPartyConfig.Provider(
                 "google",
                 "Google",
@@ -102,6 +108,10 @@ public class TestThirdPartyProvider {
 
     @Test
     public void testUpdateThirdPartyConfig() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         ThirdPartyConfig.Provider provider = new ThirdPartyConfig.Provider(
                 "google",
                 "Google",
@@ -165,6 +175,10 @@ public class TestThirdPartyProvider {
 
     @Test
     public void testDeleteThirdPartyConfig() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         ThirdPartyConfig.Provider provider = new ThirdPartyConfig.Provider(
                 "google",
                 "Google",

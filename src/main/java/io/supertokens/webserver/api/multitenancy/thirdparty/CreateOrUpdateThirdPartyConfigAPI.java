@@ -61,6 +61,11 @@ public class CreateOrUpdateThirdPartyConfigAPI extends WebserverAPI {
         String thirdPartyId = InputParser.parseStringOrThrowError(input, "thirdPartyId", false);
         thirdPartyId = thirdPartyId.trim();
 
+        Boolean skipValidation = InputParser.parseBooleanOrThrowError(input, "skipValidation", true);
+        if (skipValidation == null) {
+            skipValidation = false;
+        }
+
         try {
             TenantIdentifierWithStorage tenantIdentifier = this.getTenantIdentifierWithStorageFromRequest(req);
 
@@ -106,7 +111,7 @@ public class CreateOrUpdateThirdPartyConfigAPI extends WebserverAPI {
                     config.passwordlessConfig,
                     config.coreConfig);
 
-            Multitenancy.addNewOrUpdateAppOrTenant(main, updatedConfig, shouldProtectDbConfig(req));
+            Multitenancy.addNewOrUpdateAppOrTenant(main, updatedConfig, shouldProtectDbConfig(req), skipValidation);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

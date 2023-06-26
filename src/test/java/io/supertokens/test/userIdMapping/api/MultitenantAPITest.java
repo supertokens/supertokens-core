@@ -24,6 +24,7 @@ import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
@@ -74,6 +75,10 @@ public class MultitenantAPITest {
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         createTenants();
     }
@@ -180,7 +185,7 @@ public class MultitenantAPITest {
         JsonObject signUpResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/signup"),
                 requestBody, 1000, 1000, null,
-                SemVer.v2_22.get(), "emailpassword");
+                SemVer.v3_0.get(), "emailpassword");
         assertEquals("OK", signUpResponse.getAsJsonPrimitive("status").getAsString());
         return signUpResponse.getAsJsonObject("user");
     }
@@ -194,7 +199,7 @@ public class MultitenantAPITest {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/userid/map"), requestBody,
                 1000, 1000, null,
-                SemVer.v2_22.get(), "useridmapping");
+                SemVer.v3_0.get(), "useridmapping");
         assertEquals("OK", response.get("status").getAsString());
     }
 
@@ -207,7 +212,7 @@ public class MultitenantAPITest {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/userid/map"), requestBody,
                 1000, 1000, null,
-                SemVer.v2_22.get(), "useridmapping");
+                SemVer.v3_0.get(), "useridmapping");
         assertEquals("USER_ID_MAPPING_ALREADY_EXISTS_ERROR", response.get("status").getAsString());
     }
 
@@ -219,7 +224,7 @@ public class MultitenantAPITest {
 
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/userid/map"), QUERY_PARAM, 1000, 1000, null,
-                SemVer.v2_22.get(), "useridmapping");
+                SemVer.v3_0.get(), "useridmapping");
         assertEquals("OK", response.get("status").getAsString());
         return response;
     }
@@ -232,7 +237,7 @@ public class MultitenantAPITest {
 
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/userid/map"), QUERY_PARAM, 1000, 1000, null,
-                SemVer.v2_22.get(), "useridmapping");
+                SemVer.v3_0.get(), "useridmapping");
         assertEquals("UNKNOWN_MAPPING_ERROR", response.get("status").getAsString());
     }
 
@@ -245,7 +250,7 @@ public class MultitenantAPITest {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/userid/map/remove"), request,
                 1000, 1000, null,
-                SemVer.v2_22.get(), "useridmapping");
+                SemVer.v3_0.get(), "useridmapping");
         assertEquals(2, response.entrySet().size());
         assertEquals("OK", response.get("status").getAsString());
         assertTrue(response.get("didMappingExist").getAsBoolean());
@@ -253,6 +258,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testUserIdMappingWorksCorrectlyAcrossTenants() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         JsonObject user1 = emailPasswordSignUp(t1, "user@example.com", "password1");
         JsonObject user2 = emailPasswordSignUp(t2, "user@example.com", "password2");
         JsonObject user3 = emailPasswordSignUp(t3, "user@example.com", "password3");
@@ -304,6 +313,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testSameExternalIdIsDisallowedIrrespectiveOfUserPool() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         TenantIdentifier[] tenants = new TenantIdentifier[]{t1, t2, t3};
         int userCount = 0;
         int testcase = 0;
@@ -323,6 +336,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testRemoveMappingWorksAppWide() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         TenantIdentifier[] tenants = new TenantIdentifier[]{t1, t2, t3};
         int userCount = 0;
 
@@ -364,6 +381,14 @@ public class MultitenantAPITest {
 
     @Test
     public void testSameExternalIdAcrossUserPoolPrioritizesTenantOfInterest() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         JsonObject user1 = emailPasswordSignUp(t1, "user@example.com", "password1");
         JsonObject user2 = emailPasswordSignUp(t2, "user@example.com", "password2");
 
@@ -403,6 +428,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testUserIdFromDifferentAppIsAllowedForUserIdMapping() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         JsonObject user1 = emailPasswordSignUp(t1, "user@example.com", "password1");
         JsonObject user2 = emailPasswordSignUp(t4, "user1@example.com", "password2");
         JsonObject user3 = emailPasswordSignUp(t4, "user2@example.com", "password3");
@@ -418,7 +447,7 @@ public class MultitenantAPITest {
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     HttpRequestForTesting.getMultitenantUrl(t4, "/recipe/userid/map"), requestBody,
                     1000, 1000, null,
-                    SemVer.v2_22.get(), "useridmapping");
+                    SemVer.v3_0.get(), "useridmapping");
             fail();
         } catch (HttpResponseException e) {
             assertEquals(400, e.statusCode);

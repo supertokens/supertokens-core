@@ -91,4 +91,47 @@ public class VerifySessionAPITest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
     }
+
+    @Test
+    public void testSessionBehaviorForCDI2_22() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create dashboard user, create session and verify session
+        String email = "test@example.com";
+        String password = "testPass123";
+
+        Dashboard.signUpDashboardUser(process.getProcess(), email, password);
+
+        // create a session
+
+        String sessionId = Dashboard.signInDashboardUser(process.getProcess(), email, password);
+
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("sessionId", sessionId);
+        JsonObject verifyResponse1 = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/dashboard/session/verify", requestBody, 1000, 1000, null,
+                SemVer.v3_0.get(), "dashboard");
+        assertEquals(2, verifyResponse1.entrySet().size());
+        assertEquals("OK", verifyResponse1.get("status").getAsString());
+        assertEquals("test@example.com", verifyResponse1.get("email").getAsString());
+
+        Dashboard.revokeSessionWithSessionId(process.getProcess(), sessionId);
+
+        JsonObject verifyResponse2 = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/dashboard/session/verify", requestBody, 1000, 1000, null,
+                SemVer.v3_0.get(), "dashboard");
+
+        assertEquals(1, verifyResponse2.entrySet().size());
+        assertEquals("INVALID_SESSION_ERROR", verifyResponse2.get("status").getAsString());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
 }

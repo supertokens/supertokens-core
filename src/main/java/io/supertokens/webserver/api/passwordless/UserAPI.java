@@ -33,6 +33,7 @@ import io.supertokens.pluginInterface.passwordless.UserInfo;
 import io.supertokens.pluginInterface.passwordless.exception.DuplicatePhoneNumberException;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
+import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -123,6 +124,11 @@ public class UserAPI extends WebserverAPI {
                 result.addProperty("status", "OK");
 
                 JsonObject userJson = new JsonParser().parse(new Gson().toJson(user)).getAsJsonObject();
+
+                if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
+                    userJson.remove("tenantIds");
+                }
+
                 result.add("user", userJson);
                 super.sendJsonResponse(200, result, resp);
             }

@@ -50,7 +50,7 @@ public class Config extends ResourceDistributor.SingletonResource {
         this.main = main;
         final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
         CoreConfig config = mapper.readValue(new File(configFilePath), CoreConfig.class);
-        config.validate(main);
+        config.normalizeAndValidate(main);
         this.core = config;
     }
 
@@ -58,7 +58,7 @@ public class Config extends ResourceDistributor.SingletonResource {
         this.main = main;
         final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
         CoreConfig config = mapper.readValue(jsonConfig.toString(), CoreConfig.class);
-        config.validate(main);
+        config.normalizeAndValidate(main);
         this.core = config;
     }
 

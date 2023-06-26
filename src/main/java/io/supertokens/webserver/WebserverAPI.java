@@ -19,7 +19,6 @@ package io.supertokens.webserver;
 import com.google.gson.JsonElement;
 import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
-import io.supertokens.ProcessState;
 import io.supertokens.TenantIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
@@ -75,11 +74,11 @@ public abstract class WebserverAPI extends HttpServlet {
         supportedVersions.add(SemVer.v2_19);
         supportedVersions.add(SemVer.v2_20);
         supportedVersions.add(SemVer.v2_21);
-        supportedVersions.add(SemVer.v2_22);
+        supportedVersions.add(SemVer.v3_0);
     }
 
     public static SemVer getLatestCDIVersion() {
-        return SemVer.v2_22;
+        return SemVer.v3_0;
     }
 
     public WebserverAPI(Main main, String rid) {
@@ -272,8 +271,10 @@ public abstract class WebserverAPI extends HttpServlet {
         return null;
     }
 
-    private String getConnectionUriDomain(HttpServletRequest req) {
-        String connectionUriDomain = req.getServerName() + ":" + req.getServerPort();
+    private String getConnectionUriDomain(HttpServletRequest req) throws ServletException {
+        String connectionUriDomain = req.getServerName();
+        connectionUriDomain = Utils.normalizeAndValidateConnectionUriDomain(connectionUriDomain, false);
+
         try {
             if (Config.getConfig(new TenantIdentifier(connectionUriDomain, null, null), main) ==
                     Config.getConfig(new TenantIdentifier(null, null, null), main)) {
@@ -286,12 +287,12 @@ public abstract class WebserverAPI extends HttpServlet {
     }
 
     @TestOnly
-    protected TenantIdentifier getTenantIdentifierFromRequest(HttpServletRequest req) {
+    protected TenantIdentifier getTenantIdentifierFromRequest(HttpServletRequest req) throws ServletException {
         return new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req), this.getTenantId(req));
     }
 
     protected TenantIdentifierWithStorage getTenantIdentifierWithStorageFromRequest(HttpServletRequest req)
-            throws TenantOrAppNotFoundException {
+            throws TenantOrAppNotFoundException, ServletException {
         TenantIdentifier tenantIdentifier = new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req),
                 this.getTenantId(req));
         Storage storage = StorageLayer.getStorage(tenantIdentifier, main);
@@ -299,7 +300,7 @@ public abstract class WebserverAPI extends HttpServlet {
     }
 
     protected AppIdentifierWithStorage getAppIdentifierWithStorage(HttpServletRequest req)
-            throws TenantOrAppNotFoundException {
+            throws TenantOrAppNotFoundException, ServletException {
         TenantIdentifier tenantIdentifier = new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req),
                 this.getTenantId(req));
 
@@ -312,7 +313,7 @@ public abstract class WebserverAPI extends HttpServlet {
 
     protected AppIdentifierWithStorage getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(
             HttpServletRequest req)
-            throws TenantOrAppNotFoundException, BadPermissionException {
+            throws TenantOrAppNotFoundException, BadPermissionException, ServletException {
         TenantIdentifier tenantIdentifier = new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req),
                 this.getTenantId(req));
 
@@ -328,7 +329,7 @@ public abstract class WebserverAPI extends HttpServlet {
 
     protected TenantIdentifierWithStorageAndUserIdMapping getTenantIdentifierWithStorageAndUserIdMappingFromRequest(
             HttpServletRequest req, String userId, UserIdType userIdType)
-            throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException {
+            throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException, ServletException {
         TenantIdentifier tenantIdentifier = new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req),
                 this.getTenantId(req));
         return StorageLayer.getTenantIdentifierWithStorageAndUserIdMappingForUser(main, tenantIdentifier, userId,
@@ -337,7 +338,7 @@ public abstract class WebserverAPI extends HttpServlet {
 
     protected AppIdentifierWithStorageAndUserIdMapping getAppIdentifierWithStorageAndUserIdMappingFromRequest(
             HttpServletRequest req, String userId, UserIdType userIdType)
-            throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException {
+            throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException, ServletException {
         // This function uses storage of the tenent from which the request came from as a priorityStorage
         // while searching for the user across all storages for the app
         AppIdentifierWithStorage appIdentifierWithStorage = getAppIdentifierWithStorage(req);
@@ -402,7 +403,7 @@ public abstract class WebserverAPI extends HttpServlet {
             SemVer version = getVersionFromRequest(req);
 
             // Check for CDI version for multitenancy
-            if (version.lesserThan(SemVer.v2_22) && !tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
+            if (version.lesserThan(SemVer.v3_0) && !tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
                 sendTextResponse(404, "Not found", resp);
                 return;
             }
@@ -460,12 +461,24 @@ public abstract class WebserverAPI extends HttpServlet {
         return req.getHeader("rId");
     }
 
-    protected SemVer getVersionFromRequest(HttpServletRequest req) {
+    protected SemVer getVersionFromRequest(HttpServletRequest req) throws ServletException {
         String version = req.getHeader("cdi-version");
-        if (version == null) {
-            return getLatestCDIVersion();
+
+        if (version != null) {
+            return new SemVer(version);
         }
-        return new SemVer(version);
+
+        try {
+            String defaultCDIVersion = Config.getConfig(
+                    getAppIdentifierWithStorage(req).getAsPublicTenantIdentifier(), main).getDefaultCDIVersion();
+            if (defaultCDIVersion != null) {
+                return new SemVer(defaultCDIVersion);
+            }
+        } catch (TenantOrAppNotFoundException e) {
+            throw new ServletException(e);
+        }
+
+        return getLatestCDIVersion();
     }
 
     public static class BadRequestException extends Exception {

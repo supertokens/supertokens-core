@@ -151,13 +151,17 @@ public class CLIOptionsTest {
             assertEquals(Config.getConfig(process1.getProcess()).getErrorLogPath(process1.getProcess()),
                     Config.getConfig(process2.getProcess()).getErrorLogPath(process2.getProcess()));
 
-            Logging.debug(process.getProcess(), TenantIdentifier.BASE_TENANT, "test");
-            Logging.debug(process1.getProcess(), TenantIdentifier.BASE_TENANT, "test1");
-            Logging.debug(process2.getProcess(), TenantIdentifier.BASE_TENANT, "test2");
+            Logging.debug(process.getProcess(), TenantIdentifier.BASE_TENANT, "debugunique1");
+            Logging.debug(process1.getProcess(), TenantIdentifier.BASE_TENANT, "debugunique2");
+            Logging.debug(process2.getProcess(), TenantIdentifier.BASE_TENANT, "debugunique3");
 
-            Logging.error(process.getProcess(), TenantIdentifier.BASE_TENANT, "test", false);
-            Logging.error(process1.getProcess(), TenantIdentifier.BASE_TENANT, "test1", false);
-            Logging.error(process2.getProcess(), TenantIdentifier.BASE_TENANT, "test2", false);
+            Logging.info(process.getProcess(), TenantIdentifier.BASE_TENANT, "infounique1", false);
+            Logging.info(process1.getProcess(), TenantIdentifier.BASE_TENANT, "infounique2", false);
+            Logging.info(process2.getProcess(), TenantIdentifier.BASE_TENANT, "infounique3", false);
+
+            Logging.error(process.getProcess(), TenantIdentifier.BASE_TENANT, "errorunique1", false);
+            Logging.error(process1.getProcess(), TenantIdentifier.BASE_TENANT, "errorunique2", false);
+            Logging.error(process2.getProcess(), TenantIdentifier.BASE_TENANT, "errorunique3", false);
 
             boolean processInfoLog = false;
             boolean process1InfoLog = false;
@@ -166,6 +170,14 @@ public class CLIOptionsTest {
             boolean processErrorLog = false;
             boolean process1ErrorLog = false;
             boolean process2ErrorLog = false;
+
+            int infoTest1Count = 0;
+            int infoTest2Count = 0;
+            int infoTest3Count = 0;
+
+            int errrorTest1Count = 0;
+            int errrorTest2Count = 0;
+            int errrorTest3Count = 0;
 
             try (BufferedReader reader = new BufferedReader(
                     new FileReader(Config.getConfig(process.getProcess()).getInfoLogPath(process.getProcess())))) {
@@ -180,6 +192,16 @@ public class CLIOptionsTest {
                     }
                     if (currentReadingLine.contains(process.getProcess().getProcessId())) {
                         processInfoLog = true;
+                    }
+
+                    if (currentReadingLine.contains("infounique1")) {
+                        infoTest1Count++;
+                    }
+                    if (currentReadingLine.contains("infounique2")) {
+                        infoTest2Count++;
+                    }
+                    if (currentReadingLine.contains("infounique3")) {
+                        infoTest3Count++;
                     }
 
                     currentReadingLine = reader.readLine();
@@ -199,6 +221,17 @@ public class CLIOptionsTest {
                     if (currentReadingLine.contains(process.getProcess().getProcessId())) {
                         processErrorLog = true;
                     }
+
+                    if (currentReadingLine.contains("errorunique1")) {
+                        errrorTest1Count++;
+                    }
+                    if (currentReadingLine.contains("errorunique2")) {
+                        errrorTest2Count++;
+                    }
+                    if (currentReadingLine.contains("errorunique3")) {
+                        errrorTest3Count++;
+                    }
+
                     currentReadingLine = reader.readLine();
                 }
             }
@@ -207,6 +240,13 @@ public class CLIOptionsTest {
                     process1ErrorLog && process2ErrorLog && processErrorLog);
             assertTrue("processes do not log info to the same location",
                     processInfoLog && process2InfoLog && process1InfoLog);
+
+            assertEquals(3, infoTest1Count);
+            assertEquals(3, infoTest2Count);
+            assertEquals(3, infoTest3Count);
+            assertEquals(3, errrorTest1Count);
+            assertEquals(3, errrorTest2Count);
+            assertEquals(3, errrorTest3Count);
 
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));

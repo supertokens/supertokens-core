@@ -24,6 +24,7 @@ import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
@@ -73,6 +74,10 @@ public class MultitenantAPITest {
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         createTenants();
     }
@@ -160,7 +165,7 @@ public class MultitenantAPITest {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user/email/verify/token"),
                 requestBody, 1000, 1000, null,
-                SemVer.v2_22.get(), "emailverification");
+                SemVer.v3_0.get(), "emailverification");
 
         assertEquals(response.entrySet().size(), 2);
         assertEquals(response.get("status").getAsString(), "OK");
@@ -173,7 +178,7 @@ public class MultitenantAPITest {
         JsonObject response2 = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user/email/verify"),
                 verifyResponseBody, 1000, 1000, null,
-                SemVer.v2_22.get(), "emailverification");
+                SemVer.v3_0.get(), "emailverification");
 
         assertEquals(response2.entrySet().size(), 3);
         assertEquals(response2.get("status").getAsString(), "OK");
@@ -191,7 +196,7 @@ public class MultitenantAPITest {
         JsonObject verifyResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user/email/verify"), map, 1000, 1000,
                 null,
-                SemVer.v2_22.get(), "emailverification");
+                SemVer.v3_0.get(), "emailverification");
         assertEquals(verifyResponse.entrySet().size(), 2);
         assertEquals(verifyResponse.get("status").getAsString(), "OK");
         return verifyResponse.get("isVerified").getAsBoolean();
@@ -199,6 +204,14 @@ public class MultitenantAPITest {
 
     @Test
     public void testSameEmailAcrossDifferentUserPoolNeedsToBeVerifiedSeparately() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         verifyEmail(t1, "userid", "test@example.com");
         assertTrue(isEmailVerified(t1, "userid", "test@example.com"));
         assertFalse(isEmailVerified(t2, "userid", "test@example.com"));
@@ -207,6 +220,10 @@ public class MultitenantAPITest {
 
     @Test
     public void testSameEmailAcrossDifferentTenantButSameUserPoolDoesNotNeedVerificationAgain() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         verifyEmail(t2, "userid", "test@example.com");
         assertTrue(isEmailVerified(t2, "userid", "test@example.com"));
         assertTrue(isEmailVerified(t3, "userid", "test@example.com"));

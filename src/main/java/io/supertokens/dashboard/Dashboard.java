@@ -403,6 +403,23 @@ public class Dashboard {
         return false;
     }
 
+    public static String getEmailFromSessionId(AppIdentifierWithStorage appIdentifierWithStorage, Main main, String sessionId) throws StorageQueryException {
+        DashboardSessionInfo sessionInfo = appIdentifierWithStorage.getDashboardStorage()
+                .getSessionInfoWithSessionId(appIdentifierWithStorage, sessionId);
+
+        if (sessionInfo != null) {
+            String userId = sessionInfo.userId;
+
+            DashboardUser user = appIdentifierWithStorage.getDashboardStorage().getDashboardUserByUserId(appIdentifierWithStorage, userId);
+
+            if (user != null) {
+                return user.email;
+            }
+        }
+
+        return null;
+    }
+
     private static boolean patternMatcher(String input, String pattern) {
         return Pattern.compile(pattern).matcher(input).matches();
     }

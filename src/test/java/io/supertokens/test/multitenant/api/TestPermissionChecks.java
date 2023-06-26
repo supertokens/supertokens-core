@@ -21,6 +21,7 @@ import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
@@ -86,7 +87,7 @@ public class TestPermissionChecks {
     public void testPermissionsForListConnectionUriDomains() throws Exception {
         TestCase[] testCases = new TestCase[]{
                 new TestCase(
-                        new TenantIdentifier("127.0.0.1:3567", null, null), null,
+                        new TenantIdentifier("127.0.0.1", null, null), null,
                         "Only the public tenantId, public appId and default connectionUriDomain is allowed to list all connectionUriDomains and appIds associated with this core"
                 ),
                 new TestCase(
@@ -111,6 +112,14 @@ public class TestPermissionChecks {
                     .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
             process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
+            if (StorageLayer.isInMemDb(process.getProcess())) {
+                return;
+            }
 
             {
                 createTenant(process.getProcess(), testCase.sourceTenant);
@@ -137,11 +146,11 @@ public class TestPermissionChecks {
     public void testPermissionsForListApps() throws Exception {
         TestCase[] testCases = new TestCase[]{
                 new TestCase(
-                        new TenantIdentifier("127.0.0.1:3567", "a1", null), null,
+                        new TenantIdentifier("127.0.0.1", "a1", null), null,
                         "Only the public tenantId and public appId is allowed to list all apps associated with this connection uri domain"
                 ),
                 new TestCase(
-                        new TenantIdentifier("127.0.0.1:3567", null, "t1"), null,
+                        new TenantIdentifier("127.0.0.1", null, "t1"), null,
                         "Only the public tenantId and public appId is allowed to list all apps associated with this connection uri domain"
                 ),
                 new TestCase(
@@ -156,7 +165,7 @@ public class TestPermissionChecks {
                         new TenantIdentifier(null, null, null), null, null
                 ),
                 new TestCase(
-                        new TenantIdentifier("127.0.0.1:3567", null, null), null, null
+                        new TenantIdentifier("127.0.0.1", null, null), null, null
                 )
         };
 
@@ -169,6 +178,19 @@ public class TestPermissionChecks {
                     .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
             process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
+            if (StorageLayer.isInMemDb(process.getProcess())) {
+                if (!testCase.sourceTenant.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
+                    process.kill();
+                    assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
+                    continue;
+                }
+            }
 
             {
                 createTenant(process.getProcess(), testCase.sourceTenant);
@@ -195,11 +217,11 @@ public class TestPermissionChecks {
     public void testPermissionsForListTenants() throws Exception {
         TestCase[] testCases = new TestCase[]{
                 new TestCase(
-                        new TenantIdentifier("127.0.0.1:3567", "a1", "t1"), null,
+                        new TenantIdentifier("127.0.0.1", "a1", "t1"), null,
                         "Only the public tenantId is allowed to list all tenants associated with this app"
                 ),
                 new TestCase(
-                        new TenantIdentifier("127.0.0.1:3567", null, "t1"), null,
+                        new TenantIdentifier("127.0.0.1", null, "t1"), null,
                         "Only the public tenantId is allowed to list all tenants associated with this app"
                 ),
                 new TestCase(
@@ -210,13 +232,13 @@ public class TestPermissionChecks {
                         new TenantIdentifier(null, null, null), null, null
                 ),
                 new TestCase(
-                        new TenantIdentifier("127.0.0.1:3567", null, null), null, null
+                        new TenantIdentifier("127.0.0.1", null, null), null, null
                 ),
                 new TestCase(
                         new TenantIdentifier(null, "a1", null), null, null
                 ),
                 new TestCase(
-                        new TenantIdentifier("127.0.0.1:3567", "a1", null), null, null
+                        new TenantIdentifier("127.0.0.1", "a1", null), null, null
                 )
         };
 
@@ -229,6 +251,19 @@ public class TestPermissionChecks {
                     .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
             process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
+            if (StorageLayer.isInMemDb(process.getProcess())) {
+                if (!testCase.sourceTenant.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
+                    process.kill();
+                    assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
+                    continue;
+                }
+            }
 
             {
                 createTenant(process.getProcess(), testCase.sourceTenant);
@@ -256,21 +291,21 @@ public class TestPermissionChecks {
         TestCase[] testCases = new TestCase[]{
                 new TestCase(
                         new TenantIdentifier(null, null, null),
-                        new TenantIdentifier("127.0.0.1:3567", null, null),
+                        new TenantIdentifier("127.0.0.1", null, null),
                         null
                 ),
                 new TestCase(
-                        new TenantIdentifier("127.0.0.1:3567", null, null),
-                        new TenantIdentifier("127.0.0.1:3567", null, null),
+                        new TenantIdentifier("127.0.0.1", null, null),
+                        new TenantIdentifier("127.0.0.1", null, null),
                         null
                 ),
                 new TestCase(
-                        new TenantIdentifier("127.0.0.1:3567", null, null),
-                        new TenantIdentifier("localhost.org:3567", null, null),
+                        new TenantIdentifier("127.0.0.1", null, null),
+                        new TenantIdentifier("localhost.org", null, null),
                         "You must use the default or same connectionUriDomain to create/update a connectionUriDomain"
                 ),
                 new TestCase(
-                        new TenantIdentifier("127.0.0.1:3567", null, null),
+                        new TenantIdentifier("127.0.0.1", null, null),
                         new TenantIdentifier(null, null, null),
                         "connectionUriDomain should not be an empty String"
                 )
@@ -285,6 +320,14 @@ public class TestPermissionChecks {
                     .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
             process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
+            if (StorageLayer.isInMemDb(process.getProcess())) {
+                return;
+            }
 
             {
                 createTenant(process.getProcess(), testCase.sourceTenant);
@@ -325,7 +368,7 @@ public class TestPermissionChecks {
                 ),
                 new TestCase(
                         new TenantIdentifier(null, null, null),
-                        new TenantIdentifier("127.0.0.1:3567", null, null),
+                        new TenantIdentifier("127.0.0.1", null, null),
                         null
                 ),
                 new TestCase(
@@ -335,7 +378,7 @@ public class TestPermissionChecks {
                 ),
                 new TestCase(
                         new TenantIdentifier(null, null, null),
-                        new TenantIdentifier("localhost:3567", null, null),
+                        new TenantIdentifier("localhost", null, null),
                         null
                 ),
                 new TestCase(
@@ -345,7 +388,7 @@ public class TestPermissionChecks {
                 ),
                 new TestCase(
                         new TenantIdentifier(null, null, null),
-                        new TenantIdentifier("abc.co:3567", null, null),
+                        new TenantIdentifier("abc.co", null, null),
                         null
                 ),
                 new TestCase(
@@ -355,7 +398,7 @@ public class TestPermissionChecks {
                 ),
                 new TestCase(
                         new TenantIdentifier(null, null, null),
-                        new TenantIdentifier("sub-domain.example.com:3567", null, null),
+                        new TenantIdentifier("sub-domain.example.com", null, null),
                         null
                 ),
                 new TestCase(
@@ -394,6 +437,14 @@ public class TestPermissionChecks {
                     .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
             process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.isInMemDb(process.getProcess())) {
+                return;
+            }
+
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
 
             {
                 createTenant(process.getProcess(), testCase.sourceTenant);
@@ -464,6 +515,9 @@ public class TestPermissionChecks {
             } catch (Exception ignored) {
             }
         }
+
+        assertEquals("abccom", io.supertokens.webserver.Utils.normalizeAndValidateConnectionUriDomain("abccom", false));
+        assertEquals("local_host", io.supertokens.webserver.Utils.normalizeAndValidateConnectionUriDomain("local_host", false));
     }
 
     @Test
@@ -480,13 +534,13 @@ public class TestPermissionChecks {
                         null
                 ),
                 new TestCase(
-                        new TenantIdentifier("127.0.0.1:3567", null, null),
-                        new TenantIdentifier("127.0.0.1:3567", "a1", null),
+                        new TenantIdentifier("127.0.0.1", null, null),
+                        new TenantIdentifier("127.0.0.1", "a1", null),
                         null
                 ),
                 new TestCase(
-                        new TenantIdentifier("127.0.0.1:3567", "a1", null),
-                        new TenantIdentifier("127.0.0.1:3567", "a1", null),
+                        new TenantIdentifier("127.0.0.1", "a1", null),
+                        new TenantIdentifier("127.0.0.1", "a1", null),
                         null
                 ),
                 new TestCase(
@@ -495,8 +549,8 @@ public class TestPermissionChecks {
                         "You must use the public tenantId and, public or same appId to add/update an app"
                 ),
                 new TestCase(
-                        new TenantIdentifier("127.0.0.1:3567", null, "t1"),
-                        new TenantIdentifier("127.0.0.1:3567", "a1", null),
+                        new TenantIdentifier("127.0.0.1", null, "t1"),
+                        new TenantIdentifier("127.0.0.1", "a1", null),
                         "You must use the public tenantId and, public or same appId to add/update an app"
                 ),
                 new TestCase(
@@ -505,8 +559,8 @@ public class TestPermissionChecks {
                         "You must use the public tenantId and, public or same appId to add/update an app"
                 ),
                 new TestCase(
-                        new TenantIdentifier("127.0.0.1:3567", "a1", null),
-                        new TenantIdentifier("127.0.0.1:3567", "a2", null),
+                        new TenantIdentifier("127.0.0.1", "a1", null),
+                        new TenantIdentifier("127.0.0.1", "a2", null),
                         "You must use the public tenantId and, public or same appId to add/update an app"
                 ),
         };
@@ -520,6 +574,19 @@ public class TestPermissionChecks {
                     .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
             process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
+            if (StorageLayer.isInMemDb(process.getProcess())) {
+                if (!testCase.sourceTenant.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI) || !testCase.targetTenant.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
+                    process.kill();
+                    assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
+                    continue;
+                }
+            }
 
             {
                 createTenant(process.getProcess(), testCase.sourceTenant);
@@ -585,6 +652,10 @@ public class TestPermissionChecks {
             process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
             {
                 createTenant(process.getProcess(), testCase.sourceTenant);
 
@@ -638,13 +709,13 @@ public class TestPermissionChecks {
                         null
                 ),
                 new TestCase(
-                        new TenantIdentifier("127.0.0.1:3567", "a1", null),
-                        new TenantIdentifier("127.0.0.1:3567", "a1", "t1"),
+                        new TenantIdentifier("127.0.0.1", "a1", null),
+                        new TenantIdentifier("127.0.0.1", "a1", "t1"),
                         null
                 ),
                 new TestCase(
-                        new TenantIdentifier("127.0.0.1:3567", "a1", "t1"),
-                        new TenantIdentifier("127.0.0.1:3567", "a1", "t1"),
+                        new TenantIdentifier("127.0.0.1", "a1", "t1"),
+                        new TenantIdentifier("127.0.0.1", "a1", "t1"),
                         null
                 ),
                 new TestCase(
@@ -658,8 +729,8 @@ public class TestPermissionChecks {
                         "You must use the public or same tenantId to add/update a tenant"
                 ),
                 new TestCase(
-                        new TenantIdentifier("127.0.0.1:3567", "a1", "t1"),
-                        new TenantIdentifier("127.0.0.1:3567", "a1", "t2"),
+                        new TenantIdentifier("127.0.0.1", "a1", "t1"),
+                        new TenantIdentifier("127.0.0.1", "a1", "t2"),
                         "You must use the public or same tenantId to add/update a tenant"
                 ),
         };
@@ -673,6 +744,19 @@ public class TestPermissionChecks {
                     .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
             process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
+            if (StorageLayer.isInMemDb(process.getProcess())) {
+                if (!testCase.sourceTenant.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI) || !testCase.targetTenant.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
+                    process.kill();
+                    assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
+                    continue;
+                }
+            }
 
             {
                 createTenant(process.getProcess(), testCase.sourceTenant);
@@ -738,6 +822,10 @@ public class TestPermissionChecks {
             process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
             {
                 createTenant(process.getProcess(), testCase.sourceTenant);
 
@@ -772,7 +860,7 @@ public class TestPermissionChecks {
         TestCase[] testCases = new TestCase[]{
                 new TestCase(
                         new TenantIdentifier(null, null, null),
-                        new TenantIdentifier("127.0.0.1:3567", null, null),
+                        new TenantIdentifier("127.0.0.1", null, null),
                         null
                 ),
                 new TestCase(
@@ -781,8 +869,8 @@ public class TestPermissionChecks {
                         "connectionUriDomain should not be an empty String"
                 ),
                 new TestCase(
-                        new TenantIdentifier("127.0.0.1:3567", null, null),
-                        new TenantIdentifier("127.0.0.1:3567", null, null),
+                        new TenantIdentifier("127.0.0.1", null, null),
+                        new TenantIdentifier("127.0.0.1", null, null),
                         "Only the public tenantId, public appId and default connectionUriDomain is allowed to delete a connectionUriDomain"
                 ),
         };
@@ -796,6 +884,14 @@ public class TestPermissionChecks {
                     .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
             process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
+            if (StorageLayer.isInMemDb(process.getProcess())) {
+                return;
+            }
 
             {
                 createTenant(process.getProcess(), testCase.sourceTenant);
@@ -828,8 +924,8 @@ public class TestPermissionChecks {
                         null
                 ),
                 new TestCase(
-                        new TenantIdentifier("127.0.0.1:3567", null, null),
-                        new TenantIdentifier("127.0.0.1:3567", "a1", null),
+                        new TenantIdentifier("127.0.0.1", null, null),
+                        new TenantIdentifier("127.0.0.1", "a1", null),
                         null
                 ),
                 new TestCase(
@@ -843,13 +939,13 @@ public class TestPermissionChecks {
                         "Only the public tenantId and public appId is allowed to delete an app"
                 ),
                 new TestCase(
-                        new TenantIdentifier("127.0.0.1:3567", null, "t1"),
-                        new TenantIdentifier("127.0.0.1:3567", "a1", null),
+                        new TenantIdentifier("127.0.0.1", null, "t1"),
+                        new TenantIdentifier("127.0.0.1", "a1", null),
                         "Only the public tenantId and public appId is allowed to delete an app"
                 ),
                 new TestCase(
-                        new TenantIdentifier("127.0.0.1:3567", "a1", null),
-                        new TenantIdentifier("127.0.0.1:3567", "a1", null),
+                        new TenantIdentifier("127.0.0.1", "a1", null),
+                        new TenantIdentifier("127.0.0.1", "a1", null),
                         "Only the public tenantId and public appId is allowed to delete an app"
                 ),
                 new TestCase(
@@ -868,6 +964,19 @@ public class TestPermissionChecks {
                     .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
             process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
+            if (StorageLayer.isInMemDb(process.getProcess())) {
+                if (!testCase.sourceTenant.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI) || !testCase.targetTenant.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
+                    process.kill();
+                    assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
+                    continue;
+                }
+            }
 
             {
                 createTenant(process.getProcess(), testCase.sourceTenant);
@@ -905,8 +1014,8 @@ public class TestPermissionChecks {
                         null
                 ),
                 new TestCase(
-                        new TenantIdentifier("127.0.0.1:3567", "a1", null),
-                        new TenantIdentifier("127.0.0.1:3567", "a1", "t1"),
+                        new TenantIdentifier("127.0.0.1", "a1", null),
+                        new TenantIdentifier("127.0.0.1", "a1", "t1"),
                         null
                 ),
                 new TestCase(
@@ -930,13 +1039,13 @@ public class TestPermissionChecks {
                         "Only the public tenantId is allowed to delete a tenant"
                 ),
                 new TestCase(
-                        new TenantIdentifier("127.0.0.1:3567", "a1", "t1"),
-                        new TenantIdentifier("127.0.0.1:3567", "a1", "t2"),
+                        new TenantIdentifier("127.0.0.1", "a1", "t1"),
+                        new TenantIdentifier("127.0.0.1", "a1", "t2"),
                         "Only the public tenantId is allowed to delete a tenant"
                 ),
                 new TestCase(
-                        new TenantIdentifier("127.0.0.1:3567", "a1", "t1"),
-                        new TenantIdentifier("127.0.0.1:3567", "a1", "t1"),
+                        new TenantIdentifier("127.0.0.1", "a1", "t1"),
+                        new TenantIdentifier("127.0.0.1", "a1", "t1"),
                         "Only the public tenantId is allowed to delete a tenant"
                 ),
                 new TestCase(
@@ -950,8 +1059,8 @@ public class TestPermissionChecks {
                         "Cannot delete public tenant, use remove app API instead"
                 ),
                 new TestCase(
-                        new TenantIdentifier("127.0.0.1:3567", "a1", null),
-                        new TenantIdentifier("127.0.0.1:3567", "a1", "public"),
+                        new TenantIdentifier("127.0.0.1", "a1", null),
+                        new TenantIdentifier("127.0.0.1", "a1", "public"),
                         "Cannot delete public tenant, use remove app API instead"
                 )
         };
@@ -965,6 +1074,19 @@ public class TestPermissionChecks {
                     .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
             process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
+            if (StorageLayer.isInMemDb(process.getProcess())) {
+                if (!testCase.sourceTenant.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI) || !testCase.targetTenant.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
+                    process.kill();
+                    assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
+                    continue;
+                }
+            }
 
             {
                 createTenant(process.getProcess(), testCase.sourceTenant);

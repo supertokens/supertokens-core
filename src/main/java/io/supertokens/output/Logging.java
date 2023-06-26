@@ -28,6 +28,7 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.pluginInterface.LOG_LEVEL;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.Webserver;
@@ -174,7 +175,8 @@ public class Logging extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public static void error(Main main, TenantIdentifier tenantIdentifier, String message, boolean toConsoleAsWell, Exception e) {
+    public static void error(Main main, TenantIdentifier tenantIdentifier, String message, boolean toConsoleAsWell,
+                             Exception e) {
         try {
             if (!Config.getConfig(new TenantIdentifier(null, null, null), main).getLogLevels(main)
                     .contains(LOG_LEVEL.ERROR)) {
@@ -220,6 +222,10 @@ public class Logging extends ResourceDistributor.SingletonResource {
         if (getInstance(main) == null) {
             return;
         }
+        getInstance(main).infoLogger.getLoggerContext().stop();
+        getInstance(main).errorLogger.getLoggerContext().stop();
+        getInstance(main).infoLogger.getLoggerContext().getStatusManager().clear();
+        getInstance(main).errorLogger.getLoggerContext().getStatusManager().clear();
         getInstance(main).infoLogger.detachAndStopAllAppenders();
         getInstance(main).errorLogger.detachAndStopAllAppenders();
         Webserver.getInstance(main).closeLogger();

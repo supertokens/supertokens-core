@@ -19,103 +19,135 @@ package io.supertokens.config;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.cliOptions.CLIOptions;
-import io.supertokens.exceptions.QuitProgramException;
+import io.supertokens.config.annotations.ConfigYamlOnly;
+import io.supertokens.config.annotations.IgnoreForAnnotationCheck;
+import io.supertokens.config.annotations.NotConflictingInApp;
 import io.supertokens.pluginInterface.LOG_LEVEL;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
+import io.supertokens.utils.SemVer;
+import io.supertokens.webserver.WebserverAPI;
 import org.apache.catalina.filters.RemoteAddrFilter;
 import org.jetbrains.annotations.TestOnly;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.*;
 import java.util.regex.PatternSyntaxException;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CoreConfig {
 
+    @IgnoreForAnnotationCheck
     @JsonProperty
     private int core_config_version = -1;
 
+    @NotConflictingInApp
     @JsonProperty
     private long access_token_validity = 3600; // in seconds
 
+    @NotConflictingInApp
     @JsonProperty
     private boolean access_token_blacklisting = false;
 
+    @NotConflictingInApp
     @JsonProperty
     private double refresh_token_validity = 60 * 2400; // in mins
 
+    @IgnoreForAnnotationCheck
     @JsonProperty
     private long password_reset_token_lifetime = 3600000; // in MS
 
+    @IgnoreForAnnotationCheck
     @JsonProperty
     private long email_verification_token_lifetime = 24 * 3600 * 1000; // in MS
 
+    @IgnoreForAnnotationCheck
     @JsonProperty
     private int passwordless_max_code_input_attempts = 5;
 
+    @IgnoreForAnnotationCheck
     @JsonProperty
     private long passwordless_code_lifetime = 900000; // in MS
 
+    @IgnoreForAnnotationCheck
     @JsonProperty
     private int totp_max_attempts = 5;
 
+    @IgnoreForAnnotationCheck
     @JsonProperty
     private int totp_rate_limit_cooldown_sec = 900; // in seconds (Default 15 mins)
 
+    @IgnoreForAnnotationCheck
     private final String logDefault = "asdkfahbdfk3kjHS";
+
+    @ConfigYamlOnly
     @JsonProperty
     private String info_log_path = logDefault;
 
+    @ConfigYamlOnly
     @JsonProperty
     private String error_log_path = logDefault;
 
+    @NotConflictingInApp
     @JsonProperty
     private boolean access_token_signing_key_dynamic = true;
 
+    @NotConflictingInApp
     @JsonProperty("access_token_dynamic_signing_key_update_interval")
     @JsonAlias({"access_token_dynamic_signing_key_update_interval", "access_token_signing_key_update_interval"})
     private double access_token_dynamic_signing_key_update_interval = 168; // in hours
 
+    @ConfigYamlOnly
     @JsonProperty
     private int port = 3567;
 
+    @ConfigYamlOnly
     @JsonProperty
     private String host = "localhost";
 
+    @ConfigYamlOnly
     @JsonProperty
     private int max_server_pool_size = 10;
 
+    @NotConflictingInApp
     @JsonProperty
     private String api_keys = null;
 
+    @NotConflictingInApp
     @JsonProperty
     private boolean disable_telemetry = false;
 
+    @NotConflictingInApp
     @JsonProperty
     private String password_hashing_alg = "BCRYPT";
 
+    @NotConflictingInApp
     @JsonProperty
     private int argon2_iterations = 1;
 
+    @NotConflictingInApp
     @JsonProperty
     private int argon2_memory_kb = 87795; // 85 mb
 
+    @NotConflictingInApp
     @JsonProperty
     private int argon2_parallelism = 2;
 
+    @ConfigYamlOnly
     @JsonProperty
     private int argon2_hashing_pool_size = 1;
 
+    @ConfigYamlOnly
     @JsonProperty
     private int firebase_password_hashing_pool_size = 1;
 
+    @NotConflictingInApp
     @JsonProperty
     private int bcrypt_log_rounds = 11;
 
@@ -127,28 +159,43 @@ public class CoreConfig {
     // # example if you are using multiple cloud vendors, then it is recommended to
     // set this to true.
     // # webserver_https_enabled:
+    @ConfigYamlOnly
     @JsonProperty
     private boolean webserver_https_enabled = false;
 
+    @ConfigYamlOnly
     @JsonProperty
     private String base_path = "";
 
+    @ConfigYamlOnly
     @JsonProperty
     private String log_level = "INFO";
 
+    @NotConflictingInApp
     @JsonProperty
     private String firebase_password_hashing_signer_key = null;
 
+    @IgnoreForAnnotationCheck
     @JsonProperty
     private String ip_allow_regex = null;
 
+    @IgnoreForAnnotationCheck
     @JsonProperty
     private String ip_deny_regex = null;
 
+    @ConfigYamlOnly
     @JsonProperty
     private String supertokens_saas_secret = null;
 
+    @NotConflictingInApp
+    @JsonProperty
+    private String supertokens_default_cdi_version = null;
+
+    @IgnoreForAnnotationCheck
     private Set<LOG_LEVEL> allowedLogLevels = null;
+
+    @IgnoreForAnnotationCheck
+    private boolean isNormalizedAndValid = false;
 
     public static Set<String> getValidFields() {
         CoreConfig coreConfig = new CoreConfig();
@@ -165,16 +212,10 @@ public class CoreConfig {
     }
 
     public String getIpAllowRegex() {
-        if (ip_allow_regex != null && ip_allow_regex.trim().equals("")) {
-            return null;
-        }
         return ip_allow_regex;
     }
 
     public String getIpDenyRegex() {
-        if (ip_deny_regex != null && ip_deny_regex.trim().equals("")) {
-            return null;
-        }
         return ip_deny_regex;
     }
 
@@ -182,7 +223,7 @@ public class CoreConfig {
         if (allowedLogLevels != null) {
             return allowedLogLevels;
         }
-        LOG_LEVEL logLevel = LOG_LEVEL.valueOf(this.log_level.toUpperCase());
+        LOG_LEVEL logLevel = LOG_LEVEL.valueOf(this.log_level);
         allowedLogLevels = new HashSet<>();
         if (logLevel == LOG_LEVEL.NONE) {
             return allowedLogLevels;
@@ -204,19 +245,6 @@ public class CoreConfig {
     }
 
     public String getBasePath() {
-        String base_path = this.base_path; // Don't modify the original value from the config
-        if (base_path == null || base_path.equals("/") || base_path.isEmpty()) {
-            return "";
-        }
-        while (base_path.contains("//")) { // Catch corner case where there are multiple '/' together
-            base_path = base_path.replace("//", "/");
-        }
-        if (!base_path.startsWith("/")) { // Add leading '/'
-            base_path = "/" + base_path;
-        }
-        if (base_path.endsWith("/")) { // Remove trailing '/'
-            base_path = base_path.substring(0, base_path.length() - 1);
-        }
         return base_path;
     }
 
@@ -225,17 +253,11 @@ public class CoreConfig {
     }
 
     public int getArgon2HashingPoolSize() {
-        // the reason we do Math.max below is that if the password hashing algo is
-        // bcrypt,
-        // then we don't check the argon2 hashing pool size config at all. In this case,
-        // if the user gives a <= 0 number, it crashes the core (since it creates a
-        // blockedqueue in PaswordHashing
-        // .java with length <= 0). So we do a Math.max
-        return Math.max(1, argon2_hashing_pool_size);
+        return argon2_hashing_pool_size;
     }
 
     public int getFirebaseSCryptPasswordHashingPoolSize() {
-        return Math.max(1, firebase_password_hashing_pool_size);
+        return firebase_password_hashing_pool_size;
     }
 
     public int getArgon2Iterations() {
@@ -275,7 +297,7 @@ public class CoreConfig {
     }
 
     public long getAccessTokenValidity() {
-        return access_token_validity * 1000;
+        return access_token_validity;
     }
 
     public boolean getAccessTokenBlacklisting() {
@@ -283,7 +305,7 @@ public class CoreConfig {
     }
 
     public long getRefreshTokenValidity() {
-        return (long) (refresh_token_validity * 60 * 1000);
+        return (long) (refresh_token_validity);
     }
 
     public long getPasswordResetTokenLifetime() {
@@ -318,24 +340,10 @@ public class CoreConfig {
     }
 
     public String getInfoLogPath(Main main) {
-        if (info_log_path == null || info_log_path.equalsIgnoreCase("null")) {
-            return "null";
-        }
-        if (info_log_path.equals(logDefault)) {
-            // this works for windows as well
-            return CLIOptions.get(main).getInstallationPath() + "logs/info.log";
-        }
         return info_log_path;
     }
 
     public String getErrorLogPath(Main main) {
-        if (error_log_path == null || error_log_path.equalsIgnoreCase("null")) {
-            return "null";
-        }
-        if (error_log_path.equals(logDefault)) {
-            // this works for windows as well
-            return CLIOptions.get(main).getInstallationPath() + "logs/error.log";
-        }
         return error_log_path;
     }
 
@@ -344,7 +352,7 @@ public class CoreConfig {
     }
 
     public long getAccessTokenDynamicSigningKeyUpdateInterval() {
-        return (long) (access_token_dynamic_signing_key_update_interval * 3600 * 1000);
+        return (long) (access_token_dynamic_signing_key_update_interval);
     }
 
     public String[] getAPIKeys() {
@@ -355,25 +363,14 @@ public class CoreConfig {
     }
 
     public String getSuperTokensSaaSSecret() {
-        if (supertokens_saas_secret != null) {
-            return supertokens_saas_secret.trim();
-        }
-        return null;
+        return supertokens_saas_secret;
     }
 
     public int getPort(Main main) {
-        Integer cliPort = CLIOptions.get(main).getPort();
-        if (cliPort != null) {
-            return cliPort;
-        }
         return port;
     }
 
     public String getHost(Main main) {
-        String cliHost = CLIOptions.get(main).getHost();
-        if (cliHost != null) {
-            return cliHost;
-        }
         return host;
     }
 
@@ -391,8 +388,13 @@ public class CoreConfig {
                 : CLIOptions.get(main).getConfigFilePath()).getAbsolutePath();
     }
 
-    void validate(Main main) throws InvalidConfigException {
-        if (getConfigVersion() == -1) {
+    void normalizeAndValidate(Main main) throws InvalidConfigException {
+        if (isNormalizedAndValid) {
+            return;
+        }
+
+        // Validate
+        if (core_config_version == -1) {
             throw new InvalidConfigException(
                     "'core_config_version' is not set in the config.yaml file. Please redownload and install "
                             + "SuperTokens");
@@ -405,6 +407,7 @@ public class CoreConfig {
         Boolean validityTesting = CoreConfigTestContent.getInstance(main)
                 .getValue(CoreConfigTestContent.VALIDITY_TESTING);
         validityTesting = validityTesting == null ? false : validityTesting;
+
         if ((refresh_token_validity * 60) <= access_token_validity) {
             if (!Main.isTesting || validityTesting) {
                 throw new InvalidConfigException(
@@ -554,6 +557,111 @@ public class CoreConfig {
                 }
             }
         }
+
+        if (supertokens_default_cdi_version != null) {
+            try {
+                SemVer version = new SemVer(supertokens_default_cdi_version);
+
+                if (!WebserverAPI.supportedVersions.contains(version)) {
+                    throw new InvalidConfigException("supertokens_default_cdi_version is not a supported version");
+                }
+            } catch (IllegalArgumentException e) {
+                throw new InvalidConfigException("supertokens_default_cdi_version is not a valid semantic version");
+            }
+        }
+
+        // Normalize
+        if (ip_allow_regex != null) {
+            ip_allow_regex = ip_allow_regex.trim();
+            if (ip_allow_regex.equals("")) {
+                ip_allow_regex = null;
+            }
+        }
+        if (ip_deny_regex != null) {
+            ip_deny_regex = ip_deny_regex.trim();
+            if (ip_deny_regex.equals("")) {
+                ip_deny_regex = null;
+            }
+        }
+
+        if (log_level != null) {
+            log_level = log_level.trim().toUpperCase();
+        }
+
+        { // info_log_path
+            if (info_log_path == null || info_log_path.equalsIgnoreCase("null")) {
+                info_log_path = "null";
+            } else {
+                if (info_log_path.equals(logDefault)) {
+                    // this works for windows as well
+                    info_log_path = CLIOptions.get(main).getInstallationPath() + "logs/info.log";
+                }
+            }
+        }
+
+        { // error_log_path
+            if (error_log_path == null || error_log_path.equalsIgnoreCase("null")) {
+                error_log_path = "null";
+            } else {
+                if (error_log_path.equals(logDefault)) {
+                    // this works for windows as well
+                    error_log_path = CLIOptions.get(main).getInstallationPath() + "logs/error.log";
+                }
+            }
+        }
+
+        { // base_path
+            String n_base_path = this.base_path; // Don't modify the original value from the config
+            if (n_base_path == null || n_base_path.equals("/") || n_base_path.isEmpty()) {
+                base_path = "";
+            } else {
+                while (n_base_path.contains("//")) { // Catch corner case where there are multiple '/' together
+                    n_base_path = n_base_path.replace("//", "/");
+                }
+                if (!n_base_path.startsWith("/")) { // Add leading '/'
+                    n_base_path = "/" + n_base_path;
+                }
+                if (n_base_path.endsWith("/")) { // Remove trailing '/'
+                    n_base_path = n_base_path.substring(0, n_base_path.length() - 1);
+                }
+                base_path = n_base_path;
+            }
+        }
+
+        // the reason we do Math.max below is that if the password hashing algo is
+        // bcrypt,
+        // then we don't check the argon2 hashing pool size config at all. In this case,
+        // if the user gives a <= 0 number, it crashes the core (since it creates a
+        // blockedqueue in PaswordHashing
+        // .java with length <= 0). So we do a Math.max
+        argon2_hashing_pool_size = Math.max(1, argon2_hashing_pool_size);
+
+        firebase_password_hashing_pool_size = Math.max(1, firebase_password_hashing_pool_size);
+
+        if (api_keys != null) {
+            String[] apiKeys = api_keys.trim().replaceAll("\\s", "").split(",");
+            Arrays.sort(apiKeys);
+            api_keys = String.join(",", apiKeys);
+        }
+        if (supertokens_saas_secret != null) {
+            supertokens_saas_secret = supertokens_saas_secret.trim();
+        }
+
+        Integer cliPort = CLIOptions.get(main).getPort();
+        if (cliPort != null) {
+            port = cliPort;
+        }
+
+        String cliHost = CLIOptions.get(main).getHost();
+        if (cliHost != null) {
+            host = cliHost;
+        }
+
+        access_token_validity = access_token_validity * 1000;
+        access_token_dynamic_signing_key_update_interval = access_token_dynamic_signing_key_update_interval * 3600 * 1000;
+        refresh_token_validity = refresh_token_validity * 60 * 1000;
+
+        isNormalizedAndValid = true;
     }
 
     public void createLoggingFile(Main main) throws IOException {
@@ -582,141 +690,34 @@ public class CoreConfig {
 
     static void assertThatCertainConfigIsNotSetForAppOrTenants(JsonObject config) throws InvalidConfigException {
         // these are all configs that are per core. So we do not allow the developer to set these dynamically.
-        if (config.has("argon2_hashing_pool_size")) {
-            throw new InvalidConfigException(
-                    "argon2_hashing_pool_size can only be set via the core's base config setting");
-        }
-
-        if (config.has("firebase_password_hashing_pool_size")) {
-            throw new InvalidConfigException(
-                    "firebase_password_hashing_pool_size can only be set via the core's base config setting");
-        }
-
-        if (config.has("base_path")) {
-            throw new InvalidConfigException(
-                    "base_path can only be set via the core's base config setting");
-        }
-
-        if (config.has("log_level")) {
-            throw new InvalidConfigException(
-                    "log_level can only be set via the core's base config setting");
-        }
-
-        if (config.has("host")) {
-            throw new InvalidConfigException(
-                    "host can only be set via the core's base config setting");
-        }
-
-        if (config.has("port")) {
-            throw new InvalidConfigException(
-                    "port can only be set via the core's base config setting");
-        }
-
-        if (config.has("info_log_path")) {
-            throw new InvalidConfigException(
-                    "info_log_path can only be set via the core's base config setting");
-        }
-
-        if (config.has("error_log_path")) {
-            throw new InvalidConfigException(
-                    "error_log_path can only be set via the core's base config setting");
-        }
-
-        if (config.has("webserver_https_enabled")) {
-            throw new InvalidConfigException(
-                    "webserver_https_enabled can only be set via the core's base config setting");
-        }
-
-        if (config.has("max_server_pool_size")) {
-            throw new InvalidConfigException(
-                    "max_server_pool_size can only be set via the core's base config setting");
-        }
-
-        if (config.has("supertokens_saas_secret")) {
-            throw new InvalidConfigException(
-                    "supertokens_saas_secret can only be set via the core's base config setting");
+        for (Field field : CoreConfig.class.getDeclaredFields()) {
+            if (field.isAnnotationPresent(ConfigYamlOnly.class)) {
+                if (config.has(field.getName())) {
+                    throw new InvalidConfigException(field.getName() + " can only be set via the core's base config setting");
+                }
+            }
         }
     }
 
     void assertThatConfigFromSameAppIdAreNotConflicting(CoreConfig other) throws InvalidConfigException {
-        // we do not allow different values for this across tenants in the same app cause the keys are shared
-        // across all tenants
-        if (other.getAccessTokenSigningKeyDynamic() != this.getAccessTokenSigningKeyDynamic()) {
-            throw new InvalidConfigException(
-                    "You cannot set different values for access_token_signing_key_dynamic for the same appId");
-        }
-
-        // we do not allow different values for this across tenants in the same app cause the keys are shared
-        // across all tenants
-        if (other.getAccessTokenDynamicSigningKeyUpdateInterval() !=
-                this.getAccessTokenDynamicSigningKeyUpdateInterval()) {
-            throw new InvalidConfigException(
-                    "You cannot set different values for access_token_dynamic_signing_key_update_interval for the " +
-                            "same appId");
-        }
-
-        if (other.getAccessTokenValidity() != this.getAccessTokenValidity()) {
-            throw new InvalidConfigException(
-                    "You cannot set different values for access_token_validity for the same appId");
-        }
-
-        if (other.getRefreshTokenValidity() != this.getRefreshTokenValidity()) {
-            throw new InvalidConfigException(
-                    "You cannot set different values for refresh_token_validity for the same appId");
-        }
-
-        if (other.getAccessTokenBlacklisting() != this.getAccessTokenBlacklisting()) {
-            throw new InvalidConfigException(
-                    "You cannot set different values for access_token_blacklisting for the same appId");
-        }
-
-        if (!other.getPasswordHashingAlg().equals(this.getPasswordHashingAlg())) {
-            throw new InvalidConfigException(
-                    "You cannot set different values for password_hashing_alg for the same appId");
-        }
-
-        if (other.getArgon2Iterations() != this.getArgon2Iterations()) {
-            throw new InvalidConfigException(
-                    "You cannot set different values for argon2_iterations for the same appId");
-        }
-
-        if (other.getArgon2MemoryKb() != this.getArgon2MemoryKb()) {
-            throw new InvalidConfigException(
-                    "You cannot set different values for argon2_memory_kb for the same appId");
-        }
-
-        if (other.getArgon2Parallelism() != this.getArgon2Parallelism()) {
-            throw new InvalidConfigException(
-                    "You cannot set different values for argon2_parallelism for the same appId");
-        }
-
-        if (other.getBcryptLogRounds() != this.getBcryptLogRounds()) {
-            throw new InvalidConfigException(
-                    "You cannot set different values for bcrypt_log_rounds for the same appId");
-        }
-
-        if (!Objects.equals(other.firebase_password_hashing_signer_key, this.firebase_password_hashing_signer_key)) {
-            throw new InvalidConfigException(
-                    "You cannot set different values for firebase_password_hashing_signer_key for the same appId");
-        }
-
-        if (other.isTelemetryDisabled() != this.isTelemetryDisabled()) {
-            throw new InvalidConfigException(
-                    "You cannot set different values for disable_telemetry for the same appId");
-        }
-
-        // Check that the same set of API keys are present
-        {
-            String[] thisKeys = this.getAPIKeys() == null ? new String[0] : Arrays.copyOf(this.getAPIKeys(), this.getAPIKeys().length);
-            String[] otherKeys = other.getAPIKeys() == null ? new String[0] : Arrays.copyOf(other.getAPIKeys(), other.getAPIKeys().length);
-            Arrays.sort(thisKeys);
-            Arrays.sort(otherKeys);
-
-            if (!Arrays.equals(thisKeys, otherKeys)) {
-                throw new InvalidConfigException(
-                        "You cannot set different values for api_keys for the same appId");
+        // we do not allow different values for this across tenants in the same app
+        for (Field field : CoreConfig.class.getDeclaredFields()) {
+            if (field.isAnnotationPresent(NotConflictingInApp.class)) {
+                try {
+                    if (!Objects.equals(field.get(this), field.get(other))) {
+                        throw new InvalidConfigException(
+                                "You cannot set different values for " + field.getName() +
+                                        " for the same appId");
+                    }
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException(e);
+                }
             }
         }
+    }
+
+    public String getDefaultCDIVersion() {
+        return this.supertokens_default_cdi_version;
     }
 }
 
