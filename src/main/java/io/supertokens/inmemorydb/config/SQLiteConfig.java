@@ -141,6 +141,10 @@ public class SQLiteConfig {
         return "totp_users";
     }
 
+    public String getMfaUserFactorsTable() {
+        return "mfa_user_factors";
+    }
+
     public String getTotpUserDevicesTable() {
         return "totp_user_devices";
     }

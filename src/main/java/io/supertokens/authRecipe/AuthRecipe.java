@@ -216,6 +216,8 @@ public class AuthRecipe {
                 .deleteAllRolesForUser(appIdentifierWithStorage, userId);
         appIdentifierWithStorage.getActiveUsersStorage()
                 .deleteUserActive(appIdentifierWithStorage, userId);
+        appIdentifierWithStorage.getMfaStorage()
+                .deleteMfaInfoForUser(appIdentifierWithStorage, userId);
 
         TOTPSQLStorage storage = appIdentifierWithStorage.getTOTPStorage();
         storage.startTransaction(con -> {
@@ -248,6 +250,10 @@ public class AuthRecipe {
 
         didExist = tenantIdentifierWithStorage.getTOTPStorage()
                 .removeUser(tenantIdentifierWithStorage, userId);
+        finalDidExist = finalDidExist || didExist;
+
+        didExist = tenantIdentifierWithStorage.getMfaStorage()
+                .deleteMfaInfoForUser(tenantIdentifierWithStorage, userId);
         finalDidExist = finalDidExist || didExist;
 
         return finalDidExist;

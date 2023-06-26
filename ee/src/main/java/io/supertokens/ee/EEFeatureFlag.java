@@ -205,7 +205,7 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         totpStats.addProperty("total_users", totpTotalUsers);
         return totpStats;
     }
-
+    
     private boolean isEnterpriseThirdPartyId(String thirdPartyId) {
         for (String enterpriseThirdPartyId : ENTERPRISE_THIRD_PARTY_IDS) {
             if (thirdPartyId.startsWith(enterpriseThirdPartyId)) {
@@ -213,6 +213,38 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
             }
         }
         return false;
+    }
+    
+
+    private JsonObject getMFAStats() throws StorageQueryException, TenantOrAppNotFoundException{
+        JsonObject mfaStats = new JsonObject();
+        JsonArray mfaMauArr = new JsonArray();
+
+        Storage[] storages = StorageLayer.getStoragesForApp(main, this.appIdentifier);
+
+        // TODO: Active users are present only on public tenant and MFA users may be present on different storages
+        Storage publicTenantStorage = StorageLayer.getStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main);
+        final long now = System.currentTimeMillis();
+        for (int i = 0; i < 30; i++) {
+            long today = now - (now % (24 * 60 * 60 * 1000L));
+            long timestamp = today - (i * 24 * 60 * 60 * 1000L);
+
+            int mfaMau = 0;
+            // TODO Need to figure out a way to combine the data from different storages to get the final stats
+            // for (Storage storage : storages) {
+            mfaMau += ((ActiveUsersStorage) publicTenantStorage).countUsersEnabledMfaAndActiveSince(this.appIdentifier, timestamp);
+            // }
+            mfaMauArr.add(new JsonPrimitive(mfaMau));
+        }
+
+        mfaStats.add("maus", mfaMauArr);
+
+        int mfaTotalUsers = 0;
+        for (Storage storage : storages) {
+            mfaTotalUsers += ((ActiveUsersStorage) storage).countUsersEnabledMfa(this.appIdentifier);
+        }
+        mfaStats.addProperty("total_users", mfaTotalUsers);
+        return mfaStats;
     }
 
     private JsonObject getMultiTenancyStats()
@@ -291,6 +323,10 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
 
             if (feature == EE_FEATURES.TOTP) {
                 usageStats.add(EE_FEATURES.TOTP.toString(), getTOTPStats());
+            }
+
+            if (feature == EE_FEATURES.MFA) {
+                usageStats.add(EE_FEATURES.MFA.toString(), getMFAStats());
             }
 
             if (feature == EE_FEATURES.MULTI_TENANCY) {

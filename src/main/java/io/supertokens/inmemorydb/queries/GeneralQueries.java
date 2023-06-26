@@ -341,6 +341,11 @@ public class GeneralQueries {
             // index:
             update(start, TOTPQueries.getQueryToCreateUsedCodesExpiryTimeIndex(start), NO_OP_SETTER);
         }
+        
+        if (!doesTableExists(start, Config.getConfig(start).getMfaUserFactorsTable())) {
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, MfaQueries.getQueryToCreateUserFactorsTable(start), NO_OP_SETTER);
+        }
 
     }
 
