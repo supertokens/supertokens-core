@@ -1257,6 +1257,25 @@ public class Start
             throw new StorageQueryException(e);
         }
     }
+    
+    @Override
+    public int countUsersEnabledMfa(AppIdentifier appIdentifier) throws StorageQueryException {
+        try {
+            return ActiveUsersQueries.countUsersEnabledMfa(this, appIdentifier);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+    
+    @Override
+    public int countUsersEnabledMfaAndActiveSince(AppIdentifier appIdentifier, long time)
+            throws StorageQueryException {
+        try {
+            return ActiveUsersQueries.countUsersEnabledMfaAndActiveSince(this, appIdentifier, time);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
 
     @Override
     public void deleteUserActive(AppIdentifier appIdentifier, String userId) throws StorageQueryException {
