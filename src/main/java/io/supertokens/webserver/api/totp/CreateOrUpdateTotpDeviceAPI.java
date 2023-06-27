@@ -41,7 +41,7 @@ public class CreateOrUpdateTotpDeviceAPI extends WebserverAPI {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
-        String deviceName = InputParser.parseStringOrThrowError(input, "deviceName", false);
+        String deviceName = InputParser.parseStringOrThrowError(input, "deviceName", true);
         Integer skew = InputParser.parseIntOrThrowError(input, "skew", false);
         Integer period = InputParser.parseIntOrThrowError(input, "period", false);
 
@@ -51,7 +51,8 @@ public class CreateOrUpdateTotpDeviceAPI extends WebserverAPI {
         if (userId.isEmpty()) {
             throw new ServletException(new BadRequestException("userId cannot be empty"));
         }
-        if (deviceName.isEmpty()) {
+        if (deviceName != null && deviceName.isEmpty()) {
+            // Only Null or valid device name are allowed
             throw new ServletException(new BadRequestException("deviceName cannot be empty"));
         }
         if (skew < 0) {
@@ -86,6 +87,7 @@ public class CreateOrUpdateTotpDeviceAPI extends WebserverAPI {
             TOTPDevice device = Totp.registerDevice(appIdentifierWithStorage, main, userId, deviceName, skew, period);
 
             result.addProperty("status", "OK");
+            result.addProperty("deviceName", device.deviceName);
             result.addProperty("secret", device.secretKey);
             super.sendJsonResponse(200, result, resp);
         } catch (DeviceAlreadyExistsException e) {

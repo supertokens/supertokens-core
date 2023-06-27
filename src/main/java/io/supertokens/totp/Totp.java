@@ -106,6 +106,11 @@ public class Totp {
         }
 
         TOTPSQLStorage totpStorage = appIdentifierWithStorage.getTOTPStorage();
+        
+        if (deviceName == null) {
+            TOTPDevice[] devices = totpStorage.getDevices(appIdentifierWithStorage, userId);
+            deviceName = "TOTP Device " + (devices.length + 1);
+        }
 
         String secret = generateSecret();
         TOTPDevice device = new TOTPDevice(userId, deviceName, secret, period, skew, false);

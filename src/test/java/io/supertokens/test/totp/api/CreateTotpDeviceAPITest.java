@@ -88,16 +88,14 @@ public class CreateTotpDeviceAPITest {
 
         JsonObject body = new JsonObject();
 
-        // Missing userId/deviceName/skew/period
+        // Missing userId/skew/period
         {
             Exception e = createDeviceRequest(process, body);
             checkFieldMissingErrorResponse(e, "userId");
+            
+            body.addProperty("deviceName", "");
 
             body.addProperty("userId", "");
-            e = createDeviceRequest(process, body);
-            checkFieldMissingErrorResponse(e, "deviceName");
-
-            body.addProperty("deviceName", "");
             e = createDeviceRequest(process, body);
             checkFieldMissingErrorResponse(e, "skew");
 
@@ -138,6 +136,7 @@ public class CreateTotpDeviceAPITest {
                     Utils.getCdiVersionStringLatestForTests(),
                     "totp");
             assert res.get("status").getAsString().equals("OK");
+            assert res.get("deviceName").getAsString().equals("d1");
 
             // try again with same device:
             JsonObject res2 = HttpRequestForTesting.sendJsonPOSTRequest(
@@ -151,6 +150,21 @@ public class CreateTotpDeviceAPITest {
                     Utils.getCdiVersionStringLatestForTests(),
                     "totp");
             assert res2.get("status").getAsString().equals("DEVICE_ALREADY_EXISTS_ERROR");
+            
+            // try without passing deviceName:
+            body.remove("deviceName");
+            JsonObject res3 = HttpRequestForTesting.sendJsonPOSTRequest(
+                    process.getProcess(),
+                    "",
+                    "http://localhost:3567/recipe/totp/device",
+                    body,
+                    1000,
+                    1000,
+                    null,
+                    Utils.getCdiVersionStringLatestForTests(),
+                    "totp");
+            assert res3.get("status").getAsString().equals("OK");
+            assert res3.get("deviceName").getAsString().equals("TOTP Device 2");
         }
 
         process.kill();
