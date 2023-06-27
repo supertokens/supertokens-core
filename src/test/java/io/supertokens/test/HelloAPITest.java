@@ -244,6 +244,15 @@ public class HelloAPITest {
             assertEquals(404, e.statusCode);
         }
 
+        try {
+            res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567", null, 1000, 1000,
+                    null, Utils.getCdiVersionStringLatestForTests(), "");
+            fail();
+        } catch (HttpResponseException e) {
+            assertEquals(404, e.statusCode);
+        }
+
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
