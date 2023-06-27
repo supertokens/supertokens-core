@@ -15,7 +15,6 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.pluginInterface.totp.TOTPDevice;
 import io.supertokens.pluginInterface.totp.TOTPUsedCode;
 import io.supertokens.pluginInterface.totp.exception.DeviceAlreadyExistsException;
-import io.supertokens.pluginInterface.totp.exception.TotpNotEnabledException;
 import io.supertokens.pluginInterface.totp.exception.UnknownDeviceException;
 import io.supertokens.pluginInterface.totp.exception.UsedCodeAlreadyExistsException;
 import io.supertokens.pluginInterface.totp.sqlStorage.TOTPSQLStorage;
@@ -118,7 +117,7 @@ public class Totp {
     private static void checkAndStoreCode(TenantIdentifierWithStorage tenantIdentifierWithStorage, Main main,
                                           String userId, TOTPDevice[] devices,
                                           String code)
-            throws InvalidTotpException, TotpNotEnabledException,
+            throws InvalidTotpException, UnknownDeviceException,
             LimitReachedException, StorageQueryException, StorageTransactionLogicException,
             TenantOrAppNotFoundException {
         // Note that the TOTP cron runs every 1 hour, so all the expired tokens can stay
@@ -241,7 +240,7 @@ public class Totp {
                         try {
                             totpSQLStorage.insertUsedCode_Transaction(con, tenantIdentifierWithStorage, newCode);
                             totpSQLStorage.commitTransaction(con);
-                        } catch (UsedCodeAlreadyExistsException | TotpNotEnabledException e) {
+                        } catch (UsedCodeAlreadyExistsException | UnknownDeviceException e) {
                             throw new StorageTransactionLogicException(e);
                         }
 
@@ -264,8 +263,8 @@ public class Totp {
                     throw (LimitReachedException) e.actualException;
                 } else if (e.actualException instanceof InvalidTotpException) {
                     throw (InvalidTotpException) e.actualException;
-                } else if (e.actualException instanceof TotpNotEnabledException) {
-                    throw (TotpNotEnabledException) e.actualException;
+                } else if (e.actualException instanceof UnknownDeviceException) {
+                    throw (UnknownDeviceException) e.actualException;
                 } else if (e.actualException instanceof UsedCodeAlreadyExistsException) {
                     // retry the transaction after a small delay:
                     int delayInMs = (int) (Math.random() * 10 + 1);
@@ -339,7 +338,7 @@ public class Totp {
         // This behaviour is okay so we can ignore it.
         try{
             checkAndStoreCode(tenantIdentifierWithStorage, main, userId, new TOTPDevice[]{matchingDevice}, code);
-        } catch (TotpNotEnabledException e) {
+        } catch (UnknownDeviceException e) {
             // User must have deleted the device in parallel.
             throw new UnknownDeviceException();
         }
@@ -393,7 +392,7 @@ public class Totp {
         // can ignore it.
         try{
             checkAndStoreCode(tenantIdentifierWithStorage, main, userId, devices, code);
-        } catch (TotpNotEnabledException e) {
+        } catch (UnknownDeviceException e) {
             // User must have deleted the device in parallel
             // since they cannot un-verify a device (no API exists)
             throw new InvalidTotpException();

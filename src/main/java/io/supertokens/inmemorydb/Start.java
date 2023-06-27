@@ -68,7 +68,6 @@ import io.supertokens.pluginInterface.totp.TOTPDevice;
 import io.supertokens.pluginInterface.totp.TOTPStorage;
 import io.supertokens.pluginInterface.totp.TOTPUsedCode;
 import io.supertokens.pluginInterface.totp.exception.DeviceAlreadyExistsException;
-import io.supertokens.pluginInterface.totp.exception.TotpNotEnabledException;
 import io.supertokens.pluginInterface.totp.exception.UnknownDeviceException;
 import io.supertokens.pluginInterface.totp.exception.UsedCodeAlreadyExistsException;
 import io.supertokens.pluginInterface.totp.sqlStorage.TOTPSQLStorage;
@@ -1257,7 +1256,7 @@ public class Start
             throw new StorageQueryException(e);
         }
     }
-    
+
     @Override
     public int countUsersEnabledMfa(AppIdentifier appIdentifier) throws StorageQueryException {
         try {
@@ -1266,7 +1265,7 @@ public class Start
             throw new StorageQueryException(e);
         }
     }
-    
+
     @Override
     public int countUsersEnabledMfaAndActiveSince(AppIdentifier appIdentifier, long time)
             throws StorageQueryException {
@@ -2673,7 +2672,7 @@ public class Start
     @Override
     public void insertUsedCode_Transaction(TransactionConnection con, TenantIdentifier tenantIdentifier,
                                            TOTPUsedCode usedCodeObj)
-            throws StorageQueryException, TotpNotEnabledException, UsedCodeAlreadyExistsException,
+            throws StorageQueryException, UnknownDeviceException, UsedCodeAlreadyExistsException,
             TenantOrAppNotFoundException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
@@ -2687,7 +2686,7 @@ public class Start
                     Config.getConfig(this).getTotpUsersTable(),
                     new String[]{"app_id", "user_id"},
                     new Object[]{tenantIdentifier.getAppId(), usedCodeObj.userId})) {
-                throw new TotpNotEnabledException();
+                throw new UnknownDeviceException();
 
             } else if (isForeignKeyConstraintError(
                     e.getMessage(),
