@@ -167,7 +167,7 @@ public class HelloAPITest {
     }
 
     @Test
-    public void testThatHelloAPIDoesNotRequireAPIKeys() throws Exception {
+    public void testWithBasePathThatHelloAPIDoesNotRequireAPIKeys() throws Exception {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
@@ -247,6 +247,87 @@ public class HelloAPITest {
         try {
             res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567", null, 1000, 1000,
+                    null, Utils.getCdiVersionStringLatestForTests(), "");
+            fail();
+        } catch (HttpResponseException e) {
+            assertEquals(404, e.statusCode);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testThatHelloAPIDoesNotRequireAPIKeys() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        Utils.setValueInConfig("api_keys", "asdfasdfasdf123412341234");
+
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                new TenantIdentifier(null, "hello", null),
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                new JsonObject()
+        ), false);
+
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                new TenantIdentifier(null, "hello", "hello"),
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                new JsonObject()
+        ), false);
+
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                new TenantIdentifier(null, null, "hello"),
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                new JsonObject()
+        ), false);
+
+        String res;
+
+        res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567", null, 1000, 1000,
+                null, Utils.getCdiVersionStringLatestForTests(), "");
+        assertEquals("Hello", res);
+
+        res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/hello", null, 1000, 1000,
+                null, Utils.getCdiVersionStringLatestForTests(), "");
+        assertEquals("Hello", res);
+
+        res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/hello/hello", null, 1000, 1000,
+                null, Utils.getCdiVersionStringLatestForTests(), "");
+        assertEquals("Hello", res);
+
+        res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/appid-hello/hello", null, 1000, 1000,
+                null, Utils.getCdiVersionStringLatestForTests(), "");
+        assertEquals("Hello", res);
+
+        res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/appid-hello/hello/hello", null, 1000, 1000,
+                null, Utils.getCdiVersionStringLatestForTests(), "");
+        assertEquals("Hello", res);
+
+        // Not found
+        try {
+            HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/abcd", null, 1000, 1000,
                     null, Utils.getCdiVersionStringLatestForTests(), "");
             fail();
         } catch (HttpResponseException e) {
