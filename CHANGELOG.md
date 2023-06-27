@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+## [6.0.1]
+
+- Fixes `Invalid API key` issue on hello API
+
 ## [6.0.0] - 2023-06-02
 
 ### Adds
