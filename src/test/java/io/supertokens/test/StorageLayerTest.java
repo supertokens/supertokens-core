@@ -12,6 +12,7 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.pluginInterface.totp.TOTPDevice;
 import io.supertokens.pluginInterface.totp.TOTPUsedCode;
 import io.supertokens.pluginInterface.totp.exception.UnknownDeviceException;
+import io.supertokens.pluginInterface.totp.exception.UnknownUserIdTotpException;
 import io.supertokens.pluginInterface.totp.exception.UsedCodeAlreadyExistsException;
 import io.supertokens.pluginInterface.totp.sqlStorage.TOTPSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
@@ -47,7 +48,7 @@ public class StorageLayerTest {
                     storage.insertUsedCode_Transaction(con, new TenantIdentifier(null, null, null), usedCode);
                     storage.commitTransaction(con);
                     return null;
-                } catch (UnknownDeviceException | UsedCodeAlreadyExistsException e) {
+                } catch (UnknownUserIdTotpException | UsedCodeAlreadyExistsException e) {
                     throw new StorageTransactionLogicException(e);
                 } catch (TenantOrAppNotFoundException e) {
                     throw new IllegalStateException(e);

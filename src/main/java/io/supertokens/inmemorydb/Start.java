@@ -69,6 +69,7 @@ import io.supertokens.pluginInterface.totp.TOTPStorage;
 import io.supertokens.pluginInterface.totp.TOTPUsedCode;
 import io.supertokens.pluginInterface.totp.exception.DeviceAlreadyExistsException;
 import io.supertokens.pluginInterface.totp.exception.UnknownDeviceException;
+import io.supertokens.pluginInterface.totp.exception.UnknownUserIdTotpException;
 import io.supertokens.pluginInterface.totp.exception.UsedCodeAlreadyExistsException;
 import io.supertokens.pluginInterface.totp.sqlStorage.TOTPSQLStorage;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
@@ -2672,7 +2673,7 @@ public class Start
     @Override
     public void insertUsedCode_Transaction(TransactionConnection con, TenantIdentifier tenantIdentifier,
                                            TOTPUsedCode usedCodeObj)
-            throws StorageQueryException, UnknownDeviceException, UsedCodeAlreadyExistsException,
+            throws StorageQueryException, UnknownUserIdTotpException, UsedCodeAlreadyExistsException,
             TenantOrAppNotFoundException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
@@ -2686,7 +2687,7 @@ public class Start
                     Config.getConfig(this).getTotpUsersTable(),
                     new String[]{"app_id", "user_id"},
                     new Object[]{tenantIdentifier.getAppId(), usedCodeObj.userId})) {
-                throw new UnknownDeviceException();
+                throw new UnknownUserIdTotpException();
 
             } else if (isForeignKeyConstraintError(
                     e.getMessage(),
