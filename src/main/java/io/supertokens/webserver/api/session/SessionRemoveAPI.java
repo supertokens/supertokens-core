@@ -51,7 +51,7 @@ public class SessionRemoveAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        // API is tenant specific
+        // API is tenant specific. also operates on all tenants in an app if `revokeAcrossAllTenants` is set to true
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
         String userId = InputParser.parseStringOrThrowError(input, "userId", true);
@@ -64,6 +64,11 @@ public class SessionRemoveAPI extends WebserverAPI {
                 String session = InputParser.parseStringFromElementOrThrowError(arr.get(i), "sessionHandles", false);
                 sessionHandles[i] = session;
             }
+        }
+
+        Boolean revokeAcrossAllTenants = InputParser.parseBooleanOrThrowError(input, "revokeAcrossAllTenants", true);
+        if (revokeAcrossAllTenants == null) {
+            revokeAcrossAllTenants = true;
         }
 
         int numberOfNullItems = 0;
@@ -80,8 +85,15 @@ public class SessionRemoveAPI extends WebserverAPI {
 
         if (userId != null) {
             try {
-                String[] sessionHandlesRevoked = Session.revokeAllSessionsForUser(
-                        this.getTenantIdentifierWithStorageFromRequest(req), userId);
+                String[] sessionHandlesRevoked;
+                if (revokeAcrossAllTenants) {
+                    sessionHandlesRevoked = Session.revokeAllSessionsForUser(
+                            main, this.getAppIdentifierWithStorage(req), userId);
+                } else {
+                    sessionHandlesRevoked = Session.revokeAllSessionsForUser(
+                            main, this.getTenantIdentifierWithStorageFromRequest(req), userId);
+                }
+
                 if (StorageLayer.getStorage(this.getTenantIdentifierWithStorageFromRequest(req), main).getType() ==
                         STORAGE_TYPE.SQL) {
                     try {
@@ -110,8 +122,8 @@ public class SessionRemoveAPI extends WebserverAPI {
             }
         } else {
             try {
-                String[] sessionHandlesRevoked = Session.revokeSessionUsingSessionHandles(
-                        this.getTenantIdentifierWithStorageFromRequest(req), sessionHandles);
+                String[] sessionHandlesRevoked = Session.revokeSessionUsingSessionHandles(main,
+                        this.getAppIdentifierWithStorage(req), sessionHandles);
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
                 JsonArray sessionHandlesRevokedJSON = new JsonArray();

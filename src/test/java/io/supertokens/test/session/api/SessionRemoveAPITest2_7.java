@@ -244,7 +244,7 @@ public class SessionRemoveAPITest2_7 {
 
         // check that response should only contain s1 and s3 session handles
         assertTrue(revokedSessions.contains(s1Info.get("session").getAsJsonObject().get("handle")));
-        assertTrue(revokedSessions.contains(s2Info.get("session").getAsJsonObject().get("handle")));
+        assertTrue(revokedSessions.contains(s3Info.get("session").getAsJsonObject().get("handle")));
 
         assertEquals(revokedSessions.size(), 2);
 

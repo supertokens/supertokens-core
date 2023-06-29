@@ -295,7 +295,7 @@ public class MultitenantAPITest {
     }
 
     @Test
-    public void testSessionFromOneTenantCannotBeFetchedFromAnother() throws Exception {
+    public void testSessionFromOneTenantCanBeFetchedFromAnother() throws Exception {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
@@ -314,7 +314,7 @@ public class MultitenantAPITest {
 
                 JsonObject session = createSession(tenant1, "userid", userDataInJWT, userDataInDb).get("session")
                         .getAsJsonObject();
-                getSessionUnauthorised(tenant2, session.get("handle").getAsString());
+                getSession(tenant2, session.get("handle").getAsString());
             }
         }
     }

@@ -196,7 +196,6 @@ public class InputParser {
         try {
             if (nullable && element.get(fieldName) == null) {
                 return null;
-
             }
             String stringified = element.toString();
             if (!stringified.contains("\"")) {
