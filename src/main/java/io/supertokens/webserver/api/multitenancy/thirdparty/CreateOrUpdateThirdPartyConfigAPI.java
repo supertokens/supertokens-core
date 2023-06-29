@@ -97,14 +97,14 @@ public class CreateOrUpdateThirdPartyConfigAPI extends WebserverAPI {
                     // if the thirdPartyId is the same as the one we are trying to update, add the one from json input
                     // to the new list
                     ThirdPartyConfig.Provider newProvider = new Gson().fromJson(config, ThirdPartyConfig.Provider.class);
-                    newProviders.add(newProvider.normalize());
+                    newProviders.add(normalize(newProvider));
                     found = true;
                 }
             }
             if (!found) {
                 // if the thirdPartyId is not found in the db, add the one from json input to the new list
                 ThirdPartyConfig.Provider newProvider = new Gson().fromJson(config, ThirdPartyConfig.Provider.class);
-                newProviders.add(newProvider.normalize());
+                newProviders.add(normalize(newProvider));
             }
             TenantConfig updatedConfig = new TenantConfig(
                     tenantConfig.tenantIdentifier,
@@ -129,5 +129,29 @@ public class CreateOrUpdateThirdPartyConfigAPI extends WebserverAPI {
         } catch (InvalidProviderConfigException e) {
             throw new ServletException(new BadRequestException("Invalid third party config: " + e.getMessage()));
         }
+    }
+
+    private ThirdPartyConfig.Provider normalize(ThirdPartyConfig.Provider provider) {
+        ThirdPartyConfig.UserInfoMap normalizedUserInfoMap = provider.userInfoMap;
+        if (normalizedUserInfoMap != null) {
+            normalizedUserInfoMap = new ThirdPartyConfig.UserInfoMap(normalizedUserInfoMap.fromIdTokenPayload, normalizedUserInfoMap.fromUserInfoAPI);
+        }
+
+        return new ThirdPartyConfig.Provider(
+                provider.thirdPartyId.trim(),
+                provider.name,
+                provider.clients,
+                provider.authorizationEndpoint,
+                provider.authorizationEndpointQueryParams,
+                provider.tokenEndpoint,
+                provider.tokenEndpointBodyParams,
+                provider.userInfoEndpoint,
+                provider.userInfoEndpointQueryParams,
+                provider.userInfoEndpointHeaders,
+                provider.jwksURI,
+                provider.oidcDiscoveryEndpoint,
+                provider.requireEmail,
+                normalizedUserInfoMap
+        );
     }
 }
