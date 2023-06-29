@@ -43,10 +43,12 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 public class MultitenantAPITest {
     TestingProcessManager.TestingProcess process;
@@ -423,5 +425,78 @@ public class MultitenantAPITest {
             JWT.JWTInfo accessTokenInfo = JWT.getPayloadWithoutVerifying(session.get("accessToken").getAsJsonObject().get("token").getAsString());
             assertEquals(t2.getTenantId(), accessTokenInfo.payload.get("tId").getAsString());
         }
+    }
+
+    @Test
+    public void testFetchAndRevokeSessionForUserAcrossAllTenants() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        List<String> sessionHandles = new ArrayList<>();
+        {
+            JsonObject session = createSession(t1, "userid", new JsonObject(), new JsonObject());
+            sessionHandles.add(session.get("session").getAsJsonObject().get("handle").getAsString());
+        }
+        {
+            JsonObject session = createSession(t2, "userid", new JsonObject(), new JsonObject());
+            sessionHandles.add(session.get("session").getAsJsonObject().get("handle").getAsString());
+        }
+        {
+            JsonObject session = createSession(t3, "userid", new JsonObject(), new JsonObject());
+            sessionHandles.add(session.get("session").getAsJsonObject().get("handle").getAsString());
+        }
+
+
+        String[] allSessionHandles = getAllUserSessionsAcrossAllTenants("userid");
+        assertEquals(sessionHandles.size(), allSessionHandles.length);
+
+        for (String sessionHandle : allSessionHandles) {
+            assertTrue(sessionHandles.contains(sessionHandle));
+        }
+
+        String[] revokedSessionHandles = revokeAllUserSessionsAcrossAllTenants("userid");
+        assertEquals(sessionHandles.size(), revokedSessionHandles.length);
+        for (String sessionHandle : revokedSessionHandles) {
+            assertTrue(sessionHandles.contains(sessionHandle));
+        }
+
+        allSessionHandles = getAllUserSessionsAcrossAllTenants("userid");
+        assertEquals(0, allSessionHandles.length);
+    }
+
+    private String[] getAllUserSessionsAcrossAllTenants(String userid) throws HttpResponseException, IOException {
+        Map<String, String> params = new HashMap<>();
+        params.put("fetchAcrossAllTenants", "true");
+        params.put("userId", userid);
+
+        JsonObject sessionResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                HttpRequestForTesting.getMultitenantUrl(t1, "/recipe/session/user"),
+                params, 1000, 1000, null, SemVer.v3_0.get(),
+                "session");
+
+        assertEquals("OK", sessionResponse.getAsJsonPrimitive("status").getAsString());
+        String[] sessionHandles = new String[sessionResponse.get("sessionHandles").getAsJsonArray().size()];
+        for (int i = 0; i < sessionHandles.length; i++) {
+            sessionHandles[i] = sessionResponse.get("sessionHandles").getAsJsonArray().get(i).getAsString();
+        }
+        return sessionHandles;
+    }
+
+    private String[] revokeAllUserSessionsAcrossAllTenants(String userid) throws HttpResponseException, IOException {
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("userId", userid);
+        requestBody.addProperty("revokeAcrossAllTenants", true);
+
+        JsonObject sessionResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                HttpRequestForTesting.getMultitenantUrl(t1, "/recipe/session/remove"), requestBody,
+                1000, 1000, null, SemVer.v3_0.get(),
+                "session");
+        assertEquals("OK", sessionResponse.getAsJsonPrimitive("status").getAsString());
+        String[] sessionHandles = new String[sessionResponse.get("sessionHandlesRevoked").getAsJsonArray().size()];
+        for (int i = 0; i < sessionHandles.length; i++) {
+            sessionHandles[i] = sessionResponse.get("sessionHandlesRevoked").getAsJsonArray().get(i).getAsString();
+        }
+        return sessionHandles;
     }
 }
