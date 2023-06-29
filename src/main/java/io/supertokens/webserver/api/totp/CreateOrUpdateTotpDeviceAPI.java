@@ -7,6 +7,7 @@ import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.totp.TOTPDevice;
@@ -94,7 +95,7 @@ public class CreateOrUpdateTotpDeviceAPI extends WebserverAPI {
             result.addProperty("status", "DEVICE_ALREADY_EXISTS_ERROR");
             super.sendJsonResponse(200, result, resp);
         } catch (StorageQueryException | NoSuchAlgorithmException | FeatureNotEnabledException |
-                TenantOrAppNotFoundException e) {
+                TenantOrAppNotFoundException | StorageTransactionLogicException  e) {
             throw new ServletException(e);
         }
     }
