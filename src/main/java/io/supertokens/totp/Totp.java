@@ -94,13 +94,14 @@ public class Totp {
         }
     }
 
-    private static TOTPDevice registerDeviceRecursive(AppIdentifierWithStorage appIdentifierWithStorage, TOTPSQLStorage totpStorage, String userId, TOTPDevice device, int counter) throws StorageQueryException, DeviceAlreadyExistsException, TenantOrAppNotFoundException, StorageTransactionLogicException {
+    private static TOTPDevice registerDeviceRecursive(AppIdentifierWithStorage appIdentifierWithStorage, TOTPDevice device, int counter) throws StorageQueryException, DeviceAlreadyExistsException, TenantOrAppNotFoundException, StorageTransactionLogicException {
+        TOTPSQLStorage totpStorage = appIdentifierWithStorage.getTOTPStorage();
         try {
             TOTPDevice d = new TOTPDevice(device.userId, "TOTP Device " + (counter + 1), device.secretKey, device.period, device.skew, false);
             totpStorage.createDevice(appIdentifierWithStorage, d);
             return d;
         } catch (DeviceAlreadyExistsException e) {
-            TOTPDevice[] devices = totpStorage.getDevices(appIdentifierWithStorage, userId);
+            TOTPDevice[] devices = totpStorage.getDevices(appIdentifierWithStorage, device.userId);
             // iterate through all devices to find device with same name
             TOTPDevice existingDevice = Arrays.stream(devices).filter(d -> d.deviceName.equals(device.deviceName))
                     .findFirst().orElse(null);
@@ -109,17 +110,17 @@ public class Totp {
                 if (existingDevice.verified) {
                     // device with same name exists and is verified
                     // TODO: Should this recursion have a limit? 
-                    return registerDeviceRecursive(appIdentifierWithStorage, totpStorage, userId, device, ++counter);
+                    return registerDeviceRecursive(appIdentifierWithStorage, device, ++counter);
                 } else {
                     // device with same name exists but is not verified
                     // delete the device and retry
                     totpStorage.startTransaction(con -> {
-                        totpStorage.deleteDevice_Transaction(con, appIdentifierWithStorage, userId, device.deviceName);
+                        totpStorage.deleteDevice_Transaction(con, appIdentifierWithStorage, device.userId, device.deviceName);
                         totpStorage.commitTransaction(con);
                         return null;
                     });
                     // TODO: Should this recursion have a limit? 
-                    return registerDeviceRecursive(appIdentifierWithStorage, totpStorage, userId, device, counter);
+                    return registerDeviceRecursive(appIdentifierWithStorage, device, counter);
                 }
             }
             throw e;
@@ -137,9 +138,9 @@ public class Totp {
                             "feature.");
         }
 
-        TOTPSQLStorage totpStorage = appIdentifierWithStorage.getTOTPStorage();
         String secret = generateSecret();
         TOTPDevice device = new TOTPDevice(userId, deviceName, secret, period, skew, false);
+        TOTPSQLStorage totpStorage = appIdentifierWithStorage.getTOTPStorage();
 
         if (deviceName != null) {
             totpStorage.createDevice(appIdentifierWithStorage, device);
@@ -151,7 +152,7 @@ public class Totp {
         int verifiedDevicesCount = Arrays.stream(devices).filter(d -> d.verified).toArray().length;
         // device.deviceName = "TOTP Device " + (verifiedDevicesCount + 1);
 
-        return registerDeviceRecursive(appIdentifierWithStorage, totpStorage, userId, device, verifiedDevicesCount);
+        return registerDeviceRecursive(appIdentifierWithStorage, device, verifiedDevicesCount);
     }
 
     private static void checkAndStoreCode(TenantIdentifierWithStorage tenantIdentifierWithStorage, Main main,
