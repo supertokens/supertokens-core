@@ -26,6 +26,7 @@ import io.supertokens.httpRequest.HttpRequest;
 import io.supertokens.httpRequest.HttpRequestMocking;
 import io.supertokens.pluginInterface.ActiveUsersStorage;
 import io.supertokens.pluginInterface.KeyValueInfo;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
@@ -85,12 +86,16 @@ public class Telemetry extends CronTask {
         // following the API spec mentioned here:
         // https://github.com/supertokens/supertokens-core/issues/116#issuecomment-725465665
 
-        ActiveUsersStorage activeUsersStorage = (ActiveUsersStorage) StorageLayer.getStorage(app.getAsPublicTenantIdentifier(), main);
-
         JsonObject json = new JsonObject();
         json.addProperty("telemetryId", telemetryId.value);
         json.addProperty("superTokensVersion", coreVersion);
-        json.addProperty("mau", activeUsersStorage.countUsersActiveSince(app, System.currentTimeMillis() - 30 * 24 * 3600 * 1000L));
+
+        if (StorageLayer.getBaseStorage(main).getType() == STORAGE_TYPE.SQL) {
+            ActiveUsersStorage activeUsersStorage = (ActiveUsersStorage) StorageLayer.getStorage(app.getAsPublicTenantIdentifier(), main);
+            json.addProperty("mau", activeUsersStorage.countUsersActiveSince(app, System.currentTimeMillis() - 30 * 24 * 3600 * 1000L));
+        } else {
+            json.addProperty("mau", 0);
+        }
         json.addProperty("appId", app.getAppId());
         json.addProperty("connectionUriDomain", app.getConnectionUriDomain());
 
@@ -100,7 +105,7 @@ public class Telemetry extends CronTask {
         // wants
         // to use this)
         if (!Main.isTesting || HttpRequestMocking.getInstance(main).getMockURL(REQUEST_ID, url) != null) {
-            HttpRequest.sendJsonPOSTRequest(main, REQUEST_ID, url, json, 10000, 10000, 3);
+            HttpRequest.sendJsonPOSTRequest(main, REQUEST_ID, url, json, 10000, 10000, 4);
             ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.SENT_TELEMETRY, null);
         }
     }
