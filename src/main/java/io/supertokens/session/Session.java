@@ -26,12 +26,12 @@ import io.supertokens.exceptions.TokenTheftDetectedException;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
+import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.session.noSqlStorage.SessionNoSQLStorage_1;
 import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
@@ -56,8 +56,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
-import java.util.Arrays;
-import java.util.UUID;
+import java.util.*;
 
 public class Session {
 
@@ -129,6 +128,10 @@ public class Session {
             BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException, AccessTokenPayloadError,
             UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException {
         String sessionHandle = UUID.randomUUID().toString();
+        if (!tenantIdentifierWithStorage.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
+            sessionHandle += "_" + tenantIdentifierWithStorage.getTenantId();
+        }
+
         String antiCsrfToken = enableAntiCsrf ? UUID.randomUUID().toString() : null;
         final TokenInfo refreshToken = RefreshToken.createNewRefreshToken(tenantIdentifierWithStorage, main,
                 sessionHandle, userId, null,
@@ -147,7 +150,6 @@ public class Session {
                 refreshToken.createdTime);
         return new SessionInformationHolder(new SessionInfo(sessionHandle, userId, userDataInJWT), accessToken,
                 refreshToken, idRefreshToken, antiCsrfToken);
-
     }
 
     @TestOnly
@@ -669,59 +671,141 @@ public class Session {
                                                             String[] sessionHandles)
             throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
-        return revokeSessionUsingSessionHandles(
-                new TenantIdentifierWithStorage(null, null, null, storage),
+        return revokeSessionUsingSessionHandles(main,
+                new AppIdentifierWithStorage(null, null, storage),
                 sessionHandles);
     }
 
-    public static String[] revokeSessionUsingSessionHandles(TenantIdentifierWithStorage tenantIdentifierWithStorage,
+    public static String[] revokeSessionUsingSessionHandles(Main main, AppIdentifierWithStorage appIdentifierWithStorage,
                                                             String[] sessionHandles)
             throws StorageQueryException {
+
+        Map<String, List<String>> sessionHandleMap = new HashMap<>();
+
+        for (String sessionHandle : sessionHandles) {
+            String tenantId = getTenantIdFromSessionHandle(sessionHandle);
+            if (tenantId == null) {
+                tenantId = TenantIdentifier.DEFAULT_TENANT_ID;
+            }
+            if (!sessionHandleMap.containsKey(tenantId)) {
+                sessionHandleMap.put(tenantId, new ArrayList<>());
+            }
+
+            sessionHandleMap.get(tenantId).add(sessionHandle);
+        }
+
+        List<String> revokedSessionHandles = new ArrayList<>();
+
+        for (String tenantId : sessionHandleMap.keySet()) {
+            String[] sessionHandlesForTenant = sessionHandleMap.get(tenantId).toArray(new String[0]);
+
+            TenantIdentifier tenantIdentifier = new TenantIdentifier(appIdentifierWithStorage.getConnectionUriDomain(), appIdentifierWithStorage.getAppId(), tenantId);
+            TenantIdentifierWithStorage tenantIdentifierWithStorage = null;
+            try {
+                tenantIdentifierWithStorage = tenantIdentifier.withStorage(
+                        StorageLayer.getStorage(tenantIdentifier, main));
+            } catch (TenantOrAppNotFoundException e) {
+                // ignore as this can happen if the tenant has been deleted after fetching the sessionHandles
+                continue;
+            }
+
+            String[] sessionHandlesRevokedForTenant = revokeSessionUsingSessionHandles(tenantIdentifierWithStorage,
+                    sessionHandlesForTenant);
+            revokedSessionHandles.addAll(Arrays.asList(sessionHandlesRevokedForTenant));
+        }
+
+        return revokedSessionHandles.toArray(new String[0]);
+    }
+
+    private static String[] revokeSessionUsingSessionHandles(TenantIdentifierWithStorage tenantIdentifierWithStorage,
+                                                            String[] sessionHandles)
+            throws StorageQueryException {
+        Set<String> validHandles = new HashSet<>();
+
+        if (sessionHandles.length > 1) {
+            // we need to identify which sessionHandles are valid if there are more than one sessionHandles to revoke
+            // if there is only one sessionHandle to revoke, we would know if it was valid by the number of revoked sessions
+            for (String sessionHandle : sessionHandles) {
+                if (tenantIdentifierWithStorage.getSessionStorage()
+                        .getSession(tenantIdentifierWithStorage, sessionHandle) != null) {
+                    validHandles.add(sessionHandle);
+                }
+            }
+        }
+
         int numberOfSessionsRevoked = tenantIdentifierWithStorage.getSessionStorage()
                 .deleteSession(tenantIdentifierWithStorage, sessionHandles);
 
         // most of the time we will enter the below if statement
         if (numberOfSessionsRevoked == sessionHandles.length) {
             return sessionHandles;
-        }
-
-        String[] result = new String[numberOfSessionsRevoked];
-        int indexIntoResult = 0;
-        for (String sessionHandle : sessionHandles) {
-            if (indexIntoResult >= numberOfSessionsRevoked) {
-                break;
+        } else if (numberOfSessionsRevoked == 0) {
+            return new String[0];
+        } else {
+            List<String> revokedSessionHandles = new ArrayList<>();
+            for (String sessionHandle : sessionHandles) {
+                if (!validHandles.contains(sessionHandle)) {
+                    continue; // no need to check if the sessionHandle was invalid in the first place
+                }
+                if (tenantIdentifierWithStorage.getSessionStorage()
+                        .getSession(tenantIdentifierWithStorage, sessionHandle) == null) {
+                    revokedSessionHandles.add(sessionHandle);
+                }
             }
-
-            if (tenantIdentifierWithStorage.getSessionStorage()
-                    .getSession(tenantIdentifierWithStorage, sessionHandle) == null) {
-                result[indexIntoResult] = sessionHandle;
-                indexIntoResult++;
-            }
+            return revokedSessionHandles.toArray(new String[0]);
         }
-
-        return result;
     }
 
     @TestOnly
-    public static String[] revokeAllSessionsForUser(Main main,
-                                                    String userId) throws StorageQueryException {
+    public static String[] revokeAllSessionsForUser(Main main, String userId) throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
-        return revokeAllSessionsForUser(
-                new TenantIdentifierWithStorage(null, null, null, storage), userId);
+        return revokeAllSessionsForUser(main,
+                new AppIdentifierWithStorage(null, null, storage), userId);
     }
 
-    public static String[] revokeAllSessionsForUser(TenantIdentifierWithStorage tenantIdentifierWithStorage,
+    public static String[] revokeAllSessionsForUser(Main main, AppIdentifierWithStorage appIdentifierWithStorage,
+                                                    String userId) throws StorageQueryException {
+        String[] sessionHandles = getAllNonExpiredSessionHandlesForUser(main, appIdentifierWithStorage, userId);
+        return revokeSessionUsingSessionHandles(main, appIdentifierWithStorage, sessionHandles);
+    }
+
+    public static String[] revokeAllSessionsForUser(Main main, TenantIdentifierWithStorage tenantIdentifierWithStorage,
                                                     String userId) throws StorageQueryException {
         String[] sessionHandles = getAllNonExpiredSessionHandlesForUser(tenantIdentifierWithStorage, userId);
-        return revokeSessionUsingSessionHandles(tenantIdentifierWithStorage, sessionHandles);
+        return revokeSessionUsingSessionHandles(main, tenantIdentifierWithStorage.toAppIdentifierWithStorage(), sessionHandles);
     }
 
     @TestOnly
     public static String[] getAllNonExpiredSessionHandlesForUser(Main main, String userId)
             throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
-        return getAllNonExpiredSessionHandlesForUser(
-                new TenantIdentifierWithStorage(null, null, null, storage), userId);
+        return getAllNonExpiredSessionHandlesForUser(main,
+                new AppIdentifierWithStorage(null, null, storage), userId);
+    }
+
+    public static String[] getAllNonExpiredSessionHandlesForUser(
+            Main main, AppIdentifierWithStorage appIdentifierWithStorage, String userId)
+            throws StorageQueryException {
+        TenantConfig[] tenants = Multitenancy.getAllTenantsForApp(
+                appIdentifierWithStorage, main);
+
+        List<String> sessionHandles = new ArrayList<>();
+
+        for (TenantConfig tenant: tenants) {
+            TenantIdentifierWithStorage tenantIdentifierWithStorage = null;
+            try {
+                tenantIdentifierWithStorage = tenant.tenantIdentifier.withStorage(
+                        StorageLayer.getStorage(tenant.tenantIdentifier, main));
+                sessionHandles.addAll(Arrays.asList(getAllNonExpiredSessionHandlesForUser(
+                        tenantIdentifierWithStorage, userId)));
+
+            } catch (TenantOrAppNotFoundException e) {
+                // this might happen when a tenant was deleted after the tenant list was fetched
+                // it is okay to exclude that tenant in the results here
+            }
+        }
+
+        return sessionHandles.toArray(new String[0]);
     }
 
     public static String[] getAllNonExpiredSessionHandlesForUser(
@@ -852,5 +936,14 @@ public class Session {
         if (numberOfRowsAffected != 1) {
             throw new UnauthorisedException("Session does not exist.");
         }
+    }
+
+    public static String getTenantIdFromSessionHandle(String sessionHandle) {
+        String[] parts = sessionHandle.split("_");
+        if (parts.length == 1) {
+            return null;
+        }
+
+        return parts[1];
     }
 }

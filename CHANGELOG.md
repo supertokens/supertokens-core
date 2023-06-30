@@ -5,9 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [unreleased]
+## [6.0.1]
 
 - Fixes `Invalid API key` issue on hello API
+- Fixes `CreateOrUpdateThirdPartyConfigAPI` as per CDI 3.0
+- Fixes `sessionHandle` to include tenant information and the related APIs are now app specific
+- Updated GET `/appid-<appId>/<tenantId>/recipe/session/user`
+  - Adds `fetchAcrossAllTenants` with default `true` - controls fetching of sessions across all tenants or only a 
+    particular tenant
+- Updated POST `/appid-<appId>/<tenantId>/recipe/session/remove`
+  - Adds `revokeAcrossAllTenants` with default `true` - controls revoking of sessions across all tenants or only a 
+    particular tenant
 
 ## [6.0.0] - 2023-06-02
 

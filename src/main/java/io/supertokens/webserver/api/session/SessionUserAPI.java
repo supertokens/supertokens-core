@@ -47,13 +47,26 @@ public class SessionUserAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        // API is tenant specific
+        // API is tenant specific, also finds across all tenants in the app if fetchAcrossAllTenants is set to true
         String userId = InputParser.getQueryParamOrThrowError(req, "userId", false);
         assert userId != null;
 
+        String fetchAcrossAllTenantsString = InputParser.getQueryParamOrThrowError(req, "fetchAcrossAllTenants", true);
+
+        boolean fetchAcrossAllTenants = true;
+        if (fetchAcrossAllTenantsString != null) {
+            fetchAcrossAllTenants = fetchAcrossAllTenantsString.toLowerCase().equals("true");
+        }
+
         try {
-            String[] sessionHandles = Session.getAllNonExpiredSessionHandlesForUser(
-                    this.getTenantIdentifierWithStorageFromRequest(req), userId);
+            String[] sessionHandles;
+            if (fetchAcrossAllTenants) {
+                sessionHandles = Session.getAllNonExpiredSessionHandlesForUser(
+                        main, this.getAppIdentifierWithStorage(req), userId);
+            } else {
+                sessionHandles = Session.getAllNonExpiredSessionHandlesForUser(
+                        this.getTenantIdentifierWithStorageFromRequest(req), userId);
+            }
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
