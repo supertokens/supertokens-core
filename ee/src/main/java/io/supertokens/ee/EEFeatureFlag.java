@@ -288,7 +288,7 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
 
         EE_FEATURES[] features = getEnabledEEFeaturesFromDbOrCache();
 
-        if (!Arrays.asList(features).contains(EE_FEATURES.MULTI_TENANCY)) { // Check for multitenancy on the base app
+        if (!this.appIdentifier.equals(new AppIdentifier(null, null)) && !Arrays.asList(features).contains(EE_FEATURES.MULTI_TENANCY)) { // Check for multitenancy on the base app
             EE_FEATURES[] baseFeatures = FeatureFlag.getInstance(main, new AppIdentifier(null, null))
                     .getEnabledFeatures();
             for (EE_FEATURES feature: baseFeatures) {
