@@ -383,15 +383,256 @@ public class FeatureFlagTest {
             if (tenantId.equals("public")) {
                 assertFalse(tenantStatObj.get("hasUsersOrSessions").getAsBoolean());
                 assertFalse(tenantStatObj.get("hasEnterpriseLogin").getAsBoolean());
+                assertEquals(0, tenantStatObj.get("usersCount").getAsLong());
             } else if (tenantId.equals("t0")) {
                 assertTrue(tenantStatObj.get("hasUsersOrSessions").getAsBoolean());
                 assertFalse(tenantStatObj.get("hasEnterpriseLogin").getAsBoolean());
+                assertEquals(1, tenantStatObj.get("usersCount").getAsLong());
             } else if (tenantId.equals("t1")) {
                 assertTrue(tenantStatObj.get("hasUsersOrSessions").getAsBoolean());
                 assertFalse(tenantStatObj.get("hasEnterpriseLogin").getAsBoolean());
+                assertEquals(0, tenantStatObj.get("usersCount").getAsLong());
             } else if (tenantId.equals("t2")) {
                 assertFalse(tenantStatObj.get("hasUsersOrSessions").getAsBoolean());
                 assertTrue(tenantStatObj.get("hasEnterpriseLogin").getAsBoolean());
+                assertEquals(0, tenantStatObj.get("usersCount").getAsLong());
+            }
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testThatMultitenantStatsAreAccurateForAnApp() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(OPAQUE_KEY_WITH_MULTITENANCY_FEATURE);
+
+        Multitenancy.addNewOrUpdateAppOrTenant(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                new TenantConfig(
+                        new TenantIdentifier(null, "a1", null),
+                        new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true),
+                        new JsonObject()
+                )
+        );
+
+        for (int i=0; i<5; i++) {
+            JsonObject coreConfig = new JsonObject();
+            StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                    .modifyConfigToAddANewUserPoolForTesting(coreConfig, i+1);
+
+            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, "a1", "t" + i);
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    process.getProcess(),
+                    new TenantIdentifier(null, "a1", null),
+                    new TenantConfig(
+                            tenantIdentifier,
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(true),
+                            coreConfig
+                    )
+            );
+
+            TenantIdentifierWithStorage tenantIdentifierWithStorage = tenantIdentifier.withStorage(
+                    StorageLayer.getStorage(tenantIdentifier, process.getProcess()));
+            if (i % 3 == 0) {
+                // Create a user
+                EmailPassword.signUp(
+                        tenantIdentifierWithStorage, process.getProcess(), "user@example.com", "password");
+            } else if (i % 3 == 1) {
+                // Create a session
+                Session.createNewSession(tenantIdentifierWithStorage, process.getProcess(), "userid", new JsonObject(), new JsonObject());
+            } else {
+                // Create an enterprise provider
+                Multitenancy.addNewOrUpdateAppOrTenant(
+                        process.getProcess(),
+                        new TenantIdentifier(null, "a1", null),
+                        new TenantConfig(
+                                tenantIdentifier,
+                                new EmailPasswordConfig(true),
+                                new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[]{
+                                        new ThirdPartyConfig.Provider("okta", "Okta", null, null, null, null, null, null, null, null, null, null, null, null)
+                                }),
+                                new PasswordlessConfig(true),
+                                coreConfig
+                        )
+                );
+            }
+        }
+
+        JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/appid-a1/ee/featureflag",
+                null, 1000, 1000, null, WebserverAPI.getLatestCDIVersion().get(), "");
+        Assert.assertEquals("OK", response.get("status").getAsString());
+
+        JsonArray multitenancyStats = response.get("usageStats").getAsJsonObject().get("multi_tenancy").getAsJsonObject().get("tenants").getAsJsonArray();
+        assertEquals(6, multitenancyStats.size());
+
+        Set<String> userPoolIds = new HashSet<>();
+        for (JsonElement tenantStat : multitenancyStats) {
+            JsonObject tenantStatObj = tenantStat.getAsJsonObject();
+            String tenantId = tenantStatObj.get("tenantId").getAsString();
+
+            if (!StorageLayer.isInMemDb(process.getProcess())) {
+                // Ensure each userPoolId is unique
+                String userPoolId = tenantStatObj.get("userPoolId").getAsString();
+                assertFalse(userPoolIds.contains(userPoolId));
+                userPoolIds.add(userPoolId);
+            }
+
+            if (tenantId.equals("public")) {
+                assertFalse(tenantStatObj.get("hasUsersOrSessions").getAsBoolean());
+                assertFalse(tenantStatObj.get("hasEnterpriseLogin").getAsBoolean());
+                assertEquals(0, tenantStatObj.get("usersCount").getAsLong());
+            } else if (tenantId.equals("t0")) {
+                assertTrue(tenantStatObj.get("hasUsersOrSessions").getAsBoolean());
+                assertFalse(tenantStatObj.get("hasEnterpriseLogin").getAsBoolean());
+                assertEquals(1, tenantStatObj.get("usersCount").getAsLong());
+            } else if (tenantId.equals("t1")) {
+                assertTrue(tenantStatObj.get("hasUsersOrSessions").getAsBoolean());
+                assertFalse(tenantStatObj.get("hasEnterpriseLogin").getAsBoolean());
+                assertEquals(0, tenantStatObj.get("usersCount").getAsLong());
+            } else if (tenantId.equals("t2")) {
+                assertFalse(tenantStatObj.get("hasUsersOrSessions").getAsBoolean());
+                assertTrue(tenantStatObj.get("hasEnterpriseLogin").getAsBoolean());
+                assertEquals(0, tenantStatObj.get("usersCount").getAsLong());
+            }
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testThatMultitenantStatsAreAccurateForACud() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
+        FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(OPAQUE_KEY_WITH_MULTITENANCY_FEATURE);
+
+        {
+            JsonObject coreConfig = new JsonObject();
+            StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                    .modifyConfigToAddANewUserPoolForTesting(coreConfig, 1);
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    new TenantConfig(
+                            new TenantIdentifier("127.0.0.1", null, null),
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(true),
+                            coreConfig
+                    )
+            );
+        }
+
+        for (int i=0; i<5; i++) {
+            JsonObject coreConfig = new JsonObject();
+            StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                    .modifyConfigToAddANewUserPoolForTesting(coreConfig, i+2);
+
+            TenantIdentifier tenantIdentifier = new TenantIdentifier("127.0.0.1", null, "t" + i);
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    process.getProcess(),
+                    new TenantIdentifier("127.0.0.1", null, null),
+                    new TenantConfig(
+                            tenantIdentifier,
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(true),
+                            coreConfig
+                    )
+            );
+
+            TenantIdentifierWithStorage tenantIdentifierWithStorage = tenantIdentifier.withStorage(
+                    StorageLayer.getStorage(tenantIdentifier, process.getProcess()));
+            if (i % 3 == 0) {
+                // Create a user
+                EmailPassword.signUp(
+                        tenantIdentifierWithStorage, process.getProcess(), "user@example.com", "password");
+            } else if (i % 3 == 1) {
+                // Create a session
+                Session.createNewSession(tenantIdentifierWithStorage, process.getProcess(), "userid", new JsonObject(), new JsonObject());
+            } else {
+                // Create an enterprise provider
+                Multitenancy.addNewOrUpdateAppOrTenant(
+                        process.getProcess(),
+                        new TenantIdentifier("127.0.0.1", null, null),
+                        new TenantConfig(
+                                tenantIdentifier,
+                                new EmailPasswordConfig(true),
+                                new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[]{
+                                        new ThirdPartyConfig.Provider("okta", "Okta", null, null, null, null, null, null, null, null, null, null, null, null)
+                                }),
+                                new PasswordlessConfig(true),
+                                coreConfig
+                        )
+                );
+            }
+        }
+
+        JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://127.0.0.1:3567/ee/featureflag",
+                null, 1000, 1000, null, WebserverAPI.getLatestCDIVersion().get(), "");
+        Assert.assertEquals("OK", response.get("status").getAsString());
+
+        JsonArray multitenancyStats = response.get("usageStats").getAsJsonObject().get("multi_tenancy").getAsJsonObject().get("tenants").getAsJsonArray();
+        assertEquals(6, multitenancyStats.size());
+
+        Set<String> userPoolIds = new HashSet<>();
+        for (JsonElement tenantStat : multitenancyStats) {
+            JsonObject tenantStatObj = tenantStat.getAsJsonObject();
+            String tenantId = tenantStatObj.get("tenantId").getAsString();
+
+            if (!StorageLayer.isInMemDb(process.getProcess())) {
+                // Ensure each userPoolId is unique
+                String userPoolId = tenantStatObj.get("userPoolId").getAsString();
+                assertFalse(userPoolIds.contains(userPoolId));
+                userPoolIds.add(userPoolId);
+            }
+
+            if (tenantId.equals("public")) {
+                assertFalse(tenantStatObj.get("hasUsersOrSessions").getAsBoolean());
+                assertFalse(tenantStatObj.get("hasEnterpriseLogin").getAsBoolean());
+                assertEquals(0, tenantStatObj.get("usersCount").getAsLong());
+            } else if (tenantId.equals("t0")) {
+                assertTrue(tenantStatObj.get("hasUsersOrSessions").getAsBoolean());
+                assertFalse(tenantStatObj.get("hasEnterpriseLogin").getAsBoolean());
+                assertEquals(1, tenantStatObj.get("usersCount").getAsLong());
+            } else if (tenantId.equals("t1")) {
+                assertTrue(tenantStatObj.get("hasUsersOrSessions").getAsBoolean());
+                assertFalse(tenantStatObj.get("hasEnterpriseLogin").getAsBoolean());
+                assertEquals(0, tenantStatObj.get("usersCount").getAsLong());
+            } else if (tenantId.equals("t2")) {
+                assertFalse(tenantStatObj.get("hasUsersOrSessions").getAsBoolean());
+                assertTrue(tenantStatObj.get("hasEnterpriseLogin").getAsBoolean());
+                assertEquals(0, tenantStatObj.get("usersCount").getAsLong());
             }
         }
 

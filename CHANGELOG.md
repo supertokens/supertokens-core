@@ -16,6 +16,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Updated POST `/appid-<appId>/<tenantId>/recipe/session/remove`
   - Adds `revokeAcrossAllTenants` with default `true` - controls revoking of sessions across all tenants or only a 
     particular tenant
+- Updated telemetry to send `connectionUriDomain`, `appId` and `mau` information
+- Updated feature flag stats to report `usersCount` per tenant
 
 ## [6.0.0] - 2023-06-02
 
