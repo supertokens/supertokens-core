@@ -53,9 +53,9 @@ public class SessionUserAPI extends WebserverAPI {
 
         String fetchAcrossAllTenantsString = InputParser.getQueryParamOrThrowError(req, "fetchAcrossAllTenants", true);
 
-        boolean fetchAcrossAllTenants = false;
-        if (fetchAcrossAllTenantsString != null && fetchAcrossAllTenantsString.toLowerCase().equals("true")) {
-            fetchAcrossAllTenants = true;
+        boolean fetchAcrossAllTenants = true;
+        if (fetchAcrossAllTenantsString != null) {
+            fetchAcrossAllTenants = fetchAcrossAllTenantsString.toLowerCase().equals("true");
         }
 
         try {

@@ -448,30 +448,132 @@ public class MultitenantAPITest {
         }
 
 
-        String[] allSessionHandles = getAllUserSessionsAcrossAllTenants("userid");
+        String[] allSessionHandles = getAllUserSessionsAcrossAllTenants(t1, "userid", true);
         assertEquals(sessionHandles.size(), allSessionHandles.length);
 
         for (String sessionHandle : allSessionHandles) {
             assertTrue(sessionHandles.contains(sessionHandle));
         }
 
-        String[] revokedSessionHandles = revokeAllUserSessionsAcrossAllTenants("userid");
+        String[] revokedSessionHandles = revokeAllUserSessionsAcrossAllTenants(t1, "userid", true);
         assertEquals(sessionHandles.size(), revokedSessionHandles.length);
         for (String sessionHandle : revokedSessionHandles) {
             assertTrue(sessionHandles.contains(sessionHandle));
         }
 
-        allSessionHandles = getAllUserSessionsAcrossAllTenants("userid");
+        allSessionHandles = getAllUserSessionsAcrossAllTenants(t1, "userid", true);
         assertEquals(0, allSessionHandles.length);
     }
 
-    private String[] getAllUserSessionsAcrossAllTenants(String userid) throws HttpResponseException, IOException {
+    @Test
+    public void testFetchAndRevokeSessionForUserAcrossAllTenantsByDefault() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        List<String> sessionHandles = new ArrayList<>();
+        {
+            JsonObject session = createSession(t1, "userid", new JsonObject(), new JsonObject());
+            sessionHandles.add(session.get("session").getAsJsonObject().get("handle").getAsString());
+        }
+        {
+            JsonObject session = createSession(t2, "userid", new JsonObject(), new JsonObject());
+            sessionHandles.add(session.get("session").getAsJsonObject().get("handle").getAsString());
+        }
+        {
+            JsonObject session = createSession(t3, "userid", new JsonObject(), new JsonObject());
+            sessionHandles.add(session.get("session").getAsJsonObject().get("handle").getAsString());
+        }
+
+
+        String[] allSessionHandles = getAllUserSessionsAcrossAllTenants(t1, "userid", null);
+        assertEquals(sessionHandles.size(), allSessionHandles.length);
+
+        for (String sessionHandle : allSessionHandles) {
+            assertTrue(sessionHandles.contains(sessionHandle));
+        }
+
+        String[] revokedSessionHandles = revokeAllUserSessionsAcrossAllTenants(t1, "userid", null);
+        assertEquals(sessionHandles.size(), revokedSessionHandles.length);
+        for (String sessionHandle : revokedSessionHandles) {
+            assertTrue(sessionHandles.contains(sessionHandle));
+        }
+
+        allSessionHandles = getAllUserSessionsAcrossAllTenants(t1, "userid", null);
+        assertEquals(0, allSessionHandles.length);
+    }
+
+    @Test
+    public void testFetchAndRevokeSessionForUserOperatesPerTenantIfTheFlagIsSetToFalse() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        List<String> sessionHandles = new ArrayList<>();
+        {
+            JsonObject session = createSession(t1, "userid", new JsonObject(), new JsonObject());
+            sessionHandles.add(session.get("session").getAsJsonObject().get("handle").getAsString());
+        }
+        {
+            JsonObject session = createSession(t2, "userid", new JsonObject(), new JsonObject());
+            sessionHandles.add(session.get("session").getAsJsonObject().get("handle").getAsString());
+        }
+        {
+            JsonObject session = createSession(t3, "userid", new JsonObject(), new JsonObject());
+            sessionHandles.add(session.get("session").getAsJsonObject().get("handle").getAsString());
+        }
+
+        // Get session handles
+        {
+            String[] allSessionHandles = getAllUserSessionsAcrossAllTenants(t1, "userid", false);
+            assertEquals(1, allSessionHandles.length);
+            assertEquals(sessionHandles.get(0), allSessionHandles[0]);
+        }
+
+        {
+            String[] allSessionHandles = getAllUserSessionsAcrossAllTenants(t2, "userid", false);
+            assertEquals(1, allSessionHandles.length);
+            assertEquals(sessionHandles.get(1), allSessionHandles[0]);
+        }
+
+        {
+            String[] allSessionHandles = getAllUserSessionsAcrossAllTenants(t3, "userid", false);
+            assertEquals(1, allSessionHandles.length);
+            assertEquals(sessionHandles.get(2), allSessionHandles[0]);
+        }
+        
+        // Revoke sessions
+        {
+            String[] revokedSessionHandles = revokeAllUserSessionsAcrossAllTenants(t1, "userid", false);
+            assertEquals(1, revokedSessionHandles.length);
+            assertEquals(sessionHandles.get(0), revokedSessionHandles[0]);
+        }
+
+        {
+            String[] revokedSessionHandles = revokeAllUserSessionsAcrossAllTenants(t2, "userid", false);
+            assertEquals(1, revokedSessionHandles.length);
+            assertEquals(sessionHandles.get(1), revokedSessionHandles[0]);
+        }
+
+        {
+            String[] revokedSessionHandles = revokeAllUserSessionsAcrossAllTenants(t3, "userid", false);
+            assertEquals(1, revokedSessionHandles.length);
+            assertEquals(sessionHandles.get(2), revokedSessionHandles[0]);
+        }
+
+        String[] allSessionHandles = getAllUserSessionsAcrossAllTenants(t1, "userid", true);
+        assertEquals(0, allSessionHandles.length);
+    }
+
+    private String[] getAllUserSessionsAcrossAllTenants(TenantIdentifier tenantIdentifier, String userid, Boolean fetchAcrossAllTenants) throws HttpResponseException, IOException {
         Map<String, String> params = new HashMap<>();
-        params.put("fetchAcrossAllTenants", "true");
+        if (fetchAcrossAllTenants != null) {
+            params.put("fetchAcrossAllTenants", fetchAcrossAllTenants.toString());
+        }
         params.put("userId", userid);
 
         JsonObject sessionResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                HttpRequestForTesting.getMultitenantUrl(t1, "/recipe/session/user"),
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/session/user"),
                 params, 1000, 1000, null, SemVer.v3_0.get(),
                 "session");
 
@@ -483,13 +585,15 @@ public class MultitenantAPITest {
         return sessionHandles;
     }
 
-    private String[] revokeAllUserSessionsAcrossAllTenants(String userid) throws HttpResponseException, IOException {
+    private String[] revokeAllUserSessionsAcrossAllTenants(TenantIdentifier tenantIdentifier, String userid, Boolean revokeAcrossAllTenants) throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("userId", userid);
-        requestBody.addProperty("revokeAcrossAllTenants", true);
+        if (revokeAcrossAllTenants != null) {
+            requestBody.addProperty("revokeAcrossAllTenants", revokeAcrossAllTenants);
+        }
 
         JsonObject sessionResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                HttpRequestForTesting.getMultitenantUrl(t1, "/recipe/session/remove"), requestBody,
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/session/remove"), requestBody,
                 1000, 1000, null, SemVer.v3_0.get(),
                 "session");
         assertEquals("OK", sessionResponse.getAsJsonPrimitive("status").getAsString());
