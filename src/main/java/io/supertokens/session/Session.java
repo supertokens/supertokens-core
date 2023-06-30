@@ -694,7 +694,6 @@ public class Session {
             sessionHandleMap.get(tenantId).add(sessionHandle);
         }
 
-        int numberOfSessionsRevoked;
         List<String> revokedSessionHandles = new ArrayList<>();
 
         for (String tenantId : sessionHandleMap.keySet()) {
@@ -743,19 +742,17 @@ public class Session {
         } else if (numberOfSessionsRevoked == 0) {
             return new String[0];
         } else {
-            String revokedSessionHandles[] = new String[numberOfSessionsRevoked];
-            int currentIndex = 0;
+            List<String> revokedSessionHandles = new ArrayList<>();
             for (String sessionHandle : sessionHandles) {
                 if (!validHandles.contains(sessionHandle)) {
                     continue; // no need to check if the sessionHandle was invalid in the first place
                 }
                 if (tenantIdentifierWithStorage.getSessionStorage()
                         .getSession(tenantIdentifierWithStorage, sessionHandle) == null) {
-                    revokedSessionHandles[currentIndex] = sessionHandle;
-                    currentIndex++;
+                    revokedSessionHandles.add(sessionHandle);
                 }
             }
-            return revokedSessionHandles;
+            return revokedSessionHandles.toArray(new String[0]);
         }
     }
 

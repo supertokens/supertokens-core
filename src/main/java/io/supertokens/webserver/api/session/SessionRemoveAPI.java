@@ -66,11 +66,6 @@ public class SessionRemoveAPI extends WebserverAPI {
             }
         }
 
-        Boolean revokeAcrossAllTenants = InputParser.parseBooleanOrThrowError(input, "revokeAcrossAllTenants", true);
-        if (revokeAcrossAllTenants == null) {
-            revokeAcrossAllTenants = true;
-        }
-
         int numberOfNullItems = 0;
         if (userId != null) {
             numberOfNullItems++;
@@ -81,6 +76,15 @@ public class SessionRemoveAPI extends WebserverAPI {
         if (numberOfNullItems == 0 || numberOfNullItems > 1) {
             throw new ServletException(
                     new BadRequestException("Invalid JSON input - use one of userId or sessionHandles array"));
+        }
+
+        Boolean revokeAcrossAllTenants = InputParser.parseBooleanOrThrowError(input, "revokeAcrossAllTenants", true);
+        if (userId == null && revokeAcrossAllTenants != null) {
+            throw new ServletException(new BadRequestException("Invalid JSON input - revokeAcrossAllTenants can only be set if userId is set"));
+        }
+
+        if (revokeAcrossAllTenants == null) {
+            revokeAcrossAllTenants = true;
         }
 
         if (userId != null) {
