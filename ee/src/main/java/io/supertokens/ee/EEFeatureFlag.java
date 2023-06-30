@@ -13,6 +13,7 @@ import io.supertokens.cronjobs.Cronjobs;
 import io.supertokens.cronjobs.telemetry.Telemetry;
 import io.supertokens.ee.cronjobs.EELicenseCheck;
 import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.exceptions.InvalidLicenseKeyException;
 import io.supertokens.featureflag.exceptions.NoLicenseKeyFoundException;
 import io.supertokens.httpRequest.HttpRequest;
@@ -28,6 +29,7 @@ import io.supertokens.pluginInterface.dashboard.sqlStorage.DashboardSQLStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
@@ -231,8 +233,10 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
 
             {
                 Storage storage = StorageLayer.getStorage(tenantConfig.tenantIdentifier, main);
-                boolean hasUsersOrSessions = ((AuthRecipeStorage) storage).getUsersCount(tenantConfig.tenantIdentifier, null) > 0;
+                long usersCount = ((AuthRecipeStorage) storage).getUsersCount(tenantConfig.tenantIdentifier, null);
+                boolean hasUsersOrSessions = (usersCount > 0);
                 hasUsersOrSessions = hasUsersOrSessions || ((SessionSQLStorage) storage).getNumberOfSessions(tenantConfig.tenantIdentifier) > 0;
+                tenantStat.addProperty("usersCount", usersCount);
                 tenantStat.addProperty("hasUsersOrSessions", hasUsersOrSessions);
 
                 try {
@@ -283,6 +287,17 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         }
 
         EE_FEATURES[] features = getEnabledEEFeaturesFromDbOrCache();
+
+        if (!Arrays.asList(features).contains(EE_FEATURES.MULTI_TENANCY)) { // Check for multitenancy on the base app
+            EE_FEATURES[] baseFeatures = FeatureFlag.getInstance(main, new AppIdentifier(null, null))
+                    .getEnabledFeatures();
+            for (EE_FEATURES feature: baseFeatures) {
+                if (feature == EE_FEATURES.MULTI_TENANCY) {
+                    features = Arrays.copyOf(features, features.length + 1);
+                    features[features.length - 1] = EE_FEATURES.MULTI_TENANCY;
+                }
+            }
+        }
 
         for (EE_FEATURES feature : features) {
             if (feature == EE_FEATURES.DASHBOARD_LOGIN) {
