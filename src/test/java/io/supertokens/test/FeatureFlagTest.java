@@ -583,7 +583,7 @@ public class FeatureFlagTest {
                 // Create an enterprise provider
                 Multitenancy.addNewOrUpdateAppOrTenant(
                         process.getProcess(),
-                        new TenantIdentifier(null, "a1", null),
+                        new TenantIdentifier("127.0.0.1", null, null),
                         new TenantConfig(
                                 tenantIdentifier,
                                 new EmailPasswordConfig(true),
