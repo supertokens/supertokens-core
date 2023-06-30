@@ -94,7 +94,7 @@ public class Telemetry extends CronTask {
             ActiveUsersStorage activeUsersStorage = (ActiveUsersStorage) StorageLayer.getStorage(app.getAsPublicTenantIdentifier(), main);
             json.addProperty("mau", activeUsersStorage.countUsersActiveSince(app, System.currentTimeMillis() - 30 * 24 * 3600 * 1000L));
         } else {
-            json.addProperty("mau", 0);
+            json.addProperty("mau", -1);
         }
         json.addProperty("appId", app.getAppId());
         json.addProperty("connectionUriDomain", app.getConnectionUriDomain());
