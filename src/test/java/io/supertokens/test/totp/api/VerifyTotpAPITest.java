@@ -40,7 +40,7 @@ public class VerifyTotpAPITest {
         Utils.reset();
     }
 
-    private Exception updateDeviceRequest(TestingProcessManager.TestingProcess process, JsonObject body) {
+    private Exception verifyTotpCodeRequest(TestingProcessManager.TestingProcess process, JsonObject body) {
         return assertThrows(
                 io.supertokens.test.httpRequest.HttpResponseException.class,
                 () -> HttpRequestForTesting.sendJsonPOSTRequest(
@@ -117,36 +117,32 @@ public class VerifyTotpAPITest {
 
         // Missing userId/deviceName/skew/period
         {
-            Exception e = updateDeviceRequest(process, body);
+            Exception e = verifyTotpCodeRequest(process, body);
             checkFieldMissingErrorResponse(e, "userId");
 
             body.addProperty("userId", "");
-            e = updateDeviceRequest(process, body);
+            e = verifyTotpCodeRequest(process, body);
             checkFieldMissingErrorResponse(e, "totp");
-
-            body.addProperty("totp", "");
-            e = updateDeviceRequest(process, body);
-            checkFieldMissingErrorResponse(e, "allowUnverifiedDevices");
         }
 
         // Invalid userId/deviceName/skew/period
         {
-            body.addProperty("allowUnverifiedDevices", true);
-            Exception e = updateDeviceRequest(process, body);
+            body.addProperty("totp", "");
+            Exception e = verifyTotpCodeRequest(process, body);
             checkResponseErrorContains(e, "userId cannot be empty"); // Note that this is not a field missing error
 
             body.addProperty("userId", device.userId);
-            e = updateDeviceRequest(process, body);
+            e = verifyTotpCodeRequest(process, body);
             checkResponseErrorContains(e, "totp must be 6 characters long");
 
             // test totp of length 5:
             body.addProperty("totp", "12345");
-            e = updateDeviceRequest(process, body);
+            e = verifyTotpCodeRequest(process, body);
             checkResponseErrorContains(e, "totp must be 6 characters long");
 
             // test totp of length 8:
             body.addProperty("totp", "12345678");
-            e = updateDeviceRequest(process, body);
+            e = verifyTotpCodeRequest(process, body);
             checkResponseErrorContains(e, "totp must be 6 characters long");
 
             // but let's pass invalid code first

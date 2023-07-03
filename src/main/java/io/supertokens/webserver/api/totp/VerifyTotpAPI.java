@@ -42,7 +42,6 @@ public class VerifyTotpAPI extends WebserverAPI {
 
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
         String totp = InputParser.parseStringOrThrowError(input, "totp", false);
-        Boolean allowUnverifiedDevices = InputParser.parseBooleanOrThrowError(input, "allowUnverifiedDevices", false);
 
         if (userId.isEmpty()) {
             throw new ServletException(new BadRequestException("userId cannot be empty"));
@@ -50,7 +49,6 @@ public class VerifyTotpAPI extends WebserverAPI {
         if (totp.length() != 6) {
             throw new ServletException(new BadRequestException("totp must be 6 characters long"));
         }
-        // Already checked that allowUnverifiedDevices is not null.
 
         JsonObject result = new JsonObject();
 
@@ -72,7 +70,7 @@ public class VerifyTotpAPI extends WebserverAPI {
                 tenantIdentifierWithStorage = getTenantIdentifierWithStorageFromRequest(req);
             }
 
-            Totp.verifyCode(tenantIdentifierWithStorage, main, userId, totp, allowUnverifiedDevices);
+            Totp.verifyCode(tenantIdentifierWithStorage, main, userId, totp, false);
 
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
