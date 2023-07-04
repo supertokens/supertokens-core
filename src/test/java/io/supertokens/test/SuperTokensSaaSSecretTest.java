@@ -407,7 +407,7 @@ public class SuperTokensSaaSSecretTest {
         assertEquals(response.get("session").getAsJsonObject().get("userId").getAsString(), userId);
         assertEquals(response.get("session").getAsJsonObject().get("userDataInJWT").getAsJsonObject().toString(),
                 userDataInJWT.toString());
-        assertEquals(response.get("session").getAsJsonObject().entrySet().size(), 3);
+        assertEquals(response.get("session").getAsJsonObject().entrySet().size(), 4);
 
         assertTrue(response.get("accessToken").getAsJsonObject().has("token"));
         assertTrue(response.get("accessToken").getAsJsonObject().has("expiry"));
