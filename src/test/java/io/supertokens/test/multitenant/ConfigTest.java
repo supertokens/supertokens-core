@@ -719,7 +719,7 @@ public class ConfigTest {
             );
             fail();
         } catch (BadPermissionException e) {
-            assertEquals("You must use the public tenantId and, public or same appId to add/update an app", e.getMessage());
+            assertEquals("You must use the public or same app to add/update an app", e.getMessage());
         }
 
         try {
@@ -748,7 +748,7 @@ public class ConfigTest {
             );
             fail();
         } catch (BadPermissionException e) {
-            assertEquals("You must use the public or same tenantId to add/update a tenant", e.getMessage());
+            assertEquals("You must use the public or same tenant to add/update a tenant", e.getMessage());
         }
 
         try {
@@ -765,7 +765,7 @@ public class ConfigTest {
             );
             fail();
         } catch (BadPermissionException e) {
-            assertEquals("You must use the public or same tenantId to add/update a tenant", e.getMessage());
+            assertEquals("You must use the public or same tenant to add/update a tenant", e.getMessage());
         }
 
         try {
@@ -816,7 +816,7 @@ public class ConfigTest {
             );
             fail();
         } catch (BadPermissionException e) {
-            assertEquals("You must use the public or same tenantId to add/update a tenant", e.getMessage());
+            assertEquals("You must use the public or same tenant to add/update a tenant", e.getMessage());
         }
 
         try {
@@ -833,7 +833,7 @@ public class ConfigTest {
             );
             fail();
         } catch (BadPermissionException e) {
-            assertEquals("You must use the public tenantId and, public or same appId to add/update an app", e.getMessage());
+            assertEquals("You must use the public or same app to add/update an app", e.getMessage());
         }
 
         try {
@@ -850,7 +850,7 @@ public class ConfigTest {
             );
             fail();
         } catch (BadPermissionException e) {
-            assertEquals("You must use the public or same tenantId to add/update a tenant", e.getMessage());
+            assertEquals("You must use the public or same tenant to add/update a tenant", e.getMessage());
         }
 
         try {

@@ -446,7 +446,7 @@ public abstract class WebserverAPI extends HttpServlet {
                             "AppId or tenantId not found => " + ((TenantOrAppNotFoundException) rootCause).getMessage(),
                             resp);
                 } else if (rootCause instanceof BadPermissionException) {
-                    sendTextResponse(403, e.getMessage(), resp);
+                    sendTextResponse(403, rootCause.getMessage(), resp);
                 } else {
                     sendTextResponse(500, "Internal Error", resp);
                 }
