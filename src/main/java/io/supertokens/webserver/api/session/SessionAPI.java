@@ -123,7 +123,9 @@ public class SessionAPI extends WebserverAPI {
 
             JsonObject result = sessionInfo.toJsonObject();
 
-            result.get("session").getAsJsonObject().remove("tenantId");
+            if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
+                result.get("session").getAsJsonObject().remove("tenantId");
+            }
 
             result.addProperty("status", "OK");
 

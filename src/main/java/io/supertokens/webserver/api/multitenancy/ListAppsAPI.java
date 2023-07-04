@@ -82,14 +82,7 @@ public class ListAppsAPI extends WebserverAPI {
                 JsonArray tenantsArray = new JsonArray();
                 for (TenantConfig tenantConfig : entry.getValue()) {
                     JsonObject tenantConfigJson = tenantConfig.toJson(shouldProtect,
-                            tenantIdentifierWithStorage.getStorage());
-                    if (shouldProtect) {
-                        for (String protectedConfig : CoreConfig.PROTECTED_CONFIGS) {
-                            if (tenantConfigJson.get("coreConfig").getAsJsonObject().has(protectedConfig)) {
-                                tenantConfigJson.get("coreConfig").getAsJsonObject().remove(protectedConfig);
-                            }
-                        }
-                    }
+                            tenantIdentifierWithStorage.getStorage(), CoreConfig.PROTECTED_CONFIGS);
                     tenantsArray.add(tenantConfigJson);
                 }
                 appObject.add("tenants", tenantsArray);

@@ -79,15 +79,7 @@ public class CreateOrUpdateTenantAPI extends BaseCreateOrUpdate {
                 throw new TenantOrAppNotFoundException(tenantIdentifier);
             }
             boolean shouldProtect = shouldProtectProtectedConfig(req);
-            JsonObject result = config.toJson(shouldProtect, tenantIdentifier.getStorage());
-            if (shouldProtect) {
-                for (String protectedConfig : CoreConfig.PROTECTED_CONFIGS) {
-                    if (result.get("coreConfig").getAsJsonObject().has(protectedConfig)) {
-                        result.get("coreConfig").getAsJsonObject().remove(protectedConfig);
-                    }
-                }
-            }
-
+            JsonObject result = config.toJson(shouldProtect, tenantIdentifier.getStorage(), CoreConfig.PROTECTED_CONFIGS);
             result.addProperty("status", "OK");
 
             super.sendJsonResponse(200, result, resp);

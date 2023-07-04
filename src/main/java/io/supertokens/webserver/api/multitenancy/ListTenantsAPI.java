@@ -63,14 +63,7 @@ public class ListTenantsAPI extends WebserverAPI {
             boolean shouldProtect = shouldProtectProtectedConfig(req);
             for (TenantConfig tenantConfig : tenantConfigs) {
                 JsonObject tenantConfigJson = tenantConfig.toJson(shouldProtect,
-                        tenantIdentifierWithStorage.getStorage());
-                if (shouldProtect) {
-                    for (String protectedConfig : CoreConfig.PROTECTED_CONFIGS) {
-                        if (tenantConfigJson.get("coreConfig").getAsJsonObject().has(protectedConfig)) {
-                            tenantConfigJson.get("coreConfig").getAsJsonObject().remove(protectedConfig);
-                        }
-                    }
-                }
+                        tenantIdentifierWithStorage.getStorage(), CoreConfig.PROTECTED_CONFIGS);
                 tenantsArray.add(tenantConfigJson);
             }
 
