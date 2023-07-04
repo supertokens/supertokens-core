@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.0.2] - 2023-07-04
+
+- Fixes some of the session APIs to return `tenantId`
+- argon and bcrypt related configs are now configurable only from config.yaml
+- `ip_allow_regex` and `ip_deny_regex` are now protected properties for SaaS
+- `hello` is disallowed as a tenantId
+- creation of apps enables all recipes by default but not during creation of tenant
+
 ## [6.0.1]
 
 - Fixes `Invalid API key` issue on hello API

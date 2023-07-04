@@ -1909,19 +1909,27 @@ public class ConfigTest {
                 "argon2_hashing_pool_size",
                 "log_level",
                 "firebase_password_hashing_pool_size",
-                "supertokens_saas_secret"
+                "supertokens_saas_secret",
+                "argon2_iterations",
+                "argon2_memory_kb",
+                "argon2_parallelism",
+                "bcrypt_log_rounds",
         };
         Object[] disallowedValues = new Object[]{
-                3567,
-                "localhost",
-                "info.log",
-                "error.log",
-                15,
-                "/new-base",
-                12,
-                "DEBUG",
-                12,
-                "abcd1234abcd1234"
+                3567, // port
+                "localhost", // host
+                "info.log", // info_log_path
+                "error.log", // error_log_path
+                15, // max_server_pool_size
+                "/new-base", // base_path
+                12, // argon2_hashing_pool_size
+                "DEBUG", // log_level
+                12, // firebase_password_hashing_pool_size
+                "abcd1234abcd1234", // supertokens_saas_secret
+                1, // argon2_iterations
+                87795, // argon2_memory_kb
+                2, // argon2_parallelism
+                11, // bcrypt_log_rounds
         };
 
         process.kill();
@@ -1974,10 +1982,6 @@ public class ConfigTest {
                 "api_keys",
                 "disable_telemetry",
                 "password_hashing_alg",
-                "argon2_iterations",
-                "argon2_memory_kb",
-                "argon2_parallelism",
-                "bcrypt_log_rounds",
                 "firebase_password_hashing_signer_key",
                 "supertokens_default_cdi_version",
         };
@@ -1990,10 +1994,6 @@ public class ConfigTest {
                 new Object[]{"abcd1234abcd1234abcd1234abcd1234", "qwer1234qwer1234qwer1234qwer1234"}, // api_keys
                 new Object[]{true, false}, // disable_telemetry
                 new Object[]{"BCRYPT", "ARGON2"}, // password_hashing_alg
-                new Object[]{1, 2}, // argon2_iterations
-                new Object[]{87795, 88795}, // argon2_memory_kb
-                new Object[]{2, 3}, // argon2_parallelism
-                new Object[]{11, 12}, // bcrypt_log_rounds
                 new Object[]{"abcd1234abcd1234abcd1234abcd1234", "qwer1234qwer1234qwer1234qwer1234"}, // firebase_password_hashing_signer_key
                 new Object[]{"2.21", "3.0"} // supertokens_default_cdi_version
         };

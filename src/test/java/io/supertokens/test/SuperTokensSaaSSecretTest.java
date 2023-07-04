@@ -16,10 +16,12 @@
 
 package io.supertokens.test;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
+import io.supertokens.config.CoreConfig;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
@@ -33,15 +35,15 @@ import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import io.supertokens.utils.SemVer;
+import org.junit.*;
 import org.junit.rules.TestRule;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -405,7 +407,7 @@ public class SuperTokensSaaSSecretTest {
         assertEquals(response.get("session").getAsJsonObject().get("userId").getAsString(), userId);
         assertEquals(response.get("session").getAsJsonObject().get("userDataInJWT").getAsJsonObject().toString(),
                 userDataInJWT.toString());
-        assertEquals(response.get("session").getAsJsonObject().entrySet().size(), 3);
+        assertEquals(response.get("session").getAsJsonObject().entrySet().size(), 4);
 
         assertTrue(response.get("accessToken").getAsJsonObject().has("token"));
         assertTrue(response.get("accessToken").getAsJsonObject().has("expiry"));
@@ -416,5 +418,170 @@ public class SuperTokensSaaSSecretTest {
         assertTrue(response.get("refreshToken").getAsJsonObject().has("expiry"));
         assertTrue(response.get("refreshToken").getAsJsonObject().has("createdTime"));
         assertEquals(response.get("refreshToken").getAsJsonObject().entrySet().size(), 3);
+    }
+
+    private static final String[] PROTECTED_CORE_CONFIG = new String[]{"ip_allow_regex", "ip_deny_regex"};
+    private static final Object[] PROTECTED_CORE_CONFIG_VALUES = new String[]{"127\\\\.\\\\d+\\\\.\\\\d+\\\\.\\\\d+|::1|0:0:0:0:0:0:0:1", "192.0.0.1"};
+
+    @Test
+    public void testThatTenantCannotSetProtectedConfigIfSuperTokensSaaSSecretIsSet()
+            throws InterruptedException, IOException, InvalidConfigException, TenantOrAppNotFoundException,
+            InvalidProviderConfigException, StorageQueryException,
+            FeatureNotEnabledException, CannotModifyBaseConfigException, HttpResponseException {
+        String[] args = {"../"};
+
+        String saasSecret = "hg40239oirjgBHD9450=Beew123--hg40239oirjgBHD9450=Beew123--hg40239oirjgBHD9450=Beew123-";
+        Utils.setValueInConfig("supertokens_saas_secret", saasSecret);
+        String apiKey = "hg40239oirjgBHD9450=Beew123--hg40239oiBeew123-";
+        Utils.setValueInConfig("api_keys", apiKey);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
+        for (int i = 0; i < PROTECTED_CORE_CONFIG.length; i++) {
+            try {
+                JsonObject j = new JsonObject();
+                j.addProperty(PROTECTED_CORE_CONFIG[i], "");
+                Multitenancy.addNewOrUpdateAppOrTenant(process.main, new TenantConfig(new TenantIdentifier(null, null, "t1"), new EmailPasswordConfig(false),
+                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new PasswordlessConfig(false),
+                        j), true);
+                fail();
+            } catch (BadPermissionException e) {
+                assertEquals(e.getMessage(), "Not allowed to modify protected configs.");
+            }
+        }
+
+        try {
+            JsonObject coreConfig = new JsonObject();
+            StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(coreConfig, 1);
+
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("appId", "a1");
+            requestBody.addProperty("emailPasswordEnabled", true);
+            requestBody.addProperty("thirdPartyEnabled", true);
+            requestBody.addProperty("passwordlessEnabled", true);
+            requestBody.add("coreConfig", coreConfig);
+
+            JsonObject response = HttpRequestForTesting.sendJsonRequest(process.getProcess(), "",
+                    HttpRequestForTesting.getMultitenantUrl(TenantIdentifier.BASE_TENANT, "/recipe/multitenancy/app"),
+                    requestBody, 1000, 2500, null,
+                    SemVer.v3_0.get(), "PUT", apiKey, "multitenancy");
+
+            Assert.assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
+            fail();
+        } catch (HttpResponseException e) {
+            Assert.assertTrue(e.getMessage().contains("Not allowed to modify DB related configs."));
+        }
+
+        JsonObject coreConfig = new JsonObject();
+        coreConfig.addProperty("postgresql_database_name", "st1");
+
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("appId", "a1");
+        requestBody.addProperty("emailPasswordEnabled", true);
+        requestBody.addProperty("thirdPartyEnabled", true);
+        requestBody.addProperty("passwordlessEnabled", true);
+        requestBody.add("coreConfig", coreConfig);
+
+        JsonObject response = HttpRequestForTesting.sendJsonRequest(process.getProcess(), "",
+                HttpRequestForTesting.getMultitenantUrl(TenantIdentifier.BASE_TENANT, "/recipe/multitenancy/app"),
+                requestBody, 1000, 2500, null,
+                SemVer.v3_0.get(), "PUT", saasSecret, "multitenancy");
+
+        Assert.assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testThatTenantCannotGetProtectedConfigIfSuperTokensSaaSSecretIsSet()
+            throws InterruptedException, IOException, InvalidConfigException, TenantOrAppNotFoundException,
+            InvalidProviderConfigException, StorageQueryException,
+            FeatureNotEnabledException, CannotModifyBaseConfigException, BadPermissionException, HttpResponseException {
+        String[] args = {"../"};
+
+        String saasSecret = "hg40239oirjgBHD9450=Beew123--hg40239oirjgBHD9450=Beew123--hg40239oirjgBHD9450=Beew123-";
+        Utils.setValueInConfig("supertokens_saas_secret", saasSecret);
+        String apiKey = "hg40239oirjgBHD9450=Beew123--hg40239oiBeew123-";
+        Utils.setValueInConfig("api_keys", apiKey);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        for (int i = 0; i < PROTECTED_CORE_CONFIG.length; i++) {
+            JsonObject j = new JsonObject();
+            if (PROTECTED_CORE_CONFIG_VALUES[i] instanceof String) {
+                j.addProperty(PROTECTED_CORE_CONFIG[i], (String) PROTECTED_CORE_CONFIG_VALUES[i]);
+            } else if (PROTECTED_CORE_CONFIG_VALUES[i] instanceof Integer) {
+                j.addProperty(PROTECTED_CORE_CONFIG[i], (Integer) PROTECTED_CORE_CONFIG_VALUES[i]);
+            }
+            Multitenancy.addNewOrUpdateAppOrTenant(process.main, new TenantIdentifier(null, null, null),
+                    new TenantConfig(new TenantIdentifier(null, null, "t" + i), new EmailPasswordConfig(false),
+                            new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                            new PasswordlessConfig(false),
+                            j));
+
+            {
+                JsonObject response = HttpRequestForTesting.sendJsonRequest(process.getProcess(), "",
+                        HttpRequestForTesting.getMultitenantUrl(TenantIdentifier.BASE_TENANT, "/recipe/multitenancy/tenant/list"),
+                        null, 1000, 1000, null,
+                        SemVer.v3_0.get(), "GET", apiKey, "multitenancy");
+
+                Assert.assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
+
+                boolean found = false;
+                for (JsonElement tenant : response.get("tenants").getAsJsonArray()) {
+                    JsonObject tenantObj = tenant.getAsJsonObject();
+
+                    if (tenantObj.get("tenantId").getAsString().equals("t" + i)) {
+                        found = true;
+
+                        assertFalse(tenantObj.get("coreConfig").getAsJsonObject().has(PROTECTED_CORE_CONFIG[i]));
+                    }
+                }
+                Assert.assertTrue(found);
+            }
+
+            {
+                JsonObject response = HttpRequestForTesting.sendJsonRequest(process.getProcess(), "",
+                        HttpRequestForTesting.getMultitenantUrl(TenantIdentifier.BASE_TENANT, "/recipe/multitenancy/tenant/list"),
+                        null, 1000, 1000, null,
+                        SemVer.v3_0.get(), "GET", saasSecret, "multitenancy");
+
+                Assert.assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
+
+                boolean found = false;
+                for (JsonElement tenant : response.get("tenants").getAsJsonArray()) {
+                    JsonObject tenantObj = tenant.getAsJsonObject();
+
+                    if (tenantObj.get("tenantId").getAsString().equals("t" + i)) {
+                        found = true;
+
+                        Assert.assertTrue(tenantObj.get("coreConfig").getAsJsonObject().has(PROTECTED_CORE_CONFIG[i]));
+                    }
+                }
+                Assert.assertTrue(found);
+            }
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testThatAllProtectedPropsAreTested() throws Exception {
+        for (String protectedConfig: CoreConfig.PROTECTED_CONFIGS) {
+            assertTrue(Arrays.asList(PROTECTED_CORE_CONFIG).contains(protectedConfig));
+        }
     }
 }

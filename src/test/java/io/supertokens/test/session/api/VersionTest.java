@@ -120,7 +120,11 @@ public class VersionTest {
                     assertNotNull(response.get("session").getAsJsonObject().get("handle").getAsString());
                     junit.framework.TestCase.assertEquals(response.get("session").getAsJsonObject().get("userId").getAsString(), userId);
                     junit.framework.TestCase.assertEquals(response.get("session").getAsJsonObject().get("userDataInJWT").getAsJsonObject(), userDataInJWT);
-                    junit.framework.TestCase.assertEquals(response.get("session").getAsJsonObject().entrySet().size(), 3);
+                    if (getCDIVersionForAccessTokenVersion(updateVersion).lesserThan(SemVer.v3_0)) {
+                        junit.framework.TestCase.assertEquals(response.get("session").getAsJsonObject().entrySet().size(), 3);
+                    } else {
+                        junit.framework.TestCase.assertEquals(response.get("session").getAsJsonObject().entrySet().size(), 4);
+                    }
                 }
             }
         }

@@ -19,6 +19,7 @@ package io.supertokens.webserver.api.multitenancy;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.config.CoreConfig;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
@@ -72,6 +73,7 @@ public class ListAppsAPI extends WebserverAPI {
                 appsToTenants.get(tenantConfig.tenantIdentifier.getAppId()).add(tenantConfig);
             }
 
+            boolean shouldProtect = shouldProtectProtectedConfig(req);
             JsonArray appsArray = new JsonArray();
             for (Map.Entry<String, List<TenantConfig>> entry : appsToTenants.entrySet()) {
                String appId = entry.getKey();
@@ -79,7 +81,9 @@ public class ListAppsAPI extends WebserverAPI {
                appObject.addProperty("appId", appId);
                 JsonArray tenantsArray = new JsonArray();
                 for (TenantConfig tenantConfig : entry.getValue()) {
-                    tenantsArray.add(tenantConfig.toJson(shouldProtectDbConfig(req), tenantIdentifierWithStorage.getStorage()));
+                    JsonObject tenantConfigJson = tenantConfig.toJson(shouldProtect,
+                            tenantIdentifierWithStorage.getStorage(), CoreConfig.PROTECTED_CONFIGS);
+                    tenantsArray.add(tenantConfigJson);
                 }
                 appObject.add("tenants", tenantsArray);
                 appsArray.add(appObject);

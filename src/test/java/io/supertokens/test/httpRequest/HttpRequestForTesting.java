@@ -129,7 +129,7 @@ public class HttpRequestForTesting {
     }
 
     @SuppressWarnings("unchecked")
-    private static <T> T sendJsonRequest(Main main, String requestID, String url, JsonElement requestBody,
+    public static <T> T sendJsonRequest(Main main, String requestID, String url, JsonElement requestBody,
             int connectionTimeoutMS, int readTimeoutMS, Integer version, String cdiVersion, String method,
             String apiKey, String rid) throws IOException, io.supertokens.test.httpRequest.HttpResponseException {
         URL obj = getURL(main, requestID, url);

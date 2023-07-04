@@ -122,7 +122,7 @@ public class HelloAPITest {
         ), false);
 
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
-                new TenantIdentifier(null, "hello", "hello"),
+                new TenantIdentifier(null, "hello", "test"),
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
@@ -130,37 +130,50 @@ public class HelloAPITest {
         ), false);
 
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
-                new TenantIdentifier(null, null, "hello"),
+                new TenantIdentifier(null, null, "test"),
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
                 new JsonObject()
         ), false);
 
-        String res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/hello", null, 1000, 1000,
-                null, Utils.getCdiVersionStringLatestForTests(), "");
-        assertEquals("Hello", res);
+        String[] HELLO_ROUTES = new String[]{
+                "http://localhost:3567/hello", // baseUrl + /
+                "http://localhost:3567/hello/", // baseUrl + /
+                "http://localhost:3567/hello/hello", // baseUrl + /hello
+                "http://localhost:3567/hello/hello/", // baseUrl + (hello tenant) + / : works because the hello api doesn't check if that tenant exists
+                "http://localhost:3567/hello/appid-hello/hello", // baseUrl + app + /hello
+                "http://localhost:3567/hello/appid-hello/hello/", // baseUrl + app + /hello
+                "http://localhost:3567/hello/appid-hello/test/hello", // baseUrl + app + tenant + /hello
+        };
 
-        res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/hello/hello", null, 1000, 1000,
-                null, Utils.getCdiVersionStringLatestForTests(), "");
-        assertEquals("Hello", res);
+        for (String helloUrl: HELLO_ROUTES) {
+            System.out.println(helloUrl);
+            String res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    helloUrl, null, 1000, 1000,
+                    null, Utils.getCdiVersionStringLatestForTests(), "");
+            assertEquals("Hello", res);
+            Thread.sleep(250); // Avoid rate limiting
+        }
 
-        res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/hello/hello/hello", null, 1000, 1000,
-                null, Utils.getCdiVersionStringLatestForTests(), "");
-        assertEquals("Hello", res);
+        String[] NOT_FOUND_ROUTES = new String[]{
+                "http://localhost:3567/hello/appid-hello", // baseUrl + app + /
+                "http://localhost:3567/hello/appid-hello/", // baseUrl + app + /
+                "http://localhost:3567/hello/appid-hello/test", // baseUrl + app + tenant + /
+                "http://localhost:3567/hello/appid-hello/test/", // baseUrl + app + tenant + /
+        };
 
-        res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/hello/appid-hello/hello", null, 1000, 1000,
-                null, Utils.getCdiVersionStringLatestForTests(), "");
-        assertEquals("Hello", res);
-
-        res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/hello/appid-hello/hello/hello", null, 1000, 1000,
-                null, Utils.getCdiVersionStringLatestForTests(), "");
-        assertEquals("Hello", res);
+        // Not found
+        for (String notFoundUrl : NOT_FOUND_ROUTES) {
+            try {
+                String res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                        notFoundUrl, null, 1000, 1000,
+                        null, Utils.getCdiVersionStringLatestForTests(), "");
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(404, e.statusCode);
+            }
+        }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -192,7 +205,7 @@ public class HelloAPITest {
         ), false);
 
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
-                new TenantIdentifier(null, "hello", "hello"),
+                new TenantIdentifier(null, "hello", "test"),
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
@@ -200,57 +213,51 @@ public class HelloAPITest {
         ), false);
 
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
-                new TenantIdentifier(null, null, "hello"),
+                new TenantIdentifier(null, null, "test"),
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
                 new JsonObject()
         ), false);
 
-        String res;
+        String[] HELLO_ROUTES = new String[]{
+                "http://localhost:3567/hello", // baseUrl + /
+                "http://localhost:3567/hello/", // baseUrl + /
+                "http://localhost:3567/hello/hello", // baseUrl + /hello
+                "http://localhost:3567/hello/hello/", // baseUrl + (hello tenant) + / : works because the hello api doesn't check if that tenant exists
+                "http://localhost:3567/hello/appid-hello/hello", // baseUrl + app + /hello
+                "http://localhost:3567/hello/appid-hello/hello/", // baseUrl + app + /hello
+                "http://localhost:3567/hello/appid-hello/test/hello", // baseUrl + app + tenant + /hello
+        };
 
-        res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/hello", null, 1000, 1000,
-                null, Utils.getCdiVersionStringLatestForTests(), "");
-        assertEquals("Hello", res);
-
-        res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/hello/hello", null, 1000, 1000,
-                null, Utils.getCdiVersionStringLatestForTests(), "");
-        assertEquals("Hello", res);
-
-        res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/hello/hello/hello", null, 1000, 1000,
-                null, Utils.getCdiVersionStringLatestForTests(), "");
-        assertEquals("Hello", res);
-
-        res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/hello/appid-hello/hello", null, 1000, 1000,
-                null, Utils.getCdiVersionStringLatestForTests(), "");
-        assertEquals("Hello", res);
-
-        res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/hello/appid-hello/hello/hello", null, 1000, 1000,
-                null, Utils.getCdiVersionStringLatestForTests(), "");
-        assertEquals("Hello", res);
-
-        // Not found
-        try {
-            res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/abcd", null, 1000, 1000,
+        for (String helloUrl: HELLO_ROUTES) {
+            System.out.println(helloUrl);
+            String res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    helloUrl, null, 1000, 1000,
                     null, Utils.getCdiVersionStringLatestForTests(), "");
-            fail();
-        } catch (HttpResponseException e) {
-            assertEquals(404, e.statusCode);
+            assertEquals("Hello", res);
+            Thread.sleep(250); // avoid rate limiting
         }
 
-        try {
-            res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567", null, 1000, 1000,
-                    null, Utils.getCdiVersionStringLatestForTests(), "");
-            fail();
-        } catch (HttpResponseException e) {
-            assertEquals(404, e.statusCode);
+        String[] NOT_FOUND_ROUTES = new String[]{
+                "http://localhost:3567/abcd",
+                "http://localhost:3567",
+                "http://localhost:3567/hello/appid-hello", // baseUrl + app + /
+                "http://localhost:3567/hello/appid-hello/", // baseUrl + app + /
+                "http://localhost:3567/hello/appid-hello/test", // baseUrl + app + tenant + /
+                "http://localhost:3567/hello/appid-hello/test/", // baseUrl + app + tenant + /
+        };
+
+        // Not found
+        for (String notFoundUrl : NOT_FOUND_ROUTES) {
+            try {
+                String res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                        notFoundUrl, null, 1000, 1000,
+                        null, Utils.getCdiVersionStringLatestForTests(), "");
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(404, e.statusCode);
+            }
         }
 
         process.kill();
@@ -282,7 +289,7 @@ public class HelloAPITest {
         ), false);
 
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
-                new TenantIdentifier(null, "hello", "hello"),
+                new TenantIdentifier(null, "hello", "test"),
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
@@ -290,48 +297,50 @@ public class HelloAPITest {
         ), false);
 
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
-                new TenantIdentifier(null, null, "hello"),
+                new TenantIdentifier(null, null, "test"),
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
                 new JsonObject()
         ), false);
 
-        String res;
+        String[] HELLO_ROUTES = new String[]{
+                "http://localhost:3567", // /
+                "http://localhost:3567/", // /
+                "http://localhost:3567/hello", // /hello
+                "http://localhost:3567/hello/", // (hello tenant) + / : works because the hello api doesn't check if that tenant exists
+                "http://localhost:3567/appid-hello/hello", // app + /hello
+                "http://localhost:3567/appid-hello/hello/", // app + /hello
+                "http://localhost:3567/appid-hello/test/hello", // app + tenant + /hello
+        };
 
-        res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567", null, 1000, 1000,
-                null, Utils.getCdiVersionStringLatestForTests(), "");
-        assertEquals("Hello", res);
+        for (String helloUrl: HELLO_ROUTES) {
+            System.out.println(helloUrl);
+            String res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    helloUrl, null, 1000, 1000,
+                    null, Utils.getCdiVersionStringLatestForTests(), "");
+            assertEquals("Hello", res);
+            Thread.sleep(250); // avoid rate limiting
+        }
 
-        res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/hello", null, 1000, 1000,
-                null, Utils.getCdiVersionStringLatestForTests(), "");
-        assertEquals("Hello", res);
-
-        res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/hello/hello", null, 1000, 1000,
-                null, Utils.getCdiVersionStringLatestForTests(), "");
-        assertEquals("Hello", res);
-
-        res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/appid-hello/hello", null, 1000, 1000,
-                null, Utils.getCdiVersionStringLatestForTests(), "");
-        assertEquals("Hello", res);
-
-        res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/appid-hello/hello/hello", null, 1000, 1000,
-                null, Utils.getCdiVersionStringLatestForTests(), "");
-        assertEquals("Hello", res);
+        String[] NOT_FOUND_ROUTES = new String[]{
+                "http://localhost:3567/abcd",
+                "http://localhost:3567/appid-hello", // app + /
+                "http://localhost:3567/appid-hello/", // app + /
+                "http://localhost:3567/appid-hello/test", // app + tenant + /
+                "http://localhost:3567/appid-hello/test/", // app + tenant + /
+        };
 
         // Not found
-        try {
-            HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/abcd", null, 1000, 1000,
-                    null, Utils.getCdiVersionStringLatestForTests(), "");
-            fail();
-        } catch (HttpResponseException e) {
-            assertEquals(404, e.statusCode);
+        for (String notFoundUrl : NOT_FOUND_ROUTES) {
+            try {
+                String res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                        notFoundUrl, null, 1000, 1000,
+                        null, Utils.getCdiVersionStringLatestForTests(), "");
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(404, e.statusCode);
+            }
         }
 
         process.kill();

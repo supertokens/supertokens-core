@@ -148,7 +148,7 @@ public class Session {
 
         TokenInfo idRefreshToken = new TokenInfo(UUID.randomUUID().toString(), refreshToken.expiry,
                 refreshToken.createdTime);
-        return new SessionInformationHolder(new SessionInfo(sessionHandle, userId, userDataInJWT), accessToken,
+        return new SessionInformationHolder(new SessionInfo(sessionHandle, userId, userDataInJWT, tenantIdentifierWithStorage.getTenantId()), accessToken,
                 refreshToken, idRefreshToken, antiCsrfToken);
     }
 
@@ -209,7 +209,7 @@ public class Session {
             // in this case, we set the should not set the access token in the response since they will have to call
             // the refresh API anyway.
             return new SessionInformationHolder(
-                    new SessionInfo(accessToken.sessionHandle, accessToken.userId, newJWTUserPayload), null, null, null,
+                    new SessionInfo(accessToken.sessionHandle, accessToken.userId, newJWTUserPayload, tenantIdentifierWithStorage.getTenantId()), null, null, null,
                     null);
         }
 
@@ -219,7 +219,7 @@ public class Session {
                 accessToken.antiCsrfToken, accessToken.expiryTime, accessToken.version, sessionInfo.useStaticKey);
 
         return new SessionInformationHolder(
-                new SessionInfo(accessToken.sessionHandle, accessToken.userId, newJWTUserPayload),
+                new SessionInfo(accessToken.sessionHandle, accessToken.userId, newJWTUserPayload, tenantIdentifierWithStorage.getTenantId()),
                 new TokenInfo(newAccessToken.token, newAccessToken.expiry, newAccessToken.createdTime), null, null,
                 null);
     }
@@ -254,7 +254,7 @@ public class Session {
             // in this case, we set the should not set the access token in the response since they will have to call
             // the refresh API anyway.
             return new SessionInformationHolder(
-                    new SessionInfo(accessToken.sessionHandle, accessToken.userId, newJWTUserPayload), null, null, null,
+                    new SessionInfo(accessToken.sessionHandle, accessToken.userId, newJWTUserPayload, tenantIdentifierWithStorage.getTenantId()), null, null, null,
                     null);
         }
 
@@ -265,7 +265,7 @@ public class Session {
                 accessToken.antiCsrfToken, accessToken.expiryTime, accessToken.version, sessionInfo.useStaticKey);
 
         return new SessionInformationHolder(
-                new SessionInfo(accessToken.sessionHandle, accessToken.userId, newJWTUserPayload),
+                new SessionInfo(accessToken.sessionHandle, accessToken.userId, newJWTUserPayload, tenantIdentifierWithStorage.getTenantId()),
                 new TokenInfo(newAccessToken.token, newAccessToken.expiry, newAccessToken.createdTime), null, null,
                 null);
     }
@@ -318,7 +318,7 @@ public class Session {
             // this means that the refresh token associated with this access token is
             // already the parent - and JWT payload doesn't need to be updated.
             return new SessionInformationHolder(
-                    new SessionInfo(accessToken.sessionHandle, accessToken.userId, accessToken.userData), null, null,
+                    new SessionInfo(accessToken.sessionHandle, accessToken.userId, accessToken.userData, tenantIdentifierWithStorage.getTenantId()), null, null,
                     null, null);
         }
 
@@ -371,7 +371,7 @@ public class Session {
 
                             return new SessionInformationHolder(
                                     new SessionInfo(accessToken.sessionHandle, accessToken.userId,
-                                            sessionInfo.userDataInJWT),
+                                            sessionInfo.userDataInJWT, tenantIdentifierWithStorage.getTenantId()),
                                     new TokenInfo(newAccessToken.token, newAccessToken.expiry,
                                             newAccessToken.createdTime),
                                     null, null, null);
@@ -379,7 +379,7 @@ public class Session {
 
                         storage.commitTransaction(con);
                         return new SessionInformationHolder(
-                                new SessionInfo(accessToken.sessionHandle, accessToken.userId, accessToken.userData),
+                                new SessionInfo(accessToken.sessionHandle, accessToken.userId, accessToken.userData, tenantIdentifierWithStorage.getTenantId()),
                                 // here we purposely use accessToken.userData instead of sessionInfo.userDataInJWT
                                 // because we are not returning a new access token
                                 null, null, null, null);
@@ -443,13 +443,13 @@ public class Session {
 
                         return new SessionInformationHolder(
                                 new SessionInfo(accessToken.sessionHandle, accessToken.userId,
-                                        sessionInfo.userDataInJWT),
+                                        sessionInfo.userDataInJWT, tenantIdentifierWithStorage.getTenantId()),
                                 new TokenInfo(newAccessToken.token, newAccessToken.expiry, newAccessToken.createdTime),
                                 null, null, null);
                     }
 
                     return new SessionInformationHolder(
-                            new SessionInfo(accessToken.sessionHandle, accessToken.userId, accessToken.userData),
+                            new SessionInfo(accessToken.sessionHandle, accessToken.userId, accessToken.userData, tenantIdentifierWithStorage.getTenantId()),
                             // here we purposely use accessToken.userData instead of sessionInfo.userDataInJWT
                             // because we are not returning a new access token
                             null, null, null, null);
@@ -547,7 +547,7 @@ public class Session {
                                     newRefreshToken.expiry, newRefreshToken.createdTime);
 
                             return new SessionInformationHolder(
-                                    new SessionInfo(sessionHandle, sessionInfo.userId, sessionInfo.userDataInJWT),
+                                    new SessionInfo(sessionHandle, sessionInfo.userId, sessionInfo.userDataInJWT, tenantIdentifierWithStorage.getTenantId()),
                                     newAccessToken, newRefreshToken, idRefreshToken, antiCsrfToken);
                         }
 
@@ -629,7 +629,7 @@ public class Session {
                                 newRefreshToken.createdTime);
 
                         return new SessionInformationHolder(
-                                new SessionInfo(sessionHandle, sessionInfo.userId, sessionInfo.userDataInJWT),
+                                new SessionInfo(sessionHandle, sessionInfo.userId, sessionInfo.userDataInJWT, tenantIdentifierWithStorage.getTenantId()),
                                 newAccessToken, newRefreshToken, idRefreshToken, antiCsrfToken);
                     }
 

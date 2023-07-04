@@ -83,6 +83,10 @@ public class SessionRegenerateAPI extends WebserverAPI {
 
             JsonObject result = sessionInfo.toJsonObject();
 
+            if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
+                result.get("session").getAsJsonObject().remove("tenantId");
+            }
+
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
 

@@ -30,9 +30,13 @@ public class SessionInfo {
     @Nonnull
     public final JsonObject userDataInJWT;
 
-    public SessionInfo(@Nonnull String handle, @Nonnull String userId, @Nonnull JsonObject userDataInJWT) {
+    @Nonnull
+    public final String tenantId;
+
+    public SessionInfo(@Nonnull String handle, @Nonnull String userId, @Nonnull JsonObject userDataInJWT, @Nonnull String tenantId) {
         this.handle = handle;
         this.userId = userId;
         this.userDataInJWT = userDataInJWT;
+        this.tenantId = tenantId;
     }
 }

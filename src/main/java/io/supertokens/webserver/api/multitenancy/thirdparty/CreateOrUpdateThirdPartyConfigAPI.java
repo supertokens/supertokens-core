@@ -114,7 +114,7 @@ public class CreateOrUpdateThirdPartyConfigAPI extends WebserverAPI {
                     tenantConfig.passwordlessConfig,
                     tenantConfig.coreConfig);
 
-            Multitenancy.addNewOrUpdateAppOrTenant(main, updatedConfig, shouldProtectDbConfig(req), skipValidation);
+            Multitenancy.addNewOrUpdateAppOrTenant(main, updatedConfig, shouldProtectProtectedConfig(req), skipValidation);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

@@ -19,6 +19,7 @@ package io.supertokens.webserver.api.multitenancy;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.config.CoreConfig;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
@@ -59,8 +60,11 @@ public class ListTenantsAPI extends WebserverAPI {
             TenantConfig[] tenantConfigs = Multitenancy.getAllTenantsForApp(tenantIdentifierWithStorage.toAppIdentifier(), main);
             JsonArray tenantsArray = new JsonArray();
 
+            boolean shouldProtect = shouldProtectProtectedConfig(req);
             for (TenantConfig tenantConfig : tenantConfigs) {
-                tenantsArray.add(tenantConfig.toJson(shouldProtectDbConfig(req), tenantIdentifierWithStorage.getStorage()));
+                JsonObject tenantConfigJson = tenantConfig.toJson(shouldProtect,
+                        tenantIdentifierWithStorage.getStorage(), CoreConfig.PROTECTED_CONFIGS);
+                tenantsArray.add(tenantConfigJson);
             }
 
             JsonObject result = new JsonObject();

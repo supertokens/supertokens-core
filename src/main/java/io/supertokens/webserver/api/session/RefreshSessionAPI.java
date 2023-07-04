@@ -105,6 +105,10 @@ public class RefreshSessionAPI extends WebserverAPI {
             if (version.greaterThanOrEqualTo(SemVer.v2_21)) {
                 result.remove("idRefreshToken");
             }
+
+            if (version.lesserThan(SemVer.v3_0)) {
+                result.get("session").getAsJsonObject().remove("tenantId");
+            }
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
         } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException | UnsupportedJWTSigningAlgorithmException e) {

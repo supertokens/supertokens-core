@@ -24,7 +24,7 @@ import java.util.List;
 
 public class Utils {
 
-    private static final List<String> INVALID_WORDS_FOR_TENANTID = List.of("recipe", "config", "users");
+    public static final List<String> INVALID_WORDS_FOR_TENANTID = List.of("recipe", "config", "users", "hello");
 
     public static String normalizeAndValidateStringParam(String param, String paramName) throws ServletException {
         param = param.trim();
