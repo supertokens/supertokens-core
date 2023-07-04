@@ -459,4 +459,28 @@ public class TestConnectionUriDomain {
             }
         }
     }
+
+    @Test
+    public void testDefaultRecipesEnabledWhileCreatingCUD() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        JsonObject config = new JsonObject();
+        StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
+
+        JsonObject response = TestMultitenancyAPIHelper.createConnectionUriDomain(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "localhost:3567", null, null, null,
+                config);
+
+        assertTrue(response.get("createdNew").getAsBoolean());
+
+        JsonObject tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier("localhost", null, null),
+                process.getProcess());
+        assertTrue(tenant.get("emailPassword").getAsJsonObject().get("enabled").getAsBoolean());
+        assertTrue(tenant.get("thirdParty").getAsJsonObject().get("enabled").getAsBoolean());
+        assertTrue(tenant.get("passwordless").getAsJsonObject().get("enabled").getAsBoolean());
+    }
 }

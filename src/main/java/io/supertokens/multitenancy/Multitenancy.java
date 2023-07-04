@@ -122,7 +122,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         }
     }
 
-    private static void validateTenantConfig(Main main, TenantConfig targetTenantConfig, boolean shouldPreventDbConfigUpdate,
+    private static void validateTenantConfig(Main main, TenantConfig targetTenantConfig, boolean shouldPreventProtecterdConfigUpdate,
                                              boolean skipThirdPartyConfigValidation)
             throws IOException, InvalidConfigException, InvalidProviderConfigException, BadPermissionException,
             TenantOrAppNotFoundException, CannotModifyBaseConfigException {
@@ -139,11 +139,17 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
 
         // we check if the core config provided is correct
         {
-            if (shouldPreventDbConfigUpdate) {
+            if (shouldPreventProtecterdConfigUpdate) {
                 for (String s : StorageLayer.getStorage(new TenantIdentifier(null, null, null), main)
                         .getProtectedConfigsFromSuperTokensSaaSUsers()) {
                     if (targetTenantConfig.coreConfig.has(s)) {
                         throw new BadPermissionException("Not allowed to modify DB related configs.");
+                    }
+                }
+
+                for (String s : CoreConfig.PROTECTED_CONFIGS) {
+                    if (targetTenantConfig.coreConfig.has(s)) {
+                        throw new BadPermissionException("Not allowed to modify protected configs.");
                     }
                 }
             }
@@ -194,7 +200,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         return addNewOrUpdateAppOrTenant(main, newTenant, shouldPreventDbConfigUpdate, false);
     }
 
-    public static boolean addNewOrUpdateAppOrTenant(Main main, TenantConfig newTenant, boolean shouldPreventDbConfigUpdate, boolean skipThirdPartyConfigValidation)
+    public static boolean addNewOrUpdateAppOrTenant(Main main, TenantConfig newTenant, boolean shouldPreventProtectedConfigUpdate, boolean skipThirdPartyConfigValidation)
             throws CannotModifyBaseConfigException, BadPermissionException,
             StorageQueryException, FeatureNotEnabledException, IOException, InvalidConfigException,
             InvalidProviderConfigException, TenantOrAppNotFoundException {
@@ -212,7 +218,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         //  a big issue at the moment, but we want to solve this by taking appropriate database locks on
         //  connectionuridomain, appid and tenantid.
 
-        validateTenantConfig(main, newTenant, shouldPreventDbConfigUpdate, skipThirdPartyConfigValidation);
+        validateTenantConfig(main, newTenant, shouldPreventProtectedConfigUpdate, skipThirdPartyConfigValidation);
 
         boolean creationInSharedDbSucceeded = false;
         List<TenantIdentifier> tenantsThatChanged = new ArrayList<>();
@@ -230,7 +236,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                         .addTenantIdInTargetStorage(newTenant.tenantIdentifier);
             } catch (TenantOrAppNotFoundException e) {
                 // it should never come here, since we just added the tenant above.. but just in case.
-                return addNewOrUpdateAppOrTenant(main, newTenant, shouldPreventDbConfigUpdate);
+                return addNewOrUpdateAppOrTenant(main, newTenant, shouldPreventProtectedConfigUpdate);
             }
             return true;
         } catch (DuplicateTenantException e) {
@@ -249,7 +255,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                 } catch (TenantOrAppNotFoundException ex) {
                     // this can happen cause of a race condition if the tenant was deleted in the middle
                     // of it being recreated.
-                    return addNewOrUpdateAppOrTenant(main, newTenant, shouldPreventDbConfigUpdate);
+                    return addNewOrUpdateAppOrTenant(main, newTenant, shouldPreventProtectedConfigUpdate);
                 } catch (DuplicateTenantException ex) {
                     // we treat this as a success
                     return false;

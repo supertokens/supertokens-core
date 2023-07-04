@@ -52,13 +52,25 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
         boolean createdNew = false;
 
         if (tenantConfig == null) {
-            tenantConfig = new TenantConfig(
-                    targetTenantIdentifier,
-                    new EmailPasswordConfig(false),
-                    new ThirdPartyConfig(false, null),
-                    new PasswordlessConfig(false),
-                    new JsonObject()
-            );
+            if (targetTenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
+                // We enable all the recipes by default while creating app or CUD
+                tenantConfig = new TenantConfig(
+                        targetTenantIdentifier,
+                        new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true),
+                        new JsonObject()
+                );
+            } else {
+                // We disable all recipes by default while creating tenant
+                tenantConfig = new TenantConfig(
+                        targetTenantIdentifier,
+                        new EmailPasswordConfig(false),
+                        new ThirdPartyConfig(false, null),
+                        new PasswordlessConfig(false),
+                        new JsonObject()
+                );
+            }
             createdNew = true;
         }
 
@@ -107,7 +119,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
             Multitenancy.checkPermissionsForCreateOrUpdate(
                     main, sourceTenantIdentifier, tenantConfig.tenantIdentifier);
 
-            Multitenancy.addNewOrUpdateAppOrTenant(main, tenantConfig, shouldProtectDbConfig(req));
+            Multitenancy.addNewOrUpdateAppOrTenant(main, tenantConfig, shouldProtectProtectedConfig(req));
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             result.addProperty("createdNew", createdNew);

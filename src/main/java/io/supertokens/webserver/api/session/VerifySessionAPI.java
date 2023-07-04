@@ -103,6 +103,10 @@ public class VerifySessionAPI extends WebserverAPI {
                         super.getVersionFromRequest(req).betweenInclusive(SemVer.v2_9, SemVer.v2_21));
             }
 
+            if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
+                result.get("session").getAsJsonObject().remove("tenantId");
+            }
+
             super.sendJsonResponse(200, result, resp);
         } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException | UnsupportedJWTSigningAlgorithmException e) {
             throw new ServletException(e);

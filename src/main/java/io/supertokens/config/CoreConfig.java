@@ -44,6 +44,12 @@ import java.util.regex.PatternSyntaxException;
 public class CoreConfig {
 
     @IgnoreForAnnotationCheck
+    public static final String[] PROTECTED_CONFIGS = new String[]{
+            "ip_allow_regex",
+            "ip_deny_regex",
+    };
+
+    @IgnoreForAnnotationCheck
     @JsonProperty
     private int core_config_version = -1;
 
@@ -127,15 +133,15 @@ public class CoreConfig {
     @JsonProperty
     private String password_hashing_alg = "BCRYPT";
 
-    @NotConflictingInApp
+    @ConfigYamlOnly
     @JsonProperty
     private int argon2_iterations = 1;
 
-    @NotConflictingInApp
+    @ConfigYamlOnly
     @JsonProperty
     private int argon2_memory_kb = 87795; // 85 mb
 
-    @NotConflictingInApp
+    @ConfigYamlOnly
     @JsonProperty
     private int argon2_parallelism = 2;
 
@@ -147,7 +153,7 @@ public class CoreConfig {
     @JsonProperty
     private int firebase_password_hashing_pool_size = 1;
 
-    @NotConflictingInApp
+    @ConfigYamlOnly
     @JsonProperty
     private int bcrypt_log_rounds = 11;
 

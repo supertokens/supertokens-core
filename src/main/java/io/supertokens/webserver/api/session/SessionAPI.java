@@ -123,6 +123,8 @@ public class SessionAPI extends WebserverAPI {
 
             JsonObject result = sessionInfo.toJsonObject();
 
+            result.get("session").getAsJsonObject().remove("tenantId");
+
             result.addProperty("status", "OK");
 
             if (super.getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_21)) {
@@ -163,6 +165,10 @@ public class SessionAPI extends WebserverAPI {
             result.add("userDataInDatabase", Utils.toJsonTreeWithNulls(sessionInfo.userDataInDatabase));
 
             result.addProperty("status", "OK");
+
+            if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v3_0)) {
+                result.addProperty("tenantId", tenantIdentifierWithStorage.getTenantId());
+            }
 
             super.sendJsonResponse(200, result, resp);
 

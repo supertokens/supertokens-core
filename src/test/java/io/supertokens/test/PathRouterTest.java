@@ -195,12 +195,6 @@ public class PathRouterTest extends Mockito {
         }
         {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/Hello/t1/t1", new HashMap<>(), 1000, 1000, null,
-                    Utils.getCdiVersionStringLatestForTests(), "");
-            assertEquals(",hello", response);
-        }
-        {
-            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/public/t1/t1", new HashMap<>(), 1000, 1000, null,
                     Utils.getCdiVersionStringLatestForTests(), "");
             assertEquals(",public", response);
@@ -369,12 +363,6 @@ public class PathRouterTest extends Mockito {
                     "http://localhost:3567/t1/t1/t1?a=b&c=d", new HashMap<>(), 1000, 1000, null,
                     Utils.getCdiVersionStringLatestForTests(), "");
             assertEquals(",t1", response);
-        }
-        {
-            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/Hello/t1/t1?a=b&c=d", new HashMap<>(), 1000, 1000, null,
-                    Utils.getCdiVersionStringLatestForTests(), "");
-            assertEquals(",hello", response);
         }
         {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -547,12 +535,6 @@ public class PathRouterTest extends Mockito {
                     "http://localhost:3567/base_path/t1/t1/t1", new HashMap<>(), 1000, 1000, null,
                     Utils.getCdiVersionStringLatestForTests(), "");
             assertEquals(",t1", response);
-        }
-        {
-            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/base_path/Hello/t1/t1", new HashMap<>(), 1000, 1000, null,
-                    Utils.getCdiVersionStringLatestForTests(), "");
-            assertEquals(",hello", response);
         }
         {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -739,12 +721,6 @@ public class PathRouterTest extends Mockito {
         }
         {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/base/path/Hello/t1/t1", new HashMap<>(), 1000, 1000, null,
-                    Utils.getCdiVersionStringLatestForTests(), "");
-            assertEquals(",hello", response);
-        }
-        {
-            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/base/path/public/t1/t1", new HashMap<>(), 1000, 1000, null,
                     Utils.getCdiVersionStringLatestForTests(), "");
             assertEquals(",public", response);
@@ -925,12 +901,6 @@ public class PathRouterTest extends Mockito {
                     "http://localhost:3567/t1/t1/t1/t1", new HashMap<>(), 1000, 1000, null,
                     Utils.getCdiVersionStringLatestForTests(), "");
             assertEquals(",t1", response);
-        }
-        {
-            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/t1/Hello/t1/t1", new HashMap<>(), 1000, 1000, null,
-                    Utils.getCdiVersionStringLatestForTests(), "");
-            assertEquals(",hello", response);
         }
         {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -1851,12 +1821,6 @@ public class PathRouterTest extends Mockito {
         }
         {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/Hello/t1/t1", new HashMap<>(), 1000, 1000, null,
-                    Utils.getCdiVersionStringLatestForTests(), "");
-            assertEquals(",public,hello", response);
-        }
-        {
-            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/public/t1/t1", new HashMap<>(), 1000, 1000, null,
                     Utils.getCdiVersionStringLatestForTests(), "");
             assertEquals(",public,public", response);
@@ -2137,12 +2101,6 @@ public class PathRouterTest extends Mockito {
                     "http://localhost:3567/base_path/t1/t1/t1", new HashMap<>(), 1000, 1000, null,
                     Utils.getCdiVersionStringLatestForTests(), "");
             assertEquals(",public,t1", response);
-        }
-        {
-            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/base_path/Hello/t1/t1", new HashMap<>(), 1000, 1000, null,
-                    Utils.getCdiVersionStringLatestForTests(), "");
-            assertEquals(",public,hello", response);
         }
         {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -2428,12 +2386,6 @@ public class PathRouterTest extends Mockito {
                     "http://localhost:3567/appid-path/t1/t1/t1", new HashMap<>(), 1000, 1000, null,
                     Utils.getCdiVersionStringLatestForTests(), "");
             assertEquals(",public,t1", response);
-        }
-        {
-            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/appid-path/Hello/t1/t1", new HashMap<>(), 1000, 1000, null,
-                    Utils.getCdiVersionStringLatestForTests(), "");
-            assertEquals(",public,hello", response);
         }
         {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",

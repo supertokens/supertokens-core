@@ -32,16 +32,22 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 
 public class TestMultitenancyAPIHelper {
-    public static JsonObject createConnectionUriDomain(Main main, TenantIdentifier sourceTenant, String connectionUriDomain, boolean emailPasswordEnabled,
-                                                       boolean thirdPartyEnabled, boolean passwordlessEnabled,
+    public static JsonObject createConnectionUriDomain(Main main, TenantIdentifier sourceTenant, String connectionUriDomain, Boolean emailPasswordEnabled,
+                                                       Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
                                                        JsonObject coreConfig) throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
         if (connectionUriDomain != null) {
             requestBody.addProperty("connectionUriDomain", connectionUriDomain);
         }
-        requestBody.addProperty("emailPasswordEnabled", emailPasswordEnabled);
-        requestBody.addProperty("thirdPartyEnabled", thirdPartyEnabled);
-        requestBody.addProperty("passwordlessEnabled", passwordlessEnabled);
+        if (emailPasswordEnabled != null) {
+            requestBody.addProperty("emailPasswordEnabled", emailPasswordEnabled);
+        }
+        if (thirdPartyEnabled != null) {
+            requestBody.addProperty("thirdPartyEnabled", thirdPartyEnabled);
+        }
+        if (passwordlessEnabled != null) {
+            requestBody.addProperty("passwordlessEnabled", passwordlessEnabled);
+        }
         requestBody.add("coreConfig", coreConfig);
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
@@ -80,14 +86,20 @@ public class TestMultitenancyAPIHelper {
         return response;
     }
 
-    public static void createApp(Main main, TenantIdentifier sourceTenant, String appId, boolean emailPasswordEnabled,
-                             boolean thirdPartyEnabled, boolean passwordlessEnabled,
-                             JsonObject coreConfig) throws HttpResponseException, IOException {
+    public static JsonObject createApp(Main main, TenantIdentifier sourceTenant, String appId, Boolean emailPasswordEnabled,
+                                       Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
+                                       JsonObject coreConfig) throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("appId", appId);
-        requestBody.addProperty("emailPasswordEnabled", emailPasswordEnabled);
-        requestBody.addProperty("thirdPartyEnabled", thirdPartyEnabled);
-        requestBody.addProperty("passwordlessEnabled", passwordlessEnabled);
+        if (emailPasswordEnabled != null) {
+            requestBody.addProperty("emailPasswordEnabled", emailPasswordEnabled);
+        }
+        if (thirdPartyEnabled != null) {
+            requestBody.addProperty("thirdPartyEnabled", thirdPartyEnabled);
+        }
+        if (passwordlessEnabled != null) {
+            requestBody.addProperty("passwordlessEnabled", passwordlessEnabled);
+        }
         requestBody.add("coreConfig", coreConfig);
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
@@ -96,6 +108,7 @@ public class TestMultitenancyAPIHelper {
                 SemVer.v3_0.get(), "multitenancy");
 
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
+        return response;
     }
 
     public static JsonObject listApps(TenantIdentifier sourceTenant, Main main)
@@ -123,14 +136,20 @@ public class TestMultitenancyAPIHelper {
         return response;
     }
 
-    public static void createTenant(Main main, TenantIdentifier sourceTenant, String tenantId, boolean emailPasswordEnabled,
-                             boolean thirdPartyEnabled, boolean passwordlessEnabled,
-                             JsonObject coreConfig) throws HttpResponseException, IOException {
+    public static JsonObject createTenant(Main main, TenantIdentifier sourceTenant, String tenantId, Boolean emailPasswordEnabled,
+                                          Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
+                                          JsonObject coreConfig) throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("tenantId", tenantId);
-        requestBody.addProperty("emailPasswordEnabled", emailPasswordEnabled);
-        requestBody.addProperty("thirdPartyEnabled", thirdPartyEnabled);
-        requestBody.addProperty("passwordlessEnabled", passwordlessEnabled);
+        if (emailPasswordEnabled != null) {
+            requestBody.addProperty("emailPasswordEnabled", emailPasswordEnabled);
+        }
+        if (thirdPartyEnabled != null) {
+            requestBody.addProperty("thirdPartyEnabled", thirdPartyEnabled);
+        }
+        if (passwordlessEnabled != null) {
+            requestBody.addProperty("passwordlessEnabled", passwordlessEnabled);
+        }
         requestBody.add("coreConfig", coreConfig);
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
@@ -139,6 +158,7 @@ public class TestMultitenancyAPIHelper {
                 SemVer.v3_0.get(), "multitenancy");
 
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
+        return response;
     }
 
     public static JsonObject listTenants(TenantIdentifier sourceTenant, Main main)
