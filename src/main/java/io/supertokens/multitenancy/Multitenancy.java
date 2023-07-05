@@ -82,7 +82,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                 if (!sourceTenant.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)
                         && !sourceTenant.getTenantId().equals(targetTenant.getTenantId())) {
                     throw new BadPermissionException(
-                            "You must use the public or same tenantId to add/update a tenant");
+                            "You must use the public or same tenant to add/update a tenant");
                 }
                 if (!sourceTenant.toAppIdentifier().equals(targetTenant.toAppIdentifier())) {
                     throw new BadPermissionException("You must use the same app to create/update a tenant");
@@ -93,7 +93,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                 if (!sourceTenant.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)
                         || (!sourceTenant.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID) && !sourceTenant.getAppId().equals(targetTenant.getAppId()))) {
                     throw new BadPermissionException(
-                            "You must use the public tenantId and, public or same appId to add/update an app");
+                            "You must use the public or same app to add/update an app");
                 }
                 if (!sourceTenant.getConnectionUriDomain()
                         .equals(targetTenant.getConnectionUriDomain())) {
@@ -140,15 +140,18 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         // we check if the core config provided is correct
         {
             if (shouldPreventProtecterdConfigUpdate) {
+
+                JsonObject currentConfig = getTenantInfo(main, targetTenantConfig.tenantIdentifier).coreConfig;
+
                 for (String s : StorageLayer.getStorage(new TenantIdentifier(null, null, null), main)
                         .getProtectedConfigsFromSuperTokensSaaSUsers()) {
-                    if (targetTenantConfig.coreConfig.has(s)) {
+                    if (targetTenantConfig.coreConfig.has(s) && !targetTenantConfig.coreConfig.get(s).equals(currentConfig.get(s))) {
                         throw new BadPermissionException("Not allowed to modify DB related configs.");
                     }
                 }
 
                 for (String s : CoreConfig.PROTECTED_CONFIGS) {
-                    if (targetTenantConfig.coreConfig.has(s)) {
+                    if (targetTenantConfig.coreConfig.has(s) && !targetTenantConfig.coreConfig.get(s).equals(currentConfig.get(s))) {
                         throw new BadPermissionException("Not allowed to modify protected configs.");
                     }
                 }

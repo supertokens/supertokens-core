@@ -546,22 +546,22 @@ public class TestPermissionChecks {
                 new TestCase(
                         new TenantIdentifier(null, null, "t1"),
                         new TenantIdentifier(null, "a1", null),
-                        "You must use the public tenantId and, public or same appId to add/update an app"
+                        "You must use the public or same app to add/update an app"
                 ),
                 new TestCase(
                         new TenantIdentifier("127.0.0.1", null, "t1"),
                         new TenantIdentifier("127.0.0.1", "a1", null),
-                        "You must use the public tenantId and, public or same appId to add/update an app"
+                        "You must use the public or same app to add/update an app"
                 ),
                 new TestCase(
                         new TenantIdentifier(null, "a1", null),
                         new TenantIdentifier(null, "a2", null),
-                        "You must use the public tenantId and, public or same appId to add/update an app"
+                        "You must use the public or same app to add/update an app"
                 ),
                 new TestCase(
                         new TenantIdentifier("127.0.0.1", "a1", null),
                         new TenantIdentifier("127.0.0.1", "a2", null),
-                        "You must use the public tenantId and, public or same appId to add/update an app"
+                        "You must use the public or same app to add/update an app"
                 ),
         };
 
@@ -721,17 +721,17 @@ public class TestPermissionChecks {
                 new TestCase(
                         new TenantIdentifier(null, null, "t1"),
                         new TenantIdentifier(null, null, "t2"),
-                        "You must use the public or same tenantId to add/update a tenant"
+                        "You must use the public or same tenant to add/update a tenant"
                 ),
                 new TestCase(
                         new TenantIdentifier(null, "a1", "t1"),
                         new TenantIdentifier(null, "a1", "t2"),
-                        "You must use the public or same tenantId to add/update a tenant"
+                        "You must use the public or same tenant to add/update a tenant"
                 ),
                 new TestCase(
                         new TenantIdentifier("127.0.0.1", "a1", "t1"),
                         new TenantIdentifier("127.0.0.1", "a1", "t2"),
-                        "You must use the public or same tenantId to add/update a tenant"
+                        "You must use the public or same tenant to add/update a tenant"
                 ),
         };
 
