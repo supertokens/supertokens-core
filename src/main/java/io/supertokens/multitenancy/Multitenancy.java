@@ -141,7 +141,11 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         {
             if (shouldPreventProtecterdConfigUpdate) {
 
-                JsonObject currentConfig = getTenantInfo(main, targetTenantConfig.tenantIdentifier).coreConfig;
+                JsonObject currentConfig = new JsonObject();
+                TenantConfig tenantInfo = getTenantInfo(main, targetTenantConfig.tenantIdentifier);
+                if (tenantInfo != null) {
+                    currentConfig = tenantInfo.coreConfig;
+                }
 
                 for (String s : StorageLayer.getStorage(new TenantIdentifier(null, null, null), main)
                         .getProtectedConfigsFromSuperTokensSaaSUsers()) {

@@ -104,16 +104,16 @@ disable_telemetry: true
 # "BCRYPT"
 # password_hashing_alg:
 
-# (DIFFERENT_ACROSS_APPS | OPTIONAL | Default: 11). Number of rounds to set for bcrypt password hashing
+# (OPTIONAL | Default: 11). Number of rounds to set for bcrypt password hashing
 # bcrypt_log_rounds:
 
-# (DIFFERENT_ACROSS_APPS | OPTIONAL | Default: 1). Number of iterations for argon2 password hashing
+# (OPTIONAL | Default: 1). Number of iterations for argon2 password hashing
 # argon2_iterations:
 
-# (DIFFERENT_ACROSS_APPS | OPTIONAL | Default: 87795 (85 mb)). Amount of memory in kb for argon2 password hashing
+# (OPTIONAL | Default: 87795 (85 mb)). Amount of memory in kb for argon2 password hashing
 # argon2_memory_kb:
 
-# (DIFFERENT_ACROSS_APPS | OPTIONAL | Default: 2). Amount of parallelism for argon2 password hashing
+# (OPTIONAL | Default: 2). Amount of parallelism for argon2 password hashing
 # argon2_parallelism:
 
 # (OPTIONAL | Default: 1). Number of concurrent argon2 hashes that can happen at the same time for sign up or sign
