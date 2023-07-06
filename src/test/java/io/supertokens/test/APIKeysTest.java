@@ -22,6 +22,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -171,7 +172,7 @@ public class APIKeysTest {
         }
 
         JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_21.get(),
                 apiKey, "");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
@@ -249,19 +250,19 @@ public class APIKeysTest {
 
         // check that any one of the keys can be used
         JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_21.get(),
                 apiKey1, "");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
 
         sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_21.get(),
                 apiKey2, "");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
 
         sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_21.get(),
                 apiKey3, "");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
@@ -322,28 +323,28 @@ public class APIKeysTest {
 
         // check that any one of the keys can be used
         JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_21.get(),
                 " " + apiKey1 + " ", "");
 
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
 
         sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_21.get(),
                 " " + apiKey2, "");
 
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
 
         sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_21.get(),
                 apiKey3, "");
 
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
 
         sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_21.get(),
                 apiKey4, "");
 
         assertEquals(sessionInfo.get("status").getAsString(), "OK");

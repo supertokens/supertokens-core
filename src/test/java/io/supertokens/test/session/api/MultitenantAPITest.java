@@ -369,9 +369,6 @@ public class MultitenantAPITest {
 
                 JsonObject sessionResponse = verifySession(tenant2,
                         session.get("accessToken").getAsJsonObject().get("token").getAsString());
-                if (sessionResponse.get("session").getAsJsonObject().has("tenantId")) {
-                    sessionResponse.get("session").getAsJsonObject().remove("tenantId");
-                }
                 assertEquals(session.get("session"), sessionResponse.get("session"));
             }
         }
