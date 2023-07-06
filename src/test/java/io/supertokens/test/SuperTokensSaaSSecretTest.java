@@ -485,7 +485,7 @@ public class SuperTokensSaaSSecretTest {
         }
 
         JsonObject coreConfig = new JsonObject();
-        coreConfig.addProperty("postgresql_database_name", "st1");
+        StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(coreConfig, 1);
 
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("appId", "a1");
