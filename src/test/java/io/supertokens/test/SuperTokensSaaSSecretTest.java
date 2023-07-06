@@ -444,6 +444,10 @@ public class SuperTokensSaaSSecretTest {
             return;
         }
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         for (int i = 0; i < PROTECTED_CORE_CONFIG.length; i++) {
             try {
                 JsonObject j = new JsonObject();
@@ -517,6 +521,14 @@ public class SuperTokensSaaSSecretTest {
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         for (int i = 0; i < PROTECTED_CORE_CONFIG.length; i++) {
             JsonObject j = new JsonObject();
