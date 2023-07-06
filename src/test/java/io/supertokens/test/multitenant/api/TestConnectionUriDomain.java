@@ -466,6 +466,10 @@ public class TestConnectionUriDomain {
             return;
         }
 
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         JsonObject config = new JsonObject();
         StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
 
