@@ -9,6 +9,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Db schema changes:
     - Added new index `all_auth_recipe_users_primary_user_id_index`.
+    - Added new index `all_auth_recipe_users_primary_user_id_and_tenant_id_index`.
     - Modified `all_auth_recipe_users_pagination_index` index to be on `primary_or_recipe_user_id` instead of `user_id`
     - Added a two new columns in `all_auth_recipe_users`:
         - `primary_or_recipe_user_id` (default value is equal to `user_id` column)

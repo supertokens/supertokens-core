@@ -92,7 +92,13 @@ public class GeneralQueries {
 
     static String getQueryToCreatePrimaryUserIdIndex(Start start) {
         return "CREATE INDEX all_auth_recipe_users_primary_user_id_index ON " + Config.getConfig(start).getUsersTable()
-                + "(primary_or_recipe_user_id);";
+                + "(app_id, primary_or_recipe_user_id);";
+    }
+
+    static String getQueryToCreatePrimaryUserIdAndTenantIndex(Start start) {
+        return "CREATE INDEX all_auth_recipe_users_primary_user_id_and_tenant_id_index ON " +
+                Config.getConfig(start).getUsersTable()
+                + "(app_id, tenant_id, primary_or_recipe_user_id);";
     }
 
     private static String getQueryToCreateAppsTable(Start start) {
@@ -176,6 +182,7 @@ public class GeneralQueries {
             // index
             update(start, getQueryToCreatePrimaryUserIdIndex(start), NO_OP_SETTER);
             update(start, getQueryToCreateUserPaginationIndex(start), NO_OP_SETTER);
+            update(start, getQueryToCreatePrimaryUserIdAndTenantIndex(start), NO_OP_SETTER);
         }
 
         if (!doesTableExists(start, Config.getConfig(start).getUserLastActiveTable())) {
@@ -499,9 +506,11 @@ public class GeneralQueries {
 
     public static boolean doesUserIdExist(Start start, AppIdentifier appIdentifier, String userId)
             throws SQLException, StorageQueryException {
-
-        String QUERY = "SELECT 1 FROM " + getConfig(start).getAppIdToUserIdTable()
-                + " WHERE app_id = ? AND user_id = ?";
+        // We query both tables cause there is a case where a primary user ID exists, but its associated
+        // recipe user ID has been deleted AND there are other recipe user IDs linked to this primary user ID already.
+        String QUERY = "(SELECT 1 FROM " + getConfig(start).getAppIdToUserIdTable()
+                + " WHERE app_id = ? AND user_id = ?) UNION (SELECT 1 FROM " + getConfig(start).getUsersTable() +
+                " WHERE app_id = ? AND primary_or_recipe_user_id = ?)";
         return execute(start, QUERY, pst -> {
             pst.setString(1, appIdentifier.getAppId());
             pst.setString(2, userId);
@@ -510,9 +519,12 @@ public class GeneralQueries {
 
     public static boolean doesUserIdExist(Start start, TenantIdentifier tenantIdentifier, String userId)
             throws SQLException, StorageQueryException {
-
-        String QUERY = "SELECT 1 FROM " + getConfig(start).getUsersTable()
-                + " WHERE app_id = ? AND tenant_id = ? AND user_id = ?";
+        // We query both tables cause there is a case where a primary user ID exists, but its associated
+        // recipe user ID has been deleted AND there are other recipe user IDs linked to this primary user ID already.
+        String QUERY = "(SELECT 1 FROM " + getConfig(start).getUsersTable()
+                + " WHERE app_id = ? AND tenant_id = ? AND user_id = ?) UNION (SELECT 1 FROM " +
+                getConfig(start).getUsersTable() +
+                " WHERE app_id = ? AND tenant_id = ? AND primary_or_recipe_user_id = ?)";
         return execute(start, QUERY, pst -> {
             pst.setString(1, tenantIdentifier.getAppId());
             pst.setString(2, tenantIdentifier.getTenantId());
