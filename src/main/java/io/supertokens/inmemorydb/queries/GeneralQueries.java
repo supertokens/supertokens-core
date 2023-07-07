@@ -73,6 +73,8 @@ public class GeneralQueries {
                 + "app_id VARCHAR(64) DEFAULT 'public',"
                 + "tenant_id VARCHAR(64) DEFAULT 'public',"
                 + "user_id CHAR(36) NOT NULL,"
+                + "primary_or_recipe_user_id CHAR(36) NOT NULL,"
+                + "is_linked_or_is_a_primary_user BOOLEAN NOT NULL DEFAULT FALSE,"
                 + "recipe_id VARCHAR(128) NOT NULL,"
                 + "time_joined BIGINT UNSIGNED NOT NULL,"
                 + "PRIMARY KEY (app_id, tenant_id, user_id),"
@@ -85,7 +87,12 @@ public class GeneralQueries {
 
     static String getQueryToCreateUserPaginationIndex(Start start) {
         return "CREATE INDEX all_auth_recipe_users_pagination_index ON " + Config.getConfig(start).getUsersTable()
-                + "(time_joined DESC, user_id DESC, tenant_id DESC, app_id DESC);";
+                + "(time_joined DESC, primary_or_recipe_user_id DESC, tenant_id DESC, app_id DESC);";
+    }
+
+    static String getQueryToCreatePrimaryUserIdIndex(Start start) {
+        return "CREATE INDEX all_auth_recipe_users_primary_user_id_index ON " + Config.getConfig(start).getUsersTable()
+                + "(primary_or_recipe_user_id);";
     }
 
     private static String getQueryToCreateAppsTable(Start start) {
@@ -125,7 +132,6 @@ public class GeneralQueries {
                 + " (app_id, tenant_id) ON DELETE CASCADE"
                 + ");";
     }
-
 
 
     private static String getQueryToCreateAppIdToUserIdTable(Start start) {
@@ -168,6 +174,7 @@ public class GeneralQueries {
             update(start, getQueryToCreateUsersTable(start), NO_OP_SETTER);
 
             // index
+            update(start, getQueryToCreatePrimaryUserIdIndex(start), NO_OP_SETTER);
             update(start, getQueryToCreateUserPaginationIndex(start), NO_OP_SETTER);
         }
 
@@ -391,7 +398,9 @@ public class GeneralQueries {
                                                        String key)
             throws SQLException, StorageQueryException {
 
-        ((ConnectionWithLocks) con).lock(tenantIdentifier.getAppId() + "~" + tenantIdentifier.getTenantId() + "~" + key + Config.getConfig(start).getKeyValueTable());
+        ((ConnectionWithLocks) con).lock(
+                tenantIdentifier.getAppId() + "~" + tenantIdentifier.getTenantId() + "~" + key +
+                        Config.getConfig(start).getKeyValueTable());
 
         String QUERY = "SELECT value, created_at_time FROM " + getConfig(start).getKeyValueTable()
                 + " WHERE app_id = ? AND tenant_id = ? AND name = ?";
@@ -436,6 +445,7 @@ public class GeneralQueries {
             }
             QUERY.append(")");
         }
+        QUERY.append(" GROUP BY primary_or_recipe_user_id");
 
         return execute(start, QUERY.toString(), pst -> {
             pst.setString(1, appIdentifier.getAppId());
@@ -468,6 +478,7 @@ public class GeneralQueries {
             }
             QUERY.append(")");
         }
+        QUERY.append(" GROUP BY primary_or_recipe_user_id");
 
         return execute(start, QUERY.toString(), pst -> {
             pst.setString(1, tenantIdentifier.getAppId());
@@ -511,8 +522,9 @@ public class GeneralQueries {
 
     public static AuthRecipeUserInfo[] getUsers(Start start, TenantIdentifier tenantIdentifier, @NotNull Integer limit,
                                                 @NotNull String timeJoinedOrder,
-                                                @org.jetbrains.annotations.Nullable RECIPE_ID[] includeRecipeIds, @org.jetbrains.annotations.Nullable
-                                                String userId,
+                                                @org.jetbrains.annotations.Nullable RECIPE_ID[] includeRecipeIds,
+                                                @org.jetbrains.annotations.Nullable
+                                                        String userId,
                                                 @org.jetbrains.annotations.Nullable Long timeJoined,
                                                 @Nullable DashboardSearchTags dashboardSearchTags)
             throws SQLException, StorageQueryException {
@@ -839,10 +851,12 @@ public class GeneralQueries {
         }
     }
 
-    public static String getRecipeIdForUser_Transaction(Start start, Connection sqlCon, TenantIdentifier tenantIdentifier, String userId)
+    public static String getRecipeIdForUser_Transaction(Start start, Connection sqlCon,
+                                                        TenantIdentifier tenantIdentifier, String userId)
             throws SQLException, StorageQueryException {
 
-        ((ConnectionWithLocks) sqlCon).lock(tenantIdentifier.getAppId() + "~" + userId + Config.getConfig(start).getAppIdToUserIdTable());
+        ((ConnectionWithLocks) sqlCon).lock(
+                tenantIdentifier.getAppId() + "~" + userId + Config.getConfig(start).getAppIdToUserIdTable());
 
         String QUERY = "SELECT recipe_id FROM " + getConfig(start).getAppIdToUserIdTable()
                 + " WHERE app_id = ? AND user_id = ?";
@@ -858,7 +872,8 @@ public class GeneralQueries {
         });
     }
 
-    public static Map<String, List<String>> getTenantIdsForUserIds_transaction(Start start, Connection sqlCon, String[] userIds)
+    public static Map<String, List<String>> getTenantIdsForUserIds_transaction(Start start, Connection sqlCon,
+                                                                               String[] userIds)
             throws SQLException, StorageQueryException {
         if (userIds != null && userIds.length > 0) {
             StringBuilder QUERY = new StringBuilder("SELECT user_id, tenant_id "
@@ -905,7 +920,7 @@ public class GeneralQueries {
         List<String> tableNames = new ArrayList<>();
         try (Connection con = ConnectionPool.getConnection(start)) {
             DatabaseMetaData metadata = con.getMetaData();
-            ResultSet resultSet = metadata.getTables(null, null, null, new String[] { "TABLE" });
+            ResultSet resultSet = metadata.getTables(null, null, null, new String[]{"TABLE"});
             while (resultSet.next()) {
                 String tableName = resultSet.getString("TABLE_NAME");
                 tableNames.add(tableName);

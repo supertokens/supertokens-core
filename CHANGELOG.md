@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [unreleased]
+
+- Db schema changes:
+    - Added new index `all_auth_recipe_users_primary_user_id_index`.
+    - Modified `all_auth_recipe_users_pagination_index` index to be on `primary_or_recipe_user_id` instead of `user_id`
+    - Added a two new columns in `all_auth_recipe_users`:
+        - `primary_or_recipe_user_id` (default value is equal to `user_id` column)
+        - `is_linked_or_is_a_primary_user` (default value is false)
+
 ## [6.0.2] - 2023-07-04
 
 - Fixes some of the session APIs to return `tenantId`
@@ -19,11 +28,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Fixes `CreateOrUpdateThirdPartyConfigAPI` as per CDI 3.0
 - Fixes `sessionHandle` to include tenant information and the related APIs are now app specific
 - Updated GET `/appid-<appId>/<tenantId>/recipe/session/user`
-  - Adds `fetchAcrossAllTenants` with default `true` - controls fetching of sessions across all tenants or only a 
-    particular tenant
+    - Adds `fetchAcrossAllTenants` with default `true` - controls fetching of sessions across all tenants or only a
+      particular tenant
 - Updated POST `/appid-<appId>/<tenantId>/recipe/session/remove`
-  - Adds `revokeAcrossAllTenants` with default `true` - controls revoking of sessions across all tenants or only a 
-    particular tenant
+    - Adds `revokeAcrossAllTenants` with default `true` - controls revoking of sessions across all tenants or only a
+      particular tenant
 - Updated telemetry to send `connectionUriDomain`, `appId` and `mau` information
 - Updated feature flag stats to report `usersCount` per tenant
 
@@ -33,8 +42,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Support for multitenancy.
 - New config `supertokens_saas_secret` added to support multitenancy in SaaS mode.
-- New config `supertokens_default_cdi_version` is added to specify the version of CDI core must assume when the
-  version is not specified in the request. If this config is not specified, the core will assume the latest version.
+- New config `supertokens_default_cdi_version` is added to specify the version of CDI core must assume when the version
+  is not specified in the request. If this config is not specified, the core will assume the latest version.
 
 ### Fixes
 
@@ -44,22 +53,22 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Modifies the `/recipe/dashboard/session/verify` API to include the user's email in the response
 - Support for multitenancy
-  - New APIs to manage apps and tenants
-    - `/recipe/multitenancy/connectionuridomain` PUT
-    - `/recipe/multitenancy/connectionuridomain/remove` POST
-    - `/recipe/multitenancy/connectionuridomain/list` GET
-    - `/recipe/multitenancy/app` PUT
-    - `/recipe/multitenancy/app/remove` POST
-    - `/recipe/multitenancy/app/list` GET
-    - `/appid-<appid>/recipe/multitenancy/tenant` PUT
-    - `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant` GET
-    - `/appid-<appid>/recipe/multitenancy/tenant/remove` POST
-    - `/appid-<appid>/recipe/multitenancy/tenant/list` GET
-    - `/appid-<appid>/recipe/multitenancy/config/thirdparty` PUT
-    - `/appid-<appid>/recipe/multitenancy/config/thirdparty/remove` POST
-    - `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant/user` POST
-    - `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant/user/remove` POST
-  - API paths can be prefixed with `/appid-<appid>/<tenantid>` to perform app or tenant specific operations.
+    - New APIs to manage apps and tenants
+        - `/recipe/multitenancy/connectionuridomain` PUT
+        - `/recipe/multitenancy/connectionuridomain/remove` POST
+        - `/recipe/multitenancy/connectionuridomain/list` GET
+        - `/recipe/multitenancy/app` PUT
+        - `/recipe/multitenancy/app/remove` POST
+        - `/recipe/multitenancy/app/list` GET
+        - `/appid-<appid>/recipe/multitenancy/tenant` PUT
+        - `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant` GET
+        - `/appid-<appid>/recipe/multitenancy/tenant/remove` POST
+        - `/appid-<appid>/recipe/multitenancy/tenant/list` GET
+        - `/appid-<appid>/recipe/multitenancy/config/thirdparty` PUT
+        - `/appid-<appid>/recipe/multitenancy/config/thirdparty/remove` POST
+        - `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant/user` POST
+        - `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant/user/remove` POST
+    - API paths can be prefixed with `/appid-<appid>/<tenantid>` to perform app or tenant specific operations.
 
 ### Migration steps for SQL
 
@@ -68,10 +77,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 3. Run the migration script
 
     <details>
-    
+
     <summary>If using PostgreSQL</summary>
-    
-    #### Run the following SQL script
+
+   #### Run the following SQL script
 
     ```sql
     -- General Tables
@@ -931,15 +940,15 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     CREATE INDEX IF NOT EXISTS user_last_active_app_id_index ON user_last_active (app_id);
 
     ```
-    
+
     </details>
-    
+
     <details>
-    
+
     <summary>If using MySQL</summary>
-    
-    #### Run the following SQL script
-    
+
+   #### Run the following SQL script
+
     ```sql
     -- helper stored procedures
 
@@ -1668,28 +1677,28 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Using an internal `SemVer` class to handle version numbers. This will make handling CDI version ranges easier.
 - Support for CDI version `2.21`
-  - Removed POST `/recipe/handshake`
-  - Added `useDynamicSigningKey` into `createNewSession` (POST `/recipe/session`), replacing 
-    `access_token_signing_key_dynamic` used in CDI<=2.18
-  - Added `useStaticSigningKey` into `createSignedJWT` (POST `/recipe/jwt`)
-  - Added `checkDatabase` into `verifySession` (POST `/recipe/session/verify`), replacing 
-    `access_token_blacklisting` used in CDI<=2.18
-  - Removed `idRefreshToken`, `jwtSigningPublicKey`, `jwtSigningPublicKeyExpiryTime` and `jwtSigningPublicKeyList` 
-    from responses
-  - Deprecated GET `/recipe/jwt/jwks`
-  - Added GET `/.well-known/jwks.json`: a standard jwks
+    - Removed POST `/recipe/handshake`
+    - Added `useDynamicSigningKey` into `createNewSession` (POST `/recipe/session`), replacing
+      `access_token_signing_key_dynamic` used in CDI<=2.18
+    - Added `useStaticSigningKey` into `createSignedJWT` (POST `/recipe/jwt`)
+    - Added `checkDatabase` into `verifySession` (POST `/recipe/session/verify`), replacing
+      `access_token_blacklisting` used in CDI<=2.18
+    - Removed `idRefreshToken`, `jwtSigningPublicKey`, `jwtSigningPublicKeyExpiryTime` and `jwtSigningPublicKeyList`
+      from responses
+    - Deprecated GET `/recipe/jwt/jwks`
+    - Added GET `/.well-known/jwks.json`: a standard jwks
 - Added new access token version
-  - Uses standard prop names (i.e.: `sub` instead of `userId`)
-  - Contains the id of the signing key in the header (as `kid`)
-  - Stores the user payload merged into the root level, instead of the `userData` prop
-- Session handling function now throw if the user payload contains protected props (`sub`, `iat`, `exp`, 
+    - Uses standard prop names (i.e.: `sub` instead of `userId`)
+    - Contains the id of the signing key in the header (as `kid`)
+    - Stores the user payload merged into the root level, instead of the `userData` prop
+- Session handling function now throw if the user payload contains protected props (`sub`, `iat`, `exp`,
   `sessionHandle`, `refreshTokenHash1`, `parentRefreshTokenHash1`, `antiCsrfToken`)
-  - A related exception type was added as `AccessTokenPayloadError`
+    - A related exception type was added as `AccessTokenPayloadError`
 - Refactored the handling of signing keys
-- `createNewSession` now takes a `useStaticKey` parameter instead of depending on the 
+- `createNewSession` now takes a `useStaticKey` parameter instead of depending on the
   `access_token_signing_key_dynamic` config value
 - `createJWTToken` now supports signing by a dynamic key
-- `getSession` now takes a `checkDatabase` parameter instead of using the `access_token_blacklisting` config value 
+- `getSession` now takes a `checkDatabase` parameter instead of using the `access_token_blacklisting` config value
 - Updated plugin interface version to 2.21
 
 ### Configuration Changes
@@ -1706,59 +1715,46 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 #### Migration steps for SQL
 
 - If using `access_token_signing_key_dynamic` false:
-  - ```sql
-    ALTER TABLE session_info ADD COLUMN use_static_key BOOLEAN NOT NULL DEFAULT(true);
-    ALTER TABLE session_info ALTER COLUMN use_static_key DROP DEFAULT;
+    - ```sql
+  ALTER TABLE session_info ADD COLUMN use_static_key BOOLEAN NOT NULL DEFAULT(true); ALTER TABLE session_info ALTER
+  COLUMN use_static_key DROP DEFAULT;
     ```
-  - ```sql
+    - ```sql
     INSERT INTO jwt_signing_keys(key_id, key_string, algorithm, created_at)
       select CONCAT('s-', created_at_time) as key_id, value as key_string, 'RS256' as algorithm, created_at_time as created_at
       from session_access_token_signing_keys;
     ```
 - If using `access_token_signing_key_dynamic` true or not set:
-  - ```sql
-    ALTER TABLE session_info ADD COLUMN use_static_key BOOLEAN NOT NULL DEFAULT(false);
-    ALTER TABLE session_info ALTER COLUMN use_static_key DROP DEFAULT;
+    - ```sql
+  ALTER TABLE session_info ADD COLUMN use_static_key BOOLEAN NOT NULL DEFAULT(false); ALTER TABLE session_info ALTER
+  COLUMN use_static_key DROP DEFAULT;
     ```
 
 #### Migration steps for MongoDB
 
 - If using `access_token_signing_key_dynamic` false:
-  - ```
-    db.session_info.update({},
-      {
-        "$set": {
-          "use_static_key": true
-        }
-      });
+    - ```
+  db.session_info.update({}, {
+  "$set": {
+  "use_static_key": true } });
     ```
-  - ```
-    db.key_value.aggregate([
-      {
-        "$match": {
-          _id: "access_token_signing_key_list"
-        }
-      },
-      {
-        $unwind: "$keys"
-      },
-      {
-        $addFields: {
-          _id: {
-            "$concat": [
-              "s-",
-              {
-                $convert: {
-                  input: "$keys.created_at_time",
-                  to: "string"
-                }
-              }
-            ]
-          },
-          "key_string": "$keys.value",
-          "algorithm": "RS256",
-          "created_at": "$keys.created_at_time",
-          
+    - ```
+  db.key_value.aggregate([
+  {
+  "$match": {
+  _id: "access_token_signing_key_list"
+  } }, { $unwind: "$keys"
+  }, { $addFields: {
+  _id: {
+  "$concat": [
+  "s-", { $convert: { input: "$keys.created_at_time", to: "string"
+  } }
+  ]
+  },
+  "key_string": "$keys.value",
+  "algorithm": "RS256",
+  "created_at": "$keys.created_at_time",
+
         }
       },
       {
@@ -1773,17 +1769,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
           
         }
       }
-    ]);
+  ]);
     ```
 
 - If using `access_token_signing_key_dynamic` true or not set:
-  - ```
-    db.session_info.update({},
-      {
-        "$set": {
-          "use_static_key": false
-        }
-      });
+    - ```
+  db.session_info.update({}, {
+  "$set": {
+  "use_static_key": false } });
     ```
 
 ## [4.6.0] - 2023-03-30
@@ -1791,8 +1784,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Add Optional Search Tags to Pagination API to enable dashboard search
 
 ### New APIs:
-  - `GET /user/search/tags` retrieves the available search tags 
 
+- `GET /user/search/tags` retrieves the available search tags
 
 ## [4.5.0] - 2023-03-27
 
