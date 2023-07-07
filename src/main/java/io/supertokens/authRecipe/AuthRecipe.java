@@ -26,7 +26,6 @@ import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.dashboard.DashboardSearchTags;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -226,7 +225,7 @@ public class AuthRecipe {
     }
 
     public static boolean deleteNonAuthRecipeUser(TenantIdentifierWithStorage
-                                                        tenantIdentifierWithStorage, String userId)
+                                                          tenantIdentifierWithStorage, String userId)
             throws StorageQueryException {
 
         // UserMetadata is per app, so nothing to delete
