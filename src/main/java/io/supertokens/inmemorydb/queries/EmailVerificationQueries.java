@@ -17,8 +17,8 @@
 package io.supertokens.inmemorydb.queries;
 
 import io.supertokens.inmemorydb.ConnectionWithLocks;
-import io.supertokens.inmemorydb.QueryExecutorTemplate;
 import io.supertokens.inmemorydb.Start;
+import io.supertokens.inmemorydb.Utils;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.RowMapper;
 import io.supertokens.pluginInterface.emailverification.EmailVerificationTokenInfo;
@@ -28,11 +28,9 @@ import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
@@ -80,7 +78,8 @@ public class EmailVerificationQueries {
 
     public static void updateUsersIsEmailVerified_Transaction(Start start, Connection con, AppIdentifier appIdentifier,
                                                               String userId, String email,
-                                                              boolean isEmailVerified) throws SQLException, StorageQueryException {
+                                                              boolean isEmailVerified)
+            throws SQLException, StorageQueryException {
 
         if (isEmailVerified) {
             String QUERY = "INSERT INTO " + getConfig(start).getEmailVerificationTable()
@@ -104,8 +103,10 @@ public class EmailVerificationQueries {
     }
 
     public static void deleteAllEmailVerificationTokensForUser_Transaction(Start start, Connection con,
-                                                                           TenantIdentifier tenantIdentifier, String userId,
-                                                                           String email) throws SQLException, StorageQueryException {
+                                                                           TenantIdentifier tenantIdentifier,
+                                                                           String userId,
+                                                                           String email)
+            throws SQLException, StorageQueryException {
         String QUERY = "DELETE FROM " + getConfig(start).getEmailVerificationTokensTable()
                 + " WHERE app_id = ? AND tenant_id = ? AND user_id = ? AND email = ?";
 
@@ -117,7 +118,8 @@ public class EmailVerificationQueries {
         });
     }
 
-    public static EmailVerificationTokenInfo getEmailVerificationTokenInfo(Start start, TenantIdentifier tenantIdentifier,
+    public static EmailVerificationTokenInfo getEmailVerificationTokenInfo(Start start,
+                                                                           TenantIdentifier tenantIdentifier,
                                                                            String token)
             throws SQLException, StorageQueryException {
         String QUERY = "SELECT user_id, token, token_expiry, email FROM "
@@ -135,7 +137,8 @@ public class EmailVerificationQueries {
         });
     }
 
-    public static void addEmailVerificationToken(Start start, TenantIdentifier tenantIdentifier, String userId, String tokenHash, long expiry,
+    public static void addEmailVerificationToken(Start start, TenantIdentifier tenantIdentifier, String userId,
+                                                 String tokenHash, long expiry,
                                                  String email) throws SQLException, StorageQueryException {
         String QUERY = "INSERT INTO " + getConfig(start).getEmailVerificationTokensTable()
                 + "(app_id, tenant_id, user_id, token, token_expiry, email)" + " VALUES(?, ?, ?, ?, ?, ?)";
@@ -153,12 +156,17 @@ public class EmailVerificationQueries {
     public static EmailVerificationTokenInfo[] getAllEmailVerificationTokenInfoForUser_Transaction(Start start,
                                                                                                    Connection con,
                                                                                                    TenantIdentifier tenantIdentifier,
-                                                                                                   String userId, String email) throws SQLException, StorageQueryException {
+                                                                                                   String userId,
+                                                                                                   String email)
+            throws SQLException, StorageQueryException {
 
-        ((ConnectionWithLocks) con).lock(tenantIdentifier.getAppId() + "~" + tenantIdentifier.getTenantId() + "~" + userId + "~" + email + Config.getConfig(start).getEmailVerificationTokensTable());
+        ((ConnectionWithLocks) con).lock(
+                tenantIdentifier.getAppId() + "~" + tenantIdentifier.getTenantId() + "~" + userId + "~" + email +
+                        Config.getConfig(start).getEmailVerificationTokensTable());
 
         String QUERY = "SELECT user_id, token, token_expiry, email FROM "
-                + getConfig(start).getEmailVerificationTokensTable() + " WHERE app_id = ? AND tenant_id = ? AND user_id = ? AND email = ?";
+                + getConfig(start).getEmailVerificationTokensTable() +
+                " WHERE app_id = ? AND tenant_id = ? AND user_id = ? AND email = ?";
 
         return execute(con, QUERY, pst -> {
             pst.setString(1, tenantIdentifier.getAppId());
@@ -181,9 +189,11 @@ public class EmailVerificationQueries {
     public static EmailVerificationTokenInfo[] getAllEmailVerificationTokenInfoForUser(Start start,
                                                                                        TenantIdentifier tenantIdentifier,
                                                                                        String userId,
-                                                                                       String email) throws SQLException, StorageQueryException {
+                                                                                       String email)
+            throws SQLException, StorageQueryException {
         String QUERY = "SELECT user_id, token, token_expiry, email FROM "
-                + getConfig(start).getEmailVerificationTokensTable() + " WHERE app_id = ? AND tenant_id = ? AND user_id = ? AND email = ?";
+                + getConfig(start).getEmailVerificationTokensTable() +
+                " WHERE app_id = ? AND tenant_id = ? AND user_id = ? AND email = ?";
 
         return execute(start, QUERY, pst -> {
             pst.setString(1, tenantIdentifier.getAppId());
@@ -213,6 +223,59 @@ public class EmailVerificationQueries {
             pst.setString(2, userId);
             pst.setString(3, email);
         }, result -> result.next());
+    }
+
+    public static class UserIdAndEmail {
+        public String userId;
+        public String email;
+
+        public UserIdAndEmail(String userId, String email) {
+            this.userId = userId;
+            this.email = email;
+        }
+    }
+
+    // returns list of userIds where email is verified.
+    public static List<String> isEmailVerified_transaction(Start start, Connection sqlCon, AppIdentifier appIdentifier,
+                                                           List<UserIdAndEmail> userIdAndEmail)
+            throws SQLException, StorageQueryException {
+        List<String> emails = new ArrayList<>();
+        List<String> userIds = new ArrayList<>();
+        Map<String, String> userIdToEmailMap = new HashMap<>();
+        for (UserIdAndEmail ue : userIdAndEmail) {
+            emails.add(ue.email);
+            userIds.add(ue.userId);
+        }
+        for (UserIdAndEmail ue : userIdAndEmail) {
+            if (userIdToEmailMap.containsKey(ue.userId)) {
+                throw new RuntimeException("Found a bug!");
+            }
+            userIdToEmailMap.put(ue.userId, ue.email);
+        }
+        String QUERY = "SELECT * FROM " + getConfig(start).getEmailVerificationTable()
+                + " WHERE app_id = ? AND user_id IN (" + Utils.generateCommaSeperatedQuestionMarks(userIds.size()) +
+                ") AND email = IN (" + Utils.generateCommaSeperatedQuestionMarks(emails.size()) + ")";
+
+        return execute(sqlCon, QUERY, pst -> {
+            pst.setString(1, appIdentifier.getAppId());
+            int index = 2;
+            for (String userId : userIds) {
+                pst.setString(index++, userId);
+            }
+            for (String email : emails) {
+                pst.setString(index++, email);
+            }
+        }, result -> {
+            List<String> res = new ArrayList<>();
+            while (result.next()) {
+                String userId = result.getString("user_id");
+                String email = result.getString("email");
+                if (Objects.equals(userIdToEmailMap.get(userId), email)) {
+                    res.add(userId);
+                }
+            }
+            return res;
+        });
     }
 
     public static void deleteUserInfo(Start start, AppIdentifier appIdentifier, String userId)

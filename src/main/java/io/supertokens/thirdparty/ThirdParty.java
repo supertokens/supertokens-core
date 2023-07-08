@@ -20,6 +20,7 @@ import io.supertokens.Main;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.*;
@@ -83,7 +84,7 @@ public class ThirdParty {
 
         return response;
     }
-    
+
     @TestOnly
     public static SignInUpResponse signInUp2_7(Main main,
                                                String thirdPartyId, String thirdPartyUserId, String email,
@@ -141,7 +142,8 @@ public class ThirdParty {
                 long timeJoined = System.currentTimeMillis();
 
                 try {
-                    UserInfo createdUser = storage.signUp(tenantIdentifierWithStorage, userId, email, new UserInfo.ThirdParty(thirdPartyId, thirdPartyUserId), timeJoined);
+                    UserInfo createdUser = storage.signUp(tenantIdentifierWithStorage, userId, email,
+                            new LoginMethod.ThirdParty(thirdPartyId, thirdPartyUserId), timeJoined);
 
                     return new SignInUpResponse(true, createdUser);
                 } catch (DuplicateUserIdException e) {
