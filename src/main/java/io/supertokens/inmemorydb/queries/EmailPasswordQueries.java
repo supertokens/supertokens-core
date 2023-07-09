@@ -274,13 +274,15 @@ public class EmailPasswordQueries {
 
                 { // all_auth_recipe_users
                     String QUERY = "INSERT INTO " + getConfig(start).getUsersTable()
-                            + "(app_id, tenant_id, user_id, recipe_id, time_joined)" + " VALUES(?, ?, ?, ?, ?)";
+                            + "(app_id, tenant_id, user_id, primary_or_recipe_user_id, recipe_id, time_joined)" +
+                            " VALUES(?, ?, ?, ?, ?, ?)";
                     update(sqlCon, QUERY, pst -> {
                         pst.setString(1, tenantIdentifier.getAppId());
                         pst.setString(2, tenantIdentifier.getTenantId());
                         pst.setString(3, userId);
-                        pst.setString(4, EMAIL_PASSWORD.toString());
-                        pst.setLong(5, timeJoined);
+                        pst.setString(4, userId);
+                        pst.setString(5, EMAIL_PASSWORD.toString());
+                        pst.setLong(6, timeJoined);
                     });
                 }
 
@@ -524,6 +526,8 @@ public class EmailPasswordQueries {
         for (UserInfoPartial userInfo : userInfos) {
             if (verifiedUserIdsSet.contains(userInfo.id)) {
                 userInfo.verified = true;
+            } else {
+                userInfo.verified = false;
             }
         }
         return userInfos;

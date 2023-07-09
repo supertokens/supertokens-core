@@ -899,8 +899,15 @@ public class PasswordlessQueries {
                 userIdsAndEmails);
         Set<String> verifiedUserIdsSet = new HashSet<>(userIdsThatAreVerified);
         for (UserInfoPartial userInfo : userInfos) {
+            if (userInfo.verified != null) {
+                // this means phone number
+                assert (userInfo.email == null);
+                continue;
+            }
             if (verifiedUserIdsSet.contains(userInfo.id)) {
                 userInfo.verified = true;
+            } else {
+                userInfo.verified = false;
             }
         }
         return userInfos;

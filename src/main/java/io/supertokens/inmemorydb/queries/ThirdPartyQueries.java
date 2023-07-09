@@ -438,6 +438,8 @@ public class ThirdPartyQueries {
         for (UserInfoPartial userInfo : userInfos) {
             if (verifiedUserIdsSet.contains(userInfo.id)) {
                 userInfo.verified = true;
+            } else {
+                userInfo.verified = false;
             }
         }
         return userInfos;

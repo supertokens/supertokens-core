@@ -254,7 +254,7 @@ public class EmailVerificationQueries {
         }
         String QUERY = "SELECT * FROM " + getConfig(start).getEmailVerificationTable()
                 + " WHERE app_id = ? AND user_id IN (" + Utils.generateCommaSeperatedQuestionMarks(userIds.size()) +
-                ") AND email = IN (" + Utils.generateCommaSeperatedQuestionMarks(emails.size()) + ")";
+                ") AND email IN (" + Utils.generateCommaSeperatedQuestionMarks(emails.size()) + ")";
 
         return execute(sqlCon, QUERY, pst -> {
             pst.setString(1, appIdentifier.getAppId());
