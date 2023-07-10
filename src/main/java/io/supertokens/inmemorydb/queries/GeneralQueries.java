@@ -438,7 +438,9 @@ public class GeneralQueries {
 
     public static long getUsersCount(Start start, AppIdentifier appIdentifier, RECIPE_ID[] includeRecipeIds)
             throws SQLException, StorageQueryException {
-        StringBuilder QUERY = new StringBuilder("SELECT COUNT(*) as total FROM " + getConfig(start).getUsersTable());
+        StringBuilder QUERY = new StringBuilder(
+                "SELECT COUNT(DISTINCT primary_or_recipe_user_id) AS total FROM " +
+                        getConfig(start).getUsersTable());
         QUERY.append(" WHERE app_id = ?");
         if (includeRecipeIds != null && includeRecipeIds.length > 0) {
             QUERY.append(" AND recipe_id IN (");
@@ -451,7 +453,6 @@ public class GeneralQueries {
             }
             QUERY.append(")");
         }
-        QUERY.append(" GROUP BY primary_or_recipe_user_id");
 
         return execute(start, QUERY.toString(), pst -> {
             pst.setString(1, appIdentifier.getAppId());
@@ -471,7 +472,8 @@ public class GeneralQueries {
 
     public static long getUsersCount(Start start, TenantIdentifier tenantIdentifier, RECIPE_ID[] includeRecipeIds)
             throws SQLException, StorageQueryException {
-        StringBuilder QUERY = new StringBuilder("SELECT COUNT(*) as total FROM " + getConfig(start).getUsersTable());
+        StringBuilder QUERY = new StringBuilder(
+                "SELECT COUNT(DISTINCT primary_or_recipe_user_id) AS total FROM " + getConfig(start).getUsersTable());
         QUERY.append(" WHERE app_id = ? AND tenant_id = ?");
         if (includeRecipeIds != null && includeRecipeIds.length > 0) {
             QUERY.append(" AND recipe_id IN (");
@@ -484,7 +486,6 @@ public class GeneralQueries {
             }
             QUERY.append(")");
         }
-        QUERY.append(" GROUP BY primary_or_recipe_user_id");
 
         return execute(start, QUERY.toString(), pst -> {
             pst.setString(1, tenantIdentifier.getAppId());
