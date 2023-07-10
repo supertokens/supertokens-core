@@ -84,7 +84,7 @@ public class SignInAPI extends WebserverAPI {
                     tenantIdentifierWithStorage.toAppIdentifierWithStorage(), user.id, UserIdType.SUPERTOKENS);
 
             if (userIdMapping != null) {
-                user.id = userIdMapping.externalUserId;
+                user.setExternalUserId(userIdMapping.externalUserId);
             }
 
             JsonObject result = new JsonObject();

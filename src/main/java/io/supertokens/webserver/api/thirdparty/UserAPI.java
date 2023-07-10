@@ -84,7 +84,7 @@ public class UserAPI extends WebserverAPI {
                     user = ThirdParty.getUser(appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage,
                             userId);
                     if (user != null && appIdentifierWithStorageAndUserIdMapping.userIdMapping != null) {
-                        user.id = appIdentifierWithStorageAndUserIdMapping.userIdMapping.externalUserId;
+                        user.setExternalUserId(appIdentifierWithStorageAndUserIdMapping.userIdMapping.externalUserId);
                     }
                 } catch (UnknownUserIdException e) {
                     // let the user be null
@@ -96,7 +96,7 @@ public class UserAPI extends WebserverAPI {
                     io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
                             .getUserIdMapping(this.getAppIdentifierWithStorage(req), user.id, UserIdType.SUPERTOKENS);
                     if (userIdMapping != null) {
-                        user.id = userIdMapping.externalUserId;
+                        user.setExternalUserId(userIdMapping.externalUserId);
                     }
                 }
             }

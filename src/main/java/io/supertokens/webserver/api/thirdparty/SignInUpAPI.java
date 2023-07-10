@@ -125,7 +125,7 @@ public class SignInUpAPI extends WebserverAPI {
                         .getUserIdMapping(this.getAppIdentifierWithStorage(req), response.user.id,
                                 UserIdType.SUPERTOKENS);
                 if (userIdMapping != null) {
-                    response.user.id = userIdMapping.externalUserId;
+                    response.user.setExternalUserId(userIdMapping.externalUserId);
                 }
 
                 JsonObject result = new JsonObject();

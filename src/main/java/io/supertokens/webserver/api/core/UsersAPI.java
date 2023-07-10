@@ -177,7 +177,7 @@ public class UsersAPI extends WebserverAPI {
                 for (int i = 0; i < users.users.length; i++) {
                     String externalId = userIdMapping.get(userIds.get(i));
                     if (externalId != null) {
-                        users.users[i].user.id = externalId;
+                        users.users[i].user.setExternalUserId(externalId);
                     }
                 }
             }
@@ -193,6 +193,7 @@ public class UsersAPI extends WebserverAPI {
                         getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0) ? user.user.toJson() :
                                 user.user.toJsonWithoutAccountLinking();
                 jsonObj.add("user", userJson);
+                usersJson.add(jsonObj);
             }
 
             if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {

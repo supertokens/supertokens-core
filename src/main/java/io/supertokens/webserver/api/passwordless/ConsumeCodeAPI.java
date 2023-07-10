@@ -91,7 +91,7 @@ public class ConsumeCodeAPI extends WebserverAPI {
                     this.getAppIdentifierWithStorage(req),
                     consumeCodeResponse.user.id, UserIdType.ANY);
             if (userIdMapping != null) {
-                consumeCodeResponse.user.id = userIdMapping.externalUserId;
+                consumeCodeResponse.user.setExternalUserId(userIdMapping.externalUserId);
             }
 
             JsonObject result = new JsonObject();

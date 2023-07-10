@@ -70,7 +70,7 @@ public class GetUsersByEmailAPI extends WebserverAPI {
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
                         .getUserIdMapping(appIdentifierWithStorage, users[i].id, UserIdType.SUPERTOKENS);
                 if (userIdMapping != null) {
-                    users[i].id = userIdMapping.externalUserId;
+                    users[i].setExternalUserId(userIdMapping.externalUserId);
                 }
             }
 
