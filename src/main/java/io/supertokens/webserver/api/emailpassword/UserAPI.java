@@ -16,9 +16,8 @@
 
 package io.supertokens.webserver.api.emailpassword;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.output.Logging;
@@ -31,7 +30,6 @@ import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicExceptio
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.SemVer;
@@ -99,7 +97,9 @@ public class UserAPI extends WebserverAPI {
                     // API is tenant specific for get by Email
                     // Query by email
                     String normalisedEmail = Utils.normaliseEmail(email);
-                    TenantIdentifierWithStorage tenantIdentifierWithStorage = this.getTenantIdentifierWithStorageFromRequest(req);
+                    TenantIdentifierWithStorage tenantIdentifierWithStorage =
+                            this.getTenantIdentifierWithStorageFromRequest(
+                                    req);
                     user = EmailPassword.getUserUsingEmail(tenantIdentifierWithStorage, normalisedEmail);
 
                     // if a userIdMapping exists, set the userId in the response to the externalUserId
@@ -124,7 +124,9 @@ public class UserAPI extends WebserverAPI {
             } else {
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
-                JsonObject userJson = new JsonParser().parse(new Gson().toJson(user)).getAsJsonObject();
+                JsonObject userJson =
+                        getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0) ? user.toJson() :
+                                user.toJsonWithoutAccountLinking();
 
                 if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
                     userJson.remove("tenantIds");

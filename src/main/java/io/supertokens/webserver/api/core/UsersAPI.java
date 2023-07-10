@@ -16,7 +16,9 @@
 
 package io.supertokens.webserver.api.core;
 
-import com.google.gson.*;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.authRecipe.UserPaginationContainer;
@@ -183,7 +185,15 @@ public class UsersAPI extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
 
-            JsonArray usersJson = new JsonParser().parse(new Gson().toJson(users.users)).getAsJsonArray();
+            JsonArray usersJson = new JsonArray();
+            for (UserPaginationContainer.UsersContainer user : users.users) {
+                JsonObject jsonObj = new JsonObject();
+                jsonObj.addProperty("recipeId", user.recipeId);
+                JsonObject userJson =
+                        getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0) ? user.user.toJson() :
+                                user.user.toJsonWithoutAccountLinking();
+                jsonObj.add("user", userJson);
+            }
 
             if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
                 for (JsonElement user : usersJson) {

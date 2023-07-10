@@ -16,10 +16,7 @@
 
 package io.supertokens.webserver.api.emailpassword;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-
 import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
@@ -79,7 +76,8 @@ public class SignInAPI extends WebserverAPI {
         try {
             UserInfo user = EmailPassword.signIn(tenantIdentifierWithStorage, super.main, normalisedEmail, password);
 
-            ActiveUsers.updateLastActive(tenantIdentifierWithStorage.toAppIdentifierWithStorage(), main, user.id); // use the internal user id
+            ActiveUsers.updateLastActive(tenantIdentifierWithStorage.toAppIdentifierWithStorage(), main,
+                    user.id); // use the internal user id
 
             // if a userIdMapping exists, pass the externalUserId to the response
             UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
@@ -91,7 +89,8 @@ public class SignInAPI extends WebserverAPI {
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
-            JsonObject userJson = new JsonParser().parse(new Gson().toJson(user)).getAsJsonObject();
+            JsonObject userJson = getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0) ? user.toJson() :
+                    user.toJsonWithoutAccountLinking();
             if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
                 userJson.remove("tenantIds");
             }

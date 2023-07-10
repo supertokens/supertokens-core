@@ -16,9 +16,7 @@
 
 package io.supertokens.webserver.api.emailpassword;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.emailpassword.EmailPassword;
@@ -27,6 +25,7 @@ import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
@@ -93,12 +92,15 @@ public class ImportUserWithPasswordHashAPI extends WebserverAPI {
         }
 
         try {
+            TenantIdentifierWithStorage tenant = this.getTenantIdentifierWithStorageFromRequest(req);
             EmailPassword.ImportUserResponse importUserResponse = EmailPassword.importUserWithPasswordHash(
-                    this.getTenantIdentifierWithStorageFromRequest(req), main, email,
+                    tenant, main, email,
                     passwordHash, passwordHashingAlgorithm);
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
-            JsonObject userJson = new JsonParser().parse(new Gson().toJson(importUserResponse.user)).getAsJsonObject();
+            JsonObject userJson =
+                    getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0) ? importUserResponse.user.toJson() :
+                            importUserResponse.user.toJsonWithoutAccountLinking();
 
             if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
                 userJson.remove("tenantIds");
@@ -107,7 +109,8 @@ public class ImportUserWithPasswordHashAPI extends WebserverAPI {
             response.add("user", userJson);
             response.addProperty("didUserAlreadyExist", importUserResponse.didUserAlreadyExist);
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException | BadPermissionException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException |
+                 BadPermissionException e) {
             throw new ServletException(e);
         } catch (UnsupportedPasswordHashingFormatException e) {
             throw new ServletException(new WebserverAPI.BadRequestException(e.getMessage()));

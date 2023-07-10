@@ -16,15 +16,13 @@
 
 package io.supertokens.webserver.api.thirdparty;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
-import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
-import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.thirdparty.UserInfo;
 import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.useridmapping.UserIdMapping;
@@ -83,7 +81,8 @@ public class UserAPI extends WebserverAPI {
                         userId = appIdentifierWithStorageAndUserIdMapping.userIdMapping.superTokensUserId;
                     }
 
-                    user = ThirdParty.getUser(appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage, userId);
+                    user = ThirdParty.getUser(appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage,
+                            userId);
                     if (user != null && appIdentifierWithStorageAndUserIdMapping.userIdMapping != null) {
                         user.id = appIdentifierWithStorageAndUserIdMapping.userIdMapping.externalUserId;
                     }
@@ -110,7 +109,9 @@ public class UserAPI extends WebserverAPI {
             } else {
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
-                JsonObject userJson = new JsonParser().parse(new Gson().toJson(user)).getAsJsonObject();
+                JsonObject userJson =
+                        getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0) ? user.toJson() :
+                                user.toJsonWithoutAccountLinking();
 
                 if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
                     userJson.remove("tenantIds");

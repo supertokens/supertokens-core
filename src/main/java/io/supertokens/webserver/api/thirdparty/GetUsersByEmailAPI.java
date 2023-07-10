@@ -16,13 +16,15 @@
 
 package io.supertokens.webserver.api.thirdparty;
 
-import com.google.gson.*;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.RECIPE_ID;
-import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.thirdparty.UserInfo;
 import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.useridmapping.UserIdMapping;
@@ -53,7 +55,8 @@ public class GetUsersByEmailAPI extends WebserverAPI {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         // this API is tenant specific
         try {
-            TenantIdentifierWithStorage tenantIdentifierWithStorage = this.getTenantIdentifierWithStorageFromRequest(req);
+            TenantIdentifierWithStorage tenantIdentifierWithStorage = this.getTenantIdentifierWithStorageFromRequest(
+                    req);
             AppIdentifierWithStorage appIdentifierWithStorage = this.getAppIdentifierWithStorage(req);
 
             String email = InputParser.getQueryParamOrThrowError(req, "email", false);
@@ -73,7 +76,11 @@ public class GetUsersByEmailAPI extends WebserverAPI {
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
-            JsonArray usersJson = new JsonParser().parse(new Gson().toJson(users)).getAsJsonArray();
+            JsonArray usersJson = new JsonArray();
+            for (UserInfo userInfo : users) {
+                usersJson.add(getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0) ? userInfo.toJson() :
+                        userInfo.toJsonWithoutAccountLinking());
+            }
 
             if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
                 for (JsonElement user : usersJson) {

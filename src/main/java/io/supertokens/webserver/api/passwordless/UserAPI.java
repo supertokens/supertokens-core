@@ -16,12 +16,9 @@
 
 package io.supertokens.webserver.api.passwordless;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
-import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.Passwordless.FieldUpdate;
 import io.supertokens.passwordless.exceptions.UserWithoutContactInfoException;
@@ -29,6 +26,7 @@ import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.passwordless.UserInfo;
 import io.supertokens.pluginInterface.passwordless.exception.DuplicatePhoneNumberException;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
@@ -103,7 +101,8 @@ public class UserAPI extends WebserverAPI {
                     }
                 }
             } else {
-                user = Passwordless.getUserByPhoneNumber(this.getTenantIdentifierWithStorageFromRequest(req), phoneNumber);
+                user = Passwordless.getUserByPhoneNumber(this.getTenantIdentifierWithStorageFromRequest(req),
+                        phoneNumber);
                 if (user != null) {
                     UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
                             this.getAppIdentifierWithStorage(req),
@@ -123,7 +122,9 @@ public class UserAPI extends WebserverAPI {
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
 
-                JsonObject userJson = new JsonParser().parse(new Gson().toJson(user)).getAsJsonObject();
+                JsonObject userJson =
+                        getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0) ? user.toJson() :
+                                user.toJsonWithoutAccountLinking();
 
                 if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
                     userJson.remove("tenantIds");
@@ -146,11 +147,11 @@ public class UserAPI extends WebserverAPI {
 
         FieldUpdate emailUpdate = !input.has("email") ? null
                 : new FieldUpdate(input.get("email").isJsonNull() ? null
-                        : Utils.normaliseEmail(InputParser.parseStringOrThrowError(input, "email", false)));
+                : Utils.normaliseEmail(InputParser.parseStringOrThrowError(input, "email", false)));
 
         FieldUpdate phoneNumberUpdate = !input.has("phoneNumber") ? null
                 : new FieldUpdate(input.get("phoneNumber").isJsonNull() ? null
-                        : InputParser.parseStringOrThrowError(input, "phoneNumber", false));
+                : InputParser.parseStringOrThrowError(input, "phoneNumber", false));
 
         try {
             AppIdentifierWithStorageAndUserIdMapping appIdentifierWithStorageAndUserIdMapping =

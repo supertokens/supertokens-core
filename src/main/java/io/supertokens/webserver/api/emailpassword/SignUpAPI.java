@@ -16,10 +16,7 @@
 
 package io.supertokens.webserver.api.emailpassword;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-
 import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
@@ -30,6 +27,7 @@ import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
@@ -79,13 +77,16 @@ public class SignUpAPI extends WebserverAPI {
         }
 
         try {
-            UserInfo user = EmailPassword.signUp(this.getTenantIdentifierWithStorageFromRequest(req), super.main, normalisedEmail, password);
+            TenantIdentifierWithStorage tenant = this.getTenantIdentifierWithStorageFromRequest(req);
+            UserInfo user = EmailPassword.signUp(tenant, super.main, normalisedEmail, password);
 
             ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main, user.id);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
-            JsonObject userJson = new JsonParser().parse(new Gson().toJson(user)).getAsJsonObject();
+            JsonObject userJson =
+                    getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0) ? user.toJson() :
+                            user.toJsonWithoutAccountLinking();
 
             if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
                 userJson.remove("tenantIds");

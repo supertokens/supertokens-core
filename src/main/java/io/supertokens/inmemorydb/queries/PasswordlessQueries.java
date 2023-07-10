@@ -423,8 +423,10 @@ public class PasswordlessQueries {
                 UserInfoPartial userInfo = new UserInfoPartial(id, email, phoneNumber, timeJoined);
                 fillUserInfoWithTenantIds_transaction(start, sqlCon, tenantIdentifier.toAppIdentifier(), userInfo);
                 fillUserInfoWithVerified_transaction(start, sqlCon, tenantIdentifier.toAppIdentifier(), userInfo);
+                fillUserInfoWithIsPrimaryUserBoolean_transaction(start, sqlCon, tenantIdentifier.toAppIdentifier(),
+                        userInfo);
                 sqlCon.commit();
-                return new UserInfo(id, false,
+                return new UserInfo(id, userInfo.isPrimary,
                         userInfo.toLoginMethod());
             } catch (SQLException throwables) {
                 throw new StorageTransactionLogicException(throwables);
@@ -729,7 +731,9 @@ public class PasswordlessQueries {
             }
             fillUserInfoWithTenantIds_transaction(start, con, appIdentifier, userInfo);
             fillUserInfoWithVerified_transaction(start, con, appIdentifier, userInfo);
-            return new UserInfo(userInfo.id, false,
+            fillUserInfoWithIsPrimaryUserBoolean_transaction(start, con, appIdentifier,
+                    userInfo);
+            return new UserInfo(userInfo.id, userInfo.isPrimary,
                     userInfo.toLoginMethod());
         }
     }
@@ -780,7 +784,9 @@ public class PasswordlessQueries {
             }
             fillUserInfoWithTenantIds_transaction(start, con, tenantIdentifier.toAppIdentifier(), userInfo);
             fillUserInfoWithVerified_transaction(start, con, tenantIdentifier.toAppIdentifier(), userInfo);
-            return new UserInfo(userInfo.id, false,
+            fillUserInfoWithIsPrimaryUserBoolean_transaction(start, con, tenantIdentifier.toAppIdentifier(),
+                    userInfo);
+            return new UserInfo(userInfo.id, userInfo.isPrimary,
                     userInfo.toLoginMethod());
         }
     }
@@ -813,7 +819,9 @@ public class PasswordlessQueries {
             }
             fillUserInfoWithTenantIds_transaction(start, con, tenantIdentifier.toAppIdentifier(), userInfo);
             fillUserInfoWithVerified_transaction(start, con, tenantIdentifier.toAppIdentifier(), userInfo);
-            return new UserInfo(userInfo.id, false,
+            fillUserInfoWithIsPrimaryUserBoolean_transaction(start, con, tenantIdentifier.toAppIdentifier(),
+                    userInfo);
+            return new UserInfo(userInfo.id, userInfo.isPrimary,
                     userInfo.toLoginMethod());
         }
     }
@@ -943,6 +951,34 @@ public class PasswordlessQueries {
         return userInfos;
     }
 
+    private static UserInfoPartial fillUserInfoWithIsPrimaryUserBoolean_transaction(Start start, Connection sqlCon,
+                                                                                    AppIdentifier appIdentifier,
+                                                                                    UserInfoPartial userInfo)
+            throws SQLException, StorageQueryException {
+        if (userInfo == null) return null;
+        return fillUserInfoWithIsPrimaryUserBoolean_transaction(start, sqlCon, appIdentifier,
+                Arrays.asList(userInfo)).get(0);
+    }
+
+    private static List<UserInfoPartial> fillUserInfoWithIsPrimaryUserBoolean_transaction(Start start,
+                                                                                          Connection sqlCon,
+                                                                                          AppIdentifier appIdentifier,
+                                                                                          List<UserInfoPartial> userInfos)
+            throws SQLException, StorageQueryException {
+        String[] userIds = new String[userInfos.size()];
+        for (int i = 0; i < userInfos.size(); i++) {
+            userIds[i] = userInfos.get(i).id;
+        }
+
+        Map<String, Boolean> isPrimaryUserForUserIds = GeneralQueries.getIsPrimaryUserBoolean_transaction(start, sqlCon,
+                appIdentifier,
+                userIds);
+        for (UserInfoPartial userInfo : userInfos) {
+            userInfo.isPrimary = isPrimaryUserForUserIds.get(userInfo.id);
+        }
+        return userInfos;
+    }
+
     private static class PasswordlessDeviceRowMapper implements RowMapper<PasswordlessDevice, ResultSet> {
         private static final PasswordlessDeviceRowMapper INSTANCE = new PasswordlessDeviceRowMapper();
 
@@ -985,6 +1021,7 @@ public class PasswordlessQueries {
         public final String phoneNumber;
         public String[] tenantIds;
         public Boolean verified;
+        public Boolean isPrimary;
 
         UserInfoPartial(String id, @Nullable String email, @Nullable String phoneNumber, long timeJoined) {
             this.id = id.trim();

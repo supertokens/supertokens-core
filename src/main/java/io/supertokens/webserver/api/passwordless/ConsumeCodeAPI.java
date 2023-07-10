@@ -16,9 +16,7 @@
 
 package io.supertokens.webserver.api.passwordless;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
@@ -88,7 +86,7 @@ public class ConsumeCodeAPI extends WebserverAPI {
                     userInputCode, linkCode);
 
             ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main, consumeCodeResponse.user.id);
-            
+
             UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
                     this.getAppIdentifierWithStorage(req),
                     consumeCodeResponse.user.id, UserIdType.ANY);
@@ -98,7 +96,9 @@ public class ConsumeCodeAPI extends WebserverAPI {
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
-            JsonObject userJson = new JsonParser().parse(new Gson().toJson(consumeCodeResponse.user)).getAsJsonObject();
+            JsonObject userJson =
+                    getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0) ? consumeCodeResponse.user.toJson() :
+                            consumeCodeResponse.user.toJsonWithoutAccountLinking();
 
             if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
                 userJson.remove("tenantIds");
@@ -127,7 +127,8 @@ public class ConsumeCodeAPI extends WebserverAPI {
             super.sendJsonResponse(200, result, resp);
         } catch (DeviceIdHashMismatchException ex) {
             throw new ServletException(new BadRequestException("preAuthSessionId and deviceId doesn't match"));
-        } catch (StorageTransactionLogicException | StorageQueryException | NoSuchAlgorithmException | InvalidKeyException | TenantOrAppNotFoundException | BadPermissionException e) {
+        } catch (StorageTransactionLogicException | StorageQueryException | NoSuchAlgorithmException |
+                 InvalidKeyException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         } catch (Base64EncodingException ex) {
             throw new ServletException(new BadRequestException("Input encoding error in " + ex.source));

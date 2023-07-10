@@ -16,9 +16,7 @@
 
 package io.supertokens.webserver.api.thirdparty;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
@@ -83,7 +81,9 @@ public class SignInUpAPI extends WebserverAPI {
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
                 result.addProperty("createdNewUser", response.createdNewUser);
-                JsonObject userJson = new JsonParser().parse(new Gson().toJson(response.user)).getAsJsonObject();
+                JsonObject userJson =
+                        getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0) ? response.user.toJson() :
+                                response.user.toJsonWithoutAccountLinking();
 
                 if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
                     userJson.remove("tenantIds");
@@ -131,7 +131,9 @@ public class SignInUpAPI extends WebserverAPI {
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
                 result.addProperty("createdNewUser", response.createdNewUser);
-                JsonObject userJson = new JsonParser().parse(new Gson().toJson(response.user)).getAsJsonObject();
+                JsonObject userJson =
+                        getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0) ? response.user.toJson() :
+                                response.user.toJsonWithoutAccountLinking();
 
                 if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
                     userJson.remove("tenantIds");
