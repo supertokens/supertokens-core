@@ -223,7 +223,7 @@ public class EmailPasswordQueries {
         }
         fillUserInfoWithTenantIds_transaction(start, con, appIdentifier, userInfo);
         fillUserInfoWithVerified_transaction(start, con, appIdentifier, userInfo);
-        return new UserInfo(userInfo.id, userInfo.verified, userInfo.toLoginMethod());
+        return new UserInfo(userInfo.id, false, userInfo.toLoginMethod());
     }
 
     public static PasswordResetTokenInfo getPasswordResetTokenInfo(Start start, AppIdentifier appIdentifier,
@@ -315,7 +315,7 @@ public class EmailPasswordQueries {
                 fillUserInfoWithTenantIds_transaction(start, sqlCon, tenantIdentifier.toAppIdentifier(), userInfo);
                 fillUserInfoWithVerified_transaction(start, sqlCon, tenantIdentifier.toAppIdentifier(), userInfo);
                 sqlCon.commit();
-                return new UserInfo(userId, userInfo.verified, userInfo.toLoginMethod());
+                return new UserInfo(userId, false, userInfo.toLoginMethod());
             } catch (SQLException throwables) {
                 throw new StorageTransactionLogicException(throwables);
             }
@@ -365,7 +365,7 @@ public class EmailPasswordQueries {
             }
             fillUserInfoWithTenantIds_transaction(start, con, appIdentifier, userInfo);
             fillUserInfoWithVerified_transaction(start, con, appIdentifier, userInfo);
-            return new UserInfo(userInfo.id, userInfo.verified, userInfo.toLoginMethod());
+            return new UserInfo(userInfo.id, false, userInfo.toLoginMethod());
         }
     }
 
@@ -446,7 +446,7 @@ public class EmailPasswordQueries {
             }
             fillUserInfoWithTenantIds_transaction(start, con, tenantIdentifier.toAppIdentifier(), userInfo);
             fillUserInfoWithVerified_transaction(start, con, tenantIdentifier.toAppIdentifier(), userInfo);
-            return new UserInfo(userInfo.id, userInfo.verified,
+            return new UserInfo(userInfo.id, false,
                     userInfo.toLoginMethod());
         }
     }
@@ -459,14 +459,15 @@ public class EmailPasswordQueries {
 
         { // all_auth_recipe_users
             String QUERY = "INSERT INTO " + getConfig(start).getUsersTable()
-                    + "(app_id, tenant_id, user_id, recipe_id, time_joined)"
-                    + " VALUES(?, ?, ?, ?, ?)" + " ON CONFLICT DO NOTHING";
+                    + "(app_id, tenant_id, user_id, primary_or_recipe_user_id, recipe_id, time_joined)"
+                    + " VALUES(?, ?, ?, ?, ?, ?)" + " ON CONFLICT DO NOTHING";
             update(sqlCon, QUERY, pst -> {
                 pst.setString(1, tenantIdentifier.getAppId());
                 pst.setString(2, tenantIdentifier.getTenantId());
                 pst.setString(3, userId);
-                pst.setString(4, EMAIL_PASSWORD.toString());
-                pst.setLong(5, userInfo.timeJoined);
+                pst.setString(4, userId);
+                pst.setString(5, EMAIL_PASSWORD.toString());
+                pst.setLong(6, userInfo.timeJoined);
             });
         }
 

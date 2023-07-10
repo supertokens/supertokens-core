@@ -507,12 +507,14 @@ public class GeneralQueries {
             throws SQLException, StorageQueryException {
         // We query both tables cause there is a case where a primary user ID exists, but its associated
         // recipe user ID has been deleted AND there are other recipe user IDs linked to this primary user ID already.
-        String QUERY = "(SELECT 1 FROM " + getConfig(start).getAppIdToUserIdTable()
-                + " WHERE app_id = ? AND user_id = ?) UNION (SELECT 1 FROM " + getConfig(start).getUsersTable() +
-                " WHERE app_id = ? AND primary_or_recipe_user_id = ?)";
+        String QUERY = "SELECT 1 FROM " + getConfig(start).getAppIdToUserIdTable()
+                + " WHERE app_id = ? AND user_id = ? UNION SELECT 1 FROM " + getConfig(start).getUsersTable() +
+                " WHERE app_id = ? AND primary_or_recipe_user_id = ?";
         return execute(start, QUERY, pst -> {
             pst.setString(1, appIdentifier.getAppId());
             pst.setString(2, userId);
+            pst.setString(3, appIdentifier.getAppId());
+            pst.setString(4, userId);
         }, ResultSet::next);
     }
 
@@ -520,14 +522,17 @@ public class GeneralQueries {
             throws SQLException, StorageQueryException {
         // We query both tables cause there is a case where a primary user ID exists, but its associated
         // recipe user ID has been deleted AND there are other recipe user IDs linked to this primary user ID already.
-        String QUERY = "(SELECT 1 FROM " + getConfig(start).getUsersTable()
-                + " WHERE app_id = ? AND tenant_id = ? AND user_id = ?) UNION (SELECT 1 FROM " +
+        String QUERY = "SELECT 1 FROM " + getConfig(start).getUsersTable()
+                + " WHERE app_id = ? AND tenant_id = ? AND user_id = ? UNION SELECT 1 FROM " +
                 getConfig(start).getUsersTable() +
-                " WHERE app_id = ? AND tenant_id = ? AND primary_or_recipe_user_id = ?)";
+                " WHERE app_id = ? AND tenant_id = ? AND primary_or_recipe_user_id = ?";
         return execute(start, QUERY, pst -> {
             pst.setString(1, tenantIdentifier.getAppId());
             pst.setString(2, tenantIdentifier.getTenantId());
             pst.setString(3, userId);
+            pst.setString(4, tenantIdentifier.getAppId());
+            pst.setString(5, tenantIdentifier.getTenantId());
+            pst.setString(6, userId);
         }, ResultSet::next);
     }
 
@@ -535,7 +540,7 @@ public class GeneralQueries {
                                                 @NotNull String timeJoinedOrder,
                                                 @org.jetbrains.annotations.Nullable RECIPE_ID[] includeRecipeIds,
                                                 @org.jetbrains.annotations.Nullable
-                                                        String userId,
+                                                String userId,
                                                 @org.jetbrains.annotations.Nullable Long timeJoined,
                                                 @Nullable DashboardSearchTags dashboardSearchTags)
             throws SQLException, StorageQueryException {
@@ -917,7 +922,7 @@ public class GeneralQueries {
             String primaryUserId = authRecipeUsersResultHolder.primaryOrRecipeUserId;
             AuthRecipeUserInfo curr = userIdToAuthRecipeUserInfo.get(primaryUserId);
             if (curr == null) {
-                curr = new AuthRecipeUserInfo(primaryUserId, authRecipeUsersResultHolder.isLinkedOrIsAPrimaryUser,
+                curr = AuthRecipeUserInfo.create(primaryUserId, authRecipeUsersResultHolder.isLinkedOrIsAPrimaryUser,
                         loginMethod);
             } else {
                 curr.addLoginMethod(loginMethod);
@@ -1059,7 +1064,7 @@ public class GeneralQueries {
             this.tenantId = tenantId;
             this.primaryOrRecipeUserId = primaryOrRecipeUserId;
             this.isLinkedOrIsAPrimaryUser = isLinkedOrIsAPrimaryUser;
-            this.recipeId = RECIPE_ID.valueOf(recipeId);
+            this.recipeId = RECIPE_ID.getEnumFromString(recipeId);
             this.timeJoined = timeJoined;
         }
     }

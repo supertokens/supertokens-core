@@ -103,13 +103,15 @@ public class ThirdPartyQueries {
 
                 { // all_auth_recipe_users
                     String QUERY = "INSERT INTO " + getConfig(start).getUsersTable()
-                            + "(app_id, tenant_id, user_id, recipe_id, time_joined)" + " VALUES(?, ?, ?, ?, ?)";
+                            + "(app_id, tenant_id, user_id, primary_or_recipe_user_id, recipe_id, time_joined)" +
+                            " VALUES(?, ?, ?, ?, ?, ?)";
                     update(sqlCon, QUERY, pst -> {
                         pst.setString(1, tenantIdentifier.getAppId());
                         pst.setString(2, tenantIdentifier.getTenantId());
                         pst.setString(3, id);
-                        pst.setString(4, THIRD_PARTY.toString());
-                        pst.setLong(5, timeJoined);
+                        pst.setString(4, id);
+                        pst.setString(5, THIRD_PARTY.toString());
+                        pst.setLong(6, timeJoined);
                     });
                 }
 
@@ -144,7 +146,7 @@ public class ThirdPartyQueries {
                 fillUserInfoWithTenantIds_transaction(start, sqlCon, tenantIdentifier.toAppIdentifier(), userInfo);
                 fillUserInfoWithVerified_transaction(start, sqlCon, tenantIdentifier.toAppIdentifier(), userInfo);
                 sqlCon.commit();
-                return new UserInfo(id, userInfo.verified, userInfo.toLoginMethod());
+                return new UserInfo(id, false, userInfo.toLoginMethod());
 
             } catch (SQLException throwables) {
                 throw new StorageTransactionLogicException(throwables);
@@ -196,7 +198,7 @@ public class ThirdPartyQueries {
             }
             fillUserInfoWithTenantIds_transaction(start, con, appIdentifier, userInfo);
             fillUserInfoWithVerified_transaction(start, con, appIdentifier, userInfo);
-            return new UserInfo(userInfo.id, userInfo.verified, userInfo.toLoginMethod());
+            return new UserInfo(userInfo.id, false, userInfo.toLoginMethod());
         }
     }
 
@@ -262,7 +264,7 @@ public class ThirdPartyQueries {
             }
             fillUserInfoWithTenantIds_transaction(start, con, tenantIdentifier.toAppIdentifier(), userInfo);
             fillUserInfoWithVerified_transaction(start, con, tenantIdentifier.toAppIdentifier(), userInfo);
-            return new UserInfo(userInfo.id, userInfo.verified, userInfo.toLoginMethod());
+            return new UserInfo(userInfo.id, false, userInfo.toLoginMethod());
         }
     }
 
@@ -306,7 +308,7 @@ public class ThirdPartyQueries {
         }
         fillUserInfoWithTenantIds_transaction(start, con, appIdentifier, userInfo);
         fillUserInfoWithVerified_transaction(start, con, appIdentifier, userInfo);
-        return new UserInfo(userInfo.id, userInfo.verified, userInfo.toLoginMethod());
+        return new UserInfo(userInfo.id, false, userInfo.toLoginMethod());
     }
 
     private static UserInfoPartial getUserInfoUsingUserId(Start start, Connection con,
@@ -356,7 +358,7 @@ public class ThirdPartyQueries {
             });
             fillUserInfoWithTenantIds_transaction(start, con, tenantIdentifier.toAppIdentifier(), userInfos);
             fillUserInfoWithVerified_transaction(start, con, tenantIdentifier.toAppIdentifier(), userInfos);
-            return userInfos.stream().map(x -> new UserInfo(x.id, x.verified, x.toLoginMethod()))
+            return userInfos.stream().map(x -> new UserInfo(x.id, false, x.toLoginMethod()))
                     .toArray(UserInfo[]::new);
         }
     }
@@ -369,14 +371,15 @@ public class ThirdPartyQueries {
 
         { // all_auth_recipe_users
             String QUERY = "INSERT INTO " + getConfig(start).getUsersTable()
-                    + "(app_id, tenant_id, user_id, recipe_id, time_joined)"
-                    + " VALUES(?, ?, ?, ?, ?)" + " ON CONFLICT DO NOTHING";
+                    + "(app_id, tenant_id, user_id, primary_or_recipe_user_id, recipe_id, time_joined)"
+                    + " VALUES(?, ?, ?, ?, ?, ?)" + " ON CONFLICT DO NOTHING";
             update(sqlCon, QUERY, pst -> {
                 pst.setString(1, tenantIdentifier.getAppId());
                 pst.setString(2, tenantIdentifier.getTenantId());
                 pst.setString(3, userInfo.id);
-                pst.setString(4, THIRD_PARTY.toString());
-                pst.setLong(5, userInfo.timeJoined);
+                pst.setString(4, userInfo.id);
+                pst.setString(5, THIRD_PARTY.toString());
+                pst.setLong(6, userInfo.timeJoined);
             });
         }
 
