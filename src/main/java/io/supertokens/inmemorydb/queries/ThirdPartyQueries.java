@@ -192,7 +192,7 @@ public class ThirdPartyQueries {
             StringBuilder QUERY = new StringBuilder(
                     "SELECT user_id, third_party_id, third_party_user_id, email, time_joined "
                             + "FROM " + getConfig(start).getThirdPartyUsersTable());
-            QUERY.append(" WHERE user_id IN (");
+            QUERY.append(" WHERE app_id = ? AND user_id IN (");
             for (int i = 0; i < ids.size(); i++) {
 
                 QUERY.append("?");
@@ -204,9 +204,10 @@ public class ThirdPartyQueries {
             QUERY.append(")");
 
             List<UserInfoPartial> userInfos = execute(start, QUERY.toString(), pst -> {
+                pst.setString(1, appIdentifier.getAppId());
                 for (int i = 0; i < ids.size(); i++) {
-                    // i+1 cause this starts with 1 and not 0
-                    pst.setString(i + 1, ids.get(i));
+                    // i+2 cause this starts with 1 and not 0, and 1 is appId
+                    pst.setString(i + 2, ids.get(i));
                 }
             }, result -> {
                 List<UserInfoPartial> finalResult = new ArrayList<>();
