@@ -20,6 +20,7 @@ import io.supertokens.Main;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -199,8 +200,18 @@ public class ThirdParty {
 
     public static UserInfo getUser(AppIdentifierWithStorage appIdentifierWithStorage, String userId)
             throws StorageQueryException {
-        return appIdentifierWithStorage.getThirdPartyStorage()
-                .getThirdPartyUserInfoUsingId(appIdentifierWithStorage, userId);
+        AuthRecipeUserInfo result = appIdentifierWithStorage.getAuthRecipeStorage()
+                .getPrimaryUserById(appIdentifierWithStorage, userId);
+        if (result == null) {
+            return null;
+        }
+        for (LoginMethod lM : result.loginMethods) {
+            if (lM.recipeUserId.equals(userId)) {
+                return new io.supertokens.pluginInterface.thirdparty.UserInfo(lM.recipeUserId, result.isPrimaryUser,
+                        lM);
+            }
+        }
+        return null;
     }
 
     @TestOnly

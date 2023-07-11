@@ -172,7 +172,8 @@ public class PasswordlessUpdateUserTest {
 
         Passwordless.updateUser(process.getProcess(), user.id, new Passwordless.FieldUpdate(alternate_email), null);
 
-        assertEquals(alternate_email, storage.getUserById(new AppIdentifier(null, null), user.id).email);
+        assertEquals(alternate_email,
+                storage.getPrimaryUserById(new AppIdentifier(null, null), user.id).loginMethods[0].email);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -206,7 +207,8 @@ public class PasswordlessUpdateUserTest {
         Passwordless.updateUser(process.getProcess(), user.id, null,
                 new Passwordless.FieldUpdate(alternate_phoneNumber));
 
-        assertEquals(alternate_phoneNumber, storage.getUserById(new AppIdentifier(null, null), user.id).phoneNumber);
+        assertEquals(alternate_phoneNumber,
+                storage.getPrimaryUserById(new AppIdentifier(null, null), user.id).loginMethods[0].phoneNumber);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -239,8 +241,9 @@ public class PasswordlessUpdateUserTest {
         Passwordless.updateUser(process.getProcess(), user.id, new Passwordless.FieldUpdate(null),
                 new Passwordless.FieldUpdate(PHONE_NUMBER));
 
-        assertEquals(PHONE_NUMBER, storage.getUserById(new AppIdentifier(null, null), user.id).phoneNumber);
-        assertNull(storage.getUserById(new AppIdentifier(null, null), user.id).email);
+        assertEquals(PHONE_NUMBER,
+                storage.getPrimaryUserById(new AppIdentifier(null, null), user.id).loginMethods[0].phoneNumber);
+        assertNull(storage.getPrimaryUserById(new AppIdentifier(null, null), user.id).loginMethods[0].email);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -273,8 +276,8 @@ public class PasswordlessUpdateUserTest {
         Passwordless.updateUser(process.getProcess(), user.id, new Passwordless.FieldUpdate(EMAIL),
                 new Passwordless.FieldUpdate(null));
 
-        assertEquals(EMAIL, storage.getUserById(new AppIdentifier(null, null), user.id).email);
-        assertNull(storage.getUserById(new AppIdentifier(null, null), user.id).phoneNumber);
+        assertEquals(EMAIL, storage.getPrimaryUserById(new AppIdentifier(null, null), user.id).loginMethods[0].email);
+        assertNull(storage.getPrimaryUserById(new AppIdentifier(null, null), user.id).loginMethods[0].phoneNumber);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -425,8 +428,9 @@ public class PasswordlessUpdateUserTest {
         Passwordless.updateUser(process.getProcess(), user.id, new Passwordless.FieldUpdate(EMAIL),
                 new Passwordless.FieldUpdate(alternate_phoneNumber));
 
-        assertEquals(EMAIL, storage.getUserById(new AppIdentifier(null, null), user.id).email);
-        assertEquals(alternate_phoneNumber, storage.getUserById(new AppIdentifier(null, null), user.id).phoneNumber);
+        assertEquals(EMAIL, storage.getPrimaryUserById(new AppIdentifier(null, null), user.id).loginMethods[0].email);
+        assertEquals(alternate_phoneNumber,
+                storage.getPrimaryUserById(new AppIdentifier(null, null), user.id).loginMethods[0].phoneNumber);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

@@ -24,6 +24,7 @@ import io.supertokens.passwordless.exceptions.ExpiredUserInputCodeException;
 import io.supertokens.passwordless.exceptions.IncorrectUserInputCodeException;
 import io.supertokens.passwordless.exceptions.RestartFlowException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
@@ -150,7 +151,7 @@ public class PasswordlessConsumeCodeTest {
 
         PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
-        UserInfo user;
+        AuthRecipeUserInfo user;
         {
             Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), EMAIL,
                     null, null, null);
@@ -173,7 +174,7 @@ public class PasswordlessConsumeCodeTest {
                     null);
             assertNotNull(consumeCodeResponse);
             assert (!consumeCodeResponse.createdNewUser);
-            UserInfo user2 = checkUserWithConsumeResponse(storage, consumeCodeResponse, EMAIL, null, 0);
+            AuthRecipeUserInfo user2 = checkUserWithConsumeResponse(storage, consumeCodeResponse, EMAIL, null, 0);
 
             assert (user.equals(user2));
         }
@@ -203,7 +204,7 @@ public class PasswordlessConsumeCodeTest {
 
         PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
-        UserInfo user;
+        AuthRecipeUserInfo user;
         {
             Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), EMAIL,
                     null, null, null);
@@ -224,7 +225,7 @@ public class PasswordlessConsumeCodeTest {
                     createCodeResponse.deviceId, createCodeResponse.deviceIdHash, null, createCodeResponse.linkCode);
             assertNotNull(consumeCodeResponse);
             assert (!consumeCodeResponse.createdNewUser);
-            UserInfo user2 = checkUserWithConsumeResponse(storage, consumeCodeResponse, EMAIL, null, 0);
+            AuthRecipeUserInfo user2 = checkUserWithConsumeResponse(storage, consumeCodeResponse, EMAIL, null, 0);
 
             assert (user.equals(user2));
         }
@@ -265,10 +266,11 @@ public class PasswordlessConsumeCodeTest {
                 createCodeResponse.deviceId, createCodeResponse.deviceIdHash, createCodeResponse.userInputCode, null);
         assertNotNull(consumeCodeResponse);
 
-        user = storage.getUserById(new AppIdentifier(null, null), consumeCodeResponse.user.id);
-        Passwordless.updateUser(process.getProcess(), user.id, null, new Passwordless.FieldUpdate(PHONE_NUMBER));
-        user = storage.getUserById(new AppIdentifier(null, null), consumeCodeResponse.user.id);
-        assertEquals(user.phoneNumber, PHONE_NUMBER);
+        AuthRecipeUserInfo authUser = storage.getPrimaryUserById(new AppIdentifier(null, null),
+                consumeCodeResponse.user.id);
+        Passwordless.updateUser(process.getProcess(), authUser.id, null, new Passwordless.FieldUpdate(PHONE_NUMBER));
+        authUser = storage.getPrimaryUserById(new AppIdentifier(null, null), consumeCodeResponse.user.id);
+        assertEquals(authUser.loginMethods[0].phoneNumber, PHONE_NUMBER);
 
         // create code with email twice
         {
@@ -339,10 +341,11 @@ public class PasswordlessConsumeCodeTest {
                 createCodeResponse.deviceId, createCodeResponse.deviceIdHash, createCodeResponse.userInputCode, null);
         assertNotNull(consumeCodeResponse);
 
-        user = storage.getUserById(new AppIdentifier(null, null), consumeCodeResponse.user.id);
-        Passwordless.updateUser(process.getProcess(), user.id, null, new Passwordless.FieldUpdate(PHONE_NUMBER));
-        user = storage.getUserById(new AppIdentifier(null, null), consumeCodeResponse.user.id);
-        assertEquals(user.phoneNumber, PHONE_NUMBER);
+        AuthRecipeUserInfo authUser = storage.getPrimaryUserById(new AppIdentifier(null, null),
+                consumeCodeResponse.user.id);
+        Passwordless.updateUser(process.getProcess(), authUser.id, null, new Passwordless.FieldUpdate(PHONE_NUMBER));
+        authUser = storage.getPrimaryUserById(new AppIdentifier(null, null), consumeCodeResponse.user.id);
+        assertEquals(authUser.loginMethods[0].phoneNumber, PHONE_NUMBER);
 
         // create code with email twice
         {
@@ -816,16 +819,17 @@ public class PasswordlessConsumeCodeTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    private UserInfo checkUserWithConsumeResponse(PasswordlessStorage storage, Passwordless.ConsumeCodeResponse resp,
-                                                  String email, String phoneNumber, long joinedAfter)
+    private AuthRecipeUserInfo checkUserWithConsumeResponse(PasswordlessStorage storage,
+                                                            Passwordless.ConsumeCodeResponse resp,
+                                                            String email, String phoneNumber, long joinedAfter)
             throws StorageQueryException {
-        UserInfo user = storage.getUserById(new AppIdentifier(null, null), resp.user.id);
+        AuthRecipeUserInfo user = storage.getPrimaryUserById(new AppIdentifier(null, null), resp.user.id);
         assertNotNull(user);
 
         assertEquals(email, resp.user.email);
-        assertEquals(email, user.email);
+        assertEquals(email, user.loginMethods[0].email);
 
-        assertEquals(phoneNumber, user.phoneNumber);
+        assertEquals(phoneNumber, user.loginMethods[0].phoneNumber);
         assertEquals(phoneNumber, resp.user.phoneNumber);
 
         assert (user.timeJoined >= joinedAfter);

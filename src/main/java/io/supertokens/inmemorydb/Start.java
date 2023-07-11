@@ -770,24 +770,6 @@ public class Start
     }
 
     @Override
-    public UserInfo getUserInfoUsingId(AppIdentifier appIdentifier, String id) throws StorageQueryException {
-        try {
-            AuthRecipeUserInfo result = GeneralQueries.getPrimaryUserInfoForUserId(this, appIdentifier, id);
-            if (result == null) {
-                return null;
-            }
-            for (LoginMethod lM : result.loginMethods) {
-                if (lM.recipeUserId.equals(id)) {
-                    return new UserInfo(lM.recipeUserId, result.isPrimaryUser, lM);
-                }
-            }
-            return null;
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
     public UserInfo getUserInfoUsingEmail(TenantIdentifier tenantIdentifier, String email)
             throws StorageQueryException {
         try {
@@ -1190,27 +1172,6 @@ public class Start
     }
 
     @Override
-    public io.supertokens.pluginInterface.thirdparty.UserInfo getThirdPartyUserInfoUsingId(AppIdentifier appIdentifier,
-                                                                                           String id)
-            throws StorageQueryException {
-        try {
-            AuthRecipeUserInfo result = GeneralQueries.getPrimaryUserInfoForUserId(this, appIdentifier, id);
-            if (result == null) {
-                return null;
-            }
-            for (LoginMethod lM : result.loginMethods) {
-                if (lM.recipeUserId.equals(id)) {
-                    return new io.supertokens.pluginInterface.thirdparty.UserInfo(lM.recipeUserId, result.isPrimaryUser,
-                            lM);
-                }
-            }
-            return null;
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
     public io.supertokens.pluginInterface.thirdparty.UserInfo[] getThirdPartyUsersByEmail(
             TenantIdentifier tenantIdentifier, @NotNull String email)
             throws StorageQueryException {
@@ -1315,6 +1276,16 @@ public class Start
             throws StorageQueryException {
         try {
             return GeneralQueries.doesUserIdExist(this, tenantIdentifier, userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public AuthRecipeUserInfo getPrimaryUserById(AppIdentifier appIdentifier, String userId)
+            throws StorageQueryException {
+        try {
+            return GeneralQueries.getPrimaryUserInfoForUserId(this, appIdentifier, userId);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -1800,27 +1771,6 @@ public class Start
             throws StorageQueryException {
         try {
             return PasswordlessQueries.getCodeByLinkCodeHash(this, tenantIdentifier, linkCodeHash);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
-    public io.supertokens.pluginInterface.passwordless.UserInfo getUserById(AppIdentifier appIdentifier, String userId)
-            throws StorageQueryException {
-        try {
-            AuthRecipeUserInfo result = GeneralQueries.getPrimaryUserInfoForUserId(this, appIdentifier, userId);
-            if (result == null) {
-                return null;
-            }
-            for (LoginMethod lM : result.loginMethods) {
-                if (lM.recipeUserId.equals(userId)) {
-                    return new io.supertokens.pluginInterface.passwordless.UserInfo(lM.recipeUserId,
-                            result.isPrimaryUser,
-                            lM);
-                }
-            }
-            return null;
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
