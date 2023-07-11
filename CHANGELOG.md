@@ -8,6 +8,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [6.0.3] - 2023-07-11
 
 - Fixes duplicate users in users search queries when user is associated to multiple tenants
+- Fixes wrong tenant id in logging for `APIKeyUnauthorisedException`
 
 ## [6.0.2] - 2023-07-04
 
