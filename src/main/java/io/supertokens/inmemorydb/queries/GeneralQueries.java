@@ -833,7 +833,7 @@ public class GeneralQueries {
 
         // we give the userId[] for each recipe to fetch all those user's details
         for (RECIPE_ID recipeId : recipeIdToUserIdListMap.keySet()) {
-            List<? extends AuthRecipeUserInfo> users = getUserInfoForRecipeIdFromUserIds(start,
+            List<? extends AuthRecipeUserInfo> users = getPrimaryUserInfoForUserIds(start,
                     tenantIdentifier.toAppIdentifier(),
                     recipeIdToUserIdListMap.get(recipeId));
 
@@ -853,9 +853,20 @@ public class GeneralQueries {
         return finalResult;
     }
 
-    private static List<AuthRecipeUserInfo> getUserInfoForRecipeIdFromUserIds(Start start,
-                                                                              AppIdentifier appIdentifier,
-                                                                              List<String> userIds)
+    public static AuthRecipeUserInfo getPrimaryUserInfoForUserId(Start start, AppIdentifier appIdentifier, String id)
+            throws SQLException, StorageQueryException {
+        List<String> ids = new ArrayList<>();
+        ids.add(id);
+        List<AuthRecipeUserInfo> result = getPrimaryUserInfoForUserIds(start, appIdentifier, ids);
+        if (result.isEmpty()) {
+            return null;
+        }
+        return result.get(0);
+    }
+
+    private static List<AuthRecipeUserInfo> getPrimaryUserInfoForUserIds(Start start,
+                                                                         AppIdentifier appIdentifier,
+                                                                         List<String> userIds)
             throws StorageQueryException, SQLException {
         if (userIds.size() == 0) {
             return new ArrayList<>();

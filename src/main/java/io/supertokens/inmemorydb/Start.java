@@ -772,7 +772,16 @@ public class Start
     @Override
     public UserInfo getUserInfoUsingId(AppIdentifier appIdentifier, String id) throws StorageQueryException {
         try {
-            return EmailPasswordQueries.getUserInfoUsingId(this, appIdentifier, id);
+            AuthRecipeUserInfo result = GeneralQueries.getPrimaryUserInfoForUserId(this, appIdentifier, id);
+            if (result == null) {
+                return null;
+            }
+            for (LoginMethod lM : result.loginMethods) {
+                if (lM.recipeUserId.equals(id)) {
+                    return new UserInfo(lM.recipeUserId, result.isPrimaryUser, lM);
+                }
+            }
+            return null;
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -1185,7 +1194,17 @@ public class Start
                                                                                            String id)
             throws StorageQueryException {
         try {
-            return ThirdPartyQueries.getThirdPartyUserInfoUsingId(this, appIdentifier, id);
+            AuthRecipeUserInfo result = GeneralQueries.getPrimaryUserInfoForUserId(this, appIdentifier, id);
+            if (result == null) {
+                return null;
+            }
+            for (LoginMethod lM : result.loginMethods) {
+                if (lM.recipeUserId.equals(id)) {
+                    return new io.supertokens.pluginInterface.thirdparty.UserInfo(lM.recipeUserId, result.isPrimaryUser,
+                            lM);
+                }
+            }
+            return null;
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -1652,7 +1671,7 @@ public class Start
                                                                            String id,
                                                                            @javax.annotation.Nullable String email,
                                                                            @javax.annotation.Nullable
-                                                                                   String phoneNumber, long timeJoined)
+                                                                           String phoneNumber, long timeJoined)
             throws StorageQueryException,
             DuplicateEmailException, DuplicatePhoneNumberException, DuplicateUserIdException,
             TenantOrAppNotFoundException {
@@ -1790,7 +1809,18 @@ public class Start
     public io.supertokens.pluginInterface.passwordless.UserInfo getUserById(AppIdentifier appIdentifier, String userId)
             throws StorageQueryException {
         try {
-            return PasswordlessQueries.getUserById(this, appIdentifier, userId);
+            AuthRecipeUserInfo result = GeneralQueries.getPrimaryUserInfoForUserId(this, appIdentifier, userId);
+            if (result == null) {
+                return null;
+            }
+            for (LoginMethod lM : result.loginMethods) {
+                if (lM.recipeUserId.equals(userId)) {
+                    return new io.supertokens.pluginInterface.passwordless.UserInfo(lM.recipeUserId,
+                            result.isPrimaryUser,
+                            lM);
+                }
+            }
+            return null;
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }

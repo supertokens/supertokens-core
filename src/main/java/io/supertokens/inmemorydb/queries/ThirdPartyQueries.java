@@ -179,33 +179,6 @@ public class ThirdPartyQueries {
         });
     }
 
-    public static UserInfo getThirdPartyUserInfoUsingId(Start start, AppIdentifier appIdentifier, String userId)
-            throws SQLException, StorageQueryException {
-        // TODO: this should go away..
-        String QUERY = "SELECT user_id, third_party_id, third_party_user_id, email, time_joined FROM "
-                + getConfig(start).getThirdPartyUsersTable() + " WHERE app_id = ? AND user_id = ?";
-
-        try (Connection con = ConnectionPool.getConnection(start)) {
-            UserInfoPartial userInfo = execute(con, QUERY.toString(), pst -> {
-                pst.setString(1, appIdentifier.getAppId());
-                pst.setString(2, userId);
-            }, result -> {
-                if (result.next()) {
-                    return UserInfoRowMapper.getInstance().mapOrThrow(result);
-                }
-                return null;
-            });
-            if (userInfo == null) {
-                return null;
-            }
-            fillUserInfoWithTenantIds_transaction(start, con, appIdentifier, userInfo);
-            fillUserInfoWithVerified_transaction(start, con, appIdentifier, userInfo);
-            fillUserInfoWithIsPrimaryUserBoolean_transaction(start, con, appIdentifier,
-                    userInfo);
-            return new UserInfo(userInfo.id, userInfo.isPrimary, userInfo.toLoginMethod());
-        }
-    }
-
     public static List<LoginMethod> getUsersInfoUsingIdList(Start start, Set<String> ids, AppIdentifier appIdentifier)
             throws SQLException, StorageQueryException {
         if (ids.size() > 0) {
