@@ -395,11 +395,12 @@ public abstract class WebserverAPI extends HttpServlet {
                 return;
             }
 
+            tenantIdentifier = getTenantIdentifierWithStorageFromRequest(req);
+
             if (this.checkAPIKey(req)) {
                 assertThatAPIKeyCheckPasses(req);
             }
 
-            tenantIdentifier = getTenantIdentifierWithStorageFromRequest(req);
             SemVer version = getVersionFromRequest(req);
 
             // Check for CDI version for multitenancy
