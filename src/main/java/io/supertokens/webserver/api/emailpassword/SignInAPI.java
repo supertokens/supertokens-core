@@ -24,7 +24,7 @@ import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -74,7 +74,8 @@ public class SignInAPI extends WebserverAPI {
         }
 
         try {
-            UserInfo user = EmailPassword.signIn(tenantIdentifierWithStorage, super.main, normalisedEmail, password);
+            AuthRecipeUserInfo user = EmailPassword.signIn(tenantIdentifierWithStorage, super.main, normalisedEmail,
+                    password);
 
             ActiveUsers.updateLastActive(tenantIdentifierWithStorage.toAppIdentifierWithStorage(), main,
                     user.id); // use the internal user id

@@ -23,6 +23,8 @@ import io.supertokens.emailpassword.PasswordHashing;
 import io.supertokens.emailpassword.exceptions.ResetPasswordInvalidTokenException;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
@@ -79,12 +81,14 @@ public class EmailPasswordTest {
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             try {
-                new TenantIdentifierWithStorage(null, null, null, StorageLayer.getStorage(process.getProcess())).getEmailPasswordStorage();
+                new TenantIdentifierWithStorage(null, null, null,
+                        StorageLayer.getStorage(process.getProcess())).getEmailPasswordStorage();
                 throw new Exception("Should not come here");
             } catch (UnsupportedOperationException e) {
             }
         } else {
-            new TenantIdentifierWithStorage(null, null, null, StorageLayer.getStorage(process.getProcess())).getEmailPasswordStorage();
+            new TenantIdentifierWithStorage(null, null, null,
+                    StorageLayer.getStorage(process.getProcess())).getEmailPasswordStorage();
         }
 
         process.kill();
@@ -171,11 +175,11 @@ public class EmailPasswordTest {
 
         UserInfo user = EmailPassword.signUp(process.getProcess(), "random@gmail.com", "validPass123");
 
-        UserInfo userInfo = ((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
-                .getUserInfoUsingEmail(new TenantIdentifier(null, null, null), user.email);
-        assertNotEquals(userInfo.passwordHash, "validPass123");
+        AuthRecipeUserInfo userInfo = ((AuthRecipeStorage) StorageLayer.getStorage(process.getProcess()))
+                .listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), user.email)[0];
+        assertNotEquals(userInfo.loginMethods[0].passwordHash, "validPass123");
         assertTrue(PasswordHashing.getInstance(process.getProcess()).verifyPasswordWithHash("validPass123",
-                userInfo.passwordHash));
+                userInfo.loginMethods[0].passwordHash));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -198,7 +202,8 @@ public class EmailPasswordTest {
         UserInfo user = EmailPassword.signUp(process.getProcess(), "random@gmail.com", "validPass123");
 
         String resetToken = EmailPassword.generatePasswordResetToken(process.getProcess(), user.id);
-        PasswordResetTokenInfo resetTokenInfo = ((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
+        PasswordResetTokenInfo resetTokenInfo = ((EmailPasswordSQLStorage) StorageLayer.getStorage(
+                process.getProcess()))
                 .getPasswordResetTokenInfo(new AppIdentifier(null, null),
                         io.supertokens.utils.Utils.hashSHA256(resetToken));
 
@@ -229,12 +234,12 @@ public class EmailPasswordTest {
 
         EmailPassword.resetPassword(process.getProcess(), resetToken, "newValidPass123");
 
-        UserInfo userInfo = ((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
-                .getUserInfoUsingEmail(new TenantIdentifier(null, null, null), user.email);
-        assertNotEquals(userInfo.passwordHash, "newValidPass123");
+        AuthRecipeUserInfo userInfo = ((AuthRecipeStorage) StorageLayer.getStorage(process.getProcess()))
+                .listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), user.email)[0];
+        assertNotEquals(userInfo.loginMethods[0].passwordHash, "newValidPass123");
 
         assertTrue(PasswordHashing.getInstance(process.getProcess()).verifyPasswordWithHash("newValidPass123",
-                userInfo.passwordHash));
+                userInfo.loginMethods[0].passwordHash));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -311,9 +316,9 @@ public class EmailPasswordTest {
 
         }
 
-        UserInfo user1 = EmailPassword.signIn(process.getProcess(), "test1@example.com", "newPassword");
+        AuthRecipeUserInfo user1 = EmailPassword.signIn(process.getProcess(), "test1@example.com", "newPassword");
 
-        assertEquals(user1.email, user.email);
+        assertEquals(user1.loginMethods[0].email, user.email);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -437,7 +442,7 @@ public class EmailPasswordTest {
             ((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
                     .signUp(new TenantIdentifier(null, null, null),
                             "8ed86166-bfd8-4234-9dfe-abca9606dbd5", "test1@example.com", "password",
-                                    System.currentTimeMillis());
+                            System.currentTimeMillis());
             assert (false);
         } catch (DuplicateUserIdException ignored) {
 
@@ -490,7 +495,7 @@ public class EmailPasswordTest {
             ((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
                     .signUp(new TenantIdentifier(null, null, null),
                             "8ed86166-bfd8-4234-9dfe-abca9606dbd5", "test@example.com", "password",
-                                    System.currentTimeMillis());
+                            System.currentTimeMillis());
             assert (false);
         } catch (DuplicateUserIdException ignored) {
 
@@ -513,9 +518,9 @@ public class EmailPasswordTest {
 
         UserInfo userSignUp = EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
 
-        UserInfo user = EmailPassword.signIn(process.getProcess(), "test@example.com", "password");
+        AuthRecipeUserInfo user = EmailPassword.signIn(process.getProcess(), "test@example.com", "password");
 
-        assert (user.email.equals("test@example.com"));
+        assert (user.loginMethods[0].email.equals("test@example.com"));
 
         assert (userSignUp.id.equals(user.id));
 

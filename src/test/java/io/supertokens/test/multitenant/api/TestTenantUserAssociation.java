@@ -28,7 +28,7 @@ import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.ActiveUsersStorage;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
@@ -129,14 +129,17 @@ public class TestTenantUserAssociation {
         }
 
         createTenants();
-        JsonObject user = TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", "t1"), "user@example.com", "password", process.getProcess());
+        JsonObject user = TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", "t1"), "user@example.com",
+                "password", process.getProcess());
         String userId = user.get("id").getAsString();
 
-        JsonObject response = TestMultitenancyAPIHelper.associateUserToTenant(new TenantIdentifier(null, "a1", "t2"), userId, process.getProcess());
+        JsonObject response = TestMultitenancyAPIHelper.associateUserToTenant(new TenantIdentifier(null, "a1", "t2"),
+                userId, process.getProcess());
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
         assertFalse(response.get("wasAlreadyAssociated").getAsBoolean());
 
-        response = TestMultitenancyAPIHelper.associateUserToTenant(new TenantIdentifier(null, "a1", "t2"), userId, process.getProcess());
+        response = TestMultitenancyAPIHelper.associateUserToTenant(new TenantIdentifier(null, "a1", "t2"), userId,
+                process.getProcess());
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
         assertTrue(response.get("wasAlreadyAssociated").getAsBoolean());
     }
@@ -148,22 +151,27 @@ public class TestTenantUserAssociation {
         }
 
         createTenants();
-        JsonObject user = TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", "t1"), "user@example.com", "password", process.getProcess());
+        JsonObject user = TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", "t1"), "user@example.com",
+                "password", process.getProcess());
         String userId = user.get("id").getAsString();
 
-        JsonObject response = TestMultitenancyAPIHelper.associateUserToTenant(new TenantIdentifier(null, "a1", "t2"), userId, process.getProcess());
+        JsonObject response = TestMultitenancyAPIHelper.associateUserToTenant(new TenantIdentifier(null, "a1", "t2"),
+                userId, process.getProcess());
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
         assertFalse(response.get("wasAlreadyAssociated").getAsBoolean());
 
-        response = TestMultitenancyAPIHelper.disassociateUserFromTenant(new TenantIdentifier(null, "a1", "t2"), userId, process.getProcess());
+        response = TestMultitenancyAPIHelper.disassociateUserFromTenant(new TenantIdentifier(null, "a1", "t2"), userId,
+                process.getProcess());
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
         assertTrue(response.get("wasAssociated").getAsBoolean());
 
-        response = TestMultitenancyAPIHelper.disassociateUserFromTenant(new TenantIdentifier(null, "a1", "t2"), userId, process.getProcess());
+        response = TestMultitenancyAPIHelper.disassociateUserFromTenant(new TenantIdentifier(null, "a1", "t2"), userId,
+                process.getProcess());
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
         assertFalse(response.get("wasAssociated").getAsBoolean());
 
-        response = TestMultitenancyAPIHelper.associateUserToTenant(new TenantIdentifier(null, "a1", "t2"), userId, process.getProcess());
+        response = TestMultitenancyAPIHelper.associateUserToTenant(new TenantIdentifier(null, "a1", "t2"), userId,
+                process.getProcess());
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
         assertFalse(response.get("wasAlreadyAssociated").getAsBoolean());
     }
@@ -186,7 +194,8 @@ public class TestTenantUserAssociation {
             }
 
             if (name.equals(UserMetadataStorage.class.getName())
-                    || name.equals(JWTRecipeStorage.class.getName()) || name.equals(ActiveUsersStorage.class.getName())) {
+                    || name.equals(JWTRecipeStorage.class.getName()) ||
+                    name.equals(ActiveUsersStorage.class.getName())) {
                 // user metadata is app specific and does not have any tenant specific data
                 // JWT storage does not have any user specific data
                 // Active users storage does not have tenant specific data
@@ -203,7 +212,8 @@ public class TestTenantUserAssociation {
 
             StorageLayer.getStorage(t2, process.main).addInfoToNonAuthRecipesBasedOnUserId(t2, className, userId);
 
-            JsonObject response = TestMultitenancyAPIHelper.disassociateUserFromTenant(t2, userId, process.getProcess());
+            JsonObject response = TestMultitenancyAPIHelper.disassociateUserFromTenant(t2, userId,
+                    process.getProcess());
             assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
             assertTrue(response.get("wasAssociated").getAsBoolean());
         }
@@ -216,14 +226,17 @@ public class TestTenantUserAssociation {
         }
 
         createTenants();
-        JsonObject user = TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", "t1"), "user@example.com", "password", process.getProcess());
+        JsonObject user = TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", "t1"), "user@example.com",
+                "password", process.getProcess());
         String userId = user.get("id").getAsString();
 
-        JsonObject response = TestMultitenancyAPIHelper.disassociateUserFromTenant(new TenantIdentifier(null, "a1", "t1"), userId, process.getProcess());
+        JsonObject response = TestMultitenancyAPIHelper.disassociateUserFromTenant(
+                new TenantIdentifier(null, "a1", "t1"), userId, process.getProcess());
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
         assertTrue(response.get("wasAssociated").getAsBoolean());
 
-        response = TestMultitenancyAPIHelper.associateUserToTenant(new TenantIdentifier(null, "a1", "t2"), userId, process.getProcess());
+        response = TestMultitenancyAPIHelper.associateUserToTenant(new TenantIdentifier(null, "a1", "t2"), userId,
+                process.getProcess());
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
         assertFalse(response.get("wasAlreadyAssociated").getAsBoolean());
     }
@@ -239,10 +252,12 @@ public class TestTenantUserAssociation {
         }
 
         createTenants();
-        JsonObject user = TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", "t1"), "user@example.com", "password", process.getProcess());
+        JsonObject user = TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", "t1"), "user@example.com",
+                "password", process.getProcess());
         String userId = user.get("id").getAsString();
 
-        JsonObject response = TestMultitenancyAPIHelper.associateUserToTenant(new TenantIdentifier(null, "a1", null), userId, process.getProcess());
+        JsonObject response = TestMultitenancyAPIHelper.associateUserToTenant(new TenantIdentifier(null, "a1", null),
+                userId, process.getProcess());
         assertEquals("UNKNOWN_USER_ID_ERROR", response.get("status").getAsString());
     }
 
@@ -260,7 +275,7 @@ public class TestTenantUserAssociation {
         TenantIdentifierWithStorage t1WithStorage = t1.withStorage(StorageLayer.getStorage(t1, process.getProcess()));
         TenantIdentifierWithStorage t2WithStorage = t2.withStorage(StorageLayer.getStorage(t2, process.getProcess()));
 
-        UserInfo user = EmailPassword.signUp(t1WithStorage,
+        AuthRecipeUserInfo user = EmailPassword.signUp(t1WithStorage,
                 process.getProcess(), "user@example.com", "password");
         assertArrayEquals(new String[]{"t1"}, user.tenantIds);
 
@@ -269,7 +284,7 @@ public class TestTenantUserAssociation {
         Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds);
 
 
-        user = EmailPassword.getUserUsingEmail(t1WithStorage, user.email);
+        user = EmailPassword.getUserUsingEmail(t1WithStorage, user.loginMethods[0].email);
         Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds);
 
         Multitenancy.removeUserIdFromTenant(process.getProcess(), t1WithStorage, user.id);
@@ -293,7 +308,8 @@ public class TestTenantUserAssociation {
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(t1WithStorage,
                 process.getProcess(), "user@example.com", null, null, null);
-        Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(t1WithStorage, process.getProcess(),
+        Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(t1WithStorage,
+                process.getProcess(),
                 createCodeResponse.deviceId, createCodeResponse.deviceIdHash, createCodeResponse.userInputCode, null);
         assertArrayEquals(new String[]{"t1"}, consumeCodeResponse.user.tenantIds);
 
@@ -326,7 +342,8 @@ public class TestTenantUserAssociation {
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(t1WithStorage,
                 process.getProcess(), null, "+919876543210", null, null);
-        Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(t1WithStorage, process.getProcess(),
+        Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(t1WithStorage,
+                process.getProcess(),
                 createCodeResponse.deviceId, createCodeResponse.deviceIdHash, createCodeResponse.userInputCode, null);
         assertArrayEquals(new String[]{"t1"}, consumeCodeResponse.user.tenantIds);
 
@@ -357,7 +374,8 @@ public class TestTenantUserAssociation {
         TenantIdentifierWithStorage t1WithStorage = t1.withStorage(StorageLayer.getStorage(t1, process.getProcess()));
         TenantIdentifierWithStorage t2WithStorage = t2.withStorage(StorageLayer.getStorage(t2, process.getProcess()));
 
-        ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(t1WithStorage, process.getProcess(), "google",
+        ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(t1WithStorage, process.getProcess(),
+                "google",
                 "googleid", "user@example.com");
         assertArrayEquals(new String[]{"t1"}, signInUpResponse.user.tenantIds);
 
@@ -387,10 +405,12 @@ public class TestTenantUserAssociation {
         }
 
         createTenants();
-        JsonObject user = TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", "t1"), "user@example.com", "password", process.getProcess());
+        JsonObject user = TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", "t1"), "user@example.com",
+                "password", process.getProcess());
         String userId = user.get("id").getAsString();
 
-        JsonObject response = TestMultitenancyAPIHelper.disassociateUserFromTenant(new TenantIdentifier(null, "a1", "t2"), userId, process.getProcess());
+        JsonObject response = TestMultitenancyAPIHelper.disassociateUserFromTenant(
+                new TenantIdentifier(null, "a1", "t2"), userId, process.getProcess());
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
         assertFalse(response.get("wasAssociated").getAsBoolean());
     }
@@ -402,12 +422,15 @@ public class TestTenantUserAssociation {
         }
 
         createTenants();
-        JsonObject user = TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", "t1"), "user@example.com", "password", process.getProcess());
+        JsonObject user = TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", "t1"), "user@example.com",
+                "password", process.getProcess());
         String userId = user.get("id").getAsString();
 
-        TestMultitenancyAPIHelper.createUserIdMapping(new TenantIdentifier(null, "a1", "t1"), userId, "externalid", process.getProcess());
+        TestMultitenancyAPIHelper.createUserIdMapping(new TenantIdentifier(null, "a1", "t1"), userId, "externalid",
+                process.getProcess());
 
-        JsonObject response = TestMultitenancyAPIHelper.disassociateUserFromTenant(new TenantIdentifier(null, "a1", "t2"), "externalid", process.getProcess());
+        JsonObject response = TestMultitenancyAPIHelper.disassociateUserFromTenant(
+                new TenantIdentifier(null, "a1", "t2"), "externalid", process.getProcess());
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
         assertFalse(response.get("wasAssociated").getAsBoolean());
     }
@@ -419,16 +442,20 @@ public class TestTenantUserAssociation {
         }
 
         createTenants();
-        JsonObject user = TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", "t1"), "user@example.com", "password", process.getProcess());
+        JsonObject user = TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", "t1"), "user@example.com",
+                "password", process.getProcess());
         String userId = user.get("id").getAsString();
 
-        TestMultitenancyAPIHelper.createUserIdMapping(new TenantIdentifier(null, "a1", "t1"), userId, "externalid", process.getProcess());
+        TestMultitenancyAPIHelper.createUserIdMapping(new TenantIdentifier(null, "a1", "t1"), userId, "externalid",
+                process.getProcess());
 
-        JsonObject response = TestMultitenancyAPIHelper.associateUserToTenant(new TenantIdentifier(null, "a1", "t2"), "externalid", process.getProcess());
+        JsonObject response = TestMultitenancyAPIHelper.associateUserToTenant(new TenantIdentifier(null, "a1", "t2"),
+                "externalid", process.getProcess());
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
         assertFalse(response.get("wasAlreadyAssociated").getAsBoolean());
 
-        response = TestMultitenancyAPIHelper.disassociateUserFromTenant(new TenantIdentifier(null, "a1", "t2"), "externalid", process.getProcess());
+        response = TestMultitenancyAPIHelper.disassociateUserFromTenant(new TenantIdentifier(null, "a1", "t2"),
+                "externalid", process.getProcess());
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
         assertTrue(response.get("wasAssociated").getAsBoolean());
 

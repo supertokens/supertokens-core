@@ -22,6 +22,7 @@ import io.supertokens.config.CoreConfig.PASSWORD_HASHING_ALG;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.ParsedFirebaseSCryptResponse;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
@@ -539,8 +540,8 @@ public class ImportUserWithPasswordHashAPITest {
         assertEquals(initialUserInfo.id, response.get("user").getAsJsonObject().get("id").getAsString());
 
         // sign in with the new password to check if the password hash got updated
-        UserInfo updatedUserInfo = EmailPassword.signIn(process.main, email, newPassword);
-        assertEquals(updatedUserInfo.passwordHash, passwordHash);
+        AuthRecipeUserInfo updatedUserInfo = EmailPassword.signIn(process.main, email, newPassword);
+        assertEquals(updatedUserInfo.loginMethods[0].passwordHash, passwordHash);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -575,9 +576,9 @@ public class ImportUserWithPasswordHashAPITest {
             assertFalse(response.get("didUserAlreadyExist").getAsBoolean());
 
             // check that the user is created by signing in
-            UserInfo userInfo = EmailPassword.signIn(process.main, email, password);
-            assertEquals(email, userInfo.email);
-            assertEquals(userInfo.passwordHash, passwordHash);
+            AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.main, email, password);
+            assertEquals(email, userInfo.loginMethods[0].email);
+            assertEquals(userInfo.loginMethods[0].passwordHash, passwordHash);
 
         }
 
@@ -599,9 +600,9 @@ public class ImportUserWithPasswordHashAPITest {
             assertFalse(response.get("didUserAlreadyExist").getAsBoolean());
 
             // check that the user is created by signing in
-            UserInfo userInfo = EmailPassword.signIn(process.main, email, password);
-            assertEquals(email, userInfo.email);
-            assertEquals(userInfo.passwordHash, passwordHash);
+            AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.main, email, password);
+            assertEquals(email, userInfo.loginMethods[0].email);
+            assertEquals(userInfo.loginMethods[0].passwordHash, passwordHash);
         }
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -636,9 +637,9 @@ public class ImportUserWithPasswordHashAPITest {
             assertFalse(response.get("didUserAlreadyExist").getAsBoolean());
 
             // check that the user is created by signing in
-            UserInfo userInfo = EmailPassword.signIn(process.main, email, password);
-            assertEquals(email, userInfo.email);
-            assertEquals(userInfo.passwordHash, passwordHash);
+            AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.main, email, password);
+            assertEquals(email, userInfo.loginMethods[0].email);
+            assertEquals(userInfo.loginMethods[0].passwordHash, passwordHash);
 
         }
 
@@ -660,9 +661,9 @@ public class ImportUserWithPasswordHashAPITest {
             assertFalse(response.get("didUserAlreadyExist").getAsBoolean());
 
             // check that the user is created by signing in
-            UserInfo userInfo = EmailPassword.signIn(process.main, email, password);
-            assertEquals(email, userInfo.email);
-            assertEquals(userInfo.passwordHash, passwordHash);
+            AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.main, email, password);
+            assertEquals(email, userInfo.loginMethods[0].email);
+            assertEquals(userInfo.loginMethods[0].passwordHash, passwordHash);
         }
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

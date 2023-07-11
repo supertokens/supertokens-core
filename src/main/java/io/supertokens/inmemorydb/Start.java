@@ -770,16 +770,6 @@ public class Start
     }
 
     @Override
-    public UserInfo getUserInfoUsingEmail(TenantIdentifier tenantIdentifier, String email)
-            throws StorageQueryException {
-        try {
-            return EmailPasswordQueries.getUserInfoUsingEmail(this, tenantIdentifier, email);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
     public void addPasswordResetToken(AppIdentifier appIdentifier, PasswordResetTokenInfo passwordResetTokenInfo)
             throws StorageQueryException, UnknownUserIdException, DuplicatePasswordResetTokenException {
         try {
@@ -1294,8 +1284,11 @@ public class Start
     @Override
     public AuthRecipeUserInfo[] listPrimaryUsersByEmail(TenantIdentifier tenantIdentifier, String email)
             throws StorageQueryException {
-        // TODO:
-        return new AuthRecipeUserInfo[0];
+        try {
+            return GeneralQueries.listPrimaryUsersByEmail(this, tenantIdentifier, email);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override

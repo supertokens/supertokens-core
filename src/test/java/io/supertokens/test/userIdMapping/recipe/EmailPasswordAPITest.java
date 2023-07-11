@@ -21,13 +21,12 @@ import io.supertokens.ProcessState;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
-import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
-import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.SemVer;
@@ -57,7 +56,7 @@ public class EmailPasswordAPITest {
 
     @Test
     public void testSignInAPI() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -112,7 +111,7 @@ public class EmailPasswordAPITest {
 
     @Test
     public void testResetPasswordFlowWithUserIdMapping() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -162,7 +161,7 @@ public class EmailPasswordAPITest {
         }
 
         // sign in with the new password and check that it works
-        UserInfo userInfo1 = EmailPassword.signIn(process.main, email, newPassword);
+        AuthRecipeUserInfo userInfo1 = EmailPassword.signIn(process.main, email, newPassword);
         assertNotNull(userInfo1);
 
         process.kill();
@@ -171,7 +170,7 @@ public class EmailPasswordAPITest {
 
     @Test
     public void testRetrievingUser() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -217,7 +216,7 @@ public class EmailPasswordAPITest {
 
     @Test
     public void testUpdatingUsersEmail() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -250,7 +249,7 @@ public class EmailPasswordAPITest {
         }
 
         // check that you can now sign in with the new email
-        UserInfo userInfo1 = EmailPassword.signIn(process.main, newEmail, password);
+        AuthRecipeUserInfo userInfo1 = EmailPassword.signIn(process.main, newEmail, password);
         assertNotNull(userInfo1);
 
         process.kill();

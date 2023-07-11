@@ -25,6 +25,7 @@ import io.supertokens.emailpassword.PasswordHashing;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.storageLayer.StorageLayer;
@@ -88,9 +89,9 @@ public class PasswordHashingTest {
                 CoreConfig.PASSWORD_HASHING_ALG.FIREBASE_SCRYPT);
 
         // try signing in
-        UserInfo user = EmailPassword.signIn(process.main, email, password);
-        assertEquals(user.email, email);
-        assertEquals(user.passwordHash, combinedPasswordHash);
+        AuthRecipeUserInfo user = EmailPassword.signIn(process.main, email, password);
+        assertEquals(user.loginMethods[0].email, email);
+        assertEquals(user.loginMethods[0].passwordHash, combinedPasswordHash);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -721,8 +722,8 @@ public class PasswordHashingTest {
                         EmailPassword.importUserWithPasswordHash(process.main, uniqueEmail, combinedPasswordHash,
                                 CoreConfig.PASSWORD_HASHING_ALG.FIREBASE_SCRYPT);
                         // try signing in
-                        UserInfo user = EmailPassword.signIn(process.main, uniqueEmail, password);
-                        assertEquals(user.passwordHash, combinedPasswordHash);
+                        AuthRecipeUserInfo user = EmailPassword.signIn(process.main, uniqueEmail, password);
+                        assertEquals(user.loginMethods[0].passwordHash, combinedPasswordHash);
                         assertNotNull(process
                                 .checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_FIREBASE_SCRYPT));
                         int queueSize = PasswordHashing.getInstance(process.getProcess())
@@ -803,8 +804,8 @@ public class PasswordHashingTest {
                         EmailPassword.importUserWithPasswordHash(process.main, uniqueEmail, combinedPasswordHash,
                                 CoreConfig.PASSWORD_HASHING_ALG.FIREBASE_SCRYPT);
                         // try signing in
-                        UserInfo user = EmailPassword.signIn(process.main, uniqueEmail, password);
-                        assertEquals(user.passwordHash, combinedPasswordHash);
+                        AuthRecipeUserInfo user = EmailPassword.signIn(process.main, uniqueEmail, password);
+                        assertEquals(user.loginMethods[0].passwordHash, combinedPasswordHash);
                         assertNotNull(process
                                 .checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_FIREBASE_SCRYPT));
                         int queueSize = PasswordHashing.getInstance(process.getProcess())

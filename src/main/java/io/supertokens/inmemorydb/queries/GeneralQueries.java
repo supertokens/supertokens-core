@@ -853,6 +853,24 @@ public class GeneralQueries {
         return finalResult;
     }
 
+    public static AuthRecipeUserInfo[] listPrimaryUsersByEmail(Start start, TenantIdentifier tenantIdentifier,
+                                                               String email)
+            throws StorageQueryException, SQLException {
+        List<String> userIds = new ArrayList<>();
+
+        String emailPasswordUserId = EmailPasswordQueries.getUserIdUsingEmail(start, tenantIdentifier, email);
+        if (emailPasswordUserId != null) {
+            userIds.add(emailPasswordUserId);
+        }
+
+        // TODO:add support for other recipes.
+
+        List<AuthRecipeUserInfo> result = getPrimaryUserInfoForUserIds(start, tenantIdentifier.toAppIdentifier(),
+                userIds);
+
+        return result.toArray(new AuthRecipeUserInfo[0]);
+    }
+
     public static AuthRecipeUserInfo getPrimaryUserInfoForUserId(Start start, AppIdentifier appIdentifier, String id)
             throws SQLException, StorageQueryException {
         List<String> ids = new ArrayList<>();

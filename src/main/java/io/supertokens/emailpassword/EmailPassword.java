@@ -24,6 +24,7 @@ import io.supertokens.emailpassword.exceptions.UnsupportedPasswordHashingFormatE
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
+import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
@@ -50,14 +51,15 @@ import javax.annotation.Nullable;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Arrays;
 
 public class EmailPassword {
 
     public static class ImportUserResponse {
         public boolean didUserAlreadyExist;
-        public UserInfo user;
+        public AuthRecipeUserInfo user;
 
-        public ImportUserResponse(boolean didUserAlreadyExist, UserInfo user) {
+        public ImportUserResponse(boolean didUserAlreadyExist, AuthRecipeUserInfo user) {
             this.didUserAlreadyExist = didUserAlreadyExist;
             this.user = user;
         }
@@ -168,12 +170,26 @@ public class EmailPassword {
             } catch (DuplicateUserIdException e) {
                 // we retry with a new userId
             } catch (DuplicateEmailException e) {
-                UserInfo userInfoToBeUpdated = storage.getUserInfoUsingEmail(tenantIdentifierWithStorage, email);
+                AuthRecipeUserInfo[] allUsers = storage.listPrimaryUsersByEmail(tenantIdentifierWithStorage, email);
+                AuthRecipeUserInfo userInfoToBeUpdated = null;
+                LoginMethod loginMethod = null;
+                for (AuthRecipeUserInfo currUser : allUsers) {
+                    for (LoginMethod currLM : currUser.loginMethods) {
+                        if (currLM.email.equals(email) && currLM.recipeId == RECIPE_ID.EMAIL_PASSWORD &&
+                                Arrays.stream(currLM.tenantIds)
+                                        .anyMatch(s -> s.equals(tenantIdentifierWithStorage.getTenantId()))) {
+                            userInfoToBeUpdated = currUser;
+                            loginMethod = currLM;
+                            break;
+                        }
+                    }
+                }
 
                 if (userInfoToBeUpdated != null) {
+                    LoginMethod finalLoginMethod = loginMethod;
                     storage.startTransaction(con -> {
                         storage.updateUsersPassword_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con,
-                                userInfoToBeUpdated.id, passwordHash);
+                                finalLoginMethod.recipeUserId, passwordHash);
                         return null;
                     });
                     return new ImportUserResponse(true, userInfoToBeUpdated);
@@ -197,8 +213,8 @@ public class EmailPassword {
     }
 
     @TestOnly
-    public static UserInfo signIn(Main main, @Nonnull String email,
-                                  @Nonnull String password)
+    public static AuthRecipeUserInfo signIn(Main main, @Nonnull String email,
+                                            @Nonnull String password)
             throws StorageQueryException, WrongCredentialsException {
         try {
             Storage storage = StorageLayer.getStorage(main);
@@ -209,9 +225,9 @@ public class EmailPassword {
         }
     }
 
-    public static UserInfo signIn(TenantIdentifierWithStorage tenantIdentifierWithStorage, Main main,
-                                  @Nonnull String email,
-                                  @Nonnull String password)
+    public static AuthRecipeUserInfo signIn(TenantIdentifierWithStorage tenantIdentifierWithStorage, Main main,
+                                            @Nonnull String email,
+                                            @Nonnull String password)
             throws StorageQueryException, WrongCredentialsException, TenantOrAppNotFoundException,
             BadPermissionException {
 
@@ -223,17 +239,30 @@ public class EmailPassword {
             throw new BadPermissionException("Email password login not enabled for tenant");
         }
 
-        UserInfo user = tenantIdentifierWithStorage.getEmailPasswordStorage()
-                .getUserInfoUsingEmail(tenantIdentifierWithStorage, email);
+        AuthRecipeUserInfo[] users = tenantIdentifierWithStorage.getAuthRecipeStorage()
+                .listPrimaryUsersByEmail(tenantIdentifierWithStorage, email);
 
-        if (user == null) {
+        AuthRecipeUserInfo user = null;
+        LoginMethod lM = null;
+        for (AuthRecipeUserInfo currUser : users) {
+            for (LoginMethod currLM : currUser.loginMethods) {
+                if (currLM.recipeId == RECIPE_ID.EMAIL_PASSWORD && currLM.email.equals(email) &&
+                        Arrays.stream(currLM.tenantIds)
+                                .anyMatch(s -> s.equals(tenantIdentifierWithStorage.getTenantId()))) {
+                    user = currUser;
+                    lM = currLM;
+                }
+            }
+        }
+
+        if (user == null || lM == null) {
             throw new WrongCredentialsException();
         }
 
         try {
             if (!PasswordHashing.getInstance(main)
                     .verifyPasswordWithHash(tenantIdentifierWithStorage.toAppIdentifier(), password,
-                            user.passwordHash)) {
+                            lM.passwordHash)) {
                 throw new WrongCredentialsException();
             }
         } catch (WrongCredentialsException e) {
@@ -474,9 +503,21 @@ public class EmailPassword {
         return null;
     }
 
-    public static UserInfo getUserUsingEmail(TenantIdentifierWithStorage tenantIdentifierWithStorage, String email)
+    public static AuthRecipeUserInfo getUserUsingEmail(TenantIdentifierWithStorage tenantIdentifierWithStorage,
+                                                       String email)
             throws StorageQueryException, TenantOrAppNotFoundException {
-        return tenantIdentifierWithStorage.getEmailPasswordStorage().getUserInfoUsingEmail(
+        AuthRecipeUserInfo[] users = tenantIdentifierWithStorage.getAuthRecipeStorage().listPrimaryUsersByEmail(
                 tenantIdentifierWithStorage, email);
+        // filter used based on login method
+        for (AuthRecipeUserInfo user : users) {
+            for (LoginMethod lM : user.loginMethods) {
+                if (lM.email.equals(email) && lM.recipeId == RECIPE_ID.EMAIL_PASSWORD &&
+                        Arrays.stream(lM.tenantIds).anyMatch(
+                                tenantId -> tenantId.equals(tenantIdentifierWithStorage.getTenantId()))) {
+                    return user;
+                }
+            }
+        }
+        return null;
     }
 }

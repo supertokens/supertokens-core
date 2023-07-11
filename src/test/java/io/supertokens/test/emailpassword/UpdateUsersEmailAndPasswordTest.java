@@ -19,6 +19,7 @@ package io.supertokens.test.emailpassword;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
@@ -77,10 +78,10 @@ public class UpdateUsersEmailAndPasswordTest {
             EmailPassword.updateUsersEmailOrPassword(main, userInfo.id, "dave.doe@example.com", null);
 
             // then
-            UserInfo changedEmailUserInfo = EmailPassword.signIn(main, "dave.doe@example.com", "password");
+            AuthRecipeUserInfo changedEmailUserInfo = EmailPassword.signIn(main, "dave.doe@example.com", "password");
 
             Assert.assertEquals(userInfo.id, changedEmailUserInfo.id);
-            Assert.assertEquals("dave.doe@example.com", changedEmailUserInfo.email);
+            Assert.assertEquals("dave.doe@example.com", changedEmailUserInfo.loginMethods[0].email);
         });
     }
 
@@ -123,7 +124,7 @@ public class UpdateUsersEmailAndPasswordTest {
             EmailPassword.updateUsersEmailOrPassword(main, userInfo.id, null, "newPassword");
 
             // then
-            UserInfo changedEmailUserInfo = EmailPassword.signIn(main, "john.doe@example.com", "newPassword");
+            AuthRecipeUserInfo changedEmailUserInfo = EmailPassword.signIn(main, "john.doe@example.com", "newPassword");
 
             Assert.assertEquals(userInfo.id, changedEmailUserInfo.id);
         });
@@ -145,10 +146,11 @@ public class UpdateUsersEmailAndPasswordTest {
             EmailPassword.updateUsersEmailOrPassword(main, userInfo.id, "dave.doe@example.com", "newPassword");
 
             // then
-            UserInfo changedCredentialsUserInfo = EmailPassword.signIn(main, "dave.doe@example.com", "newPassword");
+            AuthRecipeUserInfo changedCredentialsUserInfo = EmailPassword.signIn(main, "dave.doe@example.com",
+                    "newPassword");
 
             Assert.assertEquals(userInfo.id, changedCredentialsUserInfo.id);
-            Assert.assertEquals("dave.doe@example.com", changedCredentialsUserInfo.email);
+            Assert.assertEquals("dave.doe@example.com", changedCredentialsUserInfo.loginMethods[0].email);
         });
     }
 }

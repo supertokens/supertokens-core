@@ -22,8 +22,6 @@ import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
-import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
@@ -147,9 +145,9 @@ public class SignUpAPITest2_7 {
 
         int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTS);
         assert (activeUsers == 1);
-        UserInfo user = ((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
-                .getUserInfoUsingEmail(new TenantIdentifier(null, null, null), "random@gmail.com");
-        assertEquals(user.email, signUpUser.get("email").getAsString());
+        AuthRecipeUserInfo user = ((AuthRecipeStorage) StorageLayer.getStorage(process.getProcess()))
+                .listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), "random@gmail.com")[0];
+        assertEquals(user.loginMethods[0].email, signUpUser.get("email").getAsString());
         assertEquals(user.id, signUpUser.get("id").getAsString());
 
         JsonObject responseBody = new JsonObject();

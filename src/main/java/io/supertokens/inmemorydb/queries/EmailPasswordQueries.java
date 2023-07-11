@@ -398,37 +398,23 @@ public class EmailPasswordQueries {
         return Collections.emptyList();
     }
 
-    public static UserInfo getUserInfoUsingEmail(Start start, TenantIdentifier tenantIdentifier, String email)
+    public static String getUserIdUsingEmail(Start start, TenantIdentifier tenantIdentifier, String email)
             throws StorageQueryException, SQLException {
-        String QUERY = "SELECT ep_users_to_tenant.user_id as user_id, ep_users_to_tenant.email as email, "
-                + "ep_users.password_hash as password_hash, ep_users.time_joined as time_joined "
-                + "FROM " + getConfig(start).getEmailPasswordUserToTenantTable() + " AS ep_users_to_tenant "
-                + "JOIN " + getConfig(start).getEmailPasswordUsersTable() + " AS ep_users "
-                + "ON ep_users.app_id = ep_users_to_tenant.app_id AND ep_users.user_id = ep_users_to_tenant.user_id "
-                +
-                "WHERE ep_users_to_tenant.app_id = ? AND ep_users_to_tenant.tenant_id = ? AND ep_users_to_tenant" +
-                ".email = ?";
+        String QUERY = "SELECT user_id "
+                + "FROM " + getConfig(start).getEmailPasswordUserToTenantTable() +
+                " WHERE app_id = ? AND tenant_id = ? AND email = ?";
 
         try (Connection con = ConnectionPool.getConnection(start)) {
-            UserInfoPartial userInfo = execute(con, QUERY, pst -> {
+            return execute(con, QUERY, pst -> {
                 pst.setString(1, tenantIdentifier.getAppId());
                 pst.setString(2, tenantIdentifier.getTenantId());
                 pst.setString(3, email);
             }, result -> {
                 if (result.next()) {
-                    return UserInfoRowMapper.getInstance().mapOrThrow(result);
+                    return result.getString("user_id");
                 }
                 return null;
             });
-            if (userInfo == null) {
-                return null;
-            }
-            fillUserInfoWithTenantIds_transaction(start, con, tenantIdentifier.toAppIdentifier(), userInfo);
-            fillUserInfoWithVerified_transaction(start, con, tenantIdentifier.toAppIdentifier(), userInfo);
-            fillUserInfoWithIsPrimaryUserBoolean_transaction(start, con, tenantIdentifier.toAppIdentifier(),
-                    userInfo);
-            return new UserInfo(userInfo.id, userInfo.isPrimary,
-                    userInfo.toLoginMethod());
         }
     }
 

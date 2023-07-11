@@ -22,7 +22,7 @@ import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -73,7 +73,7 @@ public class UserAPI extends WebserverAPI {
 
         try {
             // API is app specific for get by UserId
-            UserInfo user = null;
+            AuthRecipeUserInfo user = null;
 
             try {
                 if (userId != null) {
