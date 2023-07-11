@@ -36,13 +36,13 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
+import io.supertokens.test.multitenant.api.TestMultitenancyAPIHelper;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
 import io.supertokens.utils.SemVer;
 import org.junit.*;
 import org.junit.rules.TestRule;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -584,6 +584,72 @@ public class SuperTokensSaaSSecretTest {
                 }
                 Assert.assertTrue(found);
             }
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testLogContainsCorrectCud() throws Exception {
+        String[] args = {"../"};
+
+        String saasSecret = "hg40239oirjgBHD9450=Beew123--hg40239oirjgBHD9450=Beew123--hg40239oirjgBHD9450=Beew123-";
+        Utils.setValueInConfig("supertokens_saas_secret", saasSecret);
+        String apiKey = "hg40239oirjgBHD9450=Beew123--hg40239oiBeew123-";
+        Utils.setValueInConfig("api_keys", apiKey);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        TenantIdentifier cud = new TenantIdentifier("127.0.0.1", null, null);
+        JsonObject coreConfig = new JsonObject();
+        StorageLayer.getStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(coreConfig, 1);
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                cud,
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[0]),
+                new PasswordlessConfig(true),
+                coreConfig
+        ), false);
+
+        { // clear the logs
+            FileWriter f = new FileWriter(Config.getConfig(process.getProcess()).getInfoLogPath(process.getProcess()));
+            f.flush();
+            f.close();
+        }
+
+        try {
+            TestMultitenancyAPIHelper.epSignUp(cud, "test@example.com", "password", process.getProcess());
+            fail();
+        } catch (HttpResponseException e) {
+            // API key should have failed
+            assertTrue(e.getMessage().contains("Invalid API key"));
+        }
+
+        try (BufferedReader reader = new BufferedReader(
+                new FileReader(Config.getConfig(process.getProcess()).getInfoLogPath(process.getProcess())))) {
+            String currentReadingLine = reader.readLine();
+            boolean found = false;
+            while (currentReadingLine != null) {
+                if (currentReadingLine.contains("/recipe/signup")) {
+                    found = true;
+                    assertTrue(currentReadingLine.contains("Tenant(127.0.0.1, public, public)"));
+                }
+
+                currentReadingLine = reader.readLine();
+            }
+            assertTrue(found);
         }
 
         process.kill();
