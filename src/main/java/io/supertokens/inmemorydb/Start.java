@@ -1292,6 +1292,13 @@ public class Start
     }
 
     @Override
+    public AuthRecipeUserInfo[] listPrimaryUsersByEmail(TenantIdentifier tenantIdentifier, String email)
+            throws StorageQueryException {
+        // TODO:
+        return new AuthRecipeUserInfo[0];
+    }
+
+    @Override
     public List<JWTSigningKeyInfo> getJWTSigningKeys_Transaction(AppIdentifier
                                                                          appIdentifier, TransactionConnection con)
             throws StorageQueryException {
