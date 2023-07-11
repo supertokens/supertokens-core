@@ -393,7 +393,7 @@ public class PasswordlessQueries {
                         pst.setString(5, phoneNumber);
                     });
                 }
-                UserInfo userInfo = userInfoWithTenantIds_transaction(start, sqlCon, new UserInfoPartial(id, email, phoneNumber, timeJoined));
+                UserInfo userInfo = userInfoWithTenantIds_transaction(start, sqlCon, tenantIdentifier.toAppIdentifier(), new UserInfoPartial(id, email, phoneNumber, timeJoined));
                 sqlCon.commit();
                 return userInfo;
             } catch (SQLException throwables) {
@@ -640,13 +640,13 @@ public class PasswordlessQueries {
         }
     }
 
-    public static List<UserInfo> getUsersByIdList(Start start, List<String> ids)
+    public static List<UserInfo> getUsersByIdList(Start start, AppIdentifier appIdentifier, List<String> ids)
             throws SQLException, StorageQueryException {
         if (ids.size() > 0) {
             // No need to filter based on tenantId because the id list is already filtered for a tenant
             StringBuilder QUERY = new StringBuilder("SELECT user_id, email, phone_number, time_joined "
                     + "FROM " + getConfig(start).getPasswordlessUsersTable());
-            QUERY.append(" WHERE user_id IN (");
+            QUERY.append(" WHERE app_id = ? AND user_id IN (");
             for (int i = 0; i < ids.size(); i++) {
                 QUERY.append("?");
                 if (i != ids.size() - 1) {
@@ -657,9 +657,10 @@ public class PasswordlessQueries {
             QUERY.append(")");
 
             List<UserInfoPartial> userInfos = execute(start, QUERY.toString(), pst -> {
+                pst.setString(1, appIdentifier.getAppId());
                 for (int i = 0; i < ids.size(); i++) {
-                    // i+1 cause this starts with 1 and not 0
-                    pst.setString(i + 1, ids.get(i));
+                    // i+2 cause this starts with 1 and not 0, and 1 is appId
+                    pst.setString(i + 2, ids.get(i));
                 }
             }, result -> {
                 List<UserInfoPartial> finalResult = new ArrayList<>();
@@ -668,7 +669,7 @@ public class PasswordlessQueries {
                 }
                 return finalResult;
             });
-            return userInfoWithTenantIds(start, userInfos);
+            return userInfoWithTenantIds(start, appIdentifier, userInfos);
         }
         return Collections.emptyList();
     }
@@ -686,7 +687,7 @@ public class PasswordlessQueries {
             }
             return null;
         });
-        return userInfoWithTenantIds(start, userInfo);
+        return userInfoWithTenantIds(start, appIdentifier, userInfo);
     }
 
     public static UserInfoPartial getUserById(Start start, Connection sqlCon, AppIdentifier appIdentifier, String userId) throws StorageQueryException, SQLException {
@@ -725,7 +726,7 @@ public class PasswordlessQueries {
             }
             return null;
         });
-        return userInfoWithTenantIds(start, userInfo);
+        return userInfoWithTenantIds(start, tenantIdentifier.toAppIdentifier(), userInfo);
     }
 
     public static UserInfo getUserByPhoneNumber(Start start, TenantIdentifier tenantIdentifier, @Nonnull String phoneNumber)
@@ -747,7 +748,7 @@ public class PasswordlessQueries {
             }
             return null;
         });
-        return userInfoWithTenantIds(start, userInfo);
+        return userInfoWithTenantIds(start, tenantIdentifier.toAppIdentifier(), userInfo);
     }
 
     public static boolean addUserIdToTenant_Transaction(Start start, Connection sqlCon, TenantIdentifier tenantIdentifier, String userId)
@@ -803,35 +804,35 @@ public class PasswordlessQueries {
         // automatically deleted from passwordless_user_to_tenant because of foreign key constraint
     }
 
-    private static UserInfo userInfoWithTenantIds(Start start, UserInfoPartial userInfo)
+    private static UserInfo userInfoWithTenantIds(Start start, AppIdentifier appIdentifier, UserInfoPartial userInfo)
             throws SQLException, StorageQueryException {
         if (userInfo == null) return null;
         try (Connection con = ConnectionPool.getConnection(start)) {
-            return userInfoWithTenantIds_transaction(start, con, Arrays.asList(userInfo)).get(0);
+            return userInfoWithTenantIds_transaction(start, con, appIdentifier, Arrays.asList(userInfo)).get(0);
         }
     }
 
-    private static List<UserInfo> userInfoWithTenantIds(Start start, List<UserInfoPartial> userInfos)
+    private static List<UserInfo> userInfoWithTenantIds(Start start, AppIdentifier appIdentifier, List<UserInfoPartial> userInfos)
             throws SQLException, StorageQueryException {
         try (Connection con = ConnectionPool.getConnection(start)) {
-            return userInfoWithTenantIds_transaction(start, con, userInfos);
+            return userInfoWithTenantIds_transaction(start, con, appIdentifier, userInfos);
         }
     }
 
-    private static UserInfo userInfoWithTenantIds_transaction(Start start, Connection sqlCon, UserInfoPartial userInfo)
+    private static UserInfo userInfoWithTenantIds_transaction(Start start, Connection sqlCon, AppIdentifier appIdentifier, UserInfoPartial userInfo)
             throws SQLException, StorageQueryException {
         if (userInfo == null) return null;
-        return userInfoWithTenantIds_transaction(start, sqlCon, Arrays.asList(userInfo)).get(0);
+        return userInfoWithTenantIds_transaction(start, sqlCon, appIdentifier, Arrays.asList(userInfo)).get(0);
     }
 
-    private static List<UserInfo> userInfoWithTenantIds_transaction(Start start, Connection sqlCon, List<UserInfoPartial> userInfos)
+    private static List<UserInfo> userInfoWithTenantIds_transaction(Start start, Connection sqlCon, AppIdentifier appIdentifier, List<UserInfoPartial> userInfos)
             throws SQLException, StorageQueryException {
         String[] userIds = new String[userInfos.size()];
         for (int i = 0; i < userInfos.size(); i++) {
             userIds[i] = userInfos.get(i).id;
         }
 
-        Map<String, List<String>> tenantIdsForUserIds = GeneralQueries.getTenantIdsForUserIds_transaction(start, sqlCon, userIds);
+        Map<String, List<String>> tenantIdsForUserIds = GeneralQueries.getTenantIdsForUserIds_transaction(start, sqlCon, appIdentifier, userIds);
         List<UserInfo> result = new ArrayList<>();
         for (UserInfoPartial userInfo : userInfos) {
             result.add(new UserInfo(userInfo.id, userInfo.email, userInfo.phoneNumber, userInfo.timeJoined,

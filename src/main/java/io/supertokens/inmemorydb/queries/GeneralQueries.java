@@ -28,6 +28,7 @@ import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.dashboard.DashboardSearchTags;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -532,6 +533,7 @@ public class GeneralQueries {
                                 + " AS allAuthUsersTable" +
                                 " JOIN " + getConfig(start).getEmailPasswordUserToTenantTable()
                                 + " AS emailpasswordTable ON allAuthUsersTable.app_id = emailpasswordTable.app_id AND "
+                                + "allAuthUsersTable.tenant_id = emailpasswordTable.tenant_id AND "
                                 + "allAuthUsersTable.user_id = emailpasswordTable.user_id";
 
                         // attach email tags to queries
@@ -557,15 +559,14 @@ public class GeneralQueries {
                     // check if we should search through the thirdparty table
                     if (dashboardSearchTags.shouldThirdPartyTableBeSearched()) {
                         String QUERY = "SELECT  allAuthUsersTable.*" + " FROM " + getConfig(start).getUsersTable()
-                                + " AS allAuthUsersTable" +
-                                " JOIN " + getConfig(start).getThirdPartyUsersTable()
-                                + " AS thirdPartyTable ON allAuthUsersTable.app_id = thirdPartyTable.app_id AND"
-                                + " allAuthUsersTable.user_id = thirdPartyTable.user_id"
+                                + " AS allAuthUsersTable"
                                 + " JOIN " + getConfig(start).getThirdPartyUserToTenantTable()
-                                +
-                                " AS thirdPartyToTenantTable ON thirdPartyTable.app_id = thirdPartyToTenantTable" +
-                                ".app_id AND"
-                                + " thirdPartyTable.user_id = thirdPartyToTenantTable.user_id";
+                                + " AS thirdPartyToTenantTable ON allAuthUsersTable.app_id = thirdPartyToTenantTable.app_id AND"
+                                + " allAuthUsersTable.tenant_id = thirdPartyToTenantTable.tenant_id AND"
+                                + " allAuthUsersTable.user_id = thirdPartyToTenantTable.user_id"
+                                + " JOIN " + getConfig(start).getThirdPartyUsersTable()
+                                + " AS thirdPartyTable ON thirdPartyToTenantTable.app_id = thirdPartyTable.app_id AND"
+                                + " thirdPartyToTenantTable.user_id = thirdPartyTable.user_id";
 
                         // check if email tag is present
                         if (dashboardSearchTags.emails != null) {
@@ -630,6 +631,7 @@ public class GeneralQueries {
                                 + " AS allAuthUsersTable" +
                                 " JOIN " + getConfig(start).getPasswordlessUserToTenantTable()
                                 + " AS passwordlessTable ON allAuthUsersTable.app_id = passwordlessTable.app_id AND"
+                                + " allAuthUsersTable.tenant_id = passwordlessTable.tenant_id AND"
                                 + " allAuthUsersTable.user_id = passwordlessTable.user_id";
 
                         // check if email tag is present
@@ -805,7 +807,7 @@ public class GeneralQueries {
         // we give the userId[] for each recipe to fetch all those user's details
         for (RECIPE_ID recipeId : recipeIdToUserIdListMap.keySet()) {
             List<? extends AuthRecipeUserInfo> users = getUserInfoForRecipeIdFromUserIds(start,
-                    tenantIdentifier, recipeId, recipeIdToUserIdListMap.get(recipeId));
+                    tenantIdentifier.toAppIdentifier(), recipeId, recipeIdToUserIdListMap.get(recipeId));
 
             // we fill in all the slots in finalResult based on their position in
             // usersFromQuery
@@ -824,16 +826,16 @@ public class GeneralQueries {
     }
 
     private static List<? extends AuthRecipeUserInfo> getUserInfoForRecipeIdFromUserIds(Start start,
-                                                                                        TenantIdentifier tenantIdentifier,
+                                                                                        AppIdentifier appIdentifier,
                                                                                         RECIPE_ID recipeId,
                                                                                         List<String> userIds)
             throws StorageQueryException, SQLException {
         if (recipeId == RECIPE_ID.EMAIL_PASSWORD) {
-            return EmailPasswordQueries.getUsersInfoUsingIdList(start, userIds);
+            return EmailPasswordQueries.getUsersInfoUsingIdList(start, appIdentifier, userIds);
         } else if (recipeId == RECIPE_ID.THIRD_PARTY) {
-            return ThirdPartyQueries.getUsersInfoUsingIdList(start, userIds);
+            return ThirdPartyQueries.getUsersInfoUsingIdList(start, appIdentifier, userIds);
         } else if (recipeId == RECIPE_ID.PASSWORDLESS) {
-            return PasswordlessQueries.getUsersByIdList(start, userIds);
+            return PasswordlessQueries.getUsersByIdList(start, appIdentifier, userIds);
         } else {
             throw new IllegalArgumentException("No implementation of get users for recipe: " + recipeId.toString());
         }
@@ -858,12 +860,12 @@ public class GeneralQueries {
         });
     }
 
-    public static Map<String, List<String>> getTenantIdsForUserIds_transaction(Start start, Connection sqlCon, String[] userIds)
+    public static Map<String, List<String>> getTenantIdsForUserIds_transaction(Start start, Connection sqlCon, AppIdentifier appIdentifier, String[] userIds)
             throws SQLException, StorageQueryException {
         if (userIds != null && userIds.length > 0) {
             StringBuilder QUERY = new StringBuilder("SELECT user_id, tenant_id "
                     + "FROM " + getConfig(start).getUsersTable());
-            QUERY.append(" WHERE user_id IN (");
+            QUERY.append(" WHERE app_id = ? AND user_id IN (");
             for (int i = 0; i < userIds.length; i++) {
 
                 QUERY.append("?");
@@ -875,9 +877,10 @@ public class GeneralQueries {
             QUERY.append(")");
 
             return execute(sqlCon, QUERY.toString(), pst -> {
+                pst.setString(1, appIdentifier.getAppId());
                 for (int i = 0; i < userIds.length; i++) {
-                    // i+1 cause this starts with 1 and not 0
-                    pst.setString(i + 1, userIds[i]);
+                    // i+2 cause this starts with 1 and not 0, and 1 is appId
+                    pst.setString(i + 2, userIds[i]);
                 }
             }, result -> {
                 Map<String, List<String>> finalResult = new HashMap<>();

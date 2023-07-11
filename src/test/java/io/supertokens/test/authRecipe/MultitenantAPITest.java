@@ -43,6 +43,7 @@ import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
+import io.supertokens.test.multitenant.api.TestMultitenancyAPIHelper;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
 import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.utils.SemVer;
@@ -467,6 +468,80 @@ public class MultitenantAPITest {
         }
 
         createUsers();
+
+        for (TenantIdentifier tenant : new TenantIdentifier[]{t1, t2, t3}) {
+            {
+                String[] users = getUsers(tenant, new String[]{"user"}, null, null);
+                assertEquals(8, users.length);
+                for (String user : users) {
+                    assertTrue(tenantToUsers.get(tenant).contains(user));
+                }
+            }
+            {
+                String[] users = getUsers(tenant, new String[]{"gmail.com"}, null, null);
+                assertEquals(4, users.length);
+                for (String user : users) {
+                    assertTrue(tenantToUsers.get(tenant).contains(user));
+                }
+            }
+            {
+                String[] users = getUsers(tenant, null, new String[]{"+1234"}, null);
+                assertEquals(1, users.length);
+                for (String user : users) {
+                    assertTrue(tenantToUsers.get(tenant).contains(user));
+                }
+            }
+            {
+                String[] users = getUsers(tenant, null, null, new String[]{"goog"});
+                assertEquals(2, users.length);
+                for (String user : users) {
+                    assertTrue(tenantToUsers.get(tenant).contains(user));
+                }
+            }
+            {
+                String[] users = getUsers(tenant, null, null, new String[]{"face"});
+                assertEquals(2, users.length);
+                for (String user : users) {
+                    assertTrue(tenantToUsers.get(tenant).contains(user));
+                }
+            }
+            {
+                String[] users = getUsers(tenant, null, null, new String[]{"goog", "face"});
+                assertEquals(4, users.length);
+                for (String user : users) {
+                    assertTrue(tenantToUsers.get(tenant).contains(user));
+                }
+            }
+            {
+                String[] users = getUsers(tenant, new String[]{"gmail.com"}, null, new String[]{"goog"});
+                assertEquals(1, users.length);
+                for (String user : users) {
+                    assertTrue(tenantToUsers.get(tenant).contains(user));
+                }
+            }
+            {
+                String[] users = getUsers(tenant, new String[]{"gmail.com"}, null, new String[]{"goog", "face"});
+                assertEquals(2, users.length);
+                for (String user : users) {
+                    assertTrue(tenantToUsers.get(tenant).contains(user));
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testSearchWhenUsersAreSharedAcrossTenants() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        createUsers();
+        { // associate across tenants
+            for (String userId : tenantToUsers.get(t2)) {
+                TestMultitenancyAPIHelper.associateUserToTenant(t3, userId, process.getProcess());
+            }
+        }
+
         for (TenantIdentifier tenant : new TenantIdentifier[]{t1, t2, t3}) {
             {
                 String[] users = getUsers(tenant, new String[]{"user"}, null, null);
