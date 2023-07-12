@@ -1149,19 +1149,6 @@ public class Start
     }
 
     @Override
-    public io.supertokens.pluginInterface.thirdparty.UserInfo getThirdPartyUserInfoUsingId(
-            TenantIdentifier tenantIdentifier, String thirdPartyId,
-            String thirdPartyUserId)
-            throws StorageQueryException {
-        try {
-            return ThirdPartyQueries.getThirdPartyUserInfoUsingId(this, tenantIdentifier, thirdPartyId,
-                    thirdPartyUserId);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
     public io.supertokens.pluginInterface.thirdparty.UserInfo[] getThirdPartyUsersByEmail(
             TenantIdentifier tenantIdentifier, @NotNull String email)
             throws StorageQueryException {
@@ -1296,6 +1283,17 @@ public class Start
             throws StorageQueryException {
         try {
             return GeneralQueries.listPrimaryUsersByPhoneNumber(this, tenantIdentifier, phoneNumber);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public AuthRecipeUserInfo getPrimaryUserByThirdPartyInfo(TenantIdentifier tenantIdentifier, String thirdPartyId,
+                                                             String thirdPartyUserId) throws StorageQueryException {
+        try {
+            return GeneralQueries.getPrimaryUserByThirdPartyInfo(this, tenantIdentifier, thirdPartyId,
+                    thirdPartyUserId);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }

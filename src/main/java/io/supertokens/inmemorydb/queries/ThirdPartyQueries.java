@@ -210,41 +210,26 @@ public class ThirdPartyQueries {
         return Collections.emptyList();
     }
 
-    public static UserInfo getThirdPartyUserInfoUsingId(Start start, TenantIdentifier tenantIdentifier,
-                                                        String thirdPartyId, String thirdPartyUserId)
+    public static String getThirdPartyUserInfoUsingId(Start start, TenantIdentifier tenantIdentifier,
+                                                      String thirdPartyId, String thirdPartyUserId)
             throws SQLException, StorageQueryException {
+        String QUERY = "SELECT DISTINCT all_users.primary_or_recipe_user_id AS user_id "
+                + "FROM " + getConfig(start).getThirdPartyUserToTenantTable() + " AS tp" +
+                " JOIN " + getConfig(start).getUsersTable() + " AS all_users" +
+                " ON tp.app_id = all_users.app_id AND tp.user_id = all_users.user_id" +
+                " WHERE tp.app_id = ? AND tp.tenant_id = ? AND tp.third_party_id = ? AND tp.third_party_user_id = ?";
 
-        String QUERY = "SELECT tp_users.user_id as user_id, tp_users.third_party_id as third_party_id, "
-                + "tp_users.third_party_user_id as third_party_user_id, tp_users.email as email, "
-                + "tp_users.time_joined as time_joined "
-                + "FROM " + getConfig(start).getThirdPartyUserToTenantTable() + " AS tp_users_to_tenant "
-                + "JOIN " + getConfig(start).getThirdPartyUsersTable() + " AS tp_users "
-                + "ON tp_users.app_id = tp_users_to_tenant.app_id AND tp_users.user_id = tp_users_to_tenant.user_id "
-                + "WHERE tp_users_to_tenant.app_id = ? AND tp_users_to_tenant.tenant_id = ? "
-                + "AND tp_users_to_tenant.third_party_id = ? AND tp_users_to_tenant.third_party_user_id = ?";
-
-
-        try (Connection con = ConnectionPool.getConnection(start)) {
-            UserInfoPartial userInfo = execute(con, QUERY, pst -> {
-                pst.setString(1, tenantIdentifier.getAppId());
-                pst.setString(2, tenantIdentifier.getTenantId());
-                pst.setString(3, thirdPartyId);
-                pst.setString(4, thirdPartyUserId);
-            }, result -> {
-                if (result.next()) {
-                    return UserInfoRowMapper.getInstance().mapOrThrow(result);
-                }
-                return null;
-            });
-            if (userInfo == null) {
-                return null;
+        return execute(start, QUERY, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, tenantIdentifier.getTenantId());
+            pst.setString(3, thirdPartyId);
+            pst.setString(4, thirdPartyUserId);
+        }, result -> {
+            if (result.next()) {
+                return result.getString("user_id");
             }
-            fillUserInfoWithTenantIds_transaction(start, con, tenantIdentifier.toAppIdentifier(), userInfo);
-            fillUserInfoWithVerified_transaction(start, con, tenantIdentifier.toAppIdentifier(), userInfo);
-            fillUserInfoWithIsPrimaryUserBoolean_transaction(start, con, tenantIdentifier.toAppIdentifier(),
-                    userInfo);
-            return new UserInfo(userInfo.id, userInfo.isPrimary, userInfo.toLoginMethod());
-        }
+            return null;
+        });
     }
 
     public static void updateUserEmail_Transaction(Start start, Connection con, AppIdentifier appIdentifier,

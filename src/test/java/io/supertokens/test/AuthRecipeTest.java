@@ -66,7 +66,7 @@ public class AuthRecipeTest {
 
     @Test
     public void getUsersCount() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -89,17 +89,17 @@ public class AuthRecipeTest {
         }
 
         {
-            long count = AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[] { RECIPE_ID.EMAIL_PASSWORD });
+            long count = AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[]{RECIPE_ID.EMAIL_PASSWORD});
             assert (count == 2);
         }
 
         {
-            long count = AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[] { RECIPE_ID.THIRD_PARTY });
+            long count = AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[]{RECIPE_ID.THIRD_PARTY});
             assert (count == 0);
         }
 
         {
-            long count = AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[] { RECIPE_ID.PASSWORDLESS });
+            long count = AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[]{RECIPE_ID.PASSWORDLESS});
             assert (count == 0);
         }
 
@@ -110,28 +110,28 @@ public class AuthRecipeTest {
         ThirdParty.signInUp(process.getProcess(), thirdPartyId, thirdPartyUserId_1, email_1);
 
         {
-            long count = AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[] {});
+            long count = AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[]{});
             assert (count == 3);
         }
 
         {
             long count = AuthRecipe.getUsersCount(process.getProcess(),
-                    new RECIPE_ID[] { RECIPE_ID.EMAIL_PASSWORD, RECIPE_ID.THIRD_PARTY });
+                    new RECIPE_ID[]{RECIPE_ID.EMAIL_PASSWORD, RECIPE_ID.THIRD_PARTY});
             assert (count == 3);
         }
 
         {
-            long count = AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[] { RECIPE_ID.EMAIL_PASSWORD });
+            long count = AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[]{RECIPE_ID.EMAIL_PASSWORD});
             assert (count == 2);
         }
 
         {
-            long count = AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[] { RECIPE_ID.THIRD_PARTY });
+            long count = AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[]{RECIPE_ID.THIRD_PARTY});
             assert (count == 1);
         }
 
         {
-            long count = AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[] { RECIPE_ID.PASSWORDLESS });
+            long count = AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[]{RECIPE_ID.PASSWORDLESS});
             assert (count == 0);
         }
 
@@ -147,28 +147,28 @@ public class AuthRecipeTest {
         }
 
         {
-            long count = AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[] {});
+            long count = AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[]{});
             assert (count == 5);
         }
 
         {
             long count = AuthRecipe.getUsersCount(process.getProcess(),
-                    new RECIPE_ID[] { RECIPE_ID.EMAIL_PASSWORD, RECIPE_ID.PASSWORDLESS });
+                    new RECIPE_ID[]{RECIPE_ID.EMAIL_PASSWORD, RECIPE_ID.PASSWORDLESS});
             assert (count == 4);
         }
 
         {
-            long count = AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[] { RECIPE_ID.EMAIL_PASSWORD });
+            long count = AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[]{RECIPE_ID.EMAIL_PASSWORD});
             assert (count == 2);
         }
 
         {
-            long count = AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[] { RECIPE_ID.THIRD_PARTY });
+            long count = AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[]{RECIPE_ID.THIRD_PARTY});
             assert (count == 1);
         }
 
         {
-            long count = AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[] { RECIPE_ID.PASSWORDLESS });
+            long count = AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[]{RECIPE_ID.PASSWORDLESS});
             assert (count == 2);
         }
         process.kill();
@@ -177,7 +177,7 @@ public class AuthRecipeTest {
 
     @Test
     public void paginationTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -194,7 +194,7 @@ public class AuthRecipeTest {
 
         {
             UserPaginationContainer users = AuthRecipe.getUsers(process.getProcess(), 100, "ASC", null,
-                    new RECIPE_ID[] { RECIPE_ID.EMAIL_PASSWORD, RECIPE_ID.THIRD_PARTY }, null);
+                    new RECIPE_ID[]{RECIPE_ID.EMAIL_PASSWORD, RECIPE_ID.THIRD_PARTY}, null);
             assert (users.nextPaginationToken == null);
             assert (users.users.length == 0);
         }
@@ -206,7 +206,7 @@ public class AuthRecipeTest {
 
         {
             UserPaginationContainer users = AuthRecipe.getUsers(process.getProcess(), 100, "ASC", null,
-                    new RECIPE_ID[] { RECIPE_ID.EMAIL_PASSWORD }, null);
+                    new RECIPE_ID[]{RECIPE_ID.EMAIL_PASSWORD}, null);
             assert (users.nextPaginationToken == null);
             assert (users.users.length == 4);
             assert (users.users[0].recipeId.equals("emailpassword"));
@@ -222,7 +222,7 @@ public class AuthRecipeTest {
 
         {
             UserPaginationContainer users = AuthRecipe.getUsers(process.getProcess(), 100, "ASC", null,
-                    new RECIPE_ID[] { RECIPE_ID.EMAIL_PASSWORD, RECIPE_ID.THIRD_PARTY }, null);
+                    new RECIPE_ID[]{RECIPE_ID.EMAIL_PASSWORD, RECIPE_ID.THIRD_PARTY}, null);
             assert (users.nextPaginationToken == null);
             assert (users.users.length == 4);
             assert (users.users[0].recipeId.equals("emailpassword"));
@@ -237,7 +237,7 @@ public class AuthRecipeTest {
 
         {
             UserPaginationContainer users = AuthRecipe.getUsers(process.getProcess(), 100, "DESC", null,
-                    new RECIPE_ID[] { RECIPE_ID.EMAIL_PASSWORD }, null);
+                    new RECIPE_ID[]{RECIPE_ID.EMAIL_PASSWORD}, null);
             assert (users.nextPaginationToken == null);
             assert (users.users.length == 4);
             assert (users.users[3].recipeId.equals("emailpassword"));
@@ -253,7 +253,7 @@ public class AuthRecipeTest {
 
         {
             UserPaginationContainer users = AuthRecipe.getUsers(process.getProcess(), 100, "DESC", null,
-                    new RECIPE_ID[] { RECIPE_ID.THIRD_PARTY, RECIPE_ID.EMAIL_PASSWORD }, null);
+                    new RECIPE_ID[]{RECIPE_ID.THIRD_PARTY, RECIPE_ID.EMAIL_PASSWORD}, null);
             assert (users.nextPaginationToken == null);
             assert (users.users.length == 4);
             assert (users.users[3].recipeId.equals("emailpassword"));
@@ -268,14 +268,14 @@ public class AuthRecipeTest {
 
         {
             UserPaginationContainer users = AuthRecipe.getUsers(process.getProcess(), 100, "DESC", null,
-                    new RECIPE_ID[] { RECIPE_ID.THIRD_PARTY, RECIPE_ID.SESSION }, null);
+                    new RECIPE_ID[]{RECIPE_ID.THIRD_PARTY, RECIPE_ID.SESSION}, null);
             assert (users.nextPaginationToken == null);
             assert (users.users.length == 0);
         }
 
         {
             UserPaginationContainer users = AuthRecipe.getUsers(process.getProcess(), 2, "DESC", null,
-                    new RECIPE_ID[] { RECIPE_ID.THIRD_PARTY, RECIPE_ID.EMAIL_PASSWORD }, null);
+                    new RECIPE_ID[]{RECIPE_ID.THIRD_PARTY, RECIPE_ID.EMAIL_PASSWORD}, null);
             assert (users.nextPaginationToken != null);
             assert (users.users.length == 2);
             assert (users.users[1].recipeId.equals("emailpassword"));
@@ -286,7 +286,7 @@ public class AuthRecipeTest {
 
         {
             UserPaginationContainer users = AuthRecipe.getUsers(process.getProcess(), 3, "ASC", null,
-                    new RECIPE_ID[] { RECIPE_ID.THIRD_PARTY, RECIPE_ID.EMAIL_PASSWORD }, null);
+                    new RECIPE_ID[]{RECIPE_ID.THIRD_PARTY, RECIPE_ID.EMAIL_PASSWORD}, null);
             assert (users.nextPaginationToken != null);
             assert (users.users.length == 3);
             assert (users.users[0].recipeId.equals("emailpassword"));
@@ -303,12 +303,12 @@ public class AuthRecipeTest {
         String thirdPartyUserId_1 = "thirdPartyUserIdA";
         String email_1 = "testA@example.com";
 
-        io.supertokens.pluginInterface.thirdparty.UserInfo user5 = ThirdParty.signInUp(process.getProcess(),
+        AuthRecipeUserInfo user5 = ThirdParty.signInUp(process.getProcess(),
                 thirdPartyId, thirdPartyUserId_1, email_1).user;
 
         {
             UserPaginationContainer users = AuthRecipe.getUsers(process.getProcess(), 100, "ASC", null,
-                    new RECIPE_ID[] { RECIPE_ID.EMAIL_PASSWORD }, null);
+                    new RECIPE_ID[]{RECIPE_ID.EMAIL_PASSWORD}, null);
             assert (users.nextPaginationToken == null);
             assert (users.users.length == 4);
             assert (users.users[0].recipeId.equals("emailpassword"));
@@ -324,7 +324,7 @@ public class AuthRecipeTest {
 
         {
             UserPaginationContainer users = AuthRecipe.getUsers(process.getProcess(), 100, "ASC", null,
-                    new RECIPE_ID[] { RECIPE_ID.THIRD_PARTY }, null);
+                    new RECIPE_ID[]{RECIPE_ID.THIRD_PARTY}, null);
             assert (users.nextPaginationToken == null);
             assert (users.users.length == 1);
             assert (users.users[0].recipeId.equals("thirdparty"));
@@ -334,7 +334,7 @@ public class AuthRecipeTest {
 
         {
             UserPaginationContainer users = AuthRecipe.getUsers(process.getProcess(), 100, "ASC", null,
-                    new RECIPE_ID[] { RECIPE_ID.EMAIL_PASSWORD, RECIPE_ID.THIRD_PARTY }, null);
+                    new RECIPE_ID[]{RECIPE_ID.EMAIL_PASSWORD, RECIPE_ID.THIRD_PARTY}, null);
             assert (users.nextPaginationToken == null);
             assert (users.users.length == 5);
             assert (users.users[0].recipeId.equals("emailpassword"));
@@ -351,7 +351,7 @@ public class AuthRecipeTest {
 
         {
             UserPaginationContainer users = AuthRecipe.getUsers(process.getProcess(), 100, "DESC", null,
-                    new RECIPE_ID[] { RECIPE_ID.EMAIL_PASSWORD }, null);
+                    new RECIPE_ID[]{RECIPE_ID.EMAIL_PASSWORD}, null);
             assert (users.nextPaginationToken == null);
             assert (users.users.length == 4);
             assert (users.users[3].recipeId.equals("emailpassword"));
@@ -367,7 +367,7 @@ public class AuthRecipeTest {
 
         {
             UserPaginationContainer users = AuthRecipe.getUsers(process.getProcess(), 100, "DESC", null,
-                    new RECIPE_ID[] { RECIPE_ID.THIRD_PARTY }, null);
+                    new RECIPE_ID[]{RECIPE_ID.THIRD_PARTY}, null);
             assert (users.nextPaginationToken == null);
             assert (users.users.length == 1);
             assert (users.users[0].recipeId.equals("thirdparty"));
@@ -377,7 +377,7 @@ public class AuthRecipeTest {
 
         {
             UserPaginationContainer users = AuthRecipe.getUsers(process.getProcess(), 100, "DESC", null,
-                    new RECIPE_ID[] {}, null);
+                    new RECIPE_ID[]{}, null);
             assert (users.nextPaginationToken == null);
             assert (users.users.length == 5);
             assert (users.users[4].recipeId.equals("emailpassword"));
@@ -394,14 +394,14 @@ public class AuthRecipeTest {
 
         {
             UserPaginationContainer users = AuthRecipe.getUsers(process.getProcess(), 100, "DESC", null,
-                    new RECIPE_ID[] { RECIPE_ID.SESSION }, null);
+                    new RECIPE_ID[]{RECIPE_ID.SESSION}, null);
             assert (users.nextPaginationToken == null);
             assert (users.users.length == 0);
         }
 
         {
             UserPaginationContainer users = AuthRecipe.getUsers(process.getProcess(), 2, "DESC", null,
-                    new RECIPE_ID[] { RECIPE_ID.THIRD_PARTY, RECIPE_ID.EMAIL_PASSWORD }, null);
+                    new RECIPE_ID[]{RECIPE_ID.THIRD_PARTY, RECIPE_ID.EMAIL_PASSWORD}, null);
             assert (users.nextPaginationToken != null);
             assert (users.users.length == 2);
             assert (users.users[1].recipeId.equals("emailpassword"));
@@ -412,7 +412,7 @@ public class AuthRecipeTest {
 
         {
             UserPaginationContainer users = AuthRecipe.getUsers(process.getProcess(), 3, "ASC", null,
-                    new RECIPE_ID[] { RECIPE_ID.THIRD_PARTY, RECIPE_ID.EMAIL_PASSWORD }, null);
+                    new RECIPE_ID[]{RECIPE_ID.THIRD_PARTY, RECIPE_ID.EMAIL_PASSWORD}, null);
             assert (users.nextPaginationToken != null);
             assert (users.users.length == 3);
             assert (users.users[0].recipeId.equals("emailpassword"));
@@ -430,8 +430,8 @@ public class AuthRecipeTest {
     @Test
     public void randomPaginationTest() throws Exception {
         int numberOfUsers = 500;
-        int[] limits = new int[] { 10, 14, 20, 23, 50, 100, 110, 150, 200, 510 };
-        String[] args = { "../" };
+        int[] limits = new int[]{10, 14, 20, 23, 50, 100, 110, 150, 200, 510};
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -576,7 +576,7 @@ public class AuthRecipeTest {
 
     @Test
     public void deleteUserTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -610,16 +610,16 @@ public class AuthRecipeTest {
             String emailVerificationToken2 = EmailVerification.generateEmailVerificationToken(process.getProcess(),
                     user2.id, "email");
 
-            assertEquals(2, AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[] { user1.getRecipeId() }));
+            assertEquals(2, AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[]{user1.getRecipeId()}));
             AuthRecipe.deleteUser(process.getProcess(), user1.id);
-            assertEquals(1, AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[] { user1.getRecipeId() }));
+            assertEquals(1, AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[]{user1.getRecipeId()}));
             assertEquals(0, Session.getAllNonExpiredSessionHandlesForUser(process.getProcess(), user1.id).length);
             assertEquals(1, Session.getAllNonExpiredSessionHandlesForUser(process.getProcess(), user2.id).length);
             assertFalse(EmailVerification.isEmailVerified(process.getProcess(), user1.id, "email"));
             assertEquals(0, UserMetadata.getUserMetadata(process.getProcess(), user1.id).entrySet().size());
 
             AuthRecipe.deleteUser(process.getProcess(), user2.id);
-            assertEquals(0, AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[] { user1.getRecipeId() }));
+            assertEquals(0, AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[]{user1.getRecipeId()}));
             assertEquals(0, Session.getAllNonExpiredSessionHandlesForUser(process.getProcess(), user2.id).length);
             assertEquals(0, UserMetadata.getUserMetadata(process.getProcess(), user2.id).entrySet().size());
 

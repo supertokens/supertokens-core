@@ -29,7 +29,6 @@ import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.dashboard.DashboardSearchTags;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -590,7 +589,9 @@ public class GeneralQueries {
                         String QUERY = "SELECT  allAuthUsersTable.*" + " FROM " + getConfig(start).getUsersTable()
                                 + " AS allAuthUsersTable"
                                 + " JOIN " + getConfig(start).getThirdPartyUserToTenantTable()
-                                + " AS thirdPartyToTenantTable ON allAuthUsersTable.app_id = thirdPartyToTenantTable.app_id AND"
+                                +
+                                " AS thirdPartyToTenantTable ON allAuthUsersTable.app_id = thirdPartyToTenantTable" +
+                                ".app_id AND"
                                 + " allAuthUsersTable.tenant_id = thirdPartyToTenantTable.tenant_id AND"
                                 + " allAuthUsersTable.user_id = thirdPartyToTenantTable.user_id"
                                 + " JOIN " + getConfig(start).getThirdPartyUsersTable()
@@ -893,6 +894,20 @@ public class GeneralQueries {
                 userIds);
 
         return result.toArray(new AuthRecipeUserInfo[0]);
+    }
+
+    public static AuthRecipeUserInfo getPrimaryUserByThirdPartyInfo(Start start, TenantIdentifier tenantIdentifier,
+                                                                    String thirdPartyId,
+                                                                    String thirdPartyUserId)
+            throws StorageQueryException, SQLException {
+
+        String userId = ThirdPartyQueries.getThirdPartyUserInfoUsingId(start, tenantIdentifier,
+                thirdPartyId, thirdPartyUserId);
+        if (userId != null) {
+            return getPrimaryUserInfoForUserId(start, tenantIdentifier.toAppIdentifier(),
+                    userId);
+        }
+        return null;
     }
 
     public static AuthRecipeUserInfo getPrimaryUserInfoForUserId(Start start, AppIdentifier appIdentifier, String id)

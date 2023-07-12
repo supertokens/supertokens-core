@@ -380,11 +380,11 @@ public class TestTenantUserAssociation {
         assertArrayEquals(new String[]{"t1"}, signInUpResponse.user.tenantIds);
 
         Multitenancy.addUserIdToTenant(process.getProcess(), t2WithStorage, signInUpResponse.user.id);
-        io.supertokens.pluginInterface.thirdparty.UserInfo user = ThirdParty.getUser(
+        AuthRecipeUserInfo user = ThirdParty.getUser(
                 t1WithStorage.toAppIdentifierWithStorage(), signInUpResponse.user.id);
         Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds);
 
-        user = ThirdParty.getUsersByEmail(t1WithStorage, signInUpResponse.user.email)[0];
+        user = ThirdParty.getUsersByEmail(t1WithStorage, signInUpResponse.user.loginMethods[0].email)[0];
         Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds);
 
         user = ThirdParty.getUser(t1WithStorage, "google", "googleid");

@@ -42,9 +42,9 @@ public class ThirdParty {
 
     public static class SignInUpResponse {
         public boolean createdNewUser;
-        public UserInfo user;
+        public AuthRecipeUserInfo user;
 
-        public SignInUpResponse(boolean createdNewUser, UserInfo user) {
+        public SignInUpResponse(boolean createdNewUser, AuthRecipeUserInfo user) {
             this.createdNewUser = createdNewUser;
             this.user = user;
         }
@@ -65,9 +65,12 @@ public class ThirdParty {
             try {
                 tenantIdentifierWithStorage.getEmailVerificationStorage().startTransaction(con -> {
                     try {
+                        // this assert is there cause this function should only be used for older CDIs in which
+                        // account linking was not available. So loginMethod length will always be 1.
+                        assert (response.user.loginMethods.length == 1);
                         tenantIdentifierWithStorage.getEmailVerificationStorage()
                                 .updateIsEmailVerified_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con,
-                                        response.user.id, response.user.email, true);
+                                        response.user.id, response.user.loginMethods[0].email, true);
                         tenantIdentifierWithStorage.getEmailVerificationStorage()
                                 .commitTransaction(con);
                         return null;
@@ -185,7 +188,7 @@ public class ThirdParty {
                     });
                 }
 
-                UserInfo user = getUser(tenantIdentifierWithStorage, thirdPartyId, thirdPartyUserId);
+                AuthRecipeUserInfo user = getUser(tenantIdentifierWithStorage, thirdPartyId, thirdPartyUserId);
                 return new SignInUpResponse(false, user);
             } catch (StorageTransactionLogicException ignored) {
             }
@@ -220,15 +223,16 @@ public class ThirdParty {
         return getUser(new AppIdentifierWithStorage(null, null, storage), userId);
     }
 
-    public static UserInfo getUser(TenantIdentifierWithStorage tenantIdentifierWithStorage, String thirdPartyId,
-                                   String thirdPartyUserId)
+    public static AuthRecipeUserInfo getUser(TenantIdentifierWithStorage tenantIdentifierWithStorage,
+                                             String thirdPartyId,
+                                             String thirdPartyUserId)
             throws StorageQueryException {
         return tenantIdentifierWithStorage.getThirdPartyStorage()
-                .getThirdPartyUserInfoUsingId(tenantIdentifierWithStorage, thirdPartyId, thirdPartyUserId);
+                .getPrimaryUserByThirdPartyInfo(tenantIdentifierWithStorage, thirdPartyId, thirdPartyUserId);
     }
 
     @TestOnly
-    public static UserInfo getUser(Main main, String thirdPartyId, String thirdPartyUserId)
+    public static AuthRecipeUserInfo getUser(Main main, String thirdPartyId, String thirdPartyUserId)
             throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
         return getUser(

@@ -94,7 +94,8 @@ public class TestAppData {
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         FeatureFlagTestContent.getInstance(process.getProcess())
-                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY, EE_FEATURES.TOTP});
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES,
+                        new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY, EE_FEATURES.TOTP});
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -114,7 +115,8 @@ public class TestAppData {
                 new JsonObject()
         ), false);
 
-        TenantIdentifierWithStorage appWithStorage = app.withStorage(StorageLayer.getStorage(app, process.getProcess()));
+        TenantIdentifierWithStorage appWithStorage = app.withStorage(
+                StorageLayer.getStorage(app, process.getProcess()));
 
         String[] allTableNames = appWithStorage.getStorage().getAllTablesInTheDatabase();
         allTableNames = removeStrings(allTableNames, tablesToIgnore);
@@ -124,7 +126,8 @@ public class TestAppData {
         UserInfo epUser = EmailPassword.signUp(appWithStorage, process.getProcess(), "test@example.com", "password");
         EmailPassword.generatePasswordResetToken(appWithStorage, process.getProcess(), epUser.id);
 
-        ThirdParty.SignInUpResponse tpUser = ThirdParty.signInUp(appWithStorage, process.getProcess(), "google", "googleid", "test@example.com");
+        ThirdParty.SignInUpResponse tpUser = ThirdParty.signInUp(appWithStorage, process.getProcess(), "google",
+                "googleid", "test@example.com");
 
         Passwordless.CreateCodeResponse code = Passwordless.createCode(appWithStorage, process.getProcess(),
                 "test@example.com", null, null, null);
@@ -132,28 +135,37 @@ public class TestAppData {
                 code.deviceId, code.deviceIdHash, code.userInputCode, null);
         Passwordless.createCode(appWithStorage, process.getProcess(), "test@example.com", null, null, null);
 
-        Dashboard.signUpDashboardUser(appWithStorage.toAppIdentifierWithStorage(), process.getProcess(), "user@example.com", "password");
-        Dashboard.signInDashboardUser(appWithStorage.toAppIdentifierWithStorage(), process.getProcess(), "user@example.com", "password");
+        Dashboard.signUpDashboardUser(appWithStorage.toAppIdentifierWithStorage(), process.getProcess(),
+                "user@example.com", "password");
+        Dashboard.signInDashboardUser(appWithStorage.toAppIdentifierWithStorage(), process.getProcess(),
+                "user@example.com", "password");
 
-        String evToken = EmailVerification.generateEmailVerificationToken(appWithStorage, process.getProcess(), epUser.id, epUser.email);
+        String evToken = EmailVerification.generateEmailVerificationToken(appWithStorage, process.getProcess(),
+                epUser.id, epUser.email);
         EmailVerification.verifyEmail(appWithStorage, evToken);
-        EmailVerification.generateEmailVerificationToken(appWithStorage, process.getProcess(), tpUser.user.id, tpUser.user.email);
+        EmailVerification.generateEmailVerificationToken(appWithStorage, process.getProcess(), tpUser.user.id,
+                tpUser.user.loginMethods[0].email);
 
         Session.createNewSession(appWithStorage, process.getProcess(), epUser.id, new JsonObject(), new JsonObject());
 
-        UserRoles.createNewRoleOrModifyItsPermissions(appWithStorage.toAppIdentifierWithStorage(), "role", new String[]{"permission1", "permission2"});
+        UserRoles.createNewRoleOrModifyItsPermissions(appWithStorage.toAppIdentifierWithStorage(), "role",
+                new String[]{"permission1", "permission2"});
         UserRoles.addRoleToUser(appWithStorage, epUser.id, "role");
 
-        TOTPDevice totpDevice = Totp.registerDevice(appWithStorage.toAppIdentifierWithStorage(), process.getProcess(), epUser.id, "test", 1, 3);
-        Totp.verifyCode(appWithStorage, process.getProcess(), epUser.id, generateTotpCode(process.getProcess(), totpDevice, 0), true);
+        TOTPDevice totpDevice = Totp.registerDevice(appWithStorage.toAppIdentifierWithStorage(), process.getProcess(),
+                epUser.id, "test", 1, 3);
+        Totp.verifyCode(appWithStorage, process.getProcess(), epUser.id,
+                generateTotpCode(process.getProcess(), totpDevice, 0), true);
 
         ActiveUsers.updateLastActive(appWithStorage.toAppIdentifierWithStorage(), process.getProcess(), epUser.id);
 
         UserMetadata.updateUserMetadata(appWithStorage.toAppIdentifierWithStorage(), epUser.id, new JsonObject());
 
-        UserIdMapping.createUserIdMapping(process.getProcess(), appWithStorage.toAppIdentifierWithStorage(), plUser.user.id, "externalid", null, false);
+        UserIdMapping.createUserIdMapping(process.getProcess(), appWithStorage.toAppIdentifierWithStorage(),
+                plUser.user.id, "externalid", null, false);
 
-        String[] tablesThatHaveData = appWithStorage.getStorage().getAllTablesInTheDatabaseThatHasDataForAppId(app.getAppId());
+        String[] tablesThatHaveData = appWithStorage.getStorage()
+                .getAllTablesInTheDatabaseThatHasDataForAppId(app.getAppId());
         tablesThatHaveData = removeStrings(tablesThatHaveData, tablesToIgnore);
         Arrays.sort(tablesThatHaveData);
 
@@ -166,7 +178,7 @@ public class TestAppData {
         tablesThatHaveData = appWithStorage.getStorage().getAllTablesInTheDatabaseThatHasDataForAppId(app.getAppId());
         tablesThatHaveData = removeStrings(tablesThatHaveData, tablesToIgnore);
         assertEquals(0, tablesThatHaveData.length);
-        
+
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
