@@ -858,12 +858,12 @@ public class GeneralQueries {
             throws StorageQueryException, SQLException {
         List<String> userIds = new ArrayList<>();
 
-        String emailPasswordUserId = EmailPasswordQueries.getUserIdUsingEmail(start, tenantIdentifier, email);
+        String emailPasswordUserId = EmailPasswordQueries.getPrimaryUserIdUsingEmail(start, tenantIdentifier, email);
         if (emailPasswordUserId != null) {
             userIds.add(emailPasswordUserId);
         }
 
-        String passwordlessUserId = PasswordlessQueries.getUserIdUsingEmail(start, tenantIdentifier, email);
+        String passwordlessUserId = PasswordlessQueries.getPrimaryUserIdUsingEmail(start, tenantIdentifier, email);
         if (passwordlessUserId != null) {
             userIds.add(passwordlessUserId);
         }
@@ -881,7 +881,8 @@ public class GeneralQueries {
             throws StorageQueryException, SQLException {
         List<String> userIds = new ArrayList<>();
 
-        String passwordlessUserId = PasswordlessQueries.getUserByPhoneNumber(start, tenantIdentifier, phoneNumber);
+        String passwordlessUserId = PasswordlessQueries.getPrimaryUserByPhoneNumber(start, tenantIdentifier,
+                phoneNumber);
         if (passwordlessUserId != null) {
             userIds.add(passwordlessUserId);
         }

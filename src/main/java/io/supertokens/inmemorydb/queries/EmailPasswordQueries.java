@@ -398,11 +398,13 @@ public class EmailPasswordQueries {
         return Collections.emptyList();
     }
 
-    public static String getUserIdUsingEmail(Start start, TenantIdentifier tenantIdentifier, String email)
+    public static String getPrimaryUserIdUsingEmail(Start start, TenantIdentifier tenantIdentifier, String email)
             throws StorageQueryException, SQLException {
-        String QUERY = "SELECT user_id "
-                + "FROM " + getConfig(start).getEmailPasswordUserToTenantTable() +
-                " WHERE app_id = ? AND tenant_id = ? AND email = ?";
+        String QUERY = "SELECT DISTINCT all_users.primary_or_recipe_user_id AS user_id "
+                + "FROM " + getConfig(start).getEmailPasswordUserToTenantTable() + " AS ep" +
+                " JOIN " + getConfig(start).getUsersTable() + " AS all_users" +
+                " ON ep.app_id = all_users.app_id AND ep.user_id = all_users.user_id" +
+                " WHERE ep.app_id = ? AND ep.tenant_id = ? AND ep.email = ?";
 
         return execute(start, QUERY, pst -> {
             pst.setString(1, tenantIdentifier.getAppId());
