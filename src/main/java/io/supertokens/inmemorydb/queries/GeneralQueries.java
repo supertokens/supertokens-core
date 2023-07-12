@@ -29,6 +29,7 @@ import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.dashboard.DashboardSearchTags;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -561,6 +562,7 @@ public class GeneralQueries {
                                 + " AS allAuthUsersTable" +
                                 " JOIN " + getConfig(start).getEmailPasswordUserToTenantTable()
                                 + " AS emailpasswordTable ON allAuthUsersTable.app_id = emailpasswordTable.app_id AND "
+                                + "allAuthUsersTable.tenant_id = emailpasswordTable.tenant_id AND "
                                 + "allAuthUsersTable.user_id = emailpasswordTable.user_id";
 
                         // attach email tags to queries
@@ -586,15 +588,14 @@ public class GeneralQueries {
                     // check if we should search through the thirdparty table
                     if (dashboardSearchTags.shouldThirdPartyTableBeSearched()) {
                         String QUERY = "SELECT  allAuthUsersTable.*" + " FROM " + getConfig(start).getUsersTable()
-                                + " AS allAuthUsersTable" +
-                                " JOIN " + getConfig(start).getThirdPartyUsersTable()
-                                + " AS thirdPartyTable ON allAuthUsersTable.app_id = thirdPartyTable.app_id AND"
-                                + " allAuthUsersTable.user_id = thirdPartyTable.user_id"
+                                + " AS allAuthUsersTable"
                                 + " JOIN " + getConfig(start).getThirdPartyUserToTenantTable()
-                                +
-                                " AS thirdPartyToTenantTable ON thirdPartyTable.app_id = thirdPartyToTenantTable" +
-                                ".app_id AND"
-                                + " thirdPartyTable.user_id = thirdPartyToTenantTable.user_id";
+                                + " AS thirdPartyToTenantTable ON allAuthUsersTable.app_id = thirdPartyToTenantTable.app_id AND"
+                                + " allAuthUsersTable.tenant_id = thirdPartyToTenantTable.tenant_id AND"
+                                + " allAuthUsersTable.user_id = thirdPartyToTenantTable.user_id"
+                                + " JOIN " + getConfig(start).getThirdPartyUsersTable()
+                                + " AS thirdPartyTable ON thirdPartyToTenantTable.app_id = thirdPartyTable.app_id AND"
+                                + " thirdPartyToTenantTable.user_id = thirdPartyTable.user_id";
 
                         // check if email tag is present
                         if (dashboardSearchTags.emails != null) {
@@ -659,6 +660,7 @@ public class GeneralQueries {
                                 + " AS allAuthUsersTable" +
                                 " JOIN " + getConfig(start).getPasswordlessUserToTenantTable()
                                 + " AS passwordlessTable ON allAuthUsersTable.app_id = passwordlessTable.app_id AND"
+                                + " allAuthUsersTable.tenant_id = passwordlessTable.tenant_id AND"
                                 + " allAuthUsersTable.user_id = passwordlessTable.user_id";
 
                         // check if email tag is present

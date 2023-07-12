@@ -8,12 +8,18 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [unreleased]
 
 - Db schema changes:
-    - Added new index `all_auth_recipe_users_primary_user_id_index`.
-    - Added new index `all_auth_recipe_users_primary_user_id_and_tenant_id_index`.
-    - Modified `all_auth_recipe_users_pagination_index` index to be on `primary_or_recipe_user_id` instead of `user_id`
-    - Added a two new columns in `all_auth_recipe_users`:
-        - `primary_or_recipe_user_id` (default value is equal to `user_id` column)
-        - `is_linked_or_is_a_primary_user` (default value is false)
+  - Added new index `all_auth_recipe_users_primary_user_id_index`.
+  - Added new index `all_auth_recipe_users_primary_user_id_and_tenant_id_index`.
+  - Modified `all_auth_recipe_users_pagination_index` index to be on `primary_or_recipe_user_id` instead of `user_id`
+  - Added a two new columns in `all_auth_recipe_users`:
+    - `primary_or_recipe_user_id` (default value is equal to `user_id` column)
+    - `is_linked_or_is_a_primary_user` (default value is false)
+
+
+## [6.0.3] - 2023-07-11
+
+- Fixes duplicate users in users search queries when user is associated to multiple tenants
+- Fixes wrong tenant id in logging for `APIKeyUnauthorisedException`
 
 ## [6.0.2] - 2023-07-04
 

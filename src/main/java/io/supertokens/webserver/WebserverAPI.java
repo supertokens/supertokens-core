@@ -390,6 +390,8 @@ public abstract class WebserverAPI extends HttpServlet {
 
         TenantIdentifier tenantIdentifier = null;
         try {
+            tenantIdentifier = getTenantIdentifierWithStorageFromRequest(req);
+
             if (!this.checkIPAccess(req, resp)) {
                 // IP access denied and the filter has already sent the response
                 return;
@@ -399,7 +401,6 @@ public abstract class WebserverAPI extends HttpServlet {
                 assertThatAPIKeyCheckPasses(req);
             }
 
-            tenantIdentifier = getTenantIdentifierWithStorageFromRequest(req);
             SemVer version = getVersionFromRequest(req);
 
             // Check for CDI version for multitenancy
@@ -497,5 +498,4 @@ public abstract class WebserverAPI extends HttpServlet {
             super();
         }
     }
-
 }

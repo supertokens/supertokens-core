@@ -32,6 +32,7 @@ import org.junit.rules.TestRule;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 
 import static org.junit.Assert.*;
 
@@ -150,6 +151,18 @@ public class CLIOptionsTest {
                     Config.getConfig(process1.getProcess()).getErrorLogPath(process1.getProcess()));
             assertEquals(Config.getConfig(process1.getProcess()).getErrorLogPath(process1.getProcess()),
                     Config.getConfig(process2.getProcess()).getErrorLogPath(process2.getProcess()));
+
+            // clear log files
+            {
+                FileWriter f = new FileWriter(Config.getConfig(process.getProcess()).getInfoLogPath(process.getProcess()));
+                f.flush();
+                f.close();
+            }
+            {
+                FileWriter f = new FileWriter(Config.getConfig(process.getProcess()).getErrorLogPath(process.getProcess()));
+                f.flush();
+                f.close();
+            }
 
             Logging.debug(process.getProcess(), TenantIdentifier.BASE_TENANT, "debugunique1");
             Logging.debug(process1.getProcess(), TenantIdentifier.BASE_TENANT, "debugunique2");
