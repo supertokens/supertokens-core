@@ -876,6 +876,22 @@ public class GeneralQueries {
         return result.toArray(new AuthRecipeUserInfo[0]);
     }
 
+    public static AuthRecipeUserInfo[] listPrimaryUsersByPhoneNumber(Start start, TenantIdentifier tenantIdentifier,
+                                                                     String phoneNumber)
+            throws StorageQueryException, SQLException {
+        List<String> userIds = new ArrayList<>();
+
+        String passwordlessUserId = PasswordlessQueries.getUserByPhoneNumber(start, tenantIdentifier, phoneNumber);
+        if (passwordlessUserId != null) {
+            userIds.add(passwordlessUserId);
+        }
+
+        List<AuthRecipeUserInfo> result = getPrimaryUserInfoForUserIds(start, tenantIdentifier.toAppIdentifier(),
+                userIds);
+
+        return result.toArray(new AuthRecipeUserInfo[0]);
+    }
+
     public static AuthRecipeUserInfo getPrimaryUserInfoForUserId(Start start, AppIdentifier appIdentifier, String id)
             throws SQLException, StorageQueryException {
         List<String> ids = new ArrayList<>();

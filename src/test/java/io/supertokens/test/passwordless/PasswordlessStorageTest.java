@@ -27,7 +27,6 @@ import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicExceptio
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
-import io.supertokens.pluginInterface.passwordless.UserInfo;
 import io.supertokens.pluginInterface.passwordless.exception.*;
 import io.supertokens.pluginInterface.passwordless.sqlStorage.PasswordlessSQLStorage;
 import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
@@ -285,7 +284,8 @@ public class PasswordlessStorageTest {
 
             assertNotNull(error);
             assert (error instanceof DuplicateUserIdException);
-            assertNull(storage.getUserByPhoneNumber(new TenantIdentifier(null, null, null), phoneNumber2));
+            assert (storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null),
+                    phoneNumber2).length == 0);
         }
 
         {
@@ -900,8 +900,9 @@ public class PasswordlessStorageTest {
             assert (user.length == 1 && user[0].equals(userById));
         }
         if (phoneNumber != null) {
-            UserInfo user = storage.getUserByPhoneNumber(new TenantIdentifier(null, null, null), phoneNumber);
-            assert (user.equals(userById));
+            AuthRecipeUserInfo[] user = storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null),
+                    phoneNumber);
+            assert (user[0].equals(userById));
         }
     }
 

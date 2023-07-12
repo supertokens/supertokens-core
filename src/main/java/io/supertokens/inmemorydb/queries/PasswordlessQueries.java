@@ -748,39 +748,23 @@ public class PasswordlessQueries {
         });
     }
 
-    public static UserInfo getUserByPhoneNumber(Start start, TenantIdentifier tenantIdentifier,
-                                                @Nonnull String phoneNumber)
+    public static String getUserByPhoneNumber(Start start, TenantIdentifier tenantIdentifier,
+                                              @Nonnull String phoneNumber)
             throws StorageQueryException, SQLException {
-        String QUERY = "SELECT pl_users.user_id as user_id, pl_users.email as email, "
-                + "pl_users.phone_number as phone_number, pl_users.time_joined as time_joined "
-                + "FROM " + getConfig(start).getPasswordlessUserToTenantTable() + " AS pl_users_to_tenant "
-                + "JOIN " + getConfig(start).getPasswordlessUsersTable() + " AS pl_users "
-                + "ON pl_users.app_id = pl_users_to_tenant.app_id AND pl_users.user_id = pl_users_to_tenant.user_id "
-                +
-                "WHERE pl_users_to_tenant.app_id = ? AND pl_users_to_tenant.tenant_id = ? AND pl_users_to_tenant" +
-                ".phone_number = ? ";
+        String QUERY = "SELECT user_id "
+                + "FROM " + getConfig(start).getPasswordlessUserToTenantTable() +
+                " WHERE app_id = ? AND tenant_id = ? AND phone_number = ?";
 
-        try (Connection con = ConnectionPool.getConnection(start)) {
-            UserInfoPartial userInfo = execute(con, QUERY, pst -> {
-                pst.setString(1, tenantIdentifier.getAppId());
-                pst.setString(2, tenantIdentifier.getTenantId());
-                pst.setString(3, phoneNumber);
-            }, result -> {
-                if (result.next()) {
-                    return UserInfoRowMapper.getInstance().mapOrThrow(result);
-                }
-                return null;
-            });
-            if (userInfo == null) {
-                return null;
+        return execute(start, QUERY, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, tenantIdentifier.getTenantId());
+            pst.setString(3, phoneNumber);
+        }, result -> {
+            if (result.next()) {
+                return result.getString("user_id");
             }
-            fillUserInfoWithTenantIds_transaction(start, con, tenantIdentifier.toAppIdentifier(), userInfo);
-            fillUserInfoWithVerified_transaction(start, con, tenantIdentifier.toAppIdentifier(), userInfo);
-            fillUserInfoWithIsPrimaryUserBoolean_transaction(start, con, tenantIdentifier.toAppIdentifier(),
-                    userInfo);
-            return new UserInfo(userInfo.id, userInfo.isPrimary,
-                    userInfo.toLoginMethod());
-        }
+            return null;
+        });
     }
 
     public static boolean addUserIdToTenant_Transaction(Start start, Connection sqlCon,

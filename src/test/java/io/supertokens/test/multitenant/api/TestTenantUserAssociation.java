@@ -347,7 +347,7 @@ public class TestTenantUserAssociation {
                 createCodeResponse.deviceId, createCodeResponse.deviceIdHash, createCodeResponse.userInputCode, null);
         assertArrayEquals(new String[]{"t1"}, consumeCodeResponse.user.tenantIds);
 
-        io.supertokens.pluginInterface.passwordless.UserInfo user;
+        AuthRecipeUserInfo user;
         Multitenancy.addUserIdToTenant(process.getProcess(), t2WithStorage, consumeCodeResponse.user.id);
         user = Passwordless.getUserById(t1WithStorage.toAppIdentifierWithStorage(), consumeCodeResponse.user.id);
         Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds);

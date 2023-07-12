@@ -392,13 +392,21 @@ public class Passwordless {
                 }
             }
         } else {
-            user = passwordlessStorage.getUserByPhoneNumber(tenantIdentifierWithStorage, consumedDevice.phoneNumber);
-            if (user != null) {
-                loginMethod = user.loginMethods[0];
+            AuthRecipeUserInfo[] users = passwordlessStorage.listPrimaryUsersByPhoneNumber(tenantIdentifierWithStorage,
+                    consumedDevice.phoneNumber);
+            for (AuthRecipeUserInfo currUser : users) {
+                for (LoginMethod currLM : currUser.loginMethods) {
+                    if (currLM.recipeId == RECIPE_ID.PASSWORDLESS &&
+                            currLM.phoneNumber.equals(consumedDevice.phoneNumber)) {
+                        user = currUser;
+                        loginMethod = currLM;
+                        break;
+                    }
+                }
             }
         }
 
-        if (user == null || loginMethod == null) {
+        if (user == null) {
             while (true) {
                 try {
                     String userId = Utils.getUUID();
@@ -539,18 +547,26 @@ public class Passwordless {
     }
 
     @TestOnly
-    public static UserInfo getUserByPhoneNumber(Main main,
-                                                String phoneNumber) throws StorageQueryException {
+    public static AuthRecipeUserInfo getUserByPhoneNumber(Main main,
+                                                          String phoneNumber) throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
         return getUserByPhoneNumber(
                 new TenantIdentifierWithStorage(null, null, null, storage),
                 phoneNumber);
     }
 
-    public static UserInfo getUserByPhoneNumber(TenantIdentifierWithStorage tenantIdentifierWithStorage,
-                                                String phoneNumber) throws StorageQueryException {
-        return tenantIdentifierWithStorage.getPasswordlessStorage()
-                .getUserByPhoneNumber(tenantIdentifierWithStorage, phoneNumber);
+    public static AuthRecipeUserInfo getUserByPhoneNumber(TenantIdentifierWithStorage tenantIdentifierWithStorage,
+                                                          String phoneNumber) throws StorageQueryException {
+        AuthRecipeUserInfo[] users = tenantIdentifierWithStorage.getPasswordlessStorage()
+                .listPrimaryUsersByPhoneNumber(tenantIdentifierWithStorage, phoneNumber);
+        for (AuthRecipeUserInfo user : users) {
+            for (LoginMethod lM : user.loginMethods) {
+                if (lM.recipeId == RECIPE_ID.PASSWORDLESS && lM.phoneNumber.equals(phoneNumber)) {
+                    return user;
+                }
+            }
+        }
+        return null;
     }
 
     @TestOnly

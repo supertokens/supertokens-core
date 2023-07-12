@@ -34,7 +34,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class PasswordlessUserPutAPITest2_11 {
     @Rule
@@ -165,7 +166,7 @@ public class PasswordlessUserPutAPITest2_11 {
         assertEquals("OK", response.get("status").getAsString());
 
         assert (storage.listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), email).length == 0);
-        assertNotNull(storage.getUserByPhoneNumber(new TenantIdentifier(null, null, null), phoneNumber));
+        assert (storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null), phoneNumber).length == 1);
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
@@ -206,7 +207,7 @@ public class PasswordlessUserPutAPITest2_11 {
         assertEquals("OK", response.get("status").getAsString());
 
         assert (storage.listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), email).length == 1);
-        assertNull(storage.getUserByPhoneNumber(new TenantIdentifier(null, null, null), phoneNumber));
+        assert (storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null), phoneNumber).length == 0);
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
@@ -249,10 +250,12 @@ public class PasswordlessUserPutAPITest2_11 {
         assertEquals("OK", response.get("status").getAsString());
 
         assert (storage.listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), email).length == 0);
-        assertNull(storage.getUserByPhoneNumber(new TenantIdentifier(null, null, null), phoneNumber));
+        assert (storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null), phoneNumber).length == 0);
 
         assert (storage.listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), updatedEmail).length == 1);
-        assertNotNull(storage.getUserByPhoneNumber(new TenantIdentifier(null, null, null), updatedPhoneNumber));
+        assert (storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null),
+                updatedPhoneNumber).length ==
+                1);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -437,7 +440,7 @@ public class PasswordlessUserPutAPITest2_11 {
         assertEquals("OK", response.get("status").getAsString());
 
         assert (storage.listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), email).length == 0);
-        assertNotNull(storage.getUserByPhoneNumber(new TenantIdentifier(null, null, null), phoneNumber));
+        assert (storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null), phoneNumber).length == 1);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -478,7 +481,7 @@ public class PasswordlessUserPutAPITest2_11 {
         assertEquals("OK", response.get("status").getAsString());
 
         assert (storage.listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), email).length == 1);
-        assertNull(storage.getUserByPhoneNumber(new TenantIdentifier(null, null, null), phoneNumber));
+        assert (storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null), phoneNumber).length == 0);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -518,7 +521,7 @@ public class PasswordlessUserPutAPITest2_11 {
         assertEquals("OK", response.get("status").getAsString());
 
         assert (storage.listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), email).length == 1);
-        assertNotNull(storage.getUserByPhoneNumber(new TenantIdentifier(null, null, null), phoneNumber));
+        assert (storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null), phoneNumber).length == 1);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -599,8 +602,9 @@ public class PasswordlessUserPutAPITest2_11 {
 
         assertEquals("OK", response.get("status").getAsString());
 
-        assertNotNull(storage.getUserByPhoneNumber(new TenantIdentifier(null, null, null), updatedPhoneNumber));
-        assertNull(storage.getUserByPhoneNumber(new TenantIdentifier(null, null, null), phoneNumber));
+        assert (storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null),
+                updatedPhoneNumber).length == 1);
+        assert (storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null), phoneNumber).length == 0);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

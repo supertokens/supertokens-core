@@ -1292,6 +1292,16 @@ public class Start
     }
 
     @Override
+    public AuthRecipeUserInfo[] listPrimaryUsersByPhoneNumber(TenantIdentifier tenantIdentifier, String phoneNumber)
+            throws StorageQueryException {
+        try {
+            return GeneralQueries.listPrimaryUsersByPhoneNumber(this, tenantIdentifier, phoneNumber);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
     public List<JWTSigningKeyInfo> getJWTSigningKeys_Transaction(AppIdentifier
                                                                          appIdentifier, TransactionConnection con)
             throws StorageQueryException {
@@ -1771,17 +1781,6 @@ public class Start
             throws StorageQueryException {
         try {
             return PasswordlessQueries.getCodeByLinkCodeHash(this, tenantIdentifier, linkCodeHash);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
-    public io.supertokens.pluginInterface.passwordless.UserInfo getUserByPhoneNumber(TenantIdentifier tenantIdentifier,
-                                                                                     String phoneNumber)
-            throws StorageQueryException {
-        try {
-            return PasswordlessQueries.getUserByPhoneNumber(this, tenantIdentifier, phoneNumber);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }

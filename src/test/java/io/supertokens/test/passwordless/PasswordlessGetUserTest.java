@@ -232,9 +232,9 @@ public class PasswordlessGetUserTest {
 
         createUserWith(process, null, PHONE_NUMBER);
 
-        UserInfo user = Passwordless.getUserByPhoneNumber(process.getProcess(), PHONE_NUMBER);
+        AuthRecipeUserInfo user = Passwordless.getUserByPhoneNumber(process.getProcess(), PHONE_NUMBER);
         assertNotNull(user);
-        assertEquals(user.phoneNumber, PHONE_NUMBER);
+        assertEquals(user.loginMethods[0].phoneNumber, PHONE_NUMBER);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -258,7 +258,7 @@ public class PasswordlessGetUserTest {
 
         createUserWith(process, null, PHONE_NUMBER);
 
-        UserInfo user = Passwordless.getUserByPhoneNumber(process.getProcess(), PHONE_NUMBER + "1");
+        AuthRecipeUserInfo user = Passwordless.getUserByPhoneNumber(process.getProcess(), PHONE_NUMBER + "1");
         assertNull(user);
 
         process.kill();
