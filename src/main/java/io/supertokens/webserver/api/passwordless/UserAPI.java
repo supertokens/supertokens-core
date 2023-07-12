@@ -23,11 +23,11 @@ import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.Passwordless.FieldUpdate;
 import io.supertokens.passwordless.exceptions.UserWithoutContactInfoException;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.passwordless.UserInfo;
 import io.supertokens.pluginInterface.passwordless.exception.DuplicatePhoneNumberException;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
@@ -71,7 +71,7 @@ public class UserAPI extends WebserverAPI {
         }
 
         try {
-            UserInfo user;
+            AuthRecipeUserInfo user;
             if (userId != null) {
                 try {
                     AppIdentifierWithStorageAndUserIdMapping appIdentifierWithStorageAndUserIdMapping =

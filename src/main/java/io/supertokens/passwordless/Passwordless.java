@@ -21,6 +21,7 @@ import io.supertokens.config.Config;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.passwordless.exceptions.*;
+import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
@@ -376,10 +377,28 @@ public class Passwordless {
         }
 
         // Getting here means that we successfully consumed the code
-        UserInfo user = consumedDevice.email != null ?
-                passwordlessStorage.getUserByEmail(tenantIdentifierWithStorage, consumedDevice.email)
-                : passwordlessStorage.getUserByPhoneNumber(tenantIdentifierWithStorage, consumedDevice.phoneNumber);
-        if (user == null) {
+        AuthRecipeUserInfo user = null;
+        LoginMethod loginMethod = null;
+        if (consumedDevice.email != null) {
+            AuthRecipeUserInfo[] users = passwordlessStorage.listPrimaryUsersByEmail(tenantIdentifierWithStorage,
+                    consumedDevice.email);
+            for (AuthRecipeUserInfo currUser : users) {
+                for (LoginMethod currLM : currUser.loginMethods) {
+                    if (currLM.recipeId == RECIPE_ID.PASSWORDLESS && currLM.email.equals(consumedDevice.email)) {
+                        user = currUser;
+                        loginMethod = currLM;
+                        break;
+                    }
+                }
+            }
+        } else {
+            user = passwordlessStorage.getUserByPhoneNumber(tenantIdentifierWithStorage, consumedDevice.phoneNumber);
+            if (user != null) {
+                loginMethod = user.loginMethods[0];
+            }
+        }
+
+        if (user == null || loginMethod == null) {
             while (true) {
                 try {
                     String userId = Utils.getUUID();
@@ -402,11 +421,11 @@ public class Passwordless {
         } else {
             // We do not need this cleanup if we are creating the user, since it uses the email/phoneNumber of the
             // device, which has already been cleaned up
-            if (user.email != null && !user.email.equals(consumedDevice.email)) {
-                removeCodesByEmail(tenantIdentifierWithStorage, user.email);
+            if (loginMethod.email != null && !loginMethod.email.equals(consumedDevice.email)) {
+                removeCodesByEmail(tenantIdentifierWithStorage, loginMethod.email);
             }
-            if (user.phoneNumber != null && !user.phoneNumber.equals(consumedDevice.phoneNumber)) {
-                removeCodesByPhoneNumber(tenantIdentifierWithStorage, user.phoneNumber);
+            if (loginMethod.phoneNumber != null && !loginMethod.phoneNumber.equals(consumedDevice.phoneNumber)) {
+                removeCodesByPhoneNumber(tenantIdentifierWithStorage, loginMethod.phoneNumber);
             }
         }
         return new ConsumeCodeResponse(false, user);
@@ -535,16 +554,26 @@ public class Passwordless {
     }
 
     @TestOnly
-    public static UserInfo getUserByEmail(Main main, String email)
+    public static AuthRecipeUserInfo getUserByEmail(Main main, String email)
             throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
         return getUserByEmail(
                 new TenantIdentifierWithStorage(null, null, null, storage), email);
     }
 
-    public static UserInfo getUserByEmail(TenantIdentifierWithStorage tenantIdentifierWithStorage, String email)
+    public static AuthRecipeUserInfo getUserByEmail(TenantIdentifierWithStorage tenantIdentifierWithStorage,
+                                                    String email)
             throws StorageQueryException {
-        return tenantIdentifierWithStorage.getPasswordlessStorage().getUserByEmail(tenantIdentifierWithStorage, email);
+        AuthRecipeUserInfo[] users = tenantIdentifierWithStorage.getPasswordlessStorage()
+                .listPrimaryUsersByEmail(tenantIdentifierWithStorage, email);
+        for (AuthRecipeUserInfo user : users) {
+            for (LoginMethod lM : user.loginMethods) {
+                if (lM.recipeId == RECIPE_ID.PASSWORDLESS && lM.email.equals(email)) {
+                    return user;
+                }
+            }
+        }
+        return null;
     }
 
     @TestOnly
@@ -670,9 +699,9 @@ public class Passwordless {
 
     public static class ConsumeCodeResponse {
         public boolean createdNewUser;
-        public UserInfo user;
+        public AuthRecipeUserInfo user;
 
-        public ConsumeCodeResponse(boolean createdNewUser, UserInfo user) {
+        public ConsumeCodeResponse(boolean createdNewUser, AuthRecipeUserInfo user) {
             this.createdNewUser = createdNewUser;
             this.user = user;
         }

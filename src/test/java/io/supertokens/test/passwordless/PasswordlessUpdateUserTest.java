@@ -20,6 +20,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.exceptions.UserWithoutContactInfoException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
@@ -78,15 +79,17 @@ public class PasswordlessUpdateUserTest {
         createUserWith(process, EMAIL, null);
         createUserWith(process, alternate_email, null);
 
-        UserInfo user = storage.getUserByEmail(new TenantIdentifier(null, null, null), EMAIL);
-        assertNotNull(user);
+        AuthRecipeUserInfo[] user = storage.listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), EMAIL);
+        assert (user.length == 1);
 
-        UserInfo user_two = storage.getUserByEmail(new TenantIdentifier(null, null, null), alternate_email);
-        assertNotNull(user_two);
+        AuthRecipeUserInfo[] user_two = storage.listPrimaryUsersByEmail(new TenantIdentifier(null, null, null),
+                alternate_email);
+        assert (user_two.length == 1);
 
         Exception ex = null;
         try {
-            Passwordless.updateUser(process.getProcess(), user.id, new Passwordless.FieldUpdate(alternate_email), null);
+            Passwordless.updateUser(process.getProcess(), user[0].id, new Passwordless.FieldUpdate(alternate_email),
+                    null);
         } catch (Exception e) {
             ex = e;
         }
@@ -94,7 +97,9 @@ public class PasswordlessUpdateUserTest {
         assertNotNull(ex);
         assert (ex instanceof DuplicateEmailException);
 
-        assertEquals(EMAIL, storage.getUserByEmail(new TenantIdentifier(null, null, null), EMAIL).email);
+        assertEquals(EMAIL,
+                storage.listPrimaryUsersByEmail(new TenantIdentifier(null, null, null),
+                        EMAIL)[0].loginMethods[0].email);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -167,13 +172,13 @@ public class PasswordlessUpdateUserTest {
 
         createUserWith(process, EMAIL, null);
 
-        UserInfo user = storage.getUserByEmail(new TenantIdentifier(null, null, null), EMAIL);
-        assertNotNull(user);
+        AuthRecipeUserInfo[] user = storage.listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), EMAIL);
+        assert (user.length == 1);
 
-        Passwordless.updateUser(process.getProcess(), user.id, new Passwordless.FieldUpdate(alternate_email), null);
+        Passwordless.updateUser(process.getProcess(), user[0].id, new Passwordless.FieldUpdate(alternate_email), null);
 
         assertEquals(alternate_email,
-                storage.getPrimaryUserById(new AppIdentifier(null, null), user.id).loginMethods[0].email);
+                storage.getPrimaryUserById(new AppIdentifier(null, null), user[0].id).loginMethods[0].email);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -235,15 +240,15 @@ public class PasswordlessUpdateUserTest {
 
         createUserWith(process, EMAIL, null);
 
-        UserInfo user = storage.getUserByEmail(new TenantIdentifier(null, null, null), EMAIL);
-        assertNotNull(user);
+        AuthRecipeUserInfo[] user = storage.listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), EMAIL);
+        assert (user.length == 1);
 
-        Passwordless.updateUser(process.getProcess(), user.id, new Passwordless.FieldUpdate(null),
+        Passwordless.updateUser(process.getProcess(), user[0].id, new Passwordless.FieldUpdate(null),
                 new Passwordless.FieldUpdate(PHONE_NUMBER));
 
         assertEquals(PHONE_NUMBER,
-                storage.getPrimaryUserById(new AppIdentifier(null, null), user.id).loginMethods[0].phoneNumber);
-        assertNull(storage.getPrimaryUserById(new AppIdentifier(null, null), user.id).loginMethods[0].email);
+                storage.getPrimaryUserById(new AppIdentifier(null, null), user[0].id).loginMethods[0].phoneNumber);
+        assertNull(storage.getPrimaryUserById(new AppIdentifier(null, null), user[0].id).loginMethods[0].email);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -343,13 +348,13 @@ public class PasswordlessUpdateUserTest {
 
         createUserWith(process, EMAIL, null);
 
-        UserInfo user = storage.getUserByEmail(new TenantIdentifier(null, null, null), EMAIL);
-        assertNotNull(user);
+        AuthRecipeUserInfo[] user = storage.listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), EMAIL);
+        assert (user.length == 1);
 
         Exception ex = null;
 
         try {
-            Passwordless.updateUser(process.getProcess(), user.id, new Passwordless.FieldUpdate(null), null);
+            Passwordless.updateUser(process.getProcess(), user[0].id, new Passwordless.FieldUpdate(null), null);
         } catch (Exception e) {
             ex = e;
         }

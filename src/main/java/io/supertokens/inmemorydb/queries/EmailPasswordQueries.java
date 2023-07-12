@@ -404,18 +404,16 @@ public class EmailPasswordQueries {
                 + "FROM " + getConfig(start).getEmailPasswordUserToTenantTable() +
                 " WHERE app_id = ? AND tenant_id = ? AND email = ?";
 
-        try (Connection con = ConnectionPool.getConnection(start)) {
-            return execute(con, QUERY, pst -> {
-                pst.setString(1, tenantIdentifier.getAppId());
-                pst.setString(2, tenantIdentifier.getTenantId());
-                pst.setString(3, email);
-            }, result -> {
-                if (result.next()) {
-                    return result.getString("user_id");
-                }
-                return null;
-            });
-        }
+        return execute(start, QUERY, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, tenantIdentifier.getTenantId());
+            pst.setString(3, email);
+        }, result -> {
+            if (result.next()) {
+                return result.getString("user_id");
+            }
+            return null;
+        });
     }
 
     public static boolean addUserIdToTenant_Transaction(Start start, Connection sqlCon,

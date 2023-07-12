@@ -1777,17 +1777,6 @@ public class Start
     }
 
     @Override
-    public io.supertokens.pluginInterface.passwordless.UserInfo getUserByEmail(TenantIdentifier tenantIdentifier,
-                                                                               String email)
-            throws StorageQueryException {
-        try {
-            return PasswordlessQueries.getUserByEmail(this, tenantIdentifier, email);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
     public io.supertokens.pluginInterface.passwordless.UserInfo getUserByPhoneNumber(TenantIdentifier tenantIdentifier,
                                                                                      String phoneNumber)
             throws StorageQueryException {

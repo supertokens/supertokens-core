@@ -19,6 +19,7 @@ package io.supertokens.test.passwordless;
 import io.supertokens.ProcessState;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.passwordless.UserInfo;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -59,7 +60,7 @@ public class PasswordlessGetUserTest {
      */
     @Test
     public void getUserByIdWithEmail() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -86,7 +87,7 @@ public class PasswordlessGetUserTest {
      */
     @Test
     public void getUserByIdWithPhoneNumber() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -113,7 +114,7 @@ public class PasswordlessGetUserTest {
      */
     @Test
     public void getUserByIdWithEmailAndPhoneNumber() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -141,7 +142,7 @@ public class PasswordlessGetUserTest {
      */
     @Test
     public void getUserByInvalidId() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -167,7 +168,7 @@ public class PasswordlessGetUserTest {
      */
     @Test
     public void getUserByEmail() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -178,9 +179,9 @@ public class PasswordlessGetUserTest {
 
         createUserWith(process, EMAIL, null);
 
-        UserInfo user = Passwordless.getUserByEmail(process.getProcess(), EMAIL);
+        AuthRecipeUserInfo user = Passwordless.getUserByEmail(process.getProcess(), EMAIL);
         assertNotNull(user);
-        assertEquals(user.email, EMAIL);
+        assertEquals(user.loginMethods[0].email, EMAIL);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -194,7 +195,7 @@ public class PasswordlessGetUserTest {
      */
     @Test
     public void getUserByInvalidEmail() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -205,7 +206,7 @@ public class PasswordlessGetUserTest {
 
         createUserWith(process, EMAIL, null);
 
-        UserInfo user = Passwordless.getUserByEmail(process.getProcess(), EMAIL + "a");
+        AuthRecipeUserInfo user = Passwordless.getUserByEmail(process.getProcess(), EMAIL + "a");
         assertNull(user);
 
         process.kill();
@@ -220,7 +221,7 @@ public class PasswordlessGetUserTest {
      */
     @Test
     public void getUserByPhoneNumber() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -246,7 +247,7 @@ public class PasswordlessGetUserTest {
      */
     @Test
     public void getUserByInvalidPhoneNumber() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

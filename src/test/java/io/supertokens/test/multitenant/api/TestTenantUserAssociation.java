@@ -313,12 +313,12 @@ public class TestTenantUserAssociation {
                 createCodeResponse.deviceId, createCodeResponse.deviceIdHash, createCodeResponse.userInputCode, null);
         assertArrayEquals(new String[]{"t1"}, consumeCodeResponse.user.tenantIds);
 
-        io.supertokens.pluginInterface.passwordless.UserInfo user;
+        AuthRecipeUserInfo user;
         Multitenancy.addUserIdToTenant(process.getProcess(), t2WithStorage, consumeCodeResponse.user.id);
         user = Passwordless.getUserById(t1WithStorage.toAppIdentifierWithStorage(), consumeCodeResponse.user.id);
         Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds);
 
-        user = Passwordless.getUserByEmail(t1WithStorage, consumeCodeResponse.user.email);
+        user = Passwordless.getUserByEmail(t1WithStorage, consumeCodeResponse.user.loginMethods[0].email);
         Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds);
 
         Multitenancy.removeUserIdFromTenant(process.getProcess(), t1WithStorage, consumeCodeResponse.user.id);
@@ -352,7 +352,7 @@ public class TestTenantUserAssociation {
         user = Passwordless.getUserById(t1WithStorage.toAppIdentifierWithStorage(), consumeCodeResponse.user.id);
         Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds);
 
-        user = Passwordless.getUserByPhoneNumber(t1WithStorage, consumeCodeResponse.user.phoneNumber);
+        user = Passwordless.getUserByPhoneNumber(t1WithStorage, consumeCodeResponse.user.loginMethods[0].phoneNumber);
         Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds);
 
         Multitenancy.removeUserIdFromTenant(process.getProcess(), t1WithStorage, consumeCodeResponse.user.id);

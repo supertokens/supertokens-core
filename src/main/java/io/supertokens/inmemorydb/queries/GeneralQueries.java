@@ -863,6 +863,11 @@ public class GeneralQueries {
             userIds.add(emailPasswordUserId);
         }
 
+        String passwordlessUserId = PasswordlessQueries.getUserIdUsingEmail(start, tenantIdentifier, email);
+        if (passwordlessUserId != null) {
+            userIds.add(passwordlessUserId);
+        }
+
         // TODO:add support for other recipes.
 
         List<AuthRecipeUserInfo> result = getPrimaryUserInfoForUserIds(start, tenantIdentifier.toAppIdentifier(),

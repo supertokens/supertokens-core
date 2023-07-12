@@ -826,11 +826,11 @@ public class PasswordlessConsumeCodeTest {
         AuthRecipeUserInfo user = storage.getPrimaryUserById(new AppIdentifier(null, null), resp.user.id);
         assertNotNull(user);
 
-        assertEquals(email, resp.user.email);
+        assertEquals(email, resp.user.loginMethods[0].email);
         assertEquals(email, user.loginMethods[0].email);
 
         assertEquals(phoneNumber, user.loginMethods[0].phoneNumber);
-        assertEquals(phoneNumber, resp.user.phoneNumber);
+        assertEquals(phoneNumber, resp.user.loginMethods[0].phoneNumber);
 
         assert (user.timeJoined >= joinedAfter);
         assertEquals(user.timeJoined, resp.user.timeJoined);
