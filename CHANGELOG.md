@@ -7,6 +7,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+## [6.0.4] - 2023-07-13
 - Fixes tenant prefix in stack trace log
 
 ## [6.0.3] - 2023-07-11
