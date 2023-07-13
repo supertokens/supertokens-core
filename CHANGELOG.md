@@ -7,6 +7,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+
 - Db schema changes:
   - Added new index `all_auth_recipe_users_primary_user_id_index`.
   - Added new index `all_auth_recipe_users_primary_user_id_and_tenant_id_index`.
@@ -14,6 +15,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   - Added a two new columns in `all_auth_recipe_users`:
     - `primary_or_recipe_user_id` (default value is equal to `user_id` column)
     - `is_linked_or_is_a_primary_user` (default value is false)
+
+
+## [6.0.4] - 2023-07-13
+- Fixes tenant prefix in stack trace log
 
 
 ## [6.0.3] - 2023-07-11
