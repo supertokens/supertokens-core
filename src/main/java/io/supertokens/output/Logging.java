@@ -189,6 +189,7 @@ public class Logging extends ResourceDistributor.SingletonResource {
         try {
             String err = Utils.throwableStacktraceToString(e).trim();
             if (getInstance(main) != null) {
+                err = prependTenantIdentifierToMessage(tenantIdentifier, err);
                 getInstance(main).errorLogger.error(err);
             } else if (Main.isTesting) {
                 systemErr(err);
