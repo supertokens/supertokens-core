@@ -52,23 +52,18 @@ public class ApiVersionAPI extends WebserverAPI {
         JsonObject result = new JsonObject();
         JsonArray versions = new JsonArray();
 
-        SemVer maxCDIVersion = getLatestCDIVersion();
         try {
-            String maxCDIVersionStr = Config.getConfig(
-                    this.getAppIdentifierWithStorage(req).getAsPublicTenantIdentifier(), main).getMaxCDIVersion();
-            if (maxCDIVersionStr != null) {
-                maxCDIVersion = new SemVer(maxCDIVersionStr);
+            SemVer maxCDIVersion = getLatestCDIVersionForRequest(req);
+
+            for (SemVer s : WebserverAPI.supportedVersions) {
+                if (s.lesserThan(maxCDIVersion) || s.equals(maxCDIVersion)) {
+                    versions.add(new JsonPrimitive(s.get()));
+                }
             }
+            result.add("versions", versions);
+            super.sendJsonResponse(200, result, resp);
         } catch (TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
-
-        for (SemVer s : WebserverAPI.supportedVersions) {
-            if (s.lesserThan(maxCDIVersion) || s.equals(maxCDIVersion)) {
-                versions.add(new JsonPrimitive(s.get()));
-            }
-        }
-        result.add("versions", versions);
-        super.sendJsonResponse(200, result, resp);
     }
 }

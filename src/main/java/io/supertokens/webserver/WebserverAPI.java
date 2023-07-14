@@ -80,6 +80,17 @@ public abstract class WebserverAPI extends HttpServlet {
     public static SemVer getLatestCDIVersion() {
         return SemVer.v3_0;
     }
+    
+    public SemVer getLatestCDIVersionForRequest(HttpServletRequest req)
+            throws ServletException, TenantOrAppNotFoundException {
+        SemVer maxCDIVersion = getLatestCDIVersion();
+        String maxCDIVersionStr = Config.getConfig(
+                getAppIdentifierWithStorage(req).getAsPublicTenantIdentifier(), main).getMaxCDIVersion();
+        if (maxCDIVersionStr != null) {
+            maxCDIVersion = new SemVer(maxCDIVersionStr);
+        }
+        return maxCDIVersion;
+    }
 
     public WebserverAPI(Main main, String rid) {
         super();
@@ -466,13 +477,7 @@ public abstract class WebserverAPI extends HttpServlet {
 
     protected SemVer getVersionFromRequest(HttpServletRequest req) throws ServletException {
         try {
-            SemVer maxCDIVersion = getLatestCDIVersion();
-            String maxCDIVersionStr = Config.getConfig(
-                    getAppIdentifierWithStorage(req).getAsPublicTenantIdentifier(), main).getMaxCDIVersion();
-            if (maxCDIVersionStr != null) {
-                maxCDIVersion = new SemVer(maxCDIVersionStr);
-            }
-
+            SemVer maxCDIVersion = getLatestCDIVersionForRequest(req);
             String version = req.getHeader("cdi-version");
 
             if (version != null) {

@@ -22,7 +22,6 @@ import io.supertokens.config.CoreConfig;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.Utils;
 import jakarta.servlet.ServletException;
@@ -51,12 +50,6 @@ public class CreateOrUpdateTenantOrGetTenantAPI extends BaseCreateOrUpdate {
         String tenantId = InputParser.parseStringOrThrowError(input, "tenantId", true);
         if (tenantId != null) {
             tenantId = Utils.normalizeAndValidateTenantId(tenantId);
-
-            SemVer version = getVersionFromRequest(req);
-            if (version.lesserThan(SemVer.v3_0) && !tenantId.equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
-                sendTextResponse(404, "Not found", resp);
-                return;
-            }
         }
 
         Boolean emailPasswordEnabled = InputParser.parseBooleanOrThrowError(input, "emailPasswordEnabled", true);
