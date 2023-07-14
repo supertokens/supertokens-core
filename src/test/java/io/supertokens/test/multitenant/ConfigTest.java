@@ -1856,7 +1856,7 @@ public class ConfigTest {
                 "log_level",
                 "firebase_password_hashing_pool_size",
                 "supertokens_saas_secret",
-                "supertokens_default_cdi_version"
+                "supertokens_max_cdi_version"
         };
 
         for (String disallowedConfig : disallowedConfigs) {
@@ -1983,7 +1983,7 @@ public class ConfigTest {
                 "disable_telemetry",
                 "password_hashing_alg",
                 "firebase_password_hashing_signer_key",
-                "supertokens_default_cdi_version",
+                "supertokens_max_cdi_version",
         };
         Object[][] conflictingValues = new Object[][]{
                 new Object[]{3600, 3601}, // access_token_validity
@@ -1995,7 +1995,7 @@ public class ConfigTest {
                 new Object[]{true, false}, // disable_telemetry
                 new Object[]{"BCRYPT", "ARGON2"}, // password_hashing_alg
                 new Object[]{"abcd1234abcd1234abcd1234abcd1234", "qwer1234qwer1234qwer1234qwer1234"}, // firebase_password_hashing_signer_key
-                new Object[]{"2.21", "3.0"} // supertokens_default_cdi_version
+                new Object[]{"2.21", "3.0"} // supertokens_max_cdi_version
         };
 
         for (int i=0; i<conflictingInSameUserPool.length; i++) {
