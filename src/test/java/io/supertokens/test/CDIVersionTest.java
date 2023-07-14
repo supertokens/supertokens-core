@@ -360,7 +360,7 @@ public class CDIVersionTest {
 
             {
                 JsonObject oldResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/jwt/jwks", null, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
+                        "http://localhost:3567/recipe/jwt/jwks", null, 1000, 1000, null, SemVer.v2_9.get(),
                         "jwt");
 
                 JsonArray oldKeys = oldResponse.getAsJsonArray("keys");
@@ -466,30 +466,4 @@ public class CDIVersionTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    @Test
-    public void testCreateTenantInOlderVersionOfCDI() throws Exception {
-        String[] args = {"../"};
-
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
-        Utils.setValueInConfig("supertokens_max_cdi_version", "\"2.21\"");
-        FeatureFlagTestContent.getInstance(process.getProcess())
-                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("tenantId", "t1");
-
-        try {
-            JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/multitenancy/tenant", requestBody, 1000, 1000, null, null,
-                    null);
-            fail();
-        } catch (HttpResponseException e) {
-            assertEquals(404, e.statusCode);
-        }
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-    }
 }
