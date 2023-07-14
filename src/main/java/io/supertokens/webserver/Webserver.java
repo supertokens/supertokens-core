@@ -39,7 +39,7 @@ import io.supertokens.webserver.api.jwt.JWTSigningAPI;
 import io.supertokens.webserver.api.multitenancy.*;
 import io.supertokens.webserver.api.multitenancy.CreateOrUpdateAppAPI;
 import io.supertokens.webserver.api.multitenancy.CreateOrUpdateConnectionUriDomainAPI;
-import io.supertokens.webserver.api.multitenancy.CreateOrUpdateTenantAPI;
+import io.supertokens.webserver.api.multitenancy.CreateOrUpdateTenantOrGetTenantAPI;
 import io.supertokens.webserver.api.multitenancy.RemoveTenantAPI;
 import io.supertokens.webserver.api.multitenancy.thirdparty.CreateOrUpdateThirdPartyConfigAPI;
 import io.supertokens.webserver.api.multitenancy.thirdparty.RemoveThirdPartyConfigAPI;
@@ -240,7 +240,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new RemoveAppAPI(main));
         addAPI(new ListAppsAPI(main));
 
-        addAPI(new CreateOrUpdateTenantAPI(main));
+        addAPI(new CreateOrUpdateTenantOrGetTenantAPI(main));
         addAPI(new RemoveTenantAPI(main));
         addAPI(new ListTenantsAPI(main));
 

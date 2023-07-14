@@ -22,6 +22,7 @@ import io.supertokens.config.CoreConfig;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.Utils;
 import jakarta.servlet.ServletException;
@@ -30,11 +31,11 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
-public class CreateOrUpdateTenantAPI extends BaseCreateOrUpdate {
+public class CreateOrUpdateTenantOrGetTenantAPI extends BaseCreateOrUpdate {
 
     private static final long serialVersionUID = -4641988458637882374L;
 
-    public CreateOrUpdateTenantAPI(Main main) {
+    public CreateOrUpdateTenantOrGetTenantAPI(Main main) {
         super(main);
     }
 
@@ -50,7 +51,14 @@ public class CreateOrUpdateTenantAPI extends BaseCreateOrUpdate {
         String tenantId = InputParser.parseStringOrThrowError(input, "tenantId", true);
         if (tenantId != null) {
             tenantId = Utils.normalizeAndValidateTenantId(tenantId);
+
+            SemVer version = getVersionFromRequest(req);
+            if (version.lesserThan(SemVer.v3_0) && !tenantId.equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
+                sendTextResponse(404, "Not found", resp);
+                return;
+            }
         }
+
         Boolean emailPasswordEnabled = InputParser.parseBooleanOrThrowError(input, "emailPasswordEnabled", true);
         Boolean thirdPartyEnabled = InputParser.parseBooleanOrThrowError(input, "thirdPartyEnabled", true);
         Boolean passwordlessEnabled = InputParser.parseBooleanOrThrowError(input, "passwordlessEnabled", true);
@@ -84,7 +92,10 @@ public class CreateOrUpdateTenantAPI extends BaseCreateOrUpdate {
 
             super.sendJsonResponse(200, result, resp);
         } catch (TenantOrAppNotFoundException e) {
-            throw new ServletException(e);
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "TENANT_NOT_FOUND_ERROR");
+
+            super.sendJsonResponse(200, result, resp);
         }
     }
 }

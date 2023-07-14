@@ -60,6 +60,10 @@ public class SemVer implements Comparable<SemVer> {
         return min.compareTo(this) <= 0;
     }
 
+    public boolean greaterThan(SemVer min) {
+        return min.compareTo(this) < 0;
+    }
+
     public boolean lesserThan(SemVer max) {
         return this.compareTo(max) < 0;
     }

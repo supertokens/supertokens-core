@@ -20,9 +20,12 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
+import io.supertokens.config.Config;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.WebserverAPI;
 
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -45,11 +48,25 @@ public class ApiVersionAPI extends WebserverAPI {
     }
 
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject result = new JsonObject();
         JsonArray versions = new JsonArray();
+
+        SemVer maxCDIVersion = getLatestCDIVersion();
+        try {
+            String maxCDIVersionStr = Config.getConfig(
+                    this.getAppIdentifierWithStorage(req).getAsPublicTenantIdentifier(), main).getMaxCDIVersion();
+            if (maxCDIVersionStr != null) {
+                maxCDIVersion = new SemVer(maxCDIVersionStr);
+            }
+        } catch (TenantOrAppNotFoundException e) {
+            throw new ServletException(e);
+        }
+
         for (SemVer s : WebserverAPI.supportedVersions) {
-            versions.add(new JsonPrimitive(s.get()));
+            if (s.lesserThan(maxCDIVersion) || s.equals(maxCDIVersion)) {
+                versions.add(new JsonPrimitive(s.get()));
+            }
         }
         result.add("versions", versions);
         super.sendJsonResponse(200, result, resp);
