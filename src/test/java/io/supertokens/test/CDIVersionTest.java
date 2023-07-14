@@ -427,7 +427,7 @@ public class CDIVersionTest {
                     "jwt");
             fail();
         } catch (HttpResponseException e) {
-            assert(e.getMessage().contains("Unsupported CDI version"));
+            assert(e.getMessage().contains("cdi-version 2.21 not supported"));
         }
 
         try {
@@ -436,7 +436,7 @@ public class CDIVersionTest {
                     "jwt");
             fail();
         } catch (HttpResponseException e) {
-            assert(e.getMessage().contains("Unsupported CDI version"));
+            assert(e.getMessage().contains("cdi-version 3.0 not supported"));
         }
 
         process.kill();
