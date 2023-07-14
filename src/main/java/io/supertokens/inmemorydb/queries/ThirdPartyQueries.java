@@ -28,7 +28,6 @@ import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicExceptio
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.thirdparty.UserInfo;
-import org.jetbrains.annotations.NotNull;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -297,36 +296,27 @@ public class ThirdPartyQueries {
         });
     }
 
-    public static UserInfo[] getThirdPartyUsersByEmail(Start start, TenantIdentifier tenantIdentifier,
-                                                       @NotNull String email)
-            throws SQLException, StorageQueryException {
+    public static List<String> getPrimaryUserIdUsingEmail(Start start, TenantIdentifier tenantIdentifier, String email)
+            throws StorageQueryException, SQLException {
+        String QUERY = "SELECT DISTINCT all_users.primary_or_recipe_user_id AS user_id "
+                + "FROM " + getConfig(start).getThirdPartyUsersTable() + " AS tp" +
+                " JOIN " + getConfig(start).getUsersTable() + " AS all_users" +
+                " ON tp.app_id = all_users.app_id AND tp.user_id = all_users.user_id" +
+                " JOIN " + getConfig(start).getThirdPartyUserToTenantTable() + " AS tp_tenants" +
+                " ON tp_tenants.app_id = all_users.app_id AND tp_tenants.user_id = all_users.user_id" +
+                " WHERE tp.app_id = ? AND tp_tenants.tenant_id = ? AND tp.email = ?";
 
-        String QUERY = "SELECT tp_users.user_id as user_id, tp_users.third_party_id as third_party_id, "
-                + "tp_users.third_party_user_id as third_party_user_id, tp_users.email as email, "
-                + "tp_users.time_joined as time_joined "
-                + "FROM " + getConfig(start).getThirdPartyUsersTable() + " AS tp_users "
-                + "JOIN " + getConfig(start).getThirdPartyUserToTenantTable() + " AS tp_users_to_tenant "
-                + "ON tp_users.app_id = tp_users_to_tenant.app_id AND tp_users.user_id = tp_users_to_tenant.user_id "
-                + "WHERE tp_users_to_tenant.app_id = ? AND tp_users_to_tenant.tenant_id = ? AND tp_users.email = ? "
-                + "ORDER BY time_joined";
-
-        try (Connection con = ConnectionPool.getConnection(start)) {
-            List<UserInfoPartial> userInfos = execute(con, QUERY.toString(), pst -> {
-                pst.setString(1, tenantIdentifier.getAppId());
-                pst.setString(2, tenantIdentifier.getTenantId());
-                pst.setString(3, email);
-            }, result -> {
-                List<UserInfoPartial> finalResult = new ArrayList<>();
-                while (result.next()) {
-                    finalResult.add(UserInfoRowMapper.getInstance().mapOrThrow(result));
-                }
-                return finalResult;
-            });
-            fillUserInfoWithTenantIds_transaction(start, con, tenantIdentifier.toAppIdentifier(), userInfos);
-            fillUserInfoWithVerified_transaction(start, con, tenantIdentifier.toAppIdentifier(), userInfos);
-            return userInfos.stream().map(x -> new UserInfo(x.id, false, x.toLoginMethod()))
-                    .toArray(UserInfo[]::new);
-        }
+        return execute(start, QUERY, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, tenantIdentifier.getTenantId());
+            pst.setString(3, email);
+        }, result -> {
+            List<String> finalResult = new ArrayList<>();
+            while (result.next()) {
+                finalResult.add(result.getString("user_id"));
+            }
+            return finalResult;
+        });
     }
 
     public static boolean addUserIdToTenant_Transaction(Start start, Connection sqlCon,

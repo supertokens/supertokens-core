@@ -871,10 +871,17 @@ public class GeneralQueries {
             userIds.add(passwordlessUserId);
         }
 
-        // TODO:add support for other recipes.
+        userIds.addAll(ThirdPartyQueries.getPrimaryUserIdUsingEmail(start, tenantIdentifier, email));
+
+        // remove duplicates from userIds
+        Set<String> userIdsSet = new HashSet<>(userIds);
+        userIds = new ArrayList<>(userIdsSet);
 
         List<AuthRecipeUserInfo> result = getPrimaryUserInfoForUserIds(start, tenantIdentifier.toAppIdentifier(),
                 userIds);
+
+        // this is going to order them based on oldest that joined to newest that joined.
+        result.sort(Comparator.comparingLong(o -> o.timeJoined));
 
         return result.toArray(new AuthRecipeUserInfo[0]);
     }

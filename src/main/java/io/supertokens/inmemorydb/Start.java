@@ -1149,17 +1149,6 @@ public class Start
     }
 
     @Override
-    public io.supertokens.pluginInterface.thirdparty.UserInfo[] getThirdPartyUsersByEmail(
-            TenantIdentifier tenantIdentifier, @NotNull String email)
-            throws StorageQueryException {
-        try {
-            return ThirdPartyQueries.getThirdPartyUsersByEmail(this, tenantIdentifier, email);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
     public long getUsersCount(TenantIdentifier tenantIdentifier, RECIPE_ID[] includeRecipeIds)
             throws StorageQueryException {
         try {

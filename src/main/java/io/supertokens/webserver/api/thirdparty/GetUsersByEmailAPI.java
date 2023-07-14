@@ -21,11 +21,11 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.thirdparty.UserInfo;
 import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
@@ -61,7 +61,7 @@ public class GetUsersByEmailAPI extends WebserverAPI {
 
             String email = InputParser.getQueryParamOrThrowError(req, "email", false);
             email = Utils.normaliseEmail(email);
-            UserInfo[] users = ThirdParty.getUsersByEmail(tenantIdentifierWithStorage, email);
+            AuthRecipeUserInfo[] users = ThirdParty.getUsersByEmail(tenantIdentifierWithStorage, email);
 
             // return the externalUserId if a mapping exists for a user
             for (int i = 0; i < users.length; i++) {
@@ -77,7 +77,7 @@ public class GetUsersByEmailAPI extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             JsonArray usersJson = new JsonArray();
-            for (UserInfo userInfo : users) {
+            for (AuthRecipeUserInfo userInfo : users) {
                 usersJson.add(getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0) ? userInfo.toJson() :
                         userInfo.toJsonWithoutAccountLinking());
             }

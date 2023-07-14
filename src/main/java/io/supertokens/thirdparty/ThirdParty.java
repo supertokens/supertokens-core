@@ -19,6 +19,7 @@ package io.supertokens.thirdparty;
 import io.supertokens.Main;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
+import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
@@ -35,8 +36,10 @@ import io.supertokens.utils.Utils;
 import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nonnull;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 
 public class ThirdParty {
 
@@ -240,11 +243,20 @@ public class ThirdParty {
                 thirdPartyId, thirdPartyUserId);
     }
 
-    public static UserInfo[] getUsersByEmail(TenantIdentifierWithStorage tenantIdentifierWithStorage,
-                                             @Nonnull String email)
+    public static AuthRecipeUserInfo[] getUsersByEmail(TenantIdentifierWithStorage tenantIdentifierWithStorage,
+                                                       @Nonnull String email)
             throws StorageQueryException {
-        return tenantIdentifierWithStorage.getThirdPartyStorage()
-                .getThirdPartyUsersByEmail(tenantIdentifierWithStorage, email);
+        AuthRecipeUserInfo[] users = tenantIdentifierWithStorage.getThirdPartyStorage()
+                .listPrimaryUsersByEmail(tenantIdentifierWithStorage, email);
+        List<AuthRecipeUserInfo> result = new ArrayList<>();
+        for (AuthRecipeUserInfo user : users) {
+            for (LoginMethod lM : user.loginMethods) {
+                if (lM.recipeId == RECIPE_ID.THIRD_PARTY && lM.email.equals(email)) {
+                    result.add(user);
+                }
+            }
+        }
+        return result.toArray(new AuthRecipeUserInfo[0]);
     }
 
     public static void verifyThirdPartyProvidersArray(ThirdPartyConfig.Provider[] providers)
