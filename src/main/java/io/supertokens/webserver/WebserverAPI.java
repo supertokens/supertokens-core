@@ -457,8 +457,6 @@ public abstract class WebserverAPI extends HttpServlet {
                     sendTextResponse(400,
                             "AppId or tenantId not found => " + ((TenantOrAppNotFoundException) rootCause).getMessage(),
                             resp);
-                } else if (rootCause instanceof UnsupportedCDIVersionException) {
-                    sendTextResponse(400, "Unsupported CDI version", resp);
                 } else if (rootCause instanceof BadPermissionException) {
                     sendTextResponse(403, rootCause.getMessage(), resp);
                 } else {
@@ -484,7 +482,7 @@ public abstract class WebserverAPI extends HttpServlet {
                 SemVer versionFromRequest = new SemVer(version);
 
                 if (versionFromRequest.greaterThan(maxCDIVersion)) {
-                    throw new ServletException(new UnsupportedCDIVersionException());
+                    throw new ServletException(new BadRequestException("cdi-version " + versionFromRequest + " not supported"));
                 }
 
                 return versionFromRequest;
@@ -509,14 +507,6 @@ public abstract class WebserverAPI extends HttpServlet {
         private static final long serialVersionUID = 6058119187747009809L;
 
         public APIKeyUnauthorisedException() {
-            super();
-        }
-    }
-
-    protected static class UnsupportedCDIVersionException extends Exception {
-        private static final long serialVersionUID = 6058119137747009809L;
-
-        public UnsupportedCDIVersionException() {
             super();
         }
     }
