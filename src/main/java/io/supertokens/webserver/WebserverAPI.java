@@ -80,6 +80,17 @@ public abstract class WebserverAPI extends HttpServlet {
     public static SemVer getLatestCDIVersion() {
         return SemVer.v3_0;
     }
+    
+    public SemVer getLatestCDIVersionForRequest(HttpServletRequest req)
+            throws ServletException, TenantOrAppNotFoundException {
+        SemVer maxCDIVersion = getLatestCDIVersion();
+        String maxCDIVersionStr = Config.getConfig(
+                getAppIdentifierWithStorage(req).getAsPublicTenantIdentifier(), main).getMaxCDIVersion();
+        if (maxCDIVersionStr != null) {
+            maxCDIVersion = new SemVer(maxCDIVersionStr);
+        }
+        return maxCDIVersion;
+    }
 
     public WebserverAPI(Main main, String rid) {
         super();
@@ -446,6 +457,8 @@ public abstract class WebserverAPI extends HttpServlet {
                     sendTextResponse(400,
                             "AppId or tenantId not found => " + ((TenantOrAppNotFoundException) rootCause).getMessage(),
                             resp);
+                } else if (rootCause instanceof UnsupportedCDIVersionException) {
+                    sendTextResponse(400, "Unsupported CDI version", resp);
                 } else if (rootCause instanceof BadPermissionException) {
                     sendTextResponse(403, rootCause.getMessage(), resp);
                 } else {
@@ -463,23 +476,24 @@ public abstract class WebserverAPI extends HttpServlet {
     }
 
     protected SemVer getVersionFromRequest(HttpServletRequest req) throws ServletException {
-        String version = req.getHeader("cdi-version");
-
-        if (version != null) {
-            return new SemVer(version);
-        }
-
         try {
-            String defaultCDIVersion = Config.getConfig(
-                    getAppIdentifierWithStorage(req).getAsPublicTenantIdentifier(), main).getDefaultCDIVersion();
-            if (defaultCDIVersion != null) {
-                return new SemVer(defaultCDIVersion);
+            SemVer maxCDIVersion = getLatestCDIVersionForRequest(req);
+            String version = req.getHeader("cdi-version");
+
+            if (version != null) {
+                SemVer versionFromRequest = new SemVer(version);
+
+                if (versionFromRequest.greaterThan(maxCDIVersion)) {
+                    throw new ServletException(new UnsupportedCDIVersionException());
+                }
+
+                return versionFromRequest;
             }
+
+            return maxCDIVersion;
         } catch (TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
-
-        return getLatestCDIVersion();
     }
 
     public static class BadRequestException extends Exception {
@@ -495,6 +509,14 @@ public abstract class WebserverAPI extends HttpServlet {
         private static final long serialVersionUID = 6058119187747009809L;
 
         public APIKeyUnauthorisedException() {
+            super();
+        }
+    }
+
+    protected static class UnsupportedCDIVersionException extends Exception {
+        private static final long serialVersionUID = 6058119137747009809L;
+
+        public UnsupportedCDIVersionException() {
             super();
         }
     }

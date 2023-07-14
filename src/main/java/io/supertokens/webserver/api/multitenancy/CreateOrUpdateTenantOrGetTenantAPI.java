@@ -30,11 +30,11 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
-public class CreateOrUpdateTenantAPI extends BaseCreateOrUpdate {
+public class CreateOrUpdateTenantOrGetTenantAPI extends BaseCreateOrUpdate {
 
     private static final long serialVersionUID = -4641988458637882374L;
 
-    public CreateOrUpdateTenantAPI(Main main) {
+    public CreateOrUpdateTenantOrGetTenantAPI(Main main) {
         super(main);
     }
 
@@ -51,6 +51,7 @@ public class CreateOrUpdateTenantAPI extends BaseCreateOrUpdate {
         if (tenantId != null) {
             tenantId = Utils.normalizeAndValidateTenantId(tenantId);
         }
+
         Boolean emailPasswordEnabled = InputParser.parseBooleanOrThrowError(input, "emailPasswordEnabled", true);
         Boolean thirdPartyEnabled = InputParser.parseBooleanOrThrowError(input, "thirdPartyEnabled", true);
         Boolean passwordlessEnabled = InputParser.parseBooleanOrThrowError(input, "passwordlessEnabled", true);
@@ -84,7 +85,10 @@ public class CreateOrUpdateTenantAPI extends BaseCreateOrUpdate {
 
             super.sendJsonResponse(200, result, resp);
         } catch (TenantOrAppNotFoundException e) {
-            throw new ServletException(e);
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "TENANT_NOT_FOUND_ERROR");
+
+            super.sendJsonResponse(200, result, resp);
         }
     }
 }

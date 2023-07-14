@@ -195,7 +195,7 @@ public class CoreConfig {
 
     @NotConflictingInApp
     @JsonProperty
-    private String supertokens_default_cdi_version = null;
+    private String supertokens_max_cdi_version = null;
 
     @IgnoreForAnnotationCheck
     private Set<LOG_LEVEL> allowedLogLevels = null;
@@ -564,15 +564,15 @@ public class CoreConfig {
             }
         }
 
-        if (supertokens_default_cdi_version != null) {
+        if (supertokens_max_cdi_version != null) {
             try {
-                SemVer version = new SemVer(supertokens_default_cdi_version);
+                SemVer version = new SemVer(supertokens_max_cdi_version);
 
                 if (!WebserverAPI.supportedVersions.contains(version)) {
-                    throw new InvalidConfigException("supertokens_default_cdi_version is not a supported version");
+                    throw new InvalidConfigException("supertokens_max_cdi_version is not a supported version");
                 }
             } catch (IllegalArgumentException e) {
-                throw new InvalidConfigException("supertokens_default_cdi_version is not a valid semantic version");
+                throw new InvalidConfigException("supertokens_max_cdi_version is not a valid semantic version");
             }
         }
 
@@ -722,8 +722,7 @@ public class CoreConfig {
         }
     }
 
-    public String getDefaultCDIVersion() {
-        return this.supertokens_default_cdi_version;
+    public String getMaxCDIVersion() {
+        return this.supertokens_max_cdi_version;
     }
 }
-

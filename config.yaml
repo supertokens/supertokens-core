@@ -145,4 +145,4 @@ core_config_version: 0
 # (DIFFERENT_ACROSS_APPS | OPTIONAL | Default: null). This is used when the core needs to assume a specific CDI version
 # when CDI version is not specified in the request. When set to null, the core will assume the latest version of the
 # CDI.
-# supertokens_default_cdi_version:
+# supertokens_max_cdi_version:

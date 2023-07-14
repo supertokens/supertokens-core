@@ -9,6 +9,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [6.0.4] - 2023-07-13
 - Fixes tenant prefix in stack trace log
+- `supertokens_default_cdi_version` config renamed to `supertokens_max_cdi_version`
+- Fixes `/apiversion` GET to return versions until `supertokens_max_cdi_version` if set
+- Fixes `/recipe/multitenancy/tenant` GET to return `TENANT_NOT_FOUND_ERROR` with 200 status when tenant was not found
 
 ## [6.0.3] - 2023-07-11
 
