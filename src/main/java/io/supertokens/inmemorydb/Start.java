@@ -870,12 +870,12 @@ public class Start
     }
 
     @Override
-    public UserInfo getUserInfoUsingId_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
-                                                   String userId)
+    public boolean lockEmailPasswordTableUsingId_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
+                                                             String userId)
             throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
-            return EmailPasswordQueries.getUserInfoUsingId_Transaction(this, sqlCon, appIdentifier, userId);
+            return EmailPasswordQueries.lockEmailPasswordTableUsingId_Transaction(this, sqlCon, appIdentifier, userId);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -1065,14 +1065,14 @@ public class Start
     }
 
     @Override
-    public io.supertokens.pluginInterface.thirdparty.UserInfo getUserInfoUsingId_Transaction(
+    public String getEmailUsingThirdPartyInfo_Transaction(
             AppIdentifier appIdentifier, TransactionConnection con,
             String thirdPartyId,
             String thirdPartyUserId)
             throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
-            return ThirdPartyQueries.getUserInfoUsingId_Transaction(this, sqlCon, appIdentifier, thirdPartyId,
+            return ThirdPartyQueries.getEmailUsingThirdPartyInfo_Transaction(this, sqlCon, appIdentifier, thirdPartyId,
                     thirdPartyUserId);
         } catch (SQLException e) {
             throw new StorageQueryException(e);

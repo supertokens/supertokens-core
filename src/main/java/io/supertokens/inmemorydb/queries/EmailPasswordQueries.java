@@ -199,32 +199,21 @@ public class EmailPasswordQueries {
         });
     }
 
-    public static UserInfo getUserInfoUsingId_Transaction(Start start, Connection con, AppIdentifier appIdentifier,
-                                                          String id)
+    public static boolean lockEmailPasswordTableUsingId_Transaction(Start start, Connection con,
+                                                                    AppIdentifier appIdentifier,
+                                                                    String id)
             throws SQLException, StorageQueryException {
 
         ((ConnectionWithLocks) con).lock(
                 appIdentifier.getAppId() + "~" + id + Config.getConfig(start).getEmailPasswordUsersTable());
 
-        String QUERY = "SELECT user_id, email, password_hash, time_joined FROM "
+        String QUERY = "SELECT user_id FROM "
                 + getConfig(start).getEmailPasswordUsersTable()
                 + " WHERE app_id = ? AND user_id = ?";
-        UserInfoPartial userInfo = execute(con, QUERY, pst -> {
+        return execute(con, QUERY, pst -> {
             pst.setString(1, appIdentifier.getAppId());
             pst.setString(2, id);
-        }, result -> {
-            if (result.next()) {
-                return UserInfoRowMapper.getInstance().mapOrThrow(result);
-            }
-            return null;
-        });
-        if (userInfo == null) {
-            return null;
-        }
-        fillUserInfoWithTenantIds_transaction(start, con, appIdentifier, userInfo);
-        fillUserInfoWithVerified_transaction(start, con, appIdentifier, userInfo);
-        fillUserInfoWithIsPrimaryUserBoolean_transaction(start, con, appIdentifier, userInfo);
-        return new UserInfo(userInfo.id, userInfo.isPrimary, userInfo.toLoginMethod());
+        }, ResultSet::next);
     }
 
     public static PasswordResetTokenInfo getPasswordResetTokenInfo(Start start, AppIdentifier appIdentifier,
@@ -522,34 +511,6 @@ public class EmailPasswordQueries {
         List<UserInfo> result = new ArrayList<>();
         for (UserInfoPartial userInfo : userInfos) {
             userInfo.tenantIds = tenantIdsForUserIds.get(userInfo.id).toArray(new String[0]);
-        }
-        return userInfos;
-    }
-
-    private static UserInfoPartial fillUserInfoWithIsPrimaryUserBoolean_transaction(Start start, Connection sqlCon,
-                                                                                    AppIdentifier appIdentifier,
-                                                                                    UserInfoPartial userInfo)
-            throws SQLException, StorageQueryException {
-        if (userInfo == null) return null;
-        return fillUserInfoWithIsPrimaryUserBoolean_transaction(start, sqlCon, appIdentifier,
-                Arrays.asList(userInfo)).get(0);
-    }
-
-    private static List<UserInfoPartial> fillUserInfoWithIsPrimaryUserBoolean_transaction(Start start,
-                                                                                          Connection sqlCon,
-                                                                                          AppIdentifier appIdentifier,
-                                                                                          List<UserInfoPartial> userInfos)
-            throws SQLException, StorageQueryException {
-        String[] userIds = new String[userInfos.size()];
-        for (int i = 0; i < userInfos.size(); i++) {
-            userIds[i] = userInfos.get(i).id;
-        }
-
-        Map<String, Boolean> isPrimaryUserForUserIds = GeneralQueries.getIsPrimaryUserBoolean_transaction(start, sqlCon,
-                appIdentifier,
-                userIds);
-        for (UserInfoPartial userInfo : userInfos) {
-            userInfo.isPrimary = isPrimaryUserForUserIds.get(userInfo.id);
         }
         return userInfos;
     }

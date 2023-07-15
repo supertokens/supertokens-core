@@ -162,7 +162,6 @@ public class ThirdParty {
             }
 
             // we try to get user and update their email
-            SignInUpResponse response = null;
             try {
                 // We should update the user email based on thirdPartyId and thirdPartyUserId across all apps,
                 // so we iterate through all the app storages and do the update.
@@ -173,15 +172,17 @@ public class ThirdParty {
                 Storage[] storages = StorageLayer.getStoragesForApp(main, appIdentifier);
                 for (Storage st : storages) {
                     storage.startTransaction(con -> {
-                        UserInfo user = storage.getUserInfoUsingId_Transaction(appIdentifier.withStorage(st), con,
+                        String emailFromDb = storage.getEmailUsingThirdPartyInfo_Transaction(
+                                appIdentifier.withStorage(st),
+                                con,
                                 thirdPartyId, thirdPartyUserId);
 
-                        if (user == null) {
+                        if (emailFromDb == null) {
                             storage.commitTransaction(con);
                             return null;
                         }
 
-                        if (!email.equals(user.email)) {
+                        if (!email.equals(emailFromDb)) {
                             storage.updateUserEmail_Transaction(appIdentifier.withStorage(st), con,
                                     thirdPartyId, thirdPartyUserId, email);
                         }
@@ -194,10 +195,6 @@ public class ThirdParty {
                 AuthRecipeUserInfo user = getUser(tenantIdentifierWithStorage, thirdPartyId, thirdPartyUserId);
                 return new SignInUpResponse(false, user);
             } catch (StorageTransactionLogicException ignored) {
-            }
-
-            if (response != null) {
-                return response;
             }
 
             // retry..

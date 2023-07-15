@@ -277,19 +277,19 @@ public class TestTenantUserAssociation {
 
         AuthRecipeUserInfo user = EmailPassword.signUp(t1WithStorage,
                 process.getProcess(), "user@example.com", "password");
-        assertArrayEquals(new String[]{"t1"}, user.tenantIds);
+        assertArrayEquals(new String[]{"t1"}, user.tenantIds.toArray());
 
         Multitenancy.addUserIdToTenant(process.getProcess(), t2WithStorage, user.id);
         user = EmailPassword.getUserUsingId(t1WithStorage.toAppIdentifierWithStorage(), user.id);
-        Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds);
+        Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds.toArray());
 
 
         user = EmailPassword.getUserUsingEmail(t1WithStorage, user.loginMethods[0].email);
-        Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds);
+        Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds.toArray());
 
         Multitenancy.removeUserIdFromTenant(process.getProcess(), t1WithStorage, user.id);
         user = EmailPassword.getUserUsingId(t1WithStorage.toAppIdentifierWithStorage(), user.id);
-        assertArrayEquals(new String[]{"t2"}, user.tenantIds);
+        assertArrayEquals(new String[]{"t2"}, user.tenantIds.toArray());
     }
 
     @Test
@@ -311,19 +311,19 @@ public class TestTenantUserAssociation {
         Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(t1WithStorage,
                 process.getProcess(),
                 createCodeResponse.deviceId, createCodeResponse.deviceIdHash, createCodeResponse.userInputCode, null);
-        assertArrayEquals(new String[]{"t1"}, consumeCodeResponse.user.tenantIds);
+        assertArrayEquals(new String[]{"t1"}, consumeCodeResponse.user.tenantIds.toArray());
 
         AuthRecipeUserInfo user;
         Multitenancy.addUserIdToTenant(process.getProcess(), t2WithStorage, consumeCodeResponse.user.id);
         user = Passwordless.getUserById(t1WithStorage.toAppIdentifierWithStorage(), consumeCodeResponse.user.id);
-        Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds);
+        Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds.toArray());
 
         user = Passwordless.getUserByEmail(t1WithStorage, consumeCodeResponse.user.loginMethods[0].email);
-        Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds);
+        Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds.toArray());
 
         Multitenancy.removeUserIdFromTenant(process.getProcess(), t1WithStorage, consumeCodeResponse.user.id);
         user = Passwordless.getUserById(t1WithStorage.toAppIdentifierWithStorage(), consumeCodeResponse.user.id);
-        assertArrayEquals(new String[]{"t2"}, user.tenantIds);
+        assertArrayEquals(new String[]{"t2"}, user.tenantIds.toArray());
     }
 
     @Test
@@ -345,19 +345,19 @@ public class TestTenantUserAssociation {
         Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(t1WithStorage,
                 process.getProcess(),
                 createCodeResponse.deviceId, createCodeResponse.deviceIdHash, createCodeResponse.userInputCode, null);
-        assertArrayEquals(new String[]{"t1"}, consumeCodeResponse.user.tenantIds);
+        assertArrayEquals(new String[]{"t1"}, consumeCodeResponse.user.tenantIds.toArray());
 
         AuthRecipeUserInfo user;
         Multitenancy.addUserIdToTenant(process.getProcess(), t2WithStorage, consumeCodeResponse.user.id);
         user = Passwordless.getUserById(t1WithStorage.toAppIdentifierWithStorage(), consumeCodeResponse.user.id);
-        Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds);
+        Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds.toArray());
 
         user = Passwordless.getUserByPhoneNumber(t1WithStorage, consumeCodeResponse.user.loginMethods[0].phoneNumber);
-        Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds);
+        Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds.toArray());
 
         Multitenancy.removeUserIdFromTenant(process.getProcess(), t1WithStorage, consumeCodeResponse.user.id);
         user = Passwordless.getUserById(t1WithStorage.toAppIdentifierWithStorage(), consumeCodeResponse.user.id);
-        assertArrayEquals(new String[]{"t2"}, user.tenantIds);
+        assertArrayEquals(new String[]{"t2"}, user.tenantIds.toArray());
     }
 
     @Test
@@ -377,25 +377,25 @@ public class TestTenantUserAssociation {
         ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(t1WithStorage, process.getProcess(),
                 "google",
                 "googleid", "user@example.com");
-        assertArrayEquals(new String[]{"t1"}, signInUpResponse.user.tenantIds);
+        assertArrayEquals(new String[]{"t1"}, signInUpResponse.user.tenantIds.toArray());
 
         Multitenancy.addUserIdToTenant(process.getProcess(), t2WithStorage, signInUpResponse.user.id);
         AuthRecipeUserInfo user = ThirdParty.getUser(
                 t1WithStorage.toAppIdentifierWithStorage(), signInUpResponse.user.id);
-        Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds);
+        Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds.toArray());
 
         user = ThirdParty.getUsersByEmail(t1WithStorage, signInUpResponse.user.loginMethods[0].email)[0];
-        Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds);
+        Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds.toArray());
 
         user = ThirdParty.getUser(t1WithStorage, "google", "googleid");
-        Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds);
+        Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds.toArray());
 
         user = ThirdParty.getUser(t2WithStorage, "google", "googleid");
-        Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds);
+        Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds.toArray());
 
         Multitenancy.removeUserIdFromTenant(process.getProcess(), t1WithStorage, signInUpResponse.user.id);
         user = ThirdParty.getUser(t1WithStorage.toAppIdentifierWithStorage(), signInUpResponse.user.id);
-        assertArrayEquals(new String[]{"t2"}, user.tenantIds);
+        assertArrayEquals(new String[]{"t2"}, user.tenantIds.toArray());
     }
 
     @Test

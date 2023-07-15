@@ -243,35 +243,27 @@ public class ThirdPartyQueries {
         });
     }
 
-    public static UserInfo getUserInfoUsingId_Transaction(Start start, Connection con,
-                                                          AppIdentifier appIdentifier, String thirdPartyId,
-                                                          String thirdPartyUserId)
+    public static String getEmailUsingThirdPartyInfo_Transaction(Start start, Connection con,
+                                                                 AppIdentifier appIdentifier, String thirdPartyId,
+                                                                 String thirdPartyUserId)
             throws SQLException, StorageQueryException {
 
         ((ConnectionWithLocks) con).lock(appIdentifier.getAppId() + "~" + thirdPartyId + "~" + thirdPartyUserId +
                 Config.getConfig(start).getThirdPartyUsersTable());
 
-        String QUERY = "SELECT user_id, third_party_id, third_party_user_id, email, time_joined FROM "
+        String QUERY = "SELECT email FROM "
                 + getConfig(start).getThirdPartyUsersTable()
                 + " WHERE app_id = ? AND third_party_id = ? AND third_party_user_id = ?";
-        UserInfoPartial userInfo = execute(con, QUERY, pst -> {
+        return execute(con, QUERY, pst -> {
             pst.setString(1, appIdentifier.getAppId());
             pst.setString(2, thirdPartyId);
             pst.setString(3, thirdPartyUserId);
         }, result -> {
             if (result.next()) {
-                return UserInfoRowMapper.getInstance().mapOrThrow(result);
+                return result.getString("email");
             }
             return null;
         });
-        if (userInfo == null) {
-            return null;
-        }
-        fillUserInfoWithTenantIds_transaction(start, con, appIdentifier, userInfo);
-        fillUserInfoWithVerified_transaction(start, con, appIdentifier, userInfo);
-        fillUserInfoWithIsPrimaryUserBoolean_transaction(start, con, appIdentifier,
-                userInfo);
-        return new UserInfo(userInfo.id, userInfo.isPrimary, userInfo.toLoginMethod());
     }
 
     private static UserInfoPartial getUserInfoUsingUserId(Start start, Connection con,
@@ -424,34 +416,6 @@ public class ThirdPartyQueries {
                 userIds);
         for (UserInfoPartial userInfo : userInfos) {
             userInfo.tenantIds = tenantIdsForUserIds.get(userInfo.id).toArray(new String[0]);
-        }
-        return userInfos;
-    }
-
-    private static UserInfoPartial fillUserInfoWithIsPrimaryUserBoolean_transaction(Start start, Connection sqlCon,
-                                                                                    AppIdentifier appIdentifier,
-                                                                                    UserInfoPartial userInfo)
-            throws SQLException, StorageQueryException {
-        if (userInfo == null) return null;
-        return fillUserInfoWithIsPrimaryUserBoolean_transaction(start, sqlCon, appIdentifier,
-                Arrays.asList(userInfo)).get(0);
-    }
-
-    private static List<UserInfoPartial> fillUserInfoWithIsPrimaryUserBoolean_transaction(Start start,
-                                                                                          Connection sqlCon,
-                                                                                          AppIdentifier appIdentifier,
-                                                                                          List<UserInfoPartial> userInfos)
-            throws SQLException, StorageQueryException {
-        String[] userIds = new String[userInfos.size()];
-        for (int i = 0; i < userInfos.size(); i++) {
-            userIds[i] = userInfos.get(i).id;
-        }
-
-        Map<String, Boolean> isPrimaryUserForUserIds = GeneralQueries.getIsPrimaryUserBoolean_transaction(start, sqlCon,
-                appIdentifier,
-                userIds);
-        for (UserInfoPartial userInfo : userInfos) {
-            userInfo.isPrimary = isPrimaryUserForUserIds.get(userInfo.id);
         }
         return userInfos;
     }

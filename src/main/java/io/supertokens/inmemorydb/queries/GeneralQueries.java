@@ -1082,44 +1082,6 @@ public class GeneralQueries {
         return new HashMap<>();
     }
 
-    public static Map<String, Boolean> getIsPrimaryUserBoolean_transaction(Start start, Connection sqlCon,
-                                                                           AppIdentifier appIdentifier,
-                                                                           String[] userIds)
-            throws SQLException, StorageQueryException {
-        if (userIds != null && userIds.length > 0) {
-            StringBuilder QUERY = new StringBuilder("SELECT user_id, is_linked_or_is_a_primary_user "
-                    + "FROM " + getConfig(start).getUsersTable());
-            QUERY.append(" WHERE user_id IN (");
-            for (int i = 0; i < userIds.length; i++) {
-
-                QUERY.append("?");
-                if (i != userIds.length - 1) {
-                    // not the last element
-                    QUERY.append(",");
-                }
-            }
-            QUERY.append(") AND app_id = ?");
-
-            return execute(sqlCon, QUERY.toString(), pst -> {
-                for (int i = 0; i < userIds.length; i++) {
-                    // i+1 cause this starts with 1 and not 0
-                    pst.setString(i + 1, userIds[i]);
-                }
-                pst.setString(userIds.length + 1, appIdentifier.getAppId());
-            }, result -> {
-                Map<String, Boolean> finalResult = new HashMap<>();
-                while (result.next()) {
-                    String userId = result.getString("user_id").trim();
-                    Boolean isLinkedOrPrimaryUser = result.getBoolean("is_linked_or_is_a_primary_user");
-                    finalResult.put(userId, isLinkedOrPrimaryUser);
-                }
-                return finalResult;
-            });
-        }
-
-        return new HashMap<>();
-    }
-
     @TestOnly
     public static String[] getAllTablesInTheDatabase(Start start) throws SQLException, StorageQueryException {
         if (!Start.isTesting) {

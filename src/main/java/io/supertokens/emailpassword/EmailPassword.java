@@ -431,10 +431,11 @@ public class EmailPassword {
         try {
             storage.startTransaction(transaction -> {
                 try {
-                    UserInfo userInfo = storage.getUserInfoUsingId_Transaction(appIdentifierWithStorage, transaction,
+                    boolean exists = storage.lockEmailPasswordTableUsingId_Transaction(appIdentifierWithStorage,
+                            transaction,
                             userId);
 
-                    if (userInfo == null) {
+                    if (!exists) {
                         throw new StorageTransactionLogicException(new UnknownUserIdException());
                     }
 
