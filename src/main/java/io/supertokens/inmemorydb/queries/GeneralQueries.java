@@ -90,11 +90,20 @@ public class GeneralQueries {
     }
 
     static String getQueryToCreatePrimaryUserIdIndex(Start start) {
+        /*
+         * Used in:
+         *
+         * */
         return "CREATE INDEX all_auth_recipe_users_primary_user_id_index ON " + Config.getConfig(start).getUsersTable()
                 + "(app_id, primary_or_recipe_user_id);";
     }
 
     static String getQueryToCreatePrimaryUserIdAndTenantIndex(Start start) {
+        /*
+         * Used in:
+         * - user count query
+         *
+         * */
         return "CREATE INDEX all_auth_recipe_users_primary_user_id_and_tenant_id_index ON " +
                 Config.getConfig(start).getUsersTable()
                 + "(app_id, tenant_id, primary_or_recipe_user_id);";
@@ -836,7 +845,7 @@ public class GeneralQueries {
 
         // we give the userId[] for each recipe to fetch all those user's details
         for (RECIPE_ID recipeId : recipeIdToUserIdListMap.keySet()) {
-            List<? extends AuthRecipeUserInfo> users = getPrimaryUserInfoForUserIds(start,
+            List<AuthRecipeUserInfo> users = getPrimaryUserInfoForUserIds(start,
                     tenantIdentifier.toAppIdentifier(),
                     recipeIdToUserIdListMap.get(recipeId));
 
