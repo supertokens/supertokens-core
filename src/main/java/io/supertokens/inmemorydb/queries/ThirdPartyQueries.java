@@ -144,10 +144,8 @@ public class ThirdPartyQueries {
                 UserInfoPartial userInfo = new UserInfoPartial(id, email, thirdParty, timeJoined);
                 fillUserInfoWithTenantIds_transaction(start, sqlCon, tenantIdentifier.toAppIdentifier(), userInfo);
                 fillUserInfoWithVerified_transaction(start, sqlCon, tenantIdentifier.toAppIdentifier(), userInfo);
-                fillUserInfoWithIsPrimaryUserBoolean_transaction(start, sqlCon, tenantIdentifier.toAppIdentifier(),
-                        userInfo);
                 sqlCon.commit();
-                return new UserInfo(id, userInfo.isPrimary, userInfo.toLoginMethod());
+                return new UserInfo(id, false, userInfo.toLoginMethod());
 
             } catch (SQLException throwables) {
                 throw new StorageTransactionLogicException(throwables);

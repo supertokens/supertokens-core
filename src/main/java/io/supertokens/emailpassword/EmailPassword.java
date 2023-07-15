@@ -51,7 +51,6 @@ import javax.annotation.Nullable;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
-import java.util.Arrays;
 
 public class EmailPassword {
 
@@ -175,9 +174,7 @@ public class EmailPassword {
                 LoginMethod loginMethod = null;
                 for (AuthRecipeUserInfo currUser : allUsers) {
                     for (LoginMethod currLM : currUser.loginMethods) {
-                        if (currLM.email.equals(email) && currLM.recipeId == RECIPE_ID.EMAIL_PASSWORD &&
-                                Arrays.stream(currLM.tenantIds)
-                                        .anyMatch(s -> s.equals(tenantIdentifierWithStorage.getTenantId()))) {
+                        if (currLM.email.equals(email) && currLM.recipeId == RECIPE_ID.EMAIL_PASSWORD) {
                             userInfoToBeUpdated = currUser;
                             loginMethod = currLM;
                             break;
@@ -246,16 +243,14 @@ public class EmailPassword {
         LoginMethod lM = null;
         for (AuthRecipeUserInfo currUser : users) {
             for (LoginMethod currLM : currUser.loginMethods) {
-                if (currLM.recipeId == RECIPE_ID.EMAIL_PASSWORD && currLM.email.equals(email) &&
-                        Arrays.stream(currLM.tenantIds)
-                                .anyMatch(s -> s.equals(tenantIdentifierWithStorage.getTenantId()))) {
+                if (currLM.recipeId == RECIPE_ID.EMAIL_PASSWORD && currLM.email.equals(email)) {
                     user = currUser;
                     lM = currLM;
                 }
             }
         }
 
-        if (user == null || lM == null) {
+        if (user == null) {
             throw new WrongCredentialsException();
         }
 
@@ -511,9 +506,7 @@ public class EmailPassword {
         // filter used based on login method
         for (AuthRecipeUserInfo user : users) {
             for (LoginMethod lM : user.loginMethods) {
-                if (lM.email.equals(email) && lM.recipeId == RECIPE_ID.EMAIL_PASSWORD &&
-                        Arrays.stream(lM.tenantIds).anyMatch(
-                                tenantId -> tenantId.equals(tenantIdentifierWithStorage.getTenantId()))) {
+                if (lM.email.equals(email) && lM.recipeId == RECIPE_ID.EMAIL_PASSWORD) {
                     return user;
                 }
             }

@@ -423,10 +423,8 @@ public class PasswordlessQueries {
                 UserInfoPartial userInfo = new UserInfoPartial(id, email, phoneNumber, timeJoined);
                 fillUserInfoWithTenantIds_transaction(start, sqlCon, tenantIdentifier.toAppIdentifier(), userInfo);
                 fillUserInfoWithVerified_transaction(start, sqlCon, tenantIdentifier.toAppIdentifier(), userInfo);
-                fillUserInfoWithIsPrimaryUserBoolean_transaction(start, sqlCon, tenantIdentifier.toAppIdentifier(),
-                        userInfo);
                 sqlCon.commit();
-                return new UserInfo(id, userInfo.isPrimary,
+                return new UserInfo(id, false,
                         userInfo.toLoginMethod());
             } catch (SQLException throwables) {
                 throw new StorageTransactionLogicException(throwables);
@@ -892,34 +890,6 @@ public class PasswordlessQueries {
         List<UserInfo> result = new ArrayList<>();
         for (UserInfoPartial userInfo : userInfos) {
             userInfo.tenantIds = tenantIdsForUserIds.get(userInfo.id).toArray(new String[0]);
-        }
-        return userInfos;
-    }
-
-    private static UserInfoPartial fillUserInfoWithIsPrimaryUserBoolean_transaction(Start start, Connection sqlCon,
-                                                                                    AppIdentifier appIdentifier,
-                                                                                    UserInfoPartial userInfo)
-            throws SQLException, StorageQueryException {
-        if (userInfo == null) return null;
-        return fillUserInfoWithIsPrimaryUserBoolean_transaction(start, sqlCon, appIdentifier,
-                Arrays.asList(userInfo)).get(0);
-    }
-
-    private static List<UserInfoPartial> fillUserInfoWithIsPrimaryUserBoolean_transaction(Start start,
-                                                                                          Connection sqlCon,
-                                                                                          AppIdentifier appIdentifier,
-                                                                                          List<UserInfoPartial> userInfos)
-            throws SQLException, StorageQueryException {
-        String[] userIds = new String[userInfos.size()];
-        for (int i = 0; i < userInfos.size(); i++) {
-            userIds[i] = userInfos.get(i).id;
-        }
-
-        Map<String, Boolean> isPrimaryUserForUserIds = GeneralQueries.getIsPrimaryUserBoolean_transaction(start, sqlCon,
-                appIdentifier,
-                userIds);
-        for (UserInfoPartial userInfo : userInfos) {
-            userInfo.isPrimary = isPrimaryUserForUserIds.get(userInfo.id);
         }
         return userInfos;
     }
