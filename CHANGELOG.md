@@ -7,22 +7,45 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+### Db schema changes:
 
-- Db schema changes:
-  - Added new index `all_auth_recipe_users_primary_user_id_index`.
-  - Added new index `all_auth_recipe_users_primary_user_id_and_tenant_id_index`.
-  - Modified `all_auth_recipe_users_pagination_index` index to be on `primary_or_recipe_user_id` instead of `user_id`
-  - Added a two new columns in `all_auth_recipe_users`:
+- Added new index `all_auth_recipe_users_primary_user_id_index`.
+- Added new index `all_auth_recipe_users_primary_user_id_and_tenant_id_index`.
+- Modified `all_auth_recipe_users_pagination_index` index to be on `primary_or_recipe_user_id` instead of `user_id`
+- Added a two new columns in `all_auth_recipe_users`:
     - `primary_or_recipe_user_id` (default value is equal to `user_id` column)
     - `is_linked_or_is_a_primary_user` (default value is false)
 
+### DB migration:
+
+```sql
+ALTER TABLE all_auth_recipe_users
+    ADD COLUMN primary_or_recipe_user_id CHAR(36) NOT NULL DEFAULT ('0');
+
+ALTER TABLE all_auth_recipe_users
+    ADD COLUMN is_linked_or_is_a_primary_user BOOLEAN NOT NULL DEFAULT FALSE;
+
+UPDATE all_auth_recipe_users
+SET primary_or_recipe_user_id = user_id
+WHERE primary_or_recipe_user_id = '0';
+
+ALTER TABLE all_auth_recipe_users
+    ALTER primary_or_recipe_user_id DROP DEFAULT;
+
+DROP INDEX all_auth_recipe_users_pagination_index;
+CREATE INDEX all_auth_recipe_users_pagination_index ON all_auth_recipe_users (time_joined DESC,
+                                                                              primary_or_recipe_user_id DESC, tenant_id
+                                                                              DESC, app_id DESC);
+CREATE INDEX all_auth_recipe_users_primary_user_id_index ON all_auth_recipe_users (app_id, primary_or_recipe_user_id);
+CREATE INDEX all_auth_recipe_users_primary_user_id_and_tenant_id_index ON all_auth_recipe_users (app_id, tenant_id, primary_or_recipe_user_id);
+```
 
 ## [6.0.4] - 2023-07-13
+
 - Fixes tenant prefix in stack trace log
 - `supertokens_default_cdi_version` config renamed to `supertokens_max_cdi_version`
 - Fixes `/apiversion` GET to return versions until `supertokens_max_cdi_version` if set
 - Fixes `/recipe/multitenancy/tenant` GET to return `TENANT_NOT_FOUND_ERROR` with 200 status when tenant was not found
-
 
 ## [6.0.3] - 2023-07-11
 
