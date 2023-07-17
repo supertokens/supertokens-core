@@ -1066,13 +1066,14 @@ public class GeneralQueries {
                 pst.setString(userIds.length + 1, appIdentifier.getAppId());
             }, result -> {
                 Map<String, List<String>> finalResult = new HashMap<>();
+                for (String userId : userIds) {
+                    finalResult.put(userId, new ArrayList<>());
+                }
+
                 while (result.next()) {
                     String userId = result.getString("user_id").trim();
                     String tenantId = result.getString("tenant_id");
 
-                    if (!finalResult.containsKey(userId)) {
-                        finalResult.put(userId, new ArrayList<>());
-                    }
                     finalResult.get(userId).add(tenantId);
                 }
                 return finalResult;

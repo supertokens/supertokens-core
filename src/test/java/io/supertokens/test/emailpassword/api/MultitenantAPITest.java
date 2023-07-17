@@ -37,6 +37,7 @@ import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
+import io.supertokens.test.multitenant.api.TestMultitenancyAPIHelper;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
 import io.supertokens.utils.SemVer;
 import org.junit.After;
@@ -715,6 +716,24 @@ public class MultitenantAPITest {
             fail();
         } catch (HttpResponseException e) {
             assertEquals(404, e.statusCode);
+        }
+    }
+
+    @Test
+    public void testGetUserByIdForUserThatBelongsToNoTenant() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        createTenants(false);
+
+        {
+            JsonObject user = TestMultitenancyAPIHelper.epSignUp(t1, "test@example.com", "password", process.getProcess());
+            TestMultitenancyAPIHelper.disassociateUserFromTenant(t1, user.get("id").getAsString(), process.getProcess());
+            JsonObject userInfoFromId = TestMultitenancyAPIHelper.getEpUserById(t1, user.get("id").getAsString(),
+                    process.getProcess());
+
+            assertEquals(0, userInfoFromId.get("tenantIds").getAsJsonArray().size());
         }
     }
 }
