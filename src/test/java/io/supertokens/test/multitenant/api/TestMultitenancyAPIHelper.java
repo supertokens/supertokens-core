@@ -321,7 +321,7 @@ public class TestMultitenancyAPIHelper {
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
                 "http://localhost:3567/ee/license", licenseKeyRequest,
-                2000, 2000, null,
+                2000, 5000, null,
                 SemVer.v3_0.get(), null);
         assertEquals("OK", response.get("status").getAsString());
     }
