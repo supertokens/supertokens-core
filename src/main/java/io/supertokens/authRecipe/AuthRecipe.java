@@ -17,6 +17,8 @@
 package io.supertokens.authRecipe;
 
 import io.supertokens.Main;
+import io.supertokens.authRecipe.exception.AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException;
+import io.supertokens.authRecipe.exception.RecipeUserIdAlreadyLinkedWithPrimaryUserIdException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
@@ -51,6 +53,24 @@ public class AuthRecipe {
     public static AuthRecipeUserInfo getUserById(AppIdentifierWithStorage appIdentifierWithStorage, String userId)
             throws StorageQueryException {
         return appIdentifierWithStorage.getAuthRecipeStorage().getPrimaryUserById(appIdentifierWithStorage, userId);
+    }
+
+    public static class CreatePrimaryUserResult {
+        AuthRecipeUserInfo user;
+        boolean wasAlreadyAPrimaryUser;
+
+        public CreatePrimaryUserResult(AuthRecipeUserInfo user, boolean wasAlreadyAPrimaryUser) {
+            this.user = user;
+            this.wasAlreadyAPrimaryUser = wasAlreadyAPrimaryUser;
+        }
+    }
+
+    public static CreatePrimaryUserResult createPrimaryUser(AppIdentifierWithStorage appIdentifierWithStorage,
+                                                            String recipeUserId)
+            throws StorageQueryException, AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
+            RecipeUserIdAlreadyLinkedWithPrimaryUserIdException {
+        // TODO..
+        return null;
     }
 
     public static AuthRecipeUserInfo[] getUsersByAccountInfo(TenantIdentifierWithStorage tenantIdentifier,
