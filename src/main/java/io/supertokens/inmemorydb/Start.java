@@ -25,6 +25,7 @@ import io.supertokens.inmemorydb.queries.*;
 import io.supertokens.pluginInterface.*;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
+import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
 import io.supertokens.pluginInterface.dashboard.DashboardSearchTags;
 import io.supertokens.pluginInterface.dashboard.DashboardSessionInfo;
 import io.supertokens.pluginInterface.dashboard.DashboardUser;
@@ -102,7 +103,7 @@ import java.util.Set;
 public class Start
         implements SessionSQLStorage, EmailPasswordSQLStorage, EmailVerificationSQLStorage, ThirdPartySQLStorage,
         JWTRecipeSQLStorage, PasswordlessSQLStorage, UserMetadataSQLStorage, UserRolesSQLStorage, UserIdMappingStorage,
-        MultitenancyStorage, TOTPSQLStorage, ActiveUsersStorage, DashboardSQLStorage {
+        MultitenancyStorage, TOTPSQLStorage, ActiveUsersStorage, DashboardSQLStorage, AuthRecipeSQLStorage {
 
     private static final Object appenderLock = new Object();
     private static final String APP_ID_KEY_NAME = "app_id";
@@ -2768,5 +2769,35 @@ public class Start
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
+    }
+
+    @Override
+    public AuthRecipeUserInfo getPrimaryUserById_Transaction(AppIdentifier appIdentifier, String userId)
+            throws StorageQueryException {
+        // TODO:..
+        return null;
+    }
+
+    @Override
+    public AuthRecipeUserInfo[] listPrimaryUsersByEmail_Transaction(AppIdentifier appIdentifier, String email)
+            throws StorageQueryException {
+        // TODO:..
+        return new AuthRecipeUserInfo[0];
+    }
+
+    @Override
+    public AuthRecipeUserInfo[] listPrimaryUsersByPhoneNumber_Transaction(AppIdentifier appIdentifier,
+                                                                          String phoneNumber)
+            throws StorageQueryException {
+        // TODO:..
+        return new AuthRecipeUserInfo[0];
+    }
+
+    @Override
+    public AuthRecipeUserInfo getPrimaryUserByThirdPartyInfo_Transaction(AppIdentifier appIdentifier,
+                                                                         String thirdPartyId, String thirdPartyUserId)
+            throws StorageQueryException {
+        // TODO:..
+        return null;
     }
 }

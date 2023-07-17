@@ -58,6 +58,11 @@ public class EmailPasswordQueries {
                 + ");";
     }
 
+    static String getQueryToCreateEmailIndex(Start start) {
+        return "CREATE INDEX emailpassword_email_index ON "
+                + Config.getConfig(start).getEmailPasswordUsersTable() + "(app_id, email);";
+    }
+
     static String getQueryToCreateEmailPasswordUserToTenantTable(Start start) {
         String emailPasswordUserToTenantTable = Config.getConfig(start).getEmailPasswordUserToTenantTable();
         // @formatter:off

@@ -43,7 +43,7 @@ public class ListUsersByAccountInfoAPI extends WebserverAPI {
 
     @Override
     public String getPath() {
-        return "/users";
+        return "/users/by-accountinfo";
     }
 
     @Override

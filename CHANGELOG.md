@@ -11,6 +11,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Added new index `all_auth_recipe_users_primary_user_id_index`.
 - Added new index `all_auth_recipe_users_primary_user_id_and_tenant_id_index`.
+- Added new index `emailpassword_email_index`
+- Added new index `passwordless_users_email_index`
+- Added new index `passwordless_users_phone_number_index`
 - Modified `all_auth_recipe_users_pagination_index` index to be on `primary_or_recipe_user_id` instead of `user_id`
 - Added a two new columns in `all_auth_recipe_users`:
     - `primary_or_recipe_user_id` (default value is equal to `user_id` column)
@@ -38,6 +41,10 @@ CREATE INDEX all_auth_recipe_users_pagination_index ON all_auth_recipe_users (ti
                                                                               DESC, app_id DESC);
 CREATE INDEX all_auth_recipe_users_primary_user_id_index ON all_auth_recipe_users (app_id, primary_or_recipe_user_id);
 CREATE INDEX all_auth_recipe_users_primary_user_id_and_tenant_id_index ON all_auth_recipe_users (app_id, tenant_id, primary_or_recipe_user_id);
+
+CREATE INDEX emailpassword_email_index ON emailpassword_users (app_id, email);
+CREATE INDEX passwordless_users_email_index ON passwordless_users (app_id, email);
+CREATE INDEX passwordless_users_phone_number_index ON passwordless_users (app_id, phone_number);
 ```
 
 ## [6.0.4] - 2023-07-13
