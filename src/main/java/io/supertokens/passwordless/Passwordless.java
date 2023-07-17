@@ -555,6 +555,7 @@ public class Passwordless {
                 phoneNumber);
     }
 
+    @Deprecated
     public static AuthRecipeUserInfo getUserByPhoneNumber(TenantIdentifierWithStorage tenantIdentifierWithStorage,
                                                           String phoneNumber) throws StorageQueryException {
         AuthRecipeUserInfo[] users = tenantIdentifierWithStorage.getPasswordlessStorage()
@@ -569,6 +570,7 @@ public class Passwordless {
         return null;
     }
 
+    @Deprecated
     @TestOnly
     public static AuthRecipeUserInfo getUserByEmail(Main main, String email)
             throws StorageQueryException {
@@ -577,6 +579,7 @@ public class Passwordless {
                 new TenantIdentifierWithStorage(null, null, null, storage), email);
     }
 
+    @Deprecated
     public static AuthRecipeUserInfo getUserByEmail(TenantIdentifierWithStorage tenantIdentifierWithStorage,
                                                     String email)
             throws StorageQueryException {

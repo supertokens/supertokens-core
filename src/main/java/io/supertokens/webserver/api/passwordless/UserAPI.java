@@ -56,6 +56,7 @@ public class UserAPI extends WebserverAPI {
         return "/recipe/user";
     }
 
+    @Deprecated
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         // API is tenant specific for get by email or phone

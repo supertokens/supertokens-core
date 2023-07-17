@@ -37,10 +37,6 @@ import io.supertokens.webserver.api.emailverification.VerifyEmailAPI;
 import io.supertokens.webserver.api.jwt.JWKSAPI;
 import io.supertokens.webserver.api.jwt.JWTSigningAPI;
 import io.supertokens.webserver.api.multitenancy.*;
-import io.supertokens.webserver.api.multitenancy.CreateOrUpdateAppAPI;
-import io.supertokens.webserver.api.multitenancy.CreateOrUpdateConnectionUriDomainAPI;
-import io.supertokens.webserver.api.multitenancy.CreateOrUpdateTenantOrGetTenantAPI;
-import io.supertokens.webserver.api.multitenancy.RemoveTenantAPI;
 import io.supertokens.webserver.api.multitenancy.thirdparty.CreateOrUpdateThirdPartyConfigAPI;
 import io.supertokens.webserver.api.multitenancy.thirdparty.RemoveThirdPartyConfigAPI;
 import io.supertokens.webserver.api.passwordless.*;
@@ -249,6 +245,9 @@ public class Webserver extends ResourceDistributor.SingletonResource {
 
         addAPI(new AssociateUserToTenantAPI(main));
         addAPI(new DisassociateUserFromTenant(main));
+
+        addAPI(new GetUserByIdAPI(main));
+        addAPI(new ListUsersByAccountInfoAPI(main));
 
         StandardContext context = tomcatReference.getContext();
         Tomcat tomcat = tomcatReference.getTomcat();

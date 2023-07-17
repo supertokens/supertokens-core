@@ -23,6 +23,7 @@ import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.dashboard.DashboardSearchTags;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -42,6 +43,19 @@ import javax.annotation.Nullable;
 public class AuthRecipe {
 
     public static final int USER_PAGINATION_LIMIT = 500;
+
+    public static AuthRecipeUserInfo getUserById(AppIdentifierWithStorage appIdentifierWithStorage, String userId)
+            throws StorageQueryException {
+        return appIdentifierWithStorage.getAuthRecipeStorage().getPrimaryUserById(appIdentifierWithStorage, userId);
+    }
+
+    public static AuthRecipeUserInfo[] getUsersByAccountInfo(TenantIdentifierWithStorage tenantIdentifier,
+                                                             boolean doUnionOfAccountInfo, String email,
+                                                             String phoneNumber, LoginMethod.ThirdParty thirdParty)
+            throws StorageQueryException {
+        // TODO:..
+        return new AuthRecipeUserInfo[0];
+    }
 
     public static long getUsersCountForTenant(TenantIdentifierWithStorage tenantIdentifier,
                                               RECIPE_ID[] includeRecipeIds)

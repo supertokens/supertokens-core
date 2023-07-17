@@ -39,6 +39,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
+@Deprecated
 public class GetUsersByEmailAPI extends WebserverAPI {
     private static final long serialVersionUID = -4413719941975228004L;
 

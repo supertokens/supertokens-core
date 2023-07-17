@@ -201,6 +201,7 @@ public class ThirdParty {
         }
     }
 
+    @Deprecated
     public static UserInfo getUser(AppIdentifierWithStorage appIdentifierWithStorage, String userId)
             throws StorageQueryException {
         AuthRecipeUserInfo result = appIdentifierWithStorage.getAuthRecipeStorage()
@@ -217,6 +218,7 @@ public class ThirdParty {
         return null;
     }
 
+    @Deprecated
     @TestOnly
     public static UserInfo getUser(Main main, String userId) throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
@@ -230,7 +232,7 @@ public class ThirdParty {
         return tenantIdentifierWithStorage.getThirdPartyStorage()
                 .getPrimaryUserByThirdPartyInfo(tenantIdentifierWithStorage, thirdPartyId, thirdPartyUserId);
     }
-
+    
     @TestOnly
     public static AuthRecipeUserInfo getUser(Main main, String thirdPartyId, String thirdPartyUserId)
             throws StorageQueryException {
@@ -240,6 +242,7 @@ public class ThirdParty {
                 thirdPartyId, thirdPartyUserId);
     }
 
+    @Deprecated
     public static AuthRecipeUserInfo[] getUsersByEmail(TenantIdentifierWithStorage tenantIdentifierWithStorage,
                                                        @Nonnull String email)
             throws StorageQueryException {

@@ -473,6 +473,7 @@ public class EmailPassword {
         }
     }
 
+    @Deprecated
     @TestOnly
     public static UserInfo getUserUsingId(Main main, String userId)
             throws StorageQueryException {
@@ -484,6 +485,7 @@ public class EmailPassword {
         }
     }
 
+    @Deprecated
     public static UserInfo getUserUsingId(AppIdentifierWithStorage appIdentifierWithStorage, String userId)
             throws StorageQueryException, TenantOrAppNotFoundException {
         AuthRecipeUserInfo result = appIdentifierWithStorage.getAuthRecipeStorage()
@@ -499,6 +501,7 @@ public class EmailPassword {
         return null;
     }
 
+    @Deprecated
     public static AuthRecipeUserInfo getUserUsingEmail(TenantIdentifierWithStorage tenantIdentifierWithStorage,
                                                        String email)
             throws StorageQueryException, TenantOrAppNotFoundException {
