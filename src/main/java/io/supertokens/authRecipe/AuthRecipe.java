@@ -37,6 +37,10 @@ import io.supertokens.useridmapping.UserIdType;
 import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /*This files contains functions that are common for all auth recipes*/
 
@@ -51,10 +55,54 @@ public class AuthRecipe {
 
     public static AuthRecipeUserInfo[] getUsersByAccountInfo(TenantIdentifierWithStorage tenantIdentifier,
                                                              boolean doUnionOfAccountInfo, String email,
-                                                             String phoneNumber, LoginMethod.ThirdParty thirdParty)
+                                                             String phoneNumber, String thirdPartyId,
+                                                             String thirdPartyUserId)
             throws StorageQueryException {
-        // TODO:..
-        return new AuthRecipeUserInfo[0];
+        Set<AuthRecipeUserInfo> result = new HashSet<>();
+
+        if (email != null) {
+            AuthRecipeUserInfo[] users = tenantIdentifier.getAuthRecipeStorage()
+                    .listPrimaryUsersByEmail(tenantIdentifier, email);
+            result.addAll(List.of(users));
+        }
+        if (phoneNumber != null) {
+            AuthRecipeUserInfo[] users = tenantIdentifier.getAuthRecipeStorage()
+                    .listPrimaryUsersByPhoneNumber(tenantIdentifier, phoneNumber);
+            result.addAll(List.of(users));
+        }
+        if (thirdPartyId != null && thirdPartyUserId != null) {
+            AuthRecipeUserInfo user = tenantIdentifier.getAuthRecipeStorage()
+                    .getPrimaryUserByThirdPartyInfo(tenantIdentifier, thirdPartyId, thirdPartyUserId);
+            result.add(user);
+        }
+
+        if (doUnionOfAccountInfo) {
+            return result.toArray(new AuthRecipeUserInfo[0]);
+        } else {
+            List<AuthRecipeUserInfo> finalList = new ArrayList<>();
+            for (AuthRecipeUserInfo user : result) {
+                boolean emailMatch = email == null;
+                boolean phoneNumberMatch = phoneNumber == null;
+                boolean thirdPartyMatch = thirdPartyId == null;
+                for (LoginMethod lM : user.loginMethods) {
+                    if (email != null && email.equals(lM.email)) {
+                        emailMatch = true;
+                    }
+                    if (phoneNumber != null && phoneNumber.equals(lM.phoneNumber)) {
+                        phoneNumberMatch = true;
+                    }
+                    if (thirdPartyId != null &&
+                            (new LoginMethod.ThirdParty(thirdPartyId, thirdPartyUserId)).equals(lM.thirdParty)) {
+                        thirdPartyMatch = true;
+                    }
+                }
+                if (emailMatch && phoneNumberMatch && thirdPartyMatch) {
+                    finalList.add(user);
+                }
+            }
+            return finalList.toArray(new AuthRecipeUserInfo[0]);
+        }
+
     }
 
     public static long getUsersCountForTenant(TenantIdentifierWithStorage tenantIdentifier,

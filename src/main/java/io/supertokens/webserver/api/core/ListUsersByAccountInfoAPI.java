@@ -16,12 +16,16 @@
 
 package io.supertokens.webserver.api.core;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
-import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.useridmapping.UserIdMapping;
+import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -68,12 +72,30 @@ public class ListUsersByAccountInfoAPI extends WebserverAPI {
         }
 
         try {
-            AuthRecipeUserInfo[] result = AuthRecipe.getUsersByAccountInfo(
+            AppIdentifierWithStorage appIdentifierWithStorage = this.getAppIdentifierWithStorage(req);
+            AuthRecipeUserInfo[] users = AuthRecipe.getUsersByAccountInfo(
                     this.getTenantIdentifierWithStorageFromRequest(
-                            req), doUnionOfAccountInfo, email, phoneNumber,
-                    new LoginMethod.ThirdParty(thirdPartyId, thirdPartyUserId));
-            
-            // TODO:...
+                            req), doUnionOfAccountInfo, email, phoneNumber, thirdPartyId, thirdPartyUserId);
+
+            for (int i = 0; i < users.length; i++) {
+                // we intentionally do not use the function that accepts an array of user IDs to get the mapping cause
+                // this is simpler to use, and cause there shouldn't be that many userIds per email anyway
+                io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
+                        .getUserIdMapping(appIdentifierWithStorage, users[i].id, UserIdType.SUPERTOKENS);
+                if (userIdMapping != null) {
+                    users[i].setExternalUserId(userIdMapping.externalUserId);
+                }
+            }
+
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "OK");
+            JsonArray usersJson = new JsonArray();
+            for (AuthRecipeUserInfo userInfo : users) {
+                usersJson.add(userInfo.toJson());
+            }
+
+            result.add("users", usersJson);
+            super.sendJsonResponse(200, result, resp);
 
         } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
