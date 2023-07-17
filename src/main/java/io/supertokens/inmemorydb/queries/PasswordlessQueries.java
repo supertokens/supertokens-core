@@ -59,16 +59,6 @@ public class PasswordlessQueries {
                 + ");";
     }
 
-    static String getQueryToCreateEmailIndex(Start start) {
-        return "CREATE INDEX passwordless_users_email_index ON "
-                + Config.getConfig(start).getPasswordlessUsersTable() + "(app_id, email);";
-    }
-
-    static String getQueryToCreatePhoneNumberIndex(Start start) {
-        return "CREATE INDEX passwordless_users_phone_number_index ON "
-                + Config.getConfig(start).getPasswordlessUsersTable() + "(app_id, phone_number);";
-    }
-
     static String getQueryToCreatePasswordlessUserToTenantTable(Start start) {
         String passwordlessUserToTenantTable = Config.getConfig(start).getPasswordlessUserToTenantTable();
         // @formatter:off

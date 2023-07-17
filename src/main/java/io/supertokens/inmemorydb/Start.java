@@ -2772,21 +2772,24 @@ public class Start
     }
 
     @Override
-    public AuthRecipeUserInfo getPrimaryUserById_Transaction(AppIdentifier appIdentifier, String userId)
+    public AuthRecipeUserInfo getPrimaryUserById_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
+                                                             String userId)
             throws StorageQueryException {
         // TODO:..
         return null;
     }
 
     @Override
-    public AuthRecipeUserInfo[] listPrimaryUsersByEmail_Transaction(AppIdentifier appIdentifier, String email)
+    public AuthRecipeUserInfo[] listPrimaryUsersByEmail_Transaction(TenantIdentifier tenantIdentifier,
+                                                                    TransactionConnection con, String email)
             throws StorageQueryException {
         // TODO:..
         return new AuthRecipeUserInfo[0];
     }
 
     @Override
-    public AuthRecipeUserInfo[] listPrimaryUsersByPhoneNumber_Transaction(AppIdentifier appIdentifier,
+    public AuthRecipeUserInfo[] listPrimaryUsersByPhoneNumber_Transaction(TenantIdentifier tenantIdentifier,
+                                                                          TransactionConnection con,
                                                                           String phoneNumber)
             throws StorageQueryException {
         // TODO:..
@@ -2794,10 +2797,18 @@ public class Start
     }
 
     @Override
-    public AuthRecipeUserInfo getPrimaryUserByThirdPartyInfo_Transaction(AppIdentifier appIdentifier,
-                                                                         String thirdPartyId, String thirdPartyUserId)
+    public AuthRecipeUserInfo getPrimaryUsersByThirdPartyInfo_Transaction(TenantIdentifier tenantIdentifier,
+                                                                          TransactionConnection con,
+                                                                          String thirdPartyId,
+                                                                          String thirdPartyUserId)
             throws StorageQueryException {
         // TODO:..
         return null;
+    }
+
+    @Override
+    public void makePrimaryUser_Transaction(AppIdentifier appIdentifier, TransactionConnection con, String userId)
+            throws StorageQueryException {
+        // TODO...
     }
 }

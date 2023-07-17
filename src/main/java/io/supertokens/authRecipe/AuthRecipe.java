@@ -26,10 +26,13 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
+import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
 import io.supertokens.pluginInterface.dashboard.DashboardSearchTags;
+import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.totp.sqlStorage.TOTPSQLStorage;
@@ -65,12 +68,100 @@ public class AuthRecipe {
         }
     }
 
-    public static CreatePrimaryUserResult createPrimaryUser(AppIdentifierWithStorage appIdentifierWithStorage,
+    public static CreatePrimaryUserResult createPrimaryUser(Main main,
+                                                            AppIdentifierWithStorage appIdentifierWithStorage,
                                                             String recipeUserId)
             throws StorageQueryException, AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
-            RecipeUserIdAlreadyLinkedWithPrimaryUserIdException {
-        // TODO..
-        return null;
+            RecipeUserIdAlreadyLinkedWithPrimaryUserIdException, UnknownUserIdException {
+        AuthRecipeSQLStorage storage = (AuthRecipeSQLStorage) appIdentifierWithStorage.getAuthRecipeStorage();
+        try {
+            return storage.startTransaction(con -> {
+
+                AuthRecipeUserInfo targetUser = storage.getPrimaryUserById_Transaction(appIdentifierWithStorage, con,
+                        recipeUserId);
+                if (targetUser == null) {
+                    throw new StorageTransactionLogicException(new UnknownUserIdException());
+                }
+                if (targetUser.isPrimaryUser) {
+                    if (targetUser.id.equals(recipeUserId)) {
+                        return new CreatePrimaryUserResult(targetUser, true);
+                    } else {
+                        throw new StorageTransactionLogicException(
+                                new RecipeUserIdAlreadyLinkedWithPrimaryUserIdException(targetUser.id,
+                                        "This user ID is already linked to another user ID"));
+                    }
+                }
+
+                // this means that the user has only one login method since it's not a primary user
+                // nor is it linked to a primary user
+                assert (targetUser.loginMethods.length == 1);
+                LoginMethod loginMethod = targetUser.loginMethods[0];
+
+                for (String tenantId : targetUser.tenantIds) {
+                    TenantIdentifier tenantIdentifier = new TenantIdentifier(
+                            appIdentifierWithStorage.getConnectionUriDomain(), appIdentifierWithStorage.getAppId(),
+                            tenantId);
+                    // we do not bother with getting the tenantIdentifierWithStorage here because
+                    // we get the tenants from the user itself, and the user can only be shared across
+                    // tenants of the same storage - therefore, the storage will be the same.
+
+                    if (loginMethod.email != null) {
+                        AuthRecipeUserInfo[] usersWithSameEmail = storage
+                                .listPrimaryUsersByEmail_Transaction(tenantIdentifier, con,
+                                        loginMethod.email);
+                        for (AuthRecipeUserInfo user : usersWithSameEmail) {
+                            if (user.isPrimaryUser) {
+                                throw new StorageTransactionLogicException(
+                                        new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(user.id,
+                                                "This user's email is already associated with another user ID"));
+                            }
+                        }
+                    }
+
+                    if (loginMethod.phoneNumber != null) {
+                        AuthRecipeUserInfo[] usersWithSamePhoneNumber = storage
+                                .listPrimaryUsersByPhoneNumber_Transaction(tenantIdentifier, con,
+                                        loginMethod.phoneNumber);
+                        for (AuthRecipeUserInfo user : usersWithSamePhoneNumber) {
+                            if (user.isPrimaryUser) {
+                                throw new StorageTransactionLogicException(
+                                        new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(user.id,
+                                                "This user's phone number is already associated with another user" +
+                                                        " ID"));
+                            }
+                        }
+                    }
+
+                    if (loginMethod.thirdParty != null) {
+                        AuthRecipeUserInfo userWithSameThirdParty = storage
+                                .getPrimaryUsersByThirdPartyInfo_Transaction(tenantIdentifier, con,
+                                        loginMethod.thirdParty.id, loginMethod.thirdParty.userId);
+                        if (userWithSameThirdParty.isPrimaryUser) {
+                            throw new StorageTransactionLogicException(
+                                    new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(
+                                            userWithSameThirdParty.id,
+                                            "This user's third party login is already associated with another" +
+                                                    " user ID"));
+                        }
+                    }
+                }
+
+                storage.makePrimaryUser_Transaction(appIdentifierWithStorage, con, targetUser.id);
+
+                storage.commitTransaction(con);
+
+                return new CreatePrimaryUserResult(targetUser, false);
+            });
+        } catch (StorageTransactionLogicException e) {
+            if (e.actualException instanceof UnknownUserIdException) {
+                throw (UnknownUserIdException) e.actualException;
+            } else if (e.actualException instanceof RecipeUserIdAlreadyLinkedWithPrimaryUserIdException) {
+                throw (RecipeUserIdAlreadyLinkedWithPrimaryUserIdException) e.actualException;
+            } else if (e.actualException instanceof AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException) {
+                throw (AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException) e.actualException;
+            }
+            throw new RuntimeException(e);
+        }
     }
 
     public static AuthRecipeUserInfo[] getUsersByAccountInfo(TenantIdentifierWithStorage tenantIdentifier,
