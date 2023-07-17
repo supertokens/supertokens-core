@@ -926,6 +926,60 @@ public class GeneralQueries {
         return null;
     }
 
+    public static AuthRecipeUserInfo getPrimaryUserInfoForUserId_Transaction(Start start, Connection sqlCon,
+                                                                             AppIdentifier appIdentifier, String id)
+            throws SQLException, StorageQueryException {
+        ((ConnectionWithLocks) sqlCon).lock(
+                appIdentifier + "~" + id + Config.getConfig(start).getUsersTable());
+
+        // We use SELECT FOR UPDATE in the query below for other plugins.
+        String QUERY = "SELECT * FROM " + getConfig(start).getUsersTable() +
+                " WHERE (user_id = ? OR primary_or_recipe_user_id = ?) AND app_id = ?";
+
+        AllAuthRecipeUsersResultHolder allAuthUsersResult = execute(sqlCon, QUERY, pst -> {
+            pst.setString(1, id);
+            pst.setString(2, id);
+            pst.setString(3, appIdentifier.getAppId());
+        }, result -> {
+            AllAuthRecipeUsersResultHolder finalResult = null;
+            if (result.next()) {
+                finalResult = new AllAuthRecipeUsersResultHolder(result.getString("user_id"),
+                        result.getString("tenant_id"),
+                        result.getString("primary_or_recipe_user_id"),
+                        result.getBoolean("is_linked_or_is_a_primary_user"),
+                        result.getString("recipe_id"),
+                        result.getLong("time_joined"));
+            }
+            return finalResult;
+        });
+
+        if (allAuthUsersResult == null) {
+            return null;
+        }
+
+        // Now we form the userIds again, but based on the user_id in the result from above.
+        Set<String> recipeUserIdsToFetch = new HashSet<>();
+        recipeUserIdsToFetch.add(allAuthUsersResult.userId);
+
+        List<LoginMethod> loginMethods = new ArrayList<>();
+        loginMethods.addAll(
+                EmailPasswordQueries.getUsersInfoUsingIdList_Transaction(start, sqlCon, recipeUserIdsToFetch,
+                        appIdentifier));
+        loginMethods.addAll(ThirdPartyQueries.getUsersInfoUsingIdList_Transaction(start, sqlCon, recipeUserIdsToFetch,
+                appIdentifier));
+        loginMethods.addAll(PasswordlessQueries.getUsersInfoUsingIdList_Transaction(start, sqlCon, recipeUserIdsToFetch,
+                appIdentifier));
+
+        // we do this in such a strange way cause the create function takes just one login method at the moment.
+        AuthRecipeUserInfo result = AuthRecipeUserInfo.create(allAuthUsersResult.primaryOrRecipeUserId,
+                allAuthUsersResult.isLinkedOrIsAPrimaryUser, loginMethods.get(0));
+        for (int i = 1; i < loginMethods.size(); i++) {
+            result.addLoginMethod(loginMethods.get(i));
+        }
+
+        return result;
+    }
+
     public static AuthRecipeUserInfo getPrimaryUserInfoForUserId(Start start, AppIdentifier appIdentifier, String id)
             throws SQLException, StorageQueryException {
         List<String> ids = new ArrayList<>();

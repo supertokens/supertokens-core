@@ -678,7 +678,8 @@ public class PasswordlessQueries {
         }
     }
 
-    public static List<LoginMethod> getUsersInfoUsingIdList(Start start, Set<String> ids, AppIdentifier appIdentifier)
+    public static List<LoginMethod> getUsersInfoUsingIdList_Transaction(Start start, Connection con, Set<String> ids,
+                                                                        AppIdentifier appIdentifier)
             throws SQLException, StorageQueryException {
         if (ids.size() > 0) {
             // No need to filter based on tenantId because the id list is already filtered for a tenant
@@ -686,24 +687,32 @@ public class PasswordlessQueries {
                     + "FROM " + getConfig(start).getPasswordlessUsersTable() + " WHERE user_id IN (" +
                     Utils.generateCommaSeperatedQuestionMarks(ids.size()) + ") AND app_id = ?";
 
+            List<UserInfoPartial> userInfos = execute(con, QUERY, pst -> {
+                int index = 1;
+                for (String id : ids) {
+                    pst.setString(index, id);
+                    index++;
+                }
+                pst.setString(index, appIdentifier.getAppId());
+            }, result -> {
+                List<UserInfoPartial> finalResult = new ArrayList<>();
+                while (result.next()) {
+                    finalResult.add(UserInfoRowMapper.getInstance().mapOrThrow(result));
+                }
+                return finalResult;
+            });
+            fillUserInfoWithTenantIds_transaction(start, con, appIdentifier, userInfos);
+            fillUserInfoWithVerified_transaction(start, con, appIdentifier, userInfos);
+            return userInfos.stream().map(UserInfoPartial::toLoginMethod).collect(Collectors.toList());
+        }
+        return Collections.emptyList();
+    }
+
+    public static List<LoginMethod> getUsersInfoUsingIdList(Start start, Set<String> ids, AppIdentifier appIdentifier)
+            throws SQLException, StorageQueryException {
+        if (ids.size() > 0) {
             try (Connection con = ConnectionPool.getConnection(start)) {
-                List<UserInfoPartial> userInfos = execute(con, QUERY, pst -> {
-                    int index = 1;
-                    for (String id : ids) {
-                        pst.setString(index, id);
-                        index++;
-                    }
-                    pst.setString(index, appIdentifier.getAppId());
-                }, result -> {
-                    List<UserInfoPartial> finalResult = new ArrayList<>();
-                    while (result.next()) {
-                        finalResult.add(UserInfoRowMapper.getInstance().mapOrThrow(result));
-                    }
-                    return finalResult;
-                });
-                fillUserInfoWithTenantIds_transaction(start, con, appIdentifier, userInfos);
-                fillUserInfoWithVerified_transaction(start, con, appIdentifier, userInfos);
-                return userInfos.stream().map(UserInfoPartial::toLoginMethod).collect(Collectors.toList());
+                return getUsersInfoUsingIdList_Transaction(start, con, ids, appIdentifier);
             }
         }
         return Collections.emptyList();
