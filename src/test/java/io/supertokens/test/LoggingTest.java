@@ -17,13 +17,20 @@
 package io.supertokens.test;
 
 import ch.qos.logback.classic.Logger;
+import com.google.gson.JsonObject;
+import io.supertokens.ProcessState;
 import io.supertokens.ProcessState.EventAndException;
 import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.output.Logging;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager.TestingProcess;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import org.apache.tomcat.util.http.fileupload.FileUtils;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -221,6 +228,80 @@ public class LoggingTest {
 
             assertTrue(fileContainsString(stdOutput, "outTest-dfkn3knsakn"));
             assertTrue(fileContainsString(errorOutput, "errTest-sdvjovnoasid"));
+
+        } finally {
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+            System.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)));
+            System.setErr(new PrintStream(new FileOutputStream(FileDescriptor.err)));
+        }
+
+    }
+
+    @Test
+    public void testTenantNotFoundExceptionUsesTheRightCUD() throws Exception {
+        String[] args = {"../"};
+        ByteArrayOutputStream stdOutput = new ByteArrayOutputStream();
+        ByteArrayOutputStream errorOutput = new ByteArrayOutputStream();
+
+        Utils.setValueInConfig("log_level", "DEBUG");
+        Utils.setValueInConfig("info_log_path", "\"null\"");
+        Utils.setValueInConfig("error_log_path", "\"null\"");
+
+        System.setOut(new PrintStream(stdOutput));
+        System.setErr(new PrintStream(errorOutput));
+
+        TestingProcess process = TestingProcessManager.start(args, false);
+
+        try {
+            FeatureFlagTestContent.getInstance(process.getProcess())
+                    .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                            EE_FEATURES.MULTI_TENANCY});
+            process.startProcess();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
+            if (StorageLayer.isInMemDb(process.getProcess())) {
+                return;
+            }
+
+            JsonObject tenantConfig = new JsonObject();
+            StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                    .modifyConfigToAddANewUserPoolForTesting(tenantConfig, 2);
+
+            JsonObject requestJson = new JsonObject();
+            requestJson.addProperty("connectionUriDomain", "localhost:3567");
+            requestJson.addProperty("emailPasswordEnabled", true);
+            requestJson.add("coreConfig", tenantConfig);
+
+            HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/multitenancy/connectionuridomain", requestJson, 2000, 2000, null,
+                    Utils.getCdiVersionStringLatestForTests(), "multitenancy");
+
+            stdOutput.reset();
+            errorOutput.reset();
+
+            try {
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/tenant2/recipe/signin", new JsonObject(), 1000, 1000, null,
+                        Utils.getCdiVersionStringLatestForTests(), "emailpassword");
+                throw new Exception("Should not come here");
+            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                assert (e.statusCode == 400);
+                assert (e.getMessage()
+                        .equals("Http error. Status Code: 400. Message: AppId or tenantId not found => Tenant with " +
+                                "the following connectionURIDomain, appId and tenantId combination not found: " +
+                                "(localhost, " +
+                                "public, tenant2)"));
+            }
+
+            assertTrue(fileContainsString(stdOutput, "Tenant(localhost, public, tenant2)"));
+            assertTrue(fileContainsString(errorOutput, "Tenant(localhost, public, tenant2)"));
+            assertFalse(fileContainsString(stdOutput, "Tenant(, public, public)"));
+            assertFalse(fileContainsString(errorOutput, "Tenant(, public, public)"));
 
         } finally {
             process.kill();

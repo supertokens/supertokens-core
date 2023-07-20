@@ -40,6 +40,12 @@ CREATE INDEX all_auth_recipe_users_primary_user_id_index ON all_auth_recipe_user
 CREATE INDEX all_auth_recipe_users_primary_user_id_and_tenant_id_index ON all_auth_recipe_users (app_id, tenant_id, primary_or_recipe_user_id);
 ```
 
+
+## [6.0.5] - 2023-07-20
+
+- Fixes logging issue in API call where it used to print out the root CUD tenant info when querying with a tenant
+  that does not exist.
+
 ## [6.0.4] - 2023-07-13
 
 - Fixes tenant prefix in stack trace log
@@ -1754,8 +1760,8 @@ CREATE INDEX all_auth_recipe_users_primary_user_id_and_tenant_id_index ON all_au
 
 - If using `access_token_signing_key_dynamic` false:
     - ```sql
-  ALTER TABLE session_info ADD COLUMN use_static_key BOOLEAN NOT NULL DEFAULT(true); ALTER TABLE session_info ALTER
-  COLUMN use_static_key DROP DEFAULT;
+    ALTER TABLE session_info ADD COLUMN use_static_key BOOLEAN NOT NULL DEFAULT(true);
+    ALTER TABLE session_info ALTER COLUMN use_static_key DROP DEFAULT;
     ```
     - ```sql
     INSERT INTO jwt_signing_keys(key_id, key_string, algorithm, created_at)
@@ -1764,35 +1770,47 @@ CREATE INDEX all_auth_recipe_users_primary_user_id_and_tenant_id_index ON all_au
     ```
 - If using `access_token_signing_key_dynamic` true or not set:
     - ```sql
-  ALTER TABLE session_info ADD COLUMN use_static_key BOOLEAN NOT NULL DEFAULT(false); ALTER TABLE session_info ALTER
-  COLUMN use_static_key DROP DEFAULT;
+    ALTER TABLE session_info ADD COLUMN use_static_key BOOLEAN NOT NULL DEFAULT(false);
+    ALTER TABLE session_info ALTER COLUMN use_static_key DROP DEFAULT;
     ```
 
 #### Migration steps for MongoDB
 
 - If using `access_token_signing_key_dynamic` false:
     - ```
-  db.session_info.update({}, {
-  "$set": {
-  "use_static_key": true } });
+    db.session_info.update({},
+      {
+        "$set": {
+          "use_static_key": true
+        }
+      });
     ```
     - ```
-  db.key_value.aggregate([
-  {
-  "$match": {
-  _id: "access_token_signing_key_list"
-  } }, { $unwind: "$keys"
-  }, { $addFields: {
-  _id: {
-  "$concat": [
-  "s-", { $convert: { input: "$keys.created_at_time", to: "string"
-  } }
-  ]
-  },
-  "key_string": "$keys.value",
-  "algorithm": "RS256",
-  "created_at": "$keys.created_at_time",
-
+    db.key_value.aggregate([
+      {
+        "$match": {
+          _id: "access_token_signing_key_list"
+        }
+      },
+      {
+        $unwind: "$keys"
+      },
+      {
+        $addFields: {
+          _id: {
+            "$concat": [
+              "s-",
+              {
+                $convert: {
+                  input: "$keys.created_at_time",
+                  to: "string"
+                }
+              }
+            ]
+          },
+          "key_string": "$keys.value",
+          "algorithm": "RS256",
+          "created_at": "$keys.created_at_time",
         }
       },
       {
@@ -1812,9 +1830,12 @@ CREATE INDEX all_auth_recipe_users_primary_user_id_and_tenant_id_index ON all_au
 
 - If using `access_token_signing_key_dynamic` true or not set:
     - ```
-  db.session_info.update({}, {
-  "$set": {
-  "use_static_key": false } });
+    db.session_info.update({},
+      {
+        "$set": {
+          "use_static_key": false
+        }
+      });
     ```
 
 ## [4.6.0] - 2023-03-30
