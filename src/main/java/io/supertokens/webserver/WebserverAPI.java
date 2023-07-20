@@ -80,7 +80,7 @@ public abstract class WebserverAPI extends HttpServlet {
     public static SemVer getLatestCDIVersion() {
         return SemVer.v3_0;
     }
-    
+
     public SemVer getLatestCDIVersionForRequest(HttpServletRequest req)
             throws ServletException, TenantOrAppNotFoundException {
         SemVer maxCDIVersion = getLatestCDIVersion();
@@ -208,7 +208,7 @@ public abstract class WebserverAPI extends HttpServlet {
     protected boolean shouldProtectProtectedConfig(HttpServletRequest req) throws TenantOrAppNotFoundException {
         String apiKey = req.getHeader("api-key");
         String superTokensSaaSSecret = Config.getConfig(
-                new TenantIdentifier(null, null, null), this.main)
+                        new TenantIdentifier(null, null, null), this.main)
                 .getSuperTokensSaaSSecret();
 
         if (superTokensSaaSSecret == null) {
@@ -401,7 +401,16 @@ public abstract class WebserverAPI extends HttpServlet {
 
         TenantIdentifier tenantIdentifier = null;
         try {
-            tenantIdentifier = getTenantIdentifierWithStorageFromRequest(req);
+            try {
+                tenantIdentifier = getTenantIdentifierWithStorageFromRequest(req);
+            } catch (TenantOrAppNotFoundException e) {
+                // we do this so that the logs that are printed out have the right "Tenant(.." info in them,
+                // otherwise it will assume the base tenant (with "" CUD), which may not be the one querying
+                // this API right now.
+                tenantIdentifier = new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req),
+                        this.getTenantId(req));
+                throw e;
+            }
 
             if (!this.checkIPAccess(req, resp)) {
                 // IP access denied and the filter has already sent the response
@@ -415,7 +424,8 @@ public abstract class WebserverAPI extends HttpServlet {
             SemVer version = getVersionFromRequest(req);
 
             // Check for CDI version for multitenancy
-            if (version.lesserThan(SemVer.v3_0) && !tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
+            if (version.lesserThan(SemVer.v3_0) &&
+                    !tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
                 sendTextResponse(404, "Not found", resp);
                 return;
             }
@@ -426,12 +436,14 @@ public abstract class WebserverAPI extends HttpServlet {
                         "API called: " + req.getRequestURI() + ". Method: " + req.getMethod() + ". Version: " + version,
                         false);
             } else {
-                Logging.info(main, tenantIdentifier, "API called: " + req.getRequestURI() + ". Method: " + req.getMethod(), false);
+                Logging.info(main, tenantIdentifier,
+                        "API called: " + req.getRequestURI() + ". Method: " + req.getMethod(), false);
             }
             super.service(req, resp);
 
         } catch (Exception e) {
-            Logging.error(main, tenantIdentifier, "API threw an exception: " + req.getMethod() + " " + req.getRequestURI(),
+            Logging.error(main, tenantIdentifier,
+                    "API threw an exception: " + req.getMethod() + " " + req.getRequestURI(),
                     Main.isTesting, e);
 
             if (e instanceof QuitProgramException) {
@@ -466,7 +478,8 @@ public abstract class WebserverAPI extends HttpServlet {
                 sendTextResponse(500, "Internal Error", resp);
             }
         }
-        Logging.info(main, tenantIdentifier, "API ended: " + req.getRequestURI() + ". Method: " + req.getMethod(), false);
+        Logging.info(main, tenantIdentifier, "API ended: " + req.getRequestURI() + ". Method: " + req.getMethod(),
+                false);
     }
 
     protected String getRIDFromRequest(HttpServletRequest req) {
@@ -482,7 +495,8 @@ public abstract class WebserverAPI extends HttpServlet {
                 SemVer versionFromRequest = new SemVer(version);
 
                 if (versionFromRequest.greaterThan(maxCDIVersion)) {
-                    throw new ServletException(new BadRequestException("cdi-version " + versionFromRequest + " not supported"));
+                    throw new ServletException(
+                            new BadRequestException("cdi-version " + versionFromRequest + " not supported"));
                 }
 
                 return versionFromRequest;

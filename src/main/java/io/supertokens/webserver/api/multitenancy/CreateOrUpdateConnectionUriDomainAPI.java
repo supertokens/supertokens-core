@@ -18,7 +18,6 @@ package io.supertokens.webserver.api.multitenancy;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
-import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.InputParser;
@@ -46,7 +45,7 @@ public class CreateOrUpdateConnectionUriDomainAPI extends BaseCreateOrUpdate {
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
-        String connectionUriDomain =  InputParser.parseStringOrThrowError(input, "connectionUriDomain", true);
+        String connectionUriDomain = InputParser.parseStringOrThrowError(input, "connectionUriDomain", true);
         if (connectionUriDomain != null) {
             connectionUriDomain = Utils.normalizeAndValidateConnectionUriDomain(connectionUriDomain);
         }
