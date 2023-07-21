@@ -678,8 +678,8 @@ public class PasswordlessQueries {
         }
     }
 
-    public static List<LoginMethod> getUsersInfoUsingIdList_Transaction(Start start, Connection con, Set<String> ids,
-                                                                        AppIdentifier appIdentifier)
+    public static List<LoginMethod> getUsersInfoUsingIdList(Start start, Connection con, Set<String> ids,
+                                                            AppIdentifier appIdentifier)
             throws SQLException, StorageQueryException {
         if (ids.size() > 0) {
             // No need to filter based on tenantId because the id list is already filtered for a tenant
@@ -708,16 +708,6 @@ public class PasswordlessQueries {
         return Collections.emptyList();
     }
 
-    public static List<LoginMethod> getUsersInfoUsingIdList(Start start, Set<String> ids, AppIdentifier appIdentifier)
-            throws SQLException, StorageQueryException {
-        if (ids.size() > 0) {
-            try (Connection con = ConnectionPool.getConnection(start)) {
-                return getUsersInfoUsingIdList_Transaction(start, con, ids, appIdentifier);
-            }
-        }
-        return Collections.emptyList();
-    }
-
     public static UserInfoPartial getUserById(Start start, Connection sqlCon, AppIdentifier appIdentifier,
                                               String userId) throws StorageQueryException, SQLException {
         // we don't need a LOCK here because this is already part of a transaction, and locked on app_id_to_user_id
@@ -737,15 +727,16 @@ public class PasswordlessQueries {
         });
     }
 
-    public static String getPrimaryUserIdUsingEmail(Start start, TenantIdentifier tenantIdentifier, String email)
-            throws StorageQueryException, SQLException {
-        String QUERY = "SELECT DISTINCT all_users.primary_or_recipe_user_id AS user_id "
-                + "FROM " + getConfig(start).getPasswordlessUserToTenantTable() + " AS pless" +
-                " JOIN " + getConfig(start).getUsersTable() + " AS all_users" +
-                " ON pless.app_id = all_users.app_id AND pless.user_id = all_users.user_id" +
-                " WHERE pless.app_id = ? AND pless.tenant_id = ? AND pless.email = ?";
+    public static String lockEmailAndTenant_Transaction(Start start, Connection con, TenantIdentifier tenantIdentifier,
+                                                        String email) throws SQLException, StorageQueryException {
+        // normally the query below will use a for update, but sqlite doesn't support it.
+        ((ConnectionWithLocks) con).lock(
+                tenantIdentifier.getAppId() + tenantIdentifier.getTenantId() + "~" + email +
+                        Config.getConfig(start).getPasswordlessUserToTenantTable());
 
-        return execute(start, QUERY, pst -> {
+        String QUERY = "SELECT user_id FROM " + getConfig(start).getPasswordlessUserToTenantTable() +
+                " WHERE app_id = ? AND tenant_id = ? AND email = ?";
+        return execute(con, QUERY, pst -> {
             pst.setString(1, tenantIdentifier.getAppId());
             pst.setString(2, tenantIdentifier.getTenantId());
             pst.setString(3, email);
@@ -757,7 +748,51 @@ public class PasswordlessQueries {
         });
     }
 
-    public static String getPrimaryUserByPhoneNumber(Start start, TenantIdentifier tenantIdentifier,
+    public static String lockPhoneAndTenant_Transaction(Start start, Connection con,
+                                                        TenantIdentifier tenantIdentifier,
+                                                        String phoneNumber)
+            throws SQLException, StorageQueryException {
+        // normally the query below will use a for update, but sqlite doesn't support it.
+        ((ConnectionWithLocks) con).lock(
+                tenantIdentifier.getAppId() + tenantIdentifier.getTenantId() + "~" + phoneNumber +
+                        Config.getConfig(start).getPasswordlessUserToTenantTable());
+
+        String QUERY = "SELECT user_id FROM " + getConfig(start).getPasswordlessUserToTenantTable() +
+                " WHERE app_id = ? AND tenant_id = ? AND phone_number = ?";
+        return execute(con, QUERY, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, tenantIdentifier.getTenantId());
+            pst.setString(3, phoneNumber);
+        }, result -> {
+            if (result.next()) {
+                return result.getString("user_id");
+            }
+            return null;
+        });
+    }
+
+    public static String getPrimaryUserIdUsingEmail(Start start, Connection con, TenantIdentifier tenantIdentifier,
+                                                    String email)
+            throws StorageQueryException, SQLException {
+        String QUERY = "SELECT DISTINCT all_users.primary_or_recipe_user_id AS user_id "
+                + "FROM " + getConfig(start).getPasswordlessUserToTenantTable() + " AS pless" +
+                " JOIN " + getConfig(start).getUsersTable() + " AS all_users" +
+                " ON pless.app_id = all_users.app_id AND pless.user_id = all_users.user_id" +
+                " WHERE pless.app_id = ? AND pless.tenant_id = ? AND pless.email = ?";
+
+        return execute(con, QUERY, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, tenantIdentifier.getTenantId());
+            pst.setString(3, email);
+        }, result -> {
+            if (result.next()) {
+                return result.getString("user_id");
+            }
+            return null;
+        });
+    }
+
+    public static String getPrimaryUserByPhoneNumber(Start start, Connection con, TenantIdentifier tenantIdentifier,
                                                      @Nonnull String phoneNumber)
             throws StorageQueryException, SQLException {
         String QUERY = "SELECT DISTINCT all_users.primary_or_recipe_user_id AS user_id "
@@ -766,7 +801,7 @@ public class PasswordlessQueries {
                 " ON pless.app_id = all_users.app_id AND pless.user_id = all_users.user_id" +
                 " WHERE pless.app_id = ? AND pless.tenant_id = ? AND pless.phone_number = ?";
 
-        return execute(start, QUERY, pst -> {
+        return execute(con, QUERY, pst -> {
             pst.setString(1, tenantIdentifier.getAppId());
             pst.setString(2, tenantIdentifier.getTenantId());
             pst.setString(3, phoneNumber);

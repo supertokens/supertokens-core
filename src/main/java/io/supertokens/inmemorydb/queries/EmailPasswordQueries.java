@@ -16,7 +16,6 @@
 
 package io.supertokens.inmemorydb.queries;
 
-import io.supertokens.inmemorydb.ConnectionPool;
 import io.supertokens.inmemorydb.ConnectionWithLocks;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.Utils;
@@ -353,8 +352,8 @@ public class EmailPasswordQueries {
         });
     }
 
-    public static List<LoginMethod> getUsersInfoUsingIdList_Transaction(Start start, Connection con, Set<String> ids,
-                                                                        AppIdentifier appIdentifier)
+    public static List<LoginMethod> getUsersInfoUsingIdList(Start start, Connection con, Set<String> ids,
+                                                            AppIdentifier appIdentifier)
             throws SQLException, StorageQueryException {
         if (ids.size() > 0) {
             // No need to filter based on tenantId because the id list is already filtered for a tenant
@@ -384,17 +383,29 @@ public class EmailPasswordQueries {
         return Collections.emptyList();
     }
 
-    public static List<LoginMethod> getUsersInfoUsingIdList(Start start, Set<String> ids, AppIdentifier appIdentifier)
-            throws SQLException, StorageQueryException {
-        if (ids.size() > 0) {
-            try (Connection con = ConnectionPool.getConnection(start)) {
-                return getUsersInfoUsingIdList_Transaction(start, con, ids, appIdentifier);
+    public static String lockEmailAndTenant_Transaction(Start start, Connection con, TenantIdentifier tenantIdentifier,
+                                                        String email) throws SQLException, StorageQueryException {
+        // normally the query below will use a for update, but sqlite doesn't support it.
+        ((ConnectionWithLocks) con).lock(
+                tenantIdentifier.getAppId() + tenantIdentifier.getTenantId() + "~" + email +
+                        Config.getConfig(start).getEmailPasswordUserToTenantTable());
+
+        String QUERY = "SELECT user_id FROM " + getConfig(start).getEmailPasswordUserToTenantTable() +
+                " WHERE app_id = ? AND tenant_id = ? AND email = ?";
+        return execute(con, QUERY, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, tenantIdentifier.getTenantId());
+            pst.setString(3, email);
+        }, result -> {
+            if (result.next()) {
+                return result.getString("user_id");
             }
-        }
-        return null;
+            return null;
+        });
     }
 
-    public static String getPrimaryUserIdUsingEmail(Start start, TenantIdentifier tenantIdentifier, String email)
+    public static String getPrimaryUserIdUsingEmail(Start start, Connection con, TenantIdentifier tenantIdentifier,
+                                                    String email)
             throws StorageQueryException, SQLException {
         String QUERY = "SELECT DISTINCT all_users.primary_or_recipe_user_id AS user_id "
                 + "FROM " + getConfig(start).getEmailPasswordUserToTenantTable() + " AS ep" +
@@ -402,7 +413,7 @@ public class EmailPasswordQueries {
                 " ON ep.app_id = all_users.app_id AND ep.user_id = all_users.user_id" +
                 " WHERE ep.app_id = ? AND ep.tenant_id = ? AND ep.email = ?";
 
-        return execute(start, QUERY, pst -> {
+        return execute(con, QUERY, pst -> {
             pst.setString(1, tenantIdentifier.getAppId());
             pst.setString(2, tenantIdentifier.getTenantId());
             pst.setString(3, email);

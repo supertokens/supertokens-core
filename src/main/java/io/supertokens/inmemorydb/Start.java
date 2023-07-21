@@ -2787,8 +2787,12 @@ public class Start
     public AuthRecipeUserInfo[] listPrimaryUsersByEmail_Transaction(TenantIdentifier tenantIdentifier,
                                                                     TransactionConnection con, String email)
             throws StorageQueryException {
-        // TODO:..
-        return new AuthRecipeUserInfo[0];
+        try {
+            Connection sqlCon = (Connection) con.getConnection();
+            return GeneralQueries.listPrimaryUsersByEmail_Transaction(this, sqlCon, tenantIdentifier, email);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
@@ -2796,8 +2800,13 @@ public class Start
                                                                           TransactionConnection con,
                                                                           String phoneNumber)
             throws StorageQueryException {
-        // TODO:..
-        return new AuthRecipeUserInfo[0];
+        try {
+            Connection sqlCon = (Connection) con.getConnection();
+            return GeneralQueries.listPrimaryUsersByPhoneNumber_Transaction(this, sqlCon, tenantIdentifier,
+                    phoneNumber);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
@@ -2806,13 +2815,25 @@ public class Start
                                                                           String thirdPartyId,
                                                                           String thirdPartyUserId)
             throws StorageQueryException {
-        // TODO:..
-        return null;
+        try {
+            Connection sqlCon = (Connection) con.getConnection();
+            return GeneralQueries.getPrimaryUsersByThirdPartyInfo_Transaction(this, sqlCon, tenantIdentifier,
+                    thirdPartyId, thirdPartyUserId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
     public void makePrimaryUser_Transaction(AppIdentifier appIdentifier, TransactionConnection con, String userId)
             throws StorageQueryException {
-        // TODO...
+        try {
+            Connection sqlCon = (Connection) con.getConnection();
+            // we do not bother returning if a row was updated here or not, cause it's happening
+            // in a transaction anyway.
+            GeneralQueries.makePrimaryUser_Transaction(this, sqlCon, userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 }
