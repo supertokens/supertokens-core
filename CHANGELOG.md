@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+## [6.0.6] - 2023-07-24
+
+- Adds all ee features enabled for in memory database.
+
 ## [6.0.5] - 2023-07-20
 
 - Fixes logging issue in API call where it used to print out the root CUD tenant info when querying with a tenant
@@ -1726,8 +1730,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - If using `access_token_signing_key_dynamic` false:
     - ```sql
-    ALTER TABLE session_info ADD COLUMN use_static_key BOOLEAN NOT NULL DEFAULT(true);
-    ALTER TABLE session_info ALTER COLUMN use_static_key DROP DEFAULT;
+  ALTER TABLE session_info ADD COLUMN use_static_key BOOLEAN NOT NULL DEFAULT(true);
+  ALTER TABLE session_info ALTER COLUMN use_static_key DROP DEFAULT;
     ```
     - ```sql
     INSERT INTO jwt_signing_keys(key_id, key_string, algorithm, created_at)
@@ -1736,48 +1740,48 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     ```
 - If using `access_token_signing_key_dynamic` true or not set:
     - ```sql
-    ALTER TABLE session_info ADD COLUMN use_static_key BOOLEAN NOT NULL DEFAULT(false);
-    ALTER TABLE session_info ALTER COLUMN use_static_key DROP DEFAULT;
+  ALTER TABLE session_info ADD COLUMN use_static_key BOOLEAN NOT NULL DEFAULT(false);
+  ALTER TABLE session_info ALTER COLUMN use_static_key DROP DEFAULT;
     ```
 
 #### Migration steps for MongoDB
 
 - If using `access_token_signing_key_dynamic` false:
     - ```
-    db.session_info.update({},
-      {
-        "$set": {
-          "use_static_key": true
-        }
-      });
+  db.session_info.update({},
+  {
+  "$set": {
+  "use_static_key": true
+  }
+  });
     ```
     - ```
-    db.key_value.aggregate([
-      {
-        "$match": {
-          _id: "access_token_signing_key_list"
-        }
-      },
-      {
-        $unwind: "$keys"
-      },
-      {
-        $addFields: {
-          _id: {
-            "$concat": [
-              "s-",
-              {
-                $convert: {
-                  input: "$keys.created_at_time",
-                  to: "string"
-                }
-              }
-            ]
-          },
-          "key_string": "$keys.value",
-          "algorithm": "RS256",
-          "created_at": "$keys.created_at_time",
-          
+  db.key_value.aggregate([
+  {
+  "$match": {
+  _id: "access_token_signing_key_list"
+  }
+  },
+  {
+  $unwind: "$keys"
+  },
+  {
+  $addFields: {
+  _id: {
+  "$concat": [
+  "s-",
+  {
+  $convert: {
+  input: "$keys.created_at_time",
+  to: "string"
+  }
+  }
+  ]
+  },
+  "key_string": "$keys.value",
+  "algorithm": "RS256",
+  "created_at": "$keys.created_at_time",
+
         }
       },
       {
@@ -1792,17 +1796,17 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
           
         }
       }
-    ]);
+  ]);
     ```
 
 - If using `access_token_signing_key_dynamic` true or not set:
     - ```
-    db.session_info.update({},
-      {
-        "$set": {
-          "use_static_key": false
-        }
-      });
+  db.session_info.update({},
+  {
+  "$set": {
+  "use_static_key": false
+  }
+  });
     ```
 
 ## [4.6.0] - 2023-03-30
