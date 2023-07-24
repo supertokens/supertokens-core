@@ -175,15 +175,15 @@ docker run -d \
     -e ERROR_LOG_PATH=/home/try-supertokens/logs/error.log \
     -e DISABLE_TELEMETRY=true \
     --publish 9999:3567 \
-    supertokens/supertokens-postgresql:X.Y
+    supertokens/supertokens-postgresql:6.0
 
-sleep 5
+sleep 7
 
 curl --location --request POST 'https://try.supertokens.com/recipe/dashboard/user' \
 --header 'rid: dashboard' \
 --header 'api-key: <YOUR-API-KEY>' \
 --header 'Content-Type: application/json' \
---data-raw '{"email": "rishabh@supertokens.com","password": "..."}'
+--data-raw '{"email": "rishabh@supertokens.com","password": "abcd1234"}'
 
 curl --location --request PUT 'https://try.supertokens.com/recipe/multitenancy/tenant' \
 --header 'Content-Type: application/json' \
@@ -194,11 +194,10 @@ curl --location --request PUT 'https://try.supertokens.com/recipe/multitenancy/t
     "passwordlessEnabled": false
 }'
 
-curl --location --request PUT 'https://try.supertokens.com/recipe/multitenancy/config/thirdparty' \
+curl --location --request PUT 'https://try.supertokens.com/tenant1/recipe/multitenancy/config/thirdparty' \
 --header 'Content-Type: application/json' \
 --data-raw '{
   "config": {
-    "tenantId": "tenant11",
     "thirdPartyId": "google-workspaces",
     "name": "Google Workspaces",
     "clients": [
@@ -233,11 +232,10 @@ curl --location --request PUT 'https://try.supertokens.com/recipe/multitenancy/t
 }'
 
 
-curl --location --request PUT 'https://try.supertokens.com/recipe/multitenancy/config/thirdparty' \
+curl --location --request PUT 'https://try.supertokens.com/tenant3/recipe/multitenancy/config/thirdparty' \
 --header 'Content-Type: application/json' \
 --data-raw '{
   "config": {
-    "tenantId": "tenant3",
     "thirdPartyId": "github",
     "name": "GitHub",
     "clients": [
