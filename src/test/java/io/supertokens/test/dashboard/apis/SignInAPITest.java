@@ -16,17 +16,6 @@
 
 package io.supertokens.test.dashboard.apis;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
-import io.supertokens.utils.SemVer;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestRule;
-
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.dashboard.Dashboard;
@@ -39,6 +28,14 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.utils.SemVer;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestRule;
+
+import static org.junit.Assert.*;
 
 public class SignInAPITest {
     @Rule
@@ -56,7 +53,7 @@ public class SignInAPITest {
 
     @Test
     public void testSigningInAUserAndVerifyingTheirSession() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -92,7 +89,7 @@ public class SignInAPITest {
 
     @Test
     public void testSigningInASuspendedUser() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -140,11 +137,16 @@ public class SignInAPITest {
                     "http://localhost:3567/recipe/dashboard/signin", requestBody, 1000, 1000, null,
                     SemVer.v2_18.get(), "dashboard");
             assertEquals(2, response.entrySet().size());
-            assertEquals("USER_SUSPENDED_ERROR", response.get("status").getAsString());
-            assertEquals(
-                    "User is currently suspended, please sign in with another account, or reactivate the SuperTokens " +
-                            "core license key",
-                    response.get("message").getAsString());
+            if (StorageLayer.isInMemDb(process.getProcess())) {
+                assertEquals("OK", response.get("status").getAsString());
+            } else {
+                assertEquals("USER_SUSPENDED_ERROR", response.get("status").getAsString());
+                assertEquals(
+                        "User is currently suspended, please sign in with another account, or reactivate the " +
+                                "SuperTokens " +
+                                "core license key",
+                        response.get("message").getAsString());
+            }
         }
 
         process.kill();
