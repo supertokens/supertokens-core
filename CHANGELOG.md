@@ -40,6 +40,9 @@ CREATE INDEX all_auth_recipe_users_primary_user_id_index ON all_auth_recipe_user
 CREATE INDEX all_auth_recipe_users_primary_user_id_and_tenant_id_index ON all_auth_recipe_users (app_id, tenant_id, primary_or_recipe_user_id);
 ```
 
+## [6.0.6] - 2023-07-24
+
+- Adds all ee features enabled for in memory database.
 
 ## [6.0.5] - 2023-07-20
 
@@ -1759,17 +1762,17 @@ CREATE INDEX all_auth_recipe_users_primary_user_id_and_tenant_id_index ON all_au
 #### Migration steps for SQL
 
 - If using `access_token_signing_key_dynamic` false:
-    - ```sql
+    ```sql
     ALTER TABLE session_info ADD COLUMN use_static_key BOOLEAN NOT NULL DEFAULT(true);
     ALTER TABLE session_info ALTER COLUMN use_static_key DROP DEFAULT;
     ```
-    - ```sql
+    ```sql
     INSERT INTO jwt_signing_keys(key_id, key_string, algorithm, created_at)
       select CONCAT('s-', created_at_time) as key_id, value as key_string, 'RS256' as algorithm, created_at_time as created_at
       from session_access_token_signing_keys;
     ```
 - If using `access_token_signing_key_dynamic` true or not set:
-    - ```sql
+  - ```sql
     ALTER TABLE session_info ADD COLUMN use_static_key BOOLEAN NOT NULL DEFAULT(false);
     ALTER TABLE session_info ALTER COLUMN use_static_key DROP DEFAULT;
     ```
@@ -1777,7 +1780,7 @@ CREATE INDEX all_auth_recipe_users_primary_user_id_and_tenant_id_index ON all_au
 #### Migration steps for MongoDB
 
 - If using `access_token_signing_key_dynamic` false:
-    - ```
+    ```
     db.session_info.update({},
       {
         "$set": {
@@ -1785,7 +1788,7 @@ CREATE INDEX all_auth_recipe_users_primary_user_id_and_tenant_id_index ON all_au
         }
       });
     ```
-    - ```
+    ```
     db.key_value.aggregate([
       {
         "$match": {
@@ -1829,7 +1832,7 @@ CREATE INDEX all_auth_recipe_users_primary_user_id_and_tenant_id_index ON all_au
     ```
 
 - If using `access_token_signing_key_dynamic` true or not set:
-    - ```
+    ```
     db.session_info.update({},
       {
         "$set": {

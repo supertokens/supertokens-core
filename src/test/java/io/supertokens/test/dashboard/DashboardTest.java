@@ -34,7 +34,6 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
-import io.supertokens.webserver.WebserverAPI;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -283,7 +282,11 @@ public class DashboardTest {
                     null, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), "");
             assertEquals(3, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
-            assertEquals(0, response.get("features").getAsJsonArray().size());
+            if (StorageLayer.isInMemDb(process.getProcess())) {
+                assertEquals(EE_FEATURES.values().length, response.get("features").getAsJsonArray().size());
+            } else {
+                assertEquals(0, response.get("features").getAsJsonArray().size());
+            }
             JsonObject usageStats = response.get("usageStats").getAsJsonObject();
             JsonArray mauArr = usageStats.get("maus").getAsJsonArray();
             assertEquals(1, usageStats.entrySet().size());
@@ -301,7 +304,11 @@ public class DashboardTest {
                     null, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), "");
             assertEquals(3, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
-            assertEquals(0, response.get("features").getAsJsonArray().size());
+            if (StorageLayer.isInMemDb(process.getProcess())) {
+                assertEquals(EE_FEATURES.values().length, response.get("features").getAsJsonArray().size());
+            } else {
+                assertEquals(0, response.get("features").getAsJsonArray().size());
+            }
             JsonObject usageStats = response.get("usageStats").getAsJsonObject();
             JsonArray mauArr = usageStats.get("maus").getAsJsonArray();
             assertEquals(1, usageStats.entrySet().size());
@@ -319,10 +326,15 @@ public class DashboardTest {
                     null, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), "");
             assertEquals(3, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
-            assertEquals(1, response.get("features").getAsJsonArray().size());
+            if (StorageLayer.isInMemDb(process.getProcess())) {
+                assertEquals(EE_FEATURES.values().length, response.get("features").getAsJsonArray().size());
+            } else {
+                assertEquals(1, response.get("features").getAsJsonArray().size());
+            }
             JsonArray featuresArray = response.get("features").getAsJsonArray();
-            assertEquals(1, featuresArray.size());
-            assertEquals(EE_FEATURES.DASHBOARD_LOGIN.toString(), featuresArray.get(0).getAsString());
+            if (!StorageLayer.isInMemDb(process.getProcess())) {
+                assertEquals(EE_FEATURES.DASHBOARD_LOGIN.toString(), featuresArray.get(0).getAsString());
+            }
             JsonObject usageStats = response.get("usageStats").getAsJsonObject();
             JsonObject dashboardLoginObject = usageStats.get("dashboard_login").getAsJsonObject();
             assertEquals(2, usageStats.entrySet().size());
@@ -342,10 +354,15 @@ public class DashboardTest {
                     null, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), "");
             assertEquals(3, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
-            assertEquals(1, response.get("features").getAsJsonArray().size());
+            if (StorageLayer.isInMemDb(process.getProcess())) {
+                assertEquals(EE_FEATURES.values().length, response.get("features").getAsJsonArray().size());
+            } else {
+                assertEquals(1, response.get("features").getAsJsonArray().size());
+            }
             JsonArray featuresArray = response.get("features").getAsJsonArray();
-            assertEquals(1, featuresArray.size());
-            assertEquals(EE_FEATURES.DASHBOARD_LOGIN.toString(), featuresArray.get(0).getAsString());
+            if (!StorageLayer.isInMemDb(process.getProcess())) {
+                assertEquals(EE_FEATURES.DASHBOARD_LOGIN.toString(), featuresArray.get(0).getAsString());
+            }
             JsonObject usageStats = response.get("usageStats").getAsJsonObject();
             JsonObject dashboardLoginObject = usageStats.get("dashboard_login").getAsJsonObject();
             assertEquals(2, usageStats.entrySet().size());

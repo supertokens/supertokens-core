@@ -26,6 +26,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.storageLayer.StorageLayer;
 import org.jetbrains.annotations.TestOnly;
 
 import java.io.File;
@@ -122,7 +123,8 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
                 new FeatureFlag(main, eeFolderPath));
     }
 
-    public static void loadForAllTenants(Main main, List<AppIdentifier> apps, List<TenantIdentifier> tenantsThatChanged) {
+    public static void loadForAllTenants(Main main, List<AppIdentifier> apps,
+                                         List<TenantIdentifier> tenantsThatChanged) {
         try {
             main.getResourceDistributor().withResourceDistributorLock(() -> {
                 Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingResources =
@@ -160,6 +162,9 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
         }
         if (this.eeFeatureFlag == null) {
             return new EE_FEATURES[]{};
+        }
+        if (StorageLayer.isInMemDb(main)) {
+            return EE_FEATURES.values();
         }
         return this.eeFeatureFlag.getEnabledFeatures();
     }

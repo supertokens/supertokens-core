@@ -214,6 +214,11 @@ public class CronjobTest {
             process.startProcess();
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+            if (StorageLayer.isInMemDb(process.main)) {
+                // cause we keep all features enabled in memdb anyway
+                return;
+            }
+
             FeatureFlag.getInstance(process.main)
                     .setLicenseKeyAndSyncFeatures(EETest.OPAQUE_LICENSE_KEY_WITH_TEST_FEATURE);
             Assert.assertNotNull(
@@ -245,6 +250,11 @@ public class CronjobTest {
             process.startProcess();
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+            if (StorageLayer.isInMemDb(process.main)) {
+                // cause we keep all features enabled in memdb anyway
+                return;
+            }
+
             FeatureFlag.getInstance(process.main)
                     .setLicenseKeyAndSyncFeatures(EETest.STATELESS_LICENSE_KEY_WITH_TEST_AND_RANDOM_FEATURE_WITH_EXP);
 
@@ -273,6 +283,11 @@ public class CronjobTest {
             CronTaskTest.getInstance(process.main).setIntervalInSeconds(EELicenseCheck.RESOURCE_KEY, 4);
             process.startProcess();
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.isInMemDb(process.main)) {
+                // cause we keep all features enabled in memdb anyway
+                return;
+            }
 
             FeatureFlag.getInstance(process.main)
                     .setLicenseKeyAndSyncFeatures(EETest.STATELESS_LICENSE_KEY_WITH_TEST_AND_RANDOM_FEATURE_WITH_EXP);

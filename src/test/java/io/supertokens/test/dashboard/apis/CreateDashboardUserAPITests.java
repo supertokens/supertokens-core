@@ -16,17 +16,6 @@
 
 package io.supertokens.test.dashboard.apis;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
-import io.supertokens.utils.SemVer;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestRule;
-
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.dashboard.Dashboard;
@@ -37,6 +26,14 @@ import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
+import io.supertokens.utils.SemVer;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestRule;
+
+import static org.junit.Assert.*;
 
 public class CreateDashboardUserAPITests {
     @Rule
@@ -388,8 +385,9 @@ public class CreateDashboardUserAPITests {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/dashboard/user", requestBody, 5000, 1000, null,
                         SemVer.v2_18.get(), "dashboard");
-                throw new Exception("Should never come here");
+                assert StorageLayer.isInMemDb(process.main);
             } catch (HttpResponseException e) {
+                assert !StorageLayer.isInMemDb(process.main);
                 assertTrue(e.statusCode == 402 && e.getMessage().equals(
                         "Http error. Status Code: 402. Message:"
                                 +
