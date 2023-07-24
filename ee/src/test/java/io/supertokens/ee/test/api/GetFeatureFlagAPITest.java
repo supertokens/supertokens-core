@@ -1,26 +1,20 @@
 package io.supertokens.ee.test.api;
 
-import static org.junit.Assert.assertEquals;
-
 import com.google.gson.JsonArray;
-import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.storageLayer.StorageLayer;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestRule;
-
 import com.google.gson.JsonObject;
-
 import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.ee.test.EETest;
 import io.supertokens.ee.test.TestingProcessManager;
 import io.supertokens.ee.test.Utils;
 import io.supertokens.ee.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.featureflag.FeatureFlag;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.webserver.WebserverAPI;
+import org.junit.*;
+import org.junit.rules.TestRule;
+
+import static org.junit.Assert.assertEquals;
 
 public class GetFeatureFlagAPITest {
     @Rule
@@ -38,10 +32,15 @@ public class GetFeatureFlagAPITest {
 
     @Test
     public void testRetrievingFeatureFlagInfoWhenNoLicenseKeyIsSet() throws Exception {
-        String[] args = { "../../" };
+        String[] args = {"../../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         Assert.assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        if (StorageLayer.isInMemDb(process.main)) {
+            // cause we keep all features enabled in memdb anyway
+            return;
+        }
 
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 "http://localhost:3567/ee/featureflag",
@@ -67,10 +66,15 @@ public class GetFeatureFlagAPITest {
 
     @Test
     public void testRetrievingFeatureFlagInfoWhenLicenseKeyIsSet() throws Exception {
-        String[] args = { "../../" };
+        String[] args = {"../../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         Assert.assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        if (StorageLayer.isInMemDb(process.main)) {
+            // cause we keep all features enabled in memdb anyway
+            return;
+        }
 
         FeatureFlag.getInstance(process.getProcess())
                 .setLicenseKeyAndSyncFeatures(EETest.STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_WITH_EXP);

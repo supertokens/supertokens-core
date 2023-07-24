@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+## [6.0.6] - 2023-07-24
+
+- Adds all ee features enabled for in memory database.
+
 ## [6.0.5] - 2023-07-20
 
 - Fixes logging issue in API call where it used to print out the root CUD tenant info when querying with a tenant
@@ -1725,17 +1729,17 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 #### Migration steps for SQL
 
 - If using `access_token_signing_key_dynamic` false:
-    - ```sql
+    ```sql
     ALTER TABLE session_info ADD COLUMN use_static_key BOOLEAN NOT NULL DEFAULT(true);
     ALTER TABLE session_info ALTER COLUMN use_static_key DROP DEFAULT;
     ```
-    - ```sql
+    ```sql
     INSERT INTO jwt_signing_keys(key_id, key_string, algorithm, created_at)
       select CONCAT('s-', created_at_time) as key_id, value as key_string, 'RS256' as algorithm, created_at_time as created_at
       from session_access_token_signing_keys;
     ```
 - If using `access_token_signing_key_dynamic` true or not set:
-    - ```sql
+  - ```sql
     ALTER TABLE session_info ADD COLUMN use_static_key BOOLEAN NOT NULL DEFAULT(false);
     ALTER TABLE session_info ALTER COLUMN use_static_key DROP DEFAULT;
     ```
@@ -1743,7 +1747,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 #### Migration steps for MongoDB
 
 - If using `access_token_signing_key_dynamic` false:
-    - ```
+    ```
     db.session_info.update({},
       {
         "$set": {
@@ -1751,7 +1755,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
         }
       });
     ```
-    - ```
+    ```
     db.key_value.aggregate([
       {
         "$match": {
@@ -1796,7 +1800,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     ```
 
 - If using `access_token_signing_key_dynamic` true or not set:
-    - ```
+    ```
     db.session_info.update({},
       {
         "$set": {
