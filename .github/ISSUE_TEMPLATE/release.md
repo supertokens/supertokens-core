@@ -161,3 +161,91 @@ labels:
    - [ ] supertokens-ios
    - [ ] supertokens-flutter
    - [ ] supertokens-dashboard
+
+### Contents of running try.supertokens.com script:
+```bash
+docker run -d \
+    --restart=always \
+    --name try-supertokens \
+    --label name=try-supertokens \
+    --label type=session-service \
+    --label mode=production \
+    --volume /home/ubuntu/try-supertokens/logs:/home/try-supertokens/logs \
+    -e INFO_LOG_PATH=/home/try-supertokens/logs/info.log \
+    -e ERROR_LOG_PATH=/home/try-supertokens/logs/error.log \
+    -e DISABLE_TELEMETRY=true \
+    --publish 9999:3567 \
+    supertokens/supertokens-postgresql:X.Y
+
+sleep 5
+
+curl --location --request POST 'https://try.supertokens.com/recipe/dashboard/user' \
+--header 'rid: dashboard' \
+--header 'api-key: <YOUR-API-KEY>' \
+--header 'Content-Type: application/json' \
+--data-raw '{"email": "rishabh@supertokens.com","password": "..."}'
+
+curl --location --request PUT 'https://try.supertokens.com/recipe/multitenancy/tenant' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "tenantId": "tenant1",
+    "emailPasswordEnabled": true,
+    "thirdPartyEnabled": true,
+    "passwordlessEnabled": false
+}'
+
+curl --location --request PUT 'https://try.supertokens.com/recipe/multitenancy/config/thirdparty' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+  "config": {
+    "tenantId": "tenant11",
+    "thirdPartyId": "google-workspaces",
+    "name": "Google Workspaces",
+    "clients": [
+      {
+        "clientId": "1060725074195-kmeum4crr01uirfl2op9kd5acmi9jutn.apps.googleusercontent.com",
+        "clientSecret": "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",
+        "additionalConfig": {
+            "hd": "*"
+        }
+      }
+    ]
+  }
+}'
+
+
+curl --location --request PUT 'https://try.supertokens.com/recipe/multitenancy/tenant' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "tenantId": "tenant2",
+    "emailPasswordEnabled": true,
+    "thirdPartyEnabled": false,
+    "passwordlessEnabled": false
+}'
+
+curl --location --request PUT 'https://try.supertokens.com/recipe/multitenancy/tenant' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "tenantId": "tenant3",
+    "emailPasswordEnabled": false,
+    "thirdPartyEnabled": true,
+    "passwordlessEnabled": true
+}'
+
+
+curl --location --request PUT 'https://try.supertokens.com/recipe/multitenancy/config/thirdparty' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+  "config": {
+    "tenantId": "tenant3",
+    "thirdPartyId": "github",
+    "name": "GitHub",
+    "clients": [
+      {
+        "clientId": "467101b197249757c71f",
+        "clientSecret": "e97051221f4b6426e8fe8d51486396703012f5bd"
+      }
+    ]
+  }
+}'
+```
