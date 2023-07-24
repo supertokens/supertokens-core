@@ -93,6 +93,11 @@ public class EETest extends Mockito {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.isInMemDb(process.main)) {
+            // cause we keep all features enabled in memdb anyway
+            return;
+        }
+
         FeatureFlag featureFlag = FeatureFlag.getInstance(process.getProcess());
 
         // call removeLicenseKeyAndSyncFeatures
@@ -129,6 +134,11 @@ public class EETest extends Mockito {
         {
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.isInMemDb(process.main)) {
+                // cause we keep all features enabled in memdb anyway
+                return;
+            }
 
             FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(OPAQUE_LICENSE_KEY_WITH_TEST_FEATURE);
             Assert.assertNotNull(
@@ -222,6 +232,11 @@ public class EETest extends Mockito {
         {
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.isInMemDb(process.main)) {
+                // cause we keep all features enabled in memdb anyway
+                return;
+            }
 
             FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(
                     STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_NO_EXP);
@@ -584,6 +599,11 @@ public class EETest extends Mockito {
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+            if (StorageLayer.isInMemDb(process.main)) {
+                // cause we keep all features enabled in memdb anyway
+                return;
+            }
+
             FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(OPAQUE_LICENSE_KEY_WITH_TEST_FEATURE);
 
             Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 1);
@@ -608,6 +628,11 @@ public class EETest extends Mockito {
         {
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.isInMemDb(process.main)) {
+                // cause we keep all features enabled in memdb anyway
+                return;
+            }
 
             FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(OPAQUE_LICENSE_KEY_WITH_TEST_FEATURE);
 
@@ -637,6 +662,11 @@ public class EETest extends Mockito {
         {
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.isInMemDb(process.main)) {
+                // cause we keep all features enabled in memdb anyway
+                return;
+            }
 
             FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(OPAQUE_LICENSE_KEY_WITH_TEST_FEATURE);
 
@@ -673,6 +703,11 @@ public class EETest extends Mockito {
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+            if (StorageLayer.isInMemDb(process.main)) {
+                // cause we keep all features enabled in memdb anyway
+                return;
+            }
+
             FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(OPAQUE_LICENSE_KEY_WITH_TEST_FEATURE);
             Assert.assertNotNull(
                     process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL));
@@ -707,6 +742,11 @@ public class EETest extends Mockito {
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+            if (StorageLayer.isInMemDb(process.main)) {
+                // cause we keep all features enabled in memdb anyway
+                return;
+            }
+
             FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(OPAQUE_LICENSE_KEY_WITH_TEST_FEATURE);
             Assert.assertNotNull(
                     process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL));
@@ -740,6 +780,11 @@ public class EETest extends Mockito {
         {
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.isInMemDb(process.main)) {
+                // cause we keep all features enabled in memdb anyway
+                return;
+            }
 
             FeatureFlag.getInstance(process.main)
                     .setLicenseKeyAndSyncFeatures(STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_NO_EXP);
@@ -776,6 +821,12 @@ public class EETest extends Mockito {
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+            if (StorageLayer.isInMemDb(process.main)) {
+                // cause we keep all features enabled in memdb anyway
+                return;
+            }
+
+
             FeatureFlag.getInstance(process.main)
                     .setLicenseKeyAndSyncFeatures(STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_NO_EXP);
             Assert.assertNull(
@@ -810,6 +861,11 @@ public class EETest extends Mockito {
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+            if (StorageLayer.isInMemDb(process.main)) {
+                // cause we keep all features enabled in memdb anyway
+                return;
+            }
+
             FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(OPAQUE_LICENSE_KEY_WITH_TEST_FEATURE);
             Assert.assertNotNull(
                     process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL));
@@ -836,6 +892,11 @@ public class EETest extends Mockito {
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+            if (StorageLayer.isInMemDb(process.main)) {
+                // cause we keep all features enabled in memdb anyway
+                return;
+            }
+
             FeatureFlag.getInstance(process.main)
                     .setLicenseKeyAndSyncFeatures(STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_NO_EXP);
             Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 1);
@@ -860,6 +921,11 @@ public class EETest extends Mockito {
         {
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+            if (StorageLayer.isInMemDb(process.main)) {
+                // cause we keep all features enabled in memdb anyway
+                return;
+            }
+
 
             FeatureFlag.getInstance(process.main)
                     .setLicenseKeyAndSyncFeatures(STATELESS_LICENSE_KEY_WITH_EMPTY_FEATURE_NO_EXP);
@@ -913,6 +979,11 @@ public class EETest extends Mockito {
         {
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.isInMemDb(process.main)) {
+                // cause we keep all features enabled in memdb anyway
+                return;
+            }
 
             FeatureFlag.getInstance(process.main)
                     .setLicenseKeyAndSyncFeatures(OPAQUE_LICENSE_KEY_WITH_EMPTY_FEATURE);
@@ -1060,6 +1131,11 @@ public class EETest extends Mockito {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.isInMemDb(process.main)) {
+            // cause we keep all features enabled in memdb anyway
+            return;
+        }
+
         FeatureFlag.getInstance(process.main)
                 .setLicenseKeyAndSyncFeatures(STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_WITH_EXP);
 
@@ -1083,6 +1159,11 @@ public class EETest extends Mockito {
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.isInMemDb(process.main)) {
+            // cause we keep all features enabled in memdb anyway
+            return;
+        }
 
         FeatureFlag.getInstance(process.main)
                 .setLicenseKeyAndSyncFeatures(STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_WITH_EXP);
@@ -1114,6 +1195,11 @@ public class EETest extends Mockito {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.isInMemDb(process.main)) {
+            // cause we keep all features enabled in memdb anyway
+            return;
+        }
+
         EE_FEATURES[] features = new EE_FEATURES[]{};
         JsonArray json = new JsonArray();
         Arrays.stream(features).forEach(ee_features -> json.add(new JsonPrimitive(ee_features.toString())));
@@ -1138,6 +1224,11 @@ public class EETest extends Mockito {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.isInMemDb(process.main)) {
+            // cause we keep all features enabled in memdb anyway
+            return;
+        }
+
         FeatureFlag.getInstance(process.main).getEeFeatureFlagInstance()
                 .updateEnabledFeaturesValueReadFromDbTime(System.currentTimeMillis() - (1000 * 3600 * 5));
 
@@ -1154,6 +1245,11 @@ public class EETest extends Mockito {
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.isInMemDb(process.main)) {
+            // cause we keep all features enabled in memdb anyway
+            return;
+        }
 
         JsonArray json = new JsonArray();
         json.add(new JsonPrimitive("random"));
