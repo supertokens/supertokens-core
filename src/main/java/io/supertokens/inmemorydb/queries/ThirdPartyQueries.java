@@ -190,7 +190,7 @@ public class ThirdPartyQueries {
                 " ON tp_tenants.app_id = tp.app_id AND tp_tenants.user_id = tp.user_id" +
                 " WHERE tp.app_id = ? AND tp_tenants.tenant_id = ? AND tp.email = ?";
 
-        return execute(start, QUERY, pst -> {
+        return execute(con, QUERY, pst -> {
             pst.setString(1, tenantIdentifier.getAppId());
             pst.setString(2, tenantIdentifier.getTenantId());
             pst.setString(3, email);
@@ -217,7 +217,7 @@ public class ThirdPartyQueries {
                 " FROM " + getConfig(start).getThirdPartyUserToTenantTable() +
                 " WHERE app_id = ? AND tenant_id = ? AND third_party_id = ? AND third_party_user_id = ?";
 
-        return execute(start, QUERY, pst -> {
+        return execute(con, QUERY, pst -> {
             pst.setString(1, tenantIdentifier.getAppId());
             pst.setString(2, tenantIdentifier.getTenantId());
             pst.setString(3, thirdPartyId);
