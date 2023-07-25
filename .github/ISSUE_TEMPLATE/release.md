@@ -170,9 +170,7 @@ docker run -d \
     --label name=try-supertokens \
     --label type=session-service \
     --label mode=production \
-    --volume /home/ubuntu/try-supertokens/logs:/home/try-supertokens/logs \
-    -e INFO_LOG_PATH=/home/try-supertokens/logs/info.log \
-    -e ERROR_LOG_PATH=/home/try-supertokens/logs/error.log \
+    --log-driver=awslogs --log-opt awslogs-region=ap-south-1 --log-opt awslogs-group=try-supertokens --log-opt awslogs-stream=try-supertokens \
     -e DISABLE_TELEMETRY=true \
     --publish 9999:3567 \
     supertokens/supertokens-postgresql:6.0
