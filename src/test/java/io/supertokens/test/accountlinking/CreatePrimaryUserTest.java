@@ -91,7 +91,7 @@ public class CreatePrimaryUserTest {
         assert (resp.user.loginMethods[0].thirdParty.id.equals("google"));
         assert (resp.user.loginMethods[0].phoneNumber == null);
         assert (resp.user.loginMethods[0].passwordHash == null);
-        assert (user.id.equals(user.loginMethods[0].recipeUserId));
+        assert (resp.user.id.equals(resp.user.loginMethods[0].recipeUserId));
 
         {
             Passwordless.CreateCodeResponse code = Passwordless.createCode(process.getProcess(), "u@e.com", null, null,
@@ -105,7 +105,7 @@ public class CreatePrimaryUserTest {
             assert (pResp.user.loginMethods[0].passwordHash == null);
             assert (pResp.user.loginMethods[0].thirdParty == null);
             assert (pResp.user.loginMethods[0].phoneNumber == null);
-            assert (user.id.equals(user.loginMethods[0].recipeUserId));
+            assert (pResp.user.id.equals(pResp.user.loginMethods[0].recipeUserId));
         }
 
         {
@@ -120,7 +120,7 @@ public class CreatePrimaryUserTest {
             assert (pResp.user.loginMethods[0].passwordHash == null);
             assert (pResp.user.loginMethods[0].thirdParty == null);
             assert (pResp.user.loginMethods[0].phoneNumber.equals("12345"));
-            assert (user.id.equals(user.loginMethods[0].recipeUserId));
+            assert (pResp.user.id.equals(pResp.user.loginMethods[0].recipeUserId));
         }
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -147,7 +147,7 @@ public class CreatePrimaryUserTest {
     }
 
     @Test
-    public void makePrimaryUserSuccess() throws Exception {
+    public void makeEmailPasswordPrimaryUserSuccess() throws Exception {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         FeatureFlagTestContent.getInstance(process.getProcess())
@@ -169,6 +169,111 @@ public class CreatePrimaryUserTest {
         assert (result.user.loginMethods[0].thirdParty == null);
         assert (result.user.id.equals(result.user.loginMethods[0].recipeUserId));
         assert (result.user.loginMethods[0].phoneNumber == null);
+
+        AuthRecipeUserInfo refetchedUser = AuthRecipe.getUserById(process.main, result.user.id);
+
+        assert (refetchedUser.equals(result.user));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void makeThirdPartyPrimaryUserSuccess() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        ThirdParty.SignInUpResponse signInUp = ThirdParty.signInUp(process.getProcess(), "google",
+                "user-google",
+                "test@example.com");
+
+        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main,
+                signInUp.user.id);
+        assert (!result.wasAlreadyAPrimaryUser);
+        assert (result.user.isPrimaryUser);
+        assert (result.user.loginMethods.length == 1);
+        assert (result.user.loginMethods[0].recipeId == RECIPE_ID.THIRD_PARTY);
+        assert (result.user.loginMethods[0].email.equals("test@example.com"));
+        assert (result.user.loginMethods[0].thirdParty.userId.equals("user-google"));
+        assert (result.user.loginMethods[0].thirdParty.id.equals("google"));
+        assert (result.user.loginMethods[0].phoneNumber == null);
+        assert (result.user.loginMethods[0].passwordHash == null);
+        assert (result.user.id.equals(result.user.loginMethods[0].recipeUserId));
+
+        AuthRecipeUserInfo refetchedUser = AuthRecipe.getUserById(process.main, result.user.id);
+
+        assert (refetchedUser.equals(result.user));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void makePasswordlessEmailPrimaryUserSuccess() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        Passwordless.CreateCodeResponse code = Passwordless.createCode(process.getProcess(), "u@e.com", null, null,
+                null);
+        Passwordless.ConsumeCodeResponse pResp = Passwordless.consumeCode(process.getProcess(), code.deviceId,
+                code.deviceIdHash, code.userInputCode, null);
+
+        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main,
+                pResp.user.id);
+        assert (!result.wasAlreadyAPrimaryUser);
+        assert (result.user.isPrimaryUser);
+        assert (result.user.loginMethods.length == 1);
+        assert (result.user.loginMethods[0].recipeId == RECIPE_ID.PASSWORDLESS);
+        assert (result.user.loginMethods[0].email.equals("u@e.com"));
+        assert (result.user.loginMethods[0].passwordHash == null);
+        assert (result.user.loginMethods[0].thirdParty == null);
+        assert (result.user.loginMethods[0].phoneNumber == null);
+        assert (result.user.id.equals(result.user.loginMethods[0].recipeUserId));
+
+        AuthRecipeUserInfo refetchedUser = AuthRecipe.getUserById(process.main, result.user.id);
+
+        assert (refetchedUser.equals(result.user));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void makePasswordlessPhonePrimaryUserSuccess() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        Passwordless.CreateCodeResponse code = Passwordless.createCode(process.getProcess(), null, "1234", null,
+                null);
+        Passwordless.ConsumeCodeResponse pResp = Passwordless.consumeCode(process.getProcess(), code.deviceId,
+                code.deviceIdHash, code.userInputCode, null);
+
+        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main,
+                pResp.user.id);
+        assert (!result.wasAlreadyAPrimaryUser);
+        assert (result.user.isPrimaryUser);
+        assert (result.user.loginMethods.length == 1);
+        assert (result.user.loginMethods[0].recipeId == RECIPE_ID.PASSWORDLESS);
+        assert (result.user.loginMethods[0].email == null);
+        assert (result.user.loginMethods[0].passwordHash == null);
+        assert (result.user.loginMethods[0].thirdParty == null);
+        assert (result.user.loginMethods[0].phoneNumber.equals("1234"));
+        assert (result.user.id.equals(result.user.loginMethods[0].recipeUserId));
 
         AuthRecipeUserInfo refetchedUser = AuthRecipe.getUserById(process.main, result.user.id);
 
