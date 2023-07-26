@@ -18,6 +18,8 @@ package io.supertokens.authRecipe;
 
 import io.supertokens.Main;
 import io.supertokens.authRecipe.exception.AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException;
+import io.supertokens.authRecipe.exception.InputUserIdIsNotAPrimaryUserException;
+import io.supertokens.authRecipe.exception.RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException;
 import io.supertokens.authRecipe.exception.RecipeUserIdAlreadyLinkedWithPrimaryUserIdException;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
@@ -40,6 +42,7 @@ import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.totp.sqlStorage.TOTPSQLStorage;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
+import io.supertokens.session.Session;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.useridmapping.UserIdType;
 import org.jetbrains.annotations.TestOnly;
@@ -73,6 +76,138 @@ public class AuthRecipe {
         public CreatePrimaryUserResult(AuthRecipeUserInfo user, boolean wasAlreadyAPrimaryUser) {
             this.user = user;
             this.wasAlreadyAPrimaryUser = wasAlreadyAPrimaryUser;
+        }
+    }
+
+    public static boolean linkAccounts(Main main, AppIdentifierWithStorage appIdentifierWithStorage,
+                                       String _recipeUserId, String _primaryUserId) throws StorageQueryException,
+            AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
+            RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException, InputUserIdIsNotAPrimaryUserException,
+            UnknownUserIdException {
+
+        AuthRecipeSQLStorage storage = (AuthRecipeSQLStorage) appIdentifierWithStorage.getAuthRecipeStorage();
+        try {
+            boolean wasAlreadyLinked = storage.startTransaction(con -> {
+                AuthRecipeUserInfo primaryUser = storage.getPrimaryUserById_Transaction(appIdentifierWithStorage, con,
+                        _primaryUserId);
+
+                if (primaryUser == null) {
+                    throw new StorageTransactionLogicException(new UnknownUserIdException());
+                }
+
+                if (!primaryUser.isPrimaryUser) {
+                    throw new StorageTransactionLogicException(
+                            new InputUserIdIsNotAPrimaryUserException(primaryUser.id));
+                }
+
+                AuthRecipeUserInfo recipeUser = storage.getPrimaryUserById_Transaction(appIdentifierWithStorage, con,
+                        _recipeUserId);
+                if (recipeUser == null) {
+                    throw new StorageTransactionLogicException(new UnknownUserIdException());
+                }
+
+                if (recipeUser.isPrimaryUser) {
+                    if (recipeUser.id.equals(primaryUser.id)) {
+                        return true;
+                    } else {
+                        throw new StorageTransactionLogicException(
+                                new RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException(recipeUser.id,
+                                        "The input recipe user ID is already linked to another user ID"));
+                    }
+                }
+
+                // now we know that the recipe user ID is not a primary user, so we can focus on it's one
+                // login method
+                assert (recipeUser.loginMethods.length == 1);
+                LoginMethod recipeUserIdLM = recipeUser.loginMethods[0];
+
+                Set<String> tenantIds = recipeUser.tenantIds;
+                tenantIds.addAll(primaryUser.tenantIds);
+
+                // we loop through the union of both the user's tenantIds and check that the criteria for
+                // linking accounts is not violated in any of them. We do a union and not an intersection
+                // cause if we did an intersection, and that yields that account linking is allowed, it could
+                // result in one tenant having two primary users with the same email. For example:
+                // - tenant1 has u1 with email e, and u2 with email e, primary user (one is ep, one is tp)
+                // - tenant2 has u3 with email e, primary user (passwordless)
+                // now if we want to link u3 with u1, we have to deny it cause if we don't, it will result in
+                // u1 and u2 to be primary users with the same email in the same tenant. If we do an
+                // intersection, we will get an empty set, but if we do a union, we will get both the tenants and
+                // do the checks in both.
+                for (String tenantId : tenantIds) {
+                    TenantIdentifier tenantIdentifier = new TenantIdentifier(
+                            appIdentifierWithStorage.getConnectionUriDomain(), appIdentifierWithStorage.getAppId(),
+                            tenantId);
+                    // we do not bother with getting the tenantIdentifierWithStorage here because
+                    // we get the tenants from the user itself, and the user can only be shared across
+                    // tenants of the same storage - therefore, the storage will be the same.
+
+                    if (recipeUserIdLM.email != null) {
+                        AuthRecipeUserInfo[] usersWithSameEmail = storage
+                                .listPrimaryUsersByEmail_Transaction(tenantIdentifier, con,
+                                        recipeUserIdLM.email);
+                        for (AuthRecipeUserInfo user : usersWithSameEmail) {
+                            if (user.isPrimaryUser && !user.id.equals(primaryUser.id)) {
+                                throw new StorageTransactionLogicException(
+                                        new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(user.id,
+                                                "This user's email is already associated with another user ID"));
+                            }
+                        }
+                    }
+
+                    if (recipeUserIdLM.phoneNumber != null) {
+                        AuthRecipeUserInfo[] usersWithSamePhoneNumber = storage
+                                .listPrimaryUsersByPhoneNumber_Transaction(tenantIdentifier, con,
+                                        recipeUserIdLM.phoneNumber);
+                        for (AuthRecipeUserInfo user : usersWithSamePhoneNumber) {
+                            if (user.isPrimaryUser && !user.id.equals(primaryUser.id)) {
+                                throw new StorageTransactionLogicException(
+                                        new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(user.id,
+                                                "This user's phone number is already associated with another user" +
+                                                        " ID"));
+                            }
+                        }
+                    }
+
+                    if (recipeUserIdLM.thirdParty != null) {
+                        AuthRecipeUserInfo userWithSameThirdParty = storage
+                                .getPrimaryUsersByThirdPartyInfo_Transaction(tenantIdentifier, con,
+                                        recipeUserIdLM.thirdParty.id, recipeUserIdLM.thirdParty.userId);
+                        if (userWithSameThirdParty.isPrimaryUser && !userWithSameThirdParty.id.equals(primaryUser.id)) {
+                            throw new StorageTransactionLogicException(
+                                    new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(
+                                            userWithSameThirdParty.id,
+                                            "This user's third party login is already associated with another" +
+                                                    " user ID"));
+                        }
+                    }
+                }
+
+                // now we can link accounts in the db.
+                storage.linkAccounts_Transaction(appIdentifierWithStorage, con, recipeUser.id, primaryUser.id);
+
+                storage.commitTransaction(con);
+
+                return false;
+            });
+
+            if (!wasAlreadyLinked) {
+                // finally, we revoke all sessions of the recipeUser Id cause their user ID has changed.
+                Session.revokeAllSessionsForUser(main, appIdentifierWithStorage, _recipeUserId);
+            }
+
+            return wasAlreadyLinked;
+        } catch (StorageTransactionLogicException e) {
+            if (e.actualException instanceof UnknownUserIdException) {
+                throw (UnknownUserIdException) e.actualException;
+            } else if (e.actualException instanceof InputUserIdIsNotAPrimaryUserException) {
+                throw (InputUserIdIsNotAPrimaryUserException) e.actualException;
+            } else if (e.actualException instanceof RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException) {
+                throw (RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException) e.actualException;
+            } else if (e.actualException instanceof AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException) {
+                throw (AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException) e.actualException;
+            }
+            throw new StorageQueryException(e);
         }
     }
 
@@ -193,7 +328,7 @@ public class AuthRecipe {
             } else if (e.actualException instanceof AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException) {
                 throw (AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException) e.actualException;
             }
-            throw new RuntimeException(e);
+            throw new StorageQueryException(e);
         }
     }
 
