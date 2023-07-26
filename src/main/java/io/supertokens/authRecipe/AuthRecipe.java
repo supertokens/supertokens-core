@@ -19,6 +19,9 @@ package io.supertokens.authRecipe;
 import io.supertokens.Main;
 import io.supertokens.authRecipe.exception.AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException;
 import io.supertokens.authRecipe.exception.RecipeUserIdAlreadyLinkedWithPrimaryUserIdException;
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlag;
+import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
@@ -42,10 +45,7 @@ import io.supertokens.useridmapping.UserIdType;
 import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /*This files contains functions that are common for all auth recipes*/
 
@@ -53,14 +53,22 @@ public class AuthRecipe {
 
     public static final int USER_PAGINATION_LIMIT = 500;
 
+    @TestOnly
+    public static AuthRecipeUserInfo getUserById(Main main, String userId)
+            throws StorageQueryException {
+        AppIdentifierWithStorage appId = new AppIdentifierWithStorage(null, null,
+                StorageLayer.getStorage(main));
+        return getUserById(appId, userId);
+    }
+
     public static AuthRecipeUserInfo getUserById(AppIdentifierWithStorage appIdentifierWithStorage, String userId)
             throws StorageQueryException {
         return appIdentifierWithStorage.getAuthRecipeStorage().getPrimaryUserById(appIdentifierWithStorage, userId);
     }
 
     public static class CreatePrimaryUserResult {
-        AuthRecipeUserInfo user;
-        boolean wasAlreadyAPrimaryUser;
+        public AuthRecipeUserInfo user;
+        public boolean wasAlreadyAPrimaryUser;
 
         public CreatePrimaryUserResult(AuthRecipeUserInfo user, boolean wasAlreadyAPrimaryUser) {
             this.user = user;
@@ -68,11 +76,34 @@ public class AuthRecipe {
         }
     }
 
+    @TestOnly
+    public static CreatePrimaryUserResult createPrimaryUser(Main main,
+                                                            String recipeUserId)
+            throws StorageQueryException, AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
+            RecipeUserIdAlreadyLinkedWithPrimaryUserIdException, UnknownUserIdException,
+            FeatureNotEnabledException {
+        AppIdentifierWithStorage appId = new AppIdentifierWithStorage(null, null,
+                StorageLayer.getStorage(main));
+        try {
+            return createPrimaryUser(main, appId, recipeUserId);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public static CreatePrimaryUserResult createPrimaryUser(Main main,
                                                             AppIdentifierWithStorage appIdentifierWithStorage,
                                                             String recipeUserId)
             throws StorageQueryException, AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
-            RecipeUserIdAlreadyLinkedWithPrimaryUserIdException, UnknownUserIdException {
+            RecipeUserIdAlreadyLinkedWithPrimaryUserIdException, UnknownUserIdException, TenantOrAppNotFoundException,
+            FeatureNotEnabledException {
+
+        if (Arrays.stream(FeatureFlag.getInstance(main, appIdentifierWithStorage).getEnabledFeatures())
+                .noneMatch(t -> t == EE_FEATURES.ACCOUNT_LINKING)) {
+            throw new FeatureNotEnabledException(
+                    "Account linking feature is not enabled for this app. Please contact support to enable it.");
+        }
+
         AuthRecipeSQLStorage storage = (AuthRecipeSQLStorage) appIdentifierWithStorage.getAuthRecipeStorage();
         try {
             return storage.startTransaction(con -> {
@@ -149,6 +180,8 @@ public class AuthRecipe {
                 storage.makePrimaryUser_Transaction(appIdentifierWithStorage, con, targetUser.id);
 
                 storage.commitTransaction(con);
+
+                targetUser.isPrimaryUser = true;
 
                 return new CreatePrimaryUserResult(targetUser, false);
             });

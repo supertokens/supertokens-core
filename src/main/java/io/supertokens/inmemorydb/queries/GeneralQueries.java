@@ -870,9 +870,9 @@ public class GeneralQueries {
         String QUERY = "UPDATE " + getConfig(start).getUsersTable() +
                 " SET is_linked_or_is_a_primary_user = true WHERE user_id = ?";
 
-        execute(sqlCon, QUERY, pst -> {
+        update(sqlCon, QUERY, pst -> {
             pst.setString(1, userId);
-        }, result -> null);
+        });
     }
 
     public static AuthRecipeUserInfo[] listPrimaryUsersByPhoneNumber_Transaction(Start start, Connection sqlCon,
