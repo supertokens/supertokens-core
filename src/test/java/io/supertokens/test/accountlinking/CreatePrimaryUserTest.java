@@ -20,6 +20,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.authRecipe.exception.AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException;
+import io.supertokens.authRecipe.exception.RecipeUserIdAlreadyLinkedWithPrimaryUserIdException;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
@@ -468,6 +469,36 @@ public class CreatePrimaryUserTest {
             AuthRecipe.createPrimaryUser(process.main, "random");
             assert (false);
         } catch (UnknownUserIdException ignored) {
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void makingPrimaryUserFailsCauseAlreadyLinkedToAnotherAccount() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        AuthRecipeUserInfo emailPasswordUser1 = EmailPassword.signUp(process.getProcess(), "test@example.com",
+                "pass1234");
+        AuthRecipeUserInfo emailPasswordUser2 = EmailPassword.signUp(process.getProcess(), "test2@example.com",
+                "pass1234");
+
+        AuthRecipe.createPrimaryUser(process.main, emailPasswordUser1.id);
+        AuthRecipe.linkAccounts(process.main, emailPasswordUser2.id, emailPasswordUser1.id);
+
+        try {
+            AuthRecipe.createPrimaryUser(process.main, emailPasswordUser2.id);
+            assert (false);
+        } catch (RecipeUserIdAlreadyLinkedWithPrimaryUserIdException e) {
+            assert (e.primaryUserId.equals(emailPasswordUser1.id));
+            assert (e.getMessage().equals("This user ID is already linked to another user ID"));
         }
 
         process.kill();
