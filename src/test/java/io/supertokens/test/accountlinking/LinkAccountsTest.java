@@ -29,6 +29,7 @@ import io.supertokens.session.Session;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import io.supertokens.thirdparty.ThirdParty;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -72,6 +73,58 @@ public class LinkAccountsTest {
         Thread.sleep(1000);
 
         AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "password");
+        assert (!user2.isPrimaryUser);
+
+        AuthRecipe.createPrimaryUser(process.main, user.id);
+
+        Session.createNewSession(process.main, user2.id, new JsonObject(), new JsonObject());
+        String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(process.main, user2.id);
+        assert (sessions.length == 1);
+
+        boolean wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user2.id, user.id);
+        assert (!wasAlreadyLinked);
+
+        AuthRecipeUserInfo refetchUser2 = AuthRecipe.getUserById(process.main, user2.id);
+        AuthRecipeUserInfo refetchUser = AuthRecipe.getUserById(process.main, user.id);
+        assert (refetchUser2.equals(refetchUser));
+        assert (refetchUser2.loginMethods.length == 2);
+        assert (refetchUser.loginMethods[0].equals(user.loginMethods[0]));
+        assert (refetchUser.loginMethods[1].equals(user2.loginMethods[0]));
+        assert (refetchUser.tenantIds.size() == 1);
+        assert (refetchUser.isPrimaryUser);
+        assert (refetchUser.id.equals(user.id));
+
+        // cause linkAccounts revokes sessions for the recipe user ID
+        sessions = Session.getAllNonExpiredSessionHandlesForUser(process.main, user2.id);
+        assert (sessions.length == 0);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void linkAccountSuccessWithSameEmail() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
+        assert (!user.isPrimaryUser);
+
+        Thread.sleep(1000);
+
+        ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.getProcess(), "google",
+                "user-google",
+                "test@example.com");
+        AuthRecipeUserInfo user2 = signInUpResponse.user;
         assert (!user2.isPrimaryUser);
 
         AuthRecipe.createPrimaryUser(process.main, user.id);
