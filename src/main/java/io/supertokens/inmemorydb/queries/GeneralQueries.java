@@ -92,20 +92,11 @@ public class GeneralQueries {
     static String getQueryToCreatePrimaryUserIdIndex(Start start) {
         /*
          * Used in:
+         * - does user exist
          *
          * */
         return "CREATE INDEX all_auth_recipe_users_primary_user_id_index ON " + Config.getConfig(start).getUsersTable()
                 + "(app_id, primary_or_recipe_user_id);";
-    }
-
-    static String getQueryToCreateUserIdIndex(Start start) {
-        /*
-         * Used in:
-         * - making user a primary user.
-         *
-         * */
-        return "CREATE INDEX all_auth_recipe_users_user_id_index ON " + Config.getConfig(start).getUsersTable()
-                + "(app_id, user_id);";
     }
 
     static String getQueryToCreatePrimaryUserIdAndTenantIndex(Start start) {
@@ -199,7 +190,6 @@ public class GeneralQueries {
 
             // index
             update(start, getQueryToCreatePrimaryUserIdIndex(start), NO_OP_SETTER);
-            update(start, getQueryToCreateUserIdIndex(start), NO_OP_SETTER);
             update(start, getQueryToCreateUserPaginationIndex(start), NO_OP_SETTER);
             update(start, getQueryToCreatePrimaryUserIdAndTenantIndex(start), NO_OP_SETTER);
         }
