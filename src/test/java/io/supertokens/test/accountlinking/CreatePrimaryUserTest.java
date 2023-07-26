@@ -16,17 +16,21 @@
 
 package io.supertokens.test.accountlinking;
 
+import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.authRecipe.AuthRecipe;
+import io.supertokens.authRecipe.exception.AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
+import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
+import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
+import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -278,6 +282,193 @@ public class CreatePrimaryUserTest {
         AuthRecipeUserInfo refetchedUser = AuthRecipe.getUserById(process.main, result.user.id);
 
         assert (refetchedUser.equals(result.user));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void alreadyPrimaryUsertest() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(process.getProcess(), "test@example.com",
+                "pass1234");
+
+        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.id);
+        assert (!result.wasAlreadyAPrimaryUser);
+
+        result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.id);
+        assert (result.wasAlreadyAPrimaryUser);
+        assert (result.user.id.equals(emailPasswordUser.id));
+        assert (result.user.isPrimaryUser);
+        assert (result.user.loginMethods.length == 1);
+        assert (result.user.loginMethods[0].recipeId == RECIPE_ID.EMAIL_PASSWORD);
+        assert (result.user.loginMethods[0].email.equals("test@example.com"));
+        assert (result.user.loginMethods[0].passwordHash != null);
+        assert (result.user.loginMethods[0].thirdParty == null);
+        assert (result.user.id.equals(result.user.loginMethods[0].recipeUserId));
+        assert (result.user.loginMethods[0].phoneNumber == null);
+
+        AuthRecipeUserInfo refetchedUser = AuthRecipe.getUserById(process.main, result.user.id);
+
+        assert (refetchedUser.equals(result.user));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void makePrimaryUserFailsCauseAnotherAccountWithSameEmailAlreadyAPrimaryUser() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(process.getProcess(), "test@example.com",
+                "pass1234");
+
+        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.id);
+        assert (!result.wasAlreadyAPrimaryUser);
+
+        ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, "google", "user-google",
+                "test@example.com");
+
+        try {
+            AuthRecipe.createPrimaryUser(process.main, signInUpResponse.user.id);
+            assert (false);
+        } catch (AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException e) {
+            assert (e.primaryUserId.equals(emailPasswordUser.id));
+            assert (e.getMessage().equals("This user's email is already associated with another user ID"));
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void makePrimarySucceedsEvenIfAnotherAccountWithSameEmailButIsNotAPrimaryUser() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(process.getProcess(), "test@example.com",
+                "pass1234");
+
+        ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, "google", "user-google",
+                "test@example.com");
+
+        AuthRecipe.CreatePrimaryUserResult r = AuthRecipe.createPrimaryUser(process.main, signInUpResponse.user.id);
+        assert (!r.wasAlreadyAPrimaryUser);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void makePrimaryUserFailsCauseAnotherAccountWithSameEmailAlreadyAPrimaryUserInAnotherTenant()
+            throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        Multitenancy.addNewOrUpdateAppOrTenant(process.main, new TenantIdentifier(null, null, null),
+                new TenantConfig(new TenantIdentifier(null, null, "t1"), new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[0]), new PasswordlessConfig(true),
+                        new JsonObject()));
+
+        TenantIdentifierWithStorage tenantIdentifierWithStorage = new TenantIdentifierWithStorage(null, null, "t1",
+                StorageLayer.getStorage(process.main));
+        AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(tenantIdentifierWithStorage, process.getProcess(),
+                "test@example.com",
+                "pass1234");
+
+        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.id);
+        assert (!result.wasAlreadyAPrimaryUser);
+
+        ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, "google", "user-google",
+                "test@example.com");
+
+        Multitenancy.addUserIdToTenant(process.main, tenantIdentifierWithStorage, signInUpResponse.user.id);
+
+        try {
+            AuthRecipe.createPrimaryUser(process.main, signInUpResponse.user.id);
+            assert (false);
+        } catch (AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException e) {
+            assert (e.primaryUserId.equals(emailPasswordUser.id));
+            assert (e.getMessage().equals("This user's email is already associated with another user ID"));
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void makePrimarySucceedsEvenIfAnotherAccountWithSameEmailButInADifferentTenant()
+            throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        Multitenancy.addNewOrUpdateAppOrTenant(process.main, new TenantIdentifier(null, null, null),
+                new TenantConfig(new TenantIdentifier(null, null, "t1"), new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[0]), new PasswordlessConfig(true),
+                        new JsonObject()));
+
+        TenantIdentifierWithStorage tenantIdentifierWithStorage = new TenantIdentifierWithStorage(null, null, "t1",
+                StorageLayer.getStorage(process.main));
+        AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(tenantIdentifierWithStorage, process.getProcess(),
+                "test@example.com",
+                "pass1234");
+
+        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.id);
+        assert (!result.wasAlreadyAPrimaryUser);
+
+        ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, "google", "user-google",
+                "test@example.com");
+
+        AuthRecipe.CreatePrimaryUserResult r = AuthRecipe.createPrimaryUser(process.main, signInUpResponse.user.id);
+        assert !r.wasAlreadyAPrimaryUser;
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void makePrimaryUserFailsCauseOfUnknownUserId() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        try {
+            AuthRecipe.createPrimaryUser(process.main, "random");
+            assert (false);
+        } catch (UnknownUserIdException ignored) {
+        }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
