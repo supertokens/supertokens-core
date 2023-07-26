@@ -22,6 +22,7 @@ import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
+import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.session.Session;
@@ -100,5 +101,22 @@ public class LinkAccountsTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // TODO: require ee feature to be enabled..
+    @Test
+    public void testThatLinkingAccountsRequiresAccountLinkingFeatureToBeEnabled() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        try {
+            AuthRecipe.linkAccounts(process.main, "", "");
+            assert (false);
+        } catch (FeatureNotEnabledException e) {
+            assert (e.getMessage()
+                    .equals("Account linking feature is not enabled for this app. Please contact support to enable it" +
+                            "."));
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }
