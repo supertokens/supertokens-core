@@ -44,13 +44,6 @@ import org.junit.rules.TestRule;
 
 import static org.junit.Assert.assertNotNull;
 
-/*
- * TODO:
- *  - locking test - make several requests for two users with the same email with making them primary and not primary
- *  and then check that the db state is always consistent.
- *  - locking test - make sure that deadlocks are resolved on their own.
- *  - check for making primary user across tenants logic.
- * */
 
 public class CreatePrimaryUserTest {
     @Rule
