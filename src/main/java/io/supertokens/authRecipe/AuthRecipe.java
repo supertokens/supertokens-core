@@ -79,11 +79,32 @@ public class AuthRecipe {
         }
     }
 
+    @TestOnly
+    public static boolean linkAccounts(Main main, String recipeUserId, String primaryUserId)
+            throws StorageQueryException, AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
+            UnknownUserIdException,
+            FeatureNotEnabledException, InputUserIdIsNotAPrimaryUserException,
+            RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException {
+        AppIdentifierWithStorage appId = new AppIdentifierWithStorage(null, null,
+                StorageLayer.getStorage(main));
+        try {
+            return linkAccounts(main, appId, recipeUserId, primaryUserId);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public static boolean linkAccounts(Main main, AppIdentifierWithStorage appIdentifierWithStorage,
                                        String _recipeUserId, String _primaryUserId) throws StorageQueryException,
             AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
             RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException, InputUserIdIsNotAPrimaryUserException,
-            UnknownUserIdException {
+            UnknownUserIdException, TenantOrAppNotFoundException, FeatureNotEnabledException {
+
+        if (Arrays.stream(FeatureFlag.getInstance(main, appIdentifierWithStorage).getEnabledFeatures())
+                .noneMatch(t -> t == EE_FEATURES.ACCOUNT_LINKING)) {
+            throw new FeatureNotEnabledException(
+                    "Account linking feature is not enabled for this app. Please contact support to enable it.");
+        }
 
         AuthRecipeSQLStorage storage = (AuthRecipeSQLStorage) appIdentifierWithStorage.getAuthRecipeStorage();
         try {
