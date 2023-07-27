@@ -25,16 +25,16 @@ import io.supertokens.config.Config;
 import io.supertokens.exceptions.AccessTokenPayloadError;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.jwt.JWTSigningFunctions;
-import io.supertokens.pluginInterface.jwt.JWTAsymmetricSigningKeyInfo;
-import io.supertokens.signingkeys.JWTSigningKey;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.jwt.JWTAsymmetricSigningKeyInfo;
 import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
-import io.supertokens.signingkeys.SigningKeys;
 import io.supertokens.session.info.TokenInfo;
 import io.supertokens.session.jwt.JWT;
 import io.supertokens.session.jwt.JWT.JWTException;
+import io.supertokens.signingkeys.JWTSigningKey;
+import io.supertokens.signingkeys.SigningKeys;
 import io.supertokens.utils.Utils;
 
 import javax.annotation.Nonnull;
@@ -45,14 +45,17 @@ import java.security.KeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class AccessToken {
 
     // TODO: device fingerprint - store hash of this in JWT.
 
     private static AccessTokenInfo getInfoFromAccessToken(@Nonnull Main main, @Nonnull String token, boolean retry,
-            boolean doAntiCsrfCheck)
+                                                          boolean doAntiCsrfCheck)
             throws StorageQueryException, StorageTransactionLogicException, TryRefreshTokenException {
 
         List<JWTSigningKeyInfo> keyInfoList = SigningKeys.getInstance(main).getAllKeys();
@@ -75,7 +78,8 @@ public class AccessToken {
                 error = new TryRefreshTokenException("Key not found");
             } else {
                 try {
-                    jwtInfo = JWT.verifyJWTAndGetPayload(preParseJWTInfo, ((JWTAsymmetricSigningKeyInfo) keyInfo).publicKey);
+                    jwtInfo = JWT.verifyJWTAndGetPayload(preParseJWTInfo,
+                            ((JWTAsymmetricSigningKeyInfo) keyInfo).publicKey);
                 } catch (NoSuchAlgorithmException e) {
                     // This basically should never happen, but it means, that can't verify any tokens, no need to retry
                     throw new TryRefreshTokenException(e);
@@ -90,7 +94,8 @@ public class AccessToken {
         } else {
             for (JWTSigningKeyInfo keyInfo : keyInfoList) {
                 try {
-                    jwtInfo = JWT.verifyJWTAndGetPayload(preParseJWTInfo, ((JWTAsymmetricSigningKeyInfo) keyInfo).publicKey);
+                    jwtInfo = JWT.verifyJWTAndGetPayload(preParseJWTInfo,
+                            ((JWTAsymmetricSigningKeyInfo) keyInfo).publicKey);
                     error = null;
                     break;
                 } catch (NoSuchAlgorithmException e) {
@@ -103,7 +108,8 @@ public class AccessToken {
                      * that someone is trying to break the system. Here we don't mind fetching new keys from the db
                      *
                      * 2) The signing key was updated and an old access token is being used: In this case, the request
-                     * should ideally not even come to the core: https://github.com/supertokens/supertokens-node/issues/136.
+                     * should ideally not even come to the core: https://github
+                     * .com/supertokens/supertokens-node/issues/136.
                      * TODO: However, we should replicate this logic here as well since we do not want to rely too much
                      * on the client of the core.
                      *
@@ -142,29 +148,34 @@ public class AccessToken {
         }
 
         if (doAntiCsrfCheck && tokenInfo.antiCsrfToken == null) {
-            throw new TryRefreshTokenException("Access token does not contain all the information. Maybe the structure has changed?");
+            throw new TryRefreshTokenException(
+                    "Access token does not contain all the information. Maybe the structure has changed?");
         }
 
         return tokenInfo;
     }
 
     public static AccessTokenInfo getInfoFromAccessToken(@Nonnull Main main, @Nonnull String token,
-            boolean doAntiCsrfCheck)
+                                                         boolean doAntiCsrfCheck)
             throws StorageQueryException, StorageTransactionLogicException, TryRefreshTokenException {
         return getInfoFromAccessToken(main, token, true, doAntiCsrfCheck);
     }
 
-    public static AccessTokenInfo getInfoFromAccessTokenWithoutVerifying(@Nonnull String token) throws JWTException, TryRefreshTokenException {
+    public static AccessTokenInfo getInfoFromAccessTokenWithoutVerifying(@Nonnull String token)
+            throws JWTException, TryRefreshTokenException {
         JWT.JWTInfo jwtInfo = JWT.getPayloadWithoutVerifying(token);
 
         return AccessTokenInfo.fromJSON(jwtInfo.payload, jwtInfo.version);
     }
 
     public static TokenInfo createNewAccessToken(@Nonnull Main main, @Nonnull String sessionHandle,
-            @Nonnull String userId, @Nonnull String refreshTokenHash1, @Nullable String parentRefreshTokenHash1,
-            @Nonnull JsonObject userData, @Nullable String antiCsrfToken, @Nullable Long expiryTime, VERSION version, boolean useStaticKey)
+                                                 @Nonnull String userId, @Nonnull String refreshTokenHash1,
+                                                 @Nullable String parentRefreshTokenHash1,
+                                                 @Nonnull JsonObject userData, @Nullable String antiCsrfToken,
+                                                 @Nullable Long expiryTime, VERSION version, boolean useStaticKey)
             throws StorageQueryException, StorageTransactionLogicException, InvalidKeyException,
-            NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeySpecException, SignatureException, AccessTokenPayloadError,
+            NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeySpecException, SignatureException,
+            AccessTokenPayloadError,
             UnsupportedJWTSigningAlgorithmException {
 
         Utils.PubPriKey signingKey;
@@ -190,7 +201,8 @@ public class AccessToken {
         if (version == VERSION.V3) {
             HashMap<String, Object> headers = new HashMap<>();
             headers.put("version", "3");
-            token = JWTSigningFunctions.createJWTToken(JWTSigningKey.SupportedAlgorithms.RS256, headers, accessToken.toJSON(), null, expires, now, keyToUse);
+            token = JWTSigningFunctions.createJWTToken(JWTSigningKey.SupportedAlgorithms.RS256, headers,
+                    accessToken.toJSON(), null, expires, now, keyToUse);
         } else {
             signingKey = new Utils.PubPriKey(keyToUse.keyString);
             token = JWT.createAndSignLegacyAccessToken(accessToken.toJSON(), signingKey.privateKey, version);
@@ -200,12 +212,14 @@ public class AccessToken {
     }
 
     public static TokenInfo createNewAccessTokenV1(@Nonnull Main main, @Nonnull String sessionHandle,
-            @Nonnull String userId, @Nonnull String refreshTokenHash1, @Nullable String parentRefreshTokenHash1,
-            @Nonnull JsonObject userData, @Nullable String antiCsrfToken)
+                                                   @Nonnull String userId, @Nonnull String refreshTokenHash1,
+                                                   @Nullable String parentRefreshTokenHash1,
+                                                   @Nonnull JsonObject userData, @Nullable String antiCsrfToken)
             throws StorageQueryException, StorageTransactionLogicException, InvalidKeyException,
             NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeySpecException, SignatureException {
 
-        Utils.PubPriKey signingKey = new Utils.PubPriKey(SigningKeys.getInstance(main).getLatestIssuedDynamicKey().value);
+        Utils.PubPriKey signingKey = new Utils.PubPriKey(
+                SigningKeys.getInstance(main).getLatestIssuedDynamicKey().value);
         long now = System.currentTimeMillis();
         AccessTokenInfo accessToken;
 
@@ -213,7 +227,11 @@ public class AccessToken {
         accessToken = new AccessTokenInfo(sessionHandle, userId, refreshTokenHash1, expiryTime, parentRefreshTokenHash1,
                 userData, antiCsrfToken, now, VERSION.V1);
 
-        String token = JWT.createAndSignLegacyAccessToken(Utils.toJsonTreeWithNulls(accessToken), signingKey.privateKey, VERSION.V1);
+        // we use toJsonTreeWithoutNulls here cause in this version of the token, we did not add claims which
+        // had null values.
+        String token = JWT.createAndSignLegacyAccessToken(Utils.toJsonTreeWithoutNulls(accessToken),
+                signingKey.privateKey,
+                VERSION.V1);
         return new TokenInfo(token, accessToken.expiryTime, accessToken.timeCreated);
 
     }
@@ -239,8 +257,6 @@ public class AccessToken {
                 "timeCreated",
                 "sessionHandle",
                 "refreshTokenHash1",
-                "parentRefreshTokenHash1",
-                "antiCsrfToken",
         };
 
         static String[] requiredPropsV3 = {
@@ -273,8 +289,8 @@ public class AccessToken {
 
 
         AccessTokenInfo(@Nonnull String sessionHandle, @Nonnull String userId, @Nonnull String refreshTokenHash1,
-                long expiryTime, @Nullable String parentRefreshTokenHash1, @Nonnull JsonObject userData,
-                @Nullable String antiCsrfToken, long timeCreated, @Nonnull VERSION version) {
+                        long expiryTime, @Nullable String parentRefreshTokenHash1, @Nonnull JsonObject userData,
+                        @Nullable String antiCsrfToken, long timeCreated, @Nonnull VERSION version) {
             this.sessionHandle = sessionHandle;
             this.userId = userId;
             this.refreshTokenHash1 = refreshTokenHash1;
@@ -305,7 +321,7 @@ public class AccessToken {
                 JsonObject userData = new JsonObject();
 
                 for (Map.Entry<String, JsonElement> element : payload.entrySet()) {
-                    if(Arrays.stream(protectedPropNames).noneMatch(element.getKey()::equals)){
+                    if (Arrays.stream(protectedPropNames).noneMatch(element.getKey()::equals)) {
                         userData.add(element.getKey(), element.getValue());
                     }
                 }
@@ -315,9 +331,10 @@ public class AccessToken {
                         payload.get("sub").getAsString(),
                         payload.get("refreshTokenHash1").getAsString(),
                         payload.get("exp").getAsLong() * 1000,
-                        parentRefreshTokenHash.isJsonNull() ? null : parentRefreshTokenHash.getAsString(),
+                        parentRefreshTokenHash == null || parentRefreshTokenHash.isJsonNull() ? null :
+                                parentRefreshTokenHash.getAsString(),
                         userData,
-                        antiCsrfToken.isJsonNull() ? null : antiCsrfToken.getAsString(),
+                        antiCsrfToken == null || antiCsrfToken.isJsonNull() ? null : antiCsrfToken.getAsString(),
                         payload.get("iat").getAsLong() * 1000,
                         version
                 );
@@ -328,9 +345,10 @@ public class AccessToken {
                         payload.get("userId").getAsString(),
                         payload.get("refreshTokenHash1").getAsString(),
                         payload.get("expiryTime").getAsLong(),
-                        parentRefreshTokenHash.isJsonNull() ? null : parentRefreshTokenHash.getAsString(),
+                        parentRefreshTokenHash == null || parentRefreshTokenHash.isJsonNull() ? null :
+                                parentRefreshTokenHash.getAsString(),
                         payload.get("userData").getAsJsonObject(),
-                        antiCsrfToken.isJsonNull() ? null : antiCsrfToken.getAsString(),
+                        antiCsrfToken == null || antiCsrfToken.isJsonNull() ? null : antiCsrfToken.getAsString(),
                         payload.get("timeCreated").getAsLong(),
                         version
                 );
@@ -357,7 +375,8 @@ public class AccessToken {
             if (this.version == VERSION.V3) {
                 for (Map.Entry<String, JsonElement> element : this.userData.entrySet()) {
                     if (res.has(element.getKey())) {
-                        // The use is trying to add a protected prop into the payload (userId, etc) in V3 (this should be blocked by validation)
+                        // The use is trying to add a protected prop into the payload (userId, etc) in V3 (this
+                        // should be blocked by validation)
                         throw new AccessTokenPayloadError("The user payload contains protected field");
                     }
                     res.add(element.getKey(), element.getValue());
@@ -369,11 +388,13 @@ public class AccessToken {
             return res;
         }
 
-        private static void checkRequiredPropsExist(JsonObject obj, String[] propNames) throws TryRefreshTokenException {
+        private static void checkRequiredPropsExist(JsonObject obj, String[] propNames)
+                throws TryRefreshTokenException {
             for (String prop : propNames) {
                 if (!obj.has(prop)) {
                     throw new TryRefreshTokenException(
-                            "Access token does not contain all the information. Maybe the structure has changed?" + prop);
+                            "Access token does not contain all the information. Maybe the structure has changed?" +
+                                    prop);
                 }
             }
         }
