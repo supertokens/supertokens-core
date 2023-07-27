@@ -70,6 +70,7 @@ public class Utils {
     public static String convertToBase64Url(String str) {
         return new String(Base64.getUrlEncoder().encode(stringToBytes(str)), StandardCharsets.UTF_8);
     }
+
     public static String convertToBase64(String str) {
         return new String(Base64.getEncoder().encode(stringToBytes(str)), StandardCharsets.UTF_8);
     }
@@ -279,10 +280,12 @@ public class Utils {
 
         public PubPriKey(String s) {
             // We split by both | and ; because in old versions we used to use ";" in dynamic and "|" in static keys
-            // Now we are consolidating all of them to use "|", but by handling legacy keys, we can avoid the need for manual key migration.
-            // I.e.: this way only people who set access_token_signing_key_dynamic to false has to do manual migration instead of everyone.
+            // Now we are consolidating all of them to use "|", but by handling legacy keys, we can avoid the need
+            // for manual key migration.
+            // I.e.: this way only people who set access_token_signing_key_dynamic to false has to do manual
+            // migration instead of everyone.
             // for everyone else, the key rotation should get it done.
-            String[] parts =s.split("[|;]");
+            String[] parts = s.split("[|;]");
 
             this.publicKey = parts[0];
             this.privateKey = parts[1];
@@ -349,7 +352,8 @@ public class Utils {
                 result.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);
             }
         } else {
-            JWTSigningKeyInfo keyInfo = SigningKeys.getInstance(main).getStaticKeyForAlgorithm(JWTSigningKey.SupportedAlgorithms.RS256);
+            JWTSigningKeyInfo keyInfo = SigningKeys.getInstance(main)
+                    .getStaticKeyForAlgorithm(JWTSigningKey.SupportedAlgorithms.RS256);
             result.addProperty("jwtSigningPublicKey", new Utils.PubPriKey(keyInfo.keyString).publicKey);
             result.addProperty("jwtSigningPublicKeyExpiryTime", 10L * 365 * 24 * 3600 * 1000);
 
@@ -369,5 +373,9 @@ public class Utils {
 
     public static JsonElement toJsonTreeWithNulls(Object src) {
         return new GsonBuilder().serializeNulls().create().toJsonTree(src);
+    }
+
+    public static JsonElement toJsonTreeWithoutNulls(Object src) {
+        return new GsonBuilder().create().toJsonTree(src);
     }
 }

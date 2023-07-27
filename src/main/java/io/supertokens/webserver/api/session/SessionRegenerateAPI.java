@@ -16,9 +16,7 @@
 
 package io.supertokens.webserver.api.session;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.exceptions.AccessTokenPayloadError;
 import io.supertokens.exceptions.TryRefreshTokenException;
@@ -35,16 +33,15 @@ import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
-import java.util.Arrays;
 
 public class SessionRegenerateAPI extends WebserverAPI {
 
@@ -78,17 +75,17 @@ public class SessionRegenerateAPI extends WebserverAPI {
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
 
-        } catch (StorageQueryException | StorageTransactionLogicException | NoSuchAlgorithmException | TryRefreshTokenException
+        } catch (StorageQueryException | StorageTransactionLogicException | NoSuchAlgorithmException
                  | InvalidKeyException | SignatureException | InvalidKeySpecException | JWT.JWTException |
                  UnsupportedJWTSigningAlgorithmException e) {
             throw new ServletException(e);
-        } catch (UnauthorisedException e) {
+        } catch (UnauthorisedException | TryRefreshTokenException e) {
             Logging.debug(main, Utils.exceptionStacktraceToString(e));
             JsonObject reply = new JsonObject();
             reply.addProperty("status", "UNAUTHORISED");
             reply.addProperty("message", e.getMessage());
             super.sendJsonResponse(200, reply, resp);
-        } catch(AccessTokenPayloadError e) {
+        } catch (AccessTokenPayloadError e) {
             throw new ServletException(new BadRequestException(e.getMessage()));
         }
     }
