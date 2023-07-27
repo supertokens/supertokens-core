@@ -991,6 +991,9 @@ public class GeneralQueries {
         List<AuthRecipeUserInfo> result = getPrimaryUserInfoForUserIds(start, con, tenantIdentifier.toAppIdentifier(),
                 userIds);
 
+        // this is going to order them based on oldest that joined to newest that joined.
+        result.sort(Comparator.comparingLong(o -> o.timeJoined));
+
         return result.toArray(new AuthRecipeUserInfo[0]);
     }
 

@@ -27,6 +27,7 @@ import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
@@ -547,6 +548,54 @@ public class LinkAccountsTest {
         assert refetchedUser1.loginMethods[0].recipeUserId.equals(user.loginMethods[0].recipeUserId);
         assert refetchedUser1.loginMethods[1].recipeUserId.equals(user2.loginMethods[0].recipeUserId);
 
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void linkAccountSuccessWithPasswordlessEmailAndPhoneNumber() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
+        assert (!user.isPrimaryUser);
+
+        Thread.sleep(50);
+
+        Passwordless.CreateCodeResponse code = Passwordless.createCode(process.getProcess(), "u@e.com", null, null,
+                null);
+        Passwordless.ConsumeCodeResponse pResp = Passwordless.consumeCode(process.getProcess(), code.deviceId,
+                code.deviceIdHash, code.userInputCode, null);
+        AuthRecipeUserInfo user2 = pResp.user;
+        assert (!user2.isPrimaryUser);
+
+        AuthRecipe.createPrimaryUser(process.main, user.id);
+
+        Passwordless.updateUser(process.main, user2.id, null, new Passwordless.FieldUpdate("1234"));
+        user2 = AuthRecipe.getUserById(process.main, user2.id);
+
+        boolean wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user2.id, user.id);
+        assert (!wasAlreadyLinked);
+
+        AuthRecipeUserInfo refetchUser2 = AuthRecipe.getUserById(process.main, user2.id);
+        AuthRecipeUserInfo refetchUser = AuthRecipe.getUserById(process.main, user.id);
+        assert (refetchUser2.equals(refetchUser));
+        assert (refetchUser2.loginMethods.length == 2);
+        assert (refetchUser.loginMethods[0].equals(user.loginMethods[0]));
+        assert (refetchUser.loginMethods[1].equals(user2.loginMethods[0]));
+        assert (refetchUser.tenantIds.size() == 1);
+        assert (refetchUser.isPrimaryUser);
+        assert (refetchUser.id.equals(user.id));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
