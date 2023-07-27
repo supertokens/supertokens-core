@@ -26,9 +26,11 @@ import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
+import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
+import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.session.Session;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -436,6 +438,115 @@ public class LinkAccountsTest {
             assert (e.primaryUserId.equals(user.id));
             assert (e.getMessage().equals("This user's email is already associated with another user ID"));
         }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void linkAccountFailureCauseAccountInfoAssociatedWithAPrimaryUserEvenIfInDifferentTenant() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        Multitenancy.addNewOrUpdateAppOrTenant(process.main, new TenantIdentifier(null, null, null),
+                new TenantConfig(new TenantIdentifier(null, null, "t1"), new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[0]), new PasswordlessConfig(true),
+                        new JsonObject()));
+
+        TenantIdentifierWithStorage tenantIdentifierWithStorage = new TenantIdentifierWithStorage(null, null, "t1",
+                StorageLayer.getStorage(process.main));
+
+        AuthRecipeUserInfo user = EmailPassword.signUp(tenantIdentifierWithStorage, process.getProcess(),
+                "test@example.com", "password");
+        assert (!user.isPrimaryUser);
+        AuthRecipe.createPrimaryUser(process.main, user.id);
+
+        Thread.sleep(50);
+
+        ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(tenantIdentifierWithStorage,
+                process.getProcess(), "google",
+                "user-google",
+                "test@example.com");
+        AuthRecipeUserInfo user2 = signInUpResponse.user;
+        assert (!user2.isPrimaryUser);
+
+        AuthRecipeUserInfo otherPrimaryUser = EmailPassword.signUp(process.getProcess(), "test3@example.com",
+                "password");
+
+        AuthRecipe.createPrimaryUser(process.main, otherPrimaryUser.id);
+
+        try {
+            AuthRecipe.linkAccounts(process.main, user2.id, otherPrimaryUser.id);
+            assert (false);
+        } catch (AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException e) {
+            assert (e.primaryUserId.equals(user.id));
+            assert (e.getMessage().equals("This user's email is already associated with another user ID"));
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void linkAccountSuccessAcrossTenants() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        Multitenancy.addNewOrUpdateAppOrTenant(process.main, new TenantIdentifier(null, null, null),
+                new TenantConfig(new TenantIdentifier(null, null, "t1"), new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[0]), new PasswordlessConfig(true),
+                        new JsonObject()));
+
+        TenantIdentifierWithStorage tenantIdentifierWithStorage = new TenantIdentifierWithStorage(null, null, "t1",
+                StorageLayer.getStorage(process.main));
+
+        AuthRecipeUserInfo user = EmailPassword.signUp(tenantIdentifierWithStorage, process.getProcess(),
+                "test@example.com", "password");
+        assert (!user.isPrimaryUser);
+        AuthRecipe.createPrimaryUser(process.main, user.id);
+
+        Thread.sleep(50);
+
+        ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(
+                process.getProcess(), "google",
+                "user-google",
+                "test@example.com");
+        AuthRecipeUserInfo user2 = signInUpResponse.user;
+        assert (!user2.isPrimaryUser);
+
+        boolean wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user2.id, user.id);
+        assert (!wasAlreadyLinked);
+
+        AuthRecipeUserInfo refetchedUser1 = AuthRecipe.getUserById(process.main, user.id);
+        AuthRecipeUserInfo refetchedUser2 = AuthRecipe.getUserById(process.main, user2.id);
+        assert (refetchedUser1.id.equals(refetchedUser2.id));
+        assert refetchedUser1.loginMethods.length == 2;
+        assert refetchedUser1.tenantIds.size() == 2;
+        assert refetchedUser1.tenantIds.contains("t1");
+        assert refetchedUser1.tenantIds.contains("public");
+        assert refetchedUser1.id.equals(user.id);
+        assert refetchedUser1.isPrimaryUser;
+        assert refetchedUser1.loginMethods[0].recipeUserId.equals(user.loginMethods[0].recipeUserId);
+        assert refetchedUser1.loginMethods[1].recipeUserId.equals(user2.loginMethods[0].recipeUserId);
+
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

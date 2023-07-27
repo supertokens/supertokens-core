@@ -194,7 +194,8 @@ public class AuthRecipe {
                         AuthRecipeUserInfo userWithSameThirdParty = storage
                                 .getPrimaryUsersByThirdPartyInfo_Transaction(tenantIdentifier, con,
                                         recipeUserIdLM.thirdParty.id, recipeUserIdLM.thirdParty.userId);
-                        if (userWithSameThirdParty.isPrimaryUser && !userWithSameThirdParty.id.equals(primaryUser.id)) {
+                        if (userWithSameThirdParty != null && userWithSameThirdParty.isPrimaryUser &&
+                                !userWithSameThirdParty.id.equals(primaryUser.id)) {
                             throw new StorageTransactionLogicException(
                                     new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(
                                             userWithSameThirdParty.id,
@@ -323,7 +324,7 @@ public class AuthRecipe {
                         AuthRecipeUserInfo userWithSameThirdParty = storage
                                 .getPrimaryUsersByThirdPartyInfo_Transaction(tenantIdentifier, con,
                                         loginMethod.thirdParty.id, loginMethod.thirdParty.userId);
-                        if (userWithSameThirdParty.isPrimaryUser) {
+                        if (userWithSameThirdParty != null && userWithSameThirdParty.isPrimaryUser) {
                             throw new StorageTransactionLogicException(
                                     new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(
                                             userWithSameThirdParty.id,
