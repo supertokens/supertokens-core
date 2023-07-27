@@ -51,11 +51,18 @@ public class DeleteUserAPI extends WebserverAPI {
         // this API is app specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
+        Boolean removeAllLinkedAccounts = InputParser.parseBooleanOrThrowError(input, "removeAllLinkedAccounts", true);
+
+        if (removeAllLinkedAccounts == null) {
+            removeAllLinkedAccounts = true;
+        }
+
         try {
             AppIdentifierWithStorageAndUserIdMapping appIdentifierWithStorageAndUserIdMapping =
                     this.getAppIdentifierWithStorageAndUserIdMappingFromRequest(req, userId, UserIdType.ANY);
 
             AuthRecipe.deleteUser(appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage, userId,
+                    removeAllLinkedAccounts,
                     appIdentifierWithStorageAndUserIdMapping.userIdMapping);
         } catch (StorageQueryException | TenantOrAppNotFoundException | StorageTransactionLogicException e) {
             throw new ServletException(e);

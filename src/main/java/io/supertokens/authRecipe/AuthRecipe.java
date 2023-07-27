@@ -40,6 +40,7 @@ import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
 import io.supertokens.pluginInterface.totp.sqlStorage.TOTPSQLStorage;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.session.Session;
@@ -497,9 +498,36 @@ public class AuthRecipe {
         }
     }
 
+    @TestOnly
     public static void deleteUser(AppIdentifierWithStorage appIdentifierWithStorage, String userId,
                                   UserIdMapping userIdMapping)
             throws StorageQueryException, StorageTransactionLogicException {
+        deleteUser(appIdentifierWithStorage, userId, true, userIdMapping);
+    }
+
+    public static void deleteUser(AppIdentifierWithStorage appIdentifierWithStorage, String userId,
+                                  boolean removeAllLinkedAccounts,
+                                  UserIdMapping userIdMapping)
+            throws StorageQueryException, StorageTransactionLogicException {
+        AuthRecipeSQLStorage storage = (AuthRecipeSQLStorage) appIdentifierWithStorage.getAuthRecipeStorage();
+
+        storage.startTransaction(con -> {
+            deleteUserHelper(con, appIdentifierWithStorage, userId, removeAllLinkedAccounts, userIdMapping);
+            storage.commitTransaction(con);
+            return null;
+        });
+    }
+
+    private static void deleteUserHelper(TransactionConnection con, AppIdentifierWithStorage appIdentifierWithStorage,
+                                         String userId,
+                                         boolean removeAllLinkedAccounts,
+                                         UserIdMapping userIdMapping)
+            throws StorageQueryException {
+        AuthRecipeSQLStorage storage = (AuthRecipeSQLStorage) appIdentifierWithStorage.getAuthRecipeStorage();
+
+        String userIdToDeleteForNonAuthRecipeForRecipeUserId;
+        String userIdToDeleteForAuthRecipe;
+
         // We clean up the user last so that if anything before that throws an error, then that will throw a
         // 500 to the
         // developer. In this case, they expect that the user has not been deleted (which will be true). This
@@ -529,17 +557,75 @@ public class AuthRecipe {
                     .doesUserIdExist(appIdentifierWithStorage, userIdMapping.externalUserId)) {
                 // db is in state A4
                 // delete only from auth tables
-                deleteAuthRecipeUser(appIdentifierWithStorage, userId);
+                userIdToDeleteForAuthRecipe = userId;
+                userIdToDeleteForNonAuthRecipeForRecipeUserId = null;
             } else {
                 // db is in state A3
                 // delete user from non-auth tables with externalUserId
-                deleteNonAuthRecipeUser(appIdentifierWithStorage, userIdMapping.externalUserId);
-                // delete user from auth tables with superTokensUserId
-                deleteAuthRecipeUser(appIdentifierWithStorage, userIdMapping.superTokensUserId);
+                userIdToDeleteForAuthRecipe = userIdMapping.superTokensUserId;
+                userIdToDeleteForNonAuthRecipeForRecipeUserId = userIdMapping.externalUserId;
             }
         } else {
-            deleteNonAuthRecipeUser(appIdentifierWithStorage, userId);
-            deleteAuthRecipeUser(appIdentifierWithStorage, userId);
+            userIdToDeleteForAuthRecipe = userId;
+            userIdToDeleteForNonAuthRecipeForRecipeUserId = userId;
+        }
+
+        assert (userIdToDeleteForAuthRecipe != null);
+
+        // this user ID represents the non auth recipe stuff to delete for the primary user id
+        String primaryUserIdToDeleteNonAuthRecipe = null;
+
+        AuthRecipeUserInfo userToDelete = storage.getPrimaryUserById_Transaction(appIdentifierWithStorage, con,
+                userIdToDeleteForAuthRecipe);
+
+        if (userToDelete == null) {
+            return;
+        }
+
+        if (removeAllLinkedAccounts || userToDelete.loginMethods.length == 1) {
+            if (userToDelete.id.equals(userIdToDeleteForAuthRecipe)) {
+                primaryUserIdToDeleteNonAuthRecipe = userIdToDeleteForNonAuthRecipeForRecipeUserId;
+            } else {
+                primaryUserIdToDeleteNonAuthRecipe = userToDelete.id;
+                // this is always type supertokens user ID cause it's from a user from the database.
+                io.supertokens.pluginInterface.useridmapping.UserIdMapping mappingResult =
+                        io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+                                appIdentifierWithStorage,
+                                userToDelete.id, UserIdType.SUPERTOKENS);
+                if (mappingResult != null) {
+                    primaryUserIdToDeleteNonAuthRecipe = mappingResult.externalUserId;
+                } else {
+                    primaryUserIdToDeleteNonAuthRecipe = userToDelete.id;
+                }
+
+            }
+        } else {
+            if (userToDelete.id.equals(userIdToDeleteForAuthRecipe)) {
+                // this means we are deleting the primary user itself, but keeping other linked accounts
+                // so we keep the non auth recipe info of this user since other linked accounts can use it
+                userIdToDeleteForNonAuthRecipeForRecipeUserId = null;
+            }
+        }
+
+        if (!removeAllLinkedAccounts) {
+            // TODO: remove userIdToDeleteForAuthRecipe
+
+            if (userIdToDeleteForNonAuthRecipeForRecipeUserId != null) {
+                // TODO: delete non auth recipe for this user ID
+            }
+
+            if (primaryUserIdToDeleteNonAuthRecipe != null) {
+                // TODO: delete non auth recipe for this user ID
+            }
+        } else {
+            for (LoginMethod lM : userToDelete.loginMethods) {
+                io.supertokens.pluginInterface.useridmapping.UserIdMapping mappingResult = lM.recipeUserId.equals(
+                        userIdToDeleteForAuthRecipe) ? userIdMapping :
+                        io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+                                appIdentifierWithStorage,
+                                lM.recipeUserId, UserIdType.SUPERTOKENS);
+                deleteUserHelper(con, appIdentifierWithStorage, lM.recipeUserId, false, mappingResult);
+            }
         }
     }
 
