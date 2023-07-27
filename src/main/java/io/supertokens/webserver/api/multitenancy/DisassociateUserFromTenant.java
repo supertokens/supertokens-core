@@ -59,14 +59,16 @@ public class DisassociateUserFromTenant extends WebserverAPI {
         }
 
         try {
+            String externalUserId = null;
             AppIdentifierWithStorageAndUserIdMapping mappingAndStorage =
                     getAppIdentifierWithStorageAndUserIdMappingFromRequest(req, userId, UserIdType.ANY);
             if (mappingAndStorage.userIdMapping != null) {
                 userId = mappingAndStorage.userIdMapping.superTokensUserId;
+                externalUserId = mappingAndStorage.userIdMapping.externalUserId;
             }
 
             boolean wasAssociated = Multitenancy.removeUserIdFromTenant(main,
-                    getTenantIdentifierWithStorageFromRequest(req), userId);
+                    getTenantIdentifierWithStorageFromRequest(req), userId, externalUserId);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

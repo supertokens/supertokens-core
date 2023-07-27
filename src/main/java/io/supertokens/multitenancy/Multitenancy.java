@@ -375,7 +375,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                 .addUserIdToTenant(tenantIdentifierWithStorage, userId);
     }
 
-    public static boolean removeUserIdFromTenant(Main main, TenantIdentifierWithStorage tenantIdentifierWithStorage, String userId)
+    public static boolean removeUserIdFromTenant(Main main, TenantIdentifierWithStorage tenantIdentifierWithStorage, String userId, String externalUserId)
             throws FeatureNotEnabledException, TenantOrAppNotFoundException, StorageQueryException,
             UnknownUserIdException {
         if (Arrays.stream(FeatureFlag.getInstance(main, new AppIdentifier(null, null)).getEnabledFeatures())
@@ -383,15 +383,17 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             throw new FeatureNotEnabledException(EE_FEATURES.MULTI_TENANCY);
         }
 
-        boolean finalDidExist = false;
+
         boolean didExist = AuthRecipe.deleteNonAuthRecipeUser(tenantIdentifierWithStorage, userId);
-        finalDidExist = finalDidExist || didExist;
+
+        if (externalUserId != null) {
+            didExist = AuthRecipe.deleteNonAuthRecipeUser(tenantIdentifierWithStorage, externalUserId) || didExist;
+        }
 
         didExist = tenantIdentifierWithStorage.getMultitenancyStorageWithTargetStorage()
-                .removeUserIdFromTenant(tenantIdentifierWithStorage, userId);
-        finalDidExist = finalDidExist || didExist;
+                .removeUserIdFromTenant(tenantIdentifierWithStorage, userId) || didExist;
 
-        return finalDidExist;
+        return didExist;
     }
 
     public static TenantConfig getTenantInfo(Main main, TenantIdentifier tenantIdentifier) {
