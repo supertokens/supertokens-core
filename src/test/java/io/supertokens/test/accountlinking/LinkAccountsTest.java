@@ -19,12 +19,16 @@ package io.supertokens.test.accountlinking;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.authRecipe.AuthRecipe;
+import io.supertokens.authRecipe.exception.AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException;
+import io.supertokens.authRecipe.exception.InputUserIdIsNotAPrimaryUserException;
+import io.supertokens.authRecipe.exception.RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.session.Session;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -70,7 +74,7 @@ public class LinkAccountsTest {
         AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
         assert (!user.isPrimaryUser);
 
-        Thread.sleep(1000);
+        Thread.sleep(50);
 
         AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "password");
         assert (!user2.isPrimaryUser);
@@ -119,7 +123,7 @@ public class LinkAccountsTest {
         AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
         assert (!user.isPrimaryUser);
 
-        Thread.sleep(1000);
+        Thread.sleep(50);
 
         ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.getProcess(), "google",
                 "user-google",
@@ -167,6 +171,270 @@ public class LinkAccountsTest {
             assert (e.getMessage()
                     .equals("Account linking feature is not enabled for this app. Please contact support to enable it" +
                             "."));
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void linkAccountSuccessEvenIfUsingRecipeUserIdThatIsLinkedToPrimaryUser() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
+        assert (!user.isPrimaryUser);
+
+        Thread.sleep(50);
+
+        AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "password");
+        assert (!user2.isPrimaryUser);
+
+        AuthRecipe.createPrimaryUser(process.main, user.id);
+
+        boolean wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user2.id, user.id);
+        assert (!wasAlreadyLinked);
+
+        AuthRecipeUserInfo user3 = EmailPassword.signUp(process.getProcess(), "test3@example.com", "password");
+        assert (!user3.isPrimaryUser);
+
+        wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user3.id, user2.id);
+        assert (!wasAlreadyLinked);
+
+        AuthRecipeUserInfo refetchUser = AuthRecipe.getUserById(process.main, user.id);
+        assert (refetchUser.loginMethods.length == 3);
+        assert (refetchUser.loginMethods[0].equals(user.loginMethods[0]));
+        assert (refetchUser.loginMethods[1].equals(user2.loginMethods[0]));
+        assert (refetchUser.loginMethods[2].equals(user3.loginMethods[0]));
+        assert (refetchUser.tenantIds.size() == 1);
+        assert (refetchUser.isPrimaryUser);
+        assert (refetchUser.id.equals(user.id));
+
+        AuthRecipeUserInfo refetchUser3 = AuthRecipe.getUserById(process.main, user3.id);
+        assert (refetchUser3.equals(refetchUser));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void alreadyLinkAccountLinkAgain() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
+        assert (!user.isPrimaryUser);
+
+        Thread.sleep(50);
+
+        ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.getProcess(), "google",
+                "user-google",
+                "test@example.com");
+        AuthRecipeUserInfo user2 = signInUpResponse.user;
+        assert (!user2.isPrimaryUser);
+
+        AuthRecipe.createPrimaryUser(process.main, user.id);
+
+        boolean wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user2.id, user.id);
+        assert (!wasAlreadyLinked);
+
+        Session.createNewSession(process.main, user2.id, new JsonObject(), new JsonObject());
+        String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(process.main, user2.id);
+        assert (sessions.length == 1);
+
+        wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user2.id, user.id);
+        assert (wasAlreadyLinked);
+
+        // cause linkAccounts revokes sessions for the recipe user ID
+        sessions = Session.getAllNonExpiredSessionHandlesForUser(process.main, user2.id);
+        assert (sessions.length == 1);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void linkAccountFailureCauseRecipeUserIdLinkedWithAnotherPrimaryUser() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
+        assert (!user.isPrimaryUser);
+
+        Thread.sleep(50);
+
+        ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.getProcess(), "google",
+                "user-google",
+                "test@example.com");
+        AuthRecipeUserInfo user2 = signInUpResponse.user;
+        assert (!user2.isPrimaryUser);
+
+        AuthRecipe.createPrimaryUser(process.main, user.id);
+
+        boolean wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user2.id, user.id);
+        assert (!wasAlreadyLinked);
+
+        AuthRecipeUserInfo user3 = EmailPassword.signUp(process.getProcess(), "test3@example.com", "password");
+        assert (!user.isPrimaryUser);
+        AuthRecipe.createPrimaryUser(process.main, user3.id);
+
+        try {
+            AuthRecipe.linkAccounts(process.main, user2.id, user3.id);
+            assert (false);
+        } catch (RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException e) {
+            assert (e.primaryUserId.equals(user.id));
+            assert (e.getMessage().equals("The input recipe user ID is already linked to another user ID"));
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void linkAccountFailureInputUserIsNotAPrimaryUser() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
+        assert (!user.isPrimaryUser);
+
+        ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.getProcess(), "google",
+                "user-google",
+                "test@example.com");
+        AuthRecipeUserInfo user2 = signInUpResponse.user;
+        assert (!user2.isPrimaryUser);
+
+        try {
+            AuthRecipe.linkAccounts(process.main, user2.id, user.id);
+            assert (false);
+        } catch (InputUserIdIsNotAPrimaryUserException e) {
+            assert (e.userId.equals(user.id));
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void linkAccountFailureUserDoesNotExist() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
+        assert (!user.isPrimaryUser);
+
+        AuthRecipe.createPrimaryUser(process.main, user.id);
+
+        ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.getProcess(), "google",
+                "user-google",
+                "test@example.com");
+        AuthRecipeUserInfo user2 = signInUpResponse.user;
+        assert (!user2.isPrimaryUser);
+
+        try {
+            AuthRecipe.linkAccounts(process.main, user2.id, "random");
+            assert (false);
+        } catch (UnknownUserIdException e) {
+        }
+
+        try {
+            AuthRecipe.linkAccounts(process.main, "random2", user.id);
+            assert (false);
+        } catch (UnknownUserIdException e) {
+        }
+
+        try {
+            AuthRecipe.linkAccounts(process.main, "random2", "random");
+            assert (false);
+        } catch (UnknownUserIdException e) {
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void linkAccountFailureCauseAccountInfoAssociatedWithAPrimaryUser() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
+        assert (!user.isPrimaryUser);
+        AuthRecipe.createPrimaryUser(process.main, user.id);
+
+        Thread.sleep(50);
+
+        ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.getProcess(), "google",
+                "user-google",
+                "test@example.com");
+        AuthRecipeUserInfo user2 = signInUpResponse.user;
+        assert (!user2.isPrimaryUser);
+
+        AuthRecipeUserInfo otherPrimaryUser = EmailPassword.signUp(process.getProcess(), "test3@example.com",
+                "password");
+
+        AuthRecipe.createPrimaryUser(process.main, otherPrimaryUser.id);
+
+        try {
+            AuthRecipe.linkAccounts(process.main, user2.id, otherPrimaryUser.id);
+            assert (false);
+        } catch (AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException e) {
+            assert (e.primaryUserId.equals(user.id));
+            assert (e.getMessage().equals("This user's email is already associated with another user ID"));
         }
 
         process.kill();

@@ -17,10 +17,10 @@
 package io.supertokens.authRecipe.exception;
 
 public class InputUserIdIsNotAPrimaryUserException extends Exception {
-    public final String primaryUserId;
+    public final String userId;
 
-    public InputUserIdIsNotAPrimaryUserException(String primaryUserId) {
+    public InputUserIdIsNotAPrimaryUserException(String userId) {
         super();
-        this.primaryUserId = primaryUserId;
+        this.userId = userId;
     }
 }
