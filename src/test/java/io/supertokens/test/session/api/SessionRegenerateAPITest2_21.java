@@ -137,15 +137,38 @@ public class SessionRegenerateAPITest2_21 {
         JsonObject toUpdate = new JsonObject();
         toUpdate.addProperty("k1", "v1");
 
-        TokenInfo newToken = AccessToken.createNewAccessTokenV1(process.getProcess(), session.session.handle, "user1",
+        TokenInfo newToken = AccessToken.createNewAccessTokenV1(process.getProcess(),
+                session.session.handle, "user1",
                 info.refreshTokenHash1, null, new JsonObject(), null);
 
-        System.out.println(newToken.token);
+        String payload = newToken.token.split("\\.")[1];
+        String jsonStr = io.supertokens.utils.Utils.convertFromBase64(payload);
+        assert (jsonStr.contains("userId"));
+        assert (!jsonStr.contains("parentRefreshTokenHash1"));
+        assert (!jsonStr.contains("antiCsrf"));
+        assert (!jsonStr.contains("\"version\":\"V1\""));
 
         sessionRegenerateRequest.addProperty("accessToken", newToken.token);
         sessionRegenerateRequest.add("userDataInJWT", toUpdate);
 
         JsonObject jsonResp = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/session/regenerate", sessionRegenerateRequest, 1000, 1000, null,
+                SemVer.v2_21.get(), "session");
+        assertEquals("OK", jsonResp.get("status").getAsString());
+        String accessToken = jsonResp.get("accessToken").getAsJsonObject().get("token").getAsString();
+        payload = accessToken.split("\\.")[1];
+        jsonStr = io.supertokens.utils.Utils.convertFromBase64(payload);
+        assert (jsonStr.contains("userId"));
+        assert (!jsonStr.contains("parentRefreshTokenHash1"));
+        assert (!jsonStr.contains("antiCsrf"));
+        assert (!jsonStr.contains("\"version\":\"V1\""));
+
+        sessionRegenerateRequest = new JsonObject();
+        sessionRegenerateRequest.addProperty("accessToken", accessToken);
+        toUpdate.addProperty("k2", "v2");
+        sessionRegenerateRequest.add("userDataInJWT", toUpdate);
+
+        jsonResp = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session/regenerate", sessionRegenerateRequest, 1000, 1000, null,
                 SemVer.v2_21.get(), "session");
         assertEquals("OK", jsonResp.get("status").getAsString());

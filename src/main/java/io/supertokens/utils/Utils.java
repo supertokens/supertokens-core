@@ -374,8 +374,4 @@ public class Utils {
     public static JsonElement toJsonTreeWithNulls(Object src) {
         return new GsonBuilder().serializeNulls().create().toJsonTree(src);
     }
-
-    public static JsonElement toJsonTreeWithoutNulls(Object src) {
-        return new GsonBuilder().create().toJsonTree(src);
-    }
 }

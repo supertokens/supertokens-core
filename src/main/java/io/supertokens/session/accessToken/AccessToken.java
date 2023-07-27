@@ -216,7 +216,8 @@ public class AccessToken {
                                                    @Nullable String parentRefreshTokenHash1,
                                                    @Nonnull JsonObject userData, @Nullable String antiCsrfToken)
             throws StorageQueryException, StorageTransactionLogicException, InvalidKeyException,
-            NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeySpecException, SignatureException {
+            NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeySpecException, SignatureException,
+            AccessTokenPayloadError {
 
         Utils.PubPriKey signingKey = new Utils.PubPriKey(
                 SigningKeys.getInstance(main).getLatestIssuedDynamicKey().value);
@@ -229,11 +230,10 @@ public class AccessToken {
 
         // we use toJsonTreeWithoutNulls here cause in this version of the token, we did not add claims which
         // had null values.
-        String token = JWT.createAndSignLegacyAccessToken(Utils.toJsonTreeWithoutNulls(accessToken),
+        String token = JWT.createAndSignLegacyAccessToken(accessToken.toJSON(),
                 signingKey.privateKey,
                 VERSION.V1);
         return new TokenInfo(token, accessToken.expiryTime, accessToken.timeCreated);
-
     }
 
     public static VERSION getAccessTokenVersion(AccessTokenInfo accessToken) {
@@ -369,8 +369,19 @@ public class AccessToken {
             }
             res.addProperty("sessionHandle", this.sessionHandle);
             res.addProperty("refreshTokenHash1", this.refreshTokenHash1);
-            res.addProperty("parentRefreshTokenHash1", this.parentRefreshTokenHash1);
-            res.addProperty("antiCsrfToken", this.antiCsrfToken);
+
+            if (this.version == VERSION.V1 || this.version == VERSION.V2) {
+                if (parentRefreshTokenHash1 != null) {
+                    res.addProperty("parentRefreshTokenHash1", this.parentRefreshTokenHash1);
+                }
+                if (antiCsrfToken != null) {
+                    res.addProperty("antiCsrfToken", this.antiCsrfToken);
+                }
+            } else {
+                // in v3 onwards, we always add these even if they are null
+                res.addProperty("parentRefreshTokenHash1", this.parentRefreshTokenHash1);
+                res.addProperty("antiCsrfToken", this.antiCsrfToken);
+            }
 
             if (this.version == VERSION.V3) {
                 for (Map.Entry<String, JsonElement> element : this.userData.entrySet()) {
