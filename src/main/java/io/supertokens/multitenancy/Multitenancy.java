@@ -388,10 +388,10 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
 
         if (externalUserId != null) {
             didExist = AuthRecipe.deleteNonAuthRecipeUser(tenantIdentifierWithStorage, externalUserId) || didExist;
+        } else {
+            didExist = tenantIdentifierWithStorage.getMultitenancyStorageWithTargetStorage()
+                    .removeUserIdFromTenant(tenantIdentifierWithStorage, userId) || didExist;
         }
-
-        didExist = tenantIdentifierWithStorage.getMultitenancyStorageWithTargetStorage()
-                .removeUserIdFromTenant(tenantIdentifierWithStorage, userId) || didExist;
 
         return didExist;
     }
