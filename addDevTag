@@ -1,4 +1,9 @@
 #!/bin/bash
+# check if we need to merge master into this branch------------
+if [[ $(git log origin/master ^HEAD) ]]; then
+    echo "You need to merge master into this branch. Exiting"
+    exit 1
+fi
 
 # get version------------
 version=`cat build.gradle | grep -e "version =" -e "version="`
