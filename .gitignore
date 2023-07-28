@@ -44,7 +44,5 @@ local.properties
 # Mac
 .DS_Store
 
-addDevTag
-addReleaseTag
 *.iml
 ee/bin
