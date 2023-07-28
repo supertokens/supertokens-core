@@ -116,10 +116,12 @@ public class AppTenantUserTest {
                         new JsonObject()
                 ), false);
 
-                TenantIdentifierWithStorage tWithStorage = t.withStorage(StorageLayer.getStorage(t, process.getProcess()));
+                TenantIdentifierWithStorage tWithStorage = t.withStorage(
+                        StorageLayer.getStorage(t, process.getProcess()));
 
 
-                UserInfo user = EmailPassword.signUp(tWithStorage, process.getProcess(), "test@example.com", "password");
+                UserInfo user = EmailPassword.signUp(tWithStorage, process.getProcess(), "test@example.com",
+                        "password");
                 String userId = user.id;
 
                 // create entry in nonAuth table
@@ -154,7 +156,8 @@ public class AppTenantUserTest {
                         new JsonObject()
                 ), false);
 
-                UserIdMapping.assertThatUserIdIsNotBeingUsedInNonAuthRecipes(tWithStorage.toAppIdentifierWithStorage(), userId);
+                UserIdMapping.assertThatUserIdIsNotBeingUsedInNonAuthRecipes(tWithStorage.toAppIdentifierWithStorage(),
+                        userId);
             }
         }
 
@@ -237,9 +240,10 @@ public class AppTenantUserTest {
             }
 
             // Disassociate user
-            Multitenancy.removeUserIdFromTenant(process.getProcess(), tenantWithStorage, userId);
+            Multitenancy.removeUserIdFromTenant(process.getProcess(), tenantWithStorage, userId, null);
 
-            assertFalse(AuthRecipe.deleteNonAuthRecipeUser(tenantWithStorage, userId)); // Nothing deleted indicates that the non auth recipe user data was deleted already
+            assertFalse(AuthRecipe.deleteNonAuthRecipeUser(tenantWithStorage,
+                    userId)); // Nothing deleted indicates that the non auth recipe user data was deleted already
 
             AuthRecipe.deleteUser(appWithStorage.toAppIdentifierWithStorage(), userId);
         }
@@ -292,7 +296,8 @@ public class AppTenantUserTest {
 
         Multitenancy.deleteTenant(tenant, process.getProcess());
 
-        Multitenancy.addUserIdToTenant(process.getProcess(), appWithStorage, userId); // user id must be intact to do this
+        Multitenancy.addUserIdToTenant(process.getProcess(), appWithStorage,
+                userId); // user id must be intact to do this
 
         UserInfo appUser = EmailPassword.getUserUsingId(appWithStorage.toAppIdentifierWithStorage(), userId);
 

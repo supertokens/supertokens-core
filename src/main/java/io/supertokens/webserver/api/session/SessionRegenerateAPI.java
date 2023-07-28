@@ -90,12 +90,13 @@ public class SessionRegenerateAPI extends WebserverAPI {
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
 
-        } catch (StorageQueryException | StorageTransactionLogicException | NoSuchAlgorithmException | TryRefreshTokenException
-                | InvalidKeyException | SignatureException | InvalidKeySpecException | JWT.JWTException |
-                UnsupportedJWTSigningAlgorithmException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | NoSuchAlgorithmException
+                 | InvalidKeyException | SignatureException | InvalidKeySpecException | JWT.JWTException |
+                 UnsupportedJWTSigningAlgorithmException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
-        } catch (UnauthorisedException e) {
-            Logging.debug(main, appIdentifierWithStorage.getAsPublicTenantIdentifier(), Utils.exceptionStacktraceToString(e));
+        } catch (UnauthorisedException | TryRefreshTokenException e) {
+            Logging.debug(main, appIdentifierWithStorage.getAsPublicTenantIdentifier(),
+                    Utils.exceptionStacktraceToString(e));
             JsonObject reply = new JsonObject();
             reply.addProperty("status", "UNAUTHORISED");
             reply.addProperty("message", e.getMessage());

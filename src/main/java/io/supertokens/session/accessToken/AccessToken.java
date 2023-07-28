@@ -271,7 +271,7 @@ public class AccessToken {
                                                    @Nonnull JsonObject userData, @Nullable String antiCsrfToken)
             throws StorageQueryException, StorageTransactionLogicException, InvalidKeyException,
             NoSuchAlgorithmException, InvalidKeySpecException, SignatureException,
-            UnsupportedJWTSigningAlgorithmException {
+            UnsupportedJWTSigningAlgorithmException, AccessTokenPayloadError {
         try {
             return createNewAccessTokenV1(new TenantIdentifier(null, null, null), main, sessionHandle, userId,
                     refreshTokenHash1,
@@ -288,7 +288,7 @@ public class AccessToken {
                                                    @Nonnull JsonObject userData, @Nullable String antiCsrfToken)
             throws StorageQueryException, StorageTransactionLogicException, InvalidKeyException,
             NoSuchAlgorithmException, InvalidKeySpecException, SignatureException,
-            TenantOrAppNotFoundException, UnsupportedJWTSigningAlgorithmException {
+            TenantOrAppNotFoundException, UnsupportedJWTSigningAlgorithmException, AccessTokenPayloadError {
 
         Utils.PubPriKey signingKey = new Utils.PubPriKey(
                 SigningKeys.getInstance(tenantIdentifier.toAppIdentifier(), main).getLatestIssuedDynamicKey().value);
@@ -299,7 +299,7 @@ public class AccessToken {
         accessToken = new AccessTokenInfo(sessionHandle, userId, refreshTokenHash1, expiryTime, parentRefreshTokenHash1,
                 userData, antiCsrfToken, now, VERSION.V1, tenantIdentifier);
 
-        String token = JWT.createAndSignLegacyAccessToken(Utils.toJsonTreeWithNulls(accessToken), signingKey.privateKey,
+        String token = JWT.createAndSignLegacyAccessToken(accessToken.toJSON(), signingKey.privateKey,
                 VERSION.V1);
         return new TokenInfo(token, accessToken.expiryTime, accessToken.timeCreated);
 
@@ -331,9 +331,7 @@ public class AccessToken {
                 "expiryTime",
                 "timeCreated",
                 "sessionHandle",
-                "refreshTokenHash1",
-                "parentRefreshTokenHash1",
-                "antiCsrfToken",
+                "refreshTokenHash1"
         };
 
         static String[] requiredAndProtectedPropsV3 = {
@@ -426,9 +424,11 @@ public class AccessToken {
                     // V3 tokens are from core version 2.21 that did not have support for multi-tenancy
                     // so we always assume that the the tenant id is public always. User may have added `tId`
                     // as a custom payload and we don't want to use that as tenant id here.
-                    tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(), null);
+                    tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
+                            appIdentifier.getAppId(), null);
                 } else {
-                    tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(), payload.get("tId").getAsString());
+                    tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
+                            appIdentifier.getAppId(), payload.get("tId").getAsString());
                 }
 
                 return new AccessTokenInfo(
@@ -436,9 +436,10 @@ public class AccessToken {
                         payload.get("sub").getAsString(),
                         payload.get("refreshTokenHash1").getAsString(),
                         payload.get("exp").getAsLong() * 1000,
-                        parentRefreshTokenHash.isJsonNull() ? null : parentRefreshTokenHash.getAsString(),
+                        parentRefreshTokenHash == null || parentRefreshTokenHash.isJsonNull() ? null :
+                                parentRefreshTokenHash.getAsString(),
                         userData,
-                        antiCsrfToken.isJsonNull() ? null : antiCsrfToken.getAsString(),
+                        antiCsrfToken == null || antiCsrfToken.isJsonNull() ? null : antiCsrfToken.getAsString(),
                         payload.get("iat").getAsLong() * 1000,
                         version, tenantIdentifier
                 );
@@ -449,9 +450,10 @@ public class AccessToken {
                         payload.get("userId").getAsString(),
                         payload.get("refreshTokenHash1").getAsString(),
                         payload.get("expiryTime").getAsLong(),
-                        parentRefreshTokenHash.isJsonNull() ? null : parentRefreshTokenHash.getAsString(),
+                        parentRefreshTokenHash == null || parentRefreshTokenHash.isJsonNull() ? null :
+                                parentRefreshTokenHash.getAsString(),
                         payload.get("userData").getAsJsonObject(),
-                        antiCsrfToken.isJsonNull() ? null : antiCsrfToken.getAsString(),
+                        antiCsrfToken == null || antiCsrfToken.isJsonNull() ? null : antiCsrfToken.getAsString(),
                         payload.get("timeCreated").getAsLong(),
                         version,
                         appIdentifier.getAsPublicTenantIdentifier()
@@ -477,8 +479,18 @@ public class AccessToken {
             }
             res.addProperty("sessionHandle", this.sessionHandle);
             res.addProperty("refreshTokenHash1", this.refreshTokenHash1);
-            res.addProperty("parentRefreshTokenHash1", this.parentRefreshTokenHash1);
-            res.addProperty("antiCsrfToken", this.antiCsrfToken);
+            if (this.version == VERSION.V1 || this.version == VERSION.V2) {
+                if (parentRefreshTokenHash1 != null) {
+                    res.addProperty("parentRefreshTokenHash1", this.parentRefreshTokenHash1);
+                }
+                if (antiCsrfToken != null) {
+                    res.addProperty("antiCsrfToken", this.antiCsrfToken);
+                }
+            } else {
+                // in v3 onwards, we always add these even if they are null
+                res.addProperty("parentRefreshTokenHash1", this.parentRefreshTokenHash1);
+                res.addProperty("antiCsrfToken", this.antiCsrfToken);
+            }
 
             if (this.version != VERSION.V1 && this.version != VERSION.V2) {
                 for (Map.Entry<String, JsonElement> element : this.userData.entrySet()) {

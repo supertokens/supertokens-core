@@ -20,6 +20,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState.EventAndException;
 import io.supertokens.ProcessState.PROCESS_STATE;
+import io.supertokens.exceptions.AccessTokenPayloadError;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.jwt.JWTSigningFunctions;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
@@ -336,7 +337,7 @@ public class AccessTokenTest {
     public void inputOutputTestv1() throws InterruptedException, InvalidKeyException, NoSuchAlgorithmException,
             StorageQueryException, StorageTransactionLogicException, TryRefreshTokenException,
             UnsupportedEncodingException, InvalidKeySpecException, SignatureException,
-            UnsupportedJWTSigningAlgorithmException {
+            UnsupportedJWTSigningAlgorithmException, AccessTokenPayloadError {
         String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
@@ -514,7 +515,8 @@ public class AccessTokenTest {
         String jwksDomain = "http://localhost";
         long validity = 3600;
 
-        String jwt = JWTSigningFunctions.createJWTToken(process.main, algorithm, accessTokenPayload, jwksDomain, validity, false);
+        String jwt = JWTSigningFunctions.createJWTToken(process.main, algorithm, accessTokenPayload, jwksDomain,
+                validity, false);
 
         String header = jwt.split("\\.")[0];
         String decodedHeader = new String(Base64.getUrlDecoder().decode(header));
@@ -522,7 +524,7 @@ public class AccessTokenTest {
         // Verify that by default the version is not present
         assertNull(headerObject.get("version"));
 
-        JWT.JWTPreParseInfo info =  JWT.preParseJWTInfo(jwt);
+        JWT.JWTPreParseInfo info = JWT.preParseJWTInfo(jwt);
         assert info.version == AccessToken.getLatestVersion();
     }
 }

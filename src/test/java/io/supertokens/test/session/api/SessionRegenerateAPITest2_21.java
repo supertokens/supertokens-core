@@ -19,7 +19,10 @@ package io.supertokens.test.session.api;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
+import io.supertokens.session.Session;
 import io.supertokens.session.accessToken.AccessToken;
+import io.supertokens.session.info.SessionInformationHolder;
+import io.supertokens.session.info.TokenInfo;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
@@ -31,7 +34,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class SessionRegenerateAPITest2_21 {
     @Rule
@@ -49,7 +53,7 @@ public class SessionRegenerateAPITest2_21 {
 
     @Test
     public void testCallRegenerateAPIWithProtectedFieldInJWTV3Token() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -87,15 +91,16 @@ public class SessionRegenerateAPITest2_21 {
         HttpResponseException caught = null;
         try {
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-            "http://localhost:3567/recipe/session/regenerate", sessionRegenerateRequest, 1000, 1000, null,
-            SemVer.v2_21.get(), "session");
+                    "http://localhost:3567/recipe/session/regenerate", sessionRegenerateRequest, 1000, 1000, null,
+                    SemVer.v2_21.get(), "session");
         } catch (HttpResponseException e) {
             caught = e;
         }
 
         assertNotNull(caught);
         assertEquals(caught.statusCode, 400);
-        assertEquals(caught.getMessage(), "Http error. Status Code: 400. Message:" + " The user payload contains protected field");
+        assertEquals(caught.getMessage(),
+                "Http error. Status Code: 400. Message:" + " The user payload contains protected field");
 
         JsonObject sessionRefreshBody = new JsonObject();
 
@@ -108,6 +113,66 @@ public class SessionRegenerateAPITest2_21 {
                 Utils.getCdiVersionStringLatestForTests(), "session");
 
         assertEquals("OK", sessionRefreshResponse.get("status").getAsString());
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testCallRegenerateSessionWithv1AccessTokenFromReallyOldAndItSucceeds() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        // createSession with JWT payload
+        SessionInformationHolder session = Session.createNewSession(process.main, "user1", new JsonObject(),
+                new JsonObject());
+
+        AccessToken.AccessTokenInfo info = AccessToken.getInfoFromAccessToken(process.getProcess(),
+                session.accessToken.token,
+                false);
+
+
+        JsonObject sessionRegenerateRequest = new JsonObject();
+        JsonObject toUpdate = new JsonObject();
+        toUpdate.addProperty("k1", "v1");
+
+        TokenInfo newToken = AccessToken.createNewAccessTokenV1(process.getProcess(),
+                session.session.handle, "user1",
+                info.refreshTokenHash1, null, new JsonObject(), null);
+
+        String payload = newToken.token.split("\\.")[1];
+        String jsonStr = io.supertokens.utils.Utils.convertFromBase64(payload);
+        assert (jsonStr.contains("userId"));
+        assert (!jsonStr.contains("parentRefreshTokenHash1"));
+        assert (!jsonStr.contains("antiCsrf"));
+        assert (!jsonStr.contains("\"version\":\"V1\""));
+
+        sessionRegenerateRequest.addProperty("accessToken", newToken.token);
+        sessionRegenerateRequest.add("userDataInJWT", toUpdate);
+
+        JsonObject jsonResp = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/session/regenerate", sessionRegenerateRequest, 1000, 1000, null,
+                SemVer.v2_21.get(), "session");
+        assertEquals("OK", jsonResp.get("status").getAsString());
+        String accessToken = jsonResp.get("accessToken").getAsJsonObject().get("token").getAsString();
+        payload = accessToken.split("\\.")[1];
+        jsonStr = io.supertokens.utils.Utils.convertFromBase64(payload);
+        assert (jsonStr.contains("userId"));
+        assert (!jsonStr.contains("parentRefreshTokenHash1"));
+        assert (!jsonStr.contains("antiCsrf"));
+        assert (!jsonStr.contains("\"version\":\"V1\""));
+
+        sessionRegenerateRequest = new JsonObject();
+        sessionRegenerateRequest.addProperty("accessToken", accessToken);
+        toUpdate.addProperty("k2", "v2");
+        sessionRegenerateRequest.add("userDataInJWT", toUpdate);
+
+        jsonResp = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/session/regenerate", sessionRegenerateRequest, 1000, 1000, null,
+                SemVer.v2_21.get(), "session");
+        assertEquals("OK", jsonResp.get("status").getAsString());
+
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }

@@ -40,6 +40,11 @@ CREATE INDEX all_auth_recipe_users_primary_user_id_index ON all_auth_recipe_user
 CREATE INDEX all_auth_recipe_users_primary_user_id_and_tenant_id_index ON all_auth_recipe_users (app_id, tenant_id, primary_or_recipe_user_id);
 ```
 
+## [6.0.7] - 2023-07-28
+
+- Fixes session removing for user with useridmapping when disassociating from tenant.
+- Fixes issue with access token migration from version v1 and v2
+
 ## [6.0.6] - 2023-07-24
 
 - Adds all ee features enabled for in memory database.
