@@ -237,7 +237,7 @@ public class AppTenantUserTest {
             }
 
             // Disassociate user
-            Multitenancy.removeUserIdFromTenant(process.getProcess(), tenantWithStorage, userId, null);
+            Multitenancy.removeUserIdFromTenant(process.getProcess(), tenantWithStorage, userId);
 
             assertFalse(AuthRecipe.deleteNonAuthRecipeUser(tenantWithStorage, userId)); // Nothing deleted indicates that the non auth recipe user data was deleted already
 
