@@ -7,6 +7,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+## [6.0.7] - 2023-07-28
+
+- Fixes session removing for user with useridmapping when disassociating from tenant.
+- Fixes issue with access token migration from version v1 and v2
+
 ## [6.0.6] - 2023-07-24
 
 - Adds all ee features enabled for in memory database.

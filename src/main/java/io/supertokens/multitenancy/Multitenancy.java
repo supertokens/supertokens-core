@@ -62,8 +62,8 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
     public static void checkPermissionsForCreateOrUpdate(Main main, TenantIdentifier sourceTenant,
                                                          TenantIdentifier targetTenant)
             throws BadPermissionException, CannotModifyBaseConfigException, FeatureNotEnabledException,
-            TenantOrAppNotFoundException, StorageQueryException, InvalidConfigException, InvalidProviderConfigException
-    {
+            TenantOrAppNotFoundException, StorageQueryException, InvalidConfigException,
+            InvalidProviderConfigException {
 
         {
             if (!targetTenant.equals(new TenantIdentifier(null, null, null))) {
@@ -91,13 +91,15 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                 // this means that we are creating a new app for this connectionuridomain and must use the public or
                 // same app and public tenant for this
                 if (!sourceTenant.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)
-                        || (!sourceTenant.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID) && !sourceTenant.getAppId().equals(targetTenant.getAppId()))) {
+                        || (!sourceTenant.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID) &&
+                        !sourceTenant.getAppId().equals(targetTenant.getAppId()))) {
                     throw new BadPermissionException(
                             "You must use the public or same app to add/update an app");
                 }
                 if (!sourceTenant.getConnectionUriDomain()
                         .equals(targetTenant.getConnectionUriDomain())) {
-                    throw new BadPermissionException("You must use the same connection URI domain to create/update an app");
+                    throw new BadPermissionException(
+                            "You must use the same connection URI domain to create/update an app");
                 }
             } else if (!targetTenant.getConnectionUriDomain()
                     .equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
@@ -105,24 +107,27 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                 if (!sourceTenant.equals(new TenantIdentifier(null, null, null))
                         && !sourceTenant.getConnectionUriDomain().equals(targetTenant.getConnectionUriDomain())) {
                     throw new BadPermissionException(
-                            "You must use the default or same connectionUriDomain to create/update a connectionUriDomain");
+                            "You must use the default or same connectionUriDomain to create/update a " +
+                                    "connectionUriDomain");
                 }
             }
         }
     }
 
-    private static void validateConfigJsonForInvalidKeys(Main main, JsonObject coreConfig) throws InvalidConfigException {
+    private static void validateConfigJsonForInvalidKeys(Main main, JsonObject coreConfig)
+            throws InvalidConfigException {
         Set<String> coreFields = CoreConfig.getValidFields();
         Set<String> storageFields = StorageLayer.getBaseStorage(main).getValidFieldsInConfig();
 
-        for (Map.Entry<String, JsonElement> entry: coreConfig.entrySet()) {
+        for (Map.Entry<String, JsonElement> entry : coreConfig.entrySet()) {
             if (!coreFields.contains(entry.getKey()) && !storageFields.contains(entry.getKey())) {
                 throw new InvalidConfigException("Invalid config key: " + entry.getKey());
             }
         }
     }
 
-    private static void validateTenantConfig(Main main, TenantConfig targetTenantConfig, boolean shouldPreventProtecterdConfigUpdate,
+    private static void validateTenantConfig(Main main, TenantConfig targetTenantConfig,
+                                             boolean shouldPreventProtecterdConfigUpdate,
                                              boolean skipThirdPartyConfigValidation)
             throws IOException, InvalidConfigException, InvalidProviderConfigException, BadPermissionException,
             TenantOrAppNotFoundException, CannotModifyBaseConfigException {
@@ -149,13 +154,15 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
 
                 for (String s : StorageLayer.getStorage(new TenantIdentifier(null, null, null), main)
                         .getProtectedConfigsFromSuperTokensSaaSUsers()) {
-                    if (targetTenantConfig.coreConfig.has(s) && !targetTenantConfig.coreConfig.get(s).equals(currentConfig.get(s))) {
+                    if (targetTenantConfig.coreConfig.has(s) &&
+                            !targetTenantConfig.coreConfig.get(s).equals(currentConfig.get(s))) {
                         throw new BadPermissionException("Not allowed to modify DB related configs.");
                     }
                 }
 
                 for (String s : CoreConfig.PROTECTED_CONFIGS) {
-                    if (targetTenantConfig.coreConfig.has(s) && !targetTenantConfig.coreConfig.get(s).equals(currentConfig.get(s))) {
+                    if (targetTenantConfig.coreConfig.has(s) &&
+                            !targetTenantConfig.coreConfig.get(s).equals(currentConfig.get(s))) {
                         throw new BadPermissionException("Not allowed to modify protected configs.");
                     }
                 }
@@ -200,14 +207,17 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         return addNewOrUpdateAppOrTenant(main, newTenant, false);
     }
 
-    public static boolean addNewOrUpdateAppOrTenant(Main main, TenantConfig newTenant, boolean shouldPreventDbConfigUpdate)
+    public static boolean addNewOrUpdateAppOrTenant(Main main, TenantConfig newTenant,
+                                                    boolean shouldPreventDbConfigUpdate)
             throws CannotModifyBaseConfigException, BadPermissionException,
             StorageQueryException, FeatureNotEnabledException, IOException, InvalidConfigException,
             InvalidProviderConfigException, TenantOrAppNotFoundException {
         return addNewOrUpdateAppOrTenant(main, newTenant, shouldPreventDbConfigUpdate, false);
     }
 
-    public static boolean addNewOrUpdateAppOrTenant(Main main, TenantConfig newTenant, boolean shouldPreventProtectedConfigUpdate, boolean skipThirdPartyConfigValidation)
+    public static boolean addNewOrUpdateAppOrTenant(Main main, TenantConfig newTenant,
+                                                    boolean shouldPreventProtectedConfigUpdate,
+                                                    boolean skipThirdPartyConfigValidation)
             throws CannotModifyBaseConfigException, BadPermissionException,
             StorageQueryException, FeatureNotEnabledException, IOException, InvalidConfigException,
             InvalidProviderConfigException, TenantOrAppNotFoundException {
@@ -237,7 +247,8 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             // the tenant being there in the tenants table. But that insertion is done in the addTenantIdInUserPool
             // function below. So in order to actually refresh the resources, we have a finally block here which
             // calls the forceReloadAllResources function.
-            tenantsThatChanged = MultitenancyHelper.getInstance(main).refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(false);
+            tenantsThatChanged = MultitenancyHelper.getInstance(main)
+                    .refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(false);
             try {
                 ((MultitenancyStorage) StorageLayer.getStorage(newTenant.tenantIdentifier, main))
                         .addTenantIdInTargetStorage(newTenant.tenantIdentifier);
@@ -250,7 +261,8 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             if (!creationInSharedDbSucceeded) {
                 try {
                     StorageLayer.getMultitenancyStorage(main).overwriteTenantConfig(newTenant);
-                    tenantsThatChanged = MultitenancyHelper.getInstance(main).refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(false);
+                    tenantsThatChanged = MultitenancyHelper.getInstance(main)
+                            .refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(false);
 
                     // we do this extra step cause if previously an attempt to add a tenant failed midway,
                     // such that the main tenant was added in the user pool, but did not get created
@@ -357,12 +369,14 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             // we ignore this since it may have been that past deletion attempt deleted this successfully,
             // but not from the main table.
         }
-        boolean didExist = StorageLayer.getMultitenancyStorage(main).deleteConnectionUriDomainInfoInBaseStorage(connectionUriDomain);
+        boolean didExist = StorageLayer.getMultitenancyStorage(main)
+                .deleteConnectionUriDomainInfoInBaseStorage(connectionUriDomain);
         MultitenancyHelper.getInstance(main).refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(true);
         return didExist;
     }
 
-    public static boolean addUserIdToTenant(Main main, TenantIdentifierWithStorage tenantIdentifierWithStorage, String userId)
+    public static boolean addUserIdToTenant(Main main, TenantIdentifierWithStorage tenantIdentifierWithStorage,
+                                            String userId)
             throws TenantOrAppNotFoundException, UnknownUserIdException, StorageQueryException,
             FeatureNotEnabledException, DuplicateEmailException, DuplicatePhoneNumberException,
             DuplicateThirdPartyUserException {
@@ -375,7 +389,8 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                 .addUserIdToTenant(tenantIdentifierWithStorage, userId);
     }
 
-    public static boolean removeUserIdFromTenant(Main main, TenantIdentifierWithStorage tenantIdentifierWithStorage, String userId)
+    public static boolean removeUserIdFromTenant(Main main, TenantIdentifierWithStorage tenantIdentifierWithStorage,
+                                                 String userId, String externalUserId)
             throws FeatureNotEnabledException, TenantOrAppNotFoundException, StorageQueryException,
             UnknownUserIdException {
         if (Arrays.stream(FeatureFlag.getInstance(main, new AppIdentifier(null, null)).getEnabledFeatures())
@@ -384,7 +399,8 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         }
 
         boolean finalDidExist = false;
-        boolean didExist = AuthRecipe.deleteNonAuthRecipeUser(tenantIdentifierWithStorage, userId);
+        boolean didExist = AuthRecipe.deleteNonAuthRecipeUser(tenantIdentifierWithStorage,
+                externalUserId == null ? userId : externalUserId);
         finalDidExist = finalDidExist || didExist;
 
         didExist = tenantIdentifierWithStorage.getMultitenancyStorageWithTargetStorage()
