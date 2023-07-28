@@ -46,3 +46,5 @@ local.properties
 
 *.iml
 ee/bin
+addDevTag
+addReleaseTag
