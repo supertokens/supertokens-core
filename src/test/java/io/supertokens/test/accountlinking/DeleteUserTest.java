@@ -54,6 +54,150 @@ public class DeleteUserTest {
     }
 
     @Test
+    public void deleteLinkedUserWithoutRemovingAllUsers() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        AuthRecipeUserInfo r1 = EmailPassword.signUp(process.main, "test@example.com", "pass123");
+
+        AuthRecipeUserInfo r2 = EmailPassword.signUp(process.main, "test2@example.com", "pass123");
+
+        AuthRecipe.createPrimaryUser(process.main, r2.id);
+
+        assert (!AuthRecipe.linkAccounts(process.main, r1.id, r2.id));
+
+        AuthRecipe.deleteUser(process.main, r1.id, false);
+
+        assertNull(AuthRecipe.getUserById(process.main, r1.id));
+
+        AuthRecipeUserInfo user = AuthRecipe.getUserById(process.main, r2.id);
+
+        assert (user.loginMethods.length == 1);
+        assert (user.isPrimaryUser);
+        assert (user.id.equals(r2.id));
+        assert (user.loginMethods[0].recipeUserId.equals(r2.id));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void deleteLinkedPrimaryUserWithoutRemovingAllUsers() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        AuthRecipeUserInfo r1 = EmailPassword.signUp(process.main, "test@example.com", "pass123");
+
+        AuthRecipeUserInfo r2 = EmailPassword.signUp(process.main, "test2@example.com", "pass123");
+
+        AuthRecipe.createPrimaryUser(process.main, r2.id);
+
+        assert (!AuthRecipe.linkAccounts(process.main, r1.id, r2.id));
+
+        AuthRecipe.deleteUser(process.main, r2.id, false);
+
+        AuthRecipeUserInfo userP = AuthRecipe.getUserById(process.main, r2.id);
+
+        AuthRecipeUserInfo user = AuthRecipe.getUserById(process.main, r1.id);
+
+        assert (user.loginMethods.length == 1);
+        assert (user.isPrimaryUser);
+        assert (user.id.equals(r2.id));
+        assert (user.loginMethods[0].recipeUserId.equals(r1.id));
+        assert (userP.equals(user));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void deleteLinkedPrimaryUserRemovingAllUsers() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        AuthRecipeUserInfo r1 = EmailPassword.signUp(process.main, "test@example.com", "pass123");
+
+        AuthRecipeUserInfo r2 = EmailPassword.signUp(process.main, "test2@example.com", "pass123");
+
+        AuthRecipe.createPrimaryUser(process.main, r2.id);
+
+        assert (!AuthRecipe.linkAccounts(process.main, r1.id, r2.id));
+
+        AuthRecipe.deleteUser(process.main, r2.id);
+
+        AuthRecipeUserInfo userP = AuthRecipe.getUserById(process.main, r2.id);
+
+        AuthRecipeUserInfo user = AuthRecipe.getUserById(process.main, r1.id);
+
+        assert (user == null && userP == null);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void deleteLinkedPrimaryUserRemovingAllUsers2() throws Exception {
+
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        AuthRecipeUserInfo r1 = EmailPassword.signUp(process.main, "test@example.com", "pass123");
+
+        AuthRecipeUserInfo r2 = EmailPassword.signUp(process.main, "test2@example.com", "pass123");
+
+        AuthRecipe.createPrimaryUser(process.main, r2.id);
+
+        assert (!AuthRecipe.linkAccounts(process.main, r1.id, r2.id));
+
+        AuthRecipe.deleteUser(process.main, r1.id);
+
+        AuthRecipeUserInfo userP = AuthRecipe.getUserById(process.main, r2.id);
+
+        AuthRecipeUserInfo user = AuthRecipe.getUserById(process.main, r1.id);
+
+        assert (user == null && userP == null);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
     public void deleteUserTestWithUserIdMapping1() throws Exception {
         /*
          * recipe user r1 is mapped to e1 which has some metadata with e1 as the key. r1 gets linked to r2 which is
