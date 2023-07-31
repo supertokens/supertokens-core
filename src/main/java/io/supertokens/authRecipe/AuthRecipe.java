@@ -619,7 +619,7 @@ public class AuthRecipe {
 
                 // this is only done to also delete the user ID mapping in case it exists, since we do not delete in the
                 // previous call to deleteAuthRecipeUser above.
-                deleteAuthRecipeUser(con, appIdentifierWithStorage, userIdToDeleteForAuthRecipe,
+                deleteAuthRecipeUser(con, appIdentifierWithStorage, userToDelete.id,
                         true);
             }
         } else {

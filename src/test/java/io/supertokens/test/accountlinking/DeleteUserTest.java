@@ -28,6 +28,7 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.useridmapping.UserIdMapping;
+import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.usermetadata.UserMetadata;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -97,6 +98,8 @@ public class DeleteUserTest {
         assertEquals(UserMetadata.getUserMetadata(process.main, r1.id), new JsonObject());
         assertEquals(UserMetadata.getUserMetadata(process.main, "e2"), metadata);
         assertEquals(UserMetadata.getUserMetadata(process.main, r2.id), new JsonObject());
+        assert (UserIdMapping.getUserIdMapping(process.main, r2.id, UserIdType.SUPERTOKENS) != null);
+        assert (UserIdMapping.getUserIdMapping(process.main, r1.id, UserIdType.SUPERTOKENS) == null);
 
 
         process.kill();
@@ -147,6 +150,8 @@ public class DeleteUserTest {
         assertEquals(UserMetadata.getUserMetadata(process.main, r1.id), new JsonObject());
         assertEquals(UserMetadata.getUserMetadata(process.main, "e2"), new JsonObject());
         assertEquals(UserMetadata.getUserMetadata(process.main, r2.id), new JsonObject());
+        assert (UserIdMapping.getUserIdMapping(process.main, r2.id, UserIdType.SUPERTOKENS) == null);
+        assert (UserIdMapping.getUserIdMapping(process.main, r1.id, UserIdType.SUPERTOKENS) == null);
 
 
         process.kill();
@@ -206,6 +211,9 @@ public class DeleteUserTest {
             assert (userR2.loginMethods.length == 2);
             assertEquals(UserMetadata.getUserMetadata(process.main, "e2"), metadata);
             assertEquals(UserMetadata.getUserMetadata(process.main, "e3"), metadata);
+            assert (UserIdMapping.getUserIdMapping(process.main, r2.id, UserIdType.SUPERTOKENS) != null);
+            assert (UserIdMapping.getUserIdMapping(process.main, r3.id, UserIdType.SUPERTOKENS) != null);
+            assert (UserIdMapping.getUserIdMapping(process.main, r1.id, UserIdType.SUPERTOKENS) == null);
         }
 
         AuthRecipe.deleteUser(process.main, r2.id, false);
@@ -217,6 +225,9 @@ public class DeleteUserTest {
             assert (userR2.loginMethods.length == 1);
             assertEquals(UserMetadata.getUserMetadata(process.main, "e2"), metadata);
             assertEquals(UserMetadata.getUserMetadata(process.main, "e3"), metadata);
+            assert (UserIdMapping.getUserIdMapping(process.main, r2.id, UserIdType.SUPERTOKENS) != null);
+            assert (UserIdMapping.getUserIdMapping(process.main, r3.id, UserIdType.SUPERTOKENS) != null);
+            assert (UserIdMapping.getUserIdMapping(process.main, r1.id, UserIdType.SUPERTOKENS) == null);
         }
 
         AuthRecipe.deleteUser(process.main, r3.id, false);
@@ -227,8 +238,11 @@ public class DeleteUserTest {
             assert (userR2 == null && userR3 == null);
             assertEquals(UserMetadata.getUserMetadata(process.main, "e2"), new JsonObject());
             assertEquals(UserMetadata.getUserMetadata(process.main, "e3"), new JsonObject());
+            assert (UserIdMapping.getUserIdMapping(process.main, r2.id, UserIdType.SUPERTOKENS) == null);
+            assert (UserIdMapping.getUserIdMapping(process.main, r3.id, UserIdType.SUPERTOKENS) == null);
+            assert (UserIdMapping.getUserIdMapping(process.main, r1.id, UserIdType.SUPERTOKENS) == null);
         }
-        
+
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
