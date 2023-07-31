@@ -58,6 +58,69 @@ public class AuthRecipe {
     public static final int USER_PAGINATION_LIMIT = 500;
 
     @TestOnly
+    public static boolean unlinkAccounts(Main main, String recipeUserId)
+            throws StorageQueryException, UnknownUserIdException, InputUserIdIsNotAPrimaryUserException {
+        AppIdentifierWithStorage appId = new AppIdentifierWithStorage(null, null,
+                StorageLayer.getStorage(main));
+        return unlinkAccounts(main, appId, recipeUserId);
+    }
+
+
+    // returns true if the input user ID was deleted - which can happens if it was a primary user id and
+    // there were other accounts linked to it as well.
+    public static boolean unlinkAccounts(Main main, AppIdentifierWithStorage appIdentifierWithStorage,
+                                         String recipeUserId)
+            throws StorageQueryException, UnknownUserIdException, InputUserIdIsNotAPrimaryUserException {
+        AuthRecipeSQLStorage storage = (AuthRecipeSQLStorage) appIdentifierWithStorage.getAuthRecipeStorage();
+        try {
+            return storage.startTransaction(con -> {
+                AuthRecipeUserInfo primaryUser = storage.getPrimaryUserById_Transaction(appIdentifierWithStorage, con,
+                        recipeUserId);
+                if (primaryUser == null) {
+                    throw new StorageTransactionLogicException(new UnknownUserIdException());
+                }
+
+                if (!primaryUser.isPrimaryUser) {
+                    throw new StorageTransactionLogicException(new InputUserIdIsNotAPrimaryUserException(recipeUserId));
+                }
+
+                if (primaryUser.id.equals(recipeUserId)) {
+                    // we are trying to unlink the user ID which is the same as the primary one.
+                    if (primaryUser.loginMethods.length == 1) {
+                        storage.unlinkAccounts_Transaction(appIdentifierWithStorage, con, recipeUserId);
+                        Session.revokeAllSessionsForUser(main, appIdentifierWithStorage, recipeUserId);
+                        return false;
+                    } else {
+                        // Here we delete the recipe user id cause if we just unlink, then there will be two
+                        // distinct users with the same ID - which is a broken state.
+                        // The delete will also cause the automatic unlinking.
+                        io.supertokens.pluginInterface.useridmapping.UserIdMapping mappingResult =
+                                io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+                                        appIdentifierWithStorage,
+                                        recipeUserId, UserIdType.SUPERTOKENS);
+                        // We need to make sure that it only deletes sessions for recipeUserId and not other linked
+                        // users who have their sessions for primaryUserId (that is equal to the recipeUserId)
+                        Session.revokeAllSessionsForUser(main, appIdentifierWithStorage, recipeUserId);
+                        deleteUserHelper(con, appIdentifierWithStorage, recipeUserId, false, mappingResult);
+                        return true;
+                    }
+                } else {
+                    storage.unlinkAccounts_Transaction(appIdentifierWithStorage, con, recipeUserId);
+                    Session.revokeAllSessionsForUser(main, appIdentifierWithStorage, recipeUserId);
+                    return false;
+                }
+            });
+        } catch (StorageTransactionLogicException e) {
+            if (e.actualException instanceof UnknownUserIdException) {
+                throw (UnknownUserIdException) e.actualException;
+            } else if (e.actualException instanceof InputUserIdIsNotAPrimaryUserException) {
+                throw (InputUserIdIsNotAPrimaryUserException) e.actualException;
+            }
+            throw new RuntimeException(e);
+        }
+    }
+
+    @TestOnly
     public static AuthRecipeUserInfo getUserById(Main main, String userId)
             throws StorageQueryException {
         AppIdentifierWithStorage appId = new AppIdentifierWithStorage(null, null,

@@ -2837,4 +2837,10 @@ public class Start
                                          String primaryUserId) throws StorageQueryException {
         // TODO:...
     }
+
+    @Override
+    public void unlinkAccounts_Transaction(AppIdentifier appIdentifier, TransactionConnection con, String recipeUserId)
+            throws StorageQueryException {
+        // TODO:..
+    }
 }
