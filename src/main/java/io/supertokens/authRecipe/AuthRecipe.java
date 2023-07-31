@@ -375,6 +375,120 @@ public class AuthRecipe {
     }
 
     @TestOnly
+    public static CreatePrimaryUserResult canCreatePrimaryUser(Main main,
+                                                               String recipeUserId)
+            throws StorageQueryException, AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
+            RecipeUserIdAlreadyLinkedWithPrimaryUserIdException, UnknownUserIdException {
+        AppIdentifierWithStorage appId = new AppIdentifierWithStorage(null, null,
+                StorageLayer.getStorage(main));
+        return canCreatePrimaryUser(appId, recipeUserId);
+    }
+
+    public static CreatePrimaryUserResult canCreatePrimaryUser(AppIdentifierWithStorage appIdentifierWithStorage,
+                                                               String recipeUserId)
+            throws StorageQueryException, AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
+            RecipeUserIdAlreadyLinkedWithPrimaryUserIdException, UnknownUserIdException {
+
+        AuthRecipeSQLStorage storage = (AuthRecipeSQLStorage) appIdentifierWithStorage.getAuthRecipeStorage();
+        try {
+            return storage.startTransaction(con -> {
+                try {
+                    return canCreatePrimaryUserHelper(con, appIdentifierWithStorage,
+                            recipeUserId);
+
+                } catch (UnknownUserIdException | RecipeUserIdAlreadyLinkedWithPrimaryUserIdException |
+                         AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException e) {
+                    throw new StorageTransactionLogicException(e);
+                }
+            });
+        } catch (StorageTransactionLogicException e) {
+            if (e.actualException instanceof UnknownUserIdException) {
+                throw (UnknownUserIdException) e.actualException;
+            } else if (e.actualException instanceof RecipeUserIdAlreadyLinkedWithPrimaryUserIdException) {
+                throw (RecipeUserIdAlreadyLinkedWithPrimaryUserIdException) e.actualException;
+            } else if (e.actualException instanceof AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException) {
+                throw (AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException) e.actualException;
+            }
+            throw new StorageQueryException(e);
+        }
+    }
+
+    private static CreatePrimaryUserResult canCreatePrimaryUserHelper(TransactionConnection con,
+                                                                      AppIdentifierWithStorage appIdentifierWithStorage,
+                                                                      String recipeUserId)
+            throws StorageQueryException, UnknownUserIdException, RecipeUserIdAlreadyLinkedWithPrimaryUserIdException,
+            AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException {
+        AuthRecipeSQLStorage storage = (AuthRecipeSQLStorage) appIdentifierWithStorage.getAuthRecipeStorage();
+
+        AuthRecipeUserInfo targetUser = storage.getPrimaryUserById_Transaction(appIdentifierWithStorage, con,
+                recipeUserId);
+        if (targetUser == null) {
+            throw new UnknownUserIdException();
+        }
+        if (targetUser.isPrimaryUser) {
+            if (targetUser.id.equals(recipeUserId)) {
+                return new CreatePrimaryUserResult(targetUser, true);
+            } else {
+                throw new RecipeUserIdAlreadyLinkedWithPrimaryUserIdException(targetUser.id,
+                        "This user ID is already linked to another user ID");
+            }
+        }
+
+        // this means that the user has only one login method since it's not a primary user
+        // nor is it linked to a primary user
+        assert (targetUser.loginMethods.length == 1);
+        LoginMethod loginMethod = targetUser.loginMethods[0];
+
+        for (String tenantId : targetUser.tenantIds) {
+            TenantIdentifier tenantIdentifier = new TenantIdentifier(
+                    appIdentifierWithStorage.getConnectionUriDomain(), appIdentifierWithStorage.getAppId(),
+                    tenantId);
+            // we do not bother with getting the tenantIdentifierWithStorage here because
+            // we get the tenants from the user itself, and the user can only be shared across
+            // tenants of the same storage - therefore, the storage will be the same.
+
+            if (loginMethod.email != null) {
+                AuthRecipeUserInfo[] usersWithSameEmail = storage
+                        .listPrimaryUsersByEmail_Transaction(tenantIdentifier, con,
+                                loginMethod.email);
+                for (AuthRecipeUserInfo user : usersWithSameEmail) {
+                    if (user.isPrimaryUser) {
+                        throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(user.id,
+                                "This user's email is already associated with another user ID");
+                    }
+                }
+            }
+
+            if (loginMethod.phoneNumber != null) {
+                AuthRecipeUserInfo[] usersWithSamePhoneNumber = storage
+                        .listPrimaryUsersByPhoneNumber_Transaction(tenantIdentifier, con,
+                                loginMethod.phoneNumber);
+                for (AuthRecipeUserInfo user : usersWithSamePhoneNumber) {
+                    if (user.isPrimaryUser) {
+                        throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(user.id,
+                                "This user's phone number is already associated with another user" +
+                                        " ID");
+                    }
+                }
+            }
+
+            if (loginMethod.thirdParty != null) {
+                AuthRecipeUserInfo userWithSameThirdParty = storage
+                        .getPrimaryUsersByThirdPartyInfo_Transaction(tenantIdentifier, con,
+                                loginMethod.thirdParty.id, loginMethod.thirdParty.userId);
+                if (userWithSameThirdParty != null && userWithSameThirdParty.isPrimaryUser) {
+                    throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(
+                            userWithSameThirdParty.id,
+                            "This user's third party login is already associated with another" +
+                                    " user ID");
+                }
+            }
+        }
+
+        return new CreatePrimaryUserResult(targetUser, false);
+    }
+
+    @TestOnly
     public static CreatePrimaryUserResult createPrimaryUser(Main main,
                                                             String recipeUserId)
             throws StorageQueryException, AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
@@ -406,82 +520,23 @@ public class AuthRecipe {
         try {
             return storage.startTransaction(con -> {
 
-                AuthRecipeUserInfo targetUser = storage.getPrimaryUserById_Transaction(appIdentifierWithStorage, con,
-                        recipeUserId);
-                if (targetUser == null) {
-                    throw new StorageTransactionLogicException(new UnknownUserIdException());
+                try {
+                    CreatePrimaryUserResult result = canCreatePrimaryUserHelper(con, appIdentifierWithStorage,
+                            recipeUserId);
+                    if (result.wasAlreadyAPrimaryUser) {
+                        return result;
+                    }
+                    storage.makePrimaryUser_Transaction(appIdentifierWithStorage, con, result.user.id);
+
+                    storage.commitTransaction(con);
+
+                    result.user.isPrimaryUser = true;
+
+                    return result;
+                } catch (UnknownUserIdException | RecipeUserIdAlreadyLinkedWithPrimaryUserIdException |
+                         AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException e) {
+                    throw new StorageTransactionLogicException(e);
                 }
-                if (targetUser.isPrimaryUser) {
-                    if (targetUser.id.equals(recipeUserId)) {
-                        return new CreatePrimaryUserResult(targetUser, true);
-                    } else {
-                        throw new StorageTransactionLogicException(
-                                new RecipeUserIdAlreadyLinkedWithPrimaryUserIdException(targetUser.id,
-                                        "This user ID is already linked to another user ID"));
-                    }
-                }
-
-                // this means that the user has only one login method since it's not a primary user
-                // nor is it linked to a primary user
-                assert (targetUser.loginMethods.length == 1);
-                LoginMethod loginMethod = targetUser.loginMethods[0];
-
-                for (String tenantId : targetUser.tenantIds) {
-                    TenantIdentifier tenantIdentifier = new TenantIdentifier(
-                            appIdentifierWithStorage.getConnectionUriDomain(), appIdentifierWithStorage.getAppId(),
-                            tenantId);
-                    // we do not bother with getting the tenantIdentifierWithStorage here because
-                    // we get the tenants from the user itself, and the user can only be shared across
-                    // tenants of the same storage - therefore, the storage will be the same.
-
-                    if (loginMethod.email != null) {
-                        AuthRecipeUserInfo[] usersWithSameEmail = storage
-                                .listPrimaryUsersByEmail_Transaction(tenantIdentifier, con,
-                                        loginMethod.email);
-                        for (AuthRecipeUserInfo user : usersWithSameEmail) {
-                            if (user.isPrimaryUser) {
-                                throw new StorageTransactionLogicException(
-                                        new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(user.id,
-                                                "This user's email is already associated with another user ID"));
-                            }
-                        }
-                    }
-
-                    if (loginMethod.phoneNumber != null) {
-                        AuthRecipeUserInfo[] usersWithSamePhoneNumber = storage
-                                .listPrimaryUsersByPhoneNumber_Transaction(tenantIdentifier, con,
-                                        loginMethod.phoneNumber);
-                        for (AuthRecipeUserInfo user : usersWithSamePhoneNumber) {
-                            if (user.isPrimaryUser) {
-                                throw new StorageTransactionLogicException(
-                                        new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(user.id,
-                                                "This user's phone number is already associated with another user" +
-                                                        " ID"));
-                            }
-                        }
-                    }
-
-                    if (loginMethod.thirdParty != null) {
-                        AuthRecipeUserInfo userWithSameThirdParty = storage
-                                .getPrimaryUsersByThirdPartyInfo_Transaction(tenantIdentifier, con,
-                                        loginMethod.thirdParty.id, loginMethod.thirdParty.userId);
-                        if (userWithSameThirdParty != null && userWithSameThirdParty.isPrimaryUser) {
-                            throw new StorageTransactionLogicException(
-                                    new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(
-                                            userWithSameThirdParty.id,
-                                            "This user's third party login is already associated with another" +
-                                                    " user ID"));
-                        }
-                    }
-                }
-
-                storage.makePrimaryUser_Transaction(appIdentifierWithStorage, con, targetUser.id);
-
-                storage.commitTransaction(con);
-
-                targetUser.isPrimaryUser = true;
-
-                return new CreatePrimaryUserResult(targetUser, false);
             });
         } catch (StorageTransactionLogicException e) {
             if (e.actualException instanceof UnknownUserIdException) {
