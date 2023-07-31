@@ -143,6 +143,165 @@ public class AuthRecipe {
         }
     }
 
+    private static class CanLinkAccountsResult {
+        public String recipeUserId;
+        public String primaryUserId;
+
+        public boolean alreadyLinked;
+
+        public CanLinkAccountsResult(String recipeUserId, String primaryUserId, boolean alreadyLinked) {
+            this.recipeUserId = recipeUserId;
+            this.primaryUserId = primaryUserId;
+            this.alreadyLinked = alreadyLinked;
+        }
+    }
+
+    @TestOnly
+    public static CanLinkAccountsResult canLinkAccounts(Main main, String recipeUserId, String primaryUserId)
+            throws StorageQueryException, UnknownUserIdException, InputUserIdIsNotAPrimaryUserException,
+            RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException,
+            AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException {
+        AppIdentifierWithStorage appId = new AppIdentifierWithStorage(null, null,
+                StorageLayer.getStorage(main));
+        return canLinkAccounts(appId, recipeUserId, primaryUserId);
+    }
+
+    public static CanLinkAccountsResult canLinkAccounts(AppIdentifierWithStorage appIdentifierWithStorage,
+                                                        String recipeUserId, String primaryUserId)
+            throws StorageQueryException, UnknownUserIdException, InputUserIdIsNotAPrimaryUserException,
+            RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException,
+            AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException {
+        AuthRecipeSQLStorage storage = (AuthRecipeSQLStorage) appIdentifierWithStorage.getAuthRecipeStorage();
+        try {
+            return storage.startTransaction(con -> {
+                try {
+                    CanLinkAccountsResult result = canLinkAccountsHelper(con, appIdentifierWithStorage,
+                            recipeUserId, primaryUserId);
+
+                    storage.commitTransaction(con);
+
+                    return result;
+                } catch (UnknownUserIdException | InputUserIdIsNotAPrimaryUserException |
+                         RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException |
+                         AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException e) {
+                    throw new StorageTransactionLogicException(e);
+                }
+            });
+        } catch (StorageTransactionLogicException e) {
+            if (e.actualException instanceof UnknownUserIdException) {
+                throw (UnknownUserIdException) e.actualException;
+            } else if (e.actualException instanceof InputUserIdIsNotAPrimaryUserException) {
+                throw (InputUserIdIsNotAPrimaryUserException) e.actualException;
+            } else if (e.actualException instanceof RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException) {
+                throw (RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException) e.actualException;
+            } else if (e.actualException instanceof AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException) {
+                throw (AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException) e.actualException;
+            }
+            throw new StorageQueryException(e);
+        }
+    }
+
+    private static CanLinkAccountsResult canLinkAccountsHelper(TransactionConnection con,
+                                                               AppIdentifierWithStorage appIdentifierWithStorage,
+                                                               String _recipeUserId, String _primaryUserId)
+            throws StorageQueryException, UnknownUserIdException, InputUserIdIsNotAPrimaryUserException,
+            RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException,
+            AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException {
+        AuthRecipeSQLStorage storage = (AuthRecipeSQLStorage) appIdentifierWithStorage.getAuthRecipeStorage();
+        AuthRecipeUserInfo primaryUser = storage.getPrimaryUserById_Transaction(appIdentifierWithStorage, con,
+                _primaryUserId);
+
+        if (primaryUser == null) {
+            throw new UnknownUserIdException();
+        }
+
+        if (!primaryUser.isPrimaryUser) {
+            throw new InputUserIdIsNotAPrimaryUserException(primaryUser.id);
+        }
+
+        AuthRecipeUserInfo recipeUser = storage.getPrimaryUserById_Transaction(appIdentifierWithStorage, con,
+                _recipeUserId);
+        if (recipeUser == null) {
+            throw new UnknownUserIdException();
+        }
+
+        if (recipeUser.isPrimaryUser) {
+            if (recipeUser.id.equals(primaryUser.id)) {
+                return new CanLinkAccountsResult(recipeUser.id, primaryUser.id, true);
+            } else {
+                throw new RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException(recipeUser.id,
+                        "The input recipe user ID is already linked to another user ID");
+            }
+        }
+
+        // now we know that the recipe user ID is not a primary user, so we can focus on it's one
+        // login method
+        assert (recipeUser.loginMethods.length == 1);
+        LoginMethod recipeUserIdLM = recipeUser.loginMethods[0];
+
+        Set<String> tenantIds = recipeUser.tenantIds;
+        tenantIds.addAll(primaryUser.tenantIds);
+
+        // we loop through the union of both the user's tenantIds and check that the criteria for
+        // linking accounts is not violated in any of them. We do a union and not an intersection
+        // cause if we did an intersection, and that yields that account linking is allowed, it could
+        // result in one tenant having two primary users with the same email. For example:
+        // - tenant1 has u1 with email e, and u2 with email e, primary user (one is ep, one is tp)
+        // - tenant2 has u3 with email e, primary user (passwordless)
+        // now if we want to link u3 with u1, we have to deny it cause if we don't, it will result in
+        // u1 and u2 to be primary users with the same email in the same tenant. If we do an
+        // intersection, we will get an empty set, but if we do a union, we will get both the tenants and
+        // do the checks in both.
+        for (String tenantId : tenantIds) {
+            TenantIdentifier tenantIdentifier = new TenantIdentifier(
+                    appIdentifierWithStorage.getConnectionUriDomain(), appIdentifierWithStorage.getAppId(),
+                    tenantId);
+            // we do not bother with getting the tenantIdentifierWithStorage here because
+            // we get the tenants from the user itself, and the user can only be shared across
+            // tenants of the same storage - therefore, the storage will be the same.
+
+            if (recipeUserIdLM.email != null) {
+                AuthRecipeUserInfo[] usersWithSameEmail = storage
+                        .listPrimaryUsersByEmail_Transaction(tenantIdentifier, con,
+                                recipeUserIdLM.email);
+                for (AuthRecipeUserInfo user : usersWithSameEmail) {
+                    if (user.isPrimaryUser && !user.id.equals(primaryUser.id)) {
+                        throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(user.id,
+                                "This user's email is already associated with another user ID");
+                    }
+                }
+            }
+
+            if (recipeUserIdLM.phoneNumber != null) {
+                AuthRecipeUserInfo[] usersWithSamePhoneNumber = storage
+                        .listPrimaryUsersByPhoneNumber_Transaction(tenantIdentifier, con,
+                                recipeUserIdLM.phoneNumber);
+                for (AuthRecipeUserInfo user : usersWithSamePhoneNumber) {
+                    if (user.isPrimaryUser && !user.id.equals(primaryUser.id)) {
+                        throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(user.id,
+                                "This user's phone number is already associated with another user" +
+                                        " ID");
+                    }
+                }
+            }
+
+            if (recipeUserIdLM.thirdParty != null) {
+                AuthRecipeUserInfo userWithSameThirdParty = storage
+                        .getPrimaryUsersByThirdPartyInfo_Transaction(tenantIdentifier, con,
+                                recipeUserIdLM.thirdParty.id, recipeUserIdLM.thirdParty.userId);
+                if (userWithSameThirdParty != null && userWithSameThirdParty.isPrimaryUser &&
+                        !userWithSameThirdParty.id.equals(primaryUser.id)) {
+                    throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(
+                            userWithSameThirdParty.id,
+                            "This user's third party login is already associated with another" +
+                                    " user ID");
+                }
+            }
+        }
+
+        return new CanLinkAccountsResult(recipeUser.id, primaryUser.id, false);
+    }
+
     @TestOnly
     public static boolean linkAccounts(Main main, String recipeUserId, String primaryUserId)
             throws StorageQueryException, AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
@@ -173,108 +332,26 @@ public class AuthRecipe {
         AuthRecipeSQLStorage storage = (AuthRecipeSQLStorage) appIdentifierWithStorage.getAuthRecipeStorage();
         try {
             boolean wasAlreadyLinked = storage.startTransaction(con -> {
-                AuthRecipeUserInfo primaryUser = storage.getPrimaryUserById_Transaction(appIdentifierWithStorage, con,
-                        _primaryUserId);
 
-                if (primaryUser == null) {
-                    throw new StorageTransactionLogicException(new UnknownUserIdException());
-                }
+                try {
+                    CanLinkAccountsResult canLinkAccounts = canLinkAccountsHelper(con, appIdentifierWithStorage,
+                            _recipeUserId, _primaryUserId);
 
-                if (!primaryUser.isPrimaryUser) {
-                    throw new StorageTransactionLogicException(
-                            new InputUserIdIsNotAPrimaryUserException(primaryUser.id));
-                }
-
-                AuthRecipeUserInfo recipeUser = storage.getPrimaryUserById_Transaction(appIdentifierWithStorage, con,
-                        _recipeUserId);
-                if (recipeUser == null) {
-                    throw new StorageTransactionLogicException(new UnknownUserIdException());
-                }
-
-                if (recipeUser.isPrimaryUser) {
-                    if (recipeUser.id.equals(primaryUser.id)) {
+                    if (canLinkAccounts.alreadyLinked) {
                         return true;
-                    } else {
-                        throw new StorageTransactionLogicException(
-                                new RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException(recipeUser.id,
-                                        "The input recipe user ID is already linked to another user ID"));
                     }
+                    // now we can link accounts in the db.
+                    storage.linkAccounts_Transaction(appIdentifierWithStorage, con, canLinkAccounts.recipeUserId,
+                            canLinkAccounts.primaryUserId);
+
+                    storage.commitTransaction(con);
+
+                    return false;
+                } catch (UnknownUserIdException | InputUserIdIsNotAPrimaryUserException |
+                         RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException |
+                         AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException e) {
+                    throw new StorageTransactionLogicException(e);
                 }
-
-                // now we know that the recipe user ID is not a primary user, so we can focus on it's one
-                // login method
-                assert (recipeUser.loginMethods.length == 1);
-                LoginMethod recipeUserIdLM = recipeUser.loginMethods[0];
-
-                Set<String> tenantIds = recipeUser.tenantIds;
-                tenantIds.addAll(primaryUser.tenantIds);
-
-                // we loop through the union of both the user's tenantIds and check that the criteria for
-                // linking accounts is not violated in any of them. We do a union and not an intersection
-                // cause if we did an intersection, and that yields that account linking is allowed, it could
-                // result in one tenant having two primary users with the same email. For example:
-                // - tenant1 has u1 with email e, and u2 with email e, primary user (one is ep, one is tp)
-                // - tenant2 has u3 with email e, primary user (passwordless)
-                // now if we want to link u3 with u1, we have to deny it cause if we don't, it will result in
-                // u1 and u2 to be primary users with the same email in the same tenant. If we do an
-                // intersection, we will get an empty set, but if we do a union, we will get both the tenants and
-                // do the checks in both.
-                for (String tenantId : tenantIds) {
-                    TenantIdentifier tenantIdentifier = new TenantIdentifier(
-                            appIdentifierWithStorage.getConnectionUriDomain(), appIdentifierWithStorage.getAppId(),
-                            tenantId);
-                    // we do not bother with getting the tenantIdentifierWithStorage here because
-                    // we get the tenants from the user itself, and the user can only be shared across
-                    // tenants of the same storage - therefore, the storage will be the same.
-
-                    if (recipeUserIdLM.email != null) {
-                        AuthRecipeUserInfo[] usersWithSameEmail = storage
-                                .listPrimaryUsersByEmail_Transaction(tenantIdentifier, con,
-                                        recipeUserIdLM.email);
-                        for (AuthRecipeUserInfo user : usersWithSameEmail) {
-                            if (user.isPrimaryUser && !user.id.equals(primaryUser.id)) {
-                                throw new StorageTransactionLogicException(
-                                        new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(user.id,
-                                                "This user's email is already associated with another user ID"));
-                            }
-                        }
-                    }
-
-                    if (recipeUserIdLM.phoneNumber != null) {
-                        AuthRecipeUserInfo[] usersWithSamePhoneNumber = storage
-                                .listPrimaryUsersByPhoneNumber_Transaction(tenantIdentifier, con,
-                                        recipeUserIdLM.phoneNumber);
-                        for (AuthRecipeUserInfo user : usersWithSamePhoneNumber) {
-                            if (user.isPrimaryUser && !user.id.equals(primaryUser.id)) {
-                                throw new StorageTransactionLogicException(
-                                        new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(user.id,
-                                                "This user's phone number is already associated with another user" +
-                                                        " ID"));
-                            }
-                        }
-                    }
-
-                    if (recipeUserIdLM.thirdParty != null) {
-                        AuthRecipeUserInfo userWithSameThirdParty = storage
-                                .getPrimaryUsersByThirdPartyInfo_Transaction(tenantIdentifier, con,
-                                        recipeUserIdLM.thirdParty.id, recipeUserIdLM.thirdParty.userId);
-                        if (userWithSameThirdParty != null && userWithSameThirdParty.isPrimaryUser &&
-                                !userWithSameThirdParty.id.equals(primaryUser.id)) {
-                            throw new StorageTransactionLogicException(
-                                    new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(
-                                            userWithSameThirdParty.id,
-                                            "This user's third party login is already associated with another" +
-                                                    " user ID"));
-                        }
-                    }
-                }
-
-                // now we can link accounts in the db.
-                storage.linkAccounts_Transaction(appIdentifierWithStorage, con, recipeUser.id, primaryUser.id);
-
-                storage.commitTransaction(con);
-
-                return false;
             });
 
             if (!wasAlreadyLinked) {
