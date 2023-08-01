@@ -40,6 +40,10 @@ CREATE INDEX all_auth_recipe_users_primary_user_id_index ON all_auth_recipe_user
 CREATE INDEX all_auth_recipe_users_primary_user_id_and_tenant_id_index ON all_auth_recipe_users (app_id, tenant_id, primary_or_recipe_user_id);
 ```
 
+## [6.0.8] - 2023-08-01
+
+- Fixes CUD validation starting with number.
+
 ## [6.0.7] - 2023-07-28
 
 - Fixes session removing for user with useridmapping when disassociating from tenant.

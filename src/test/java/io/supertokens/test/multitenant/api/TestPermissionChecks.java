@@ -487,6 +487,7 @@ public class TestPermissionChecks {
                 "sub-domain.example.com",
                 "sub-domain.example.com:3567",
                 "hello.co.uk",
+                "58hello.abc.com"
         };
         String[] invalidDomains = new String[]{
                 "http://localhost",
