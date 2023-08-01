@@ -73,6 +73,7 @@ public class CreatePrimaryUserAPITest {
 
         AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "abcd1234");
 
+        JsonObject userObj;
         {
             JsonObject params = new JsonObject();
             params.addProperty("recipeUserId", user.id);
@@ -83,7 +84,25 @@ public class CreatePrimaryUserAPITest {
             assertEquals(3, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
             assertFalse(response.get("wasAlreadyAPrimaryUser").getAsBoolean());
-            // TODO: compare user object..
+
+            // check user object
+            JsonObject jsonUser = response.get("user").getAsJsonObject();
+            assert (jsonUser.get("id").getAsString().equals(user.id));
+            assert (jsonUser.get("timeJoined").getAsLong() == user.timeJoined);
+            assert (jsonUser.get("isPrimaryUser").getAsBoolean());
+            assert (jsonUser.get("emails").getAsJsonArray().size() == 1);
+            assert (jsonUser.get("emails").getAsJsonArray().get(0).getAsString().equals("test@example.com"));
+            assert (jsonUser.get("phoneNumbers").getAsJsonArray().size() == 0);
+            assert (jsonUser.get("thirdParty").getAsJsonArray().size() == 0);
+            assert (jsonUser.get("loginMethods").getAsJsonArray().size() == 1);
+            JsonObject lM = jsonUser.get("loginMethods").getAsJsonArray().get(0).getAsJsonObject();
+            assertFalse(lM.get("verified").getAsBoolean());
+            assertEquals(lM.get("timeJoined").getAsLong(), user.timeJoined);
+            assertEquals(lM.get("recipeUserId").getAsString(), user.id);
+            assertEquals(lM.get("recipeId").getAsString(), "emailpassword");
+            assertEquals(lM.get("email").getAsString(), "test@example.com");
+            assert (lM.entrySet().size() == 5);
+            userObj = jsonUser;
         }
 
         AuthRecipe.createPrimaryUser(process.main, user.id);
@@ -98,7 +117,7 @@ public class CreatePrimaryUserAPITest {
             assertEquals(3, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
             assertTrue(response.get("wasAlreadyAPrimaryUser").getAsBoolean());
-            // TODO: compare user object..
+            assertEquals(response.get("user"), userObj);
         }
 
         process.kill();
@@ -122,6 +141,7 @@ public class CreatePrimaryUserAPITest {
         AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "abcd1234");
         UserIdMapping.createUserIdMapping(process.main, user.id, "r1", null, false);
 
+        JsonObject userObj;
         {
             JsonObject params = new JsonObject();
             params.addProperty("recipeUserId", "r1");
@@ -132,7 +152,24 @@ public class CreatePrimaryUserAPITest {
             assertEquals(3, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
             assertFalse(response.get("wasAlreadyAPrimaryUser").getAsBoolean());
-            // TODO: compare user object..
+            // check user object
+            JsonObject jsonUser = response.get("user").getAsJsonObject();
+            assert (jsonUser.get("id").getAsString().equals("r1"));
+            assert (jsonUser.get("timeJoined").getAsLong() == user.timeJoined);
+            assert (jsonUser.get("isPrimaryUser").getAsBoolean());
+            assert (jsonUser.get("emails").getAsJsonArray().size() == 1);
+            assert (jsonUser.get("emails").getAsJsonArray().get(0).getAsString().equals("test@example.com"));
+            assert (jsonUser.get("phoneNumbers").getAsJsonArray().size() == 0);
+            assert (jsonUser.get("thirdParty").getAsJsonArray().size() == 0);
+            assert (jsonUser.get("loginMethods").getAsJsonArray().size() == 1);
+            JsonObject lM = jsonUser.get("loginMethods").getAsJsonArray().get(0).getAsJsonObject();
+            assertFalse(lM.get("verified").getAsBoolean());
+            assertEquals(lM.get("timeJoined").getAsLong(), user.timeJoined);
+            assertEquals(lM.get("recipeUserId").getAsString(), "r1");
+            assertEquals(lM.get("recipeId").getAsString(), "emailpassword");
+            assertEquals(lM.get("email").getAsString(), "test@example.com");
+            assert (lM.entrySet().size() == 5);
+            userObj = jsonUser;
         }
 
         AuthRecipe.createPrimaryUser(process.main, user.id);
@@ -147,7 +184,7 @@ public class CreatePrimaryUserAPITest {
             assertEquals(3, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
             assertTrue(response.get("wasAlreadyAPrimaryUser").getAsBoolean());
-            // TODO: compare user object..
+            assertEquals(response.get("user"), userObj);
         }
 
         {
@@ -160,7 +197,7 @@ public class CreatePrimaryUserAPITest {
             assertEquals(3, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
             assertTrue(response.get("wasAlreadyAPrimaryUser").getAsBoolean());
-            // TODO: compare user object..
+            assertEquals(response.get("user"), userObj);
         }
 
         process.kill();

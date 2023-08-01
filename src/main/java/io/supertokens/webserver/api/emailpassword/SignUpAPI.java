@@ -84,6 +84,7 @@ public class SignUpAPI extends WebserverAPI {
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
+            user.setExternalUserId(null);
             JsonObject userJson =
                     getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0) ? user.toJson() :
                             user.toJsonWithoutAccountLinking();
