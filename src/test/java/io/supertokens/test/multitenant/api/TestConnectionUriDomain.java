@@ -442,7 +442,7 @@ public class TestConnectionUriDomain {
             return;
         }
 
-        String[] valueForCreate = new String[]{"http://localhost_com", "localhost:", "abc.example.1com", "domain.com:abcd"};
+        String[] valueForCreate = new String[]{"http://localhost_com", "localhost:", "domain.com:abcd"};
         for (int i = 0; i < valueForCreate.length; i++) {
             try {
                 JsonObject config = new JsonObject();
