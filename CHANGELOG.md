@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+## [6.0.8] - 2023-08-01
+
+- Fixes CUD validation starting with number.
+
 ## [6.0.7] - 2023-07-28
 
 - Fixes session removing for user with useridmapping when disassociating from tenant.
