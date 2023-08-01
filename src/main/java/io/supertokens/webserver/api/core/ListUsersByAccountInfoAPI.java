@@ -84,6 +84,8 @@ public class ListUsersByAccountInfoAPI extends WebserverAPI {
                         .getUserIdMapping(appIdentifierWithStorage, users[i].id, UserIdType.SUPERTOKENS);
                 if (userIdMapping != null) {
                     users[i].setExternalUserId(userIdMapping.externalUserId);
+                } else {
+                    users[i].setExternalUserId(null);
                 }
             }
 

@@ -126,6 +126,8 @@ public class SignInUpAPI extends WebserverAPI {
                                 UserIdType.SUPERTOKENS);
                 if (userIdMapping != null) {
                     response.user.setExternalUserId(userIdMapping.externalUserId);
+                } else {
+                    response.user.setExternalUserId(null);
                 }
 
                 JsonObject result = new JsonObject();

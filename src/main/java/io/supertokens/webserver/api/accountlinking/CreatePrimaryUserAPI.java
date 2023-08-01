@@ -72,6 +72,8 @@ public class CreatePrimaryUserAPI extends WebserverAPI {
             response.addProperty("wasAlreadyAPrimaryUser", result.wasAlreadyAPrimaryUser);
             if (mappingAndStorage.userIdMapping != null) {
                 result.user.setExternalUserId(mappingAndStorage.userIdMapping.externalUserId);
+            } else {
+                result.user.setExternalUserId(null);
             }
             response.add("user", result.user.toJson());
             super.sendJsonResponse(200, response, resp);

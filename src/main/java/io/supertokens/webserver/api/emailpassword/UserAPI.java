@@ -90,8 +90,13 @@ public class UserAPI extends WebserverAPI {
                             appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage, userId);
 
                     // if the userIdMapping exists set the userId in the response to the externalUserId
-                    if (user != null && appIdentifierWithStorageAndUserIdMapping.userIdMapping != null) {
-                        user.setExternalUserId(appIdentifierWithStorageAndUserIdMapping.userIdMapping.externalUserId);
+                    if (user != null) {
+                        if (appIdentifierWithStorageAndUserIdMapping.userIdMapping != null) {
+                            user.setExternalUserId(
+                                    appIdentifierWithStorageAndUserIdMapping.userIdMapping.externalUserId);
+                        } else {
+                            user.setExternalUserId(null);
+                        }
                     }
 
                 } else {
@@ -110,6 +115,8 @@ public class UserAPI extends WebserverAPI {
                                         getAppIdentifierWithStorage(req), user.id, UserIdType.SUPERTOKENS);
                         if (userIdMapping != null) {
                             user.setExternalUserId(userIdMapping.externalUserId);
+                        } else {
+                            user.setExternalUserId(null);
                         }
                     }
                 }

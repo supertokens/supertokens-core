@@ -71,6 +71,8 @@ public class GetUserByIdAPI extends WebserverAPI {
                                     getAppIdentifierWithStorage(req), user.id, UserIdType.SUPERTOKENS);
                     if (userIdMapping != null) {
                         user.setExternalUserId(userIdMapping.externalUserId);
+                    } else {
+                        user.setExternalUserId(null);
                     }
                 }
 

@@ -86,6 +86,8 @@ public class SignInAPI extends WebserverAPI {
 
             if (userIdMapping != null) {
                 user.setExternalUserId(userIdMapping.externalUserId);
+            } else {
+                user.setExternalUserId(null);
             }
 
             JsonObject result = new JsonObject();

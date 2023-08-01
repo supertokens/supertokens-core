@@ -178,6 +178,8 @@ public class UsersAPI extends WebserverAPI {
                     String externalId = userIdMapping.get(userIds.get(i));
                     if (externalId != null) {
                         users.users[i].user.setExternalUserId(externalId);
+                    } else {
+                        users.users[i].user.setExternalUserId(null);
                     }
                 }
             }

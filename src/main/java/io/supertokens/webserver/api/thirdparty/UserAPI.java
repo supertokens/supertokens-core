@@ -84,8 +84,13 @@ public class UserAPI extends WebserverAPI {
 
                     user = ThirdParty.getUser(appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage,
                             userId);
-                    if (user != null && appIdentifierWithStorageAndUserIdMapping.userIdMapping != null) {
-                        user.setExternalUserId(appIdentifierWithStorageAndUserIdMapping.userIdMapping.externalUserId);
+                    if (user != null) {
+                        if (appIdentifierWithStorageAndUserIdMapping.userIdMapping != null) {
+                            user.setExternalUserId(
+                                    appIdentifierWithStorageAndUserIdMapping.userIdMapping.externalUserId);
+                        } else {
+                            user.setExternalUserId(null);
+                        }
                     }
                 } catch (UnknownUserIdException e) {
                     // let the user be null
@@ -98,6 +103,8 @@ public class UserAPI extends WebserverAPI {
                             .getUserIdMapping(this.getAppIdentifierWithStorage(req), user.id, UserIdType.SUPERTOKENS);
                     if (userIdMapping != null) {
                         user.setExternalUserId(userIdMapping.externalUserId);
+                    } else {
+                        user.setExternalUserId(null);
                     }
                 }
             }
