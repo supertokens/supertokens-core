@@ -43,7 +43,7 @@ import java.util.Map;
 
 import static org.junit.Assert.*;
 
-public class CanCreatePrimaryUserAPITest {
+public class CreatePrimaryUserAPITest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
@@ -58,7 +58,7 @@ public class CanCreatePrimaryUserAPITest {
     }
 
     @Test
-    public void canCreateReturnsTrue() throws Exception {
+    public void createReturnsSucceeds() throws Exception {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         FeatureFlagTestContent.getInstance(process.getProcess())
@@ -74,29 +74,31 @@ public class CanCreatePrimaryUserAPITest {
         AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "abcd1234");
 
         {
-            Map<String, String> params = new HashMap<>();
-            params.put("recipeUserId", user.id);
+            JsonObject params = new JsonObject();
+            params.addProperty("recipeUserId", user.id);
 
-            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/accountlinking/user/primary/check", params, 1000, 1000, null,
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/accountlinking/user/primary", params, 1000, 1000, null,
                     WebserverAPI.getLatestCDIVersion().get(), "");
-            assertEquals(2, response.entrySet().size());
+            assertEquals(3, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
             assertFalse(response.get("wasAlreadyAPrimaryUser").getAsBoolean());
+            // TODO: compare user object..
         }
 
         AuthRecipe.createPrimaryUser(process.main, user.id);
 
         {
-            Map<String, String> params = new HashMap<>();
-            params.put("recipeUserId", user.id);
+            JsonObject params = new JsonObject();
+            params.addProperty("recipeUserId", user.id);
 
-            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/accountlinking/user/primary/check", params, 1000, 1000, null,
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/accountlinking/user/primary", params, 1000, 1000, null,
                     WebserverAPI.getLatestCDIVersion().get(), "");
-            assertEquals(2, response.entrySet().size());
+            assertEquals(3, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
             assertTrue(response.get("wasAlreadyAPrimaryUser").getAsBoolean());
+            // TODO: compare user object..
         }
 
         process.kill();
@@ -104,7 +106,7 @@ public class CanCreatePrimaryUserAPITest {
     }
 
     @Test
-    public void canCreateReturnsTrueWithUserIdMapping() throws Exception {
+    public void createReturnsTrueWithUserIdMapping() throws Exception {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         FeatureFlagTestContent.getInstance(process.getProcess())
@@ -121,29 +123,44 @@ public class CanCreatePrimaryUserAPITest {
         UserIdMapping.createUserIdMapping(process.main, user.id, "r1", null, false);
 
         {
-            Map<String, String> params = new HashMap<>();
-            params.put("recipeUserId", "r1");
+            JsonObject params = new JsonObject();
+            params.addProperty("recipeUserId", "r1");
 
-            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/accountlinking/user/primary/check", params, 1000, 1000, null,
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/accountlinking/user/primary", params, 1000, 1000, null,
                     WebserverAPI.getLatestCDIVersion().get(), "");
-            assertEquals(2, response.entrySet().size());
+            assertEquals(3, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
             assertFalse(response.get("wasAlreadyAPrimaryUser").getAsBoolean());
+            // TODO: compare user object..
         }
 
         AuthRecipe.createPrimaryUser(process.main, user.id);
 
         {
-            Map<String, String> params = new HashMap<>();
-            params.put("recipeUserId", "r1");
+            JsonObject params = new JsonObject();
+            params.addProperty("recipeUserId", "r1");
 
-            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/accountlinking/user/primary/check", params, 1000, 1000, null,
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/accountlinking/user/primary", params, 1000, 1000, null,
                     WebserverAPI.getLatestCDIVersion().get(), "");
-            assertEquals(2, response.entrySet().size());
+            assertEquals(3, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
             assertTrue(response.get("wasAlreadyAPrimaryUser").getAsBoolean());
+            // TODO: compare user object..
+        }
+
+        {
+            JsonObject params = new JsonObject();
+            params.addProperty("recipeUserId", user.id);
+
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/accountlinking/user/primary", params, 1000, 1000, null,
+                    WebserverAPI.getLatestCDIVersion().get(), "");
+            assertEquals(3, response.entrySet().size());
+            assertEquals("OK", response.get("status").getAsString());
+            assertTrue(response.get("wasAlreadyAPrimaryUser").getAsBoolean());
+            // TODO: compare user object..
         }
 
         process.kill();
@@ -151,7 +168,7 @@ public class CanCreatePrimaryUserAPITest {
     }
 
     @Test
-    public void canCreatePrimaryUserBadInput() throws Exception {
+    public void createPrimaryUserBadInput() throws Exception {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         FeatureFlagTestContent.getInstance(process.getProcess())
@@ -168,25 +185,25 @@ public class CanCreatePrimaryUserAPITest {
             Map<String, String> params = new HashMap<>();
 
             try {
-                HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/accountlinking/user/primary/check", params, 1000, 1000, null,
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/accountlinking/user/primary", new JsonObject(), 1000, 1000, null,
                         WebserverAPI.getLatestCDIVersion().get(), "");
                 assert (false);
             } catch (HttpResponseException e) {
                 assert (e.statusCode == 400);
                 assert (e.getMessage()
-                        .equals("Http error. Status Code: 400. Message: Field name 'recipeUserId' is missing in GET " +
-                                "request"));
+                        .equals("Http error. Status Code: 400. Message: Field name 'recipeUserId' is invalid in JSON " +
+                                "input"));
             }
         }
 
         {
-            Map<String, String> params = new HashMap<>();
-            params.put("recipeUserId", "random");
+            JsonObject params = new JsonObject();
+            params.addProperty("recipeUserId", "random");
 
             try {
-                HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/accountlinking/user/primary/check", params, 1000, 1000, null,
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/accountlinking/user/primary", params, 1000, 1000, null,
                         WebserverAPI.getLatestCDIVersion().get(), "");
                 assert (false);
             } catch (HttpResponseException e) {
@@ -220,11 +237,11 @@ public class CanCreatePrimaryUserAPITest {
                 "test@example.com");
 
         {
-            Map<String, String> params = new HashMap<>();
-            params.put("recipeUserId", signInUpResponse.user.id);
+            JsonObject params = new JsonObject();
+            params.addProperty("recipeUserId", signInUpResponse.user.id);
 
-            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/accountlinking/user/primary/check", params, 1000, 1000, null,
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/accountlinking/user/primary", params, 1000, 1000, null,
                     WebserverAPI.getLatestCDIVersion().get(), "");
             assertEquals(3, response.entrySet().size());
             assertEquals("ACCOUNT_INFO_ALREADY_ASSOCIATED_WITH_ANOTHER_PRIMARY_USER_ID_ERROR",
@@ -257,11 +274,11 @@ public class CanCreatePrimaryUserAPITest {
         AuthRecipe.linkAccounts(process.main, emailPasswordUser2.id, emailPasswordUser1.id);
 
         {
-            Map<String, String> params = new HashMap<>();
-            params.put("recipeUserId", emailPasswordUser2.id);
+            JsonObject params = new JsonObject();
+            params.addProperty("recipeUserId", emailPasswordUser2.id);
 
-            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/accountlinking/user/primary/check", params, 1000, 1000, null,
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/accountlinking/user/primary", params, 1000, 1000, null,
                     WebserverAPI.getLatestCDIVersion().get(), "");
             assertEquals(3, response.entrySet().size());
             assertEquals("RECIPE_USER_ID_ALREADY_LINKED_WITH_PRIMARY_USER_ID_ERROR",
@@ -297,11 +314,11 @@ public class CanCreatePrimaryUserAPITest {
                 "test@example.com");
 
         {
-            Map<String, String> params = new HashMap<>();
-            params.put("recipeUserId", signInUpResponse.user.id);
+            JsonObject params = new JsonObject();
+            params.addProperty("recipeUserId", signInUpResponse.user.id);
 
-            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/accountlinking/user/primary/check", params, 1000, 1000, null,
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/accountlinking/user/primary", params, 1000, 1000, null,
                     WebserverAPI.getLatestCDIVersion().get(), "");
             assertEquals(3, response.entrySet().size());
             assertEquals("ACCOUNT_INFO_ALREADY_ASSOCIATED_WITH_ANOTHER_PRIMARY_USER_ID_ERROR",
@@ -335,11 +352,11 @@ public class CanCreatePrimaryUserAPITest {
         AuthRecipe.linkAccounts(process.main, emailPasswordUser2.id, emailPasswordUser1.id);
 
         {
-            Map<String, String> params = new HashMap<>();
-            params.put("recipeUserId", emailPasswordUser2.id);
+            JsonObject params = new JsonObject();
+            params.addProperty("recipeUserId", emailPasswordUser2.id);
 
-            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/accountlinking/user/primary/check", params, 1000, 1000, null,
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/accountlinking/user/primary", params, 1000, 1000, null,
                     WebserverAPI.getLatestCDIVersion().get(), "");
             assertEquals(3, response.entrySet().size());
             assertEquals("RECIPE_USER_ID_ALREADY_LINKED_WITH_PRIMARY_USER_ID_ERROR",

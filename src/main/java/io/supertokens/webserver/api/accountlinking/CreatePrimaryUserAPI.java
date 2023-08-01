@@ -22,6 +22,7 @@ import io.supertokens.Main;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.authRecipe.exception.AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException;
 import io.supertokens.authRecipe.exception.RecipeUserIdAlreadyLinkedWithPrimaryUserIdException;
+import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
@@ -36,21 +37,22 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
-public class CanCreatePrimaryUserAPI extends WebserverAPI {
+public class CreatePrimaryUserAPI extends WebserverAPI {
 
-    public CanCreatePrimaryUserAPI(Main main) {
+    public CreatePrimaryUserAPI(Main main) {
         super(main, "");
     }
 
     @Override
     public String getPath() {
-        return "/recipe/accountlinking/user/primary/check";
+        return "/recipe/accountlinking/user/primary";
     }
 
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         // API is app specific
-        String inputRecipeUserId = InputParser.getQueryParamOrThrowError(req, "recipeUserId", false);
+        JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
+        String inputRecipeUserId = InputParser.parseStringOrThrowError(input, "recipeUserId", false);
 
         AppIdentifierWithStorage appIdentifierWithStorage = null;
         try {
@@ -63,13 +65,17 @@ public class CanCreatePrimaryUserAPI extends WebserverAPI {
             }
             appIdentifierWithStorage = mappingAndStorage.appIdentifierWithStorage;
 
-            AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.canCreatePrimaryUser(appIdentifierWithStorage,
+            AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(main, appIdentifierWithStorage,
                     userId);
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             response.addProperty("wasAlreadyAPrimaryUser", result.wasAlreadyAPrimaryUser);
+            if (mappingAndStorage.userIdMapping != null) {
+                result.user.setExternalUserId(mappingAndStorage.userIdMapping.externalUserId);
+            }
+            response.add("user", result.user.toJson());
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | FeatureNotEnabledException e) {
             throw new ServletException(e);
         } catch (UnknownUserIdException e) {
             throw new ServletException(new BadRequestException("Unknown user ID provided"));
