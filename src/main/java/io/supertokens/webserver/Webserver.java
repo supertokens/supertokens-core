@@ -27,6 +27,7 @@ import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.api.accountlinking.CanCreatePrimaryUserAPI;
+import io.supertokens.webserver.api.accountlinking.CanLinkAccountsAPI;
 import io.supertokens.webserver.api.accountlinking.CreatePrimaryUserAPI;
 import io.supertokens.webserver.api.core.*;
 import io.supertokens.webserver.api.dashboard.*;
@@ -253,6 +254,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
 
         addAPI(new CanCreatePrimaryUserAPI(main));
         addAPI(new CreatePrimaryUserAPI(main));
+        addAPI(new CanLinkAccountsAPI(main));
 
         StandardContext context = tomcatReference.getContext();
         Tomcat tomcat = tomcatReference.getTomcat();

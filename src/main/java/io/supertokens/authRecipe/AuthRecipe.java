@@ -143,7 +143,7 @@ public class AuthRecipe {
         }
     }
 
-    private static class CanLinkAccountsResult {
+    public static class CanLinkAccountsResult {
         public String recipeUserId;
         public String primaryUserId;
 

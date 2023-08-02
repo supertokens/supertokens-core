@@ -22,8 +22,10 @@ import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
+import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -101,7 +103,7 @@ public class CreatePrimaryUserAPITest {
             assertEquals(lM.get("recipeUserId").getAsString(), user.id);
             assertEquals(lM.get("recipeId").getAsString(), "emailpassword");
             assertEquals(lM.get("email").getAsString(), "test@example.com");
-            assert (lM.entrySet().size() == 5);
+            assert (lM.entrySet().size() == 6);
             userObj = jsonUser;
         }
 
@@ -168,7 +170,7 @@ public class CreatePrimaryUserAPITest {
             assertEquals(lM.get("recipeUserId").getAsString(), "r1");
             assertEquals(lM.get("recipeId").getAsString(), "emailpassword");
             assertEquals(lM.get("email").getAsString(), "test@example.com");
-            assert (lM.entrySet().size() == 5);
+            assert (lM.entrySet().size() == 6);
             userObj = jsonUser;
         }
 
@@ -401,6 +403,98 @@ public class CreatePrimaryUserAPITest {
             assertEquals("r1", response.get("primaryUserId").getAsString());
             assertEquals("This user ID is already linked to another user ID",
                     response.get("description").getAsString());
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void createPrimaryUserInTenantWithAnotherStorage() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        JsonObject coreConfig = new JsonObject();
+        StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                .modifyConfigToAddANewUserPoolForTesting(coreConfig, 2);
+
+        TenantIdentifier tenantIdentifier = new TenantIdentifier(null, null, "t1");
+        Multitenancy.addNewOrUpdateAppOrTenant(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                new TenantConfig(
+                        tenantIdentifier,
+                        new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true),
+                        coreConfig
+                )
+        );
+
+        AuthRecipeUserInfo user = EmailPassword.signUp(
+                tenantIdentifier.withStorage(StorageLayer.getStorage(tenantIdentifier, process.main)),
+                process.getProcess(), "test@example.com", "abcd1234");
+
+        JsonObject userObj;
+        {
+            JsonObject params = new JsonObject();
+            params.addProperty("recipeUserId", user.id);
+
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/accountlinking/user/primary", params, 1000, 1000, null,
+                    WebserverAPI.getLatestCDIVersion().get(), "");
+            assertEquals(3, response.entrySet().size());
+            assertEquals("OK", response.get("status").getAsString());
+            assertFalse(response.get("wasAlreadyAPrimaryUser").getAsBoolean());
+
+            // check user object
+            JsonObject jsonUser = response.get("user").getAsJsonObject();
+            assert (jsonUser.get("id").getAsString().equals(user.id));
+            assert (jsonUser.get("tenantIds").getAsJsonArray().size() == 1);
+            assert (jsonUser.get("tenantIds").getAsJsonArray().get(0).getAsString().equals("t1"));
+            assert (jsonUser.get("timeJoined").getAsLong() == user.timeJoined);
+            assert (jsonUser.get("isPrimaryUser").getAsBoolean());
+            assert (jsonUser.get("emails").getAsJsonArray().size() == 1);
+            assert (jsonUser.get("emails").getAsJsonArray().get(0).getAsString().equals("test@example.com"));
+            assert (jsonUser.get("phoneNumbers").getAsJsonArray().size() == 0);
+            assert (jsonUser.get("thirdParty").getAsJsonArray().size() == 0);
+            assert (jsonUser.get("loginMethods").getAsJsonArray().size() == 1);
+            JsonObject lM = jsonUser.get("loginMethods").getAsJsonArray().get(0).getAsJsonObject();
+            assertFalse(lM.get("verified").getAsBoolean());
+            assert (lM.get("tenantIds").getAsJsonArray().size() == 1);
+            assert (lM.get("tenantIds").getAsJsonArray().get(0).getAsString().equals("t1"));
+            assertEquals(lM.get("timeJoined").getAsLong(), user.timeJoined);
+            assertEquals(lM.get("recipeUserId").getAsString(), user.id);
+            assertEquals(lM.get("recipeId").getAsString(), "emailpassword");
+            assertEquals(lM.get("email").getAsString(), "test@example.com");
+            assert (lM.entrySet().size() == 6);
+            userObj = jsonUser;
+        }
+
+        AuthRecipe.createPrimaryUser(process.main,
+                tenantIdentifier.toAppIdentifier().withStorage(StorageLayer.getStorage(tenantIdentifier, process.main)),
+                user.id);
+
+        {
+            JsonObject params = new JsonObject();
+            params.addProperty("recipeUserId", user.id);
+
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/accountlinking/user/primary", params, 1000, 1000, null,
+                    WebserverAPI.getLatestCDIVersion().get(), "");
+            assertEquals(3, response.entrySet().size());
+            assertEquals("OK", response.get("status").getAsString());
+            assertTrue(response.get("wasAlreadyAPrimaryUser").getAsBoolean());
+            assertEquals(response.get("user"), userObj);
         }
 
         process.kill();
