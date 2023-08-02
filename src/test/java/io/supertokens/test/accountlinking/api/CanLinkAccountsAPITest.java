@@ -16,11 +16,30 @@
 
 package io.supertokens.test.accountlinking.api;
 
+import com.google.gson.JsonObject;
+import io.supertokens.ProcessState;
+import io.supertokens.authRecipe.AuthRecipe;
+import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlagTestContent;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.useridmapping.UserIdMapping;
+import io.supertokens.webserver.WebserverAPI;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TestRule;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.junit.Assert.*;
 
 public class CanLinkAccountsAPITest {
     @Rule
@@ -36,52 +55,59 @@ public class CanLinkAccountsAPITest {
         Utils.reset();
     }
 
-//    @Test
-//    public void canCreateReturnsTrueWithUserIdMapping() throws Exception {
-//        String[] args = {"../"};
-//        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
-//        FeatureFlagTestContent.getInstance(process.getProcess())
-//                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
-//                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-//        process.startProcess();
-//        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-//
-//        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-//            return;
-//        }
-//
-//        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "abcd1234");
-//        UserIdMapping.createUserIdMapping(process.main, user.id, "r1", null, false);
-//
-//        {
-//            Map<String, String> params = new HashMap<>();
-//            params.put("recipeUserId", "r1");
-//
-//            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-//                    "http://localhost:3567/recipe/accountlinking/user/primary/check", params, 1000, 1000, null,
-//                    WebserverAPI.getLatestCDIVersion().get(), "");
-//            assertEquals(2, response.entrySet().size());
-//            assertEquals("OK", response.get("status").getAsString());
-//            assertFalse(response.get("wasAlreadyAPrimaryUser").getAsBoolean());
-//        }
-//
-//        AuthRecipe.createPrimaryUser(process.main, user.id);
-//
-//        {
-//            Map<String, String> params = new HashMap<>();
-//            params.put("recipeUserId", "r1");
-//
-//            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-//                    "http://localhost:3567/recipe/accountlinking/user/primary/check", params, 1000, 1000, null,
-//                    WebserverAPI.getLatestCDIVersion().get(), "");
-//            assertEquals(2, response.entrySet().size());
-//            assertEquals("OK", response.get("status").getAsString());
-//            assertTrue(response.get("wasAlreadyAPrimaryUser").getAsBoolean());
-//        }
-//
-//        process.kill();
-//        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-//    }
+    @Test
+    public void canCreateReturnsTrueWithUserIdMapping() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "abcd1234");
+        UserIdMapping.createUserIdMapping(process.main, user.id, "r1", null, false);
+
+        AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "abcd1234");
+        UserIdMapping.createUserIdMapping(process.main, user2.id, "r2", null, false);
+
+        AuthRecipe.createPrimaryUser(process.main, user2.id);
+
+        {
+            Map<String, String> params = new HashMap<>();
+            params.put("recipeUserId", "r1");
+            params.put("primaryUserId", "r2");
+
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/accountlinking/user/link/check", params, 1000, 1000, null,
+                    WebserverAPI.getLatestCDIVersion().get(), "");
+            assertEquals(2, response.entrySet().size());
+            assertEquals("OK", response.get("status").getAsString());
+            assertFalse(response.get("accountsAlreadyLinked").getAsBoolean());
+        }
+
+        AuthRecipe.linkAccounts(process.main, user.id, user2.id);
+
+        {
+            Map<String, String> params = new HashMap<>();
+            params.put("recipeUserId", "r1");
+            params.put("primaryUserId", "r2");
+
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/accountlinking/user/link/check", params, 1000, 1000, null,
+                    WebserverAPI.getLatestCDIVersion().get(), "");
+            assertEquals(2, response.entrySet().size());
+            assertEquals("OK", response.get("status").getAsString());
+            assertTrue(response.get("accountsAlreadyLinked").getAsBoolean());
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 //
 //    @Test
 //    public void canCreatePrimaryUserBadInput() throws Exception {
