@@ -28,6 +28,7 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.webserver.WebserverAPI;
 import org.junit.AfterClass;
@@ -56,7 +57,59 @@ public class CanLinkAccountsAPITest {
     }
 
     @Test
-    public void canCreateReturnsTrueWithUserIdMapping() throws Exception {
+    public void canLinkReturnsTrue() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "abcd1234");
+
+        AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "abcd1234");
+
+        AuthRecipe.createPrimaryUser(process.main, user2.id);
+
+        {
+            Map<String, String> params = new HashMap<>();
+            params.put("recipeUserId", user.id);
+            params.put("primaryUserId", user2.id);
+
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/accountlinking/user/link/check", params, 1000, 1000, null,
+                    WebserverAPI.getLatestCDIVersion().get(), "");
+            assertEquals(2, response.entrySet().size());
+            assertEquals("OK", response.get("status").getAsString());
+            assertFalse(response.get("accountsAlreadyLinked").getAsBoolean());
+        }
+
+        AuthRecipe.linkAccounts(process.main, user.id, user2.id);
+
+        {
+            Map<String, String> params = new HashMap<>();
+            params.put("recipeUserId", user.id);
+            params.put("primaryUserId", user2.id);
+
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/accountlinking/user/link/check", params, 1000, 1000, null,
+                    WebserverAPI.getLatestCDIVersion().get(), "");
+            assertEquals(2, response.entrySet().size());
+            assertEquals("OK", response.get("status").getAsString());
+            assertTrue(response.get("accountsAlreadyLinked").getAsBoolean());
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void canLinkReturnsTrueWithUserIdMapping() throws Exception {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         FeatureFlagTestContent.getInstance(process.getProcess())
@@ -108,57 +161,96 @@ public class CanLinkAccountsAPITest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
-//
-//    @Test
-//    public void canCreatePrimaryUserBadInput() throws Exception {
-//        String[] args = {"../"};
-//        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
-//        FeatureFlagTestContent.getInstance(process.getProcess())
-//                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
-//                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-//        process.startProcess();
-//        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-//
-//        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-//            return;
-//        }
-//
-//        {
-//            Map<String, String> params = new HashMap<>();
-//
-//            try {
-//                HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-//                        "http://localhost:3567/recipe/accountlinking/user/primary/check", params, 1000, 1000, null,
-//                        WebserverAPI.getLatestCDIVersion().get(), "");
-//                assert (false);
-//            } catch (HttpResponseException e) {
-//                assert (e.statusCode == 400);
-//                assert (e.getMessage()
-//                        .equals("Http error. Status Code: 400. Message: Field name 'recipeUserId' is missing in GET
-//                        " +
-//                                "request"));
-//            }
-//        }
-//
-//        {
-//            Map<String, String> params = new HashMap<>();
-//            params.put("recipeUserId", "random");
-//
-//            try {
-//                HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-//                        "http://localhost:3567/recipe/accountlinking/user/primary/check", params, 1000, 1000, null,
-//                        WebserverAPI.getLatestCDIVersion().get(), "");
-//                assert (false);
-//            } catch (HttpResponseException e) {
-//                assert (e.statusCode == 400);
-//                assert (e.getMessage()
-//                        .equals("Http error. Status Code: 400. Message: Unknown user ID provided"));
-//            }
-//        }
-//
-//        process.kill();
-//        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-//    }
+
+    @Test
+    public void canLinkUserBadInput() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        {
+            Map<String, String> params = new HashMap<>();
+
+            try {
+                HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/accountlinking/user/link/check", params, 1000, 1000, null,
+                        WebserverAPI.getLatestCDIVersion().get(), "");
+                assert (false);
+            } catch (HttpResponseException e) {
+                assert (e.statusCode == 400);
+                assert (e.getMessage()
+                        .equals("Http error. Status Code: 400. Message: Field name 'recipeUserId' is missing in GET " +
+                                "request"));
+            }
+        }
+
+        {
+            Map<String, String> params = new HashMap<>();
+            params.put("recipeUserId", "random");
+
+            try {
+                HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/accountlinking/user/link/check", params, 1000, 1000, null,
+                        WebserverAPI.getLatestCDIVersion().get(), "");
+                assert (false);
+            } catch (HttpResponseException e) {
+                assert (e.statusCode == 400);
+                assert (e.getMessage()
+                        .equals("Http error. Status Code: 400. Message: Field name 'primaryUserId' is missing in GET " +
+                                "request"));
+            }
+        }
+
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "abcd1234");
+        AuthRecipe.createPrimaryUser(process.main, user.id);
+
+        AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "abcd1234");
+
+        {
+            Map<String, String> params = new HashMap<>();
+            params.put("recipeUserId", user2.id);
+            params.put("primaryUserId", "random");
+
+            try {
+                HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/accountlinking/user/link/check", params, 1000, 1000, null,
+                        WebserverAPI.getLatestCDIVersion().get(), "");
+                assert (false);
+            } catch (HttpResponseException e) {
+                assert (e.statusCode == 400);
+                assert (e.getMessage()
+                        .equals("Http error. Status Code: 400. Message: Unknown user ID provided"));
+            }
+        }
+
+        {
+            Map<String, String> params = new HashMap<>();
+            params.put("recipeUserId", "random");
+            params.put("primaryUserId", user.id);
+
+            try {
+                HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/accountlinking/user/link/check", params, 1000, 1000, null,
+                        WebserverAPI.getLatestCDIVersion().get(), "");
+                assert (false);
+            } catch (HttpResponseException e) {
+                assert (e.statusCode == 400);
+                assert (e.getMessage()
+                        .equals("Http error. Status Code: 400. Message: Unknown user ID provided"));
+            }
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 //
 //    @Test
 //    public void makePrimaryUserFailsCauseAnotherAccountWithSameEmailAlreadyAPrimaryUser() throws Exception {
