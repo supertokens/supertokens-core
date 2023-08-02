@@ -29,6 +29,7 @@ import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
+import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.webserver.WebserverAPI;
 import org.junit.AfterClass;
@@ -251,158 +252,223 @@ public class CanLinkAccountsAPITest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
-//
-//    @Test
-//    public void makePrimaryUserFailsCauseAnotherAccountWithSameEmailAlreadyAPrimaryUser() throws Exception {
-//        String[] args = {"../"};
-//        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
-//        FeatureFlagTestContent.getInstance(process.getProcess())
-//                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
-//                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-//        process.startProcess();
-//        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-//
-//        AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(process.getProcess(), "test@example.com",
-//                "pass1234");
-//
-//        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.id);
-//        assert (!result.wasAlreadyAPrimaryUser);
-//
-//        ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, "google", "user-google",
-//                "test@example.com");
-//
-//        {
-//            Map<String, String> params = new HashMap<>();
-//            params.put("recipeUserId", signInUpResponse.user.id);
-//
-//            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-//                    "http://localhost:3567/recipe/accountlinking/user/primary/check", params, 1000, 1000, null,
-//                    WebserverAPI.getLatestCDIVersion().get(), "");
-//            assertEquals(3, response.entrySet().size());
-//            assertEquals("ACCOUNT_INFO_ALREADY_ASSOCIATED_WITH_ANOTHER_PRIMARY_USER_ID_ERROR",
-//                    response.get("status").getAsString());
-//            assertEquals(emailPasswordUser.id, response.get("primaryUserId").getAsString());
-//            assertEquals("This user's email is already associated with another user ID",
-//                    response.get("description").getAsString());
-//        }
-//
-//        process.kill();
-//        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-//    }
-//
-//    @Test
-//    public void makingPrimaryUserFailsCauseAlreadyLinkedToAnotherAccount() throws Exception {
-//        String[] args = {"../"};
-//        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
-//        FeatureFlagTestContent.getInstance(process.getProcess())
-//                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
-//                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-//        process.startProcess();
-//        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-//
-//        AuthRecipeUserInfo emailPasswordUser1 = EmailPassword.signUp(process.getProcess(), "test@example.com",
-//                "pass1234");
-//        AuthRecipeUserInfo emailPasswordUser2 = EmailPassword.signUp(process.getProcess(), "test2@example.com",
-//                "pass1234");
-//
-//        AuthRecipe.createPrimaryUser(process.main, emailPasswordUser1.id);
-//        AuthRecipe.linkAccounts(process.main, emailPasswordUser2.id, emailPasswordUser1.id);
-//
-//        {
-//            Map<String, String> params = new HashMap<>();
-//            params.put("recipeUserId", emailPasswordUser2.id);
-//
-//            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-//                    "http://localhost:3567/recipe/accountlinking/user/primary/check", params, 1000, 1000, null,
-//                    WebserverAPI.getLatestCDIVersion().get(), "");
-//            assertEquals(3, response.entrySet().size());
-//            assertEquals("RECIPE_USER_ID_ALREADY_LINKED_WITH_PRIMARY_USER_ID_ERROR",
-//                    response.get("status").getAsString());
-//            assertEquals(emailPasswordUser1.id, response.get("primaryUserId").getAsString());
-//            assertEquals("This user ID is already linked to another user ID",
-//                    response.get("description").getAsString());
-//        }
-//
-//        process.kill();
-//        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-//    }
-//
-//    @Test
-//    public void makePrimaryUserFailsCauseAnotherAccountWithSameEmailAlreadyAPrimaryUserWithUserIdMapping()
-//            throws Exception {
-//        String[] args = {"../"};
-//        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
-//        FeatureFlagTestContent.getInstance(process.getProcess())
-//                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
-//                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-//        process.startProcess();
-//        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-//
-//        AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(process.getProcess(), "test@example.com",
-//                "pass1234");
-//        UserIdMapping.createUserIdMapping(process.main, emailPasswordUser.id, "r1", null, false);
-//
-//        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.id);
-//        assert (!result.wasAlreadyAPrimaryUser);
-//
-//        ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, "google", "user-google",
-//                "test@example.com");
-//
-//        {
-//            Map<String, String> params = new HashMap<>();
-//            params.put("recipeUserId", signInUpResponse.user.id);
-//
-//            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-//                    "http://localhost:3567/recipe/accountlinking/user/primary/check", params, 1000, 1000, null,
-//                    WebserverAPI.getLatestCDIVersion().get(), "");
-//            assertEquals(3, response.entrySet().size());
-//            assertEquals("ACCOUNT_INFO_ALREADY_ASSOCIATED_WITH_ANOTHER_PRIMARY_USER_ID_ERROR",
-//                    response.get("status").getAsString());
-//            assertEquals("r1", response.get("primaryUserId").getAsString());
-//            assertEquals("This user's email is already associated with another user ID",
-//                    response.get("description").getAsString());
-//        }
-//
-//        process.kill();
-//        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-//    }
-//
-//    @Test
-//    public void makingPrimaryUserFailsCauseAlreadyLinkedToAnotherAccountWithUserIdMapping() throws Exception {
-//        String[] args = {"../"};
-//        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
-//        FeatureFlagTestContent.getInstance(process.getProcess())
-//                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
-//                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-//        process.startProcess();
-//        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-//
-//        AuthRecipeUserInfo emailPasswordUser1 = EmailPassword.signUp(process.getProcess(), "test@example.com",
-//                "pass1234");
-//        UserIdMapping.createUserIdMapping(process.main, emailPasswordUser1.id, "r1", null, false);
-//        AuthRecipeUserInfo emailPasswordUser2 = EmailPassword.signUp(process.getProcess(), "test2@example.com",
-//                "pass1234");
-//
-//        AuthRecipe.createPrimaryUser(process.main, emailPasswordUser1.id);
-//        AuthRecipe.linkAccounts(process.main, emailPasswordUser2.id, emailPasswordUser1.id);
-//
-//        {
-//            Map<String, String> params = new HashMap<>();
-//            params.put("recipeUserId", emailPasswordUser2.id);
-//
-//            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-//                    "http://localhost:3567/recipe/accountlinking/user/primary/check", params, 1000, 1000, null,
-//                    WebserverAPI.getLatestCDIVersion().get(), "");
-//            assertEquals(3, response.entrySet().size());
-//            assertEquals("RECIPE_USER_ID_ALREADY_LINKED_WITH_PRIMARY_USER_ID_ERROR",
-//                    response.get("status").getAsString());
-//            assertEquals("r1", response.get("primaryUserId").getAsString());
-//            assertEquals("This user ID is already linked to another user ID",
-//                    response.get("description").getAsString());
-//        }
-//
-//        process.kill();
-//        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-//    }
+
+    @Test
+    public void linkingUsersFailsCauseAnotherAccountWithSameEmailAlreadyAPrimaryUser() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(process.getProcess(), "test@example.com",
+                "pass1234");
+
+        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.id);
+        assert (!result.wasAlreadyAPrimaryUser);
+
+        ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, "google", "user-google",
+                "test2@example.com");
+
+        AuthRecipe.createPrimaryUser(process.main, signInUpResponse.user.id);
+
+        ThirdParty.SignInUpResponse signInUpResponse2 = ThirdParty.signInUp(process.main, "fb", "user-fb",
+                "test@example.com");
+
+
+        {
+            Map<String, String> params = new HashMap<>();
+            params.put("primaryUserId", signInUpResponse.user.id);
+            params.put("recipeUserId", signInUpResponse2.user.id);
+
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/accountlinking/user/link/check", params, 1000, 1000, null,
+                    WebserverAPI.getLatestCDIVersion().get(), "");
+            assertEquals(3, response.entrySet().size());
+            assertEquals("ACCOUNT_INFO_ALREADY_ASSOCIATED_WITH_ANOTHER_PRIMARY_USER_ID_ERROR",
+                    response.get("status").getAsString());
+            assertEquals(emailPasswordUser.id, response.get("primaryUserId").getAsString());
+            assertEquals("This user's email is already associated with another user ID",
+                    response.get("description").getAsString());
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void linkingUsersFailsCauseAnotherAccountWithSameEmailAlreadyAPrimaryUserWithUserIdMapping()
+            throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(process.getProcess(), "test@example.com",
+                "pass1234");
+        UserIdMapping.createUserIdMapping(process.main, emailPasswordUser.id, "e1", null, false);
+
+        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.id);
+        assert (!result.wasAlreadyAPrimaryUser);
+
+        ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, "google", "user-google",
+                "test2@example.com");
+        UserIdMapping.createUserIdMapping(process.main, signInUpResponse.user.id, "e2", null, false);
+
+        AuthRecipe.createPrimaryUser(process.main, signInUpResponse.user.id);
+
+        ThirdParty.SignInUpResponse signInUpResponse2 = ThirdParty.signInUp(process.main, "fb", "user-fb",
+                "test@example.com");
+        UserIdMapping.createUserIdMapping(process.main, signInUpResponse2.user.id, "e3", null, false);
+
+
+        {
+            Map<String, String> params = new HashMap<>();
+            params.put("primaryUserId", "e2");
+            params.put("recipeUserId", "e3");
+
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/accountlinking/user/link/check", params, 1000, 1000, null,
+                    WebserverAPI.getLatestCDIVersion().get(), "");
+            assertEquals(3, response.entrySet().size());
+            assertEquals("ACCOUNT_INFO_ALREADY_ASSOCIATED_WITH_ANOTHER_PRIMARY_USER_ID_ERROR",
+                    response.get("status").getAsString());
+            assertEquals("e1", response.get("primaryUserId").getAsString());
+            assertEquals("This user's email is already associated with another user ID",
+                    response.get("description").getAsString());
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void linkingUserFailsCauseAlreadyLinkedToAnotherAccount() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        AuthRecipeUserInfo emailPasswordUser1 = EmailPassword.signUp(process.getProcess(), "test@example.com",
+                "pass1234");
+        AuthRecipeUserInfo emailPasswordUser2 = EmailPassword.signUp(process.getProcess(), "test2@example.com",
+                "pass1234");
+
+        AuthRecipe.createPrimaryUser(process.main, emailPasswordUser1.id);
+        AuthRecipe.linkAccounts(process.main, emailPasswordUser2.id, emailPasswordUser1.id);
+
+        AuthRecipeUserInfo emailPasswordUser3 = EmailPassword.signUp(process.getProcess(), "test3@example.com",
+                "pass1234");
+
+        AuthRecipe.createPrimaryUser(process.main, emailPasswordUser3.id);
+
+        {
+            Map<String, String> params = new HashMap<>();
+            params.put("recipeUserId", emailPasswordUser2.id);
+            params.put("primaryUserId", emailPasswordUser3.id);
+
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/accountlinking/user/link/check", params, 1000, 1000, null,
+                    WebserverAPI.getLatestCDIVersion().get(), "");
+            assertEquals(3, response.entrySet().size());
+            assertEquals("RECIPE_USER_ID_ALREADY_LINKED_WITH_ANOTHER_PRIMARY_USER_ID_ERROR",
+                    response.get("status").getAsString());
+            assertEquals(emailPasswordUser1.id, response.get("primaryUserId").getAsString());
+            assertEquals("The input recipe user ID is already linked to another user ID",
+                    response.get("description").getAsString());
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+
+    @Test
+    public void makingPrimaryUserFailsCauseAlreadyLinkedToAnotherAccountWithUserIdMapping() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        AuthRecipeUserInfo emailPasswordUser1 = EmailPassword.signUp(process.getProcess(), "test@example.com",
+                "pass1234");
+        UserIdMapping.createUserIdMapping(process.main, emailPasswordUser1.id, "r1", null, false);
+        AuthRecipeUserInfo emailPasswordUser2 = EmailPassword.signUp(process.getProcess(), "test2@example.com",
+                "pass1234");
+        UserIdMapping.createUserIdMapping(process.main, emailPasswordUser2.id, "r2", null, false);
+
+        AuthRecipe.createPrimaryUser(process.main, emailPasswordUser1.id);
+        AuthRecipe.linkAccounts(process.main, emailPasswordUser2.id, emailPasswordUser1.id);
+
+        AuthRecipeUserInfo emailPasswordUser3 = EmailPassword.signUp(process.getProcess(), "test3@example.com",
+                "pass1234");
+        UserIdMapping.createUserIdMapping(process.main, emailPasswordUser3.id, "r3", null, false);
+
+        AuthRecipe.createPrimaryUser(process.main, emailPasswordUser3.id);
+
+        {
+            Map<String, String> params = new HashMap<>();
+            params.put("recipeUserId", "r2");
+            params.put("primaryUserId", "r3");
+
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/accountlinking/user/link/check", params, 1000, 1000, null,
+                    WebserverAPI.getLatestCDIVersion().get(), "");
+            assertEquals(3, response.entrySet().size());
+            assertEquals("RECIPE_USER_ID_ALREADY_LINKED_WITH_ANOTHER_PRIMARY_USER_ID_ERROR",
+                    response.get("status").getAsString());
+            assertEquals("r1", response.get("primaryUserId").getAsString());
+            assertEquals("The input recipe user ID is already linked to another user ID",
+                    response.get("description").getAsString());
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void inputUserIsNotAPrimaryUserTest() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "abcd1234");
+
+        AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "abcd1234");
+
+        {
+            Map<String, String> params = new HashMap<>();
+            params.put("recipeUserId", user.id);
+            params.put("primaryUserId", user2.id);
+
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/accountlinking/user/link/check", params, 1000, 1000, null,
+                    WebserverAPI.getLatestCDIVersion().get(), "");
+            assertEquals(1, response.entrySet().size());
+            assertEquals("INPUT_USER_IS_NOT_A_PRIMARY_USER", response.get("status").getAsString());
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 
 }
