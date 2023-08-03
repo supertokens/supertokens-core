@@ -18,12 +18,15 @@ package io.supertokens.test.emailpassword.api;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
+import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.thirdparty.ThirdParty;
+import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -33,7 +36,7 @@ import org.junit.rules.TestRule;
 
 import static org.junit.Assert.*;
 
-public class GeneratePasswordResetTokenAPITest2_7 {
+public class GeneratePasswordResetTokenAPITest4_0 {
 
     @Rule
     public TestRule watchman = Utils.getOnFailure();
@@ -64,7 +67,7 @@ public class GeneratePasswordResetTokenAPITest2_7 {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/user/password/reset/token", null, 1000, 1000, null,
-                        SemVer.v2_7.get(), "emailpassword");
+                        SemVer.v4_0.get(), "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400
@@ -77,7 +80,7 @@ public class GeneratePasswordResetTokenAPITest2_7 {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/user/password/reset/token", requestBody, 1000, 1000, null,
-                        SemVer.v2_7.get(), "emailpassword");
+                        SemVer.v4_0.get(), "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
@@ -92,11 +95,26 @@ public class GeneratePasswordResetTokenAPITest2_7 {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/user/password/reset/token", requestBody, 1000, 1000, null,
-                        SemVer.v2_7.get(), "emailpassword");
+                        SemVer.v4_0.get(), "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
-                        "Http error. Status Code: 400. Message: Field name 'userId' is invalid in " + "JSON input"));
+                        "Http error. Status Code: 400. Message: Field name 'userId' is invalid in JSON input"));
+            }
+        }
+
+        {
+            AuthRecipeUserInfo user = EmailPassword.signUp(process.main, "a@a.com", "p1234");
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("userId", user.id);
+            try {
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/user/password/reset/token", requestBody, 1000, 1000, null,
+                        SemVer.v4_0.get(), "emailpassword");
+                throw new Exception("Should not come here");
+            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                assertTrue(e.statusCode == 400 && e.getMessage().equals(
+                        "Http error. Status Code: 400. Message: Field name 'email' is invalid in JSON input"));
             }
         }
 
@@ -123,10 +141,41 @@ public class GeneratePasswordResetTokenAPITest2_7 {
 
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("userId", userId);
+        requestBody.addProperty("email", "random@gmail.com");
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user/password/reset/token", requestBody, 1000, 1000, null,
-                SemVer.v2_7.get(), "emailpassword");
+                SemVer.v4_0.get(), "emailpassword");
+
+        assertEquals(response.get("status").getAsString(), "OK");
+        assertNotNull(response.get("token"));
+        assertEquals(response.entrySet().size(), 2);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testGoodInputWithUserIdMapping() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.main, "a@a.com", "p1234");
+        UserIdMapping.createUserIdMapping(process.main, user.id, "e1", null, false);
+
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("userId", "e1");
+        requestBody.addProperty("email", "random@gmail.com");
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/user/password/reset/token", requestBody, 1000, 1000, null,
+                SemVer.v4_0.get(), "emailpassword");
 
         assertEquals(response.get("status").getAsString(), "OK");
         assertNotNull(response.get("token"));
@@ -154,7 +203,7 @@ public class GeneratePasswordResetTokenAPITest2_7 {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user/password/reset/token", requestBody, 1000, 1000, null,
-                SemVer.v2_7.get(), "emailpassword");
+                SemVer.v4_0.get(), "emailpassword");
 
         assertEquals(response.get("status").getAsString(), "UNKNOWN_USER_ID_ERROR");
         assertEquals(response.entrySet().size(), 1);
@@ -178,13 +227,15 @@ public class GeneratePasswordResetTokenAPITest2_7 {
 
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("userId", res.user.id);
+        requestBody.addProperty("email", res.user.loginMethods[0].email);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user/password/reset/token", requestBody, 1000, 1000, null,
-                SemVer.v2_7.get(), "emailpassword");
+                SemVer.v4_0.get(), "emailpassword");
 
-        assertEquals(response.get("status").getAsString(), "UNKNOWN_USER_ID_ERROR");
-        assertEquals(response.entrySet().size(), 1);
+        assertEquals(response.get("status").getAsString(), "OK");
+        assertNotNull(response.get("token"));
+        assertEquals(response.entrySet().size(), 2);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
