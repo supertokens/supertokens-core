@@ -709,4 +709,40 @@ public class EmailPasswordTest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    @Test
+    public void deletionOfTpUserDeletesPasswordResetToken() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.getProcess(), "google",
+                "user-google",
+                "test@example.com");
+
+
+        String token = EmailPassword.generatePasswordResetToken(process.main, signInUpResponse.user.id,
+                "test@example.com");
+        token = io.supertokens.utils.Utils.hashSHA256(token);
+
+        assertNotNull(((EmailPasswordSQLStorage) StorageLayer.getStorage(process.main)).getPasswordResetTokenInfo(
+                new AppIdentifier(null, null), token));
+
+        AuthRecipe.deleteUser(process.main, signInUpResponse.user.id);
+
+        assertNull(((EmailPasswordSQLStorage) StorageLayer.getStorage(process.main)).getPasswordResetTokenInfo(
+                new AppIdentifier(null, null), token));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }
