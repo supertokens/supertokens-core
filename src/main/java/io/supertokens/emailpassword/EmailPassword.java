@@ -17,6 +17,7 @@
 package io.supertokens.emailpassword;
 
 import io.supertokens.Main;
+import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.emailpassword.exceptions.ResetPasswordInvalidTokenException;
@@ -44,6 +45,7 @@ import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
+import io.supertokens.webserver.WebserverAPI;
 import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nonnull;
@@ -276,20 +278,55 @@ public class EmailPassword {
     }
 
     @TestOnly
-    public static String generatePasswordResetToken(Main main, String userId)
+    public static String generatePasswordResetTokenBeforeCdi4_0(Main main, String userId)
+            throws InvalidKeySpecException, NoSuchAlgorithmException, StorageQueryException, UnknownUserIdException {
+        try {
+            Storage storage = StorageLayer.getStorage(main);
+            return generatePasswordResetTokenBeforeCdi4_0(
+                    new TenantIdentifierWithStorage(null, null, null, storage),
+                    main, userId);
+        } catch (TenantOrAppNotFoundException | BadPermissionException | WebserverAPI.BadRequestException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    @TestOnly
+    public static String generatePasswordResetToken(Main main, String userId, String email)
             throws InvalidKeySpecException, NoSuchAlgorithmException, StorageQueryException, UnknownUserIdException {
         try {
             Storage storage = StorageLayer.getStorage(main);
             return generatePasswordResetToken(
                     new TenantIdentifierWithStorage(null, null, null, storage),
-                    main, userId);
+                    main, userId, email);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
         }
     }
 
+    public static String generatePasswordResetTokenBeforeCdi4_0(TenantIdentifierWithStorage tenantIdentifierWithStorage,
+                                                                Main main,
+                                                                String userId)
+            throws InvalidKeySpecException, NoSuchAlgorithmException, StorageQueryException, UnknownUserIdException,
+            TenantOrAppNotFoundException, BadPermissionException, WebserverAPI.BadRequestException {
+        AppIdentifierWithStorage appIdentifierWithStorage =
+                tenantIdentifierWithStorage.toAppIdentifierWithStorage();
+        AuthRecipeUserInfo user = AuthRecipe.getUserById(appIdentifierWithStorage, userId);
+        if (user == null) {
+            throw new UnknownUserIdException();
+        }
+        if (user.loginMethods.length > 1) {
+            throw new WebserverAPI.BadRequestException("Please use CDI version >= 4.0");
+        }
+        if (user.loginMethods[0].email == null ||
+                user.loginMethods[0].recipeId != RECIPE_ID.EMAIL_PASSWORD) {
+            // this used to be the behaviour of the older CDI version and it was enforced via a fkey constraint
+            throw new UnknownUserIdException();
+        }
+        return generatePasswordResetToken(tenantIdentifierWithStorage, main, userId, user.loginMethods[0].email);
+    }
+
     public static String generatePasswordResetToken(TenantIdentifierWithStorage tenantIdentifierWithStorage, Main main,
-                                                    String userId)
+                                                    String userId, String email)
             throws InvalidKeySpecException, NoSuchAlgorithmException, StorageQueryException, UnknownUserIdException,
             TenantOrAppNotFoundException, BadPermissionException {
 
@@ -326,7 +363,7 @@ public class EmailPassword {
                 tenantIdentifierWithStorage.getEmailPasswordStorage().addPasswordResetToken(
                         tenantIdentifierWithStorage.toAppIdentifier(), new PasswordResetTokenInfo(userId,
                                 hashedToken, System.currentTimeMillis() +
-                                getPasswordResetTokenLifetime(tenantIdentifierWithStorage, main)));
+                                getPasswordResetTokenLifetime(tenantIdentifierWithStorage, main), email));
                 return token;
             } catch (DuplicatePasswordResetTokenException ignored) {
             }
@@ -334,6 +371,7 @@ public class EmailPassword {
     }
 
     @TestOnly
+    @Deprecated
     public static String resetPassword(Main main, String token,
                                        String password)
             throws ResetPasswordInvalidTokenException, NoSuchAlgorithmException, StorageQueryException,
@@ -347,6 +385,7 @@ public class EmailPassword {
         }
     }
 
+    @Deprecated
     public static String resetPassword(TenantIdentifierWithStorage tenantIdentifierWithStorage, Main main, String token,
                                        String password)
             throws ResetPasswordInvalidTokenException, NoSuchAlgorithmException, StorageQueryException,

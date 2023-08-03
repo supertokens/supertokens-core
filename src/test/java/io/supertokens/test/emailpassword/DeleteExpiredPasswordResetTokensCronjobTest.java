@@ -66,13 +66,13 @@ public class DeleteExpiredPasswordResetTokensCronjobTest {
 
         UserInfo user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
 
-        String tok = EmailPassword.generatePasswordResetToken(process.getProcess(), user.id);
-        String tok2 = EmailPassword.generatePasswordResetToken(process.getProcess(), user.id);
+        String tok = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.id);
+        String tok2 = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.id);
 
         Thread.sleep(2000);
 
-        String tok3 = EmailPassword.generatePasswordResetToken(process.getProcess(), user.id);
-        String tok4 = EmailPassword.generatePasswordResetToken(process.getProcess(), user.id);
+        String tok3 = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.id);
+        String tok4 = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.id);
 
         assert (((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
                 .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.id).length == 4);

@@ -15,6 +15,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Added a two new columns in `all_auth_recipe_users`:
     - `primary_or_recipe_user_id` (default value is equal to `user_id` column)
     - `is_linked_or_is_a_primary_user` (default value is false)
+- Dropped existing fkey constraint on `emailpassword_pswd_reset_tokens`, and added a new fkey constraint on `app_id_to_user_id` table.
+- Added new column in `emailpassword_pswd_reset_tokens` to store email
 
 ### DB migration:
 
@@ -38,6 +40,10 @@ CREATE INDEX all_auth_recipe_users_pagination_index ON all_auth_recipe_users (ti
                                                                               DESC, app_id DESC);
 CREATE INDEX all_auth_recipe_users_primary_user_id_index ON all_auth_recipe_users (app_id, primary_or_recipe_user_id);
 CREATE INDEX all_auth_recipe_users_primary_user_id_and_tenant_id_index ON all_auth_recipe_users (app_id, tenant_id, primary_or_recipe_user_id);
+
+ALTER TABLE emailpassword_pswd_reset_tokens DROP CONSTRAINT IF EXISTS emailpassword_pswd_reset_tokens_user_id_fkey;
+ALTER TABLE emailpassword_pswd_reset_tokens ADD CONSTRAINT emailpassword_pswd_reset_tokens_user_id_fkey FOREIGN KEY (app_id, user_id) REFERENCES app_id_to_user_id (app_id, user_id) ON DELETE CASCADE;
+ALTER TABLE emailpassword_pswd_reset_tokens ADD COLUMN email VARCHAR(256);
 ```
 
 ## [6.0.8] - 2023-08-01

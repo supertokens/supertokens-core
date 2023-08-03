@@ -124,7 +124,7 @@ public class TestAppData {
 
         // Add all recipe data
         UserInfo epUser = EmailPassword.signUp(appWithStorage, process.getProcess(), "test@example.com", "password");
-        EmailPassword.generatePasswordResetToken(appWithStorage, process.getProcess(), epUser.id);
+        EmailPassword.generatePasswordResetTokenBeforeCdi4_0(appWithStorage, process.getProcess(), epUser.id);
 
         ThirdParty.SignInUpResponse tpUser = ThirdParty.signInUp(appWithStorage, process.getProcess(), "google",
                 "googleid", "test@example.com");

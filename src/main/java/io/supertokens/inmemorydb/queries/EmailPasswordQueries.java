@@ -573,7 +573,7 @@ public class EmailPasswordQueries {
         public PasswordResetTokenInfo map(ResultSet result) throws StorageQueryException {
             try {
                 return new PasswordResetTokenInfo(result.getString("user_id"), result.getString("token"),
-                        result.getLong("token_expiry"));
+                        result.getLong("token_expiry"), result.getString("email"));
             } catch (Exception e) {
                 throw new StorageQueryException(e);
             }
