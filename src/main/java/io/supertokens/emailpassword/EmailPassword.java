@@ -447,6 +447,103 @@ public class EmailPassword {
     }
 
     @TestOnly
+    public static ConsumeResetPasswordTokenResult consumeResetPasswordToken(Main main, String token)
+            throws ResetPasswordInvalidTokenException, NoSuchAlgorithmException, StorageQueryException,
+            StorageTransactionLogicException {
+        try {
+            Storage storage = StorageLayer.getStorage(main);
+            return consumeResetPasswordToken(new TenantIdentifierWithStorage(null, null, null, storage),
+                    token);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    public static class ConsumeResetPasswordTokenResult {
+        public String userId;
+        public String email;
+
+        public ConsumeResetPasswordTokenResult(String userId, String email) {
+            this.userId = userId;
+            this.email = email;
+        }
+    }
+
+    public static ConsumeResetPasswordTokenResult consumeResetPasswordToken(
+            TenantIdentifierWithStorage tenantIdentifierWithStorage, String token)
+            throws ResetPasswordInvalidTokenException, NoSuchAlgorithmException, StorageQueryException,
+            StorageTransactionLogicException, TenantOrAppNotFoundException {
+        String hashedToken = Utils.hashSHA256(token);
+
+        EmailPasswordSQLStorage storage = tenantIdentifierWithStorage.getEmailPasswordStorage();
+
+        PasswordResetTokenInfo resetInfo = storage.getPasswordResetTokenInfo(
+                tenantIdentifierWithStorage.toAppIdentifier(), hashedToken);
+
+        if (resetInfo == null) {
+            throw new ResetPasswordInvalidTokenException();
+        }
+
+        final String userId = resetInfo.userId;
+
+        try {
+            return storage.startTransaction(con -> {
+
+                PasswordResetTokenInfo[] allTokens = storage.getAllPasswordResetTokenInfoForUser_Transaction(
+                        tenantIdentifierWithStorage.toAppIdentifier(), con,
+                        userId);
+
+                PasswordResetTokenInfo matchedToken = null;
+                for (PasswordResetTokenInfo tok : allTokens) {
+                    if (tok.token.equals(hashedToken)) {
+                        matchedToken = tok;
+                        break;
+                    }
+                }
+
+                if (matchedToken == null) {
+                    throw new StorageTransactionLogicException(new ResetPasswordInvalidTokenException());
+                }
+
+                storage.deleteAllPasswordResetTokensForUser_Transaction(tenantIdentifierWithStorage.toAppIdentifier(),
+                        con,
+                        userId);
+
+                if (matchedToken.tokenExpiry < System.currentTimeMillis()) {
+                    storage.commitTransaction(con);
+                    throw new StorageTransactionLogicException(new ResetPasswordInvalidTokenException());
+                }
+
+                storage.commitTransaction(con);
+                if (matchedToken.email == null) {
+                    // this is possible if the token was generated before migration, and then consumed
+                    // after migration
+                    AppIdentifierWithStorage appIdentifierWithStorage =
+                            tenantIdentifierWithStorage.toAppIdentifierWithStorage();
+                    AuthRecipeUserInfo user = AuthRecipe.getUserById(appIdentifierWithStorage, userId);
+                    if (user == null) {
+                        throw new StorageTransactionLogicException(new ResetPasswordInvalidTokenException());
+                    }
+                    if (user.loginMethods.length > 1) {
+                        throw new StorageTransactionLogicException(new ResetPasswordInvalidTokenException());
+                    }
+                    if (user.loginMethods[0].email == null ||
+                            user.loginMethods[0].recipeId != RECIPE_ID.EMAIL_PASSWORD) {
+                        throw new StorageTransactionLogicException(new ResetPasswordInvalidTokenException());
+                    }
+                    return new ConsumeResetPasswordTokenResult(matchedToken.userId, user.loginMethods[0].email);
+                }
+                return new ConsumeResetPasswordTokenResult(matchedToken.userId, matchedToken.email);
+            });
+        } catch (StorageTransactionLogicException e) {
+            if (e.actualException instanceof ResetPasswordInvalidTokenException) {
+                throw (ResetPasswordInvalidTokenException) e.actualException;
+            }
+            throw e;
+        }
+    }
+
+    @TestOnly
     public static void updateUsersEmailOrPassword(Main main,
                                                   @Nonnull String userId, @Nullable String email,
                                                   @Nullable String password)

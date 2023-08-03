@@ -635,10 +635,20 @@ public class EmailPasswordTest {
                 "user-google",
                 "test@example.com");
 
-        EmailPassword.generatePasswordResetToken(process.main, signInUpResponse.user.id,
+        try {
+            EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.main, signInUpResponse.user.id);
+            assert false;
+        } catch (UnknownUserIdException ignored) {
+
+        }
+
+        String token = EmailPassword.generatePasswordResetToken(process.main, signInUpResponse.user.id,
                 "test@example.com");
 
-        // TODO: call consume
+        EmailPassword.ConsumeResetPasswordTokenResult res = EmailPassword.consumeResetPasswordToken(process.main,
+                token);
+        assert (res.email.equals("test@example.com"));
+        assert (res.userId.equals(signInUpResponse.user.id));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -665,10 +675,13 @@ public class EmailPasswordTest {
 
         AuthRecipe.createPrimaryUser(process.main, signInUpResponse.user.id);
 
-        EmailPassword.generatePasswordResetToken(process.main, signInUpResponse.user.id,
+        String token = EmailPassword.generatePasswordResetToken(process.main, signInUpResponse.user.id,
                 "test@example.com");
 
-        // TODO: call consume
+        EmailPassword.ConsumeResetPasswordTokenResult res = EmailPassword.consumeResetPasswordToken(process.main,
+                token);
+        assert (res.email.equals("test@example.com"));
+        assert (res.userId.equals(signInUpResponse.user.id));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -701,10 +714,13 @@ public class EmailPasswordTest {
         AuthRecipe.linkAccounts(process.main, signInUpResponse2.user.id, signInUpResponse.user.id);
         assert (AuthRecipe.unlinkAccounts(process.main, signInUpResponse.user.id));
 
-        EmailPassword.generatePasswordResetToken(process.main, signInUpResponse.user.id,
+        String token = EmailPassword.generatePasswordResetToken(process.main, signInUpResponse.user.id,
                 "test@example.com");
 
-        // TODO: call consume
+        EmailPassword.ConsumeResetPasswordTokenResult res = EmailPassword.consumeResetPasswordToken(process.main,
+                token);
+        assert (res.email.equals("test@example.com"));
+        assert (res.userId.equals(signInUpResponse.user.id));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
