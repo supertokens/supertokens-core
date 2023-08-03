@@ -23,6 +23,7 @@ import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.authRecipe.exception.AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException;
 import io.supertokens.authRecipe.exception.InputUserIdIsNotAPrimaryUserException;
 import io.supertokens.authRecipe.exception.RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException;
+import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
@@ -40,7 +41,7 @@ import java.io.IOException;
 public class CanLinkAccountsAPI extends WebserverAPI {
 
     public CanLinkAccountsAPI(Main main) {
-        super(main, "");
+        super(main, RECIPE_ID.ACCOUNT_LINKING.toString());
     }
 
     @Override
