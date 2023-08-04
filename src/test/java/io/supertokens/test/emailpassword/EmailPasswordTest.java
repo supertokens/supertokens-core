@@ -16,15 +16,18 @@
 
 package io.supertokens.test.emailpassword;
 
+import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.config.Config;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.PasswordHashing;
+import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
 import io.supertokens.emailpassword.exceptions.ResetPasswordInvalidTokenException;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
+import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
@@ -35,9 +38,7 @@ import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicatePassword
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateUserIdException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -881,6 +882,119 @@ public class EmailPasswordTest {
 
         assert (((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
                 .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.id).length == 0);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+
+    @Test
+    public void updateEmailFailsIfEmailUsedByOtherPrimaryUserInSameTenant() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        UserInfo user0 = EmailPassword.signUp(process.getProcess(), "someemail1@gmail.com", "somePass");
+        AuthRecipe.createPrimaryUser(process.main, user0.id);
+
+        UserInfo user = EmailPassword.signUp(process.getProcess(), "someemail@gmail.com", "somePass");
+        AuthRecipe.createPrimaryUser(process.main, user.id);
+
+        try {
+            EmailPassword.updateUsersEmailOrPassword(process.main, user.id, "someemail1@gmail.com", null);
+            assert (false);
+        } catch (EmailChangeNotAllowedException ignored) {
+
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void updateEmailSucceedsIfEmailUsedByOtherPrimaryUserInDifferentTenantWhichThisUserIsNotAPartOf()
+            throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        Multitenancy.addNewOrUpdateAppOrTenant(process.main, new TenantIdentifier(null, null, null),
+                new TenantConfig(new TenantIdentifier(null, null, "t1"), new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[0]), new PasswordlessConfig(true),
+                        new JsonObject()));
+
+        TenantIdentifierWithStorage tenantIdentifierWithStorage = new TenantIdentifierWithStorage(null, null, "t1",
+                StorageLayer.getStorage(process.main));
+        AuthRecipeUserInfo user0 = EmailPassword.signUp(tenantIdentifierWithStorage, process.getProcess(),
+                "someemail1@gmail.com",
+                "pass1234");
+
+        AuthRecipe.createPrimaryUser(process.main, user0.id);
+
+        UserInfo user = EmailPassword.signUp(process.getProcess(), "someemail@gmail.com", "somePass");
+        AuthRecipe.createPrimaryUser(process.main, user.id);
+
+        EmailPassword.updateUsersEmailOrPassword(process.main, user.id, "someemail1@gmail.com", null);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void updateEmailFailsIfEmailUsedByOtherPrimaryUserInDifferentTenant()
+            throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        Multitenancy.addNewOrUpdateAppOrTenant(process.main, new TenantIdentifier(null, null, null),
+                new TenantConfig(new TenantIdentifier(null, null, "t1"), new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[0]), new PasswordlessConfig(true),
+                        new JsonObject()));
+
+        TenantIdentifierWithStorage tenantIdentifierWithStorage = new TenantIdentifierWithStorage(null, null, "t1",
+                StorageLayer.getStorage(process.main));
+        AuthRecipeUserInfo user0 = EmailPassword.signUp(tenantIdentifierWithStorage, process.getProcess(),
+                "someemail1@gmail.com",
+                "pass1234");
+
+        AuthRecipe.createPrimaryUser(process.main, user0.id);
+
+        UserInfo user = EmailPassword.signUp(process.getProcess(), "someemail@gmail.com", "somePass");
+        AuthRecipe.createPrimaryUser(process.main, user.id);
+
+        Multitenancy.addUserIdToTenant(process.main, tenantIdentifierWithStorage, user.id);
+
+        try {
+            EmailPassword.updateUsersEmailOrPassword(process.main, user.id, "someemail1@gmail.com", null);
+            assert (false);
+        } catch (EmailChangeNotAllowedException ignored) {
+
+        }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

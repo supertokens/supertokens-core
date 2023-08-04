@@ -19,6 +19,7 @@ package io.supertokens.test.emailpassword;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
@@ -351,7 +352,8 @@ public class MultitenantEmailPasswordTest {
             throws InterruptedException, InvalidProviderConfigException,
             StorageQueryException, FeatureNotEnabledException, TenantOrAppNotFoundException, IOException,
             InvalidConfigException, CannotModifyBaseConfigException, BadPermissionException, DuplicateEmailException,
-            UnknownUserIdException, StorageTransactionLogicException, WrongCredentialsException {
+            UnknownUserIdException, StorageTransactionLogicException, WrongCredentialsException,
+            EmailChangeNotAllowedException {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
