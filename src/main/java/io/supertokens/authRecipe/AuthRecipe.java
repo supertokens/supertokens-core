@@ -570,7 +570,9 @@ public class AuthRecipe {
         if (thirdPartyId != null && thirdPartyUserId != null) {
             AuthRecipeUserInfo user = tenantIdentifier.getAuthRecipeStorage()
                     .getPrimaryUserByThirdPartyInfo(tenantIdentifier, thirdPartyId, thirdPartyUserId);
-            result.add(user);
+            if (user != null) {
+                result.add(user);
+            }
         }
 
         if (doUnionOfAccountInfo) {
