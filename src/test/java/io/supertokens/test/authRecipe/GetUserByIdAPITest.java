@@ -28,6 +28,7 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.webserver.WebserverAPI;
 import org.junit.AfterClass;
@@ -194,6 +195,76 @@ public class GetUserByIdAPITest {
                 assertEquals(lM.get("recipeId").getAsString(), "emailpassword");
                 assertEquals(lM.get("email").getAsString(), "test2@example.com");
                 assert (lM.entrySet().size() == 6);
+            }
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void getUserSuccess2() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
+        assert (!user.isPrimaryUser);
+
+        Thread.sleep(50);
+
+
+        ThirdParty.SignInUpResponse signInUpRespone = ThirdParty.signInUp(process.getProcess(), "google", "google-user",
+                "test@example.com");
+        AuthRecipeUserInfo user2 = signInUpRespone.user;
+        assert (!user2.isPrimaryUser);
+
+        AuthRecipe.createPrimaryUser(process.main, user2.id);
+
+        AuthRecipe.linkAccounts(process.main, user.id, user2.id);
+
+        {
+            Map<String, String> params = new HashMap<>();
+            params.put("userId", user2.id);
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/user/id", params, 1000, 1000, null,
+                    WebserverAPI.getLatestCDIVersion().get(), "");
+            assertEquals(2, response.entrySet().size());
+            assertEquals("OK", response.get("status").getAsString());
+            JsonObject jsonUser = response.get("user").getAsJsonObject();
+            assert (jsonUser.get("id").getAsString().equals(user2.id));
+            assert (jsonUser.get("timeJoined").getAsLong() == user.timeJoined);
+            assert (jsonUser.get("isPrimaryUser").getAsBoolean());
+            assert (jsonUser.get("emails").getAsJsonArray().size() == 1);
+            assert (jsonUser.get("emails").getAsJsonArray().get(0).getAsString().equals("test@example.com"));
+            assert (jsonUser.get("phoneNumbers").getAsJsonArray().size() == 0);
+            assert (jsonUser.get("thirdParty").getAsJsonArray().size() == 1);
+            assert (jsonUser.get("loginMethods").getAsJsonArray().size() == 2);
+            {
+                JsonObject lM = jsonUser.get("loginMethods").getAsJsonArray().get(0).getAsJsonObject();
+                assertFalse(lM.get("verified").getAsBoolean());
+                assertEquals(lM.get("timeJoined").getAsLong(), user.timeJoined);
+                assertEquals(lM.get("recipeUserId").getAsString(), user.id);
+                assertEquals(lM.get("recipeId").getAsString(), "emailpassword");
+                assertEquals(lM.get("email").getAsString(), "test@example.com");
+                assert (lM.entrySet().size() == 6);
+            }
+            {
+                JsonObject lM = jsonUser.get("loginMethods").getAsJsonArray().get(1).getAsJsonObject();
+                assertFalse(lM.get("verified").getAsBoolean());
+                assertEquals(lM.get("timeJoined").getAsLong(), user2.timeJoined);
+                assertEquals(lM.get("recipeUserId").getAsString(), user2.id);
+                assertEquals(lM.get("recipeId").getAsString(), "thirdparty");
+                assertEquals(lM.get("email").getAsString(), "test@example.com");
+                assert (lM.entrySet().size() == 7);
             }
         }
 
