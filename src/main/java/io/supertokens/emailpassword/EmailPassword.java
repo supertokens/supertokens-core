@@ -291,6 +291,19 @@ public class EmailPassword {
     }
 
     @TestOnly
+    public static String generatePasswordResetTokenBeforeCdi4_0WithoutAddingEmail(Main main, String userId)
+            throws InvalidKeySpecException, NoSuchAlgorithmException, StorageQueryException, UnknownUserIdException {
+        try {
+            Storage storage = StorageLayer.getStorage(main);
+            return generatePasswordResetToken(
+                    new TenantIdentifierWithStorage(null, null, null, storage),
+                    main, userId, null);
+        } catch (TenantOrAppNotFoundException | BadPermissionException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    @TestOnly
     public static String generatePasswordResetToken(Main main, String userId, String email)
             throws InvalidKeySpecException, NoSuchAlgorithmException, StorageQueryException, UnknownUserIdException {
         try {

@@ -761,4 +761,128 @@ public class EmailPasswordTest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    @Test
+    public void passwordResetTokenExpiredCheckWithConsumeCode() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        Utils.setValueInConfig("password_reset_token_lifetime", "10");
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        UserInfo user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
+
+        String tok = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.id);
+
+        assert (((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
+                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.id).length == 1);
+
+        Thread.sleep(20);
+
+        try {
+            EmailPassword.consumeResetPasswordToken(process.getProcess(), tok);
+            assert (false);
+        } catch (ResetPasswordInvalidTokenException ignored) {
+
+        }
+
+        assert (((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
+                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.id).length == 0);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void multiplePasswordResetTokensPerUserAndThenVerifyWithSigninWithConsumeCode() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        UserInfo user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
+
+        EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.id);
+        String tok = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.id);
+        EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.id);
+
+        PasswordResetTokenInfo[] tokens = ((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
+                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.id);
+
+        assert (tokens.length == 3);
+
+        EmailPassword.consumeResetPasswordToken(process.getProcess(), tok);
+
+        tokens = ((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
+                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.id);
+        assert (tokens.length == 0);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void wrongPasswordResetTokenWithConsumeCode() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        try {
+            EmailPassword.consumeResetPasswordToken(process.getProcess(), "token");
+            assert (false);
+        } catch (ResetPasswordInvalidTokenException ignored) {
+
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void consumeCodeCorrectlySetsTheUserEmailForOlderTokens() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        UserInfo user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
+
+        String tok = EmailPassword.generatePasswordResetTokenBeforeCdi4_0WithoutAddingEmail(process.getProcess(),
+                user.id);
+
+        assert (((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
+                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.id).length == 1);
+        assert (((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
+                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.id)[0].email == null);
+
+        EmailPassword.ConsumeResetPasswordTokenResult result = EmailPassword.consumeResetPasswordToken(
+                process.getProcess(), tok);
+        assert (result.email.equals("test1@example.com"));
+        assert (result.userId.equals(user.id));
+
+        assert (((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
+                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.id).length == 0);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }
