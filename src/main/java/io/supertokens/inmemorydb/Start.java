@@ -1054,21 +1054,6 @@ public class Start
     }
 
     @Override
-    public String getEmailUsingThirdPartyInfo_Transaction(
-            AppIdentifier appIdentifier, TransactionConnection con,
-            String thirdPartyId,
-            String thirdPartyUserId)
-            throws StorageQueryException {
-        Connection sqlCon = (Connection) con.getConnection();
-        try {
-            return ThirdPartyQueries.getEmailUsingThirdPartyInfo_Transaction(this, sqlCon, appIdentifier, thirdPartyId,
-                    thirdPartyUserId);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
     public void updateUserEmail_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
                                             String thirdPartyId, String thirdPartyUserId,
                                             String newEmail) throws StorageQueryException {

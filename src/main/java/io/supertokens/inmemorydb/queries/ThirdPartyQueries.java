@@ -297,29 +297,6 @@ public class ThirdPartyQueries {
         });
     }
 
-    public static String getEmailUsingThirdPartyInfo_Transaction(Start start, Connection con,
-                                                                 AppIdentifier appIdentifier, String thirdPartyId,
-                                                                 String thirdPartyUserId)
-            throws SQLException, StorageQueryException {
-
-        ((ConnectionWithLocks) con).lock(appIdentifier.getAppId() + "~" + thirdPartyId + "~" + thirdPartyUserId +
-                Config.getConfig(start).getThirdPartyUsersTable());
-
-        String QUERY = "SELECT email FROM "
-                + getConfig(start).getThirdPartyUsersTable()
-                + " WHERE app_id = ? AND third_party_id = ? AND third_party_user_id = ?";
-        return execute(con, QUERY, pst -> {
-            pst.setString(1, appIdentifier.getAppId());
-            pst.setString(2, thirdPartyId);
-            pst.setString(3, thirdPartyUserId);
-        }, result -> {
-            if (result.next()) {
-                return result.getString("email");
-            }
-            return null;
-        });
-    }
-
     private static UserInfoPartial getUserInfoUsingUserId(Start start, Connection con,
                                                           AppIdentifier appIdentifier, String userId)
             throws SQLException, StorageQueryException {

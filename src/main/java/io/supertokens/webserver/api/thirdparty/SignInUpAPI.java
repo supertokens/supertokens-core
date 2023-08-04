@@ -19,6 +19,7 @@ package io.supertokens.webserver.api.thirdparty;
 import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
+import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -81,9 +82,7 @@ public class SignInUpAPI extends WebserverAPI {
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
                 result.addProperty("createdNewUser", response.createdNewUser);
-                JsonObject userJson =
-                        getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0) ? response.user.toJson() :
-                                response.user.toJsonWithoutAccountLinking();
+                JsonObject userJson = response.user.toJsonWithoutAccountLinking();
 
                 if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
                     userJson.remove("tenantIds");
@@ -146,6 +145,11 @@ public class SignInUpAPI extends WebserverAPI {
 
             } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
                 throw new ServletException(e);
+            } catch (EmailChangeNotAllowedException e) {
+                JsonObject result = new JsonObject();
+                result.addProperty("status", "OK");
+                result.addProperty("reason", "Email already associated with another primary user.");
+                super.sendJsonResponse(200, result, resp);
             }
         }
 
