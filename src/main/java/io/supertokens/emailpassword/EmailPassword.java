@@ -20,6 +20,7 @@ import io.supertokens.Main;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
+import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
 import io.supertokens.emailpassword.exceptions.ResetPasswordInvalidTokenException;
 import io.supertokens.emailpassword.exceptions.UnsupportedPasswordHashingFormatException;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
@@ -29,6 +30,7 @@ import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
+import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
 import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
@@ -561,7 +563,7 @@ public class EmailPassword {
                                                   @Nonnull String userId, @Nullable String email,
                                                   @Nullable String password)
             throws StorageQueryException, StorageTransactionLogicException,
-            UnknownUserIdException, DuplicateEmailException {
+            UnknownUserIdException, DuplicateEmailException, EmailChangeNotAllowedException {
         try {
             Storage storage = StorageLayer.getStorage(main);
             updateUsersEmailOrPassword(new AppIdentifierWithStorage(null, null, storage),
@@ -575,20 +577,45 @@ public class EmailPassword {
                                                   @Nonnull String userId, @Nullable String email,
                                                   @Nullable String password)
             throws StorageQueryException, StorageTransactionLogicException,
-            UnknownUserIdException, DuplicateEmailException, TenantOrAppNotFoundException {
+            UnknownUserIdException, DuplicateEmailException, TenantOrAppNotFoundException,
+            EmailChangeNotAllowedException {
         EmailPasswordSQLStorage storage = appIdentifierWithStorage.getEmailPasswordStorage();
+        AuthRecipeSQLStorage authRecipeStorage = (AuthRecipeSQLStorage) appIdentifierWithStorage.getAuthRecipeStorage();
         try {
             storage.startTransaction(transaction -> {
                 try {
-                    boolean exists = storage.lockEmailPasswordTableUsingId_Transaction(appIdentifierWithStorage,
-                            transaction,
-                            userId);
+                    AuthRecipeUserInfo user = authRecipeStorage.getPrimaryUserById_Transaction(appIdentifierWithStorage,
+                            transaction, userId);
 
-                    if (!exists) {
+                    if (user == null) {
                         throw new StorageTransactionLogicException(new UnknownUserIdException());
                     }
 
                     if (email != null) {
+                        if (user.isPrimaryUser) {
+                            for (String tenantId : user.tenantIds) {
+                                // we do not bother with getting the tenantIdentifierWithStorage here because
+                                // we get the tenants from the user itself, and the user can only be shared across
+                                // tenants of the same storage - therefore, the storage will be the same.
+                                TenantIdentifier tenantIdentifier = new TenantIdentifier(
+                                        appIdentifierWithStorage.getConnectionUriDomain(),
+                                        appIdentifierWithStorage.getAppId(),
+                                        tenantId);
+
+                                AuthRecipeUserInfo[] existingUsersWithNewEmail =
+                                        authRecipeStorage.listPrimaryUsersByEmail_Transaction(
+                                                tenantIdentifier, transaction,
+                                                email);
+
+                                for (AuthRecipeUserInfo userWithSameEmail : existingUsersWithNewEmail) {
+                                    if (userWithSameEmail.isPrimaryUser && !userWithSameEmail.id.equals(user.id)) {
+                                        throw new StorageTransactionLogicException(
+                                                new EmailChangeNotAllowedException());
+                                    }
+                                }
+                            }
+                        }
+
                         try {
                             storage.updateUsersEmail_Transaction(appIdentifierWithStorage, transaction,
                                     userId, email);
@@ -617,6 +644,8 @@ public class EmailPassword {
                 throw (DuplicateEmailException) e.actualException;
             } else if (e.actualException instanceof TenantOrAppNotFoundException) {
                 throw (TenantOrAppNotFoundException) e.actualException;
+            } else if (e.actualException instanceof EmailChangeNotAllowedException) {
+                throw (EmailChangeNotAllowedException) e.actualException;
             }
             throw e;
         }

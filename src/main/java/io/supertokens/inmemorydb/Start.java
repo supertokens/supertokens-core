@@ -868,18 +868,6 @@ public class Start
     }
 
     @Override
-    public boolean lockEmailPasswordTableUsingId_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
-                                                             String userId)
-            throws StorageQueryException {
-        Connection sqlCon = (Connection) con.getConnection();
-        try {
-            return EmailPasswordQueries.lockEmailPasswordTableUsingId_Transaction(this, sqlCon, appIdentifier, userId);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
     public void deleteEmailPasswordUser_Transaction(TransactionConnection con, AppIdentifier appIdentifier,
                                                     String userId, boolean deleteUserIdMappingToo)
             throws StorageQueryException {

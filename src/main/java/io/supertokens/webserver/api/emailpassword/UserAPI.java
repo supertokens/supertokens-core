@@ -20,6 +20,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
@@ -201,6 +202,12 @@ public class UserAPI extends WebserverAPI {
             Logging.debug(main, appIdentifier.getAsPublicTenantIdentifier(), Utils.exceptionStacktraceToString(e));
             JsonObject result = new JsonObject();
             result.addProperty("status", "EMAIL_ALREADY_EXISTS_ERROR");
+            super.sendJsonResponse(200, result, resp);
+        } catch (EmailChangeNotAllowedException e) {
+            Logging.debug(main, appIdentifier.getAsPublicTenantIdentifier(), Utils.exceptionStacktraceToString(e));
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "EMAIL_CHANGE_NOT_ALLOWED_ERROR");
+            result.addProperty("reason", "New email is associated with another primary user ID");
             super.sendJsonResponse(200, result, resp);
         }
     }
