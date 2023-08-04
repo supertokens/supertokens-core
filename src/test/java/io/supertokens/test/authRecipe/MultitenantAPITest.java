@@ -21,6 +21,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
@@ -175,7 +176,8 @@ public class MultitenantAPITest {
             throws TenantOrAppNotFoundException, DuplicateEmailException, StorageQueryException,
             BadPermissionException, DuplicateLinkCodeHashException, NoSuchAlgorithmException, IOException,
             RestartFlowException, InvalidKeyException, Base64EncodingException, DeviceIdHashMismatchException,
-            StorageTransactionLogicException, IncorrectUserInputCodeException, ExpiredUserInputCodeException {
+            StorageTransactionLogicException, IncorrectUserInputCodeException, ExpiredUserInputCodeException,
+            EmailChangeNotAllowedException {
         tenantToUsers = new HashMap<>();
         recipeToUsers = new HashMap<>();
 
@@ -236,7 +238,8 @@ public class MultitenantAPITest {
                             null, null,
                             "abcd"
                     );
-                    Passwordless.ConsumeCodeResponse response = Passwordless.consumeCode(tenantIdentifierWithStorage, process.getProcess(), codeResponse.deviceId,
+                    Passwordless.ConsumeCodeResponse response = Passwordless.consumeCode(tenantIdentifierWithStorage,
+                            process.getProcess(), codeResponse.deviceId,
                             codeResponse.deviceIdHash, "abcd", null);
                     tenantToUsers.get(tenant).add(response.user.id);
                     recipeToUsers.get("passwordless").add(response.user.id);
@@ -249,7 +252,8 @@ public class MultitenantAPITest {
                             "+1234567890", null,
                             "abcd"
                     );
-                    Passwordless.ConsumeCodeResponse response = Passwordless.consumeCode(tenantIdentifierWithStorage, process.getProcess(), codeResponse.deviceId,
+                    Passwordless.ConsumeCodeResponse response = Passwordless.consumeCode(tenantIdentifierWithStorage,
+                            process.getProcess(), codeResponse.deviceId,
                             codeResponse.deviceIdHash, "abcd", null);
                     tenantToUsers.get(tenant).add(response.user.id);
                     recipeToUsers.get("passwordless").add(response.user.id);
@@ -262,7 +266,8 @@ public class MultitenantAPITest {
                             "+9876543210", null,
                             "abcd"
                     );
-                    Passwordless.ConsumeCodeResponse response = Passwordless.consumeCode(tenantIdentifierWithStorage, process.getProcess(), codeResponse.deviceId,
+                    Passwordless.ConsumeCodeResponse response = Passwordless.consumeCode(tenantIdentifierWithStorage,
+                            process.getProcess(), codeResponse.deviceId,
                             codeResponse.deviceIdHash, "abcd", null);
                     tenantToUsers.get(tenant).add(response.user.id);
                     recipeToUsers.get("passwordless").add(response.user.id);
@@ -303,7 +308,7 @@ public class MultitenantAPITest {
         }
     }
 
-    private long getUserCount(TenantIdentifier tenantIdentifier, String []recipeIds, boolean includeAllTenants)
+    private long getUserCount(TenantIdentifier tenantIdentifier, String[] recipeIds, boolean includeAllTenants)
             throws HttpResponseException, IOException {
         HashMap<String, String> params = new HashMap<>();
         if (recipeIds != null) {
@@ -323,7 +328,7 @@ public class MultitenantAPITest {
         return response.get("count").getAsLong();
     }
 
-    private String[] getUsers(TenantIdentifier tenantIdentifier, String []recipeIds)
+    private String[] getUsers(TenantIdentifier tenantIdentifier, String[] recipeIds)
             throws HttpResponseException, IOException {
         HashMap<String, String> params = new HashMap<>();
         if (recipeIds != null) {
@@ -347,7 +352,8 @@ public class MultitenantAPITest {
         return userIds;
     }
 
-    private String[] getUsers(TenantIdentifier tenantIdentifier, String[] emails, String[] phoneNumbers, String[] providers)
+    private String[] getUsers(TenantIdentifier tenantIdentifier, String[] emails, String[] phoneNumbers,
+                              String[] providers)
             throws HttpResponseException, IOException {
         HashMap<String, String> params = new HashMap<>();
         if (emails != null) {
@@ -447,7 +453,8 @@ public class MultitenantAPITest {
                 String[] users = getUsers(tenant, new String[]{"emailpassword", "passwordless"});
                 for (String user : users) {
                     assertTrue(tenantToUsers.get(tenant).contains(user));
-                    assertTrue(recipeToUsers.get("emailpassword").contains(user) || recipeToUsers.get("passwordless").contains(user));
+                    assertTrue(recipeToUsers.get("emailpassword").contains(user) ||
+                            recipeToUsers.get("passwordless").contains(user));
                 }
             }
 
@@ -455,7 +462,8 @@ public class MultitenantAPITest {
                 String[] users = getUsers(tenant, new String[]{"thirdparty", "passwordless"});
                 for (String user : users) {
                     assertTrue(tenantToUsers.get(tenant).contains(user));
-                    assertTrue(recipeToUsers.get("thirdparty").contains(user) || recipeToUsers.get("passwordless").contains(user));
+                    assertTrue(recipeToUsers.get("thirdparty").contains(user) ||
+                            recipeToUsers.get("passwordless").contains(user));
                 }
             }
         }

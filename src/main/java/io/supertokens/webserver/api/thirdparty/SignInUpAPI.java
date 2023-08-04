@@ -147,7 +147,7 @@ public class SignInUpAPI extends WebserverAPI {
                 throw new ServletException(e);
             } catch (EmailChangeNotAllowedException e) {
                 JsonObject result = new JsonObject();
-                result.addProperty("status", "OK");
+                result.addProperty("status", "EMAIL_CHANGE_NOT_ALLOWED_ERROR");
                 result.addProperty("reason", "Email already associated with another primary user.");
                 super.sendJsonResponse(200, result, resp);
             }

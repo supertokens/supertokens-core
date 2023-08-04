@@ -22,6 +22,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
@@ -270,7 +271,8 @@ public class TestTenantIdIsNotPresentForOlderCDI {
             throws TenantOrAppNotFoundException, DuplicateEmailException, StorageQueryException,
             BadPermissionException, DuplicateLinkCodeHashException, NoSuchAlgorithmException, IOException,
             RestartFlowException, InvalidKeyException, Base64EncodingException, DeviceIdHashMismatchException,
-            StorageTransactionLogicException, IncorrectUserInputCodeException, ExpiredUserInputCodeException {
+            StorageTransactionLogicException, IncorrectUserInputCodeException, ExpiredUserInputCodeException,
+            EmailChangeNotAllowedException {
 
         HashMap<TenantIdentifier, ArrayList<String>> tenantToUsers = new HashMap<>();
         HashMap<String, ArrayList<String>> recipeToUsers = new HashMap<>();
@@ -279,7 +281,8 @@ public class TestTenantIdIsNotPresentForOlderCDI {
             tenantToUsers.put(tenantIdentifier, new ArrayList<>());
         }
 
-        TenantIdentifierWithStorage tenantIdentifierWithStorage = tenantIdentifier.withStorage(StorageLayer.getStorage(tenantIdentifier, process.getProcess()));
+        TenantIdentifierWithStorage tenantIdentifierWithStorage = tenantIdentifier.withStorage(
+                StorageLayer.getStorage(tenantIdentifier, process.getProcess()));
         for (int i = 0; i < numUsers; i++) {
             {
                 UserInfo user = EmailPassword.signUp(
@@ -327,7 +330,8 @@ public class TestTenantIdIsNotPresentForOlderCDI {
         }
     }
 
-    public static JsonObject listUsers(TenantIdentifier sourceTenant, String paginationToken, String limit, String includeRecipeIds, Main main)
+    public static JsonObject listUsers(TenantIdentifier sourceTenant, String paginationToken, String limit,
+                                       String includeRecipeIds, Main main)
             throws HttpResponseException, IOException {
         Map<String, String> params = new HashMap<>();
         if (paginationToken != null) {
@@ -396,7 +400,8 @@ public class TestTenantIdIsNotPresentForOlderCDI {
             }
 
             { // recipe combinations
-                String[] combinations = new String[]{"emailpassword", "passwordless", "thirdparty", "emailpassword,passwordless", "emailpassword,thirdparty", "passwordless,thirdparty"};
+                String[] combinations = new String[]{"emailpassword", "passwordless", "thirdparty",
+                        "emailpassword,passwordless", "emailpassword,thirdparty", "passwordless,thirdparty"};
                 int[] userCounts = new int[]{50, 50, 100, 100, 150, 150};
 
                 for (int i = 0; i < combinations.length; i++) {
@@ -405,7 +410,8 @@ public class TestTenantIdIsNotPresentForOlderCDI {
 
                     Set<String> userIdSet = new HashSet<>();
 
-                    JsonObject userList = listUsers(tenantIdentifier, null, "10", includeRecipeIds, process.getProcess());
+                    JsonObject userList = listUsers(tenantIdentifier, null, "10", includeRecipeIds,
+                            process.getProcess());
                     String paginationToken = userList.get("nextPaginationToken").getAsString();
 
                     JsonArray users = userList.get("users").getAsJsonArray();
@@ -419,11 +425,13 @@ public class TestTenantIdIsNotPresentForOlderCDI {
                     }
 
                     while (paginationToken != null) {
-                        userList = listUsers(tenantIdentifier, paginationToken, "10", includeRecipeIds, process.getProcess());
+                        userList = listUsers(tenantIdentifier, paginationToken, "10", includeRecipeIds,
+                                process.getProcess());
                         users = userList.get("users").getAsJsonArray();
 
                         for (JsonElement user : users) {
-                            String userId = user.getAsJsonObject().get("user").getAsJsonObject().get("id").getAsString();
+                            String userId = user.getAsJsonObject().get("user").getAsJsonObject().get("id")
+                                    .getAsString();
                             String recipeId = user.getAsJsonObject().get("recipeId").getAsString();
                             assertFalse(userIdSet.contains(userId));
                             userIdSet.add(userId);
@@ -504,7 +512,8 @@ public class TestTenantIdIsNotPresentForOlderCDI {
         return response.get("user").getAsJsonObject();
     }
 
-    private JsonObject consumeCode(TenantIdentifier tenantIdentifier, String deviceId, String preAuthSessionId, String userInputCode)
+    private JsonObject consumeCode(TenantIdentifier tenantIdentifier, String deviceId, String preAuthSessionId,
+                                   String userInputCode)
             throws HttpResponseException, IOException {
         JsonObject consumeCodeRequestBody = new JsonObject();
         consumeCodeRequestBody.addProperty("deviceId", deviceId);
@@ -522,25 +531,29 @@ public class TestTenantIdIsNotPresentForOlderCDI {
     private JsonObject signInUpEmailUsingLinkCode(TenantIdentifier tenantIdentifier, String email)
             throws HttpResponseException, IOException {
         JsonObject code = createCodeWithEmail(tenantIdentifier, email);
-        return consumeCode(tenantIdentifier, code.get("preAuthSessionId").getAsString(), code.get("linkCode").getAsString());
+        return consumeCode(tenantIdentifier, code.get("preAuthSessionId").getAsString(),
+                code.get("linkCode").getAsString());
     }
 
     private JsonObject signInUpEmailUsingUserInputCode(TenantIdentifier tenantIdentifier, String email)
             throws HttpResponseException, IOException {
         JsonObject code = createCodeWithEmail(tenantIdentifier, email);
-        return consumeCode(tenantIdentifier, code.get("deviceId").getAsString(), code.get("preAuthSessionId").getAsString(), code.get("userInputCode").getAsString());
+        return consumeCode(tenantIdentifier, code.get("deviceId").getAsString(),
+                code.get("preAuthSessionId").getAsString(), code.get("userInputCode").getAsString());
     }
 
     private JsonObject signInUpNumberUsingLinkCode(TenantIdentifier tenantIdentifier, String phoneNumber)
             throws HttpResponseException, IOException {
         JsonObject code = createCodeWithNumber(tenantIdentifier, phoneNumber);
-        return consumeCode(tenantIdentifier, code.get("preAuthSessionId").getAsString(), code.get("linkCode").getAsString());
+        return consumeCode(tenantIdentifier, code.get("preAuthSessionId").getAsString(),
+                code.get("linkCode").getAsString());
     }
 
     private JsonObject signInUpNumberUsingUserInputCode(TenantIdentifier tenantIdentifier, String phoneNumber)
             throws HttpResponseException, IOException {
         JsonObject code = createCodeWithNumber(tenantIdentifier, phoneNumber);
-        return consumeCode(tenantIdentifier, code.get("deviceId").getAsString(), code.get("preAuthSessionId").getAsString(), code.get("userInputCode").getAsString());
+        return consumeCode(tenantIdentifier, code.get("deviceId").getAsString(),
+                code.get("preAuthSessionId").getAsString(), code.get("userInputCode").getAsString());
     }
 
     private JsonObject plessGetUserUsingId(TenantIdentifier tenantIdentifier, String userId)
@@ -622,7 +635,8 @@ public class TestTenantIdIsNotPresentForOlderCDI {
         }
     }
 
-    public JsonObject signInUp(TenantIdentifier tenantIdentifier, String thirdPartyId, String thirdPartyUserId, String email)
+    public JsonObject signInUp(TenantIdentifier tenantIdentifier, String thirdPartyId, String thirdPartyUserId,
+                               String email)
             throws HttpResponseException, IOException {
         JsonObject emailObject = new JsonObject();
         emailObject.addProperty("id", email);
@@ -654,7 +668,8 @@ public class TestTenantIdIsNotPresentForOlderCDI {
         return userResponse.getAsJsonObject("user");
     }
 
-    private JsonObject getUserUsingThirdPartyUserId(TenantIdentifier tenantIdentifier, String thirdPartyId, String thirdPartyUserId)
+    private JsonObject getUserUsingThirdPartyUserId(TenantIdentifier tenantIdentifier, String thirdPartyId,
+                                                    String thirdPartyUserId)
             throws HttpResponseException, IOException {
         HashMap<String, String> map = new HashMap<>();
         map.put("thirdPartyId", thirdPartyId);
@@ -694,7 +709,7 @@ public class TestTenantIdIsNotPresentForOlderCDI {
             return;
         }
 
-        for (TenantIdentifier t: new TenantIdentifier[]{t1, t2, t3}) {
+        for (TenantIdentifier t : new TenantIdentifier[]{t1, t2, t3}) {
             JsonObject user1 = signInUp(t, "google", "google-user-id", "user@gmail.com");
             JsonObject user2 = signInUp(t, "facebook", "fb-user-id", "user@gmail.com");
 

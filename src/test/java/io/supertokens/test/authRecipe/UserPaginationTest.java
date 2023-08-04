@@ -21,6 +21,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
@@ -44,13 +45,18 @@ import io.supertokens.test.Utils;
 import io.supertokens.test.multitenant.api.TestMultitenancyAPIHelper;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
 import io.supertokens.thirdparty.ThirdParty;
-import org.junit.*;
-import org.junit.rules.TestRule;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 import static org.junit.Assert.*;
 
@@ -168,13 +174,15 @@ public class UserPaginationTest {
             throws TenantOrAppNotFoundException, DuplicateEmailException, StorageQueryException,
             BadPermissionException, DuplicateLinkCodeHashException, NoSuchAlgorithmException, IOException,
             RestartFlowException, InvalidKeyException, Base64EncodingException, DeviceIdHashMismatchException,
-            StorageTransactionLogicException, IncorrectUserInputCodeException, ExpiredUserInputCodeException {
+            StorageTransactionLogicException, IncorrectUserInputCodeException, ExpiredUserInputCodeException,
+            EmailChangeNotAllowedException {
 
         if (tenantToUsers.get(tenantIdentifier) == null) {
             tenantToUsers.put(tenantIdentifier, new ArrayList<>());
         }
 
-        TenantIdentifierWithStorage tenantIdentifierWithStorage = tenantIdentifier.withStorage(StorageLayer.getStorage(tenantIdentifier, process.getProcess()));
+        TenantIdentifierWithStorage tenantIdentifierWithStorage = tenantIdentifier.withStorage(
+                StorageLayer.getStorage(tenantIdentifier, process.getProcess()));
         for (int i = 0; i < numUsers; i++) {
             {
                 UserInfo user = EmailPassword.signUp(
@@ -241,7 +249,8 @@ public class UserPaginationTest {
             { // All recipes
                 Set<String> userIdSet = new HashSet<>();
 
-                JsonObject userList = TestMultitenancyAPIHelper.listUsers(tenantIdentifier, null, "10", null, process.getProcess());
+                JsonObject userList = TestMultitenancyAPIHelper.listUsers(tenantIdentifier, null, "10", null,
+                        process.getProcess());
                 String paginationToken = userList.get("nextPaginationToken").getAsString();
 
                 JsonArray users = userList.get("users").getAsJsonArray();
@@ -254,7 +263,8 @@ public class UserPaginationTest {
                 }
 
                 while (paginationToken != null) {
-                    userList = TestMultitenancyAPIHelper.listUsers(tenantIdentifier, paginationToken, "10", null, process.getProcess());
+                    userList = TestMultitenancyAPIHelper.listUsers(tenantIdentifier, paginationToken, "10", null,
+                            process.getProcess());
                     users = userList.get("users").getAsJsonArray();
 
                     for (JsonElement user : users) {
@@ -275,7 +285,8 @@ public class UserPaginationTest {
             }
 
             { // recipe combinations
-                String[] combinations = new String[]{"emailpassword", "passwordless", "thirdparty", "emailpassword,passwordless", "emailpassword,thirdparty", "passwordless,thirdparty"};
+                String[] combinations = new String[]{"emailpassword", "passwordless", "thirdparty",
+                        "emailpassword,passwordless", "emailpassword,thirdparty", "passwordless,thirdparty"};
                 int[] userCounts = new int[]{50, 50, 100, 100, 150, 150};
 
                 for (int i = 0; i < combinations.length; i++) {
@@ -284,7 +295,8 @@ public class UserPaginationTest {
 
                     Set<String> userIdSet = new HashSet<>();
 
-                    JsonObject userList = TestMultitenancyAPIHelper.listUsers(tenantIdentifier, null, "10", includeRecipeIds, process.getProcess());
+                    JsonObject userList = TestMultitenancyAPIHelper.listUsers(tenantIdentifier, null, "10",
+                            includeRecipeIds, process.getProcess());
                     String paginationToken = userList.get("nextPaginationToken").getAsString();
 
                     JsonArray users = userList.get("users").getAsJsonArray();
@@ -300,11 +312,13 @@ public class UserPaginationTest {
                     }
 
                     while (paginationToken != null) {
-                        userList = TestMultitenancyAPIHelper.listUsers(tenantIdentifier, paginationToken, "10", includeRecipeIds, process.getProcess());
+                        userList = TestMultitenancyAPIHelper.listUsers(tenantIdentifier, paginationToken, "10",
+                                includeRecipeIds, process.getProcess());
                         users = userList.get("users").getAsJsonArray();
 
                         for (JsonElement user : users) {
-                            String userId = user.getAsJsonObject().get("user").getAsJsonObject().get("id").getAsString();
+                            String userId = user.getAsJsonObject().get("user").getAsJsonObject().get("id")
+                                    .getAsString();
                             String recipeId = user.getAsJsonObject().get("recipeId").getAsString();
                             assertFalse(userIdSet.contains(userId));
                             userIdSet.add(userId);
