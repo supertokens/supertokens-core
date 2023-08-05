@@ -34,7 +34,6 @@ import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.session.SessionInfo;
-import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.session.Session;
 import io.supertokens.session.accessToken.AccessToken;
 import io.supertokens.session.info.SessionInformationHolder;
@@ -108,8 +107,8 @@ public class SessionAPI extends WebserverAPI {
                 try {
                     io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping =
                             io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                            this.getAppIdentifierWithStorage(req),
-                            sessionInfo.session.userId, UserIdType.ANY);
+                                    this.getAppIdentifierWithStorage(req),
+                                    sessionInfo.session.userId, UserIdType.ANY);
                     if (userIdMapping != null) {
                         ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main,
                                 userIdMapping.superTokensUserId);
@@ -126,6 +125,9 @@ public class SessionAPI extends WebserverAPI {
             if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
                 result.get("session").getAsJsonObject().remove("tenantId");
             }
+            if (version.lesserThan(SemVer.v4_0)) {
+                result.get("session").getAsJsonObject().remove("recipeUserId");
+            }
 
             result.addProperty("status", "OK");
 
@@ -139,7 +141,10 @@ public class SessionAPI extends WebserverAPI {
             super.sendJsonResponse(200, result, resp);
         } catch (AccessTokenPayloadError e) {
             throw new ServletException(new BadRequestException(e.getMessage()));
-        } catch (NoSuchAlgorithmException | StorageQueryException | InvalidKeyException | InvalidKeySpecException | StorageTransactionLogicException | SignatureException | IllegalBlockSizeException | BadPaddingException | InvalidAlgorithmParameterException | NoSuchPaddingException | TenantOrAppNotFoundException | UnsupportedJWTSigningAlgorithmException e) {
+        } catch (NoSuchAlgorithmException | StorageQueryException | InvalidKeyException | InvalidKeySpecException |
+                 StorageTransactionLogicException | SignatureException | IllegalBlockSizeException |
+                 BadPaddingException | InvalidAlgorithmParameterException | NoSuchPaddingException |
+                 TenantOrAppNotFoundException | UnsupportedJWTSigningAlgorithmException e) {
             throw new ServletException(e);
         }
     }
@@ -153,7 +158,8 @@ public class SessionAPI extends WebserverAPI {
         TenantIdentifierWithStorage tenantIdentifierWithStorage = null;
         try {
             AppIdentifierWithStorage appIdentifier = getAppIdentifierWithStorage(req);
-            TenantIdentifier tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(), Session.getTenantIdFromSessionHandle(sessionHandle));
+            TenantIdentifier tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
+                    appIdentifier.getAppId(), Session.getTenantIdFromSessionHandle(sessionHandle));
             tenantIdentifierWithStorage = tenantIdentifier.withStorage(StorageLayer.getStorage(tenantIdentifier, main));
         } catch (TenantOrAppNotFoundException e) {
             throw new ServletException(e);
@@ -170,6 +176,9 @@ public class SessionAPI extends WebserverAPI {
 
             if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v3_0)) {
                 result.addProperty("tenantId", tenantIdentifierWithStorage.getTenantId());
+            }
+            if (getVersionFromRequest(req).lesserThan(SemVer.v4_0)) {
+                result.remove("recipeUserId");
             }
 
             super.sendJsonResponse(200, result, resp);

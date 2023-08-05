@@ -1227,6 +1227,13 @@ public class Start
     }
 
     @Override
+    public String getPrimaryUserIdStrForUserId(AppIdentifier appIdentifier, String userId)
+            throws StorageQueryException {
+        // TODO:...
+        return null;
+    }
+
+    @Override
     public AuthRecipeUserInfo[] listPrimaryUsersByEmail(TenantIdentifier tenantIdentifier, String email)
             throws StorageQueryException {
         try {

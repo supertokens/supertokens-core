@@ -105,7 +105,7 @@ public class AccessTokenTest {
 
         // check payload is fine
         assertEquals(accessTokenInfo.userData, userDataInJWT);
-        assertEquals(accessTokenInfo.userId, userId);
+        assertEquals(accessTokenInfo.recipeUserId, userId);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
@@ -142,7 +142,7 @@ public class AccessTokenTest {
 
         // check payload is fine
         assertEquals(accessTokenInfo.userData, userDataInJWT);
-        assertEquals(accessTokenInfo.userId, userId);
+        assertEquals(accessTokenInfo.recipeUserId, userId);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
@@ -265,7 +265,7 @@ public class AccessTokenTest {
                 AccessToken.getLatestVersion(), false);
         AccessTokenInfo info = AccessToken.getInfoFromAccessToken(process.getProcess(), newToken.token, true);
         assertEquals("sessionHandle", info.sessionHandle);
-        assertEquals("userId", info.userId);
+        assertEquals("userId", info.recipeUserId);
         assertEquals("refreshTokenHash1", info.refreshTokenHash1);
         assertEquals("parentRefreshTokenHash1", info.parentRefreshTokenHash1);
         assertEquals("value", info.userData.get("key").getAsString());
@@ -295,7 +295,7 @@ public class AccessTokenTest {
                 AccessToken.getLatestVersion(), true);
         AccessTokenInfo info = AccessToken.getInfoFromAccessToken(process.getProcess(), newToken.token, true);
         assertEquals("sessionHandle", info.sessionHandle);
-        assertEquals("userId", info.userId);
+        assertEquals("userId", info.recipeUserId);
         assertEquals("refreshTokenHash1", info.refreshTokenHash1);
         assertEquals("parentRefreshTokenHash1", info.parentRefreshTokenHash1);
         assertEquals("value", info.userData.get("key").getAsString());
@@ -324,7 +324,7 @@ public class AccessTokenTest {
                 AccessToken.VERSION.V2, false);
         AccessTokenInfo info = AccessToken.getInfoFromAccessToken(process.getProcess(), newToken.token, true);
         assertEquals("sessionHandle", info.sessionHandle);
-        assertEquals("userId", info.userId);
+        assertEquals("userId", info.recipeUserId);
         assertEquals("refreshTokenHash1", info.refreshTokenHash1);
         assertEquals("parentRefreshTokenHash1", info.parentRefreshTokenHash1);
         assertEquals("value", info.userData.get("key").getAsString());
@@ -350,7 +350,7 @@ public class AccessTokenTest {
                 "refreshTokenHash1", "parentRefreshTokenHash1", jsonObj, "antiCsrfToken");
         AccessTokenInfo info = AccessToken.getInfoFromAccessToken(process.getProcess(), newToken.token, true);
         assertEquals("sessionHandle", info.sessionHandle);
-        assertEquals("userId", info.userId);
+        assertEquals("userId", info.recipeUserId);
         assertEquals("refreshTokenHash1", info.refreshTokenHash1);
         assertEquals("parentRefreshTokenHash1", info.parentRefreshTokenHash1);
         assertEquals("value", info.userData.get("key").getAsString());

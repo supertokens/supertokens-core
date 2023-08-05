@@ -19,7 +19,6 @@ package io.supertokens.inmemorydb.queries;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.inmemorydb.ConnectionWithLocks;
-import io.supertokens.inmemorydb.QueryExecutorTemplate;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.KeyValueInfo;
@@ -36,7 +35,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static io.supertokens.inmemorydb.PreparedStatementValueSetter.NO_OP_SETTER;
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
 import static io.supertokens.inmemorydb.config.Config.getConfig;
@@ -105,7 +103,9 @@ public class SessionQueries {
                                                          String sessionHandle)
             throws SQLException, StorageQueryException {
 
-        ((ConnectionWithLocks) con).lock(tenantIdentifier.getAppId() + "~" + tenantIdentifier.getTenantId() + "~" + sessionHandle + Config.getConfig(start).getSessionInfoTable());
+        ((ConnectionWithLocks) con).lock(
+                tenantIdentifier.getAppId() + "~" + tenantIdentifier.getTenantId() + "~" + sessionHandle +
+                        Config.getConfig(start).getSessionInfoTable());
 
         String QUERY = "SELECT session_handle, user_id, refresh_token_hash_2, session_data, expires_at, "
                 + "created_at_time, jwt_user_payload, use_static_key FROM " + getConfig(start).getSessionInfoTable()
@@ -326,7 +326,8 @@ public class SessionQueries {
     public static KeyValueInfo[] getAccessTokenSigningKeys_Transaction(Start start, Connection con,
                                                                        AppIdentifier appIdentifier)
             throws SQLException, StorageQueryException {
-        ((ConnectionWithLocks) con).lock(appIdentifier.getAppId() + Config.getConfig(start).getAccessTokenSigningKeysTable());
+        ((ConnectionWithLocks) con).lock(
+                appIdentifier.getAppId() + Config.getConfig(start).getAccessTokenSigningKeysTable());
 
         String QUERY = "SELECT * FROM " + getConfig(start).getAccessTokenSigningKeysTable()
                 + " WHERE app_id = ?";
@@ -371,6 +372,7 @@ public class SessionQueries {
         public SessionInfo map(ResultSet result) throws Exception {
             JsonParser jp = new JsonParser();
             return new SessionInfo(result.getString("session_handle"), result.getString("user_id"),
+                    result.getString("user_id"),
                     result.getString("refresh_token_hash_2"),
                     jp.parse(result.getString("session_data")).getAsJsonObject(), result.getLong("expires_at"),
                     jp.parse(result.getString("jwt_user_payload")).getAsJsonObject(),

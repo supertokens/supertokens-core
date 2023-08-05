@@ -21,10 +21,12 @@ public class TokenTheftDetectedException extends Exception {
     private static final long serialVersionUID = -7964000536695705071L;
 
     public final String sessionHandle;
-    public final String userId;
+    public final String recipeUserId;
+    public final String primaryUserId;
 
-    public TokenTheftDetectedException(String sessionHandle, String userId) {
+    public TokenTheftDetectedException(String sessionHandle, String recipeUserId, String primaryUserId) {
         this.sessionHandle = sessionHandle;
-        this.userId = userId;
+        this.recipeUserId = recipeUserId;
+        this.primaryUserId = primaryUserId;
     }
 }
