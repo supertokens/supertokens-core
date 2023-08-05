@@ -74,7 +74,7 @@ public class UserPutAPITest4_0 {
         AuthRecipe.createPrimaryUser(process.main, user.id);
 
         JsonObject body = new JsonObject();
-        body.addProperty("userId", user.id);
+        body.addProperty("recipeUserId", user.id);
         body.addProperty("email", "someemail1@gmail.com");
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",

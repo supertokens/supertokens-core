@@ -155,7 +155,13 @@ public class UserAPI extends WebserverAPI {
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         // API is app specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-        String userId = InputParser.parseStringOrThrowError(input, "userId", false);
+        String userId;
+
+        if (getVersionFromRequest(req).lesserThan(SemVer.v4_0)) {
+            userId = InputParser.parseStringOrThrowError(input, "userId", true);
+        } else {
+            userId = InputParser.parseStringOrThrowError(input, "recipeUserId", true);
+        }
         String email = InputParser.parseStringOrThrowError(input, "email", true);
         String password = InputParser.parseStringOrThrowError(input, "password", true);
 

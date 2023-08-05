@@ -590,6 +590,16 @@ public class EmailPassword {
                     if (user == null) {
                         throw new StorageTransactionLogicException(new UnknownUserIdException());
                     }
+                    boolean foundEmailPasswordLoginMethod = false;
+                    for (LoginMethod lm : user.loginMethods) {
+                        if (lm.recipeId == RECIPE_ID.EMAIL_PASSWORD) {
+                            foundEmailPasswordLoginMethod = true;
+                            break;
+                        }
+                    }
+                    if (!foundEmailPasswordLoginMethod) {
+                        throw new StorageTransactionLogicException(new UnknownUserIdException());
+                    }
 
                     if (email != null) {
                         if (user.isPrimaryUser) {
