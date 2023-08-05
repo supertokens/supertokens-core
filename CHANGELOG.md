@@ -7,6 +7,15 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+- Support for CDI version 4.0
+
+### Session recipe changes:
+- New access token version: v5, which contains a required prop: `recipesub`. This contains the recipe user ID that belongs to the login method that the user used to login. The `sub` claim in the access token payload is now the primary user ID.
+- APIs that return `SessionInformation` (like GET `/recipe/session`) contains userId, recipeUserId in the response.
+- Apis that create / modify / refresh a session return the `recipeUserId` in the `session` object in the response.
+- Token theft detected response returns userId and recipeUserId
+
+
 ### Db schema changes:
 
 - Added new index `all_auth_recipe_users_primary_user_id_index`.
