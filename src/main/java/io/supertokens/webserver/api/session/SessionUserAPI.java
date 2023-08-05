@@ -20,9 +20,9 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
-import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.session.Session;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -58,14 +58,21 @@ public class SessionUserAPI extends WebserverAPI {
             fetchAcrossAllTenants = fetchAcrossAllTenantsString.toLowerCase().equals("true");
         }
 
+        String fetchSessionsForAllLinkedAccountsString = InputParser.getQueryParamOrThrowError(req,
+                "fetchSessionsForAllLinkedAccounts", true);
+        boolean fetchSessionsForAllLinkedAccounts = true;
+        if (fetchSessionsForAllLinkedAccountsString != null) {
+            fetchSessionsForAllLinkedAccounts = fetchSessionsForAllLinkedAccountsString.toLowerCase().equals("true");
+        }
+
         try {
             String[] sessionHandles;
             if (fetchAcrossAllTenants) {
                 sessionHandles = Session.getAllNonExpiredSessionHandlesForUser(
-                        main, this.getAppIdentifierWithStorage(req), userId);
+                        main, this.getAppIdentifierWithStorage(req), userId, fetchSessionsForAllLinkedAccounts);
             } else {
                 sessionHandles = Session.getAllNonExpiredSessionHandlesForUser(
-                        this.getTenantIdentifierWithStorageFromRequest(req), userId);
+                        this.getTenantIdentifierWithStorageFromRequest(req), userId, fetchSessionsForAllLinkedAccounts);
             }
 
             JsonObject result = new JsonObject();

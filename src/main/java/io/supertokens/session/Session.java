@@ -29,6 +29,8 @@ import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.*;
@@ -802,18 +804,22 @@ public class Session {
     public static String[] revokeAllSessionsForUser(Main main, String userId) throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
         return revokeAllSessionsForUser(main,
-                new AppIdentifierWithStorage(null, null, storage), userId);
+                new AppIdentifierWithStorage(null, null, storage), userId, true);
     }
 
     public static String[] revokeAllSessionsForUser(Main main, AppIdentifierWithStorage appIdentifierWithStorage,
-                                                    String userId) throws StorageQueryException {
-        String[] sessionHandles = getAllNonExpiredSessionHandlesForUser(main, appIdentifierWithStorage, userId);
+                                                    String userId, boolean revokeSessionsForLinkedAccounts)
+            throws StorageQueryException {
+        String[] sessionHandles = getAllNonExpiredSessionHandlesForUser(main, appIdentifierWithStorage, userId,
+                revokeSessionsForLinkedAccounts);
         return revokeSessionUsingSessionHandles(main, appIdentifierWithStorage, sessionHandles);
     }
 
     public static String[] revokeAllSessionsForUser(Main main, TenantIdentifierWithStorage tenantIdentifierWithStorage,
-                                                    String userId) throws StorageQueryException {
-        String[] sessionHandles = getAllNonExpiredSessionHandlesForUser(tenantIdentifierWithStorage, userId);
+                                                    String userId, boolean revokeSessionsForLinkedAccounts)
+            throws StorageQueryException {
+        String[] sessionHandles = getAllNonExpiredSessionHandlesForUser(tenantIdentifierWithStorage, userId,
+                revokeSessionsForLinkedAccounts);
         return revokeSessionUsingSessionHandles(main, tenantIdentifierWithStorage.toAppIdentifierWithStorage(),
                 sessionHandles);
     }
@@ -823,28 +829,43 @@ public class Session {
             throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
         return getAllNonExpiredSessionHandlesForUser(main,
-                new AppIdentifierWithStorage(null, null, storage), userId);
+                new AppIdentifierWithStorage(null, null, storage), userId, true);
     }
 
     public static String[] getAllNonExpiredSessionHandlesForUser(
-            Main main, AppIdentifierWithStorage appIdentifierWithStorage, String userId)
+            Main main, AppIdentifierWithStorage appIdentifierWithStorage, String userId,
+            boolean fetchSessionsForAllLinkedAccounts)
             throws StorageQueryException {
         TenantConfig[] tenants = Multitenancy.getAllTenantsForApp(
                 appIdentifierWithStorage, main);
 
         List<String> sessionHandles = new ArrayList<>();
 
-        for (TenantConfig tenant : tenants) {
-            TenantIdentifierWithStorage tenantIdentifierWithStorage = null;
-            try {
-                tenantIdentifierWithStorage = tenant.tenantIdentifier.withStorage(
-                        StorageLayer.getStorage(tenant.tenantIdentifier, main));
-                sessionHandles.addAll(Arrays.asList(getAllNonExpiredSessionHandlesForUser(
-                        tenantIdentifierWithStorage, userId)));
+        Set<String> userIds = new HashSet<>();
+        userIds.add(userId);
+        if (fetchSessionsForAllLinkedAccounts) {
+            AuthRecipeUserInfo primaryUser = appIdentifierWithStorage.getAuthRecipeStorage()
+                    .getPrimaryUserById(appIdentifierWithStorage, userId);
+            if (primaryUser != null) {
+                for (LoginMethod lM : primaryUser.loginMethods) {
+                    userIds.add(lM.recipeUserId);
+                }
+            }
+        }
 
-            } catch (TenantOrAppNotFoundException e) {
-                // this might happen when a tenant was deleted after the tenant list was fetched
-                // it is okay to exclude that tenant in the results here
+        for (String currUserId : userIds) {
+            for (TenantConfig tenant : tenants) {
+                TenantIdentifierWithStorage tenantIdentifierWithStorage = null;
+                try {
+                    tenantIdentifierWithStorage = tenant.tenantIdentifier.withStorage(
+                            StorageLayer.getStorage(tenant.tenantIdentifier, main));
+                    sessionHandles.addAll(Arrays.asList(getAllNonExpiredSessionHandlesForUser(
+                            tenantIdentifierWithStorage, currUserId, false)));
+
+                } catch (TenantOrAppNotFoundException e) {
+                    // this might happen when a tenant was deleted after the tenant list was fetched
+                    // it is okay to exclude that tenant in the results here
+                }
             }
         }
 
@@ -852,10 +873,26 @@ public class Session {
     }
 
     public static String[] getAllNonExpiredSessionHandlesForUser(
-            TenantIdentifierWithStorage tenantIdentifierWithStorage, String userId)
+            TenantIdentifierWithStorage tenantIdentifierWithStorage, String userId,
+            boolean fetchSessionsForAllLinkedAccounts)
             throws StorageQueryException {
-        return tenantIdentifierWithStorage.getSessionStorage()
-                .getAllNonExpiredSessionHandlesForUser(tenantIdentifierWithStorage, userId);
+        Set<String> userIds = new HashSet<>();
+        userIds.add(userId);
+        if (fetchSessionsForAllLinkedAccounts) {
+            AuthRecipeUserInfo primaryUser = tenantIdentifierWithStorage.getAuthRecipeStorage()
+                    .getPrimaryUserById(tenantIdentifierWithStorage.toAppIdentifier(), userId);
+            if (primaryUser != null) {
+                for (LoginMethod lM : primaryUser.loginMethods) {
+                    userIds.add(lM.recipeUserId);
+                }
+            }
+        }
+        List<String> sessionHandles = new ArrayList<>();
+        for (String currUserId : userIds) {
+            sessionHandles.addAll(List.of(tenantIdentifierWithStorage.getSessionStorage()
+                    .getAllNonExpiredSessionHandlesForUser(tenantIdentifierWithStorage, currUserId)));
+        }
+        return sessionHandles.toArray(new String[0]);
     }
 
     @TestOnly

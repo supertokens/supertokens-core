@@ -80,11 +80,21 @@ public class SessionRemoveAPI extends WebserverAPI {
 
         Boolean revokeAcrossAllTenants = InputParser.parseBooleanOrThrowError(input, "revokeAcrossAllTenants", true);
         if (userId == null && revokeAcrossAllTenants != null) {
-            throw new ServletException(new BadRequestException("Invalid JSON input - revokeAcrossAllTenants can only be set if userId is set"));
+            throw new ServletException(new BadRequestException(
+                    "Invalid JSON input - revokeAcrossAllTenants can only be set if userId is set"));
         }
-
         if (revokeAcrossAllTenants == null) {
             revokeAcrossAllTenants = true;
+        }
+
+        Boolean revokeSessionsForLinkedAccounts = InputParser.parseBooleanOrThrowError(input,
+                "revokeSessionsForLinkedAccounts", true);
+        if (userId == null && revokeSessionsForLinkedAccounts != null) {
+            throw new ServletException(new BadRequestException(
+                    "Invalid JSON input - revokeSessionsForLinkedAccounts can only be set if userId is set"));
+        }
+        if (revokeSessionsForLinkedAccounts == null) {
+            revokeSessionsForLinkedAccounts = true;
         }
 
         if (userId != null) {
@@ -92,10 +102,11 @@ public class SessionRemoveAPI extends WebserverAPI {
                 String[] sessionHandlesRevoked;
                 if (revokeAcrossAllTenants) {
                     sessionHandlesRevoked = Session.revokeAllSessionsForUser(
-                            main, this.getAppIdentifierWithStorage(req), userId);
+                            main, this.getAppIdentifierWithStorage(req), userId, revokeSessionsForLinkedAccounts);
                 } else {
                     sessionHandlesRevoked = Session.revokeAllSessionsForUser(
-                            main, this.getTenantIdentifierWithStorageFromRequest(req), userId);
+                            main, this.getTenantIdentifierWithStorageFromRequest(req), userId,
+                            revokeSessionsForLinkedAccounts);
                 }
 
                 if (StorageLayer.getStorage(this.getTenantIdentifierWithStorageFromRequest(req), main).getType() ==

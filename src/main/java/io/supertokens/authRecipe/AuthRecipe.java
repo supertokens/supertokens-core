@@ -84,29 +84,34 @@ public class AuthRecipe {
                     throw new StorageTransactionLogicException(new InputUserIdIsNotAPrimaryUserException(recipeUserId));
                 }
 
+                io.supertokens.pluginInterface.useridmapping.UserIdMapping mappingResult =
+                        io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+                                appIdentifierWithStorage,
+                                recipeUserId, UserIdType.SUPERTOKENS);
+
                 if (primaryUser.id.equals(recipeUserId)) {
                     // we are trying to unlink the user ID which is the same as the primary one.
                     if (primaryUser.loginMethods.length == 1) {
                         storage.unlinkAccounts_Transaction(appIdentifierWithStorage, con, recipeUserId);
-                        Session.revokeAllSessionsForUser(main, appIdentifierWithStorage, recipeUserId);
+                        Session.revokeAllSessionsForUser(main, appIdentifierWithStorage,
+                                mappingResult == null ? recipeUserId : mappingResult.externalUserId,
+                                false);
                         return false;
                     } else {
                         // Here we delete the recipe user id cause if we just unlink, then there will be two
                         // distinct users with the same ID - which is a broken state.
                         // The delete will also cause the automatic unlinking.
-                        io.supertokens.pluginInterface.useridmapping.UserIdMapping mappingResult =
-                                io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                                        appIdentifierWithStorage,
-                                        recipeUserId, UserIdType.SUPERTOKENS);
                         // We need to make sure that it only deletes sessions for recipeUserId and not other linked
                         // users who have their sessions for primaryUserId (that is equal to the recipeUserId)
-                        Session.revokeAllSessionsForUser(main, appIdentifierWithStorage, recipeUserId);
+                        Session.revokeAllSessionsForUser(main, appIdentifierWithStorage,
+                                mappingResult == null ? recipeUserId : mappingResult.externalUserId, false);
                         deleteUserHelper(con, appIdentifierWithStorage, recipeUserId, false, mappingResult);
                         return true;
                     }
                 } else {
                     storage.unlinkAccounts_Transaction(appIdentifierWithStorage, con, recipeUserId);
-                    Session.revokeAllSessionsForUser(main, appIdentifierWithStorage, recipeUserId);
+                    Session.revokeAllSessionsForUser(main, appIdentifierWithStorage,
+                            mappingResult == null ? recipeUserId : mappingResult.externalUserId, false);
                     return false;
                 }
             });
@@ -318,7 +323,8 @@ public class AuthRecipe {
     }
 
     public static boolean linkAccounts(Main main, AppIdentifierWithStorage appIdentifierWithStorage,
-                                       String _recipeUserId, String _primaryUserId) throws StorageQueryException,
+                                       String _recipeUserId, String _primaryUserId)
+            throws StorageQueryException,
             AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
             RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException, InputUserIdIsNotAPrimaryUserException,
             UnknownUserIdException, TenantOrAppNotFoundException, FeatureNotEnabledException {
@@ -355,8 +361,13 @@ public class AuthRecipe {
             });
 
             if (!wasAlreadyLinked) {
+                io.supertokens.pluginInterface.useridmapping.UserIdMapping mappingResult =
+                        io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+                                appIdentifierWithStorage,
+                                _recipeUserId, UserIdType.SUPERTOKENS);
                 // finally, we revoke all sessions of the recipeUser Id cause their user ID has changed.
-                Session.revokeAllSessionsForUser(main, appIdentifierWithStorage, _recipeUserId);
+                Session.revokeAllSessionsForUser(main, appIdentifierWithStorage,
+                        mappingResult == null ? _recipeUserId : mappingResult.externalUserId, false);
             }
 
             return wasAlreadyLinked;
