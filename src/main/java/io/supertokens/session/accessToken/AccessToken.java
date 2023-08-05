@@ -369,7 +369,7 @@ public class AccessToken {
                 "parentRefreshTokenHash1",
                 "antiCsrfToken",
                 "tId",
-                "recipesub"
+                "rsub"
         };
 
         @Nonnull
@@ -456,7 +456,7 @@ public class AccessToken {
                 String recipeUserId = payload.get("sub").getAsString();
                 if (version != VERSION.V3 && version != VERSION.V4) {
                     // this means >= v5
-                    recipeUserId = payload.get("recipesub").getAsString();
+                    recipeUserId = payload.get("rsub").getAsString();
                 }
 
                 return new AccessTokenInfo(
@@ -504,7 +504,7 @@ public class AccessToken {
                 }
                 if (this.version != VERSION.V3 && this.version != VERSION.V4) {
                     // this means >= v5
-                    res.addProperty("recipesub", this.recipeUserId);
+                    res.addProperty("rsub", this.recipeUserId);
                 }
             } else {
                 res.addProperty("userId", this.primaryUserId);
