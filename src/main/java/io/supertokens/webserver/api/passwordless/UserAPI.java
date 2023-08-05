@@ -19,6 +19,7 @@ package io.supertokens.webserver.api.passwordless;
 import com.google.gson.JsonObject;
 import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
+import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.Passwordless.FieldUpdate;
 import io.supertokens.passwordless.exceptions.UserWithoutContactInfoException;
@@ -153,7 +154,13 @@ public class UserAPI extends WebserverAPI {
         // API is app specific
         // logic based on: https://app.code2flow.com/TXloWHJOwWKg
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-        String userId = InputParser.parseStringOrThrowError(input, "userId", false);
+        String userId;
+
+        if (getVersionFromRequest(req).lesserThan(SemVer.v4_0)) {
+            userId = InputParser.parseStringOrThrowError(input, "userId", false);
+        } else {
+            userId = InputParser.parseStringOrThrowError(input, "recipeUserId", false);
+        }
 
         FieldUpdate emailUpdate = !input.has("email") ? null
                 : new FieldUpdate(input.get("email").isJsonNull() ? null
@@ -194,6 +201,11 @@ public class UserAPI extends WebserverAPI {
         } catch (UserWithoutContactInfoException e) {
             throw new ServletException(
                     new BadRequestException("You cannot clear both email and phone number of a user"));
+        } catch (EmailChangeNotAllowedException e) {
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "EMAIL_CHANGE_NOT_ALLOWED_ERROR");
+            result.addProperty("reason", "New email is associated with another primary user ID");
+            super.sendJsonResponse(200, result, resp);
         }
     }
 }

@@ -17,7 +17,9 @@
 package io.supertokens.passwordless;
 
 import io.supertokens.Main;
+import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.config.Config;
+import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.passwordless.exceptions.*;
@@ -25,6 +27,7 @@ import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
+import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateUserIdException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
@@ -32,6 +35,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
@@ -49,6 +53,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -523,6 +528,7 @@ public class Passwordless {
     }
 
     @TestOnly
+    @Deprecated
     public static UserInfo getUserById(Main main, String userId)
             throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
@@ -530,6 +536,7 @@ public class Passwordless {
                 new AppIdentifierWithStorage(null, null, storage), userId);
     }
 
+    @Deprecated
     public static UserInfo getUserById(AppIdentifierWithStorage appIdentifierWithStorage, String userId)
             throws StorageQueryException {
         AuthRecipeUserInfo result = appIdentifierWithStorage.getAuthRecipeStorage()
@@ -599,7 +606,7 @@ public class Passwordless {
     public static void updateUser(Main main, String userId,
                                   FieldUpdate emailUpdate, FieldUpdate phoneNumberUpdate)
             throws StorageQueryException, UnknownUserIdException, DuplicateEmailException,
-            DuplicatePhoneNumberException, UserWithoutContactInfoException {
+            DuplicatePhoneNumberException, UserWithoutContactInfoException, EmailChangeNotAllowedException {
         Storage storage = StorageLayer.getStorage(main);
         updateUser(new AppIdentifierWithStorage(null, null, storage),
                 userId, emailUpdate, phoneNumberUpdate);
@@ -608,32 +615,66 @@ public class Passwordless {
     public static void updateUser(AppIdentifierWithStorage appIdentifierWithStorage, String userId,
                                   FieldUpdate emailUpdate, FieldUpdate phoneNumberUpdate)
             throws StorageQueryException, UnknownUserIdException, DuplicateEmailException,
-            DuplicatePhoneNumberException, UserWithoutContactInfoException {
+            DuplicatePhoneNumberException, UserWithoutContactInfoException, EmailChangeNotAllowedException {
         PasswordlessSQLStorage storage = appIdentifierWithStorage.getPasswordlessStorage();
 
         // We do not lock the user here, because we decided that even if the device cleanup used outdated information
         // it wouldn't leave the system in an incosistent state/cause problems.
-        UserInfo user = Passwordless.getUserById(appIdentifierWithStorage, userId);
+        AuthRecipeUserInfo user = AuthRecipe.getUserById(appIdentifierWithStorage, userId);
         if (user == null) {
             throw new UnknownUserIdException();
         }
-        boolean emailWillBeDefined = emailUpdate != null ? emailUpdate.newValue != null : user.email != null;
+
+        LoginMethod lM = Arrays.stream(user.loginMethods)
+                .filter(currlM -> currlM.recipeUserId.equals(userId) && currlM.recipeId == RECIPE_ID.PASSWORDLESS)
+                .findFirst().orElse(null);
+
+        if (lM == null) {
+            throw new UnknownUserIdException();
+        }
+
+        boolean emailWillBeDefined = emailUpdate != null ? emailUpdate.newValue != null : lM.email != null;
         boolean phoneNumberWillBeDefined = phoneNumberUpdate != null ? phoneNumberUpdate.newValue != null
-                : user.phoneNumber != null;
+                : lM.phoneNumber != null;
         if (!emailWillBeDefined && !phoneNumberWillBeDefined) {
             throw new UserWithoutContactInfoException();
         }
         try {
+            AuthRecipeSQLStorage authRecipeSQLStorage =
+                    (AuthRecipeSQLStorage) appIdentifierWithStorage.getAuthRecipeStorage();
             storage.startTransaction(con -> {
-                if (emailUpdate != null && !Objects.equals(emailUpdate.newValue, user.email)) {
+                if (emailUpdate != null && !Objects.equals(emailUpdate.newValue, lM.email)) {
+                    if (user.isPrimaryUser) {
+                        for (String tenantId : user.tenantIds) {
+                            // we do not bother with getting the tenantIdentifierWithStorage here because
+                            // we get the tenants from the user itself, and the user can only be shared across
+                            // tenants of the same storage - therefore, the storage will be the same.
+                            TenantIdentifier tenantIdentifier = new TenantIdentifier(
+                                    appIdentifierWithStorage.getConnectionUriDomain(),
+                                    appIdentifierWithStorage.getAppId(),
+                                    tenantId);
+
+                            AuthRecipeUserInfo[] existingUsersWithNewEmail =
+                                    authRecipeSQLStorage.listPrimaryUsersByEmail_Transaction(
+                                            tenantIdentifier, con,
+                                            emailUpdate.newValue);
+
+                            for (AuthRecipeUserInfo userWithSameEmail : existingUsersWithNewEmail) {
+                                if (userWithSameEmail.isPrimaryUser && !userWithSameEmail.id.equals(user.id)) {
+                                    throw new StorageTransactionLogicException(
+                                            new EmailChangeNotAllowedException());
+                                }
+                            }
+                        }
+                    }
                     try {
                         storage.updateUserEmail_Transaction(appIdentifierWithStorage, con, userId,
                                 emailUpdate.newValue);
                     } catch (UnknownUserIdException | DuplicateEmailException e) {
                         throw new StorageTransactionLogicException(e);
                     }
-                    if (user.email != null) {
-                        storage.deleteDevicesByEmail_Transaction(appIdentifierWithStorage, con, user.email,
+                    if (lM.email != null) {
+                        storage.deleteDevicesByEmail_Transaction(appIdentifierWithStorage, con, lM.email,
                                 userId);
                     }
                     if (emailUpdate.newValue != null) {
@@ -641,16 +682,16 @@ public class Passwordless {
                                 emailUpdate.newValue, userId);
                     }
                 }
-                if (phoneNumberUpdate != null && !Objects.equals(phoneNumberUpdate.newValue, user.phoneNumber)) {
+                if (phoneNumberUpdate != null && !Objects.equals(phoneNumberUpdate.newValue, lM.phoneNumber)) {
                     try {
                         storage.updateUserPhoneNumber_Transaction(appIdentifierWithStorage, con, userId,
                                 phoneNumberUpdate.newValue);
                     } catch (UnknownUserIdException | DuplicatePhoneNumberException e) {
                         throw new StorageTransactionLogicException(e);
                     }
-                    if (user.phoneNumber != null) {
+                    if (lM.phoneNumber != null) {
                         storage.deleteDevicesByPhoneNumber_Transaction(appIdentifierWithStorage, con,
-                                user.phoneNumber, userId);
+                                lM.phoneNumber, userId);
                     }
                     if (phoneNumberUpdate.newValue != null) {
                         storage.deleteDevicesByPhoneNumber_Transaction(appIdentifierWithStorage, con,
@@ -671,6 +712,10 @@ public class Passwordless {
 
             if (e.actualException instanceof DuplicatePhoneNumberException) {
                 throw (DuplicatePhoneNumberException) e.actualException;
+            }
+
+            if (e.actualException instanceof EmailChangeNotAllowedException) {
+                throw (EmailChangeNotAllowedException) e.actualException;
             }
         }
     }

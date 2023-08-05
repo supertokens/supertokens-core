@@ -158,9 +158,9 @@ public class UserAPI extends WebserverAPI {
         String userId;
 
         if (getVersionFromRequest(req).lesserThan(SemVer.v4_0)) {
-            userId = InputParser.parseStringOrThrowError(input, "userId", true);
+            userId = InputParser.parseStringOrThrowError(input, "userId", false);
         } else {
-            userId = InputParser.parseStringOrThrowError(input, "recipeUserId", true);
+            userId = InputParser.parseStringOrThrowError(input, "recipeUserId", false);
         }
         String email = InputParser.parseStringOrThrowError(input, "email", true);
         String password = InputParser.parseStringOrThrowError(input, "password", true);

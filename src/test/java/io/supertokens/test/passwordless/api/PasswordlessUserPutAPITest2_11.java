@@ -62,7 +62,7 @@ public class PasswordlessUserPutAPITest2_11 {
             return;
         }
 
-        String userId = "userId";
+        String userId = "6347c997-4cc9-4f95-94c9-b96e2c65aefc";
 
         String email = "test@example.com";
         String email2 = "test2@example.com";
@@ -146,7 +146,7 @@ public class PasswordlessUserPutAPITest2_11 {
             return;
         }
 
-        String userId = "userId";
+        String userId = "6347c997-4cc9-4f95-94c9-b96e2c65aefc";
         String phoneNumber = "+442071838750";
 
         PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
@@ -187,7 +187,7 @@ public class PasswordlessUserPutAPITest2_11 {
             return;
         }
 
-        String userId = "userId";
+        String userId = "6347c997-4cc9-4f95-94c9-b96e2c65aefc";
         String phoneNumber = "+442071838750";
         String email = "email";
 
@@ -228,7 +228,7 @@ public class PasswordlessUserPutAPITest2_11 {
             return;
         }
 
-        String userId = "userId";
+        String userId = "6347c997-4cc9-4f95-94c9-b96e2c65aefc";
         String phoneNumber = "+442071838750";
         String email = "email";
         String updatedPhoneNumber = "+442071838751";
@@ -277,7 +277,7 @@ public class PasswordlessUserPutAPITest2_11 {
             return;
         }
 
-        String userId = "userId";
+        String userId = "6347c997-4cc9-4f95-94c9-b96e2c65aefc";
         String phoneNumber = "+442071838750";
         String email = "email";
 
@@ -326,7 +326,7 @@ public class PasswordlessUserPutAPITest2_11 {
             return;
         }
 
-        String userId = "userId";
+        String userId = "6347c997-4cc9-4f95-94c9-b96e2c65aefc";
         String email = "email";
 
         PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
@@ -374,7 +374,7 @@ public class PasswordlessUserPutAPITest2_11 {
             return;
         }
 
-        String userId = "userId";
+        String userId = "6347c997-4cc9-4f95-94c9-b96e2c65aefc";
         String phoneNumber = "+91898989898";
 
         PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
@@ -421,7 +421,7 @@ public class PasswordlessUserPutAPITest2_11 {
             return;
         }
 
-        String userId = "userId";
+        String userId = "6347c997-4cc9-4f95-94c9-b96e2c65aefc";
         String email = "email";
         String phoneNumber = "+9189898989";
 
@@ -462,7 +462,7 @@ public class PasswordlessUserPutAPITest2_11 {
             return;
         }
 
-        String userId = "userId";
+        String userId = "6347c997-4cc9-4f95-94c9-b96e2c65aefc";
         String email = "email";
         String phoneNumber = "+9189898989";
 
@@ -503,7 +503,7 @@ public class PasswordlessUserPutAPITest2_11 {
             return;
         }
 
-        String userId = "userId";
+        String userId = "6347c997-4cc9-4f95-94c9-b96e2c65aefc";
         String email = "email";
         String phoneNumber = "+9189898989";
 
@@ -543,7 +543,7 @@ public class PasswordlessUserPutAPITest2_11 {
             return;
         }
 
-        String userId = "userId";
+        String userId = "6347c997-4cc9-4f95-94c9-b96e2c65aefc";
 
         PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
         String email = "email";
@@ -584,7 +584,7 @@ public class PasswordlessUserPutAPITest2_11 {
             return;
         }
 
-        String userId = "userId";
+        String userId = "6347c997-4cc9-4f95-94c9-b96e2c65aefc";
         String phoneNumber = "+442071838750";
         String updatedPhoneNumber = "+442071838751";
 
