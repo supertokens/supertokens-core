@@ -612,7 +612,7 @@ public class Passwordless {
                 userId, emailUpdate, phoneNumberUpdate);
     }
 
-    public static void updateUser(AppIdentifierWithStorage appIdentifierWithStorage, String userId,
+    public static void updateUser(AppIdentifierWithStorage appIdentifierWithStorage, String recipeUserId,
                                   FieldUpdate emailUpdate, FieldUpdate phoneNumberUpdate)
             throws StorageQueryException, UnknownUserIdException, DuplicateEmailException,
             DuplicatePhoneNumberException, UserWithoutContactInfoException, EmailChangeNotAllowedException {
@@ -620,13 +620,13 @@ public class Passwordless {
 
         // We do not lock the user here, because we decided that even if the device cleanup used outdated information
         // it wouldn't leave the system in an incosistent state/cause problems.
-        AuthRecipeUserInfo user = AuthRecipe.getUserById(appIdentifierWithStorage, userId);
+        AuthRecipeUserInfo user = AuthRecipe.getUserById(appIdentifierWithStorage, recipeUserId);
         if (user == null) {
             throw new UnknownUserIdException();
         }
 
         LoginMethod lM = Arrays.stream(user.loginMethods)
-                .filter(currlM -> currlM.recipeUserId.equals(userId) && currlM.recipeId == RECIPE_ID.PASSWORDLESS)
+                .filter(currlM -> currlM.recipeUserId.equals(recipeUserId) && currlM.recipeId == RECIPE_ID.PASSWORDLESS)
                 .findFirst().orElse(null);
 
         if (lM == null) {
@@ -668,34 +668,34 @@ public class Passwordless {
                         }
                     }
                     try {
-                        storage.updateUserEmail_Transaction(appIdentifierWithStorage, con, userId,
+                        storage.updateUserEmail_Transaction(appIdentifierWithStorage, con, recipeUserId,
                                 emailUpdate.newValue);
                     } catch (UnknownUserIdException | DuplicateEmailException e) {
                         throw new StorageTransactionLogicException(e);
                     }
                     if (lM.email != null) {
                         storage.deleteDevicesByEmail_Transaction(appIdentifierWithStorage, con, lM.email,
-                                userId);
+                                recipeUserId);
                     }
                     if (emailUpdate.newValue != null) {
                         storage.deleteDevicesByEmail_Transaction(appIdentifierWithStorage, con,
-                                emailUpdate.newValue, userId);
+                                emailUpdate.newValue, recipeUserId);
                     }
                 }
                 if (phoneNumberUpdate != null && !Objects.equals(phoneNumberUpdate.newValue, lM.phoneNumber)) {
                     try {
-                        storage.updateUserPhoneNumber_Transaction(appIdentifierWithStorage, con, userId,
+                        storage.updateUserPhoneNumber_Transaction(appIdentifierWithStorage, con, recipeUserId,
                                 phoneNumberUpdate.newValue);
                     } catch (UnknownUserIdException | DuplicatePhoneNumberException e) {
                         throw new StorageTransactionLogicException(e);
                     }
                     if (lM.phoneNumber != null) {
                         storage.deleteDevicesByPhoneNumber_Transaction(appIdentifierWithStorage, con,
-                                lM.phoneNumber, userId);
+                                lM.phoneNumber, recipeUserId);
                     }
                     if (phoneNumberUpdate.newValue != null) {
                         storage.deleteDevicesByPhoneNumber_Transaction(appIdentifierWithStorage, con,
-                                phoneNumberUpdate.newValue, userId);
+                                phoneNumberUpdate.newValue, recipeUserId);
                     }
                 }
                 storage.commitTransaction(con);
