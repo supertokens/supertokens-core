@@ -107,6 +107,11 @@ public class GetUserByIdTest {
         Thread.sleep(50);
         AuthRecipeUserInfo user4 = createPasswordlessUserWithPhone(process.getProcess(), "+919876543210");
 
+        assertFalse(user1.isPrimaryUser);
+        assertFalse(user2.isPrimaryUser);
+        assertFalse(user3.isPrimaryUser);
+        assertFalse(user4.isPrimaryUser);
+
         assertEquals(user1, AuthRecipe.getUserById(process.getProcess(), user1.id));
         assertEquals(user2, AuthRecipe.getUserById(process.getProcess(), user2.id));
         assertEquals(user3, AuthRecipe.getUserById(process.getProcess(), user3.id));
@@ -119,6 +124,7 @@ public class GetUserByIdTest {
 
         for (String userId : new String[]{user1.id, user2.id, user3.id, user4.id}) {
             AuthRecipeUserInfo result = AuthRecipe.getUserById(process.getProcess(), userId);
+            assertTrue(result.isPrimaryUser);
 
             assertEquals(4, result.loginMethods.length);
             assertEquals(user1.loginMethods[0], result.loginMethods[0]);
