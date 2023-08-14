@@ -127,9 +127,8 @@ public class JWTSigningFunctions {
         headerClaims.put("kid", keyToUse.keyId);
 
         // Add relevant claims to the payload, note we only add/override ones that we absolutely need to.
-        Map<String, Object> jwtPayload = new Gson().fromJson(payload, HashMap.class);
-        if (jwksDomain != null) {
-            jwtPayload.putIfAbsent("iss", jwksDomain);
+        if (jwksDomain != null && !payload.has("iss")){
+            payload.addProperty("iss", jwksDomain);
         }
 
         JWTCreator.Builder builder = com.auth0.jwt.JWT.create();
@@ -141,7 +140,7 @@ public class JWTSigningFunctions {
         if (jwksDomain != null) {
             builder.withIssuer(jwksDomain);
         }
-        builder.withPayload(jwtPayload);
+        builder.withPayload(payload.toString());
 
         return builder.sign(signingAlgorithm);
     }
