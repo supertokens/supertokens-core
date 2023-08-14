@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+## [6.0.9] - 2023-08-14
+
+- Now using decimal notation to add numbers into the access token payload (instead of scientific notation) 
+
 ## [6.0.8] - 2023-08-01
 
 - Fixes CUD validation starting with number.

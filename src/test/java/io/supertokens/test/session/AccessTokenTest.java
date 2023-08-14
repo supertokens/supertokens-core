@@ -18,6 +18,7 @@ package io.supertokens.test.session;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import io.supertokens.ProcessState.EventAndException;
 import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.exceptions.AccessTokenPayloadError;
@@ -272,6 +273,11 @@ public class AccessTokenTest {
         assertEquals("antiCsrfToken", info.antiCsrfToken);
         assertEquals(expiryTime / 1000 * 1000, info.expiryTime);
 
+        JsonObject payload = (JsonObject) new JsonParser()
+                .parse(io.supertokens.utils.Utils.convertFromBase64(newToken.token.split("\\.")[1]));
+        // This throws if the number is in scientific (E) format
+        assertEquals(expiryTime / 1000, Long.parseLong(payload.get("exp").toString()));
+
         JWT.JWTPreParseInfo jwtInfo = JWT.preParseJWTInfo(newToken.token);
         assertNotNull(jwtInfo.kid);
         assertEquals(jwtInfo.version, AccessToken.getLatestVersion());
@@ -302,6 +308,11 @@ public class AccessTokenTest {
         assertEquals("antiCsrfToken", info.antiCsrfToken);
         assertEquals(expiryTime / 1000 * 1000, info.expiryTime);
 
+        JsonObject payload = (JsonObject) new JsonParser()
+                .parse(io.supertokens.utils.Utils.convertFromBase64(newToken.token.split("\\.")[1]));
+        // This throws if the number is in scientific (E) format
+        assertEquals(expiryTime / 1000, Long.parseLong(payload.get("exp").toString()));
+
         JWT.JWTPreParseInfo jwtInfo = JWT.preParseJWTInfo(newToken.token);
         assertNotNull(jwtInfo.kid);
         assertEquals(jwtInfo.version, AccessToken.getLatestVersion());
@@ -330,6 +341,12 @@ public class AccessTokenTest {
         assertEquals("value", info.userData.get("key").getAsString());
         assertEquals("antiCsrfToken", info.antiCsrfToken);
         assertEquals(expiryTime, info.expiryTime);
+
+        JsonObject payload = (JsonObject) new JsonParser()
+                .parse(io.supertokens.utils.Utils.convertFromBase64(newToken.token.split("\\.")[1]));
+        // This throws if the number is in scientific (E) format
+        assertEquals(expiryTime, Long.parseLong(payload.get("expiryTime").toString()));
+
         process.kill();
     }
 
@@ -355,6 +372,12 @@ public class AccessTokenTest {
         assertEquals("parentRefreshTokenHash1", info.parentRefreshTokenHash1);
         assertEquals("value", info.userData.get("key").getAsString());
         assertEquals("antiCsrfToken", info.antiCsrfToken);
+
+        JsonObject payload = (JsonObject) new JsonParser()
+                .parse(io.supertokens.utils.Utils.convertFromBase64(newToken.token.split("\\.")[1]));
+        // This throws if the number is in scientific (E) format
+        Long.parseLong(payload.get("expiryTime").toString());
+
         process.kill();
     }
 
