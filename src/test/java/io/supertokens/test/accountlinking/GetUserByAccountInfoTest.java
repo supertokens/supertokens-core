@@ -25,6 +25,7 @@ import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.exceptions.*;
+import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -110,6 +111,17 @@ public class GetUserByAccountInfoTest {
 
         TenantIdentifierWithStorage tenantIdentifierWithStorage = TenantIdentifier.BASE_TENANT.withStorage(StorageLayer.getBaseStorage(process.getProcess()));
 
+        AuthRecipeUserInfo userToTest = AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false,
+                "test1@example.com", null, null, null)[0];
+        assertNotNull(userToTest.id);
+        assertFalse(userToTest.isPrimaryUser);
+        assertEquals(1, userToTest.loginMethods.length);
+        assertEquals("test1@example.com", userToTest.loginMethods[0].email);
+        assertEquals(RECIPE_ID.EMAIL_PASSWORD, userToTest.loginMethods[0].recipeId);
+        assertEquals(user1.id, userToTest.loginMethods[0].recipeUserId);
+        assertFalse(userToTest.loginMethods[0].verified);
+        assert(userToTest.loginMethods[0].timeJoined > 0);
+
         // test for result
         assertEquals(user1, AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false, "test1@example.com", null, null, null)[0]);
         assertEquals(user2, AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false, null, null, "google", "userid1")[0]);
@@ -176,7 +188,7 @@ public class GetUserByAccountInfoTest {
     }
 
     @Test
-    public void testUnknownAccouentInfo() throws Exception {
+    public void testUnknownAccountInfo() throws Exception {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         FeatureFlagTestContent.getInstance(process.getProcess())
