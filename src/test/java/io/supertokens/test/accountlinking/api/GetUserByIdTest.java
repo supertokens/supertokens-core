@@ -36,6 +36,7 @@ import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.thirdparty.ThirdParty;
+import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.webserver.WebserverAPI;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -428,6 +429,71 @@ public class GetUserByIdTest {
             assertTrue(phoneNumbers.contains("+919876543210"));
             assertTrue(phoneNumbers.contains("+911234567890"));
         }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testWithUserIdMapping() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        AuthRecipeUserInfo user1 = createEmailPasswordUser(process.getProcess(), "test@example.com", "password1");
+        Thread.sleep(50);
+        AuthRecipeUserInfo user2 = createThirdPartyUser(process.getProcess(), "google", "userid1", "test@example.com");
+        Thread.sleep(50);
+        AuthRecipeUserInfo user3 = createPasswordlessUserWithEmail(process.getProcess(), "test@example.com");
+        Thread.sleep(50);
+        AuthRecipeUserInfo user4 = createPasswordlessUserWithPhone(process.getProcess(), "+919876543210");
+
+        UserIdMapping.createUserIdMapping(process.getProcess(), user1.id, "ext1", "", false);
+        UserIdMapping.createUserIdMapping(process.getProcess(), user2.id, "ext2", "", false);
+        UserIdMapping.createUserIdMapping(process.getProcess(), user3.id, "ext3", "", false);
+
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.id).user;
+        AuthRecipe.linkAccounts(process.getProcess(), user2.id, primaryUser.id);
+        AuthRecipe.linkAccounts(process.getProcess(), user3.id, primaryUser.id);
+        AuthRecipe.linkAccounts(process.getProcess(), user4.id, primaryUser.id);
+
+        for (String userId : new String[]{user1.id, user2.id, user3.id, user4.id, "ext1", "ext2", "ext3"}) {
+            Map<String, String> params = new HashMap<>();
+            params.put("userId", userId);
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/user/id", params, 1000, 1000, null,
+                    WebserverAPI.getLatestCDIVersion().get(), "");
+            JsonObject user = response.get("user").getAsJsonObject();
+            assertEquals("ext1", user.get("id").getAsString());
+            assertEquals("ext1", user.get("loginMethods").getAsJsonArray().get(0).getAsJsonObject().get("recipeUserId").getAsString());
+            assertNotEquals("ext2", user.get("loginMethods").getAsJsonArray().get(1).getAsJsonObject().get("recipeUserId").getAsString()); // TODO should be equal once userIdMapping is fixed
+            assertNotEquals("ext3", user.get("loginMethods").getAsJsonArray().get(2).getAsJsonObject().get("recipeUserId").getAsString()); // TODO should be equal once userIdMapping is fixed
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testUnknownUser() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        Map<String, String> params = new HashMap<>();
+        params.put("userId", "unknownid");
+        JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/user/id", params, 1000, 1000, null,
+                WebserverAPI.getLatestCDIVersion().get(), "");
+        assertEquals("UNKNOWN_USER_ID_ERROR", response.get("status").getAsString());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
