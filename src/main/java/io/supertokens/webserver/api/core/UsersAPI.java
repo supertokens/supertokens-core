@@ -25,6 +25,7 @@ import io.supertokens.authRecipe.UserPaginationContainer;
 import io.supertokens.authRecipe.UserPaginationToken;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.dashboard.DashboardSearchTags;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
@@ -169,18 +170,17 @@ public class UsersAPI extends WebserverAPI {
 
             ArrayList<String> userIds = new ArrayList<>();
             for (int i = 0; i < users.users.length; i++) {
-                userIds.add(users.users[i].user.id);
+                userIds.add(users.users[i].id);
             }
             HashMap<String, String> userIdMapping = UserIdMapping.getUserIdMappingForSuperTokensUserIds(
                     tenantIdentifierWithStorage, userIds);
-            if (!userIdMapping.isEmpty()) {
-                for (int i = 0; i < users.users.length; i++) {
-                    String externalId = userIdMapping.get(userIds.get(i));
-                    if (externalId != null) {
-                        users.users[i].user.setExternalUserId(externalId);
-                    } else {
-                        users.users[i].user.setExternalUserId(null);
-                    }
+
+            for (int i = 0; i < users.users.length; i++) {
+                String externalId = userIdMapping.get(userIds.get(i));
+                if (externalId != null) {
+                    users.users[i].setExternalUserId(externalId);
+                } else {
+                    users.users[i].setExternalUserId(null);
                 }
             }
 
@@ -188,12 +188,14 @@ public class UsersAPI extends WebserverAPI {
             result.addProperty("status", "OK");
 
             JsonArray usersJson = new JsonArray();
-            for (UserPaginationContainer.UsersContainer user : users.users) {
+            for (AuthRecipeUserInfo user : users.users) {
                 JsonObject jsonObj = new JsonObject();
-                jsonObj.addProperty("recipeId", user.recipeId);
+                if (getVersionFromRequest(req).lesserThan(SemVer.v4_0)) {
+                    jsonObj.addProperty("recipeId", user.loginMethods[0].recipeId.toString());
+                }
                 JsonObject userJson =
-                        getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0) ? user.user.toJson() :
-                                user.user.toJsonWithoutAccountLinking();
+                        getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0) ? user.toJson() :
+                                user.toJsonWithoutAccountLinking();
                 jsonObj.add("user", userJson);
                 usersJson.add(jsonObj);
             }
