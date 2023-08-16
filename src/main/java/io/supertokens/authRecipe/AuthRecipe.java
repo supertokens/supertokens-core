@@ -92,7 +92,7 @@ public class AuthRecipe {
                 if (primaryUser.id.equals(recipeUserId)) {
                     // we are trying to unlink the user ID which is the same as the primary one.
                     if (primaryUser.loginMethods.length == 1) {
-                        storage.unlinkAccounts_Transaction(appIdentifierWithStorage, con, recipeUserId);
+                        storage.unlinkAccounts_Transaction(appIdentifierWithStorage, con, primaryUser.id, recipeUserId);
                         Session.revokeAllSessionsForUser(main, appIdentifierWithStorage,
                                 mappingResult == null ? recipeUserId : mappingResult.externalUserId,
                                 false);
@@ -109,7 +109,7 @@ public class AuthRecipe {
                         return true;
                     }
                 } else {
-                    storage.unlinkAccounts_Transaction(appIdentifierWithStorage, con, recipeUserId);
+                    storage.unlinkAccounts_Transaction(appIdentifierWithStorage, con, primaryUser.id, recipeUserId);
                     Session.revokeAllSessionsForUser(main, appIdentifierWithStorage,
                             mappingResult == null ? recipeUserId : mappingResult.externalUserId, false);
                     return false;

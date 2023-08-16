@@ -31,7 +31,6 @@ import static org.junit.Assert.assertNotNull;
 import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.authRecipe.UserPaginationContainer;
-import io.supertokens.authRecipe.UserPaginationContainer.UsersContainer;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.Passwordless.ConsumeCodeResponse;
@@ -95,7 +94,7 @@ public class GetUsersWithSearchTagsTest {
             UserPaginationContainer info = AuthRecipe.getUsers(process.getProcess(), 10, "ASC", null, null, tags);
             assertEquals(userIds.size(), info.users.length);
             for (int i = 0; i < info.users.length; i++) {
-                assertTrue(userIds.contains(info.users[i].user.id));
+                assertTrue(userIds.contains(info.users[i].id));
             }
         }
 
@@ -109,8 +108,8 @@ public class GetUsersWithSearchTagsTest {
             DashboardSearchTags tags = new DashboardSearchTags(arrayList, null, arrayList);
             UserPaginationContainer info = AuthRecipe.getUsers(process.getProcess(), 10, "ASC", null, null, tags);
             assertEquals(1, info.users.length);
-            assertEquals(userIds.get(2), info.users[0].user.id);
-            assertEquals("thirdparty", info.users[0].recipeId);
+            assertEquals(userIds.get(2), info.users[0].id);
+            assertEquals("thirdparty", info.users[0].loginMethods[0].recipeId.toString());
 
         }
 
@@ -124,8 +123,8 @@ public class GetUsersWithSearchTagsTest {
             DashboardSearchTags tags = new DashboardSearchTags(null, arrayList, null);
             UserPaginationContainer info = AuthRecipe.getUsers(process.getProcess(), 10, "ASC", null, null, tags);
             assertEquals(1, info.users.length);
-            assertEquals(userIds.get(3), info.users[0].user.id);
-            assertEquals("passwordless", info.users[0].recipeId);
+            assertEquals(userIds.get(3), info.users[0].id);
+            assertEquals("passwordless", info.users[0].loginMethods[0].recipeId.toString());
         }
 
         process.kill();
@@ -214,9 +213,9 @@ public class GetUsersWithSearchTagsTest {
                 DashboardSearchTags tags = new DashboardSearchTags(emailList, null, null);
                 UserPaginationContainer info = AuthRecipe.getUsers(process.getProcess(), 10, "ASC", null, null, tags);
                 assertEquals(3, info.users.length);
-                assertEquals(userIds.get(0), info.users[0].user.id);
-                assertEquals(userIds.get(3), info.users[1].user.id);
-                assertEquals(userIds.get(4), info.users[2].user.id);
+                assertEquals(userIds.get(0), info.users[0].id);
+                assertEquals(userIds.get(3), info.users[1].id);
+                assertEquals(userIds.get(4), info.users[2].id);
             }
 
             // retrieve emails for users whose email starts with abc or have domain abc
@@ -229,8 +228,8 @@ public class GetUsersWithSearchTagsTest {
                 DashboardSearchTags tags = new DashboardSearchTags(emailList, null, null);
                 UserPaginationContainer info = AuthRecipe.getUsers(process.getProcess(), 10, "ASC", null, null, tags);
                 assertEquals(2, info.users.length);
-                assertEquals(userIds.get(1), info.users[0].user.id);
-                assertEquals(userIds.get(2), info.users[1].user.id);
+                assertEquals(userIds.get(1), info.users[0].id);
+                assertEquals(userIds.get(2), info.users[1].id);
 
             }
 
@@ -244,7 +243,7 @@ public class GetUsersWithSearchTagsTest {
                     UserPaginationContainer info = AuthRecipe.getUsers(process.getProcess(), 10, "ASC", null, null,
                             tags);
                     assertEquals(1, info.users.length);
-                    assertEquals(userIds.get(4), info.users[0].user.id);
+                    assertEquals(userIds.get(4), info.users[0].id);
                 }
 
             }
@@ -280,7 +279,7 @@ public class GetUsersWithSearchTagsTest {
         UserPaginationContainer info = AuthRecipe.getUsers(process.getProcess(), 10, "ASC", null, null, tags);
         assertEquals(1000, info.users.length);
         for (int i = 0; i < info.users.length; i++) {
-            assertTrue(userIds.contains(info.users[i].user.id));
+            assertTrue(userIds.contains(info.users[i].id));
 
         }
         

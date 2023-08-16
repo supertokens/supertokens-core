@@ -2819,7 +2819,7 @@ public class Start
     }
 
     @Override
-    public void unlinkAccounts_Transaction(AppIdentifier appIdentifier, TransactionConnection con, String recipeUserId)
+    public void unlinkAccounts_Transaction(AppIdentifier appIdentifier, TransactionConnection con, String primaryUserId, String recipeUserId)
             throws StorageQueryException {
         // TODO:..
     }

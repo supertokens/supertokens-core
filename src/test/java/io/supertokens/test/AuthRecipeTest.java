@@ -209,14 +209,14 @@ public class AuthRecipeTest {
                     new RECIPE_ID[]{RECIPE_ID.EMAIL_PASSWORD}, null);
             assert (users.nextPaginationToken == null);
             assert (users.users.length == 4);
-            assert (users.users[0].recipeId.equals("emailpassword"));
-            assert (users.users[0].user.equals(user1));
-            assert (users.users[1].recipeId.equals("emailpassword"));
-            assert (users.users[1].user.equals(user2));
-            assert (users.users[2].recipeId.equals("emailpassword"));
-            assert (users.users[2].user.equals(user3));
-            assert (users.users[3].recipeId.equals("emailpassword"));
-            assert (users.users[3].user.equals(user4));
+            assert (users.users[0].loginMethods[0].recipeId.toString().equals("emailpassword"));
+            assert (users.users[0].equals(user1));
+            assert (users.users[1].loginMethods[0].recipeId.toString().equals("emailpassword"));
+            assert (users.users[1].equals(user2));
+            assert (users.users[2].loginMethods[0].recipeId.toString().equals("emailpassword"));
+            assert (users.users[2].equals(user3));
+            assert (users.users[3].loginMethods[0].recipeId.toString().equals("emailpassword"));
+            assert (users.users[3].equals(user4));
 
         }
 
@@ -225,14 +225,14 @@ public class AuthRecipeTest {
                     new RECIPE_ID[]{RECIPE_ID.EMAIL_PASSWORD, RECIPE_ID.THIRD_PARTY}, null);
             assert (users.nextPaginationToken == null);
             assert (users.users.length == 4);
-            assert (users.users[0].recipeId.equals("emailpassword"));
-            assert (users.users[0].user.equals(user1));
-            assert (users.users[1].recipeId.equals("emailpassword"));
-            assert (users.users[1].user.equals(user2));
-            assert (users.users[2].recipeId.equals("emailpassword"));
-            assert (users.users[2].user.equals(user3));
-            assert (users.users[3].recipeId.equals("emailpassword"));
-            assert (users.users[3].user.equals(user4));
+            assert (users.users[0].loginMethods[0].recipeId.toString().equals("emailpassword"));
+            assert (users.users[0].equals(user1));
+            assert (users.users[1].loginMethods[0].recipeId.toString().equals("emailpassword"));
+            assert (users.users[1].equals(user2));
+            assert (users.users[2].loginMethods[0].recipeId.toString().equals("emailpassword"));
+            assert (users.users[2].equals(user3));
+            assert (users.users[3].loginMethods[0].recipeId.toString().equals("emailpassword"));
+            assert (users.users[3].equals(user4));
         }
 
         {
@@ -240,14 +240,14 @@ public class AuthRecipeTest {
                     new RECIPE_ID[]{RECIPE_ID.EMAIL_PASSWORD}, null);
             assert (users.nextPaginationToken == null);
             assert (users.users.length == 4);
-            assert (users.users[3].recipeId.equals("emailpassword"));
-            assert (users.users[3].user.equals(user1));
-            assert (users.users[2].recipeId.equals("emailpassword"));
-            assert (users.users[2].user.equals(user2));
-            assert (users.users[1].recipeId.equals("emailpassword"));
-            assert (users.users[1].user.equals(user3));
-            assert (users.users[0].recipeId.equals("emailpassword"));
-            assert (users.users[0].user.equals(user4));
+            assert (users.users[3].loginMethods[0].recipeId.toString().equals("emailpassword"));
+            assert (users.users[3].equals(user1));
+            assert (users.users[2].loginMethods[0].recipeId.toString().equals("emailpassword"));
+            assert (users.users[2].equals(user2));
+            assert (users.users[1].loginMethods[0].recipeId.toString().equals("emailpassword"));
+            assert (users.users[1].equals(user3));
+            assert (users.users[0].loginMethods[0].recipeId.toString().equals("emailpassword"));
+            assert (users.users[0].equals(user4));
 
         }
 
@@ -256,14 +256,14 @@ public class AuthRecipeTest {
                     new RECIPE_ID[]{RECIPE_ID.THIRD_PARTY, RECIPE_ID.EMAIL_PASSWORD}, null);
             assert (users.nextPaginationToken == null);
             assert (users.users.length == 4);
-            assert (users.users[3].recipeId.equals("emailpassword"));
-            assert (users.users[3].user.equals(user1));
-            assert (users.users[2].recipeId.equals("emailpassword"));
-            assert (users.users[2].user.equals(user2));
-            assert (users.users[1].recipeId.equals("emailpassword"));
-            assert (users.users[1].user.equals(user3));
-            assert (users.users[0].recipeId.equals("emailpassword"));
-            assert (users.users[0].user.equals(user4));
+            assert (users.users[3].loginMethods[0].recipeId.toString().equals("emailpassword"));
+            assert (users.users[3].equals(user1));
+            assert (users.users[2].loginMethods[0].recipeId.toString().equals("emailpassword"));
+            assert (users.users[2].equals(user2));
+            assert (users.users[1].loginMethods[0].recipeId.toString().equals("emailpassword"));
+            assert (users.users[1].equals(user3));
+            assert (users.users[0].loginMethods[0].recipeId.toString().equals("emailpassword"));
+            assert (users.users[0].equals(user4));
         }
 
         {
@@ -278,10 +278,10 @@ public class AuthRecipeTest {
                     new RECIPE_ID[]{RECIPE_ID.THIRD_PARTY, RECIPE_ID.EMAIL_PASSWORD}, null);
             assert (users.nextPaginationToken != null);
             assert (users.users.length == 2);
-            assert (users.users[1].recipeId.equals("emailpassword"));
-            assert (users.users[1].user.equals(user3));
-            assert (users.users[0].recipeId.equals("emailpassword"));
-            assert (users.users[0].user.equals(user4));
+            assert (users.users[1].loginMethods[0].recipeId.toString().equals("emailpassword"));
+            assert (users.users[1].equals(user3));
+            assert (users.users[0].loginMethods[0].recipeId.toString().equals("emailpassword"));
+            assert (users.users[0].equals(user4));
         }
 
         {
@@ -289,12 +289,12 @@ public class AuthRecipeTest {
                     new RECIPE_ID[]{RECIPE_ID.THIRD_PARTY, RECIPE_ID.EMAIL_PASSWORD}, null);
             assert (users.nextPaginationToken != null);
             assert (users.users.length == 3);
-            assert (users.users[0].recipeId.equals("emailpassword"));
-            assert (users.users[0].user.equals(user1));
-            assert (users.users[1].recipeId.equals("emailpassword"));
-            assert (users.users[1].user.equals(user2));
-            assert (users.users[2].recipeId.equals("emailpassword"));
-            assert (users.users[2].user.equals(user3));
+            assert (users.users[0].loginMethods[0].recipeId.toString().equals("emailpassword"));
+            assert (users.users[0].equals(user1));
+            assert (users.users[1].loginMethods[0].recipeId.toString().equals("emailpassword"));
+            assert (users.users[1].equals(user2));
+            assert (users.users[2].loginMethods[0].recipeId.toString().equals("emailpassword"));
+            assert (users.users[2].equals(user3));
         }
 
         ///////////////////////////////////////////////////////////////////////////////////
@@ -311,14 +311,14 @@ public class AuthRecipeTest {
                     new RECIPE_ID[]{RECIPE_ID.EMAIL_PASSWORD}, null);
             assert (users.nextPaginationToken == null);
             assert (users.users.length == 4);
-            assert (users.users[0].recipeId.equals("emailpassword"));
-            assert (users.users[0].user.equals(user1));
-            assert (users.users[1].recipeId.equals("emailpassword"));
-            assert (users.users[1].user.equals(user2));
-            assert (users.users[2].recipeId.equals("emailpassword"));
-            assert (users.users[2].user.equals(user3));
-            assert (users.users[3].recipeId.equals("emailpassword"));
-            assert (users.users[3].user.equals(user4));
+            assert (users.users[0].loginMethods[0].recipeId.toString().equals("emailpassword"));
+            assert (users.users[0].equals(user1));
+            assert (users.users[1].loginMethods[0].recipeId.toString().equals("emailpassword"));
+            assert (users.users[1].equals(user2));
+            assert (users.users[2].loginMethods[0].recipeId.toString().equals("emailpassword"));
+            assert (users.users[2].equals(user3));
+            assert (users.users[3].loginMethods[0].recipeId.toString().equals("emailpassword"));
+            assert (users.users[3].equals(user4));
 
         }
 
@@ -327,8 +327,8 @@ public class AuthRecipeTest {
                     new RECIPE_ID[]{RECIPE_ID.THIRD_PARTY}, null);
             assert (users.nextPaginationToken == null);
             assert (users.users.length == 1);
-            assert (users.users[0].recipeId.equals("thirdparty"));
-            assert (users.users[0].user.equals(user5));
+            assert (users.users[0].loginMethods[0].recipeId.toString().equals("thirdparty"));
+            assert (users.users[0].equals(user5));
 
         }
 
@@ -337,16 +337,16 @@ public class AuthRecipeTest {
                     new RECIPE_ID[]{RECIPE_ID.EMAIL_PASSWORD, RECIPE_ID.THIRD_PARTY}, null);
             assert (users.nextPaginationToken == null);
             assert (users.users.length == 5);
-            assert (users.users[0].recipeId.equals("emailpassword"));
-            assert (users.users[0].user.equals(user1));
-            assert (users.users[1].recipeId.equals("emailpassword"));
-            assert (users.users[1].user.equals(user2));
-            assert (users.users[2].recipeId.equals("emailpassword"));
-            assert (users.users[2].user.equals(user3));
-            assert (users.users[3].recipeId.equals("emailpassword"));
-            assert (users.users[3].user.equals(user4));
-            assert (users.users[4].recipeId.equals("thirdparty"));
-            assert (users.users[4].user.equals(user5));
+            assert (users.users[0].loginMethods[0].recipeId.toString().equals("emailpassword"));
+            assert (users.users[0].equals(user1));
+            assert (users.users[1].loginMethods[0].recipeId.toString().equals("emailpassword"));
+            assert (users.users[1].equals(user2));
+            assert (users.users[2].loginMethods[0].recipeId.toString().equals("emailpassword"));
+            assert (users.users[2].equals(user3));
+            assert (users.users[3].loginMethods[0].recipeId.toString().equals("emailpassword"));
+            assert (users.users[3].equals(user4));
+            assert (users.users[4].loginMethods[0].recipeId.toString().equals("thirdparty"));
+            assert (users.users[4].equals(user5));
         }
 
         {
@@ -354,14 +354,14 @@ public class AuthRecipeTest {
                     new RECIPE_ID[]{RECIPE_ID.EMAIL_PASSWORD}, null);
             assert (users.nextPaginationToken == null);
             assert (users.users.length == 4);
-            assert (users.users[3].recipeId.equals("emailpassword"));
-            assert (users.users[3].user.equals(user1));
-            assert (users.users[2].recipeId.equals("emailpassword"));
-            assert (users.users[2].user.equals(user2));
-            assert (users.users[1].recipeId.equals("emailpassword"));
-            assert (users.users[1].user.equals(user3));
-            assert (users.users[0].recipeId.equals("emailpassword"));
-            assert (users.users[0].user.equals(user4));
+            assert (users.users[3].loginMethods[0].recipeId.toString().equals("emailpassword"));
+            assert (users.users[3].equals(user1));
+            assert (users.users[2].loginMethods[0].recipeId.toString().equals("emailpassword"));
+            assert (users.users[2].equals(user2));
+            assert (users.users[1].loginMethods[0].recipeId.toString().equals("emailpassword"));
+            assert (users.users[1].equals(user3));
+            assert (users.users[0].loginMethods[0].recipeId.toString().equals("emailpassword"));
+            assert (users.users[0].equals(user4));
 
         }
 
@@ -370,8 +370,8 @@ public class AuthRecipeTest {
                     new RECIPE_ID[]{RECIPE_ID.THIRD_PARTY}, null);
             assert (users.nextPaginationToken == null);
             assert (users.users.length == 1);
-            assert (users.users[0].recipeId.equals("thirdparty"));
-            assert (users.users[0].user.equals(user5));
+            assert (users.users[0].loginMethods[0].recipeId.toString().equals("thirdparty"));
+            assert (users.users[0].equals(user5));
 
         }
 
@@ -380,16 +380,16 @@ public class AuthRecipeTest {
                     new RECIPE_ID[]{}, null);
             assert (users.nextPaginationToken == null);
             assert (users.users.length == 5);
-            assert (users.users[4].recipeId.equals("emailpassword"));
-            assert (users.users[4].user.equals(user1));
-            assert (users.users[3].recipeId.equals("emailpassword"));
-            assert (users.users[3].user.equals(user2));
-            assert (users.users[2].recipeId.equals("emailpassword"));
-            assert (users.users[2].user.equals(user3));
-            assert (users.users[1].recipeId.equals("emailpassword"));
-            assert (users.users[1].user.equals(user4));
-            assert (users.users[0].recipeId.equals("thirdparty"));
-            assert (users.users[0].user.equals(user5));
+            assert (users.users[4].loginMethods[0].recipeId.toString().equals("emailpassword"));
+            assert (users.users[4].equals(user1));
+            assert (users.users[3].loginMethods[0].recipeId.toString().equals("emailpassword"));
+            assert (users.users[3].equals(user2));
+            assert (users.users[2].loginMethods[0].recipeId.toString().equals("emailpassword"));
+            assert (users.users[2].equals(user3));
+            assert (users.users[1].loginMethods[0].recipeId.toString().equals("emailpassword"));
+            assert (users.users[1].equals(user4));
+            assert (users.users[0].loginMethods[0].recipeId.toString().equals("thirdparty"));
+            assert (users.users[0].equals(user5));
         }
 
         {
@@ -404,10 +404,10 @@ public class AuthRecipeTest {
                     new RECIPE_ID[]{RECIPE_ID.THIRD_PARTY, RECIPE_ID.EMAIL_PASSWORD}, null);
             assert (users.nextPaginationToken != null);
             assert (users.users.length == 2);
-            assert (users.users[1].recipeId.equals("emailpassword"));
-            assert (users.users[1].user.equals(user4));
-            assert (users.users[0].recipeId.equals("thirdparty"));
-            assert (users.users[0].user.equals(user5));
+            assert (users.users[1].loginMethods[0].recipeId.toString().equals("emailpassword"));
+            assert (users.users[1].equals(user4));
+            assert (users.users[0].loginMethods[0].recipeId.toString().equals("thirdparty"));
+            assert (users.users[0].equals(user5));
         }
 
         {
@@ -415,12 +415,12 @@ public class AuthRecipeTest {
                     new RECIPE_ID[]{RECIPE_ID.THIRD_PARTY, RECIPE_ID.EMAIL_PASSWORD}, null);
             assert (users.nextPaginationToken != null);
             assert (users.users.length == 3);
-            assert (users.users[0].recipeId.equals("emailpassword"));
-            assert (users.users[0].user.equals(user1));
-            assert (users.users[1].recipeId.equals("emailpassword"));
-            assert (users.users[1].user.equals(user2));
-            assert (users.users[2].recipeId.equals("emailpassword"));
-            assert (users.users[2].user.equals(user3));
+            assert (users.users[0].loginMethods[0].recipeId.toString().equals("emailpassword"));
+            assert (users.users[0].equals(user1));
+            assert (users.users[1].loginMethods[0].recipeId.toString().equals("emailpassword"));
+            assert (users.users[1].equals(user2));
+            assert (users.users[2].loginMethods[0].recipeId.toString().equals("emailpassword"));
+            assert (users.users[2].equals(user3));
         }
 
         process.kill();
@@ -516,11 +516,11 @@ public class AuthRecipeTest {
                     UserPaginationContainer users = AuthRecipe.getUsers(process.getProcess(), limit, "ASC",
                             paginationToken, null, null);
 
-                    for (UserPaginationContainer.UsersContainer uc : users.users) {
+                    for (AuthRecipeUserInfo uc : users.users) {
                         AuthRecipeUserInfo expected = usersCreated.get(indexIntoUsers);
-                        AuthRecipeUserInfo actualUser = uc.user;
+                        AuthRecipeUserInfo actualUser = uc;
 
-                        assert (actualUser.equals(expected) && uc.recipeId.equals(expected.getRecipeId().toString()));
+                        assert (actualUser.equals(expected) && uc.loginMethods[0].recipeId.toString().equals(expected.getRecipeId().toString()));
                         indexIntoUsers++;
                     }
 
@@ -555,11 +555,11 @@ public class AuthRecipeTest {
                     UserPaginationContainer users = AuthRecipe.getUsers(process.getProcess(), limit, "DESC",
                             paginationToken, null, null);
 
-                    for (UserPaginationContainer.UsersContainer uc : users.users) {
+                    for (AuthRecipeUserInfo uc : users.users) {
                         AuthRecipeUserInfo expected = usersCreated.get(indexIntoUsers);
-                        AuthRecipeUserInfo actualUser = uc.user;
+                        AuthRecipeUserInfo actualUser = uc;
 
-                        assert (actualUser.equals(expected) && uc.recipeId.equals(expected.getRecipeId().toString()));
+                        assert (actualUser.equals(expected) && uc.loginMethods[0].recipeId.toString().equals(expected.getRecipeId().toString()));
                         indexIntoUsers--;
                     }
 
