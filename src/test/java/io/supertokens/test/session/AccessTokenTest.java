@@ -257,7 +257,8 @@ public class AccessTokenTest {
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
         assertNotNull(e);
         JsonObject jsonObj = new JsonObject();
-        jsonObj.addProperty("key", "value");
+        String testValue = "asdf???123";
+        jsonObj.addProperty("key", testValue);
 
         // db key
         long expiryTime = System.currentTimeMillis() + 1000;
@@ -269,7 +270,7 @@ public class AccessTokenTest {
         assertEquals("userId", info.userId);
         assertEquals("refreshTokenHash1", info.refreshTokenHash1);
         assertEquals("parentRefreshTokenHash1", info.parentRefreshTokenHash1);
-        assertEquals("value", info.userData.get("key").getAsString());
+        assertEquals(testValue, info.userData.get("key").getAsString());
         assertEquals("antiCsrfToken", info.antiCsrfToken);
         assertEquals(expiryTime / 1000 * 1000, info.expiryTime);
 
@@ -292,19 +293,21 @@ public class AccessTokenTest {
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
         assertNotNull(e);
         JsonObject jsonObj = new JsonObject();
-        jsonObj.addProperty("key", "value");
+        String testValue = "asdf???123";
+        jsonObj.addProperty("key", testValue);
 
         // db key
         long expiryTime = System.currentTimeMillis() + 1000;
         TokenInfo newToken = AccessToken.createNewAccessToken(process.getProcess(), "sessionHandle", "userId",
                 "refreshTokenHash1", "parentRefreshTokenHash1", jsonObj, "antiCsrfToken", expiryTime,
                 AccessToken.getLatestVersion(), true);
+        System.out.println(newToken.token);
         AccessTokenInfo info = AccessToken.getInfoFromAccessToken(process.getProcess(), newToken.token, true);
         assertEquals("sessionHandle", info.sessionHandle);
         assertEquals("userId", info.userId);
         assertEquals("refreshTokenHash1", info.refreshTokenHash1);
         assertEquals("parentRefreshTokenHash1", info.parentRefreshTokenHash1);
-        assertEquals("value", info.userData.get("key").getAsString());
+        assertEquals(testValue, info.userData.get("key").getAsString());
         assertEquals("antiCsrfToken", info.antiCsrfToken);
         assertEquals(expiryTime / 1000 * 1000, info.expiryTime);
 
@@ -326,7 +329,8 @@ public class AccessTokenTest {
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
         assertNotNull(e);
         JsonObject jsonObj = new JsonObject();
-        jsonObj.addProperty("key", "value");
+        String testValue = "asdf???123";
+        jsonObj.addProperty("key", testValue);
 
         // db key
         long expiryTime = System.currentTimeMillis() + 1000;
@@ -338,7 +342,7 @@ public class AccessTokenTest {
         assertEquals("userId", info.userId);
         assertEquals("refreshTokenHash1", info.refreshTokenHash1);
         assertEquals("parentRefreshTokenHash1", info.parentRefreshTokenHash1);
-        assertEquals("value", info.userData.get("key").getAsString());
+        assertEquals(testValue, info.userData.get("key").getAsString());
         assertEquals("antiCsrfToken", info.antiCsrfToken);
         assertEquals(expiryTime, info.expiryTime);
 
@@ -360,7 +364,8 @@ public class AccessTokenTest {
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
         assertNotNull(e);
         JsonObject jsonObj = new JsonObject();
-        jsonObj.addProperty("key", "value");
+        String testValue = "asdf???123";
+        jsonObj.addProperty("key", testValue);
 
         // db key
         TokenInfo newToken = AccessToken.createNewAccessTokenV1(process.getProcess(), "sessionHandle", "userId",
@@ -370,7 +375,7 @@ public class AccessTokenTest {
         assertEquals("userId", info.userId);
         assertEquals("refreshTokenHash1", info.refreshTokenHash1);
         assertEquals("parentRefreshTokenHash1", info.parentRefreshTokenHash1);
-        assertEquals("value", info.userData.get("key").getAsString());
+        assertEquals(testValue, info.userData.get("key").getAsString());
         assertEquals("antiCsrfToken", info.antiCsrfToken);
 
         JsonObject payload = (JsonObject) new JsonParser()
