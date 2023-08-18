@@ -192,12 +192,12 @@ public class UsersAPI extends WebserverAPI {
                 JsonObject jsonObj = new JsonObject();
                 if (getVersionFromRequest(req).lesserThan(SemVer.v4_0)) {
                     jsonObj.addProperty("recipeId", user.loginMethods[0].recipeId.toString());
+                    JsonObject userJson = user.toJsonWithoutAccountLinking();
+                    jsonObj.add("user", userJson);
+                    usersJson.add(jsonObj);
+                } else {
+                    usersJson.add(user.toJson());
                 }
-                JsonObject userJson =
-                        getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0) ? user.toJson() :
-                                user.toJsonWithoutAccountLinking();
-                jsonObj.add("user", userJson);
-                usersJson.add(jsonObj);
             }
 
             if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
