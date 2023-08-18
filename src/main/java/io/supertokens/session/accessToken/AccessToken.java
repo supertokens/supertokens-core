@@ -568,7 +568,7 @@ public class AccessToken {
     }
 
     public static VERSION getLatestVersion() {
-        return VERSION.V4;
+        return VERSION.V5;
     }
 
     public static String getVersionStringFromAccessTokenVersion(VERSION version) {
