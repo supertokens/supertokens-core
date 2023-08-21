@@ -183,6 +183,12 @@ curl --location --request POST 'https://try.supertokens.com/recipe/dashboard/use
 --header 'Content-Type: application/json' \
 --data-raw '{"email": "rishabh@supertokens.com","password": "abcd1234"}'
 
+curl --location --request POST 'https://try.supertokens.com/recipe/dashboard/user' \
+--header 'rid: dashboard' \
+--header 'api-key: <YOUR-API-KEY>' \
+--header 'Content-Type: application/json' \
+--data-raw '{"email": "demo@supertokens.com","password": "abcd1234"}'
+
 curl --location --request PUT 'https://try.supertokens.com/recipe/multitenancy/tenant' \
 --header 'Content-Type: application/json' \
 --data-raw '{
