@@ -119,6 +119,7 @@ labels:
     - [ ] Change [checklist in contributing guide for which tables to pick when migrating data from dev to prod instance](https://test.supertokens.com/docs/contribute/checklists/saas/tables-to-consider-for-data-migration-dev-to-prod).
     - [ ] Update license key used for cores to include nea feature.
     - [ ] Update table schema in mysql / postgresql section for self hosted in docs
+    - [ ] Update API that returns the list of paid features in saas dashboard 
  - [ ] [supertokens-node:X.Y](https://github.com/supertokens/supertokens-node/tree/X.Y)
  - [ ] [supertokens-golang:X.Y](https://github.com/supertokens/supertokens-golang/tree/X.Y)
  - [ ] [supertokens-website:X.Y](https://github.com/supertokens/supertokens-website/tree/X.Y)
