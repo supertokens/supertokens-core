@@ -22,6 +22,7 @@ import io.supertokens.Main;
 import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.thirdparty.ThirdParty;
@@ -36,6 +37,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
+import java.util.Objects;
 
 public class SignInUpAPI extends WebserverAPI {
 
@@ -89,6 +91,16 @@ public class SignInUpAPI extends WebserverAPI {
                 }
 
                 result.add("user", userJson);
+                if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0)) {
+                    for (LoginMethod loginMethod : response.user.loginMethods) {
+                        if (loginMethod.recipeId.equals(RECIPE_ID.THIRD_PARTY)
+                                && Objects.equals(loginMethod.thirdParty.id, thirdPartyId)
+                                && Objects.equals(loginMethod.thirdParty.userId, thirdPartyUserId)) {
+                            result.addProperty("recipeUserId", loginMethod.recipeUserId);
+                            break;
+                        }
+                    }
+                }
                 super.sendJsonResponse(200, result, resp);
 
             } catch (StorageQueryException | TenantOrAppNotFoundException e) {
@@ -141,6 +153,16 @@ public class SignInUpAPI extends WebserverAPI {
                 }
 
                 result.add("user", userJson);
+                if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0)) {
+                    for (LoginMethod loginMethod : response.user.loginMethods) {
+                        if (loginMethod.recipeId.equals(RECIPE_ID.THIRD_PARTY)
+                                && Objects.equals(loginMethod.thirdParty.id, thirdPartyId)
+                                && Objects.equals(loginMethod.thirdParty.userId, thirdPartyUserId)) {
+                            result.addProperty("recipeUserId", loginMethod.recipeUserId);
+                            break;
+                        }
+                    }
+                }
                 super.sendJsonResponse(200, result, resp);
 
             } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {

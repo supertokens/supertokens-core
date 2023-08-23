@@ -24,6 +24,7 @@ import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.Passwordless.ConsumeCodeResponse;
 import io.supertokens.passwordless.exceptions.*;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -39,6 +40,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.Objects;
 
 public class ConsumeCodeAPI extends WebserverAPI {
 
@@ -108,6 +110,16 @@ public class ConsumeCodeAPI extends WebserverAPI {
 
             result.addProperty("createdNewUser", consumeCodeResponse.createdNewUser);
             result.add("user", userJson);
+            if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0)) {
+                for (LoginMethod loginMethod : consumeCodeResponse.user.loginMethods) {
+                    if (loginMethod.recipeId.equals(RECIPE_ID.PASSWORDLESS)
+                            && Objects.equals(loginMethod.email, consumeCodeResponse.email)
+                            && Objects.equals(loginMethod.phoneNumber, consumeCodeResponse.phoneNumber)) {
+                        result.addProperty("recipeUserId", loginMethod.recipeUserId);
+                        break;
+                    }
+                }
+            }
 
             super.sendJsonResponse(200, result, resp);
         } catch (RestartFlowException ex) {

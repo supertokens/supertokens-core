@@ -25,6 +25,7 @@ import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -98,6 +99,15 @@ public class SignInAPI extends WebserverAPI {
                 userJson.remove("tenantIds");
             }
             result.add("user", userJson);
+            if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0)) {
+                for (LoginMethod loginMethod : user.loginMethods) {
+                    if (loginMethod.recipeId.equals(RECIPE_ID.EMAIL_PASSWORD) && normalisedEmail.equals(loginMethod.email)) {
+                        result.addProperty("recipeUserId", loginMethod.recipeUserId);
+                        break;
+                    }
+                }
+            }
+
             super.sendJsonResponse(200, result, resp);
 
         } catch (WrongCredentialsException e) {
