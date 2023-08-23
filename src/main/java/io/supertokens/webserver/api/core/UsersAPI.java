@@ -189,8 +189,8 @@ public class UsersAPI extends WebserverAPI {
 
             JsonArray usersJson = new JsonArray();
             for (AuthRecipeUserInfo user : users.users) {
-                JsonObject jsonObj = new JsonObject();
                 if (getVersionFromRequest(req).lesserThan(SemVer.v4_0)) {
+                    JsonObject jsonObj = new JsonObject();
                     jsonObj.addProperty("recipeId", user.loginMethods[0].recipeId.toString());
                     JsonObject userJson = user.toJsonWithoutAccountLinking();
                     jsonObj.add("user", userJson);
