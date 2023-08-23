@@ -37,7 +37,6 @@ import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.utils.SemVer;
-import io.supertokens.webserver.WebserverAPI;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -110,6 +109,8 @@ public class UserPaginationTest {
         if (recipeFilters != null) {
             params.put("includeRecipeIds", String.join(",", recipeFilters));
         }
+
+        params.put("limit", String.valueOf(pageSize));
 
         JsonArray result = new JsonArray();
 
