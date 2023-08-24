@@ -161,16 +161,6 @@ public class AuthRecipe {
         }
     }
 
-    public static class LinkAccountsResult {
-        public boolean wasAlreadyLinked;
-        public AuthRecipeUserInfo finalUser;
-
-        public LinkAccountsResult(boolean wasAlreadyLinked, AuthRecipeUserInfo finalUser) {
-            this.wasAlreadyLinked = wasAlreadyLinked;
-            this.finalUser = finalUser;
-        }
-    }
-
     @TestOnly
     public static CanLinkAccountsResult canLinkAccounts(Main main, String recipeUserId, String primaryUserId)
             throws StorageQueryException, UnknownUserIdException, InputUserIdIsNotAPrimaryUserException,
@@ -318,7 +308,7 @@ public class AuthRecipe {
     }
 
     @TestOnly
-    public static LinkAccountsResult linkAccounts(Main main, String recipeUserId, String primaryUserId)
+    public static boolean linkAccounts(Main main, String recipeUserId, String primaryUserId)
             throws StorageQueryException, AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
             UnknownUserIdException,
             FeatureNotEnabledException, InputUserIdIsNotAPrimaryUserException,
@@ -332,7 +322,7 @@ public class AuthRecipe {
         }
     }
 
-    public static LinkAccountsResult linkAccounts(Main main, AppIdentifierWithStorage appIdentifierWithStorage,
+    public static boolean linkAccounts(Main main, AppIdentifierWithStorage appIdentifierWithStorage,
                                        String _recipeUserId, String _primaryUserId)
             throws StorageQueryException,
             AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
@@ -347,14 +337,14 @@ public class AuthRecipe {
 
         AuthRecipeSQLStorage storage = (AuthRecipeSQLStorage) appIdentifierWithStorage.getAuthRecipeStorage();
         try {
-            LinkAccountsResult result = storage.startTransaction(con -> {
+            boolean wasAlreadyLinked = storage.startTransaction(con -> {
 
                 try {
                     CanLinkAccountsResult canLinkAccounts = canLinkAccountsHelper(con, appIdentifierWithStorage,
                             _recipeUserId, _primaryUserId);
 
                     if (canLinkAccounts.alreadyLinked) {
-                        return new LinkAccountsResult(true, getUserById(appIdentifierWithStorage, canLinkAccounts.primaryUserId));
+                        return true;
                     }
                     // now we can link accounts in the db.
                     storage.linkAccounts_Transaction(appIdentifierWithStorage, con, canLinkAccounts.recipeUserId,
@@ -362,7 +352,7 @@ public class AuthRecipe {
 
                     storage.commitTransaction(con);
 
-                    return new LinkAccountsResult(false, getUserById(appIdentifierWithStorage, canLinkAccounts.primaryUserId));
+                    return false;
                 } catch (UnknownUserIdException | InputUserIdIsNotAPrimaryUserException |
                          RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException |
                          AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException e) {
@@ -370,7 +360,7 @@ public class AuthRecipe {
                 }
             });
 
-            if (!result.wasAlreadyLinked) {
+            if (!wasAlreadyLinked) {
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping mappingResult =
                         io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
                                 appIdentifierWithStorage,
@@ -380,7 +370,7 @@ public class AuthRecipe {
                         mappingResult == null ? _recipeUserId : mappingResult.externalUserId, false);
             }
 
-            return result;
+            return wasAlreadyLinked;
         } catch (StorageTransactionLogicException e) {
             if (e.actualException instanceof UnknownUserIdException) {
                 throw (UnknownUserIdException) e.actualException;

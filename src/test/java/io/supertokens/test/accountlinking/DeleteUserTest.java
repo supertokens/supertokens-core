@@ -73,7 +73,7 @@ public class DeleteUserTest {
 
         AuthRecipe.createPrimaryUser(process.main, r2.getUserIdNotToBeReturnedFromAPI());
 
-        assert (!AuthRecipe.linkAccounts(process.main, r1.getUserIdNotToBeReturnedFromAPI(), r2.getUserIdNotToBeReturnedFromAPI()).wasAlreadyLinked);
+        assert (!AuthRecipe.linkAccounts(process.main, r1.getUserIdNotToBeReturnedFromAPI(), r2.getUserIdNotToBeReturnedFromAPI()));
 
         AuthRecipe.deleteUser(process.main, r1.getUserIdNotToBeReturnedFromAPI(), false);
 
@@ -110,7 +110,7 @@ public class DeleteUserTest {
 
         AuthRecipe.createPrimaryUser(process.main, r2.getUserIdNotToBeReturnedFromAPI());
 
-        assert (!AuthRecipe.linkAccounts(process.main, r1.getUserIdNotToBeReturnedFromAPI(), r2.getUserIdNotToBeReturnedFromAPI()).wasAlreadyLinked);
+        assert (!AuthRecipe.linkAccounts(process.main, r1.getUserIdNotToBeReturnedFromAPI(), r2.getUserIdNotToBeReturnedFromAPI()));
 
         AuthRecipe.deleteUser(process.main, r2.getUserIdNotToBeReturnedFromAPI(), false);
 
@@ -148,7 +148,7 @@ public class DeleteUserTest {
 
         AuthRecipe.createPrimaryUser(process.main, r2.getUserIdNotToBeReturnedFromAPI());
 
-        assert (!AuthRecipe.linkAccounts(process.main, r1.getUserIdNotToBeReturnedFromAPI(), r2.getUserIdNotToBeReturnedFromAPI()).wasAlreadyLinked);
+        assert (!AuthRecipe.linkAccounts(process.main, r1.getUserIdNotToBeReturnedFromAPI(), r2.getUserIdNotToBeReturnedFromAPI()));
 
         AuthRecipe.deleteUser(process.main, r2.getUserIdNotToBeReturnedFromAPI());
 
@@ -183,7 +183,7 @@ public class DeleteUserTest {
 
         AuthRecipe.createPrimaryUser(process.main, r2.getUserIdNotToBeReturnedFromAPI());
 
-        assert (!AuthRecipe.linkAccounts(process.main, r1.getUserIdNotToBeReturnedFromAPI(), r2.getUserIdNotToBeReturnedFromAPI()).wasAlreadyLinked);
+        assert (!AuthRecipe.linkAccounts(process.main, r1.getUserIdNotToBeReturnedFromAPI(), r2.getUserIdNotToBeReturnedFromAPI()));
 
         AuthRecipe.deleteUser(process.main, r1.getUserIdNotToBeReturnedFromAPI());
 
@@ -228,7 +228,7 @@ public class DeleteUserTest {
 
         AuthRecipe.createPrimaryUser(process.main, r2.getUserIdNotToBeReturnedFromAPI());
 
-        assert (!AuthRecipe.linkAccounts(process.main, r1.getUserIdNotToBeReturnedFromAPI(), r2.getUserIdNotToBeReturnedFromAPI()).wasAlreadyLinked);
+        assert (!AuthRecipe.linkAccounts(process.main, r1.getUserIdNotToBeReturnedFromAPI(), r2.getUserIdNotToBeReturnedFromAPI()));
 
         AuthRecipe.deleteUser(process.main, r1.getUserIdNotToBeReturnedFromAPI(), false);
 
@@ -280,7 +280,7 @@ public class DeleteUserTest {
 
         AuthRecipe.createPrimaryUser(process.main, r2.getUserIdNotToBeReturnedFromAPI());
 
-        assert (!AuthRecipe.linkAccounts(process.main, r1.getUserIdNotToBeReturnedFromAPI(), r2.getUserIdNotToBeReturnedFromAPI()).wasAlreadyLinked);
+        assert (!AuthRecipe.linkAccounts(process.main, r1.getUserIdNotToBeReturnedFromAPI(), r2.getUserIdNotToBeReturnedFromAPI()));
 
         AuthRecipe.deleteUser(process.main, r1.getUserIdNotToBeReturnedFromAPI());
 
@@ -338,8 +338,8 @@ public class DeleteUserTest {
 
         AuthRecipe.createPrimaryUser(process.main, r2.getUserIdNotToBeReturnedFromAPI());
 
-        assert (!AuthRecipe.linkAccounts(process.main, r1.getUserIdNotToBeReturnedFromAPI(), r2.getUserIdNotToBeReturnedFromAPI()).wasAlreadyLinked);
-        assert (!AuthRecipe.linkAccounts(process.main, r3.getUserIdNotToBeReturnedFromAPI(), r1.getUserIdNotToBeReturnedFromAPI()).wasAlreadyLinked);
+        assert (!AuthRecipe.linkAccounts(process.main, r1.getUserIdNotToBeReturnedFromAPI(), r2.getUserIdNotToBeReturnedFromAPI()));
+        assert (!AuthRecipe.linkAccounts(process.main, r3.getUserIdNotToBeReturnedFromAPI(), r1.getUserIdNotToBeReturnedFromAPI()));
 
         AuthRecipe.deleteUser(process.main, r1.getUserIdNotToBeReturnedFromAPI(), false);
 
