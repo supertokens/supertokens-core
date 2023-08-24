@@ -113,8 +113,8 @@ public class ConsumeCodeAPI extends WebserverAPI {
             if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0)) {
                 for (LoginMethod loginMethod : consumeCodeResponse.user.loginMethods) {
                     if (loginMethod.recipeId.equals(RECIPE_ID.PASSWORDLESS)
-                            && Objects.equals(loginMethod.email, consumeCodeResponse.email)
-                            && Objects.equals(loginMethod.phoneNumber, consumeCodeResponse.phoneNumber)) {
+                            && (consumeCodeResponse.email == null || Objects.equals(loginMethod.email, consumeCodeResponse.email))
+                            && (consumeCodeResponse.phoneNumber == null || Objects.equals(loginMethod.phoneNumber, consumeCodeResponse.phoneNumber))) {
                         result.addProperty("recipeUserId", loginMethod.recipeUserId);
                         break;
                     }

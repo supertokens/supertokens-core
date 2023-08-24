@@ -538,4 +538,136 @@ public class TestRecipeUserIdInSignInUpAPIs {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    @Test
+    public void testPasswordlessConsumeCodeForPhoneAndEmail() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        String userId = null;
+        {
+            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), null, "+919876543210", null, null);
+
+            JsonObject consumeCodeRequestBody = new JsonObject();
+            consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
+            consumeCodeRequestBody.addProperty("linkCode", createResp.linkCode);
+
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                    SemVer.v4_0.get(), "passwordless");
+
+            assertEquals(4, response.entrySet().size());
+            assertEquals(response.get("recipeUserId"), response.get("user").getAsJsonObject().get("id"));
+            userId = response.get("recipeUserId").getAsString();
+        }
+
+        Passwordless.updateUser(process.getProcess(), userId, new Passwordless.FieldUpdate("test@example.com"), null);
+
+        { // Without account linking - phone
+            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), null, "+919876543210", null, null);
+
+            JsonObject consumeCodeRequestBody = new JsonObject();
+            consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
+            consumeCodeRequestBody.addProperty("linkCode", createResp.linkCode);
+
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                    SemVer.v4_0.get(), "passwordless");
+
+            assertEquals(4, response.entrySet().size());
+            assertEquals(userId, response.get("recipeUserId").getAsString());
+        }
+        { // Without account linking - email
+            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), "test@example.com", null, null, null);
+
+            JsonObject consumeCodeRequestBody = new JsonObject();
+            consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
+            consumeCodeRequestBody.addProperty("linkCode", createResp.linkCode);
+
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                    SemVer.v4_0.get(), "passwordless");
+
+            assertEquals(4, response.entrySet().size());
+            assertEquals(userId, response.get("recipeUserId").getAsString());
+        }
+
+        AuthRecipeUserInfo user2 = createThirdPartyUser(process.getProcess(), "google", "google-user", "test@example.com");
+
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user2.id).user;
+        AuthRecipe.linkAccounts(process.getProcess(), userId, primaryUser.id);
+
+        { // after account linking - phone
+            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), null, "+919876543210", null, null);
+
+            JsonObject consumeCodeRequestBody = new JsonObject();
+            consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
+            consumeCodeRequestBody.addProperty("linkCode", createResp.linkCode);
+
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                    SemVer.v4_0.get(), "passwordless");
+
+            assertEquals(4, response.entrySet().size());
+            assertEquals(userId, response.get("recipeUserId").getAsString());
+        }
+        { // after account linking - email
+            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), "test@example.com", null, null, null);
+
+            JsonObject consumeCodeRequestBody = new JsonObject();
+            consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
+            consumeCodeRequestBody.addProperty("linkCode", createResp.linkCode);
+
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                    SemVer.v4_0.get(), "passwordless");
+
+            assertEquals(4, response.entrySet().size());
+            assertEquals(userId, response.get("recipeUserId").getAsString());
+        }
+
+        AuthRecipeUserInfo user3 = createPasswordlessUserWithPhone(process.getProcess(), "+919876543211");
+        AuthRecipe.linkAccounts(process.getProcess(), user3.id, primaryUser.id);
+
+        { // after account linking - phone
+            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), null, "+919876543210", null, null);
+
+            JsonObject consumeCodeRequestBody = new JsonObject();
+            consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
+            consumeCodeRequestBody.addProperty("linkCode", createResp.linkCode);
+
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                    SemVer.v4_0.get(), "passwordless");
+
+            assertEquals(4, response.entrySet().size());
+            assertEquals(userId, response.get("recipeUserId").getAsString());
+        }
+        { // after account linking - email
+            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), "test@example.com", null, null, null);
+
+            JsonObject consumeCodeRequestBody = new JsonObject();
+            consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
+            consumeCodeRequestBody.addProperty("linkCode", createResp.linkCode);
+
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                    SemVer.v4_0.get(), "passwordless");
+
+            assertEquals(4, response.entrySet().size());
+            assertEquals(userId, response.get("recipeUserId").getAsString());
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }
