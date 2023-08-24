@@ -267,9 +267,9 @@ public class PasswordlessConsumeCodeTest {
         assertNotNull(consumeCodeResponse);
 
         AuthRecipeUserInfo authUser = storage.getPrimaryUserById(new AppIdentifier(null, null),
-                consumeCodeResponse.user.id);
-        Passwordless.updateUser(process.getProcess(), authUser.id, null, new Passwordless.FieldUpdate(PHONE_NUMBER));
-        authUser = storage.getPrimaryUserById(new AppIdentifier(null, null), consumeCodeResponse.user.id);
+                consumeCodeResponse.user.getUserIdNotToBeReturnedFromAPI());
+        Passwordless.updateUser(process.getProcess(), authUser.getUserIdNotToBeReturnedFromAPI(), null, new Passwordless.FieldUpdate(PHONE_NUMBER));
+        authUser = storage.getPrimaryUserById(new AppIdentifier(null, null), consumeCodeResponse.user.getUserIdNotToBeReturnedFromAPI());
         assertEquals(authUser.loginMethods[0].phoneNumber, PHONE_NUMBER);
 
         // create code with email twice
@@ -342,9 +342,9 @@ public class PasswordlessConsumeCodeTest {
         assertNotNull(consumeCodeResponse);
 
         AuthRecipeUserInfo authUser = storage.getPrimaryUserById(new AppIdentifier(null, null),
-                consumeCodeResponse.user.id);
-        Passwordless.updateUser(process.getProcess(), authUser.id, null, new Passwordless.FieldUpdate(PHONE_NUMBER));
-        authUser = storage.getPrimaryUserById(new AppIdentifier(null, null), consumeCodeResponse.user.id);
+                consumeCodeResponse.user.getUserIdNotToBeReturnedFromAPI());
+        Passwordless.updateUser(process.getProcess(), authUser.getUserIdNotToBeReturnedFromAPI(), null, new Passwordless.FieldUpdate(PHONE_NUMBER));
+        authUser = storage.getPrimaryUserById(new AppIdentifier(null, null), consumeCodeResponse.user.getUserIdNotToBeReturnedFromAPI());
         assertEquals(authUser.loginMethods[0].phoneNumber, PHONE_NUMBER);
 
         // create code with email twice
@@ -823,7 +823,7 @@ public class PasswordlessConsumeCodeTest {
                                                             Passwordless.ConsumeCodeResponse resp,
                                                             String email, String phoneNumber, long joinedAfter)
             throws StorageQueryException {
-        AuthRecipeUserInfo user = storage.getPrimaryUserById(new AppIdentifier(null, null), resp.user.id);
+        AuthRecipeUserInfo user = storage.getPrimaryUserById(new AppIdentifier(null, null), resp.user.getUserIdNotToBeReturnedFromAPI());
         assertNotNull(user);
 
         assertEquals(email, resp.user.loginMethods[0].email);

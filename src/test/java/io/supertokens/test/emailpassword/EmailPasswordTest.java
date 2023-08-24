@@ -150,11 +150,11 @@ public class EmailPasswordTest {
 
         UserInfo userInfo = EmailPassword.signUp(process.getProcess(), "random@gmail.com", "validPass123");
         assertEquals(userInfo.email, "random@gmail.com");
-        assertNotNull(userInfo.id);
+        assertNotNull(userInfo.getUserIdNotToBeReturnedFromAPI());
 
         for (int i = 0; i < 100; i++) {
             String generatedResetToken = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(),
-                    userInfo.id);
+                    userInfo.getUserIdNotToBeReturnedFromAPI());
 
             assertEquals(generatedResetToken.length(), 128);
             assertFalse(generatedResetToken.contains("+"));
@@ -207,7 +207,7 @@ public class EmailPasswordTest {
 
         UserInfo user = EmailPassword.signUp(process.getProcess(), "random@gmail.com", "validPass123");
 
-        String resetToken = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.id);
+        String resetToken = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.getUserIdNotToBeReturnedFromAPI());
         PasswordResetTokenInfo resetTokenInfo = ((EmailPasswordSQLStorage) StorageLayer.getStorage(
                 process.getProcess()))
                 .getPasswordResetTokenInfo(new AppIdentifier(null, null),
@@ -236,7 +236,7 @@ public class EmailPasswordTest {
 
         UserInfo user = EmailPassword.signUp(process.getProcess(), "random@gmail.com", "validPass123");
 
-        String resetToken = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.id);
+        String resetToken = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.getUserIdNotToBeReturnedFromAPI());
 
         EmailPassword.resetPassword(process.getProcess(), resetToken, "newValidPass123");
 
@@ -266,10 +266,10 @@ public class EmailPasswordTest {
 
         UserInfo user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
 
-        String tok = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.id);
+        String tok = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.getUserIdNotToBeReturnedFromAPI());
 
         assert (((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
-                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.id).length == 1);
+                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.getUserIdNotToBeReturnedFromAPI()).length == 1);
 
         Thread.sleep(20);
 
@@ -281,7 +281,7 @@ public class EmailPasswordTest {
         }
 
         assert (((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
-                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.id).length == 0);
+                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.getUserIdNotToBeReturnedFromAPI()).length == 0);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -300,19 +300,19 @@ public class EmailPasswordTest {
 
         UserInfo user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
 
-        EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.id);
-        String tok = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.id);
-        EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.id);
+        EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.getUserIdNotToBeReturnedFromAPI());
+        String tok = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.getUserIdNotToBeReturnedFromAPI());
+        EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.getUserIdNotToBeReturnedFromAPI());
 
         PasswordResetTokenInfo[] tokens = ((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
-                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.id);
+                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.getUserIdNotToBeReturnedFromAPI());
 
         assert (tokens.length == 3);
 
         EmailPassword.resetPassword(process.getProcess(), tok, "newPassword");
 
         tokens = ((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
-                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.id);
+                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.getUserIdNotToBeReturnedFromAPI());
         assert (tokens.length == 0);
 
         try {
@@ -388,14 +388,14 @@ public class EmailPasswordTest {
 
         ((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
                 .addPasswordResetToken(new AppIdentifier(null, null), new PasswordResetTokenInfo(
-                        user.id, "token",
+                        user.getUserIdNotToBeReturnedFromAPI(), "token",
                         System.currentTimeMillis() +
                                 Config.getConfig(process.getProcess()).getPasswordResetTokenLifetime(), "email"));
 
         try {
             ((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
                     .addPasswordResetToken(new AppIdentifier(null, null),
-                            new PasswordResetTokenInfo(user.id, "token", System.currentTimeMillis()
+                            new PasswordResetTokenInfo(user.getUserIdNotToBeReturnedFromAPI(), "token", System.currentTimeMillis()
                                     + Config.getConfig(process.getProcess()).getPasswordResetTokenLifetime(), "email"));
             assert (false);
         } catch (DuplicatePasswordResetTokenException ignored) {
@@ -529,7 +529,7 @@ public class EmailPasswordTest {
 
         assert (user.loginMethods[0].email.equals("test@example.com"));
 
-        assert (userSignUp.id.equals(user.id));
+        assert (userSignUp.getUserIdNotToBeReturnedFromAPI().equals(user.getUserIdNotToBeReturnedFromAPI()));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -637,19 +637,19 @@ public class EmailPasswordTest {
                 "test@example.com");
 
         try {
-            EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.main, signInUpResponse.user.id);
+            EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.main, signInUpResponse.user.getUserIdNotToBeReturnedFromAPI());
             assert false;
         } catch (UnknownUserIdException ignored) {
 
         }
 
-        String token = EmailPassword.generatePasswordResetToken(process.main, signInUpResponse.user.id,
+        String token = EmailPassword.generatePasswordResetToken(process.main, signInUpResponse.user.getUserIdNotToBeReturnedFromAPI(),
                 "test@example.com");
 
         EmailPassword.ConsumeResetPasswordTokenResult res = EmailPassword.consumeResetPasswordToken(process.main,
                 token);
         assert (res.email.equals("test@example.com"));
-        assert (res.userId.equals(signInUpResponse.user.id));
+        assert (res.userId.equals(signInUpResponse.user.getUserIdNotToBeReturnedFromAPI()));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -674,15 +674,15 @@ public class EmailPasswordTest {
                 "user-google",
                 "test@example.com");
 
-        AuthRecipe.createPrimaryUser(process.main, signInUpResponse.user.id);
+        AuthRecipe.createPrimaryUser(process.main, signInUpResponse.user.getUserIdNotToBeReturnedFromAPI());
 
-        String token = EmailPassword.generatePasswordResetToken(process.main, signInUpResponse.user.id,
+        String token = EmailPassword.generatePasswordResetToken(process.main, signInUpResponse.user.getUserIdNotToBeReturnedFromAPI(),
                 "test@example.com");
 
         EmailPassword.ConsumeResetPasswordTokenResult res = EmailPassword.consumeResetPasswordToken(process.main,
                 token);
         assert (res.email.equals("test@example.com"));
-        assert (res.userId.equals(signInUpResponse.user.id));
+        assert (res.userId.equals(signInUpResponse.user.getUserIdNotToBeReturnedFromAPI()));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -711,17 +711,17 @@ public class EmailPasswordTest {
                 "user-fb",
                 "test2@example.com");
 
-        AuthRecipe.createPrimaryUser(process.main, signInUpResponse.user.id);
-        AuthRecipe.linkAccounts(process.main, signInUpResponse2.user.id, signInUpResponse.user.id);
-        assert (AuthRecipe.unlinkAccounts(process.main, signInUpResponse.user.id));
+        AuthRecipe.createPrimaryUser(process.main, signInUpResponse.user.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipe.linkAccounts(process.main, signInUpResponse2.user.getUserIdNotToBeReturnedFromAPI(), signInUpResponse.user.getUserIdNotToBeReturnedFromAPI());
+        assert (AuthRecipe.unlinkAccounts(process.main, signInUpResponse.user.getUserIdNotToBeReturnedFromAPI()));
 
-        String token = EmailPassword.generatePasswordResetToken(process.main, signInUpResponse.user.id,
+        String token = EmailPassword.generatePasswordResetToken(process.main, signInUpResponse.user.getUserIdNotToBeReturnedFromAPI(),
                 "test@example.com");
 
         EmailPassword.ConsumeResetPasswordTokenResult res = EmailPassword.consumeResetPasswordToken(process.main,
                 token);
         assert (res.email.equals("test@example.com"));
-        assert (res.userId.equals(signInUpResponse.user.id));
+        assert (res.userId.equals(signInUpResponse.user.getUserIdNotToBeReturnedFromAPI()));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -747,14 +747,14 @@ public class EmailPasswordTest {
                 "test@example.com");
 
 
-        String token = EmailPassword.generatePasswordResetToken(process.main, signInUpResponse.user.id,
+        String token = EmailPassword.generatePasswordResetToken(process.main, signInUpResponse.user.getUserIdNotToBeReturnedFromAPI(),
                 "test@example.com");
         token = io.supertokens.utils.Utils.hashSHA256(token);
 
         assertNotNull(((EmailPasswordSQLStorage) StorageLayer.getStorage(process.main)).getPasswordResetTokenInfo(
                 new AppIdentifier(null, null), token));
 
-        AuthRecipe.deleteUser(process.main, signInUpResponse.user.id);
+        AuthRecipe.deleteUser(process.main, signInUpResponse.user.getUserIdNotToBeReturnedFromAPI());
 
         assertNull(((EmailPasswordSQLStorage) StorageLayer.getStorage(process.main)).getPasswordResetTokenInfo(
                 new AppIdentifier(null, null), token));
@@ -778,10 +778,10 @@ public class EmailPasswordTest {
 
         UserInfo user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
 
-        String tok = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.id);
+        String tok = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.getUserIdNotToBeReturnedFromAPI());
 
         assert (((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
-                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.id).length == 1);
+                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.getUserIdNotToBeReturnedFromAPI()).length == 1);
 
         Thread.sleep(20);
 
@@ -793,7 +793,7 @@ public class EmailPasswordTest {
         }
 
         assert (((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
-                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.id).length == 0);
+                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.getUserIdNotToBeReturnedFromAPI()).length == 0);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -812,19 +812,19 @@ public class EmailPasswordTest {
 
         UserInfo user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
 
-        EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.id);
-        String tok = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.id);
-        EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.id);
+        EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.getUserIdNotToBeReturnedFromAPI());
+        String tok = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.getUserIdNotToBeReturnedFromAPI());
+        EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.getUserIdNotToBeReturnedFromAPI());
 
         PasswordResetTokenInfo[] tokens = ((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
-                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.id);
+                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.getUserIdNotToBeReturnedFromAPI());
 
         assert (tokens.length == 3);
 
         EmailPassword.consumeResetPasswordToken(process.getProcess(), tok);
 
         tokens = ((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
-                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.id);
+                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.getUserIdNotToBeReturnedFromAPI());
         assert (tokens.length == 0);
 
         process.kill();
@@ -868,20 +868,20 @@ public class EmailPasswordTest {
         UserInfo user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
 
         String tok = EmailPassword.generatePasswordResetTokenBeforeCdi4_0WithoutAddingEmail(process.getProcess(),
-                user.id);
+                user.getUserIdNotToBeReturnedFromAPI());
 
         assert (((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
-                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.id).length == 1);
+                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.getUserIdNotToBeReturnedFromAPI()).length == 1);
         assert (((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
-                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.id)[0].email == null);
+                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.getUserIdNotToBeReturnedFromAPI())[0].email == null);
 
         EmailPassword.ConsumeResetPasswordTokenResult result = EmailPassword.consumeResetPasswordToken(
                 process.getProcess(), tok);
         assert (result.email.equals("test1@example.com"));
-        assert (result.userId.equals(user.id));
+        assert (result.userId.equals(user.getUserIdNotToBeReturnedFromAPI()));
 
         assert (((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
-                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.id).length == 0);
+                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.getUserIdNotToBeReturnedFromAPI()).length == 0);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -903,13 +903,13 @@ public class EmailPasswordTest {
         }
 
         UserInfo user0 = EmailPassword.signUp(process.getProcess(), "someemail1@gmail.com", "somePass");
-        AuthRecipe.createPrimaryUser(process.main, user0.id);
+        AuthRecipe.createPrimaryUser(process.main, user0.getUserIdNotToBeReturnedFromAPI());
 
         UserInfo user = EmailPassword.signUp(process.getProcess(), "someemail@gmail.com", "somePass");
-        AuthRecipe.createPrimaryUser(process.main, user.id);
+        AuthRecipe.createPrimaryUser(process.main, user.getUserIdNotToBeReturnedFromAPI());
 
         try {
-            EmailPassword.updateUsersEmailOrPassword(process.main, user.id, "someemail1@gmail.com", null);
+            EmailPassword.updateUsersEmailOrPassword(process.main, user.getUserIdNotToBeReturnedFromAPI(), "someemail1@gmail.com", null);
             assert (false);
         } catch (EmailChangeNotAllowedException ignored) {
 
@@ -945,12 +945,12 @@ public class EmailPasswordTest {
                 "someemail1@gmail.com",
                 "pass1234");
 
-        AuthRecipe.createPrimaryUser(process.main, user0.id);
+        AuthRecipe.createPrimaryUser(process.main, user0.getUserIdNotToBeReturnedFromAPI());
 
         UserInfo user = EmailPassword.signUp(process.getProcess(), "someemail@gmail.com", "somePass");
-        AuthRecipe.createPrimaryUser(process.main, user.id);
+        AuthRecipe.createPrimaryUser(process.main, user.getUserIdNotToBeReturnedFromAPI());
 
-        EmailPassword.updateUsersEmailOrPassword(process.main, user.id, "someemail1@gmail.com", null);
+        EmailPassword.updateUsersEmailOrPassword(process.main, user.getUserIdNotToBeReturnedFromAPI(), "someemail1@gmail.com", null);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -982,15 +982,15 @@ public class EmailPasswordTest {
                 "someemail1@gmail.com",
                 "pass1234");
 
-        AuthRecipe.createPrimaryUser(process.main, user0.id);
+        AuthRecipe.createPrimaryUser(process.main, user0.getUserIdNotToBeReturnedFromAPI());
 
         UserInfo user = EmailPassword.signUp(process.getProcess(), "someemail@gmail.com", "somePass");
-        AuthRecipe.createPrimaryUser(process.main, user.id);
+        AuthRecipe.createPrimaryUser(process.main, user.getUserIdNotToBeReturnedFromAPI());
 
-        Multitenancy.addUserIdToTenant(process.main, tenantIdentifierWithStorage, user.id);
+        Multitenancy.addUserIdToTenant(process.main, tenantIdentifierWithStorage, user.getUserIdNotToBeReturnedFromAPI());
 
         try {
-            EmailPassword.updateUsersEmailOrPassword(process.main, user.id, "someemail1@gmail.com", null);
+            EmailPassword.updateUsersEmailOrPassword(process.main, user.getUserIdNotToBeReturnedFromAPI(), "someemail1@gmail.com", null);
             assert (false);
         } catch (EmailChangeNotAllowedException ignored) {
 

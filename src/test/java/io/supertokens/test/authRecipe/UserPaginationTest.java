@@ -188,11 +188,11 @@ public class UserPaginationTest {
                 UserInfo user = EmailPassword.signUp(
                         tenantIdentifierWithStorage, process.getProcess(),
                         prefix + "epuser" + i + "@example.com", "password" + i);
-                tenantToUsers.get(tenantIdentifier).add(user.id);
+                tenantToUsers.get(tenantIdentifier).add(user.getUserIdNotToBeReturnedFromAPI());
                 if (!recipeToUsers.containsKey("emailpassword")) {
                     recipeToUsers.put("emailpassword", new ArrayList<>());
                 }
-                recipeToUsers.get("emailpassword").add(user.id);
+                recipeToUsers.get("emailpassword").add(user.getUserIdNotToBeReturnedFromAPI());
             }
             {
                 Passwordless.CreateCodeResponse codeResponse = Passwordless.createCode(
@@ -205,27 +205,27 @@ public class UserPaginationTest {
                 Passwordless.ConsumeCodeResponse response = Passwordless.consumeCode(tenantIdentifierWithStorage,
                         process.getProcess(), codeResponse.deviceId,
                         codeResponse.deviceIdHash, "abcd", null);
-                tenantToUsers.get(tenantIdentifier).add(response.user.id);
+                tenantToUsers.get(tenantIdentifier).add(response.user.getUserIdNotToBeReturnedFromAPI());
 
                 if (!recipeToUsers.containsKey("passwordless")) {
                     recipeToUsers.put("passwordless", new ArrayList<>());
                 }
-                recipeToUsers.get("passwordless").add(response.user.id);
+                recipeToUsers.get("passwordless").add(response.user.getUserIdNotToBeReturnedFromAPI());
             }
             {
                 ThirdParty.SignInUpResponse user1 = ThirdParty.signInUp(tenantIdentifierWithStorage,
                         process.getProcess(), "google", "googleid" + i, prefix + "tpuser" + i + "@example.com");
-                tenantToUsers.get(tenantIdentifier).add(user1.user.id);
+                tenantToUsers.get(tenantIdentifier).add(user1.user.getUserIdNotToBeReturnedFromAPI());
                 ThirdParty.SignInUpResponse user2 = ThirdParty.signInUp(tenantIdentifierWithStorage,
                         process.getProcess(), "facebook", "fbid" + i, prefix + "tpuser" + i + "@example.com");
-                tenantToUsers.get(tenantIdentifier).add(user2.user.id);
+                tenantToUsers.get(tenantIdentifier).add(user2.user.getUserIdNotToBeReturnedFromAPI());
 
 
                 if (!recipeToUsers.containsKey("thirdparty")) {
                     recipeToUsers.put("thirdparty", new ArrayList<>());
                 }
-                recipeToUsers.get("thirdparty").add(user1.user.id);
-                recipeToUsers.get("thirdparty").add(user2.user.id);
+                recipeToUsers.get("thirdparty").add(user1.user.getUserIdNotToBeReturnedFromAPI());
+                recipeToUsers.get("thirdparty").add(user2.user.getUserIdNotToBeReturnedFromAPI());
             }
         }
     }

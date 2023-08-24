@@ -497,7 +497,7 @@ public class AuthRecipeTest {
                     if (o1.timeJoined != o2.timeJoined) {
                         return (int) (o1.timeJoined - o2.timeJoined);
                     }
-                    return o2.id.compareTo(o1.id);
+                    return o2.getUserIdNotToBeReturnedFromAPI().compareTo(o1.getUserIdNotToBeReturnedFromAPI());
                 });
 
                 // we make sure it's sorted properly..
@@ -537,7 +537,7 @@ public class AuthRecipeTest {
                     if (o1.timeJoined != o2.timeJoined) {
                         return (int) (o1.timeJoined - o2.timeJoined);
                     }
-                    return o1.id.compareTo(o2.id);
+                    return o1.getUserIdNotToBeReturnedFromAPI().compareTo(o2.getUserIdNotToBeReturnedFromAPI());
                 });
 
                 // we make sure it's sorted properly..
@@ -599,29 +599,29 @@ public class AuthRecipeTest {
             AuthRecipeUserInfo user1 = signUpMap.get(userType).apply(null);
             JsonObject testMetadata = new JsonObject();
             testMetadata.addProperty("test", "test");
-            UserMetadata.updateUserMetadata(process.getProcess(), user1.id, testMetadata);
-            Session.createNewSession(process.getProcess(), user1.id, new JsonObject(), new JsonObject());
+            UserMetadata.updateUserMetadata(process.getProcess(), user1.getUserIdNotToBeReturnedFromAPI(), testMetadata);
+            Session.createNewSession(process.getProcess(), user1.getUserIdNotToBeReturnedFromAPI(), new JsonObject(), new JsonObject());
             String emailVerificationToken = EmailVerification.generateEmailVerificationToken(process.getProcess(),
-                    user1.id, "email");
+                    user1.getUserIdNotToBeReturnedFromAPI(), "email");
             EmailVerification.verifyEmail(process.getProcess(), emailVerificationToken);
 
             AuthRecipeUserInfo user2 = signUpMap.get(userType).apply(null);
-            Session.createNewSession(process.getProcess(), user2.id, new JsonObject(), new JsonObject());
+            Session.createNewSession(process.getProcess(), user2.getUserIdNotToBeReturnedFromAPI(), new JsonObject(), new JsonObject());
             String emailVerificationToken2 = EmailVerification.generateEmailVerificationToken(process.getProcess(),
-                    user2.id, "email");
+                    user2.getUserIdNotToBeReturnedFromAPI(), "email");
 
             assertEquals(2, AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[]{user1.getRecipeId()}));
-            AuthRecipe.deleteUser(process.getProcess(), user1.id);
+            AuthRecipe.deleteUser(process.getProcess(), user1.getUserIdNotToBeReturnedFromAPI());
             assertEquals(1, AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[]{user1.getRecipeId()}));
-            assertEquals(0, Session.getAllNonExpiredSessionHandlesForUser(process.getProcess(), user1.id).length);
-            assertEquals(1, Session.getAllNonExpiredSessionHandlesForUser(process.getProcess(), user2.id).length);
-            assertFalse(EmailVerification.isEmailVerified(process.getProcess(), user1.id, "email"));
-            assertEquals(0, UserMetadata.getUserMetadata(process.getProcess(), user1.id).entrySet().size());
+            assertEquals(0, Session.getAllNonExpiredSessionHandlesForUser(process.getProcess(), user1.getUserIdNotToBeReturnedFromAPI()).length);
+            assertEquals(1, Session.getAllNonExpiredSessionHandlesForUser(process.getProcess(), user2.getUserIdNotToBeReturnedFromAPI()).length);
+            assertFalse(EmailVerification.isEmailVerified(process.getProcess(), user1.getUserIdNotToBeReturnedFromAPI(), "email"));
+            assertEquals(0, UserMetadata.getUserMetadata(process.getProcess(), user1.getUserIdNotToBeReturnedFromAPI()).entrySet().size());
 
-            AuthRecipe.deleteUser(process.getProcess(), user2.id);
+            AuthRecipe.deleteUser(process.getProcess(), user2.getUserIdNotToBeReturnedFromAPI());
             assertEquals(0, AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[]{user1.getRecipeId()}));
-            assertEquals(0, Session.getAllNonExpiredSessionHandlesForUser(process.getProcess(), user2.id).length);
-            assertEquals(0, UserMetadata.getUserMetadata(process.getProcess(), user2.id).entrySet().size());
+            assertEquals(0, Session.getAllNonExpiredSessionHandlesForUser(process.getProcess(), user2.getUserIdNotToBeReturnedFromAPI()).length);
+            assertEquals(0, UserMetadata.getUserMetadata(process.getProcess(), user2.getUserIdNotToBeReturnedFromAPI()).entrySet().size());
 
             Exception error = null;
             try {

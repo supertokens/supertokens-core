@@ -177,7 +177,7 @@ public class GeneratePasswordResetTokenAPITest2_7 {
         ThirdParty.SignInUpResponse res = ThirdParty.signInUp(process.main, "google", "ug", "t@example.com");
 
         JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("userId", res.user.id);
+        requestBody.addProperty("userId", res.user.getUserIdNotToBeReturnedFromAPI());
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user/password/reset/token", requestBody, 1000, 1000, null,

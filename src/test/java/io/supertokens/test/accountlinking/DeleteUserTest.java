@@ -71,20 +71,20 @@ public class DeleteUserTest {
 
         AuthRecipeUserInfo r2 = EmailPassword.signUp(process.main, "test2@example.com", "pass123");
 
-        AuthRecipe.createPrimaryUser(process.main, r2.id);
+        AuthRecipe.createPrimaryUser(process.main, r2.getUserIdNotToBeReturnedFromAPI());
 
-        assert (!AuthRecipe.linkAccounts(process.main, r1.id, r2.id));
+        assert (!AuthRecipe.linkAccounts(process.main, r1.getUserIdNotToBeReturnedFromAPI(), r2.getUserIdNotToBeReturnedFromAPI()).wasAlreadyLinked);
 
-        AuthRecipe.deleteUser(process.main, r1.id, false);
+        AuthRecipe.deleteUser(process.main, r1.getUserIdNotToBeReturnedFromAPI(), false);
 
-        assertNull(AuthRecipe.getUserById(process.main, r1.id));
+        assertNull(AuthRecipe.getUserById(process.main, r1.getUserIdNotToBeReturnedFromAPI()));
 
-        AuthRecipeUserInfo user = AuthRecipe.getUserById(process.main, r2.id);
+        AuthRecipeUserInfo user = AuthRecipe.getUserById(process.main, r2.getUserIdNotToBeReturnedFromAPI());
 
         assert (user.loginMethods.length == 1);
         assert (user.isPrimaryUser);
-        assert (user.id.equals(r2.id));
-        assert (user.loginMethods[0].recipeUserId.equals(r2.id));
+        assert (user.getUserIdNotToBeReturnedFromAPI().equals(r2.getUserIdNotToBeReturnedFromAPI()));
+        assert (user.loginMethods[0].getRecipeUserIdNotToBeReturnedFromAPI().equals(r2.getUserIdNotToBeReturnedFromAPI()));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -108,20 +108,20 @@ public class DeleteUserTest {
 
         AuthRecipeUserInfo r2 = EmailPassword.signUp(process.main, "test2@example.com", "pass123");
 
-        AuthRecipe.createPrimaryUser(process.main, r2.id);
+        AuthRecipe.createPrimaryUser(process.main, r2.getUserIdNotToBeReturnedFromAPI());
 
-        assert (!AuthRecipe.linkAccounts(process.main, r1.id, r2.id));
+        assert (!AuthRecipe.linkAccounts(process.main, r1.getUserIdNotToBeReturnedFromAPI(), r2.getUserIdNotToBeReturnedFromAPI()).wasAlreadyLinked);
 
-        AuthRecipe.deleteUser(process.main, r2.id, false);
+        AuthRecipe.deleteUser(process.main, r2.getUserIdNotToBeReturnedFromAPI(), false);
 
-        AuthRecipeUserInfo userP = AuthRecipe.getUserById(process.main, r2.id);
+        AuthRecipeUserInfo userP = AuthRecipe.getUserById(process.main, r2.getUserIdNotToBeReturnedFromAPI());
 
-        AuthRecipeUserInfo user = AuthRecipe.getUserById(process.main, r1.id);
+        AuthRecipeUserInfo user = AuthRecipe.getUserById(process.main, r1.getUserIdNotToBeReturnedFromAPI());
 
         assert (user.loginMethods.length == 1);
         assert (user.isPrimaryUser);
-        assert (user.id.equals(r2.id));
-        assert (user.loginMethods[0].recipeUserId.equals(r1.id));
+        assert (user.getUserIdNotToBeReturnedFromAPI().equals(r2.getUserIdNotToBeReturnedFromAPI()));
+        assert (user.loginMethods[0].getRecipeUserIdNotToBeReturnedFromAPI().equals(r1.getUserIdNotToBeReturnedFromAPI()));
         assert (userP.equals(user));
 
         process.kill();
@@ -146,15 +146,15 @@ public class DeleteUserTest {
 
         AuthRecipeUserInfo r2 = EmailPassword.signUp(process.main, "test2@example.com", "pass123");
 
-        AuthRecipe.createPrimaryUser(process.main, r2.id);
+        AuthRecipe.createPrimaryUser(process.main, r2.getUserIdNotToBeReturnedFromAPI());
 
-        assert (!AuthRecipe.linkAccounts(process.main, r1.id, r2.id));
+        assert (!AuthRecipe.linkAccounts(process.main, r1.getUserIdNotToBeReturnedFromAPI(), r2.getUserIdNotToBeReturnedFromAPI()).wasAlreadyLinked);
 
-        AuthRecipe.deleteUser(process.main, r2.id);
+        AuthRecipe.deleteUser(process.main, r2.getUserIdNotToBeReturnedFromAPI());
 
-        AuthRecipeUserInfo userP = AuthRecipe.getUserById(process.main, r2.id);
+        AuthRecipeUserInfo userP = AuthRecipe.getUserById(process.main, r2.getUserIdNotToBeReturnedFromAPI());
 
-        AuthRecipeUserInfo user = AuthRecipe.getUserById(process.main, r1.id);
+        AuthRecipeUserInfo user = AuthRecipe.getUserById(process.main, r1.getUserIdNotToBeReturnedFromAPI());
 
         assert (user == null && userP == null);
 
@@ -181,15 +181,15 @@ public class DeleteUserTest {
 
         AuthRecipeUserInfo r2 = EmailPassword.signUp(process.main, "test2@example.com", "pass123");
 
-        AuthRecipe.createPrimaryUser(process.main, r2.id);
+        AuthRecipe.createPrimaryUser(process.main, r2.getUserIdNotToBeReturnedFromAPI());
 
-        assert (!AuthRecipe.linkAccounts(process.main, r1.id, r2.id));
+        assert (!AuthRecipe.linkAccounts(process.main, r1.getUserIdNotToBeReturnedFromAPI(), r2.getUserIdNotToBeReturnedFromAPI()).wasAlreadyLinked);
 
-        AuthRecipe.deleteUser(process.main, r1.id);
+        AuthRecipe.deleteUser(process.main, r1.getUserIdNotToBeReturnedFromAPI());
 
-        AuthRecipeUserInfo userP = AuthRecipe.getUserById(process.main, r2.id);
+        AuthRecipeUserInfo userP = AuthRecipe.getUserById(process.main, r2.getUserIdNotToBeReturnedFromAPI());
 
-        AuthRecipeUserInfo user = AuthRecipe.getUserById(process.main, r1.id);
+        AuthRecipeUserInfo user = AuthRecipe.getUserById(process.main, r1.getUserIdNotToBeReturnedFromAPI());
 
         assert (user == null && userP == null);
 
@@ -217,33 +217,33 @@ public class DeleteUserTest {
         }
 
         AuthRecipeUserInfo r1 = EmailPassword.signUp(process.main, "test@example.com", "pass123");
-        UserIdMapping.createUserIdMapping(process.main, r1.id, "e1", null, false);
+        UserIdMapping.createUserIdMapping(process.main, r1.getUserIdNotToBeReturnedFromAPI(), "e1", null, false);
         JsonObject metadata = new JsonObject();
         metadata.addProperty("k1", "v1");
         UserMetadata.updateUserMetadata(process.main, "e1", metadata);
 
         AuthRecipeUserInfo r2 = EmailPassword.signUp(process.main, "test2@example.com", "pass123");
-        UserIdMapping.createUserIdMapping(process.main, r2.id, "e2", null, false);
+        UserIdMapping.createUserIdMapping(process.main, r2.getUserIdNotToBeReturnedFromAPI(), "e2", null, false);
         UserMetadata.updateUserMetadata(process.main, "e2", metadata);
 
-        AuthRecipe.createPrimaryUser(process.main, r2.id);
+        AuthRecipe.createPrimaryUser(process.main, r2.getUserIdNotToBeReturnedFromAPI());
 
-        assert (!AuthRecipe.linkAccounts(process.main, r1.id, r2.id));
+        assert (!AuthRecipe.linkAccounts(process.main, r1.getUserIdNotToBeReturnedFromAPI(), r2.getUserIdNotToBeReturnedFromAPI()).wasAlreadyLinked);
 
-        AuthRecipe.deleteUser(process.main, r1.id, false);
+        AuthRecipe.deleteUser(process.main, r1.getUserIdNotToBeReturnedFromAPI(), false);
 
-        assertNull(AuthRecipe.getUserById(process.main, r1.id));
+        assertNull(AuthRecipe.getUserById(process.main, r1.getUserIdNotToBeReturnedFromAPI()));
 
         assertNull(AuthRecipe.getUserById(process.main, "e2"));
 
-        assertNotNull(AuthRecipe.getUserById(process.main, r2.id));
+        assertNotNull(AuthRecipe.getUserById(process.main, r2.getUserIdNotToBeReturnedFromAPI()));
 
         assertEquals(UserMetadata.getUserMetadata(process.main, "e1"), new JsonObject());
-        assertEquals(UserMetadata.getUserMetadata(process.main, r1.id), new JsonObject());
+        assertEquals(UserMetadata.getUserMetadata(process.main, r1.getUserIdNotToBeReturnedFromAPI()), new JsonObject());
         assertEquals(UserMetadata.getUserMetadata(process.main, "e2"), metadata);
-        assertEquals(UserMetadata.getUserMetadata(process.main, r2.id), new JsonObject());
-        assert (UserIdMapping.getUserIdMapping(process.main, r2.id, UserIdType.SUPERTOKENS) != null);
-        assert (UserIdMapping.getUserIdMapping(process.main, r1.id, UserIdType.SUPERTOKENS) == null);
+        assertEquals(UserMetadata.getUserMetadata(process.main, r2.getUserIdNotToBeReturnedFromAPI()), new JsonObject());
+        assert (UserIdMapping.getUserIdMapping(process.main, r2.getUserIdNotToBeReturnedFromAPI(), UserIdType.SUPERTOKENS) != null);
+        assert (UserIdMapping.getUserIdMapping(process.main, r1.getUserIdNotToBeReturnedFromAPI(), UserIdType.SUPERTOKENS) == null);
 
 
         process.kill();
@@ -269,33 +269,33 @@ public class DeleteUserTest {
         }
 
         AuthRecipeUserInfo r1 = EmailPassword.signUp(process.main, "test@example.com", "pass123");
-        UserIdMapping.createUserIdMapping(process.main, r1.id, "e1", null, false);
+        UserIdMapping.createUserIdMapping(process.main, r1.getUserIdNotToBeReturnedFromAPI(), "e1", null, false);
         JsonObject metadata = new JsonObject();
         metadata.addProperty("k1", "v1");
         UserMetadata.updateUserMetadata(process.main, "e1", metadata);
 
         AuthRecipeUserInfo r2 = EmailPassword.signUp(process.main, "test2@example.com", "pass123");
-        UserIdMapping.createUserIdMapping(process.main, r2.id, "e2", null, false);
+        UserIdMapping.createUserIdMapping(process.main, r2.getUserIdNotToBeReturnedFromAPI(), "e2", null, false);
         UserMetadata.updateUserMetadata(process.main, "e2", metadata);
 
-        AuthRecipe.createPrimaryUser(process.main, r2.id);
+        AuthRecipe.createPrimaryUser(process.main, r2.getUserIdNotToBeReturnedFromAPI());
 
-        assert (!AuthRecipe.linkAccounts(process.main, r1.id, r2.id));
+        assert (!AuthRecipe.linkAccounts(process.main, r1.getUserIdNotToBeReturnedFromAPI(), r2.getUserIdNotToBeReturnedFromAPI()).wasAlreadyLinked);
 
-        AuthRecipe.deleteUser(process.main, r1.id);
+        AuthRecipe.deleteUser(process.main, r1.getUserIdNotToBeReturnedFromAPI());
 
-        assertNull(AuthRecipe.getUserById(process.main, r1.id));
+        assertNull(AuthRecipe.getUserById(process.main, r1.getUserIdNotToBeReturnedFromAPI()));
 
         assertNull(AuthRecipe.getUserById(process.main, "e2"));
 
-        assertNull(AuthRecipe.getUserById(process.main, r2.id));
+        assertNull(AuthRecipe.getUserById(process.main, r2.getUserIdNotToBeReturnedFromAPI()));
 
         assertEquals(UserMetadata.getUserMetadata(process.main, "e1"), new JsonObject());
-        assertEquals(UserMetadata.getUserMetadata(process.main, r1.id), new JsonObject());
+        assertEquals(UserMetadata.getUserMetadata(process.main, r1.getUserIdNotToBeReturnedFromAPI()), new JsonObject());
         assertEquals(UserMetadata.getUserMetadata(process.main, "e2"), new JsonObject());
-        assertEquals(UserMetadata.getUserMetadata(process.main, r2.id), new JsonObject());
-        assert (UserIdMapping.getUserIdMapping(process.main, r2.id, UserIdType.SUPERTOKENS) == null);
-        assert (UserIdMapping.getUserIdMapping(process.main, r1.id, UserIdType.SUPERTOKENS) == null);
+        assertEquals(UserMetadata.getUserMetadata(process.main, r2.getUserIdNotToBeReturnedFromAPI()), new JsonObject());
+        assert (UserIdMapping.getUserIdMapping(process.main, r2.getUserIdNotToBeReturnedFromAPI(), UserIdType.SUPERTOKENS) == null);
+        assert (UserIdMapping.getUserIdMapping(process.main, r1.getUserIdNotToBeReturnedFromAPI(), UserIdType.SUPERTOKENS) == null);
 
 
         process.kill();
@@ -323,68 +323,68 @@ public class DeleteUserTest {
         }
 
         AuthRecipeUserInfo r1 = EmailPassword.signUp(process.main, "test@example.com", "pass123");
-        UserIdMapping.createUserIdMapping(process.main, r1.id, "e1", null, false);
+        UserIdMapping.createUserIdMapping(process.main, r1.getUserIdNotToBeReturnedFromAPI(), "e1", null, false);
         JsonObject metadata = new JsonObject();
         metadata.addProperty("k1", "v1");
         UserMetadata.updateUserMetadata(process.main, "e1", metadata);
 
         AuthRecipeUserInfo r2 = EmailPassword.signUp(process.main, "test2@example.com", "pass123");
-        UserIdMapping.createUserIdMapping(process.main, r2.id, "e2", null, false);
+        UserIdMapping.createUserIdMapping(process.main, r2.getUserIdNotToBeReturnedFromAPI(), "e2", null, false);
         UserMetadata.updateUserMetadata(process.main, "e2", metadata);
 
         AuthRecipeUserInfo r3 = EmailPassword.signUp(process.main, "test3@example.com", "pass123");
-        UserIdMapping.createUserIdMapping(process.main, r3.id, "e3", null, false);
+        UserIdMapping.createUserIdMapping(process.main, r3.getUserIdNotToBeReturnedFromAPI(), "e3", null, false);
         UserMetadata.updateUserMetadata(process.main, "e3", metadata);
 
-        AuthRecipe.createPrimaryUser(process.main, r2.id);
+        AuthRecipe.createPrimaryUser(process.main, r2.getUserIdNotToBeReturnedFromAPI());
 
-        assert (!AuthRecipe.linkAccounts(process.main, r1.id, r2.id));
-        assert (!AuthRecipe.linkAccounts(process.main, r3.id, r1.id));
+        assert (!AuthRecipe.linkAccounts(process.main, r1.getUserIdNotToBeReturnedFromAPI(), r2.getUserIdNotToBeReturnedFromAPI()).wasAlreadyLinked);
+        assert (!AuthRecipe.linkAccounts(process.main, r3.getUserIdNotToBeReturnedFromAPI(), r1.getUserIdNotToBeReturnedFromAPI()).wasAlreadyLinked);
 
-        AuthRecipe.deleteUser(process.main, r1.id, false);
+        AuthRecipe.deleteUser(process.main, r1.getUserIdNotToBeReturnedFromAPI(), false);
 
-        assertNull(AuthRecipe.getUserById(process.main, r1.id));
+        assertNull(AuthRecipe.getUserById(process.main, r1.getUserIdNotToBeReturnedFromAPI()));
 
         assertEquals(UserMetadata.getUserMetadata(process.main, "e1"), new JsonObject());
-        assertEquals(UserMetadata.getUserMetadata(process.main, r1.id), new JsonObject());
+        assertEquals(UserMetadata.getUserMetadata(process.main, r1.getUserIdNotToBeReturnedFromAPI()), new JsonObject());
 
         {
-            AuthRecipeUserInfo userR2 = AuthRecipe.getUserById(process.main, r2.id);
-            AuthRecipeUserInfo userR3 = AuthRecipe.getUserById(process.main, r3.id);
+            AuthRecipeUserInfo userR2 = AuthRecipe.getUserById(process.main, r2.getUserIdNotToBeReturnedFromAPI());
+            AuthRecipeUserInfo userR3 = AuthRecipe.getUserById(process.main, r3.getUserIdNotToBeReturnedFromAPI());
             assert (userR2.equals(userR3));
             assert (userR2.loginMethods.length == 2);
             assertEquals(UserMetadata.getUserMetadata(process.main, "e2"), metadata);
             assertEquals(UserMetadata.getUserMetadata(process.main, "e3"), metadata);
-            assert (UserIdMapping.getUserIdMapping(process.main, r2.id, UserIdType.SUPERTOKENS) != null);
-            assert (UserIdMapping.getUserIdMapping(process.main, r3.id, UserIdType.SUPERTOKENS) != null);
-            assert (UserIdMapping.getUserIdMapping(process.main, r1.id, UserIdType.SUPERTOKENS) == null);
+            assert (UserIdMapping.getUserIdMapping(process.main, r2.getUserIdNotToBeReturnedFromAPI(), UserIdType.SUPERTOKENS) != null);
+            assert (UserIdMapping.getUserIdMapping(process.main, r3.getUserIdNotToBeReturnedFromAPI(), UserIdType.SUPERTOKENS) != null);
+            assert (UserIdMapping.getUserIdMapping(process.main, r1.getUserIdNotToBeReturnedFromAPI(), UserIdType.SUPERTOKENS) == null);
         }
 
-        AuthRecipe.deleteUser(process.main, r2.id, false);
+        AuthRecipe.deleteUser(process.main, r2.getUserIdNotToBeReturnedFromAPI(), false);
 
         {
-            AuthRecipeUserInfo userR2 = AuthRecipe.getUserById(process.main, r2.id);
-            AuthRecipeUserInfo userR3 = AuthRecipe.getUserById(process.main, r3.id);
+            AuthRecipeUserInfo userR2 = AuthRecipe.getUserById(process.main, r2.getUserIdNotToBeReturnedFromAPI());
+            AuthRecipeUserInfo userR3 = AuthRecipe.getUserById(process.main, r3.getUserIdNotToBeReturnedFromAPI());
             assert (userR2.equals(userR3));
             assert (userR2.loginMethods.length == 1);
             assertEquals(UserMetadata.getUserMetadata(process.main, "e2"), metadata);
             assertEquals(UserMetadata.getUserMetadata(process.main, "e3"), metadata);
-            assert (UserIdMapping.getUserIdMapping(process.main, r2.id, UserIdType.SUPERTOKENS) != null);
-            assert (UserIdMapping.getUserIdMapping(process.main, r3.id, UserIdType.SUPERTOKENS) != null);
-            assert (UserIdMapping.getUserIdMapping(process.main, r1.id, UserIdType.SUPERTOKENS) == null);
+            assert (UserIdMapping.getUserIdMapping(process.main, r2.getUserIdNotToBeReturnedFromAPI(), UserIdType.SUPERTOKENS) != null);
+            assert (UserIdMapping.getUserIdMapping(process.main, r3.getUserIdNotToBeReturnedFromAPI(), UserIdType.SUPERTOKENS) != null);
+            assert (UserIdMapping.getUserIdMapping(process.main, r1.getUserIdNotToBeReturnedFromAPI(), UserIdType.SUPERTOKENS) == null);
         }
 
-        AuthRecipe.deleteUser(process.main, r3.id, false);
+        AuthRecipe.deleteUser(process.main, r3.getUserIdNotToBeReturnedFromAPI(), false);
 
         {
-            AuthRecipeUserInfo userR2 = AuthRecipe.getUserById(process.main, r2.id);
-            AuthRecipeUserInfo userR3 = AuthRecipe.getUserById(process.main, r3.id);
+            AuthRecipeUserInfo userR2 = AuthRecipe.getUserById(process.main, r2.getUserIdNotToBeReturnedFromAPI());
+            AuthRecipeUserInfo userR3 = AuthRecipe.getUserById(process.main, r3.getUserIdNotToBeReturnedFromAPI());
             assert (userR2 == null && userR3 == null);
             assertEquals(UserMetadata.getUserMetadata(process.main, "e2"), new JsonObject());
             assertEquals(UserMetadata.getUserMetadata(process.main, "e3"), new JsonObject());
-            assert (UserIdMapping.getUserIdMapping(process.main, r2.id, UserIdType.SUPERTOKENS) == null);
-            assert (UserIdMapping.getUserIdMapping(process.main, r3.id, UserIdType.SUPERTOKENS) == null);
-            assert (UserIdMapping.getUserIdMapping(process.main, r1.id, UserIdType.SUPERTOKENS) == null);
+            assert (UserIdMapping.getUserIdMapping(process.main, r2.getUserIdNotToBeReturnedFromAPI(), UserIdType.SUPERTOKENS) == null);
+            assert (UserIdMapping.getUserIdMapping(process.main, r3.getUserIdNotToBeReturnedFromAPI(), UserIdType.SUPERTOKENS) == null);
+            assert (UserIdMapping.getUserIdMapping(process.main, r1.getUserIdNotToBeReturnedFromAPI(), UserIdType.SUPERTOKENS) == null);
         }
 
         process.kill();

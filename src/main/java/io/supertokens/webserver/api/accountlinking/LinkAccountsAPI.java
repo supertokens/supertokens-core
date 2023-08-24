@@ -94,7 +94,7 @@ public class LinkAccountsAPI extends WebserverAPI {
 
             boolean alreadyLinked = AuthRecipe.linkAccounts(main,
                     primaryUserIdAppIdentifierWithStorage,
-                    recipeUserId, primaryUserId);
+                    recipeUserId, primaryUserId).wasAlreadyLinked;
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             response.addProperty("accountsAlreadyLinked", alreadyLinked);

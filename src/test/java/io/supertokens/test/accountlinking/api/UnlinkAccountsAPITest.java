@@ -77,17 +77,17 @@ public class UnlinkAccountsAPITest {
         AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "password");
         assert (!user2.isPrimaryUser);
 
-        AuthRecipe.createPrimaryUser(process.main, user.id);
+        AuthRecipe.createPrimaryUser(process.main, user.getUserIdNotToBeReturnedFromAPI());
 
-        AuthRecipe.linkAccounts(process.main, user2.id, user.id);
+        AuthRecipe.linkAccounts(process.main, user2.getUserIdNotToBeReturnedFromAPI(), user.getUserIdNotToBeReturnedFromAPI());
 
-        Session.createNewSession(process.main, user2.id, new JsonObject(), new JsonObject());
-        String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(process.main, user2.id);
+        Session.createNewSession(process.main, user2.getUserIdNotToBeReturnedFromAPI(), new JsonObject(), new JsonObject());
+        String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(process.main, user2.getUserIdNotToBeReturnedFromAPI());
         assert (sessions.length == 1);
 
         {
             JsonObject params = new JsonObject();
-            params.addProperty("recipeUserId", user2.id);
+            params.addProperty("recipeUserId", user2.getUserIdNotToBeReturnedFromAPI());
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/accountlinking/user/unlink", params, 1000, 1000, null,
                     WebserverAPI.getLatestCDIVersion().get(), "");
@@ -98,20 +98,20 @@ public class UnlinkAccountsAPITest {
         }
 
 
-        AuthRecipeUserInfo refetchUser2 = AuthRecipe.getUserById(process.main, user2.id);
+        AuthRecipeUserInfo refetchUser2 = AuthRecipe.getUserById(process.main, user2.getUserIdNotToBeReturnedFromAPI());
         assert (!refetchUser2.isPrimaryUser);
-        assert (refetchUser2.id.equals(user2.id));
+        assert (refetchUser2.getUserIdNotToBeReturnedFromAPI().equals(user2.getUserIdNotToBeReturnedFromAPI()));
         assert (refetchUser2.loginMethods.length == 1);
-        assert (refetchUser2.loginMethods[0].recipeUserId.equals(user2.id));
+        assert (refetchUser2.loginMethods[0].getRecipeUserIdNotToBeReturnedFromAPI().equals(user2.getUserIdNotToBeReturnedFromAPI()));
 
-        AuthRecipeUserInfo refetchUser = AuthRecipe.getUserById(process.main, user.id);
+        AuthRecipeUserInfo refetchUser = AuthRecipe.getUserById(process.main, user.getUserIdNotToBeReturnedFromAPI());
         assert (!refetchUser2.equals(refetchUser));
         assert (refetchUser.isPrimaryUser);
         assert (refetchUser.loginMethods.length == 1);
-        assert (refetchUser.loginMethods[0].recipeUserId.equals(user.id));
+        assert (refetchUser.loginMethods[0].getRecipeUserIdNotToBeReturnedFromAPI().equals(user.getUserIdNotToBeReturnedFromAPI()));
 
         // cause linkAccounts revokes sessions for the recipe user ID
-        sessions = Session.getAllNonExpiredSessionHandlesForUser(process.main, user2.id);
+        sessions = Session.getAllNonExpiredSessionHandlesForUser(process.main, user2.getUserIdNotToBeReturnedFromAPI());
         assert (sessions.length == 0);
 
         process.kill();
@@ -171,11 +171,11 @@ public class UnlinkAccountsAPITest {
 
         AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "password");
         assert (!user2.isPrimaryUser);
-        UserIdMapping.createUserIdMapping(process.main, user2.id, "e2", null, false);
+        UserIdMapping.createUserIdMapping(process.main, user2.getUserIdNotToBeReturnedFromAPI(), "e2", null, false);
 
-        AuthRecipe.createPrimaryUser(process.main, user.id);
+        AuthRecipe.createPrimaryUser(process.main, user.getUserIdNotToBeReturnedFromAPI());
 
-        AuthRecipe.linkAccounts(process.main, user2.id, user.id);
+        AuthRecipe.linkAccounts(process.main, user2.getUserIdNotToBeReturnedFromAPI(), user.getUserIdNotToBeReturnedFromAPI());
 
         {
             JsonObject params = new JsonObject();
@@ -190,17 +190,17 @@ public class UnlinkAccountsAPITest {
         }
 
 
-        AuthRecipeUserInfo refetchUser2 = AuthRecipe.getUserById(process.main, user2.id);
+        AuthRecipeUserInfo refetchUser2 = AuthRecipe.getUserById(process.main, user2.getUserIdNotToBeReturnedFromAPI());
         assert (!refetchUser2.isPrimaryUser);
-        assert (refetchUser2.id.equals(user2.id));
+        assert (refetchUser2.getUserIdNotToBeReturnedFromAPI().equals(user2.getUserIdNotToBeReturnedFromAPI()));
         assert (refetchUser2.loginMethods.length == 1);
-        assert (refetchUser2.loginMethods[0].recipeUserId.equals(user2.id));
+        assert (refetchUser2.loginMethods[0].getRecipeUserIdNotToBeReturnedFromAPI().equals(user2.getUserIdNotToBeReturnedFromAPI()));
 
-        AuthRecipeUserInfo refetchUser = AuthRecipe.getUserById(process.main, user.id);
+        AuthRecipeUserInfo refetchUser = AuthRecipe.getUserById(process.main, user.getUserIdNotToBeReturnedFromAPI());
         assert (!refetchUser2.equals(refetchUser));
         assert (refetchUser.isPrimaryUser);
         assert (refetchUser.loginMethods.length == 1);
-        assert (refetchUser.loginMethods[0].recipeUserId.equals(user.id));
+        assert (refetchUser.loginMethods[0].getRecipeUserIdNotToBeReturnedFromAPI().equals(user.getUserIdNotToBeReturnedFromAPI()));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -225,7 +225,7 @@ public class UnlinkAccountsAPITest {
 
         {
             JsonObject params = new JsonObject();
-            params.addProperty("recipeUserId", user.id);
+            params.addProperty("recipeUserId", user.getUserIdNotToBeReturnedFromAPI());
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/accountlinking/user/unlink", params, 1000, 1000, null,
                     WebserverAPI.getLatestCDIVersion().get(), "");
@@ -293,13 +293,13 @@ public class UnlinkAccountsAPITest {
         AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "password");
         assert (!user2.isPrimaryUser);
 
-        AuthRecipe.createPrimaryUser(process.main, user.id);
+        AuthRecipe.createPrimaryUser(process.main, user.getUserIdNotToBeReturnedFromAPI());
 
-        AuthRecipe.linkAccounts(process.main, user2.id, user.id);
+        AuthRecipe.linkAccounts(process.main, user2.getUserIdNotToBeReturnedFromAPI(), user.getUserIdNotToBeReturnedFromAPI());
 
         {
             JsonObject params = new JsonObject();
-            params.addProperty("recipeUserId", user.id);
+            params.addProperty("recipeUserId", user.getUserIdNotToBeReturnedFromAPI());
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/accountlinking/user/unlink", params, 1000, 1000, null,
                     WebserverAPI.getLatestCDIVersion().get(), "");

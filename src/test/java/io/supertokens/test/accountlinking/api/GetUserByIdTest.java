@@ -116,12 +116,12 @@ public class GetUserByIdTest {
         Thread.sleep(50);
         AuthRecipeUserInfo user4 = createPasswordlessUserWithPhone(process.getProcess(), "+919876543210");
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.id).user;
-        AuthRecipe.linkAccounts(process.getProcess(), user2.id, primaryUser.id);
-        AuthRecipe.linkAccounts(process.getProcess(), user3.id, primaryUser.id);
-        AuthRecipe.linkAccounts(process.getProcess(), user4.id, primaryUser.id);
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getUserIdNotToBeReturnedFromAPI()).user;
+        AuthRecipe.linkAccounts(process.getProcess(), user2.getUserIdNotToBeReturnedFromAPI(), primaryUser.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipe.linkAccounts(process.getProcess(), user3.getUserIdNotToBeReturnedFromAPI(), primaryUser.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipe.linkAccounts(process.getProcess(), user4.getUserIdNotToBeReturnedFromAPI(), primaryUser.getUserIdNotToBeReturnedFromAPI());
 
-        for (String userId : new String[]{user1.id, user2.id, user3.id, user4.id}) {
+        for (String userId : new String[]{user1.getUserIdNotToBeReturnedFromAPI(), user2.getUserIdNotToBeReturnedFromAPI(), user3.getUserIdNotToBeReturnedFromAPI(), user4.getUserIdNotToBeReturnedFromAPI()}) {
             Map<String, String> params = new HashMap<>();
             params.put("userId", userId);
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -174,11 +174,11 @@ public class GetUserByIdTest {
         Thread.sleep(50);
         AuthRecipeUserInfo user3 = createPasswordlessUserWithEmail(process.getProcess(), "test3@example.com");
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.id).user;
-        AuthRecipe.linkAccounts(process.getProcess(), user2.id, primaryUser.id);
-        AuthRecipe.linkAccounts(process.getProcess(), user3.id, primaryUser.id);
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getUserIdNotToBeReturnedFromAPI()).user;
+        AuthRecipe.linkAccounts(process.getProcess(), user2.getUserIdNotToBeReturnedFromAPI(), primaryUser.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipe.linkAccounts(process.getProcess(), user3.getUserIdNotToBeReturnedFromAPI(), primaryUser.getUserIdNotToBeReturnedFromAPI());
 
-        for (String userId : new String[]{user1.id, user2.id, user3.id}) {
+        for (String userId : new String[]{user1.getUserIdNotToBeReturnedFromAPI(), user2.getUserIdNotToBeReturnedFromAPI(), user3.getUserIdNotToBeReturnedFromAPI()}) {
             Map<String, String> params = new HashMap<>();
             params.put("userId", userId);
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -214,10 +214,10 @@ public class GetUserByIdTest {
         Thread.sleep(50);
         AuthRecipeUserInfo user2 = createThirdPartyUser(process.getProcess(), "google", "userid1", "test2@example.com");
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.id).user;
-        AuthRecipe.linkAccounts(process.getProcess(), user2.id, primaryUser.id);
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getUserIdNotToBeReturnedFromAPI()).user;
+        AuthRecipe.linkAccounts(process.getProcess(), user2.getUserIdNotToBeReturnedFromAPI(), primaryUser.getUserIdNotToBeReturnedFromAPI());
 
-        for (String userId : new String[]{user1.id, user2.id}) {
+        for (String userId : new String[]{user1.getUserIdNotToBeReturnedFromAPI(), user2.getUserIdNotToBeReturnedFromAPI()}) {
             Map<String, String> params = new HashMap<>();
             params.put("userId", userId);
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -252,10 +252,10 @@ public class GetUserByIdTest {
         Thread.sleep(50);
         AuthRecipeUserInfo user2 = createPasswordlessUserWithEmail(process.getProcess(), "test2@example.com");
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.id).user;
-        AuthRecipe.linkAccounts(process.getProcess(), user2.id, primaryUser.id);
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getUserIdNotToBeReturnedFromAPI()).user;
+        AuthRecipe.linkAccounts(process.getProcess(), user2.getUserIdNotToBeReturnedFromAPI(), primaryUser.getUserIdNotToBeReturnedFromAPI());
 
-        for (String userId : new String[]{user1.id, user2.id}) {
+        for (String userId : new String[]{user1.getUserIdNotToBeReturnedFromAPI(), user2.getUserIdNotToBeReturnedFromAPI()}) {
             Map<String, String> params = new HashMap<>();
             params.put("userId", userId);
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -290,10 +290,10 @@ public class GetUserByIdTest {
         Thread.sleep(50);
         AuthRecipeUserInfo user2 = createPasswordlessUserWithEmail(process.getProcess(), "test2@example.com");
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.id).user;
-        AuthRecipe.linkAccounts(process.getProcess(), user2.id, primaryUser.id);
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getUserIdNotToBeReturnedFromAPI()).user;
+        AuthRecipe.linkAccounts(process.getProcess(), user2.getUserIdNotToBeReturnedFromAPI(), primaryUser.getUserIdNotToBeReturnedFromAPI());
 
-        for (String userId : new String[]{user1.id, user2.id}) {
+        for (String userId : new String[]{user1.getUserIdNotToBeReturnedFromAPI(), user2.getUserIdNotToBeReturnedFromAPI()}) {
             Map<String, String> params = new HashMap<>();
             params.put("userId", userId);
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -328,10 +328,10 @@ public class GetUserByIdTest {
         Thread.sleep(50);
         AuthRecipeUserInfo user2 = createPasswordlessUserWithPhone(process.getProcess(), "+911234567890");
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.id).user;
-        AuthRecipe.linkAccounts(process.getProcess(), user2.id, primaryUser.id);
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getUserIdNotToBeReturnedFromAPI()).user;
+        AuthRecipe.linkAccounts(process.getProcess(), user2.getUserIdNotToBeReturnedFromAPI(), primaryUser.getUserIdNotToBeReturnedFromAPI());
 
-        for (String userId : new String[]{user1.id, user2.id}) {
+        for (String userId : new String[]{user1.getUserIdNotToBeReturnedFromAPI(), user2.getUserIdNotToBeReturnedFromAPI()}) {
             Map<String, String> params = new HashMap<>();
             params.put("userId", userId);
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -368,11 +368,11 @@ public class GetUserByIdTest {
         Thread.sleep(50);
         AuthRecipeUserInfo user3 = createThirdPartyUser(process.getProcess(), "google", "googleid", "test@example.com");
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.id).user;
-        AuthRecipe.linkAccounts(process.getProcess(), user2.id, primaryUser.id);
-        AuthRecipe.linkAccounts(process.getProcess(), user3.id, primaryUser.id);
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getUserIdNotToBeReturnedFromAPI()).user;
+        AuthRecipe.linkAccounts(process.getProcess(), user2.getUserIdNotToBeReturnedFromAPI(), primaryUser.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipe.linkAccounts(process.getProcess(), user3.getUserIdNotToBeReturnedFromAPI(), primaryUser.getUserIdNotToBeReturnedFromAPI());
 
-        for (String userId : new String[]{user1.id, user2.id}) {
+        for (String userId : new String[]{user1.getUserIdNotToBeReturnedFromAPI(), user2.getUserIdNotToBeReturnedFromAPI()}) {
             Map<String, String> params = new HashMap<>();
             params.put("userId", userId);
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -409,11 +409,11 @@ public class GetUserByIdTest {
         Thread.sleep(50);
         AuthRecipeUserInfo user3 = createEmailPasswordUser(process.getProcess(), "test@example.com", "password");
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.id).user;
-        AuthRecipe.linkAccounts(process.getProcess(), user2.id, primaryUser.id);
-        AuthRecipe.linkAccounts(process.getProcess(), user3.id, primaryUser.id);
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getUserIdNotToBeReturnedFromAPI()).user;
+        AuthRecipe.linkAccounts(process.getProcess(), user2.getUserIdNotToBeReturnedFromAPI(), primaryUser.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipe.linkAccounts(process.getProcess(), user3.getUserIdNotToBeReturnedFromAPI(), primaryUser.getUserIdNotToBeReturnedFromAPI());
 
-        for (String userId : new String[]{user1.id, user2.id}) {
+        for (String userId : new String[]{user1.getUserIdNotToBeReturnedFromAPI(), user2.getUserIdNotToBeReturnedFromAPI()}) {
             Map<String, String> params = new HashMap<>();
             params.put("userId", userId);
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -452,16 +452,16 @@ public class GetUserByIdTest {
         Thread.sleep(50);
         AuthRecipeUserInfo user4 = createPasswordlessUserWithPhone(process.getProcess(), "+919876543210");
 
-        UserIdMapping.createUserIdMapping(process.getProcess(), user1.id, "ext1", "", false);
-        UserIdMapping.createUserIdMapping(process.getProcess(), user2.id, "ext2", "", false);
-        UserIdMapping.createUserIdMapping(process.getProcess(), user3.id, "ext3", "", false);
+        UserIdMapping.createUserIdMapping(process.getProcess(), user1.getUserIdNotToBeReturnedFromAPI(), "ext1", "", false);
+        UserIdMapping.createUserIdMapping(process.getProcess(), user2.getUserIdNotToBeReturnedFromAPI(), "ext2", "", false);
+        UserIdMapping.createUserIdMapping(process.getProcess(), user3.getUserIdNotToBeReturnedFromAPI(), "ext3", "", false);
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.id).user;
-        AuthRecipe.linkAccounts(process.getProcess(), user2.id, primaryUser.id);
-        AuthRecipe.linkAccounts(process.getProcess(), user3.id, primaryUser.id);
-        AuthRecipe.linkAccounts(process.getProcess(), user4.id, primaryUser.id);
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getUserIdNotToBeReturnedFromAPI()).user;
+        AuthRecipe.linkAccounts(process.getProcess(), user2.getUserIdNotToBeReturnedFromAPI(), primaryUser.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipe.linkAccounts(process.getProcess(), user3.getUserIdNotToBeReturnedFromAPI(), primaryUser.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipe.linkAccounts(process.getProcess(), user4.getUserIdNotToBeReturnedFromAPI(), primaryUser.getUserIdNotToBeReturnedFromAPI());
 
-        for (String userId : new String[]{user1.id, user2.id, user3.id, user4.id, "ext1", "ext2", "ext3"}) {
+        for (String userId : new String[]{user1.getUserIdNotToBeReturnedFromAPI(), user2.getUserIdNotToBeReturnedFromAPI(), user3.getUserIdNotToBeReturnedFromAPI(), user4.getUserIdNotToBeReturnedFromAPI(), "ext1", "ext2", "ext3"}) {
             Map<String, String> params = new HashMap<>();
             params.put("userId", userId);
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -470,8 +470,8 @@ public class GetUserByIdTest {
             JsonObject user = response.get("user").getAsJsonObject();
             assertEquals("ext1", user.get("id").getAsString());
             assertEquals("ext1", user.get("loginMethods").getAsJsonArray().get(0).getAsJsonObject().get("recipeUserId").getAsString());
-            assertNotEquals("ext2", user.get("loginMethods").getAsJsonArray().get(1).getAsJsonObject().get("recipeUserId").getAsString()); // TODO should be equal once userIdMapping is fixed
-            assertNotEquals("ext3", user.get("loginMethods").getAsJsonArray().get(2).getAsJsonObject().get("recipeUserId").getAsString()); // TODO should be equal once userIdMapping is fixed
+            assertEquals("ext2", user.get("loginMethods").getAsJsonArray().get(1).getAsJsonObject().get("recipeUserId").getAsString());
+            assertEquals("ext3", user.get("loginMethods").getAsJsonArray().get(2).getAsJsonObject().get("recipeUserId").getAsString());
         }
 
         process.kill();

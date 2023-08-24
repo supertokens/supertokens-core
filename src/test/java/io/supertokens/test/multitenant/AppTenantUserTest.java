@@ -122,7 +122,7 @@ public class AppTenantUserTest {
 
                 UserInfo user = EmailPassword.signUp(tWithStorage, process.getProcess(), "test@example.com",
                         "password");
-                String userId = user.id;
+                String userId = user.getUserIdNotToBeReturnedFromAPI();
 
                 // create entry in nonAuth table
                 StorageLayer.getStorage(process.main).addInfoToNonAuthRecipesBasedOnUserId(app, className, userId);
@@ -224,7 +224,7 @@ public class AppTenantUserTest {
             }
 
             UserInfo user = EmailPassword.signUp(appWithStorage, process.getProcess(), "test@example.com", "password");
-            String userId = user.id;
+            String userId = user.getUserIdNotToBeReturnedFromAPI();
 
             Multitenancy.addUserIdToTenant(process.getProcess(), tenantWithStorage, userId);
 
@@ -292,7 +292,7 @@ public class AppTenantUserTest {
                 StorageLayer.getStorage(tenant, process.getProcess()));
 
         UserInfo user = EmailPassword.signUp(tenantWithStorage, process.getProcess(), "test@example.com", "password");
-        String userId = user.id;
+        String userId = user.getUserIdNotToBeReturnedFromAPI();
 
         Multitenancy.deleteTenant(tenant, process.getProcess());
 
@@ -302,7 +302,7 @@ public class AppTenantUserTest {
         UserInfo appUser = EmailPassword.getUserUsingId(appWithStorage.toAppIdentifierWithStorage(), userId);
 
         assertNotNull(appUser);
-        assertEquals(userId, appUser.id);
+        assertEquals(userId, appUser.getUserIdNotToBeReturnedFromAPI());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

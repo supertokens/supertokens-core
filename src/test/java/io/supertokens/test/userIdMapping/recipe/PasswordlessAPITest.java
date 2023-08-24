@@ -74,7 +74,7 @@ public class PasswordlessAPITest {
                     createCodeResponse.deviceId, createCodeResponse.deviceIdHash, createCodeResponse.userInputCode,
                     null);
             assertTrue(consumeCodeResponse.createdNewUser);
-            superTokensUserId = consumeCodeResponse.user.id;
+            superTokensUserId = consumeCodeResponse.user.getUserIdNotToBeReturnedFromAPI();
 
             // create mapping
             UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalId, null, false);
@@ -141,7 +141,7 @@ public class PasswordlessAPITest {
                     createCodeResponse.deviceId, createCodeResponse.deviceIdHash, createCodeResponse.userInputCode,
                     null);
             assertTrue(consumeCodeResponse.createdNewUser);
-            superTokensUserId = consumeCodeResponse.user.id;
+            superTokensUserId = consumeCodeResponse.user.getUserIdNotToBeReturnedFromAPI();
 
             // create mapping
             UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalId, null, false);
@@ -219,7 +219,7 @@ public class PasswordlessAPITest {
                     createCodeResponse.deviceId, createCodeResponse.deviceIdHash, createCodeResponse.userInputCode,
                     null);
             assertTrue(consumeCodeResponse.createdNewUser);
-            superTokensUserId = consumeCodeResponse.user.id;
+            superTokensUserId = consumeCodeResponse.user.getUserIdNotToBeReturnedFromAPI();
 
             // create mapping
             UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalId, null, false);
@@ -267,7 +267,7 @@ public class PasswordlessAPITest {
                 null);
         Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(process.main, response.deviceId,
                 response.deviceIdHash, response.userInputCode, null);
-        superTokensUserId = consumeCodeResponse.user.id;
+        superTokensUserId = consumeCodeResponse.user.getUserIdNotToBeReturnedFromAPI();
 
         // map their userId
         UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalId, null, false);
@@ -287,7 +287,7 @@ public class PasswordlessAPITest {
             // check that user got updated
             AuthRecipeUserInfo userInfo = Passwordless.getUserByEmail(process.main, newEmail);
             assertNotNull(userInfo);
-            assertEquals(userInfo.id, superTokensUserId);
+            assertEquals(userInfo.getUserIdNotToBeReturnedFromAPI(), superTokensUserId);
         }
 
         process.kill();

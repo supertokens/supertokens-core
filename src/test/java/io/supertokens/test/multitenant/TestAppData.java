@@ -124,7 +124,7 @@ public class TestAppData {
 
         // Add all recipe data
         UserInfo epUser = EmailPassword.signUp(appWithStorage, process.getProcess(), "test@example.com", "password");
-        EmailPassword.generatePasswordResetTokenBeforeCdi4_0(appWithStorage, process.getProcess(), epUser.id);
+        EmailPassword.generatePasswordResetTokenBeforeCdi4_0(appWithStorage, process.getProcess(), epUser.getUserIdNotToBeReturnedFromAPI());
 
         ThirdParty.SignInUpResponse tpUser = ThirdParty.signInUp(appWithStorage, process.getProcess(), "google",
                 "googleid", "test@example.com");
@@ -141,28 +141,28 @@ public class TestAppData {
                 "user@example.com", "password");
 
         String evToken = EmailVerification.generateEmailVerificationToken(appWithStorage, process.getProcess(),
-                epUser.id, epUser.email);
+                epUser.getUserIdNotToBeReturnedFromAPI(), epUser.email);
         EmailVerification.verifyEmail(appWithStorage, evToken);
-        EmailVerification.generateEmailVerificationToken(appWithStorage, process.getProcess(), tpUser.user.id,
+        EmailVerification.generateEmailVerificationToken(appWithStorage, process.getProcess(), tpUser.user.getUserIdNotToBeReturnedFromAPI(),
                 tpUser.user.loginMethods[0].email);
 
-        Session.createNewSession(appWithStorage, process.getProcess(), epUser.id, new JsonObject(), new JsonObject());
+        Session.createNewSession(appWithStorage, process.getProcess(), epUser.getUserIdNotToBeReturnedFromAPI(), new JsonObject(), new JsonObject());
 
         UserRoles.createNewRoleOrModifyItsPermissions(appWithStorage.toAppIdentifierWithStorage(), "role",
                 new String[]{"permission1", "permission2"});
-        UserRoles.addRoleToUser(appWithStorage, epUser.id, "role");
+        UserRoles.addRoleToUser(appWithStorage, epUser.getUserIdNotToBeReturnedFromAPI(), "role");
 
         TOTPDevice totpDevice = Totp.registerDevice(appWithStorage.toAppIdentifierWithStorage(), process.getProcess(),
-                epUser.id, "test", 1, 3);
-        Totp.verifyCode(appWithStorage, process.getProcess(), epUser.id,
+                epUser.getUserIdNotToBeReturnedFromAPI(), "test", 1, 3);
+        Totp.verifyCode(appWithStorage, process.getProcess(), epUser.getUserIdNotToBeReturnedFromAPI(),
                 generateTotpCode(process.getProcess(), totpDevice, 0), true);
 
-        ActiveUsers.updateLastActive(appWithStorage.toAppIdentifierWithStorage(), process.getProcess(), epUser.id);
+        ActiveUsers.updateLastActive(appWithStorage.toAppIdentifierWithStorage(), process.getProcess(), epUser.getUserIdNotToBeReturnedFromAPI());
 
-        UserMetadata.updateUserMetadata(appWithStorage.toAppIdentifierWithStorage(), epUser.id, new JsonObject());
+        UserMetadata.updateUserMetadata(appWithStorage.toAppIdentifierWithStorage(), epUser.getUserIdNotToBeReturnedFromAPI(), new JsonObject());
 
         UserIdMapping.createUserIdMapping(process.getProcess(), appWithStorage.toAppIdentifierWithStorage(),
-                plUser.user.id, "externalid", null, false);
+                plUser.user.getUserIdNotToBeReturnedFromAPI(), "externalid", null, false);
 
         String[] tablesThatHaveData = appWithStorage.getStorage()
                 .getAllTablesInTheDatabaseThatHasDataForAppId(app.getAppId());

@@ -28,7 +28,6 @@ import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.exceptions.*;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -157,14 +156,14 @@ public class TestRecipeUserIdInSignInUpAPIs {
 
             assertEquals(signInResponse.get("status").getAsString(), "OK");
             assertEquals(signInResponse.entrySet().size(), 3);
-            assertEquals(signInResponse.get("recipeUserId").getAsString(), user.id);
+            assertEquals(signInResponse.get("recipeUserId").getAsString(), user.getUserIdNotToBeReturnedFromAPI());
         }
 
         AuthRecipeUserInfo user2 = createPasswordlessUserWithEmail(process.getProcess(),
                 "test@example.com");
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user2.id).user;
-        AuthRecipe.linkAccounts(process.getProcess(), user.id, primaryUser.id);
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user2.getUserIdNotToBeReturnedFromAPI()).user;
+        AuthRecipe.linkAccounts(process.getProcess(), user.getUserIdNotToBeReturnedFromAPI(), primaryUser.getUserIdNotToBeReturnedFromAPI());
 
         {
             // After account linking
@@ -178,13 +177,13 @@ public class TestRecipeUserIdInSignInUpAPIs {
 
             assertEquals(signInResponse.get("status").getAsString(), "OK");
             assertEquals(signInResponse.entrySet().size(), 3);
-            assertEquals(signInResponse.get("recipeUserId").getAsString(), user.id);
+            assertEquals(signInResponse.get("recipeUserId").getAsString(), user.getUserIdNotToBeReturnedFromAPI());
         }
 
         // With another email password user
         AuthRecipeUserInfo user3 = createEmailPasswordUser(process.getProcess(),
                 "test2@example.com", "password");
-        AuthRecipe.linkAccounts(process.getProcess(), user3.id, primaryUser.id);
+        AuthRecipe.linkAccounts(process.getProcess(), user3.getUserIdNotToBeReturnedFromAPI(), primaryUser.getUserIdNotToBeReturnedFromAPI());
 
         {
             // After account linking
@@ -198,7 +197,7 @@ public class TestRecipeUserIdInSignInUpAPIs {
 
             assertEquals(signInResponse.get("status").getAsString(), "OK");
             assertEquals(signInResponse.entrySet().size(), 3);
-            assertEquals(signInResponse.get("recipeUserId").getAsString(), user.id);
+            assertEquals(signInResponse.get("recipeUserId").getAsString(), user.getUserIdNotToBeReturnedFromAPI());
         }
         {
             // After account linking
@@ -212,7 +211,7 @@ public class TestRecipeUserIdInSignInUpAPIs {
 
             assertEquals(signInResponse.get("status").getAsString(), "OK");
             assertEquals(signInResponse.entrySet().size(), 3);
-            assertEquals(signInResponse.get("recipeUserId").getAsString(), user3.id);
+            assertEquals(signInResponse.get("recipeUserId").getAsString(), user3.getUserIdNotToBeReturnedFromAPI());
         }
 
         process.kill();
@@ -273,8 +272,8 @@ public class TestRecipeUserIdInSignInUpAPIs {
         AuthRecipeUserInfo user2 = createEmailPasswordUser(process.getProcess(),
                 "test@example.com", "password");
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user2.id).user;
-        AuthRecipe.linkAccounts(process.getProcess(), userId, primaryUser.id);
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user2.getUserIdNotToBeReturnedFromAPI()).user;
+        AuthRecipe.linkAccounts(process.getProcess(), userId, primaryUser.getUserIdNotToBeReturnedFromAPI());
 
         {
             // After account linking
@@ -295,7 +294,7 @@ public class TestRecipeUserIdInSignInUpAPIs {
         }
 
         AuthRecipeUserInfo user3 = createThirdPartyUser(process.getProcess(), "facebook", "fb-user", "test@example.com");
-        AuthRecipe.linkAccounts(process.getProcess(), user3.id, primaryUser.id);
+        AuthRecipe.linkAccounts(process.getProcess(), user3.getUserIdNotToBeReturnedFromAPI(), primaryUser.getUserIdNotToBeReturnedFromAPI());
 
         {
             // After account linking
@@ -329,7 +328,7 @@ public class TestRecipeUserIdInSignInUpAPIs {
                     SemVer.v4_0.get(), "thirdparty");
 
             assertEquals(4, response.entrySet().size());
-            assertEquals(user3.id, response.get("recipeUserId").getAsString());
+            assertEquals(user3.getUserIdNotToBeReturnedFromAPI(), response.get("recipeUserId").getAsString());
         }
 
         process.kill();
@@ -384,8 +383,8 @@ public class TestRecipeUserIdInSignInUpAPIs {
 
         AuthRecipeUserInfo user2 = createThirdPartyUser(process.getProcess(), "google", "google-user", "test@example.com");
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user2.id).user;
-        AuthRecipe.linkAccounts(process.getProcess(), userId, primaryUser.id);
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user2.getUserIdNotToBeReturnedFromAPI()).user;
+        AuthRecipe.linkAccounts(process.getProcess(), userId, primaryUser.getUserIdNotToBeReturnedFromAPI());
 
         { // after account linking
             Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), "test@example.com", null, null, null);
@@ -403,7 +402,7 @@ public class TestRecipeUserIdInSignInUpAPIs {
         }
 
         AuthRecipeUserInfo user3 = createPasswordlessUserWithEmail(process.getProcess(), "test2@example.com");
-        AuthRecipe.linkAccounts(process.getProcess(), user3.id, primaryUser.id);
+        AuthRecipe.linkAccounts(process.getProcess(), user3.getUserIdNotToBeReturnedFromAPI(), primaryUser.getUserIdNotToBeReturnedFromAPI());
 
         { // after account linking
             Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), "test@example.com", null, null, null);
@@ -431,7 +430,7 @@ public class TestRecipeUserIdInSignInUpAPIs {
                     SemVer.v4_0.get(), "passwordless");
 
             assertEquals(4, response.entrySet().size());
-            assertEquals(user3.id, response.get("recipeUserId").getAsString());
+            assertEquals(user3.getUserIdNotToBeReturnedFromAPI(), response.get("recipeUserId").getAsString());
         }
 
         process.kill();
@@ -486,8 +485,8 @@ public class TestRecipeUserIdInSignInUpAPIs {
 
         AuthRecipeUserInfo user2 = createThirdPartyUser(process.getProcess(), "google", "google-user", "test@example.com");
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user2.id).user;
-        AuthRecipe.linkAccounts(process.getProcess(), userId, primaryUser.id);
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user2.getUserIdNotToBeReturnedFromAPI()).user;
+        AuthRecipe.linkAccounts(process.getProcess(), userId, primaryUser.getUserIdNotToBeReturnedFromAPI());
 
         { // after account linking
             Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), null, "+919876543210", null, null);
@@ -505,7 +504,7 @@ public class TestRecipeUserIdInSignInUpAPIs {
         }
 
         AuthRecipeUserInfo user3 = createPasswordlessUserWithPhone(process.getProcess(), "+919876543211");
-        AuthRecipe.linkAccounts(process.getProcess(), user3.id, primaryUser.id);
+        AuthRecipe.linkAccounts(process.getProcess(), user3.getUserIdNotToBeReturnedFromAPI(), primaryUser.getUserIdNotToBeReturnedFromAPI());
 
         { // after account linking
             Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), null, "+919876543210", null, null);
@@ -533,7 +532,7 @@ public class TestRecipeUserIdInSignInUpAPIs {
                     SemVer.v4_0.get(), "passwordless");
 
             assertEquals(4, response.entrySet().size());
-            assertEquals(user3.id, response.get("recipeUserId").getAsString());
+            assertEquals(user3.getUserIdNotToBeReturnedFromAPI(), response.get("recipeUserId").getAsString());
         }
 
         process.kill();
@@ -604,8 +603,8 @@ public class TestRecipeUserIdInSignInUpAPIs {
 
         AuthRecipeUserInfo user2 = createThirdPartyUser(process.getProcess(), "google", "google-user", "test@example.com");
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user2.id).user;
-        AuthRecipe.linkAccounts(process.getProcess(), userId, primaryUser.id);
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user2.getUserIdNotToBeReturnedFromAPI()).user;
+        AuthRecipe.linkAccounts(process.getProcess(), userId, primaryUser.getUserIdNotToBeReturnedFromAPI());
 
         { // after account linking - phone
             Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), null, "+919876543210", null, null);
@@ -637,7 +636,7 @@ public class TestRecipeUserIdInSignInUpAPIs {
         }
 
         AuthRecipeUserInfo user3 = createPasswordlessUserWithPhone(process.getProcess(), "+919876543211");
-        AuthRecipe.linkAccounts(process.getProcess(), user3.id, primaryUser.id);
+        AuthRecipe.linkAccounts(process.getProcess(), user3.getUserIdNotToBeReturnedFromAPI(), primaryUser.getUserIdNotToBeReturnedFromAPI());
 
         { // after account linking - phone
             Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), null, "+919876543210", null, null);
@@ -688,7 +687,7 @@ public class TestRecipeUserIdInSignInUpAPIs {
 
         AuthRecipeUserInfo user = createEmailPasswordUser(process.getProcess(),
                 "test@example.com", "password");
-        UserIdMapping.createUserIdMapping(process.getProcess(), user.id, "extuserid", "", false);
+        UserIdMapping.createUserIdMapping(process.getProcess(), user.getUserIdNotToBeReturnedFromAPI(), "extuserid", "", false);
 
         {
             // Before account linking
@@ -708,8 +707,8 @@ public class TestRecipeUserIdInSignInUpAPIs {
         AuthRecipeUserInfo user2 = createPasswordlessUserWithEmail(process.getProcess(),
                 "test@example.com");
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user2.id).user;
-        AuthRecipe.linkAccounts(process.getProcess(), user.id, primaryUser.id);
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user2.getUserIdNotToBeReturnedFromAPI()).user;
+        AuthRecipe.linkAccounts(process.getProcess(), user.getUserIdNotToBeReturnedFromAPI(), primaryUser.getUserIdNotToBeReturnedFromAPI());
 
         {
             // After account linking
@@ -729,7 +728,7 @@ public class TestRecipeUserIdInSignInUpAPIs {
         // With another email password user
         AuthRecipeUserInfo user3 = createEmailPasswordUser(process.getProcess(),
                 "test2@example.com", "password");
-        AuthRecipe.linkAccounts(process.getProcess(), user3.id, primaryUser.id);
+        AuthRecipe.linkAccounts(process.getProcess(), user3.getUserIdNotToBeReturnedFromAPI(), primaryUser.getUserIdNotToBeReturnedFromAPI());
 
         {
             // After account linking
@@ -757,7 +756,7 @@ public class TestRecipeUserIdInSignInUpAPIs {
 
             assertEquals(signInResponse.get("status").getAsString(), "OK");
             assertEquals(signInResponse.entrySet().size(), 3);
-            assertEquals(signInResponse.get("recipeUserId").getAsString(), user3.id);
+            assertEquals(signInResponse.get("recipeUserId").getAsString(), user3.getUserIdNotToBeReturnedFromAPI());
         }
 
         process.kill();

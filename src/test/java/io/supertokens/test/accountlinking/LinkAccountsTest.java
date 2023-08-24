@@ -82,27 +82,27 @@ public class LinkAccountsTest {
         AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "password");
         assert (!user2.isPrimaryUser);
 
-        AuthRecipe.createPrimaryUser(process.main, user.id);
+        AuthRecipe.createPrimaryUser(process.main, user.getUserIdNotToBeReturnedFromAPI());
 
-        Session.createNewSession(process.main, user2.id, new JsonObject(), new JsonObject());
-        String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(process.main, user2.id);
+        Session.createNewSession(process.main, user2.getUserIdNotToBeReturnedFromAPI(), new JsonObject(), new JsonObject());
+        String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(process.main, user2.getUserIdNotToBeReturnedFromAPI());
         assert (sessions.length == 1);
 
-        boolean wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user2.id, user.id);
+        boolean wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user2.getUserIdNotToBeReturnedFromAPI(), user.getUserIdNotToBeReturnedFromAPI()).wasAlreadyLinked;
         assert (!wasAlreadyLinked);
 
-        AuthRecipeUserInfo refetchUser2 = AuthRecipe.getUserById(process.main, user2.id);
-        AuthRecipeUserInfo refetchUser = AuthRecipe.getUserById(process.main, user.id);
+        AuthRecipeUserInfo refetchUser2 = AuthRecipe.getUserById(process.main, user2.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipeUserInfo refetchUser = AuthRecipe.getUserById(process.main, user.getUserIdNotToBeReturnedFromAPI());
         assert (refetchUser2.equals(refetchUser));
         assert (refetchUser2.loginMethods.length == 2);
         assert (refetchUser.loginMethods[0].equals(user.loginMethods[0]));
         assert (refetchUser.loginMethods[1].equals(user2.loginMethods[0]));
         assert (refetchUser.tenantIds.size() == 1);
         assert (refetchUser.isPrimaryUser);
-        assert (refetchUser.id.equals(user.id));
+        assert (refetchUser.getUserIdNotToBeReturnedFromAPI().equals(user.getUserIdNotToBeReturnedFromAPI()));
 
         // cause linkAccounts revokes sessions for the recipe user ID
-        sessions = Session.getAllNonExpiredSessionHandlesForUser(process.main, user2.id);
+        sessions = Session.getAllNonExpiredSessionHandlesForUser(process.main, user2.getUserIdNotToBeReturnedFromAPI());
         assert (sessions.length == 0);
 
         process.kill();
@@ -134,27 +134,27 @@ public class LinkAccountsTest {
         AuthRecipeUserInfo user2 = signInUpResponse.user;
         assert (!user2.isPrimaryUser);
 
-        AuthRecipe.createPrimaryUser(process.main, user.id);
+        AuthRecipe.createPrimaryUser(process.main, user.getUserIdNotToBeReturnedFromAPI());
 
-        Session.createNewSession(process.main, user2.id, new JsonObject(), new JsonObject());
-        String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(process.main, user2.id);
+        Session.createNewSession(process.main, user2.getUserIdNotToBeReturnedFromAPI(), new JsonObject(), new JsonObject());
+        String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(process.main, user2.getUserIdNotToBeReturnedFromAPI());
         assert (sessions.length == 1);
 
-        boolean wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user2.id, user.id);
+        boolean wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user2.getUserIdNotToBeReturnedFromAPI(), user.getUserIdNotToBeReturnedFromAPI()).wasAlreadyLinked;
         assert (!wasAlreadyLinked);
 
-        AuthRecipeUserInfo refetchUser2 = AuthRecipe.getUserById(process.main, user2.id);
-        AuthRecipeUserInfo refetchUser = AuthRecipe.getUserById(process.main, user.id);
+        AuthRecipeUserInfo refetchUser2 = AuthRecipe.getUserById(process.main, user2.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipeUserInfo refetchUser = AuthRecipe.getUserById(process.main, user.getUserIdNotToBeReturnedFromAPI());
         assert (refetchUser2.equals(refetchUser));
         assert (refetchUser2.loginMethods.length == 2);
         assert (refetchUser.loginMethods[0].equals(user.loginMethods[0]));
         assert (refetchUser.loginMethods[1].equals(user2.loginMethods[0]));
         assert (refetchUser.tenantIds.size() == 1);
         assert (refetchUser.isPrimaryUser);
-        assert (refetchUser.id.equals(user.id));
+        assert (refetchUser.getUserIdNotToBeReturnedFromAPI().equals(user.getUserIdNotToBeReturnedFromAPI()));
 
         // cause linkAccounts revokes sessions for the recipe user ID
-        sessions = Session.getAllNonExpiredSessionHandlesForUser(process.main, user2.id);
+        sessions = Session.getAllNonExpiredSessionHandlesForUser(process.main, user2.getUserIdNotToBeReturnedFromAPI());
         assert (sessions.length == 0);
 
         process.kill();
@@ -202,27 +202,27 @@ public class LinkAccountsTest {
         AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "password");
         assert (!user2.isPrimaryUser);
 
-        AuthRecipe.createPrimaryUser(process.main, user.id);
+        AuthRecipe.createPrimaryUser(process.main, user.getUserIdNotToBeReturnedFromAPI());
 
-        boolean wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user2.id, user.id);
+        boolean wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user2.getUserIdNotToBeReturnedFromAPI(), user.getUserIdNotToBeReturnedFromAPI()).wasAlreadyLinked;
         assert (!wasAlreadyLinked);
 
         AuthRecipeUserInfo user3 = EmailPassword.signUp(process.getProcess(), "test3@example.com", "password");
         assert (!user3.isPrimaryUser);
 
-        wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user3.id, user2.id);
+        wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user3.getUserIdNotToBeReturnedFromAPI(), user2.getUserIdNotToBeReturnedFromAPI()).wasAlreadyLinked;
         assert (!wasAlreadyLinked);
 
-        AuthRecipeUserInfo refetchUser = AuthRecipe.getUserById(process.main, user.id);
+        AuthRecipeUserInfo refetchUser = AuthRecipe.getUserById(process.main, user.getUserIdNotToBeReturnedFromAPI());
         assert (refetchUser.loginMethods.length == 3);
         assert (refetchUser.loginMethods[0].equals(user.loginMethods[0]));
         assert (refetchUser.loginMethods[1].equals(user2.loginMethods[0]));
         assert (refetchUser.loginMethods[2].equals(user3.loginMethods[0]));
         assert (refetchUser.tenantIds.size() == 1);
         assert (refetchUser.isPrimaryUser);
-        assert (refetchUser.id.equals(user.id));
+        assert (refetchUser.getUserIdNotToBeReturnedFromAPI().equals(user.getUserIdNotToBeReturnedFromAPI()));
 
-        AuthRecipeUserInfo refetchUser3 = AuthRecipe.getUserById(process.main, user3.id);
+        AuthRecipeUserInfo refetchUser3 = AuthRecipe.getUserById(process.main, user3.getUserIdNotToBeReturnedFromAPI());
         assert (refetchUser3.equals(refetchUser));
 
         process.kill();
@@ -254,20 +254,20 @@ public class LinkAccountsTest {
         AuthRecipeUserInfo user2 = signInUpResponse.user;
         assert (!user2.isPrimaryUser);
 
-        AuthRecipe.createPrimaryUser(process.main, user.id);
+        AuthRecipe.createPrimaryUser(process.main, user.getUserIdNotToBeReturnedFromAPI());
 
-        boolean wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user2.id, user.id);
+        boolean wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user2.getUserIdNotToBeReturnedFromAPI(), user.getUserIdNotToBeReturnedFromAPI()).wasAlreadyLinked;
         assert (!wasAlreadyLinked);
 
-        Session.createNewSession(process.main, user2.id, new JsonObject(), new JsonObject());
-        String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(process.main, user2.id);
+        Session.createNewSession(process.main, user2.getUserIdNotToBeReturnedFromAPI(), new JsonObject(), new JsonObject());
+        String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(process.main, user2.getUserIdNotToBeReturnedFromAPI());
         assert (sessions.length == 1);
 
-        wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user2.id, user.id);
+        wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user2.getUserIdNotToBeReturnedFromAPI(), user.getUserIdNotToBeReturnedFromAPI()).wasAlreadyLinked;
         assert (wasAlreadyLinked);
 
         // cause linkAccounts revokes sessions for the recipe user ID
-        sessions = Session.getAllNonExpiredSessionHandlesForUser(process.main, user2.id);
+        sessions = Session.getAllNonExpiredSessionHandlesForUser(process.main, user2.getUserIdNotToBeReturnedFromAPI());
         assert (sessions.length == 1);
 
         process.kill();
@@ -299,20 +299,20 @@ public class LinkAccountsTest {
         AuthRecipeUserInfo user2 = signInUpResponse.user;
         assert (!user2.isPrimaryUser);
 
-        AuthRecipe.createPrimaryUser(process.main, user.id);
+        AuthRecipe.createPrimaryUser(process.main, user.getUserIdNotToBeReturnedFromAPI());
 
-        boolean wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user2.id, user.id);
+        boolean wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user2.getUserIdNotToBeReturnedFromAPI(), user.getUserIdNotToBeReturnedFromAPI()).wasAlreadyLinked;
         assert (!wasAlreadyLinked);
 
         AuthRecipeUserInfo user3 = EmailPassword.signUp(process.getProcess(), "test3@example.com", "password");
         assert (!user.isPrimaryUser);
-        AuthRecipe.createPrimaryUser(process.main, user3.id);
+        AuthRecipe.createPrimaryUser(process.main, user3.getUserIdNotToBeReturnedFromAPI());
 
         try {
-            AuthRecipe.linkAccounts(process.main, user2.id, user3.id);
+            AuthRecipe.linkAccounts(process.main, user2.getUserIdNotToBeReturnedFromAPI(), user3.getUserIdNotToBeReturnedFromAPI());
             assert (false);
         } catch (RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException e) {
-            assert (e.primaryUserId.equals(user.id));
+            assert (e.primaryUserId.equals(user.getUserIdNotToBeReturnedFromAPI()));
             assert (e.getMessage().equals("The input recipe user ID is already linked to another user ID"));
         }
 
@@ -344,10 +344,10 @@ public class LinkAccountsTest {
         assert (!user2.isPrimaryUser);
 
         try {
-            AuthRecipe.linkAccounts(process.main, user2.id, user.id);
+            AuthRecipe.linkAccounts(process.main, user2.getUserIdNotToBeReturnedFromAPI(), user.getUserIdNotToBeReturnedFromAPI());
             assert (false);
         } catch (InputUserIdIsNotAPrimaryUserException e) {
-            assert (e.userId.equals(user.id));
+            assert (e.userId.equals(user.getUserIdNotToBeReturnedFromAPI()));
         }
 
         process.kill();
@@ -371,7 +371,7 @@ public class LinkAccountsTest {
         AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
         assert (!user.isPrimaryUser);
 
-        AuthRecipe.createPrimaryUser(process.main, user.id);
+        AuthRecipe.createPrimaryUser(process.main, user.getUserIdNotToBeReturnedFromAPI());
 
         ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.getProcess(), "google",
                 "user-google",
@@ -380,13 +380,13 @@ public class LinkAccountsTest {
         assert (!user2.isPrimaryUser);
 
         try {
-            AuthRecipe.linkAccounts(process.main, user2.id, "random");
+            AuthRecipe.linkAccounts(process.main, user2.getUserIdNotToBeReturnedFromAPI(), "random");
             assert (false);
         } catch (UnknownUserIdException e) {
         }
 
         try {
-            AuthRecipe.linkAccounts(process.main, "random2", user.id);
+            AuthRecipe.linkAccounts(process.main, "random2", user.getUserIdNotToBeReturnedFromAPI());
             assert (false);
         } catch (UnknownUserIdException e) {
         }
@@ -417,7 +417,7 @@ public class LinkAccountsTest {
 
         AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
         assert (!user.isPrimaryUser);
-        AuthRecipe.createPrimaryUser(process.main, user.id);
+        AuthRecipe.createPrimaryUser(process.main, user.getUserIdNotToBeReturnedFromAPI());
 
         Thread.sleep(50);
 
@@ -430,13 +430,13 @@ public class LinkAccountsTest {
         AuthRecipeUserInfo otherPrimaryUser = EmailPassword.signUp(process.getProcess(), "test3@example.com",
                 "password");
 
-        AuthRecipe.createPrimaryUser(process.main, otherPrimaryUser.id);
+        AuthRecipe.createPrimaryUser(process.main, otherPrimaryUser.getUserIdNotToBeReturnedFromAPI());
 
         try {
-            AuthRecipe.linkAccounts(process.main, user2.id, otherPrimaryUser.id);
+            AuthRecipe.linkAccounts(process.main, user2.getUserIdNotToBeReturnedFromAPI(), otherPrimaryUser.getUserIdNotToBeReturnedFromAPI());
             assert (false);
         } catch (AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException e) {
-            assert (e.primaryUserId.equals(user.id));
+            assert (e.primaryUserId.equals(user.getUserIdNotToBeReturnedFromAPI()));
             assert (e.getMessage().equals("This user's email is already associated with another user ID"));
         }
 
@@ -469,7 +469,7 @@ public class LinkAccountsTest {
         AuthRecipeUserInfo user = EmailPassword.signUp(tenantIdentifierWithStorage, process.getProcess(),
                 "test@example.com", "password");
         assert (!user.isPrimaryUser);
-        AuthRecipe.createPrimaryUser(process.main, user.id);
+        AuthRecipe.createPrimaryUser(process.main, user.getUserIdNotToBeReturnedFromAPI());
 
         Thread.sleep(50);
 
@@ -483,13 +483,13 @@ public class LinkAccountsTest {
         AuthRecipeUserInfo otherPrimaryUser = EmailPassword.signUp(process.getProcess(), "test3@example.com",
                 "password");
 
-        AuthRecipe.createPrimaryUser(process.main, otherPrimaryUser.id);
+        AuthRecipe.createPrimaryUser(process.main, otherPrimaryUser.getUserIdNotToBeReturnedFromAPI());
 
         try {
-            AuthRecipe.linkAccounts(process.main, user2.id, otherPrimaryUser.id);
+            AuthRecipe.linkAccounts(process.main, user2.getUserIdNotToBeReturnedFromAPI(), otherPrimaryUser.getUserIdNotToBeReturnedFromAPI());
             assert (false);
         } catch (AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException e) {
-            assert (e.primaryUserId.equals(user.id));
+            assert (e.primaryUserId.equals(user.getUserIdNotToBeReturnedFromAPI()));
             assert (e.getMessage().equals("This user's email is already associated with another user ID"));
         }
 
@@ -522,7 +522,7 @@ public class LinkAccountsTest {
         AuthRecipeUserInfo user = EmailPassword.signUp(tenantIdentifierWithStorage, process.getProcess(),
                 "test@example.com", "password");
         assert (!user.isPrimaryUser);
-        AuthRecipe.createPrimaryUser(process.main, user.id);
+        AuthRecipe.createPrimaryUser(process.main, user.getUserIdNotToBeReturnedFromAPI());
 
         Thread.sleep(50);
 
@@ -533,20 +533,20 @@ public class LinkAccountsTest {
         AuthRecipeUserInfo user2 = signInUpResponse.user;
         assert (!user2.isPrimaryUser);
 
-        boolean wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user2.id, user.id);
+        boolean wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user2.getUserIdNotToBeReturnedFromAPI(), user.getUserIdNotToBeReturnedFromAPI()).wasAlreadyLinked;
         assert (!wasAlreadyLinked);
 
-        AuthRecipeUserInfo refetchedUser1 = AuthRecipe.getUserById(process.main, user.id);
-        AuthRecipeUserInfo refetchedUser2 = AuthRecipe.getUserById(process.main, user2.id);
-        assert (refetchedUser1.id.equals(refetchedUser2.id));
+        AuthRecipeUserInfo refetchedUser1 = AuthRecipe.getUserById(process.main, user.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipeUserInfo refetchedUser2 = AuthRecipe.getUserById(process.main, user2.getUserIdNotToBeReturnedFromAPI());
+        assert (refetchedUser1.getUserIdNotToBeReturnedFromAPI().equals(refetchedUser2.getUserIdNotToBeReturnedFromAPI()));
         assert refetchedUser1.loginMethods.length == 2;
         assert refetchedUser1.tenantIds.size() == 2;
         assert refetchedUser1.tenantIds.contains("t1");
         assert refetchedUser1.tenantIds.contains("public");
-        assert refetchedUser1.id.equals(user.id);
+        assert refetchedUser1.getUserIdNotToBeReturnedFromAPI().equals(user.getUserIdNotToBeReturnedFromAPI());
         assert refetchedUser1.isPrimaryUser;
-        assert refetchedUser1.loginMethods[0].recipeUserId.equals(user.loginMethods[0].recipeUserId);
-        assert refetchedUser1.loginMethods[1].recipeUserId.equals(user2.loginMethods[0].recipeUserId);
+        assert refetchedUser1.loginMethods[0].getRecipeUserIdNotToBeReturnedFromAPI().equals(user.loginMethods[0].getRecipeUserIdNotToBeReturnedFromAPI());
+        assert refetchedUser1.loginMethods[1].getRecipeUserIdNotToBeReturnedFromAPI().equals(user2.loginMethods[0].getRecipeUserIdNotToBeReturnedFromAPI());
 
 
         process.kill();
@@ -579,23 +579,23 @@ public class LinkAccountsTest {
         AuthRecipeUserInfo user2 = pResp.user;
         assert (!user2.isPrimaryUser);
 
-        AuthRecipe.createPrimaryUser(process.main, user.id);
+        AuthRecipe.createPrimaryUser(process.main, user.getUserIdNotToBeReturnedFromAPI());
 
-        Passwordless.updateUser(process.main, user2.id, null, new Passwordless.FieldUpdate("1234"));
-        user2 = AuthRecipe.getUserById(process.main, user2.id);
+        Passwordless.updateUser(process.main, user2.getUserIdNotToBeReturnedFromAPI(), null, new Passwordless.FieldUpdate("1234"));
+        user2 = AuthRecipe.getUserById(process.main, user2.getUserIdNotToBeReturnedFromAPI());
 
-        boolean wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user2.id, user.id);
+        boolean wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user2.getUserIdNotToBeReturnedFromAPI(), user.getUserIdNotToBeReturnedFromAPI()).wasAlreadyLinked;
         assert (!wasAlreadyLinked);
 
-        AuthRecipeUserInfo refetchUser2 = AuthRecipe.getUserById(process.main, user2.id);
-        AuthRecipeUserInfo refetchUser = AuthRecipe.getUserById(process.main, user.id);
+        AuthRecipeUserInfo refetchUser2 = AuthRecipe.getUserById(process.main, user2.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipeUserInfo refetchUser = AuthRecipe.getUserById(process.main, user.getUserIdNotToBeReturnedFromAPI());
         assert (refetchUser2.equals(refetchUser));
         assert (refetchUser2.loginMethods.length == 2);
         assert (refetchUser.loginMethods[0].equals(user.loginMethods[0]));
         assert (refetchUser.loginMethods[1].equals(user2.loginMethods[0]));
         assert (refetchUser.tenantIds.size() == 1);
         assert (refetchUser.isPrimaryUser);
-        assert (refetchUser.id.equals(user.id));
+        assert (refetchUser.getUserIdNotToBeReturnedFromAPI().equals(user.getUserIdNotToBeReturnedFromAPI()));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

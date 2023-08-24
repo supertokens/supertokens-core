@@ -81,7 +81,7 @@ public class ThirdParty {
                         assert (finalResponse.user.loginMethods.length == 1);
                         tenantIdentifierWithStorage.getEmailVerificationStorage()
                                 .updateIsEmailVerified_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con,
-                                        finalResponse.user.id, finalResponse.user.loginMethods[0].email, true);
+                                        finalResponse.user.getUserIdNotToBeReturnedFromAPI(), finalResponse.user.loginMethods[0].email, true);
                         tenantIdentifierWithStorage.getEmailVerificationStorage()
                                 .commitTransaction(con);
                         return null;
@@ -220,7 +220,7 @@ public class ThirdParty {
                                         );
                                 for (AuthRecipeUserInfo userWithSameEmail : userBasedOnEmail) {
                                     if (userWithSameEmail.isPrimaryUser &&
-                                            !userWithSameEmail.id.equals(userFromDb.id)) {
+                                            !userWithSameEmail.getUserIdNotToBeReturnedFromAPI().equals(userFromDb.getUserIdNotToBeReturnedFromAPI())) {
                                         throw new StorageTransactionLogicException(
                                                 new EmailChangeNotAllowedException());
                                     }
@@ -257,8 +257,8 @@ public class ThirdParty {
             return null;
         }
         for (LoginMethod lM : result.loginMethods) {
-            if (lM.recipeUserId.equals(userId)) {
-                return new io.supertokens.pluginInterface.thirdparty.UserInfo(lM.recipeUserId, result.isPrimaryUser,
+            if (lM.getRecipeUserIdNotToBeReturnedFromAPI().equals(userId)) {
+                return new io.supertokens.pluginInterface.thirdparty.UserInfo(lM.getRecipeUserIdNotToBeReturnedFromAPI(), result.isPrimaryUser,
                         lM);
             }
         }

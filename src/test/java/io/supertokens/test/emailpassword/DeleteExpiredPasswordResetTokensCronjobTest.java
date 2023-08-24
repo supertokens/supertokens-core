@@ -66,21 +66,21 @@ public class DeleteExpiredPasswordResetTokensCronjobTest {
 
         UserInfo user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
 
-        String tok = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.id);
-        String tok2 = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.id);
+        String tok = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.getUserIdNotToBeReturnedFromAPI());
+        String tok2 = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.getUserIdNotToBeReturnedFromAPI());
 
         Thread.sleep(2000);
 
-        String tok3 = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.id);
-        String tok4 = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.id);
+        String tok3 = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.getUserIdNotToBeReturnedFromAPI());
+        String tok4 = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.getUserIdNotToBeReturnedFromAPI());
 
         assert (((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
-                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.id).length == 4);
+                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.getUserIdNotToBeReturnedFromAPI()).length == 4);
 
         Thread.sleep(3500);
 
         PasswordResetTokenInfo[] tokens = ((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
-                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.id);
+                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.getUserIdNotToBeReturnedFromAPI());
 
         assert (tokens.length == 2);
 

@@ -854,7 +854,7 @@ public class GeneralQueries {
             // usersFromQuery
             Map<String, AuthRecipeUserInfo> userIdToInfoMap = new HashMap<>();
             for (AuthRecipeUserInfo user : users) {
-                userIdToInfoMap.put(user.id, user);
+                userIdToInfoMap.put(user.getUserIdNotToBeReturnedFromAPI(), user);
             }
             for (int i = 0; i < usersFromQuery.size(); i++) {
                 if (finalResult[i] == null) {
@@ -1155,7 +1155,7 @@ public class GeneralQueries {
 
         Map<String, LoginMethod> recipeUserIdToLoginMethodMap = new HashMap<>();
         for (LoginMethod loginMethod : loginMethods) {
-            recipeUserIdToLoginMethodMap.put(loginMethod.recipeUserId, loginMethod);
+            recipeUserIdToLoginMethodMap.put(loginMethod.getRecipeUserIdNotToBeReturnedFromAPI(), loginMethod);
         }
 
         Map<String, AuthRecipeUserInfo> userIdToAuthRecipeUserInfo = new HashMap<>();

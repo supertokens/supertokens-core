@@ -79,7 +79,7 @@ public class SignInUpAPI extends WebserverAPI {
                         thirdPartyId,
                         thirdPartyUserId, email, isEmailVerified);
 
-                ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main, response.user.id);
+                ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main, response.user.getUserIdNotToBeReturnedFromAPI());
 
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
@@ -96,7 +96,7 @@ public class SignInUpAPI extends WebserverAPI {
                         if (loginMethod.recipeId.equals(RECIPE_ID.THIRD_PARTY)
                                 && Objects.equals(loginMethod.thirdParty.id, thirdPartyId)
                                 && Objects.equals(loginMethod.thirdParty.userId, thirdPartyUserId)) {
-                            result.addProperty("recipeUserId", loginMethod.getUserIdToBeReturnedInAPI());
+                            result.addProperty("recipeUserId", loginMethod.getUserIdToBeReturnedFromAPI());
                             break;
                         }
                     }
@@ -129,11 +129,11 @@ public class SignInUpAPI extends WebserverAPI {
                         this.getTenantIdentifierWithStorageFromRequest(req), super.main, thirdPartyId, thirdPartyUserId,
                         email);
 
-                ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main, response.user.id);
+                ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main, response.user.getUserIdNotToBeReturnedFromAPI());
 
                 //
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                        .getUserIdMapping(this.getAppIdentifierWithStorage(req), response.user.id,
+                        .getUserIdMapping(this.getAppIdentifierWithStorage(req), response.user.getUserIdNotToBeReturnedFromAPI(),
                                 UserIdType.SUPERTOKENS);
                 if (userIdMapping != null) {
                     response.user.setExternalUserId(userIdMapping.externalUserId);
@@ -158,7 +158,7 @@ public class SignInUpAPI extends WebserverAPI {
                         if (loginMethod.recipeId.equals(RECIPE_ID.THIRD_PARTY)
                                 && Objects.equals(loginMethod.thirdParty.id, thirdPartyId)
                                 && Objects.equals(loginMethod.thirdParty.userId, thirdPartyUserId)) {
-                            result.addProperty("recipeUserId", loginMethod.getUserIdToBeReturnedInAPI());
+                            result.addProperty("recipeUserId", loginMethod.getUserIdToBeReturnedFromAPI());
                             break;
                         }
                     }

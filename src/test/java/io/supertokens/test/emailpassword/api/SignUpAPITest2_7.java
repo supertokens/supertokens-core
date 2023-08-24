@@ -148,7 +148,7 @@ public class SignUpAPITest2_7 {
         AuthRecipeUserInfo user = ((AuthRecipeStorage) StorageLayer.getStorage(process.getProcess()))
                 .listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), "random@gmail.com")[0];
         assertEquals(user.loginMethods[0].email, signUpUser.get("email").getAsString());
-        assertEquals(user.id, signUpUser.get("id").getAsString());
+        assertEquals(user.getUserIdNotToBeReturnedFromAPI(), signUpUser.get("id").getAsString());
 
         JsonObject responseBody = new JsonObject();
         responseBody.addProperty("email", "random@gmail.com");

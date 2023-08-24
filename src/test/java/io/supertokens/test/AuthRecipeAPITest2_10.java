@@ -71,7 +71,7 @@ public class AuthRecipeAPITest2_10 {
 
         {
             JsonObject requestBody = new JsonObject();
-            requestBody.addProperty("userId", user.id);
+            requestBody.addProperty("userId", user.getUserIdNotToBeReturnedFromAPI());
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/user/remove", requestBody, 1000, 1000, null,
@@ -80,7 +80,7 @@ public class AuthRecipeAPITest2_10 {
             assertEquals(response.entrySet().size(), 1);
         }
 
-        assertNull(EmailPassword.getUserUsingId(process.getProcess(), user.id));
+        assertNull(EmailPassword.getUserUsingId(process.getProcess(), user.getUserIdNotToBeReturnedFromAPI()));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

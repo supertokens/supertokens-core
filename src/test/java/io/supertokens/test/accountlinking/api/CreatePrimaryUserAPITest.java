@@ -78,7 +78,7 @@ public class CreatePrimaryUserAPITest {
         JsonObject userObj;
         {
             JsonObject params = new JsonObject();
-            params.addProperty("recipeUserId", user.id);
+            params.addProperty("recipeUserId", user.getUserIdNotToBeReturnedFromAPI());
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/accountlinking/user/primary", params, 1000, 1000, null,
@@ -89,7 +89,7 @@ public class CreatePrimaryUserAPITest {
 
             // check user object
             JsonObject jsonUser = response.get("user").getAsJsonObject();
-            assert (jsonUser.get("id").getAsString().equals(user.id));
+            assert (jsonUser.get("id").getAsString().equals(user.getUserIdNotToBeReturnedFromAPI()));
             assert (jsonUser.get("timeJoined").getAsLong() == user.timeJoined);
             assert (jsonUser.get("isPrimaryUser").getAsBoolean());
             assert (jsonUser.get("emails").getAsJsonArray().size() == 1);
@@ -100,18 +100,18 @@ public class CreatePrimaryUserAPITest {
             JsonObject lM = jsonUser.get("loginMethods").getAsJsonArray().get(0).getAsJsonObject();
             assertFalse(lM.get("verified").getAsBoolean());
             assertEquals(lM.get("timeJoined").getAsLong(), user.timeJoined);
-            assertEquals(lM.get("recipeUserId").getAsString(), user.id);
+            assertEquals(lM.get("recipeUserId").getAsString(), user.getUserIdNotToBeReturnedFromAPI());
             assertEquals(lM.get("recipeId").getAsString(), "emailpassword");
             assertEquals(lM.get("email").getAsString(), "test@example.com");
             assert (lM.entrySet().size() == 6);
             userObj = jsonUser;
         }
 
-        AuthRecipe.createPrimaryUser(process.main, user.id);
+        AuthRecipe.createPrimaryUser(process.main, user.getUserIdNotToBeReturnedFromAPI());
 
         {
             JsonObject params = new JsonObject();
-            params.addProperty("recipeUserId", user.id);
+            params.addProperty("recipeUserId", user.getUserIdNotToBeReturnedFromAPI());
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/accountlinking/user/primary", params, 1000, 1000, null,
@@ -141,7 +141,7 @@ public class CreatePrimaryUserAPITest {
         }
 
         AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "abcd1234");
-        UserIdMapping.createUserIdMapping(process.main, user.id, "r1", null, false);
+        UserIdMapping.createUserIdMapping(process.main, user.getUserIdNotToBeReturnedFromAPI(), "r1", null, false);
 
         JsonObject userObj;
         {
@@ -174,7 +174,7 @@ public class CreatePrimaryUserAPITest {
             userObj = jsonUser;
         }
 
-        AuthRecipe.createPrimaryUser(process.main, user.id);
+        AuthRecipe.createPrimaryUser(process.main, user.getUserIdNotToBeReturnedFromAPI());
 
         {
             JsonObject params = new JsonObject();
@@ -191,7 +191,7 @@ public class CreatePrimaryUserAPITest {
 
         {
             JsonObject params = new JsonObject();
-            params.addProperty("recipeUserId", user.id);
+            params.addProperty("recipeUserId", user.getUserIdNotToBeReturnedFromAPI());
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/accountlinking/user/primary", params, 1000, 1000, null,
@@ -269,7 +269,7 @@ public class CreatePrimaryUserAPITest {
         AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(process.getProcess(), "test@example.com",
                 "pass1234");
 
-        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.id);
+        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.getUserIdNotToBeReturnedFromAPI());
         assert (!result.wasAlreadyAPrimaryUser);
 
         ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, "google", "user-google",
@@ -277,7 +277,7 @@ public class CreatePrimaryUserAPITest {
 
         {
             JsonObject params = new JsonObject();
-            params.addProperty("recipeUserId", signInUpResponse.user.id);
+            params.addProperty("recipeUserId", signInUpResponse.user.getUserIdNotToBeReturnedFromAPI());
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/accountlinking/user/primary", params, 1000, 1000, null,
@@ -285,7 +285,7 @@ public class CreatePrimaryUserAPITest {
             assertEquals(3, response.entrySet().size());
             assertEquals("ACCOUNT_INFO_ALREADY_ASSOCIATED_WITH_ANOTHER_PRIMARY_USER_ID_ERROR",
                     response.get("status").getAsString());
-            assertEquals(emailPasswordUser.id, response.get("primaryUserId").getAsString());
+            assertEquals(emailPasswordUser.getUserIdNotToBeReturnedFromAPI(), response.get("primaryUserId").getAsString());
             assertEquals("This user's email is already associated with another user ID",
                     response.get("description").getAsString());
         }
@@ -309,12 +309,12 @@ public class CreatePrimaryUserAPITest {
         AuthRecipeUserInfo emailPasswordUser2 = EmailPassword.signUp(process.getProcess(), "test2@example.com",
                 "pass1234");
 
-        AuthRecipe.createPrimaryUser(process.main, emailPasswordUser1.id);
-        AuthRecipe.linkAccounts(process.main, emailPasswordUser2.id, emailPasswordUser1.id);
+        AuthRecipe.createPrimaryUser(process.main, emailPasswordUser1.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipe.linkAccounts(process.main, emailPasswordUser2.getUserIdNotToBeReturnedFromAPI(), emailPasswordUser1.getUserIdNotToBeReturnedFromAPI());
 
         {
             JsonObject params = new JsonObject();
-            params.addProperty("recipeUserId", emailPasswordUser2.id);
+            params.addProperty("recipeUserId", emailPasswordUser2.getUserIdNotToBeReturnedFromAPI());
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/accountlinking/user/primary", params, 1000, 1000, null,
@@ -322,7 +322,7 @@ public class CreatePrimaryUserAPITest {
             assertEquals(3, response.entrySet().size());
             assertEquals("RECIPE_USER_ID_ALREADY_LINKED_WITH_PRIMARY_USER_ID_ERROR",
                     response.get("status").getAsString());
-            assertEquals(emailPasswordUser1.id, response.get("primaryUserId").getAsString());
+            assertEquals(emailPasswordUser1.getUserIdNotToBeReturnedFromAPI(), response.get("primaryUserId").getAsString());
             assertEquals("This user ID is already linked to another user ID",
                     response.get("description").getAsString());
         }
@@ -344,9 +344,9 @@ public class CreatePrimaryUserAPITest {
 
         AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(process.getProcess(), "test@example.com",
                 "pass1234");
-        UserIdMapping.createUserIdMapping(process.main, emailPasswordUser.id, "r1", null, false);
+        UserIdMapping.createUserIdMapping(process.main, emailPasswordUser.getUserIdNotToBeReturnedFromAPI(), "r1", null, false);
 
-        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.id);
+        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.getUserIdNotToBeReturnedFromAPI());
         assert (!result.wasAlreadyAPrimaryUser);
 
         ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, "google", "user-google",
@@ -354,7 +354,7 @@ public class CreatePrimaryUserAPITest {
 
         {
             JsonObject params = new JsonObject();
-            params.addProperty("recipeUserId", signInUpResponse.user.id);
+            params.addProperty("recipeUserId", signInUpResponse.user.getUserIdNotToBeReturnedFromAPI());
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/accountlinking/user/primary", params, 1000, 1000, null,
@@ -383,16 +383,16 @@ public class CreatePrimaryUserAPITest {
 
         AuthRecipeUserInfo emailPasswordUser1 = EmailPassword.signUp(process.getProcess(), "test@example.com",
                 "pass1234");
-        UserIdMapping.createUserIdMapping(process.main, emailPasswordUser1.id, "r1", null, false);
+        UserIdMapping.createUserIdMapping(process.main, emailPasswordUser1.getUserIdNotToBeReturnedFromAPI(), "r1", null, false);
         AuthRecipeUserInfo emailPasswordUser2 = EmailPassword.signUp(process.getProcess(), "test2@example.com",
                 "pass1234");
 
-        AuthRecipe.createPrimaryUser(process.main, emailPasswordUser1.id);
-        AuthRecipe.linkAccounts(process.main, emailPasswordUser2.id, emailPasswordUser1.id);
+        AuthRecipe.createPrimaryUser(process.main, emailPasswordUser1.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipe.linkAccounts(process.main, emailPasswordUser2.getUserIdNotToBeReturnedFromAPI(), emailPasswordUser1.getUserIdNotToBeReturnedFromAPI());
 
         {
             JsonObject params = new JsonObject();
-            params.addProperty("recipeUserId", emailPasswordUser2.id);
+            params.addProperty("recipeUserId", emailPasswordUser2.getUserIdNotToBeReturnedFromAPI());
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/accountlinking/user/primary", params, 1000, 1000, null,
@@ -447,7 +447,7 @@ public class CreatePrimaryUserAPITest {
         JsonObject userObj;
         {
             JsonObject params = new JsonObject();
-            params.addProperty("recipeUserId", user.id);
+            params.addProperty("recipeUserId", user.getUserIdNotToBeReturnedFromAPI());
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/accountlinking/user/primary", params, 1000, 1000, null,
@@ -458,7 +458,7 @@ public class CreatePrimaryUserAPITest {
 
             // check user object
             JsonObject jsonUser = response.get("user").getAsJsonObject();
-            assert (jsonUser.get("id").getAsString().equals(user.id));
+            assert (jsonUser.get("id").getAsString().equals(user.getUserIdNotToBeReturnedFromAPI()));
             assert (jsonUser.get("tenantIds").getAsJsonArray().size() == 1);
             assert (jsonUser.get("tenantIds").getAsJsonArray().get(0).getAsString().equals("t1"));
             assert (jsonUser.get("timeJoined").getAsLong() == user.timeJoined);
@@ -473,7 +473,7 @@ public class CreatePrimaryUserAPITest {
             assert (lM.get("tenantIds").getAsJsonArray().size() == 1);
             assert (lM.get("tenantIds").getAsJsonArray().get(0).getAsString().equals("t1"));
             assertEquals(lM.get("timeJoined").getAsLong(), user.timeJoined);
-            assertEquals(lM.get("recipeUserId").getAsString(), user.id);
+            assertEquals(lM.get("recipeUserId").getAsString(), user.getUserIdNotToBeReturnedFromAPI());
             assertEquals(lM.get("recipeId").getAsString(), "emailpassword");
             assertEquals(lM.get("email").getAsString(), "test@example.com");
             assert (lM.entrySet().size() == 6);
@@ -482,11 +482,11 @@ public class CreatePrimaryUserAPITest {
 
         AuthRecipe.createPrimaryUser(process.main,
                 tenantIdentifier.toAppIdentifier().withStorage(StorageLayer.getStorage(tenantIdentifier, process.main)),
-                user.id);
+                user.getUserIdNotToBeReturnedFromAPI());
 
         {
             JsonObject params = new JsonObject();
-            params.addProperty("recipeUserId", user.id);
+            params.addProperty("recipeUserId", user.getUserIdNotToBeReturnedFromAPI());
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/accountlinking/user/primary", params, 1000, 1000, null,
@@ -517,7 +517,7 @@ public class CreatePrimaryUserAPITest {
         JsonObject userObj;
         {
             JsonObject params = new JsonObject();
-            params.addProperty("recipeUserId", user.id);
+            params.addProperty("recipeUserId", user.getUserIdNotToBeReturnedFromAPI());
 
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",

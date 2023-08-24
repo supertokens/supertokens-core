@@ -282,16 +282,16 @@ public class TestTenantUserAssociation {
                 process.getProcess(), "user@example.com", "password");
         assertArrayEquals(new String[]{"t1"}, user.tenantIds.toArray());
 
-        Multitenancy.addUserIdToTenant(process.getProcess(), t2WithStorage, user.id);
-        user = EmailPassword.getUserUsingId(t1WithStorage.toAppIdentifierWithStorage(), user.id);
+        Multitenancy.addUserIdToTenant(process.getProcess(), t2WithStorage, user.getUserIdNotToBeReturnedFromAPI());
+        user = EmailPassword.getUserUsingId(t1WithStorage.toAppIdentifierWithStorage(), user.getUserIdNotToBeReturnedFromAPI());
         Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds.toArray());
 
 
         user = EmailPassword.getUserUsingEmail(t1WithStorage, user.loginMethods[0].email);
         Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds.toArray());
 
-        Multitenancy.removeUserIdFromTenant(process.getProcess(), t1WithStorage, user.id, null);
-        user = EmailPassword.getUserUsingId(t1WithStorage.toAppIdentifierWithStorage(), user.id);
+        Multitenancy.removeUserIdFromTenant(process.getProcess(), t1WithStorage, user.getUserIdNotToBeReturnedFromAPI(), null);
+        user = EmailPassword.getUserUsingId(t1WithStorage.toAppIdentifierWithStorage(), user.getUserIdNotToBeReturnedFromAPI());
         assertArrayEquals(new String[]{"t2"}, user.tenantIds.toArray());
     }
 
@@ -317,15 +317,15 @@ public class TestTenantUserAssociation {
         assertArrayEquals(new String[]{"t1"}, consumeCodeResponse.user.tenantIds.toArray());
 
         AuthRecipeUserInfo user;
-        Multitenancy.addUserIdToTenant(process.getProcess(), t2WithStorage, consumeCodeResponse.user.id);
-        user = Passwordless.getUserById(t1WithStorage.toAppIdentifierWithStorage(), consumeCodeResponse.user.id);
+        Multitenancy.addUserIdToTenant(process.getProcess(), t2WithStorage, consumeCodeResponse.user.getUserIdNotToBeReturnedFromAPI());
+        user = Passwordless.getUserById(t1WithStorage.toAppIdentifierWithStorage(), consumeCodeResponse.user.getUserIdNotToBeReturnedFromAPI());
         Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds.toArray());
 
         user = Passwordless.getUserByEmail(t1WithStorage, consumeCodeResponse.user.loginMethods[0].email);
         Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds.toArray());
 
-        Multitenancy.removeUserIdFromTenant(process.getProcess(), t1WithStorage, consumeCodeResponse.user.id, null);
-        user = Passwordless.getUserById(t1WithStorage.toAppIdentifierWithStorage(), consumeCodeResponse.user.id);
+        Multitenancy.removeUserIdFromTenant(process.getProcess(), t1WithStorage, consumeCodeResponse.user.getUserIdNotToBeReturnedFromAPI(), null);
+        user = Passwordless.getUserById(t1WithStorage.toAppIdentifierWithStorage(), consumeCodeResponse.user.getUserIdNotToBeReturnedFromAPI());
         assertArrayEquals(new String[]{"t2"}, user.tenantIds.toArray());
     }
 
@@ -351,15 +351,15 @@ public class TestTenantUserAssociation {
         assertArrayEquals(new String[]{"t1"}, consumeCodeResponse.user.tenantIds.toArray());
 
         AuthRecipeUserInfo user;
-        Multitenancy.addUserIdToTenant(process.getProcess(), t2WithStorage, consumeCodeResponse.user.id);
-        user = Passwordless.getUserById(t1WithStorage.toAppIdentifierWithStorage(), consumeCodeResponse.user.id);
+        Multitenancy.addUserIdToTenant(process.getProcess(), t2WithStorage, consumeCodeResponse.user.getUserIdNotToBeReturnedFromAPI());
+        user = Passwordless.getUserById(t1WithStorage.toAppIdentifierWithStorage(), consumeCodeResponse.user.getUserIdNotToBeReturnedFromAPI());
         Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds.toArray());
 
         user = Passwordless.getUserByPhoneNumber(t1WithStorage, consumeCodeResponse.user.loginMethods[0].phoneNumber);
         Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds.toArray());
 
-        Multitenancy.removeUserIdFromTenant(process.getProcess(), t1WithStorage, consumeCodeResponse.user.id, null);
-        user = Passwordless.getUserById(t1WithStorage.toAppIdentifierWithStorage(), consumeCodeResponse.user.id);
+        Multitenancy.removeUserIdFromTenant(process.getProcess(), t1WithStorage, consumeCodeResponse.user.getUserIdNotToBeReturnedFromAPI(), null);
+        user = Passwordless.getUserById(t1WithStorage.toAppIdentifierWithStorage(), consumeCodeResponse.user.getUserIdNotToBeReturnedFromAPI());
         assertArrayEquals(new String[]{"t2"}, user.tenantIds.toArray());
     }
 
@@ -382,9 +382,9 @@ public class TestTenantUserAssociation {
                 "googleid", "user@example.com");
         assertArrayEquals(new String[]{"t1"}, signInUpResponse.user.tenantIds.toArray());
 
-        Multitenancy.addUserIdToTenant(process.getProcess(), t2WithStorage, signInUpResponse.user.id);
+        Multitenancy.addUserIdToTenant(process.getProcess(), t2WithStorage, signInUpResponse.user.getUserIdNotToBeReturnedFromAPI());
         AuthRecipeUserInfo user = ThirdParty.getUser(
-                t1WithStorage.toAppIdentifierWithStorage(), signInUpResponse.user.id);
+                t1WithStorage.toAppIdentifierWithStorage(), signInUpResponse.user.getUserIdNotToBeReturnedFromAPI());
         Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds.toArray());
 
         user = ThirdParty.getUsersByEmail(t1WithStorage, signInUpResponse.user.loginMethods[0].email)[0];
@@ -396,8 +396,8 @@ public class TestTenantUserAssociation {
         user = ThirdParty.getUser(t2WithStorage, "google", "googleid");
         Utils.assertArrayEqualsIgnoreOrder(new String[]{"t1", "t2"}, user.tenantIds.toArray());
 
-        Multitenancy.removeUserIdFromTenant(process.getProcess(), t1WithStorage, signInUpResponse.user.id, null);
-        user = ThirdParty.getUser(t1WithStorage.toAppIdentifierWithStorage(), signInUpResponse.user.id);
+        Multitenancy.removeUserIdFromTenant(process.getProcess(), t1WithStorage, signInUpResponse.user.getUserIdNotToBeReturnedFromAPI(), null);
+        user = ThirdParty.getUser(t1WithStorage.toAppIdentifierWithStorage(), signInUpResponse.user.getUserIdNotToBeReturnedFromAPI());
         assertArrayEquals(new String[]{"t2"}, user.tenantIds.toArray());
     }
 

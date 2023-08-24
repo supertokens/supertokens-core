@@ -17,10 +17,8 @@
 package io.supertokens.test.userIdMapping.api;
 
 import com.google.gson.JsonObject;
-import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
-import io.supertokens.emailverification.User;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
@@ -37,8 +35,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
-
-import jakarta.servlet.ServletException;
 
 import static io.supertokens.test.Utils.createUserIdMappingAndCheckThatItExists;
 import static org.junit.Assert.*;
@@ -235,7 +231,7 @@ public class RemoveUserIdMappingAPITest {
 
         // create a userId mapping
         UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        UserIdMapping userIdMapping = new UserIdMapping(userInfo.id, "externalUserId", "externalUserIdInfo");
+        UserIdMapping userIdMapping = new UserIdMapping(userInfo.getUserIdNotToBeReturnedFromAPI(), "externalUserId", "externalUserIdInfo");
         createUserIdMappingAndCheckThatItExists(process.main, userIdMapping);
 
         // delete userId mapping with userIdType as SUPERTOKENS
@@ -337,7 +333,7 @@ public class RemoveUserIdMappingAPITest {
 
         // create a userId mapping
         UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        UserIdMapping userIdMapping = new UserIdMapping(userInfo.id, "externalUserId", "externalUserIdInfo");
+        UserIdMapping userIdMapping = new UserIdMapping(userInfo.getUserIdNotToBeReturnedFromAPI(), "externalUserId", "externalUserIdInfo");
         createUserIdMappingAndCheckThatItExists(process.main, userIdMapping);
 
         {
@@ -394,7 +390,7 @@ public class RemoveUserIdMappingAPITest {
         }
 
         UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        String superTokensUserId = userInfo.id;
+        String superTokensUserId = userInfo.getUserIdNotToBeReturnedFromAPI();
         String externalId = "externalId";
         io.supertokens.useridmapping.UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalId,
                 null, false);

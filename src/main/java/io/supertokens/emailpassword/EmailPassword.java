@@ -190,7 +190,7 @@ public class EmailPassword {
                     LoginMethod finalLoginMethod = loginMethod;
                     storage.startTransaction(con -> {
                         storage.updateUsersPassword_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con,
-                                finalLoginMethod.recipeUserId, passwordHash);
+                                finalLoginMethod.getRecipeUserIdNotToBeReturnedFromAPI(), passwordHash);
                         return null;
                     });
                     return new ImportUserResponse(true, userInfoToBeUpdated);
@@ -618,7 +618,7 @@ public class EmailPassword {
                                                 email);
 
                                 for (AuthRecipeUserInfo userWithSameEmail : existingUsersWithNewEmail) {
-                                    if (userWithSameEmail.isPrimaryUser && !userWithSameEmail.id.equals(user.id)) {
+                                    if (userWithSameEmail.isPrimaryUser && !userWithSameEmail.getUserIdNotToBeReturnedFromAPI().equals(user.getUserIdNotToBeReturnedFromAPI())) {
                                         throw new StorageTransactionLogicException(
                                                 new EmailChangeNotAllowedException());
                                     }
@@ -682,8 +682,8 @@ public class EmailPassword {
             return null;
         }
         for (LoginMethod lM : result.loginMethods) {
-            if (lM.recipeUserId.equals(userId)) {
-                return new UserInfo(lM.recipeUserId, result.isPrimaryUser, lM);
+            if (lM.getRecipeUserIdNotToBeReturnedFromAPI().equals(userId)) {
+                return new UserInfo(lM.getRecipeUserIdNotToBeReturnedFromAPI(), result.isPrimaryUser, lM);
             }
         }
         return null;

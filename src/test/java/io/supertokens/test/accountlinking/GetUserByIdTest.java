@@ -115,27 +115,27 @@ public class GetUserByIdTest {
         assertFalse(user3.isPrimaryUser);
         assertFalse(user4.isPrimaryUser);
 
-        AuthRecipeUserInfo userToTest = AuthRecipe.getUserById(process.getProcess(), user1.id);
-        assertNotNull(userToTest.id);
+        AuthRecipeUserInfo userToTest = AuthRecipe.getUserById(process.getProcess(), user1.getUserIdNotToBeReturnedFromAPI());
+        assertNotNull(userToTest.getUserIdNotToBeReturnedFromAPI());
         assertFalse(userToTest.isPrimaryUser);
         assertEquals(1, userToTest.loginMethods.length);
         assertEquals("test@example.com", userToTest.loginMethods[0].email);
         assertEquals(RECIPE_ID.EMAIL_PASSWORD, userToTest.loginMethods[0].recipeId);
-        assertEquals(user1.id, userToTest.loginMethods[0].recipeUserId);
+        assertEquals(user1.getUserIdNotToBeReturnedFromAPI(), userToTest.loginMethods[0].getRecipeUserIdNotToBeReturnedFromAPI());
         assertFalse(userToTest.loginMethods[0].verified);
         assert(userToTest.loginMethods[0].timeJoined > 0);
 
-        assertEquals(user1, AuthRecipe.getUserById(process.getProcess(), user1.id));
-        assertEquals(user2, AuthRecipe.getUserById(process.getProcess(), user2.id));
-        assertEquals(user3, AuthRecipe.getUserById(process.getProcess(), user3.id));
-        assertEquals(user4, AuthRecipe.getUserById(process.getProcess(), user4.id));
+        assertEquals(user1, AuthRecipe.getUserById(process.getProcess(), user1.getUserIdNotToBeReturnedFromAPI()));
+        assertEquals(user2, AuthRecipe.getUserById(process.getProcess(), user2.getUserIdNotToBeReturnedFromAPI()));
+        assertEquals(user3, AuthRecipe.getUserById(process.getProcess(), user3.getUserIdNotToBeReturnedFromAPI()));
+        assertEquals(user4, AuthRecipe.getUserById(process.getProcess(), user4.getUserIdNotToBeReturnedFromAPI()));
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user4.id).user;
-        AuthRecipe.linkAccounts(process.getProcess(), user3.id, primaryUser.id);
-        AuthRecipe.linkAccounts(process.getProcess(), user2.id, primaryUser.id);
-        AuthRecipe.linkAccounts(process.getProcess(), user1.id, primaryUser.id);
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user4.getUserIdNotToBeReturnedFromAPI()).user;
+        AuthRecipe.linkAccounts(process.getProcess(), user3.getUserIdNotToBeReturnedFromAPI(), primaryUser.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipe.linkAccounts(process.getProcess(), user2.getUserIdNotToBeReturnedFromAPI(), primaryUser.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipe.linkAccounts(process.getProcess(), user1.getUserIdNotToBeReturnedFromAPI(), primaryUser.getUserIdNotToBeReturnedFromAPI());
 
-        for (String userId : new String[]{user1.id, user2.id, user3.id, user4.id}) {
+        for (String userId : new String[]{user1.getUserIdNotToBeReturnedFromAPI(), user2.getUserIdNotToBeReturnedFromAPI(), user3.getUserIdNotToBeReturnedFromAPI(), user4.getUserIdNotToBeReturnedFromAPI()}) {
             AuthRecipeUserInfo result = AuthRecipe.getUserById(process.getProcess(), userId);
             assertTrue(result.isPrimaryUser);
 
@@ -189,12 +189,12 @@ public class GetUserByIdTest {
             AuthRecipeUserInfo user1 = createEmailPasswordUser(process.getProcess(), "test@example.com", "password1");
 
             // Link accounts randomly
-            String[] userIds = new String[]{user1.id, user2.id, user3.id, user4.id};
+            String[] userIds = new String[]{user1.getUserIdNotToBeReturnedFromAPI(), user2.getUserIdNotToBeReturnedFromAPI(), user3.getUserIdNotToBeReturnedFromAPI(), user4.getUserIdNotToBeReturnedFromAPI()};
             Collections.shuffle(Arrays.asList(userIds));
             AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), userIds[0]).user;
-            AuthRecipe.linkAccounts(process.getProcess(), userIds[1], primaryUser.id);
-            AuthRecipe.linkAccounts(process.getProcess(), userIds[2], primaryUser.id);
-            AuthRecipe.linkAccounts(process.getProcess(), userIds[3], primaryUser.id);
+            AuthRecipe.linkAccounts(process.getProcess(), userIds[1], primaryUser.getUserIdNotToBeReturnedFromAPI());
+            AuthRecipe.linkAccounts(process.getProcess(), userIds[2], primaryUser.getUserIdNotToBeReturnedFromAPI());
+            AuthRecipe.linkAccounts(process.getProcess(), userIds[3], primaryUser.getUserIdNotToBeReturnedFromAPI());
 
             for (String userId : userIds) {
                 AuthRecipeUserInfo result = AuthRecipe.getUserById(process.getProcess(), userId);

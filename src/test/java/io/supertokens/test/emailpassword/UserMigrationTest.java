@@ -137,7 +137,7 @@ public class UserMigrationTest {
             // try and sign in with plainTextPassword
             AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.main, email, plainTextPassword);
 
-            assertEquals(userInfo.id, importUserResponse.user.id);
+            assertEquals(userInfo.getUserIdNotToBeReturnedFromAPI(), importUserResponse.user.getUserIdNotToBeReturnedFromAPI());
             assertEquals(userInfo.loginMethods[0].passwordHash, passwordHash);
             assertEquals(userInfo.loginMethods[0].email, email);
         }
@@ -156,7 +156,7 @@ public class UserMigrationTest {
             // try and sign in with plainTextPassword
             AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.main, email, plainTextPassword);
 
-            assertEquals(userInfo.id, importUserResponse.user.id);
+            assertEquals(userInfo.getUserIdNotToBeReturnedFromAPI(), importUserResponse.user.getUserIdNotToBeReturnedFromAPI());
             assertEquals(userInfo.loginMethods[0].passwordHash, passwordHash);
             assertEquals(userInfo.loginMethods[0].email, email);
         }
@@ -202,7 +202,7 @@ public class UserMigrationTest {
         // sign in with the newPassword and check that it works
         AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.main, email, newPassword);
         assertEquals(userInfo.loginMethods[0].email, signUpUserInfo.email);
-        assertEquals(userInfo.id, signUpUserInfo.id);
+        assertEquals(userInfo.getUserIdNotToBeReturnedFromAPI(), signUpUserInfo.getUserIdNotToBeReturnedFromAPI());
         assertEquals(userInfo.timeJoined, signUpUserInfo.timeJoined);
         assertEquals(userInfo.loginMethods[0].passwordHash, newPasswordHash);
 
