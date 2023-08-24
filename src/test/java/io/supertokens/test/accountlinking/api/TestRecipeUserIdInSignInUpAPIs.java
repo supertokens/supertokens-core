@@ -38,6 +38,7 @@ import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.thirdparty.ThirdParty;
+import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -665,6 +666,98 @@ public class TestRecipeUserIdInSignInUpAPIs {
 
             assertEquals(4, response.entrySet().size());
             assertEquals(userId, response.get("recipeUserId").getAsString());
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testWithEmailPasswordUserWithUserIdMapping() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        AuthRecipeUserInfo user = createEmailPasswordUser(process.getProcess(),
+                "test@example.com", "password");
+        UserIdMapping.createUserIdMapping(process.getProcess(), user.id, "extuserid", "", false);
+
+        {
+            // Before account linking
+            JsonObject responseBody = new JsonObject();
+            responseBody.addProperty("email", "test@example.com");
+            responseBody.addProperty("password", "password");
+
+            JsonObject signInResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/signin", responseBody, 1000, 1000, null, SemVer.v4_0.get(),
+                    "emailpassword");
+
+            assertEquals(signInResponse.get("status").getAsString(), "OK");
+            assertEquals(signInResponse.entrySet().size(), 3);
+            assertEquals(signInResponse.get("recipeUserId").getAsString(), "extuserid");
+        }
+
+        AuthRecipeUserInfo user2 = createPasswordlessUserWithEmail(process.getProcess(),
+                "test@example.com");
+
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user2.id).user;
+        AuthRecipe.linkAccounts(process.getProcess(), user.id, primaryUser.id);
+
+        {
+            // After account linking
+            JsonObject responseBody = new JsonObject();
+            responseBody.addProperty("email", "test@example.com");
+            responseBody.addProperty("password", "password");
+
+            JsonObject signInResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/signin", responseBody, 1000, 1000, null, SemVer.v4_0.get(),
+                    "emailpassword");
+
+            assertEquals(signInResponse.get("status").getAsString(), "OK");
+            assertEquals(signInResponse.entrySet().size(), 3);
+            assertEquals(signInResponse.get("recipeUserId").getAsString(), "extuserid");
+        }
+
+        // With another email password user
+        AuthRecipeUserInfo user3 = createEmailPasswordUser(process.getProcess(),
+                "test2@example.com", "password");
+        AuthRecipe.linkAccounts(process.getProcess(), user3.id, primaryUser.id);
+
+        {
+            // After account linking
+            JsonObject responseBody = new JsonObject();
+            responseBody.addProperty("email", "test@example.com");
+            responseBody.addProperty("password", "password");
+
+            JsonObject signInResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/signin", responseBody, 1000, 1000, null, SemVer.v4_0.get(),
+                    "emailpassword");
+
+            assertEquals(signInResponse.get("status").getAsString(), "OK");
+            assertEquals(signInResponse.entrySet().size(), 3);
+            assertEquals(signInResponse.get("recipeUserId").getAsString(), "extuserid");
+        }
+        {
+            // After account linking
+            JsonObject responseBody = new JsonObject();
+            responseBody.addProperty("email", "test2@example.com");
+            responseBody.addProperty("password", "password");
+
+            JsonObject signInResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/signin", responseBody, 1000, 1000, null, SemVer.v4_0.get(),
+                    "emailpassword");
+
+            assertEquals(signInResponse.get("status").getAsString(), "OK");
+            assertEquals(signInResponse.entrySet().size(), 3);
+            assertEquals(signInResponse.get("recipeUserId").getAsString(), user3.id);
         }
 
         process.kill();
