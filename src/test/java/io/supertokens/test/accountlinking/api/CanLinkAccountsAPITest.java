@@ -75,12 +75,12 @@ public class CanLinkAccountsAPITest {
 
         AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "abcd1234");
 
-        AuthRecipe.createPrimaryUser(process.main, user2.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipe.createPrimaryUser(process.main, user2.getSupertokensUserId());
 
         {
             Map<String, String> params = new HashMap<>();
-            params.put("recipeUserId", user.getUserIdNotToBeReturnedFromAPI());
-            params.put("primaryUserId", user2.getUserIdNotToBeReturnedFromAPI());
+            params.put("recipeUserId", user.getSupertokensUserId());
+            params.put("primaryUserId", user2.getSupertokensUserId());
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/accountlinking/user/link/check", params, 1000, 1000, null,
@@ -90,12 +90,12 @@ public class CanLinkAccountsAPITest {
             assertFalse(response.get("accountsAlreadyLinked").getAsBoolean());
         }
 
-        AuthRecipe.linkAccounts(process.main, user.getUserIdNotToBeReturnedFromAPI(), user2.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipe.linkAccounts(process.main, user.getSupertokensUserId(), user2.getSupertokensUserId());
 
         {
             Map<String, String> params = new HashMap<>();
-            params.put("recipeUserId", user.getUserIdNotToBeReturnedFromAPI());
-            params.put("primaryUserId", user2.getUserIdNotToBeReturnedFromAPI());
+            params.put("recipeUserId", user.getSupertokensUserId());
+            params.put("primaryUserId", user2.getSupertokensUserId());
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/accountlinking/user/link/check", params, 1000, 1000, null,
@@ -124,12 +124,12 @@ public class CanLinkAccountsAPITest {
         }
 
         AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "abcd1234");
-        UserIdMapping.createUserIdMapping(process.main, user.getUserIdNotToBeReturnedFromAPI(), "r1", null, false);
+        UserIdMapping.createUserIdMapping(process.main, user.getSupertokensUserId(), "r1", null, false);
 
         AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "abcd1234");
-        UserIdMapping.createUserIdMapping(process.main, user2.getUserIdNotToBeReturnedFromAPI(), "r2", null, false);
+        UserIdMapping.createUserIdMapping(process.main, user2.getSupertokensUserId(), "r2", null, false);
 
-        AuthRecipe.createPrimaryUser(process.main, user2.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipe.createPrimaryUser(process.main, user2.getSupertokensUserId());
 
         {
             Map<String, String> params = new HashMap<>();
@@ -144,7 +144,7 @@ public class CanLinkAccountsAPITest {
             assertFalse(response.get("accountsAlreadyLinked").getAsBoolean());
         }
 
-        AuthRecipe.linkAccounts(process.main, user.getUserIdNotToBeReturnedFromAPI(), user2.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipe.linkAccounts(process.main, user.getSupertokensUserId(), user2.getSupertokensUserId());
 
         {
             Map<String, String> params = new HashMap<>();
@@ -211,13 +211,13 @@ public class CanLinkAccountsAPITest {
         }
 
         AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "abcd1234");
-        AuthRecipe.createPrimaryUser(process.main, user.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipe.createPrimaryUser(process.main, user.getSupertokensUserId());
 
         AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "abcd1234");
 
         {
             Map<String, String> params = new HashMap<>();
-            params.put("recipeUserId", user2.getUserIdNotToBeReturnedFromAPI());
+            params.put("recipeUserId", user2.getSupertokensUserId());
             params.put("primaryUserId", "random");
 
             try {
@@ -235,7 +235,7 @@ public class CanLinkAccountsAPITest {
         {
             Map<String, String> params = new HashMap<>();
             params.put("recipeUserId", "random");
-            params.put("primaryUserId", user.getUserIdNotToBeReturnedFromAPI());
+            params.put("primaryUserId", user.getSupertokensUserId());
 
             try {
                 HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -266,13 +266,13 @@ public class CanLinkAccountsAPITest {
         AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(process.getProcess(), "test@example.com",
                 "pass1234");
 
-        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.getSupertokensUserId());
         assert (!result.wasAlreadyAPrimaryUser);
 
         ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, "google", "user-google",
                 "test2@example.com");
 
-        AuthRecipe.createPrimaryUser(process.main, signInUpResponse.user.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipe.createPrimaryUser(process.main, signInUpResponse.user.getSupertokensUserId());
 
         ThirdParty.SignInUpResponse signInUpResponse2 = ThirdParty.signInUp(process.main, "fb", "user-fb",
                 "test@example.com");
@@ -280,8 +280,8 @@ public class CanLinkAccountsAPITest {
 
         {
             Map<String, String> params = new HashMap<>();
-            params.put("primaryUserId", signInUpResponse.user.getUserIdNotToBeReturnedFromAPI());
-            params.put("recipeUserId", signInUpResponse2.user.getUserIdNotToBeReturnedFromAPI());
+            params.put("primaryUserId", signInUpResponse.user.getSupertokensUserId());
+            params.put("recipeUserId", signInUpResponse2.user.getSupertokensUserId());
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/accountlinking/user/link/check", params, 1000, 1000, null,
@@ -289,7 +289,7 @@ public class CanLinkAccountsAPITest {
             assertEquals(3, response.entrySet().size());
             assertEquals("ACCOUNT_INFO_ALREADY_ASSOCIATED_WITH_ANOTHER_PRIMARY_USER_ID_ERROR",
                     response.get("status").getAsString());
-            assertEquals(emailPasswordUser.getUserIdNotToBeReturnedFromAPI(), response.get("primaryUserId").getAsString());
+            assertEquals(emailPasswordUser.getSupertokensUserId(), response.get("primaryUserId").getAsString());
             assertEquals("This user's email is already associated with another user ID",
                     response.get("description").getAsString());
         }
@@ -311,20 +311,20 @@ public class CanLinkAccountsAPITest {
 
         AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(process.getProcess(), "test@example.com",
                 "pass1234");
-        UserIdMapping.createUserIdMapping(process.main, emailPasswordUser.getUserIdNotToBeReturnedFromAPI(), "e1", null, false);
+        UserIdMapping.createUserIdMapping(process.main, emailPasswordUser.getSupertokensUserId(), "e1", null, false);
 
-        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.getSupertokensUserId());
         assert (!result.wasAlreadyAPrimaryUser);
 
         ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, "google", "user-google",
                 "test2@example.com");
-        UserIdMapping.createUserIdMapping(process.main, signInUpResponse.user.getUserIdNotToBeReturnedFromAPI(), "e2", null, false);
+        UserIdMapping.createUserIdMapping(process.main, signInUpResponse.user.getSupertokensUserId(), "e2", null, false);
 
-        AuthRecipe.createPrimaryUser(process.main, signInUpResponse.user.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipe.createPrimaryUser(process.main, signInUpResponse.user.getSupertokensUserId());
 
         ThirdParty.SignInUpResponse signInUpResponse2 = ThirdParty.signInUp(process.main, "fb", "user-fb",
                 "test@example.com");
-        UserIdMapping.createUserIdMapping(process.main, signInUpResponse2.user.getUserIdNotToBeReturnedFromAPI(), "e3", null, false);
+        UserIdMapping.createUserIdMapping(process.main, signInUpResponse2.user.getSupertokensUserId(), "e3", null, false);
 
 
         {
@@ -362,18 +362,18 @@ public class CanLinkAccountsAPITest {
         AuthRecipeUserInfo emailPasswordUser2 = EmailPassword.signUp(process.getProcess(), "test2@example.com",
                 "pass1234");
 
-        AuthRecipe.createPrimaryUser(process.main, emailPasswordUser1.getUserIdNotToBeReturnedFromAPI());
-        AuthRecipe.linkAccounts(process.main, emailPasswordUser2.getUserIdNotToBeReturnedFromAPI(), emailPasswordUser1.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipe.createPrimaryUser(process.main, emailPasswordUser1.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.main, emailPasswordUser2.getSupertokensUserId(), emailPasswordUser1.getSupertokensUserId());
 
         AuthRecipeUserInfo emailPasswordUser3 = EmailPassword.signUp(process.getProcess(), "test3@example.com",
                 "pass1234");
 
-        AuthRecipe.createPrimaryUser(process.main, emailPasswordUser3.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipe.createPrimaryUser(process.main, emailPasswordUser3.getSupertokensUserId());
 
         {
             Map<String, String> params = new HashMap<>();
-            params.put("recipeUserId", emailPasswordUser2.getUserIdNotToBeReturnedFromAPI());
-            params.put("primaryUserId", emailPasswordUser3.getUserIdNotToBeReturnedFromAPI());
+            params.put("recipeUserId", emailPasswordUser2.getSupertokensUserId());
+            params.put("primaryUserId", emailPasswordUser3.getSupertokensUserId());
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/accountlinking/user/link/check", params, 1000, 1000, null,
@@ -381,7 +381,7 @@ public class CanLinkAccountsAPITest {
             assertEquals(4, response.entrySet().size());
             assertEquals("RECIPE_USER_ID_ALREADY_LINKED_WITH_ANOTHER_PRIMARY_USER_ID_ERROR",
                     response.get("status").getAsString());
-            assertEquals(emailPasswordUser1.getUserIdNotToBeReturnedFromAPI(), response.get("primaryUserId").getAsString());
+            assertEquals(emailPasswordUser1.getSupertokensUserId(), response.get("primaryUserId").getAsString());
             assertEquals("The input recipe user ID is already linked to another user ID",
                     response.get("description").getAsString());
             assertTrue(response.has("user"));
@@ -403,19 +403,19 @@ public class CanLinkAccountsAPITest {
 
         AuthRecipeUserInfo emailPasswordUser1 = EmailPassword.signUp(process.getProcess(), "test@example.com",
                 "pass1234");
-        UserIdMapping.createUserIdMapping(process.main, emailPasswordUser1.getUserIdNotToBeReturnedFromAPI(), "r1", null, false);
+        UserIdMapping.createUserIdMapping(process.main, emailPasswordUser1.getSupertokensUserId(), "r1", null, false);
         AuthRecipeUserInfo emailPasswordUser2 = EmailPassword.signUp(process.getProcess(), "test2@example.com",
                 "pass1234");
-        UserIdMapping.createUserIdMapping(process.main, emailPasswordUser2.getUserIdNotToBeReturnedFromAPI(), "r2", null, false);
+        UserIdMapping.createUserIdMapping(process.main, emailPasswordUser2.getSupertokensUserId(), "r2", null, false);
 
-        AuthRecipe.createPrimaryUser(process.main, emailPasswordUser1.getUserIdNotToBeReturnedFromAPI());
-        AuthRecipe.linkAccounts(process.main, emailPasswordUser2.getUserIdNotToBeReturnedFromAPI(), emailPasswordUser1.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipe.createPrimaryUser(process.main, emailPasswordUser1.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.main, emailPasswordUser2.getSupertokensUserId(), emailPasswordUser1.getSupertokensUserId());
 
         AuthRecipeUserInfo emailPasswordUser3 = EmailPassword.signUp(process.getProcess(), "test3@example.com",
                 "pass1234");
-        UserIdMapping.createUserIdMapping(process.main, emailPasswordUser3.getUserIdNotToBeReturnedFromAPI(), "r3", null, false);
+        UserIdMapping.createUserIdMapping(process.main, emailPasswordUser3.getSupertokensUserId(), "r3", null, false);
 
-        AuthRecipe.createPrimaryUser(process.main, emailPasswordUser3.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipe.createPrimaryUser(process.main, emailPasswordUser3.getSupertokensUserId());
 
         {
             Map<String, String> params = new HashMap<>();
@@ -458,8 +458,8 @@ public class CanLinkAccountsAPITest {
 
         {
             Map<String, String> params = new HashMap<>();
-            params.put("recipeUserId", user.getUserIdNotToBeReturnedFromAPI());
-            params.put("primaryUserId", user2.getUserIdNotToBeReturnedFromAPI());
+            params.put("recipeUserId", user.getSupertokensUserId());
+            params.put("primaryUserId", user2.getSupertokensUserId());
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/accountlinking/user/link/check", params, 1000, 1000, null,

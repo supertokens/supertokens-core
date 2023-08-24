@@ -53,7 +53,7 @@ public class TotpUserIdMappingTest {
         JsonObject body = new JsonObject();
 
         UserInfo user = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        String superTokensUserId = user.getUserIdNotToBeReturnedFromAPI();
+        String superTokensUserId = user.getSupertokensUserId();
         String externalUserId = "external-user-id";
 
         // Create user id mapping first:

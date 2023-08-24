@@ -66,7 +66,7 @@ public class DeleteUserAPIWithUserIdMappingTest {
         {
             // create User
             UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-            String superTokensUserId = userInfo.getUserIdNotToBeReturnedFromAPI();
+            String superTokensUserId = userInfo.getSupertokensUserId();
             String externalId = "externalId";
 
             // map their id
@@ -127,19 +127,19 @@ public class DeleteUserAPIWithUserIdMappingTest {
         // associate some data with user
         JsonObject data = new JsonObject();
         data.addProperty("test", "testData");
-        UserMetadata.updateUserMetadata(process.main, userInfo_1.getUserIdNotToBeReturnedFromAPI(), data);
+        UserMetadata.updateUserMetadata(process.main, userInfo_1.getSupertokensUserId(), data);
 
         // create a new User who we would like to migrate the EmailPassword user to
         ThirdParty.SignInUpResponse userInfo_2 = ThirdParty.signInUp(process.main, "google", "test-google",
                 "test123@example.com");
 
         // force create a mapping between the thirdParty user and EmailPassword user
-        UserIdMapping.createUserIdMapping(process.main, userInfo_2.user.getUserIdNotToBeReturnedFromAPI(), userInfo_1.getUserIdNotToBeReturnedFromAPI(), null, true);
+        UserIdMapping.createUserIdMapping(process.main, userInfo_2.user.getSupertokensUserId(), userInfo_1.getSupertokensUserId(), null, true);
 
         // delete User with EmailPassword userId
         {
             JsonObject requestBody = new JsonObject();
-            requestBody.addProperty("userId", userInfo_1.getUserIdNotToBeReturnedFromAPI());
+            requestBody.addProperty("userId", userInfo_1.getSupertokensUserId());
 
             JsonObject deleteResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/user/remove", requestBody, 1000, 1000, null,
@@ -150,20 +150,20 @@ public class DeleteUserAPIWithUserIdMappingTest {
         // check that only auth tables for EmailPassword user have been deleted and the userMetadata table entries still
         // exist
         {
-            UserInfo epUser = EmailPassword.getUserUsingId(process.main, userInfo_1.getUserIdNotToBeReturnedFromAPI());
+            UserInfo epUser = EmailPassword.getUserUsingId(process.main, userInfo_1.getSupertokensUserId());
             assertNull(epUser);
 
-            JsonObject epUserMetadata = UserMetadata.getUserMetadata(process.main, userInfo_1.getUserIdNotToBeReturnedFromAPI());
+            JsonObject epUserMetadata = UserMetadata.getUserMetadata(process.main, userInfo_1.getSupertokensUserId());
             assertNotNull(epUserMetadata);
             assertEquals(epUserMetadata.get("test").getAsString(), "testData");
         }
         // check that the mapping still exists
         {
             io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping = UserIdMapping
-                    .getUserIdMapping(process.main, userInfo_2.user.getUserIdNotToBeReturnedFromAPI(), UserIdType.ANY);
+                    .getUserIdMapping(process.main, userInfo_2.user.getSupertokensUserId(), UserIdType.ANY);
             assertNotNull(mapping);
-            assertEquals(mapping.superTokensUserId, userInfo_2.user.getUserIdNotToBeReturnedFromAPI());
-            assertEquals(mapping.externalUserId, userInfo_1.getUserIdNotToBeReturnedFromAPI());
+            assertEquals(mapping.superTokensUserId, userInfo_2.user.getSupertokensUserId());
+            assertEquals(mapping.externalUserId, userInfo_1.getSupertokensUserId());
         }
 
         process.kill();
@@ -187,19 +187,19 @@ public class DeleteUserAPIWithUserIdMappingTest {
         // associate some data with user
         JsonObject data = new JsonObject();
         data.addProperty("test", "testData");
-        UserMetadata.updateUserMetadata(process.main, userInfo_1.getUserIdNotToBeReturnedFromAPI(), data);
+        UserMetadata.updateUserMetadata(process.main, userInfo_1.getSupertokensUserId(), data);
 
         // create a new User who we would like to migrate the EmailPassword user to
         ThirdParty.SignInUpResponse userInfo_2 = ThirdParty.signInUp(process.main, "google", "test-google",
                 "test123@example.com");
 
         // force create a mapping between the thirdParty user and EmailPassword user
-        UserIdMapping.createUserIdMapping(process.main, userInfo_2.user.getUserIdNotToBeReturnedFromAPI(), userInfo_1.getUserIdNotToBeReturnedFromAPI(), null, true);
+        UserIdMapping.createUserIdMapping(process.main, userInfo_2.user.getSupertokensUserId(), userInfo_1.getSupertokensUserId(), null, true);
 
         // delete User with ThirdParty users id
         {
             JsonObject requestBody = new JsonObject();
-            requestBody.addProperty("userId", userInfo_2.user.getUserIdNotToBeReturnedFromAPI());
+            requestBody.addProperty("userId", userInfo_2.user.getSupertokensUserId());
 
             JsonObject deleteResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/user/remove", requestBody, 1000, 1000, null,
@@ -211,17 +211,17 @@ public class DeleteUserAPIWithUserIdMappingTest {
         // exist
         {
             io.supertokens.pluginInterface.thirdparty.UserInfo tpUserInfo = ThirdParty.getUser(process.main,
-                    userInfo_2.user.getUserIdNotToBeReturnedFromAPI());
+                    userInfo_2.user.getSupertokensUserId());
             assertNull(tpUserInfo);
 
-            JsonObject epUserMetadata = UserMetadata.getUserMetadata(process.main, userInfo_1.getUserIdNotToBeReturnedFromAPI());
+            JsonObject epUserMetadata = UserMetadata.getUserMetadata(process.main, userInfo_1.getSupertokensUserId());
             assertNotNull(epUserMetadata);
             assertEquals(epUserMetadata.get("test").getAsString(), "testData");
         }
         // check that the mapping is also deleted
         {
             io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping = UserIdMapping
-                    .getUserIdMapping(process.main, userInfo_2.user.getUserIdNotToBeReturnedFromAPI(), UserIdType.ANY);
+                    .getUserIdMapping(process.main, userInfo_2.user.getSupertokensUserId(), UserIdType.ANY);
             assertNull(mapping);
         }
 

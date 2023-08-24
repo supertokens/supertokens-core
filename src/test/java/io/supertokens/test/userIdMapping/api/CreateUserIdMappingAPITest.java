@@ -229,8 +229,8 @@ public class CreateUserIdMappingAPITest {
         // add some metadata to the user
         JsonObject userMetadata = new JsonObject();
         userMetadata.addProperty("test", "testExample");
-        UserMetadata.updateUserMetadata(process.main, userInfo.getUserIdNotToBeReturnedFromAPI(), userMetadata);
-        String superTokensUserId = userInfo.getUserIdNotToBeReturnedFromAPI();
+        UserMetadata.updateUserMetadata(process.main, userInfo.getSupertokensUserId(), userMetadata);
+        String superTokensUserId = userInfo.getSupertokensUserId();
         String externalUserId = "externalId";
 
         // try and create mapping without force
@@ -282,7 +282,7 @@ public class CreateUserIdMappingAPITest {
 
         // create a User
         UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        String superTokensUserId = userInfo.getUserIdNotToBeReturnedFromAPI();
+        String superTokensUserId = userInfo.getSupertokensUserId();
         String externalUserId = "userId";
         String externalUserIdInfo = "externUserIdInfo";
 
@@ -356,7 +356,7 @@ public class CreateUserIdMappingAPITest {
         UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
         String externalUserId = "externalUserId";
         JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("superTokensUserId", userInfo.getUserIdNotToBeReturnedFromAPI());
+        requestBody.addProperty("superTokensUserId", userInfo.getSupertokensUserId());
         requestBody.addProperty("externalUserId", externalUserId);
         requestBody.add("externalUserIdInfo", null);
 
@@ -366,11 +366,11 @@ public class CreateUserIdMappingAPITest {
 
         UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
 
-        UserIdMapping userIdMapping = storage.getUserIdMapping(new AppIdentifier(null, null), userInfo.getUserIdNotToBeReturnedFromAPI(),
+        UserIdMapping userIdMapping = storage.getUserIdMapping(new AppIdentifier(null, null), userInfo.getSupertokensUserId(),
                 true);
 
         assertNotNull(userIdMapping);
-        assertEquals(userInfo.getUserIdNotToBeReturnedFromAPI(), userIdMapping.superTokensUserId);
+        assertEquals(userInfo.getSupertokensUserId(), userIdMapping.superTokensUserId);
         assertEquals(externalUserId, userIdMapping.externalUserId);
         assertNull(userIdMapping.externalUserIdInfo);
 
@@ -392,7 +392,7 @@ public class CreateUserIdMappingAPITest {
 
         UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
 
-        String superTokensUserId = userInfo.getUserIdNotToBeReturnedFromAPI();
+        String superTokensUserId = userInfo.getSupertokensUserId();
         String externalUserId = "externalUserId";
 
         // create UserId mapping
@@ -440,7 +440,7 @@ public class CreateUserIdMappingAPITest {
 
             JsonObject requestBody = new JsonObject();
 
-            requestBody.addProperty("superTokensUserId", newUserInfo.getUserIdNotToBeReturnedFromAPI());
+            requestBody.addProperty("superTokensUserId", newUserInfo.getSupertokensUserId());
             requestBody.addProperty("externalUserId", externalUserId);
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",

@@ -273,24 +273,24 @@ public class MultitenantEmailPasswordTest {
         {
             UserInfo userInfo = EmailPassword.getUserUsingId(
                     StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUserWithPriorityForTenantStorage(
-                            process.getProcess(), new AppIdentifier(null, "a1"), storage, user1.getUserIdNotToBeReturnedFromAPI(),
-                            UserIdType.SUPERTOKENS).appIdentifierWithStorage, user1.getUserIdNotToBeReturnedFromAPI());
+                            process.getProcess(), new AppIdentifier(null, "a1"), storage, user1.getSupertokensUserId(),
+                            UserIdType.SUPERTOKENS).appIdentifierWithStorage, user1.getSupertokensUserId());
             assertEquals(user1, userInfo);
         }
 
         {
             UserInfo userInfo = EmailPassword.getUserUsingId(
                     StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUserWithPriorityForTenantStorage(
-                            process.getProcess(), new AppIdentifier(null, "a1"), storage, user2.getUserIdNotToBeReturnedFromAPI(),
-                            UserIdType.SUPERTOKENS).appIdentifierWithStorage, user2.getUserIdNotToBeReturnedFromAPI());
+                            process.getProcess(), new AppIdentifier(null, "a1"), storage, user2.getSupertokensUserId(),
+                            UserIdType.SUPERTOKENS).appIdentifierWithStorage, user2.getSupertokensUserId());
             assertEquals(user2, userInfo);
         }
 
         {
             UserInfo userInfo = EmailPassword.getUserUsingId(
                     StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUserWithPriorityForTenantStorage(
-                            process.getProcess(), new AppIdentifier(null, "a1"), storage, user3.getUserIdNotToBeReturnedFromAPI(),
-                            UserIdType.SUPERTOKENS).appIdentifierWithStorage, user3.getUserIdNotToBeReturnedFromAPI());
+                            process.getProcess(), new AppIdentifier(null, "a1"), storage, user3.getSupertokensUserId(),
+                            UserIdType.SUPERTOKENS).appIdentifierWithStorage, user3.getSupertokensUserId());
             assertEquals(user3, userInfo);
         }
 
@@ -383,42 +383,42 @@ public class MultitenantEmailPasswordTest {
 
         EmailPassword.updateUsersEmailOrPassword(
                 StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUserWithPriorityForTenantStorage(
-                        process.getProcess(), new AppIdentifier(null, "a1"), storage, user1.getUserIdNotToBeReturnedFromAPI(),
+                        process.getProcess(), new AppIdentifier(null, "a1"), storage, user1.getSupertokensUserId(),
                         UserIdType.SUPERTOKENS).appIdentifierWithStorage,
-                process.getProcess(), user1.getUserIdNotToBeReturnedFromAPI(), null, "newpassword1");
+                process.getProcess(), user1.getSupertokensUserId(), null, "newpassword1");
         EmailPassword.updateUsersEmailOrPassword(
                 StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUserWithPriorityForTenantStorage(
-                        process.getProcess(), new AppIdentifier(null, "a1"), storage, user2.getUserIdNotToBeReturnedFromAPI(),
+                        process.getProcess(), new AppIdentifier(null, "a1"), storage, user2.getSupertokensUserId(),
                         UserIdType.SUPERTOKENS).appIdentifierWithStorage,
-                process.getProcess(), user2.getUserIdNotToBeReturnedFromAPI(), null, "newpassword2");
+                process.getProcess(), user2.getSupertokensUserId(), null, "newpassword2");
         EmailPassword.updateUsersEmailOrPassword(
                 StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUserWithPriorityForTenantStorage(
-                        process.getProcess(), new AppIdentifier(null, "a1"), storage, user3.getUserIdNotToBeReturnedFromAPI(),
+                        process.getProcess(), new AppIdentifier(null, "a1"), storage, user3.getSupertokensUserId(),
                         UserIdType.SUPERTOKENS).appIdentifierWithStorage,
-                process.getProcess(), user3.getUserIdNotToBeReturnedFromAPI(), null, "newpassword3");
+                process.getProcess(), user3.getSupertokensUserId(), null, "newpassword3");
 
         {
-            t1 = StorageLayer.getTenantIdentifierWithStorageAndUserIdMappingForUser(process.getProcess(), t1, user1.getUserIdNotToBeReturnedFromAPI(),
+            t1 = StorageLayer.getTenantIdentifierWithStorageAndUserIdMappingForUser(process.getProcess(), t1, user1.getSupertokensUserId(),
                     UserIdType.SUPERTOKENS).tenantIdentifierWithStorage;
             AuthRecipeUserInfo userInfo = EmailPassword.signIn(t1storage, process.getProcess(), "user@example.com",
                     "newpassword1");
-            assertEquals(user1.getUserIdNotToBeReturnedFromAPI(), userInfo.getUserIdNotToBeReturnedFromAPI());
+            assertEquals(user1.getSupertokensUserId(), userInfo.getSupertokensUserId());
         }
 
         {
-            t2 = StorageLayer.getTenantIdentifierWithStorageAndUserIdMappingForUser(process.getProcess(), t2, user2.getUserIdNotToBeReturnedFromAPI(),
+            t2 = StorageLayer.getTenantIdentifierWithStorageAndUserIdMappingForUser(process.getProcess(), t2, user2.getSupertokensUserId(),
                     UserIdType.SUPERTOKENS).tenantIdentifierWithStorage;
             AuthRecipeUserInfo userInfo = EmailPassword.signIn(t2storage, process.getProcess(), "user@example.com",
                     "newpassword2");
-            assertEquals(user2.getUserIdNotToBeReturnedFromAPI(), userInfo.getUserIdNotToBeReturnedFromAPI());
+            assertEquals(user2.getSupertokensUserId(), userInfo.getSupertokensUserId());
         }
 
         {
-            t3 = StorageLayer.getTenantIdentifierWithStorageAndUserIdMappingForUser(process.getProcess(), t3, user3.getUserIdNotToBeReturnedFromAPI(),
+            t3 = StorageLayer.getTenantIdentifierWithStorageAndUserIdMappingForUser(process.getProcess(), t3, user3.getSupertokensUserId(),
                     UserIdType.SUPERTOKENS).tenantIdentifierWithStorage;
             AuthRecipeUserInfo userInfo = EmailPassword.signIn(t3storage, process.getProcess(), "user@example.com",
                     "newpassword3");
-            assertEquals(user3.getUserIdNotToBeReturnedFromAPI(), userInfo.getUserIdNotToBeReturnedFromAPI());
+            assertEquals(user3.getSupertokensUserId(), userInfo.getSupertokensUserId());
         }
 
         process.kill();

@@ -195,16 +195,16 @@ public class MultitenantAPITest {
                         "user@example.com",
                         "password" + (pcount++)
                 );
-                tenantToUsers.get(tenant).add(user1.getUserIdNotToBeReturnedFromAPI());
-                recipeToUsers.get("emailpassword").add(user1.getUserIdNotToBeReturnedFromAPI());
+                tenantToUsers.get(tenant).add(user1.getSupertokensUserId());
+                recipeToUsers.get("emailpassword").add(user1.getSupertokensUserId());
                 UserInfo user2 = EmailPassword.signUp(
                         tenant.withStorage(StorageLayer.getStorage(tenant, process.getProcess())),
                         process.getProcess(),
                         "user@gmail.com",
                         "password2" + (pcount++)
                 );
-                tenantToUsers.get(tenant).add(user2.getUserIdNotToBeReturnedFromAPI());
-                recipeToUsers.get("emailpassword").add(user2.getUserIdNotToBeReturnedFromAPI());
+                tenantToUsers.get(tenant).add(user2.getSupertokensUserId());
+                recipeToUsers.get("emailpassword").add(user2.getSupertokensUserId());
             }
         }
         { // passwordless users
@@ -227,8 +227,8 @@ public class MultitenantAPITest {
                     Passwordless.ConsumeCodeResponse response = Passwordless.consumeCode(tenantIdentifierWithStorage,
                             process.getProcess(), codeResponse.deviceId,
                             codeResponse.deviceIdHash, "abcd", null);
-                    tenantToUsers.get(tenant).add(response.user.getUserIdNotToBeReturnedFromAPI());
-                    recipeToUsers.get("passwordless").add(response.user.getUserIdNotToBeReturnedFromAPI());
+                    tenantToUsers.get(tenant).add(response.user.getSupertokensUserId());
+                    recipeToUsers.get("passwordless").add(response.user.getSupertokensUserId());
                 }
                 {
                     Passwordless.CreateCodeResponse codeResponse = Passwordless.createCode(
@@ -241,8 +241,8 @@ public class MultitenantAPITest {
                     Passwordless.ConsumeCodeResponse response = Passwordless.consumeCode(tenantIdentifierWithStorage,
                             process.getProcess(), codeResponse.deviceId,
                             codeResponse.deviceIdHash, "abcd", null);
-                    tenantToUsers.get(tenant).add(response.user.getUserIdNotToBeReturnedFromAPI());
-                    recipeToUsers.get("passwordless").add(response.user.getUserIdNotToBeReturnedFromAPI());
+                    tenantToUsers.get(tenant).add(response.user.getSupertokensUserId());
+                    recipeToUsers.get("passwordless").add(response.user.getSupertokensUserId());
                 }
                 {
                     Passwordless.CreateCodeResponse codeResponse = Passwordless.createCode(
@@ -255,8 +255,8 @@ public class MultitenantAPITest {
                     Passwordless.ConsumeCodeResponse response = Passwordless.consumeCode(tenantIdentifierWithStorage,
                             process.getProcess(), codeResponse.deviceId,
                             codeResponse.deviceIdHash, "abcd", null);
-                    tenantToUsers.get(tenant).add(response.user.getUserIdNotToBeReturnedFromAPI());
-                    recipeToUsers.get("passwordless").add(response.user.getUserIdNotToBeReturnedFromAPI());
+                    tenantToUsers.get(tenant).add(response.user.getSupertokensUserId());
+                    recipeToUsers.get("passwordless").add(response.user.getSupertokensUserId());
                 }
                 {
                     Passwordless.CreateCodeResponse codeResponse = Passwordless.createCode(
@@ -269,8 +269,8 @@ public class MultitenantAPITest {
                     Passwordless.ConsumeCodeResponse response = Passwordless.consumeCode(tenantIdentifierWithStorage,
                             process.getProcess(), codeResponse.deviceId,
                             codeResponse.deviceIdHash, "abcd", null);
-                    tenantToUsers.get(tenant).add(response.user.getUserIdNotToBeReturnedFromAPI());
-                    recipeToUsers.get("passwordless").add(response.user.getUserIdNotToBeReturnedFromAPI());
+                    tenantToUsers.get(tenant).add(response.user.getSupertokensUserId());
+                    recipeToUsers.get("passwordless").add(response.user.getSupertokensUserId());
                 }
             }
         }
@@ -287,23 +287,23 @@ public class MultitenantAPITest {
 
                 ThirdParty.SignInUpResponse user1 = ThirdParty.signInUp(tenantIdentifierWithStorage,
                         process.getProcess(), "google", "googleid1", "user@example.com");
-                tenantToUsers.get(tenant).add(user1.user.getUserIdNotToBeReturnedFromAPI());
-                recipeToUsers.get("thirdparty").add(user1.user.getUserIdNotToBeReturnedFromAPI());
+                tenantToUsers.get(tenant).add(user1.user.getSupertokensUserId());
+                recipeToUsers.get("thirdparty").add(user1.user.getSupertokensUserId());
 
                 ThirdParty.SignInUpResponse user2 = ThirdParty.signInUp(tenantIdentifierWithStorage,
                         process.getProcess(), "google", "googleid2", "user@gmail.com");
-                tenantToUsers.get(tenant).add(user2.user.getUserIdNotToBeReturnedFromAPI());
-                recipeToUsers.get("thirdparty").add(user2.user.getUserIdNotToBeReturnedFromAPI());
+                tenantToUsers.get(tenant).add(user2.user.getSupertokensUserId());
+                recipeToUsers.get("thirdparty").add(user2.user.getSupertokensUserId());
 
                 ThirdParty.SignInUpResponse user3 = ThirdParty.signInUp(tenantIdentifierWithStorage,
                         process.getProcess(), "facebook", "facebookid1", "user@example.com");
-                tenantToUsers.get(tenant).add(user3.user.getUserIdNotToBeReturnedFromAPI());
-                recipeToUsers.get("thirdparty").add(user3.user.getUserIdNotToBeReturnedFromAPI());
+                tenantToUsers.get(tenant).add(user3.user.getSupertokensUserId());
+                recipeToUsers.get("thirdparty").add(user3.user.getSupertokensUserId());
 
                 ThirdParty.SignInUpResponse user4 = ThirdParty.signInUp(tenantIdentifierWithStorage,
                         process.getProcess(), "facebook", "facebookid2", "user@gmail.com");
-                tenantToUsers.get(tenant).add(user4.user.getUserIdNotToBeReturnedFromAPI());
-                recipeToUsers.get("thirdparty").add(user4.user.getUserIdNotToBeReturnedFromAPI());
+                tenantToUsers.get(tenant).add(user4.user.getSupertokensUserId());
+                recipeToUsers.get("thirdparty").add(user4.user.getSupertokensUserId());
             }
         }
     }

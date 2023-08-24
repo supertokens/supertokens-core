@@ -144,10 +144,10 @@ public class GetUserByAccountInfoTest {
         AuthRecipeUserInfo user3 = createPasswordlessUserWithEmail(process.getProcess(), "test3@example.com");
         AuthRecipeUserInfo user4 = createPasswordlessUserWithPhone(process.getProcess(), "+919876543210");
 
-        JsonObject user1json = getUserById(process.getProcess(), user1.getUserIdNotToBeReturnedFromAPI());
-        JsonObject user2json = getUserById(process.getProcess(), user2.getUserIdNotToBeReturnedFromAPI());
-        JsonObject user3json = getUserById(process.getProcess(), user3.getUserIdNotToBeReturnedFromAPI());
-        JsonObject user4json = getUserById(process.getProcess(), user4.getUserIdNotToBeReturnedFromAPI());
+        JsonObject user1json = getUserById(process.getProcess(), user1.getSupertokensUserId());
+        JsonObject user2json = getUserById(process.getProcess(), user2.getSupertokensUserId());
+        JsonObject user3json = getUserById(process.getProcess(), user3.getSupertokensUserId());
+        JsonObject user4json = getUserById(process.getProcess(), user4.getSupertokensUserId());
 
         // test for result
         assertEquals(user1json, getUsersByAccountInfo(process.getProcess(), false, "test1@example.com", null, null, null).get(0));
@@ -183,10 +183,10 @@ public class GetUserByAccountInfoTest {
         AuthRecipeUserInfo user3 = createPasswordlessUserWithEmail(process.getProcess(), "test3@example.com");
         AuthRecipeUserInfo user4 = createPasswordlessUserWithPhone(process.getProcess(), "+919876543210");
 
-        JsonObject user1json = getUserById(process.getProcess(), user1.getUserIdNotToBeReturnedFromAPI());
-        JsonObject user2json = getUserById(process.getProcess(), user2.getUserIdNotToBeReturnedFromAPI());
-        JsonObject user3json = getUserById(process.getProcess(), user3.getUserIdNotToBeReturnedFromAPI());
-        JsonObject user4json = getUserById(process.getProcess(), user4.getUserIdNotToBeReturnedFromAPI());
+        JsonObject user1json = getUserById(process.getProcess(), user1.getSupertokensUserId());
+        JsonObject user2json = getUserById(process.getProcess(), user2.getSupertokensUserId());
+        JsonObject user3json = getUserById(process.getProcess(), user3.getSupertokensUserId());
+        JsonObject user4json = getUserById(process.getProcess(), user4.getSupertokensUserId());
 
         TenantIdentifierWithStorage tenantIdentifierWithStorage = TenantIdentifier.BASE_TENANT.withStorage(StorageLayer.getBaseStorage(process.getProcess()));
         {
@@ -253,13 +253,13 @@ public class GetUserByAccountInfoTest {
         Thread.sleep(50);
         AuthRecipeUserInfo user2 = ThirdParty.signInUp(process.getProcess(), "google", "userid1", "test2@example.com").user;
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getUserIdNotToBeReturnedFromAPI()).user;
-        AuthRecipe.linkAccounts(process.getProcess(), user2.getUserIdNotToBeReturnedFromAPI(), primaryUser.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId()).user;
+        AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), primaryUser.getSupertokensUserId());
 
         TenantIdentifierWithStorage tenantIdentifierWithStorage = TenantIdentifier.BASE_TENANT.withStorage(
                 StorageLayer.getBaseStorage(process.getProcess()));
 
-        JsonObject primaryUserJson = getUserById(process.getProcess(), user1.getUserIdNotToBeReturnedFromAPI());
+        JsonObject primaryUserJson = getUserById(process.getProcess(), user1.getSupertokensUserId());
 
         assertEquals(primaryUserJson, getUsersByAccountInfo(process.getProcess(), false,
                 "test1@example.com", null, null, null).get(0));
@@ -290,10 +290,10 @@ public class GetUserByAccountInfoTest {
         Thread.sleep(50);
         AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "password2");
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getUserIdNotToBeReturnedFromAPI()).user;
-        AuthRecipe.linkAccounts(process.getProcess(), user2.getUserIdNotToBeReturnedFromAPI(), primaryUser.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId()).user;
+        AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), primaryUser.getSupertokensUserId());
 
-        JsonObject primaryUserJson = getUserById(process.getProcess(), user1.getUserIdNotToBeReturnedFromAPI());
+        JsonObject primaryUserJson = getUserById(process.getProcess(), user1.getSupertokensUserId());
 
         assertEquals(primaryUserJson, getUsersByAccountInfo(process.getProcess(), false,
                 "test1@example.com", null, null, null).get(0));
@@ -318,13 +318,13 @@ public class GetUserByAccountInfoTest {
         Thread.sleep(50);
         AuthRecipeUserInfo user2 = createPasswordlessUserWithEmail(process.getProcess(), "test2@example.com");
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getUserIdNotToBeReturnedFromAPI()).user;
-        AuthRecipe.linkAccounts(process.getProcess(), user2.getUserIdNotToBeReturnedFromAPI(), primaryUser.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId()).user;
+        AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), primaryUser.getSupertokensUserId());
 
         TenantIdentifierWithStorage tenantIdentifierWithStorage = TenantIdentifier.BASE_TENANT.withStorage(
                 StorageLayer.getBaseStorage(process.getProcess()));
 
-        JsonObject primaryUserJson = getUserById(process.getProcess(), user1.getUserIdNotToBeReturnedFromAPI());
+        JsonObject primaryUserJson = getUserById(process.getProcess(), user1.getSupertokensUserId());
 
         assertEquals(primaryUserJson, getUsersByAccountInfo(process.getProcess(), false,
                 "test1@example.com", null, null, null).get(0));
@@ -349,13 +349,13 @@ public class GetUserByAccountInfoTest {
         Thread.sleep(50);
         AuthRecipeUserInfo user2 = createPasswordlessUserWithPhone(process.getProcess(), "+919876543210");
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getUserIdNotToBeReturnedFromAPI()).user;
-        AuthRecipe.linkAccounts(process.getProcess(), user2.getUserIdNotToBeReturnedFromAPI(), primaryUser.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId()).user;
+        AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), primaryUser.getSupertokensUserId());
 
         TenantIdentifierWithStorage tenantIdentifierWithStorage = TenantIdentifier.BASE_TENANT.withStorage(
                 StorageLayer.getBaseStorage(process.getProcess()));
 
-        JsonObject primaryUserJson = getUserById(process.getProcess(), user1.getUserIdNotToBeReturnedFromAPI());
+        JsonObject primaryUserJson = getUserById(process.getProcess(), user1.getSupertokensUserId());
 
         assertEquals(primaryUserJson, getUsersByAccountInfo(process.getProcess(), false,
                 "test1@example.com", null, null, null).get(0));
@@ -382,13 +382,13 @@ public class GetUserByAccountInfoTest {
         Thread.sleep(50);
         AuthRecipeUserInfo user2 = createThirdPartyUser(process.getProcess(), "google", "userid1", "test2@example.com");
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getUserIdNotToBeReturnedFromAPI()).user;
-        AuthRecipe.linkAccounts(process.getProcess(), user2.getUserIdNotToBeReturnedFromAPI(), primaryUser.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId()).user;
+        AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), primaryUser.getSupertokensUserId());
 
         TenantIdentifierWithStorage tenantIdentifierWithStorage = TenantIdentifier.BASE_TENANT.withStorage(
                 StorageLayer.getBaseStorage(process.getProcess()));
 
-        JsonObject primaryUserJson = getUserById(process.getProcess(), user1.getUserIdNotToBeReturnedFromAPI());
+        JsonObject primaryUserJson = getUserById(process.getProcess(), user1.getSupertokensUserId());
 
         assertEquals(primaryUserJson, getUsersByAccountInfo(process.getProcess(), false,
                 "test1@example.com", null, null, null).get(0));
@@ -423,14 +423,14 @@ public class GetUserByAccountInfoTest {
         Thread.sleep(50);
         AuthRecipeUserInfo user4 = createPasswordlessUserWithPhone(process.getProcess(), "+919876543210");
 
-        UserIdMapping.createUserIdMapping(process.getProcess(), user1.getUserIdNotToBeReturnedFromAPI(), "ext1", "", false);
-        UserIdMapping.createUserIdMapping(process.getProcess(), user2.getUserIdNotToBeReturnedFromAPI(), "ext2", "", false);
-        UserIdMapping.createUserIdMapping(process.getProcess(), user3.getUserIdNotToBeReturnedFromAPI(), "ext3", "", false);
+        UserIdMapping.createUserIdMapping(process.getProcess(), user1.getSupertokensUserId(), "ext1", "", false);
+        UserIdMapping.createUserIdMapping(process.getProcess(), user2.getSupertokensUserId(), "ext2", "", false);
+        UserIdMapping.createUserIdMapping(process.getProcess(), user3.getSupertokensUserId(), "ext3", "", false);
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getUserIdNotToBeReturnedFromAPI()).user;
-        AuthRecipe.linkAccounts(process.getProcess(), user2.getUserIdNotToBeReturnedFromAPI(), primaryUser.getUserIdNotToBeReturnedFromAPI());
-        AuthRecipe.linkAccounts(process.getProcess(), user3.getUserIdNotToBeReturnedFromAPI(), primaryUser.getUserIdNotToBeReturnedFromAPI());
-        AuthRecipe.linkAccounts(process.getProcess(), user4.getUserIdNotToBeReturnedFromAPI(), primaryUser.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId()).user;
+        AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), primaryUser.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.getProcess(), user3.getSupertokensUserId(), primaryUser.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.getProcess(), user4.getSupertokensUserId(), primaryUser.getSupertokensUserId());
 
         JsonObject primaryUserInfo = getUsersByAccountInfo(process.getProcess(), false,
                 "test@example.com", null, null, null).get(0).getAsJsonObject();

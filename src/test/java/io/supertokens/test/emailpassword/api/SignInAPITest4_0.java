@@ -84,7 +84,7 @@ public class SignInAPITest4_0 {
         assertEquals(signInResponse.entrySet().size(), 2);
 
         JsonObject jsonUser = signInResponse.get("user").getAsJsonObject();
-        assert (jsonUser.get("id").getAsString().equals(user.getUserIdNotToBeReturnedFromAPI()));
+        assert (jsonUser.get("id").getAsString().equals(user.getSupertokensUserId()));
         assert (jsonUser.get("timeJoined").getAsLong() == user.timeJoined);
         assert (!jsonUser.get("isPrimaryUser").getAsBoolean());
         assert (jsonUser.get("emails").getAsJsonArray().size() == 1);
@@ -95,7 +95,7 @@ public class SignInAPITest4_0 {
         JsonObject lM = jsonUser.get("loginMethods").getAsJsonArray().get(0).getAsJsonObject();
         assertFalse(lM.get("verified").getAsBoolean());
         assertEquals(lM.get("timeJoined").getAsLong(), user.timeJoined);
-        assertEquals(lM.get("recipeUserId").getAsString(), user.getUserIdNotToBeReturnedFromAPI());
+        assertEquals(lM.get("recipeUserId").getAsString(), user.getSupertokensUserId());
         assertEquals(lM.get("recipeId").getAsString(), "emailpassword");
         assertEquals(lM.get("email").getAsString(), "random@gmail.com");
         assert (lM.entrySet().size() == 6);
@@ -119,7 +119,7 @@ public class SignInAPITest4_0 {
         }
 
         AuthRecipeUserInfo user = EmailPassword.signUp(process.main, "random@gmail.com", "validPass123");
-        UserIdMapping.createUserIdMapping(process.main, user.getUserIdNotToBeReturnedFromAPI(), "e1", null, false);
+        UserIdMapping.createUserIdMapping(process.main, user.getSupertokensUserId(), "e1", null, false);
 
         JsonObject responseBody = new JsonObject();
         responseBody.addProperty("email", "random@gmail.com");
@@ -175,14 +175,14 @@ public class SignInAPITest4_0 {
         }
 
         AuthRecipeUserInfo user0 = EmailPassword.signUp(process.main, "random1@gmail.com", "validPass123");
-        UserIdMapping.createUserIdMapping(process.main, user0.getUserIdNotToBeReturnedFromAPI(), "e0", null, false);
+        UserIdMapping.createUserIdMapping(process.main, user0.getSupertokensUserId(), "e0", null, false);
 
         Thread.sleep(1); // add a small delay to ensure a unique timestamp
 
         AuthRecipeUserInfo user = EmailPassword.signUp(process.main, "random@gmail.com", "validPass123");
-        UserIdMapping.createUserIdMapping(process.main, user.getUserIdNotToBeReturnedFromAPI(), "e1", null, false);
-        AuthRecipe.createPrimaryUser(process.main, user.getUserIdNotToBeReturnedFromAPI());
-        AuthRecipe.linkAccounts(process.main, user0.getUserIdNotToBeReturnedFromAPI(), user.getUserIdNotToBeReturnedFromAPI());
+        UserIdMapping.createUserIdMapping(process.main, user.getSupertokensUserId(), "e1", null, false);
+        AuthRecipe.createPrimaryUser(process.main, user.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.main, user0.getSupertokensUserId(), user.getSupertokensUserId());
 
         JsonObject responseBody = new JsonObject();
         responseBody.addProperty("email", "random@gmail.com");
@@ -225,7 +225,7 @@ public class SignInAPITest4_0 {
             JsonObject lM = jsonUser.get("loginMethods").getAsJsonArray().get(0).getAsJsonObject();
             assertFalse(lM.get("verified").getAsBoolean());
             assertEquals(lM.get("timeJoined").getAsLong(), user0.timeJoined);
-            assertEquals(lM.get("recipeUserId").getAsString(), user0.getUserIdNotToBeReturnedFromAPI());
+            assertEquals(lM.get("recipeUserId").getAsString(), user0.getSupertokensUserId());
             assertEquals(lM.get("recipeId").getAsString(), "emailpassword");
             assertEquals(lM.get("email").getAsString(), "random1@gmail.com");
             assert (lM.entrySet().size() == 6);

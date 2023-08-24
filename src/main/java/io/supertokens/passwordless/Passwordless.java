@@ -545,8 +545,8 @@ public class Passwordless {
             return null;
         }
         for (LoginMethod lM : result.loginMethods) {
-            if (lM.getRecipeUserIdNotToBeReturnedFromAPI().equals(userId)) {
-                return new io.supertokens.pluginInterface.passwordless.UserInfo(lM.getRecipeUserIdNotToBeReturnedFromAPI(), result.isPrimaryUser,
+            if (lM.getSupertokensUserId().equals(userId)) {
+                return new io.supertokens.pluginInterface.passwordless.UserInfo(lM.getSupertokensUserId(), result.isPrimaryUser,
                         lM);
             }
         }
@@ -626,7 +626,7 @@ public class Passwordless {
         }
 
         LoginMethod lM = Arrays.stream(user.loginMethods)
-                .filter(currlM -> currlM.getRecipeUserIdNotToBeReturnedFromAPI().equals(recipeUserId) && currlM.recipeId == RECIPE_ID.PASSWORDLESS)
+                .filter(currlM -> currlM.getSupertokensUserId().equals(recipeUserId) && currlM.recipeId == RECIPE_ID.PASSWORDLESS)
                 .findFirst().orElse(null);
 
         if (lM == null) {
@@ -660,7 +660,7 @@ public class Passwordless {
                                             emailUpdate.newValue);
 
                             for (AuthRecipeUserInfo userWithSameEmail : existingUsersWithNewEmail) {
-                                if (userWithSameEmail.isPrimaryUser && !userWithSameEmail.getUserIdNotToBeReturnedFromAPI().equals(user.getUserIdNotToBeReturnedFromAPI())) {
+                                if (userWithSameEmail.isPrimaryUser && !userWithSameEmail.getSupertokensUserId().equals(user.getSupertokensUserId())) {
                                     throw new StorageTransactionLogicException(
                                             new EmailChangeNotAllowedException());
                                 }

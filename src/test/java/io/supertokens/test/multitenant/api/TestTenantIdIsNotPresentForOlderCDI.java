@@ -288,11 +288,11 @@ public class TestTenantIdIsNotPresentForOlderCDI {
                 UserInfo user = EmailPassword.signUp(
                         tenantIdentifierWithStorage, process.getProcess(),
                         prefix + "epuser" + i + "@example.com", "password" + i);
-                tenantToUsers.get(tenantIdentifier).add(user.getUserIdNotToBeReturnedFromAPI());
+                tenantToUsers.get(tenantIdentifier).add(user.getSupertokensUserId());
                 if (!recipeToUsers.containsKey("emailpassword")) {
                     recipeToUsers.put("emailpassword", new ArrayList<>());
                 }
-                recipeToUsers.get("emailpassword").add(user.getUserIdNotToBeReturnedFromAPI());
+                recipeToUsers.get("emailpassword").add(user.getSupertokensUserId());
             }
             {
                 Passwordless.CreateCodeResponse codeResponse = Passwordless.createCode(
@@ -305,27 +305,27 @@ public class TestTenantIdIsNotPresentForOlderCDI {
                 Passwordless.ConsumeCodeResponse response = Passwordless.consumeCode(tenantIdentifierWithStorage,
                         process.getProcess(), codeResponse.deviceId,
                         codeResponse.deviceIdHash, "abcd", null);
-                tenantToUsers.get(tenantIdentifier).add(response.user.getUserIdNotToBeReturnedFromAPI());
+                tenantToUsers.get(tenantIdentifier).add(response.user.getSupertokensUserId());
 
                 if (!recipeToUsers.containsKey("passwordless")) {
                     recipeToUsers.put("passwordless", new ArrayList<>());
                 }
-                recipeToUsers.get("passwordless").add(response.user.getUserIdNotToBeReturnedFromAPI());
+                recipeToUsers.get("passwordless").add(response.user.getSupertokensUserId());
             }
             {
                 ThirdParty.SignInUpResponse user1 = ThirdParty.signInUp(tenantIdentifierWithStorage,
                         process.getProcess(), "google", "googleid" + i, prefix + "tpuser" + i + "@example.com");
-                tenantToUsers.get(tenantIdentifier).add(user1.user.getUserIdNotToBeReturnedFromAPI());
+                tenantToUsers.get(tenantIdentifier).add(user1.user.getSupertokensUserId());
                 ThirdParty.SignInUpResponse user2 = ThirdParty.signInUp(tenantIdentifierWithStorage,
                         process.getProcess(), "facebook", "fbid" + i, prefix + "tpuser" + i + "@example.com");
-                tenantToUsers.get(tenantIdentifier).add(user2.user.getUserIdNotToBeReturnedFromAPI());
+                tenantToUsers.get(tenantIdentifier).add(user2.user.getSupertokensUserId());
 
 
                 if (!recipeToUsers.containsKey("thirdparty")) {
                     recipeToUsers.put("thirdparty", new ArrayList<>());
                 }
-                recipeToUsers.get("thirdparty").add(user1.user.getUserIdNotToBeReturnedFromAPI());
-                recipeToUsers.get("thirdparty").add(user2.user.getUserIdNotToBeReturnedFromAPI());
+                recipeToUsers.get("thirdparty").add(user1.user.getSupertokensUserId());
+                recipeToUsers.get("thirdparty").add(user2.user.getSupertokensUserId());
             }
         }
     }

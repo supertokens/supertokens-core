@@ -65,7 +65,7 @@ public class AuthRecipeStorageTest {
 
         // create a user and check that the userId exists
         UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        assertTrue(storage.doesUserIdExist(new TenantIdentifier(null, null, null), userInfo.getUserIdNotToBeReturnedFromAPI()));
+        assertTrue(storage.doesUserIdExist(new TenantIdentifier(null, null, null), userInfo.getSupertokensUserId()));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

@@ -231,7 +231,7 @@ public class RemoveUserIdMappingAPITest {
 
         // create a userId mapping
         UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        UserIdMapping userIdMapping = new UserIdMapping(userInfo.getUserIdNotToBeReturnedFromAPI(), "externalUserId", "externalUserIdInfo");
+        UserIdMapping userIdMapping = new UserIdMapping(userInfo.getSupertokensUserId(), "externalUserId", "externalUserIdInfo");
         createUserIdMappingAndCheckThatItExists(process.main, userIdMapping);
 
         // delete userId mapping with userIdType as SUPERTOKENS
@@ -333,7 +333,7 @@ public class RemoveUserIdMappingAPITest {
 
         // create a userId mapping
         UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        UserIdMapping userIdMapping = new UserIdMapping(userInfo.getUserIdNotToBeReturnedFromAPI(), "externalUserId", "externalUserIdInfo");
+        UserIdMapping userIdMapping = new UserIdMapping(userInfo.getSupertokensUserId(), "externalUserId", "externalUserIdInfo");
         createUserIdMappingAndCheckThatItExists(process.main, userIdMapping);
 
         {
@@ -390,7 +390,7 @@ public class RemoveUserIdMappingAPITest {
         }
 
         UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        String superTokensUserId = userInfo.getUserIdNotToBeReturnedFromAPI();
+        String superTokensUserId = userInfo.getSupertokensUserId();
         String externalId = "externalId";
         io.supertokens.useridmapping.UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalId,
                 null, false);

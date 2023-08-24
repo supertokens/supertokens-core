@@ -70,17 +70,17 @@ public class GetUsersWithSearchTagsAPITest {
 
         // create emailpassword user
         ArrayList<String> userIds = new ArrayList<>();
-        userIds.add(EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123").getUserIdNotToBeReturnedFromAPI());
+        userIds.add(EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123").getSupertokensUserId());
 
         // create thirdparty user
-        userIds.add(ThirdParty.signInUp(process.getProcess(), "testTPID", "test", "test2@example.com").user.getUserIdNotToBeReturnedFromAPI());
+        userIds.add(ThirdParty.signInUp(process.getProcess(), "testTPID", "test", "test2@example.com").user.getSupertokensUserId());
 
         // create passwordless user
         CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), "test@example.com", null,
                 null, null);
         userIds.add(Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId,
                 createCodeResponse.deviceIdHash,
-                createCodeResponse.userInputCode, null).user.getUserIdNotToBeReturnedFromAPI());
+                createCodeResponse.userInputCode, null).user.getSupertokensUserId());
 
         // search with empty input for email field
         {
@@ -146,18 +146,18 @@ public class GetUsersWithSearchTagsAPITest {
 
         // create emailpassword user
         ArrayList<String> userIds = new ArrayList<>();
-        userIds.add(EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123").getUserIdNotToBeReturnedFromAPI());
-        userIds.add(EmailPassword.signUp(process.getProcess(), "test2@example.com", "testPass123").getUserIdNotToBeReturnedFromAPI());
+        userIds.add(EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123").getSupertokensUserId());
+        userIds.add(EmailPassword.signUp(process.getProcess(), "test2@example.com", "testPass123").getSupertokensUserId());
 
         // create thirdparty user
-        userIds.add(ThirdParty.signInUp(process.getProcess(), "testTPID", "test", "test2@example.com").user.getUserIdNotToBeReturnedFromAPI());
+        userIds.add(ThirdParty.signInUp(process.getProcess(), "testTPID", "test", "test2@example.com").user.getSupertokensUserId());
 
         // create passwordless user
         CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), "test@example.com", null,
                 null, null);
         userIds.add(Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId,
                 createCodeResponse.deviceIdHash,
-                createCodeResponse.userInputCode, null).user.getUserIdNotToBeReturnedFromAPI());
+                createCodeResponse.userInputCode, null).user.getSupertokensUserId());
 
         // search with partial input for email field
         HashMap<String, String> params = new HashMap<>();
@@ -190,9 +190,9 @@ public class GetUsersWithSearchTagsAPITest {
 
         // create emailpassword user
         ArrayList<String> userIds = new ArrayList<>();
-        userIds.add(EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123").getUserIdNotToBeReturnedFromAPI());
+        userIds.add(EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123").getSupertokensUserId());
         Thread.sleep(50);
-        userIds.add(EmailPassword.signUp(process.getProcess(), "abc@example.com", "testPass123").getUserIdNotToBeReturnedFromAPI());
+        userIds.add(EmailPassword.signUp(process.getProcess(), "abc@example.com", "testPass123").getSupertokensUserId());
         Thread.sleep(50);
 
         // search with multiple inputs to email
@@ -213,9 +213,9 @@ public class GetUsersWithSearchTagsAPITest {
         }
 
         // create thirdparty user
-        userIds.add(ThirdParty.signInUp(process.getProcess(), "testpid", "test", "test@example.com").user.getUserIdNotToBeReturnedFromAPI());
+        userIds.add(ThirdParty.signInUp(process.getProcess(), "testpid", "test", "test@example.com").user.getSupertokensUserId());
         Thread.sleep(50);
-        userIds.add(ThirdParty.signInUp(process.getProcess(), "newtestpid", "test123", "test@example.com").user.getUserIdNotToBeReturnedFromAPI());
+        userIds.add(ThirdParty.signInUp(process.getProcess(), "newtestpid", "test123", "test@example.com").user.getSupertokensUserId());
         Thread.sleep(50);
         // search with multiple inputs to provider
         {
@@ -241,7 +241,7 @@ public class GetUsersWithSearchTagsAPITest {
                     null, null);
             userIds.add(Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId,
                     createCodeResponse.deviceIdHash,
-                    createCodeResponse.userInputCode, null).user.getUserIdNotToBeReturnedFromAPI());
+                    createCodeResponse.userInputCode, null).user.getSupertokensUserId());
         }
         Thread.sleep(50);
         {
@@ -250,7 +250,7 @@ public class GetUsersWithSearchTagsAPITest {
                     null, null);
             userIds.add(Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId,
                     createCodeResponse.deviceIdHash,
-                    createCodeResponse.userInputCode, null).user.getUserIdNotToBeReturnedFromAPI());
+                    createCodeResponse.userInputCode, null).user.getSupertokensUserId());
         }
         Thread.sleep(50);
 
@@ -285,10 +285,10 @@ public class GetUsersWithSearchTagsAPITest {
 
         // create emailpassword user
         ArrayList<String> userIds = new ArrayList<>();
-        userIds.add(EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123").getUserIdNotToBeReturnedFromAPI());
+        userIds.add(EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123").getSupertokensUserId());
 
         // create thirdparty user
-        userIds.add(ThirdParty.signInUp(process.getProcess(), "testTPID", "test", "test@example.com").user.getUserIdNotToBeReturnedFromAPI());
+        userIds.add(ThirdParty.signInUp(process.getProcess(), "testTPID", "test", "test@example.com").user.getSupertokensUserId());
 
         // create passwordless user
         CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), "test@example.com",
@@ -296,7 +296,7 @@ public class GetUsersWithSearchTagsAPITest {
                 null, null);
         userIds.add(Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId,
                 createCodeResponse.deviceIdHash,
-                createCodeResponse.userInputCode, null).user.getUserIdNotToBeReturnedFromAPI());
+                createCodeResponse.userInputCode, null).user.getSupertokensUserId());
 
         HashMap<String, String> params = new HashMap<>();
         params.put("email", "test@example.com");
@@ -326,10 +326,10 @@ public class GetUsersWithSearchTagsAPITest {
 
         // create emailpassword user
         ArrayList<String> userIds = new ArrayList<>();
-        userIds.add(EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123").getUserIdNotToBeReturnedFromAPI());
+        userIds.add(EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123").getSupertokensUserId());
 
         // create thirdparty user
-        userIds.add(ThirdParty.signInUp(process.getProcess(), "testpid", "test", "test@example.com").user.getUserIdNotToBeReturnedFromAPI());
+        userIds.add(ThirdParty.signInUp(process.getProcess(), "testpid", "test", "test@example.com").user.getSupertokensUserId());
 
         {
             // searching for email with upper and lower case combination

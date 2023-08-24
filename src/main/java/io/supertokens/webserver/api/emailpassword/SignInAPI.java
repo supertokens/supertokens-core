@@ -79,11 +79,11 @@ public class SignInAPI extends WebserverAPI {
                     password);
 
             ActiveUsers.updateLastActive(tenantIdentifierWithStorage.toAppIdentifierWithStorage(), main,
-                    user.getUserIdNotToBeReturnedFromAPI()); // use the internal user id
+                    user.getSupertokensUserId()); // use the internal user id
 
             // if a userIdMapping exists, pass the externalUserId to the response
             UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                    tenantIdentifierWithStorage.toAppIdentifierWithStorage(), user.getUserIdNotToBeReturnedFromAPI(), UserIdType.SUPERTOKENS);
+                    tenantIdentifierWithStorage.toAppIdentifierWithStorage(), user.getSupertokensUserId(), UserIdType.SUPERTOKENS);
 
             if (userIdMapping != null) {
                 user.setExternalUserId(userIdMapping.externalUserId);
@@ -102,7 +102,7 @@ public class SignInAPI extends WebserverAPI {
             if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0)) {
                 for (LoginMethod loginMethod : user.loginMethods) {
                     if (loginMethod.recipeId.equals(RECIPE_ID.EMAIL_PASSWORD) && normalisedEmail.equals(loginMethod.email)) {
-                        result.addProperty("recipeUserId", loginMethod.getUserId());
+                        result.addProperty("recipeUserId", loginMethod.getSupertokensOrExternalUserId());
                         break;
                     }
                 }

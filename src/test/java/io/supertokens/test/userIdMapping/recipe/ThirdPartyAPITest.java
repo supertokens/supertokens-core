@@ -70,7 +70,7 @@ public class ThirdPartyAPITest {
         String email = "test@example.com";
         ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, thirdPartyId, thirdPartyUserId,
                 email);
-        String superTokensUserId = signInUpResponse.user.getUserIdNotToBeReturnedFromAPI();
+        String superTokensUserId = signInUpResponse.user.getSupertokensUserId();
         String externalUserId = "externalId";
 
         // create the mapping
@@ -130,7 +130,7 @@ public class ThirdPartyAPITest {
         String email = "test@example.com";
         ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, thirdPartyId, thirdPartyUserId,
                 email);
-        String superTokensUserId = signInUpResponse.user.getUserIdNotToBeReturnedFromAPI();
+        String superTokensUserId = signInUpResponse.user.getSupertokensUserId();
         String externalUserId = "externalId";
 
         // create the mapping
@@ -172,7 +172,7 @@ public class ThirdPartyAPITest {
         String email = "test@example.com";
         ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, thirdPartyId, thirdPartyUserId,
                 email);
-        String superTokensUserId = signInUpResponse.user.getUserIdNotToBeReturnedFromAPI();
+        String superTokensUserId = signInUpResponse.user.getSupertokensUserId();
         String externalUserId = "externalId";
 
         // create the mapping
@@ -213,7 +213,7 @@ public class ThirdPartyAPITest {
         String email = "test@example.com";
         ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, thirdPartyId, thirdPartyUserId,
                 email);
-        String superTokensUserId = signInUpResponse.user.getUserIdNotToBeReturnedFromAPI();
+        String superTokensUserId = signInUpResponse.user.getSupertokensUserId();
         String externalUserId = "externalId";
 
         // create the mapping

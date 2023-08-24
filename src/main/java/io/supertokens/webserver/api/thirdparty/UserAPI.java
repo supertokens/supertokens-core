@@ -100,7 +100,7 @@ public class UserAPI extends WebserverAPI {
                         thirdPartyUserId);
                 if (user != null) {
                     io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                            .getUserIdMapping(this.getAppIdentifierWithStorage(req), user.getUserIdNotToBeReturnedFromAPI(), UserIdType.SUPERTOKENS);
+                            .getUserIdMapping(this.getAppIdentifierWithStorage(req), user.getSupertokensUserId(), UserIdType.SUPERTOKENS);
                     if (userIdMapping != null) {
                         user.setExternalUserId(userIdMapping.externalUserId);
                     } else {

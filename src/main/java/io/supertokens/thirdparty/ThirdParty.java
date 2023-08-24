@@ -81,7 +81,7 @@ public class ThirdParty {
                         assert (finalResponse.user.loginMethods.length == 1);
                         tenantIdentifierWithStorage.getEmailVerificationStorage()
                                 .updateIsEmailVerified_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con,
-                                        finalResponse.user.getUserIdNotToBeReturnedFromAPI(), finalResponse.user.loginMethods[0].email, true);
+                                        finalResponse.user.getSupertokensUserId(), finalResponse.user.loginMethods[0].email, true);
                         tenantIdentifierWithStorage.getEmailVerificationStorage()
                                 .commitTransaction(con);
                         return null;
@@ -220,7 +220,7 @@ public class ThirdParty {
                                         );
                                 for (AuthRecipeUserInfo userWithSameEmail : userBasedOnEmail) {
                                     if (userWithSameEmail.isPrimaryUser &&
-                                            !userWithSameEmail.getUserIdNotToBeReturnedFromAPI().equals(userFromDb.getUserIdNotToBeReturnedFromAPI())) {
+                                            !userWithSameEmail.getSupertokensUserId().equals(userFromDb.getSupertokensUserId())) {
                                         throw new StorageTransactionLogicException(
                                                 new EmailChangeNotAllowedException());
                                     }
@@ -257,8 +257,8 @@ public class ThirdParty {
             return null;
         }
         for (LoginMethod lM : result.loginMethods) {
-            if (lM.getRecipeUserIdNotToBeReturnedFromAPI().equals(userId)) {
-                return new io.supertokens.pluginInterface.thirdparty.UserInfo(lM.getRecipeUserIdNotToBeReturnedFromAPI(), result.isPrimaryUser,
+            if (lM.getSupertokensUserId().equals(userId)) {
+                return new io.supertokens.pluginInterface.thirdparty.UserInfo(lM.getSupertokensUserId(), result.isPrimaryUser,
                         lM);
             }
         }

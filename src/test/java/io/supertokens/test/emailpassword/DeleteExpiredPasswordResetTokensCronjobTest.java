@@ -66,21 +66,21 @@ public class DeleteExpiredPasswordResetTokensCronjobTest {
 
         UserInfo user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
 
-        String tok = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.getUserIdNotToBeReturnedFromAPI());
-        String tok2 = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.getUserIdNotToBeReturnedFromAPI());
+        String tok = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.getSupertokensUserId());
+        String tok2 = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.getSupertokensUserId());
 
         Thread.sleep(2000);
 
-        String tok3 = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.getUserIdNotToBeReturnedFromAPI());
-        String tok4 = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.getUserIdNotToBeReturnedFromAPI());
+        String tok3 = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.getSupertokensUserId());
+        String tok4 = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.getSupertokensUserId());
 
         assert (((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
-                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.getUserIdNotToBeReturnedFromAPI()).length == 4);
+                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.getSupertokensUserId()).length == 4);
 
         Thread.sleep(3500);
 
         PasswordResetTokenInfo[] tokens = ((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
-                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.getUserIdNotToBeReturnedFromAPI());
+                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.getSupertokensUserId());
 
         assert (tokens.length == 2);
 

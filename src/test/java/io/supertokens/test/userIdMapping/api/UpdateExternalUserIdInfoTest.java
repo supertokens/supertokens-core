@@ -270,7 +270,7 @@ public class UpdateExternalUserIdInfoTest {
         // create userId mapping with externalUserIdInfo
         String externalUserIdInfo = "externalUserIdInfo";
         UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        UserIdMapping userIdMapping = new io.supertokens.pluginInterface.useridmapping.UserIdMapping(userInfo.getUserIdNotToBeReturnedFromAPI(),
+        UserIdMapping userIdMapping = new io.supertokens.pluginInterface.useridmapping.UserIdMapping(userInfo.getSupertokensUserId(),
                 "externalUserIdInfo", externalUserIdInfo);
 
         Utils.createUserIdMappingAndCheckThatItExists(process.main, userIdMapping);
@@ -341,7 +341,7 @@ public class UpdateExternalUserIdInfoTest {
         // create userId mapping with externalUserIdInfo
         String externalUserIdInfo = "externalUserIdInfo";
         UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        UserIdMapping userIdMapping = new io.supertokens.pluginInterface.useridmapping.UserIdMapping(userInfo.getUserIdNotToBeReturnedFromAPI(),
+        UserIdMapping userIdMapping = new io.supertokens.pluginInterface.useridmapping.UserIdMapping(userInfo.getSupertokensUserId(),
                 "externalUserIdInfo", externalUserIdInfo);
 
         Utils.createUserIdMappingAndCheckThatItExists(process.main, userIdMapping);
@@ -412,7 +412,7 @@ public class UpdateExternalUserIdInfoTest {
         // create userId mapping with externalUserIdInfo
         String externalUserIdInfo = "externalUserIdInfo";
         UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        UserIdMapping userIdMapping = new io.supertokens.pluginInterface.useridmapping.UserIdMapping(userInfo.getUserIdNotToBeReturnedFromAPI(),
+        UserIdMapping userIdMapping = new io.supertokens.pluginInterface.useridmapping.UserIdMapping(userInfo.getSupertokensUserId(),
                 "externalUserIdInfo", externalUserIdInfo);
 
         Utils.createUserIdMappingAndCheckThatItExists(process.main, userIdMapping);

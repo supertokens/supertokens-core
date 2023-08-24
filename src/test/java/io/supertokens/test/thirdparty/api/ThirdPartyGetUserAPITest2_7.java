@@ -139,7 +139,7 @@ public class ThirdPartyGetUserAPITest2_7 {
         // query with userId
         {
             HashMap<String, String> QueryParams = new HashMap<>();
-            QueryParams.put("userId", signUpResponse.user.getUserIdNotToBeReturnedFromAPI());
+            QueryParams.put("userId", signUpResponse.user.getSupertokensUserId());
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user", QueryParams, 1000, 1000, null,

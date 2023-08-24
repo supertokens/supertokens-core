@@ -79,7 +79,7 @@ public class UserPutAPITest2_8 {
             UserInfo user2 = EmailPassword.signUp(process.getProcess(), "someemail2@gmail.com", "somePass");
 
             JsonObject body = new JsonObject();
-            body.addProperty("userId", user.getUserIdNotToBeReturnedFromAPI());
+            body.addProperty("userId", user.getSupertokensUserId());
             body.addProperty("email", user2.email);
 
             JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
@@ -101,7 +101,7 @@ public class UserPutAPITest2_8 {
             UserInfo user = EmailPassword.signUp(process.getProcess(), "someemail@gmail.com", "somePass");
 
             JsonObject body = new JsonObject();
-            body.addProperty("userId", user.getUserIdNotToBeReturnedFromAPI());
+            body.addProperty("userId", user.getSupertokensUserId());
             body.addProperty("email", "someemail+TEST@gmail.com");
 
             JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
@@ -147,7 +147,7 @@ public class UserPutAPITest2_8 {
             UserInfo user = EmailPassword.signUp(process.getProcess(), "someemail@gmail.com", "somePass");
 
             JsonObject body = new JsonObject();
-            body.addProperty("userId", user.getUserIdNotToBeReturnedFromAPI());
+            body.addProperty("userId", user.getSupertokensUserId());
             body.addProperty("email", "someOtherEmail@gmail.com");
 
             JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
@@ -171,7 +171,7 @@ public class UserPutAPITest2_8 {
             UserInfo user = EmailPassword.signUp(process.getProcess(), "someemail@gmail.com", "somePass");
 
             JsonObject body = new JsonObject();
-            body.addProperty("userId", user.getUserIdNotToBeReturnedFromAPI());
+            body.addProperty("userId", user.getSupertokensUserId());
             body.addProperty("password", "somePass123");
 
             JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",

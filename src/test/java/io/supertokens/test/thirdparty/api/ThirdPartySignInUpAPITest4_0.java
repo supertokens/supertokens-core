@@ -134,11 +134,11 @@ public class ThirdPartySignInUpAPITest4_0 {
         }
 
         UserInfo user0 = EmailPassword.signUp(process.getProcess(), "someemail1@gmail.com", "somePass");
-        AuthRecipe.createPrimaryUser(process.main, user0.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipe.createPrimaryUser(process.main, user0.getSupertokensUserId());
 
         ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.getProcess(), "google", "user",
                 "someemail@gmail.com");
-        AuthRecipe.createPrimaryUser(process.main, signInUpResponse.user.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipe.createPrimaryUser(process.main, signInUpResponse.user.getSupertokensUserId());
 
         JsonObject emailObject = new JsonObject();
         emailObject.addProperty("id", "someemail1@gmail.com");

@@ -1008,25 +1008,25 @@ public class UserRolesTest {
         UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPassword");
 
         // assign role to user
-        UserRoles.addRoleToUser(process.main, userInfo.getUserIdNotToBeReturnedFromAPI(), role);
+        UserRoles.addRoleToUser(process.main, userInfo.getSupertokensUserId(), role);
 
         {
             // check that user has role
-            String[] retrievedRoles = UserRoles.getRolesForUser(process.main, userInfo.getUserIdNotToBeReturnedFromAPI());
+            String[] retrievedRoles = UserRoles.getRolesForUser(process.main, userInfo.getSupertokensUserId());
             assertEquals(1, retrievedRoles.length);
             assertEquals(role, retrievedRoles[0]);
         }
 
         // delete User
-        AuthRecipe.deleteUser(process.main, userInfo.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipe.deleteUser(process.main, userInfo.getSupertokensUserId());
 
         {
             // check that user has no roles
-            String[] retrievedRoles = UserRoles.getRolesForUser(process.main, userInfo.getUserIdNotToBeReturnedFromAPI());
+            String[] retrievedRoles = UserRoles.getRolesForUser(process.main, userInfo.getSupertokensUserId());
             assertEquals(0, retrievedRoles.length);
 
             // check that the mapping for user role doesnt exist
-            String[] roleUserMapping = storage.getRolesForUser(new TenantIdentifier(null, null, null), userInfo.getUserIdNotToBeReturnedFromAPI());
+            String[] roleUserMapping = storage.getRolesForUser(new TenantIdentifier(null, null, null), userInfo.getSupertokensUserId());
             assertEquals(0, roleUserMapping.length);
         }
 

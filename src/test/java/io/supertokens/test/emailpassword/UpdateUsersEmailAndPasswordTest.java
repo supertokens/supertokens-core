@@ -75,12 +75,12 @@ public class UpdateUsersEmailAndPasswordTest {
             UserInfo userInfo = EmailPassword.signUp(main, "john.doe@example.com", "password");
 
             // when
-            EmailPassword.updateUsersEmailOrPassword(main, userInfo.getUserIdNotToBeReturnedFromAPI(), "dave.doe@example.com", null);
+            EmailPassword.updateUsersEmailOrPassword(main, userInfo.getSupertokensUserId(), "dave.doe@example.com", null);
 
             // then
             AuthRecipeUserInfo changedEmailUserInfo = EmailPassword.signIn(main, "dave.doe@example.com", "password");
 
-            Assert.assertEquals(userInfo.getUserIdNotToBeReturnedFromAPI(), changedEmailUserInfo.getUserIdNotToBeReturnedFromAPI());
+            Assert.assertEquals(userInfo.getSupertokensUserId(), changedEmailUserInfo.getSupertokensUserId());
             Assert.assertEquals("dave.doe@example.com", changedEmailUserInfo.loginMethods[0].email);
         });
     }
@@ -100,7 +100,7 @@ public class UpdateUsersEmailAndPasswordTest {
 
             // when
             try {
-                EmailPassword.updateUsersEmailOrPassword(main, userInfo.getUserIdNotToBeReturnedFromAPI(), userInfo2.email, null);
+                EmailPassword.updateUsersEmailOrPassword(main, userInfo.getSupertokensUserId(), userInfo2.email, null);
                 Assert.fail();
             } catch (DuplicateEmailException ignored) {
             }
@@ -121,12 +121,12 @@ public class UpdateUsersEmailAndPasswordTest {
             UserInfo userInfo = EmailPassword.signUp(main, "john.doe@example.com", "password");
 
             // when
-            EmailPassword.updateUsersEmailOrPassword(main, userInfo.getUserIdNotToBeReturnedFromAPI(), null, "newPassword");
+            EmailPassword.updateUsersEmailOrPassword(main, userInfo.getSupertokensUserId(), null, "newPassword");
 
             // then
             AuthRecipeUserInfo changedEmailUserInfo = EmailPassword.signIn(main, "john.doe@example.com", "newPassword");
 
-            Assert.assertEquals(userInfo.getUserIdNotToBeReturnedFromAPI(), changedEmailUserInfo.getUserIdNotToBeReturnedFromAPI());
+            Assert.assertEquals(userInfo.getSupertokensUserId(), changedEmailUserInfo.getSupertokensUserId());
         });
     }
 
@@ -143,13 +143,13 @@ public class UpdateUsersEmailAndPasswordTest {
             UserInfo userInfo = EmailPassword.signUp(main, "john.doe@example.com", "password");
 
             // when
-            EmailPassword.updateUsersEmailOrPassword(main, userInfo.getUserIdNotToBeReturnedFromAPI(), "dave.doe@example.com", "newPassword");
+            EmailPassword.updateUsersEmailOrPassword(main, userInfo.getSupertokensUserId(), "dave.doe@example.com", "newPassword");
 
             // then
             AuthRecipeUserInfo changedCredentialsUserInfo = EmailPassword.signIn(main, "dave.doe@example.com",
                     "newPassword");
 
-            Assert.assertEquals(userInfo.getUserIdNotToBeReturnedFromAPI(), changedCredentialsUserInfo.getUserIdNotToBeReturnedFromAPI());
+            Assert.assertEquals(userInfo.getSupertokensUserId(), changedCredentialsUserInfo.getSupertokensUserId());
             Assert.assertEquals("dave.doe@example.com", changedCredentialsUserInfo.loginMethods[0].email);
         });
     }

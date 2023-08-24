@@ -87,11 +87,11 @@ public class ConsumeCodeAPI extends WebserverAPI {
                     deviceId, deviceIdHash,
                     userInputCode, linkCode);
 
-            ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main, consumeCodeResponse.user.getUserIdNotToBeReturnedFromAPI());
+            ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main, consumeCodeResponse.user.getSupertokensUserId());
 
             UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
                     this.getAppIdentifierWithStorage(req),
-                    consumeCodeResponse.user.getUserIdNotToBeReturnedFromAPI(), UserIdType.ANY);
+                    consumeCodeResponse.user.getSupertokensUserId(), UserIdType.ANY);
             if (userIdMapping != null) {
                 consumeCodeResponse.user.setExternalUserId(userIdMapping.externalUserId);
             } else {
@@ -115,7 +115,7 @@ public class ConsumeCodeAPI extends WebserverAPI {
                     if (loginMethod.recipeId.equals(RECIPE_ID.PASSWORDLESS)
                             && (consumeCodeResponse.email == null || Objects.equals(loginMethod.email, consumeCodeResponse.email))
                             && (consumeCodeResponse.phoneNumber == null || Objects.equals(loginMethod.phoneNumber, consumeCodeResponse.phoneNumber))) {
-                        result.addProperty("recipeUserId", loginMethod.getUserId());
+                        result.addProperty("recipeUserId", loginMethod.getSupertokensOrExternalUserId());
                         break;
                     }
                 }

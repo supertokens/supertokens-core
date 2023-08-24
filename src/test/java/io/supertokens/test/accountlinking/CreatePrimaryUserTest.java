@@ -76,7 +76,7 @@ public class CreatePrimaryUserTest {
         assert (user.loginMethods[0].email.equals("test@example.com"));
         assert (user.loginMethods[0].passwordHash != null);
         assert (user.loginMethods[0].thirdParty == null);
-        assert (user.getUserIdNotToBeReturnedFromAPI().equals(user.loginMethods[0].getRecipeUserIdNotToBeReturnedFromAPI()));
+        assert (user.getSupertokensUserId().equals(user.loginMethods[0].getSupertokensUserId()));
         assert (user.loginMethods[0].phoneNumber == null);
 
         ThirdParty.SignInUpResponse resp = ThirdParty.signInUp(process.getProcess(), "google", "user-google",
@@ -89,7 +89,7 @@ public class CreatePrimaryUserTest {
         assert (resp.user.loginMethods[0].thirdParty.id.equals("google"));
         assert (resp.user.loginMethods[0].phoneNumber == null);
         assert (resp.user.loginMethods[0].passwordHash == null);
-        assert (resp.user.getUserIdNotToBeReturnedFromAPI().equals(resp.user.loginMethods[0].getRecipeUserIdNotToBeReturnedFromAPI()));
+        assert (resp.user.getSupertokensUserId().equals(resp.user.loginMethods[0].getSupertokensUserId()));
 
         {
             Passwordless.CreateCodeResponse code = Passwordless.createCode(process.getProcess(), "u@e.com", null, null,
@@ -103,7 +103,7 @@ public class CreatePrimaryUserTest {
             assert (pResp.user.loginMethods[0].passwordHash == null);
             assert (pResp.user.loginMethods[0].thirdParty == null);
             assert (pResp.user.loginMethods[0].phoneNumber == null);
-            assert (pResp.user.getUserIdNotToBeReturnedFromAPI().equals(pResp.user.loginMethods[0].getRecipeUserIdNotToBeReturnedFromAPI()));
+            assert (pResp.user.getSupertokensUserId().equals(pResp.user.loginMethods[0].getSupertokensUserId()));
         }
 
         {
@@ -118,7 +118,7 @@ public class CreatePrimaryUserTest {
             assert (pResp.user.loginMethods[0].passwordHash == null);
             assert (pResp.user.loginMethods[0].thirdParty == null);
             assert (pResp.user.loginMethods[0].phoneNumber.equals("12345"));
-            assert (pResp.user.getUserIdNotToBeReturnedFromAPI().equals(pResp.user.loginMethods[0].getRecipeUserIdNotToBeReturnedFromAPI()));
+            assert (pResp.user.getSupertokensUserId().equals(pResp.user.loginMethods[0].getSupertokensUserId()));
         }
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -157,7 +157,7 @@ public class CreatePrimaryUserTest {
         AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(process.getProcess(), "test@example.com",
                 "pass1234");
 
-        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.getSupertokensUserId());
         assert (!result.wasAlreadyAPrimaryUser);
         assert (result.user.isPrimaryUser);
         assert (result.user.loginMethods.length == 1);
@@ -165,10 +165,10 @@ public class CreatePrimaryUserTest {
         assert (result.user.loginMethods[0].email.equals("test@example.com"));
         assert (result.user.loginMethods[0].passwordHash != null);
         assert (result.user.loginMethods[0].thirdParty == null);
-        assert (result.user.getUserIdNotToBeReturnedFromAPI().equals(result.user.loginMethods[0].getRecipeUserIdNotToBeReturnedFromAPI()));
+        assert (result.user.getSupertokensUserId().equals(result.user.loginMethods[0].getSupertokensUserId()));
         assert (result.user.loginMethods[0].phoneNumber == null);
 
-        AuthRecipeUserInfo refetchedUser = AuthRecipe.getUserById(process.main, result.user.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipeUserInfo refetchedUser = AuthRecipe.getUserById(process.main, result.user.getSupertokensUserId());
 
         assert (refetchedUser.equals(result.user));
 
@@ -191,7 +191,7 @@ public class CreatePrimaryUserTest {
                 "test@example.com");
 
         AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main,
-                signInUp.user.getUserIdNotToBeReturnedFromAPI());
+                signInUp.user.getSupertokensUserId());
         assert (!result.wasAlreadyAPrimaryUser);
         assert (result.user.isPrimaryUser);
         assert (result.user.loginMethods.length == 1);
@@ -201,9 +201,9 @@ public class CreatePrimaryUserTest {
         assert (result.user.loginMethods[0].thirdParty.id.equals("google"));
         assert (result.user.loginMethods[0].phoneNumber == null);
         assert (result.user.loginMethods[0].passwordHash == null);
-        assert (result.user.getUserIdNotToBeReturnedFromAPI().equals(result.user.loginMethods[0].getRecipeUserIdNotToBeReturnedFromAPI()));
+        assert (result.user.getSupertokensUserId().equals(result.user.loginMethods[0].getSupertokensUserId()));
 
-        AuthRecipeUserInfo refetchedUser = AuthRecipe.getUserById(process.main, result.user.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipeUserInfo refetchedUser = AuthRecipe.getUserById(process.main, result.user.getSupertokensUserId());
 
         assert (refetchedUser.equals(result.user));
 
@@ -227,7 +227,7 @@ public class CreatePrimaryUserTest {
                 code.deviceIdHash, code.userInputCode, null);
 
         AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main,
-                pResp.user.getUserIdNotToBeReturnedFromAPI());
+                pResp.user.getSupertokensUserId());
         assert (!result.wasAlreadyAPrimaryUser);
         assert (result.user.isPrimaryUser);
         assert (result.user.loginMethods.length == 1);
@@ -236,9 +236,9 @@ public class CreatePrimaryUserTest {
         assert (result.user.loginMethods[0].passwordHash == null);
         assert (result.user.loginMethods[0].thirdParty == null);
         assert (result.user.loginMethods[0].phoneNumber == null);
-        assert (result.user.getUserIdNotToBeReturnedFromAPI().equals(result.user.loginMethods[0].getRecipeUserIdNotToBeReturnedFromAPI()));
+        assert (result.user.getSupertokensUserId().equals(result.user.loginMethods[0].getSupertokensUserId()));
 
-        AuthRecipeUserInfo refetchedUser = AuthRecipe.getUserById(process.main, result.user.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipeUserInfo refetchedUser = AuthRecipe.getUserById(process.main, result.user.getSupertokensUserId());
 
         assert (refetchedUser.equals(result.user));
 
@@ -262,7 +262,7 @@ public class CreatePrimaryUserTest {
                 code.deviceIdHash, code.userInputCode, null);
 
         AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main,
-                pResp.user.getUserIdNotToBeReturnedFromAPI());
+                pResp.user.getSupertokensUserId());
         assert (!result.wasAlreadyAPrimaryUser);
         assert (result.user.isPrimaryUser);
         assert (result.user.loginMethods.length == 1);
@@ -271,9 +271,9 @@ public class CreatePrimaryUserTest {
         assert (result.user.loginMethods[0].passwordHash == null);
         assert (result.user.loginMethods[0].thirdParty == null);
         assert (result.user.loginMethods[0].phoneNumber.equals("1234"));
-        assert (result.user.getUserIdNotToBeReturnedFromAPI().equals(result.user.loginMethods[0].getRecipeUserIdNotToBeReturnedFromAPI()));
+        assert (result.user.getSupertokensUserId().equals(result.user.loginMethods[0].getSupertokensUserId()));
 
-        AuthRecipeUserInfo refetchedUser = AuthRecipe.getUserById(process.main, result.user.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipeUserInfo refetchedUser = AuthRecipe.getUserById(process.main, result.user.getSupertokensUserId());
 
         assert (refetchedUser.equals(result.user));
 
@@ -294,22 +294,22 @@ public class CreatePrimaryUserTest {
         AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(process.getProcess(), "test@example.com",
                 "pass1234");
 
-        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.getSupertokensUserId());
         assert (!result.wasAlreadyAPrimaryUser);
 
-        result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.getUserIdNotToBeReturnedFromAPI());
+        result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.getSupertokensUserId());
         assert (result.wasAlreadyAPrimaryUser);
-        assert (result.user.getUserIdNotToBeReturnedFromAPI().equals(emailPasswordUser.getUserIdNotToBeReturnedFromAPI()));
+        assert (result.user.getSupertokensUserId().equals(emailPasswordUser.getSupertokensUserId()));
         assert (result.user.isPrimaryUser);
         assert (result.user.loginMethods.length == 1);
         assert (result.user.loginMethods[0].recipeId == RECIPE_ID.EMAIL_PASSWORD);
         assert (result.user.loginMethods[0].email.equals("test@example.com"));
         assert (result.user.loginMethods[0].passwordHash != null);
         assert (result.user.loginMethods[0].thirdParty == null);
-        assert (result.user.getUserIdNotToBeReturnedFromAPI().equals(result.user.loginMethods[0].getRecipeUserIdNotToBeReturnedFromAPI()));
+        assert (result.user.getSupertokensUserId().equals(result.user.loginMethods[0].getSupertokensUserId()));
         assert (result.user.loginMethods[0].phoneNumber == null);
 
-        AuthRecipeUserInfo refetchedUser = AuthRecipe.getUserById(process.main, result.user.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipeUserInfo refetchedUser = AuthRecipe.getUserById(process.main, result.user.getSupertokensUserId());
 
         assert (refetchedUser.equals(result.user));
 
@@ -330,17 +330,17 @@ public class CreatePrimaryUserTest {
         AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(process.getProcess(), "test@example.com",
                 "pass1234");
 
-        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.getSupertokensUserId());
         assert (!result.wasAlreadyAPrimaryUser);
 
         ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, "google", "user-google",
                 "test@example.com");
 
         try {
-            AuthRecipe.createPrimaryUser(process.main, signInUpResponse.user.getUserIdNotToBeReturnedFromAPI());
+            AuthRecipe.createPrimaryUser(process.main, signInUpResponse.user.getSupertokensUserId());
             assert (false);
         } catch (AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException e) {
-            assert (e.primaryUserId.equals(emailPasswordUser.getUserIdNotToBeReturnedFromAPI()));
+            assert (e.primaryUserId.equals(emailPasswordUser.getSupertokensUserId()));
             assert (e.getMessage().equals("This user's email is already associated with another user ID"));
         }
 
@@ -364,7 +364,7 @@ public class CreatePrimaryUserTest {
         ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, "google", "user-google",
                 "test@example.com");
 
-        AuthRecipe.CreatePrimaryUserResult r = AuthRecipe.createPrimaryUser(process.main, signInUpResponse.user.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipe.CreatePrimaryUserResult r = AuthRecipe.createPrimaryUser(process.main, signInUpResponse.user.getSupertokensUserId());
         assert (!r.wasAlreadyAPrimaryUser);
 
         process.kill();
@@ -393,19 +393,19 @@ public class CreatePrimaryUserTest {
                 "test@example.com",
                 "pass1234");
 
-        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.getSupertokensUserId());
         assert (!result.wasAlreadyAPrimaryUser);
 
         ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, "google", "user-google",
                 "test@example.com");
 
-        Multitenancy.addUserIdToTenant(process.main, tenantIdentifierWithStorage, signInUpResponse.user.getUserIdNotToBeReturnedFromAPI());
+        Multitenancy.addUserIdToTenant(process.main, tenantIdentifierWithStorage, signInUpResponse.user.getSupertokensUserId());
 
         try {
-            AuthRecipe.createPrimaryUser(process.main, signInUpResponse.user.getUserIdNotToBeReturnedFromAPI());
+            AuthRecipe.createPrimaryUser(process.main, signInUpResponse.user.getSupertokensUserId());
             assert (false);
         } catch (AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException e) {
-            assert (e.primaryUserId.equals(emailPasswordUser.getUserIdNotToBeReturnedFromAPI()));
+            assert (e.primaryUserId.equals(emailPasswordUser.getSupertokensUserId()));
             assert (e.getMessage().equals("This user's email is already associated with another user ID"));
         }
 
@@ -435,13 +435,13 @@ public class CreatePrimaryUserTest {
                 "test@example.com",
                 "pass1234");
 
-        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.getSupertokensUserId());
         assert (!result.wasAlreadyAPrimaryUser);
 
         ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, "google", "user-google",
                 "test@example.com");
 
-        AuthRecipe.CreatePrimaryUserResult r = AuthRecipe.createPrimaryUser(process.main, signInUpResponse.user.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipe.CreatePrimaryUserResult r = AuthRecipe.createPrimaryUser(process.main, signInUpResponse.user.getSupertokensUserId());
         assert !r.wasAlreadyAPrimaryUser;
 
         process.kill();
@@ -483,14 +483,14 @@ public class CreatePrimaryUserTest {
         AuthRecipeUserInfo emailPasswordUser2 = EmailPassword.signUp(process.getProcess(), "test2@example.com",
                 "pass1234");
 
-        AuthRecipe.createPrimaryUser(process.main, emailPasswordUser1.getUserIdNotToBeReturnedFromAPI());
-        AuthRecipe.linkAccounts(process.main, emailPasswordUser2.getUserIdNotToBeReturnedFromAPI(), emailPasswordUser1.getUserIdNotToBeReturnedFromAPI());
+        AuthRecipe.createPrimaryUser(process.main, emailPasswordUser1.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.main, emailPasswordUser2.getSupertokensUserId(), emailPasswordUser1.getSupertokensUserId());
 
         try {
-            AuthRecipe.createPrimaryUser(process.main, emailPasswordUser2.getUserIdNotToBeReturnedFromAPI());
+            AuthRecipe.createPrimaryUser(process.main, emailPasswordUser2.getSupertokensUserId());
             assert (false);
         } catch (RecipeUserIdAlreadyLinkedWithPrimaryUserIdException e) {
-            assert (e.primaryUserId.equals(emailPasswordUser1.getUserIdNotToBeReturnedFromAPI()));
+            assert (e.primaryUserId.equals(emailPasswordUser1.getSupertokensUserId()));
             assert (e.getMessage().equals("This user ID is already linked to another user ID"));
         }
 

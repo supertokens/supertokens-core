@@ -67,22 +67,22 @@ public class DeleteExpiredEmailVerificationTokensCronjobTest {
 
         UserInfo user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
 
-        String tok = EmailVerification.generateEmailVerificationToken(process.getProcess(), user.getUserIdNotToBeReturnedFromAPI(), user.email);
-        String tok2 = EmailVerification.generateEmailVerificationToken(process.getProcess(), user.getUserIdNotToBeReturnedFromAPI(), user.email);
+        String tok = EmailVerification.generateEmailVerificationToken(process.getProcess(), user.getSupertokensUserId(), user.email);
+        String tok2 = EmailVerification.generateEmailVerificationToken(process.getProcess(), user.getSupertokensUserId(), user.email);
 
         Thread.sleep(2000);
 
-        String tok3 = EmailVerification.generateEmailVerificationToken(process.getProcess(), user.getUserIdNotToBeReturnedFromAPI(), user.email);
-        String tok4 = EmailVerification.generateEmailVerificationToken(process.getProcess(), user.getUserIdNotToBeReturnedFromAPI(), user.email);
+        String tok3 = EmailVerification.generateEmailVerificationToken(process.getProcess(), user.getSupertokensUserId(), user.email);
+        String tok4 = EmailVerification.generateEmailVerificationToken(process.getProcess(), user.getSupertokensUserId(), user.email);
 
         assert (((EmailVerificationSQLStorage) StorageLayer.getStorage(process.getProcess()))
-                .getAllEmailVerificationTokenInfoForUser(new TenantIdentifier(null, null, null), user.getUserIdNotToBeReturnedFromAPI(), user.email).length ==
+                .getAllEmailVerificationTokenInfoForUser(new TenantIdentifier(null, null, null), user.getSupertokensUserId(), user.email).length ==
                 4);
 
         Thread.sleep(3500);
 
         EmailVerificationTokenInfo[] tokens = ((EmailVerificationSQLStorage) StorageLayer.getStorage(process.getProcess()))
-                .getAllEmailVerificationTokenInfoForUser(new TenantIdentifier(null, null, null), user.getUserIdNotToBeReturnedFromAPI(), user.email);
+                .getAllEmailVerificationTokenInfoForUser(new TenantIdentifier(null, null, null), user.getSupertokensUserId(), user.email);
 
         assert (tokens.length == 2);
 
