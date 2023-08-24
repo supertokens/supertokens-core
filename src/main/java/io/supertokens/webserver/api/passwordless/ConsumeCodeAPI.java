@@ -115,7 +115,7 @@ public class ConsumeCodeAPI extends WebserverAPI {
                     if (loginMethod.recipeId.equals(RECIPE_ID.PASSWORDLESS)
                             && (consumeCodeResponse.email == null || Objects.equals(loginMethod.email, consumeCodeResponse.email))
                             && (consumeCodeResponse.phoneNumber == null || Objects.equals(loginMethod.phoneNumber, consumeCodeResponse.phoneNumber))) {
-                        result.addProperty("recipeUserId", loginMethod.recipeUserId);
+                        result.addProperty("recipeUserId", loginMethod.getUserIdToBeReturnedInAPI());
                         break;
                     }
                 }
