@@ -96,7 +96,7 @@ public class SignInUpAPI extends WebserverAPI {
                         if (loginMethod.recipeId.equals(RECIPE_ID.THIRD_PARTY)
                                 && Objects.equals(loginMethod.thirdParty.id, thirdPartyId)
                                 && Objects.equals(loginMethod.thirdParty.userId, thirdPartyUserId)) {
-                            result.addProperty("recipeUserId", loginMethod.getUserIdToBeReturnedFromAPI());
+                            result.addProperty("recipeUserId", loginMethod.getUserId());
                             break;
                         }
                     }
@@ -158,7 +158,7 @@ public class SignInUpAPI extends WebserverAPI {
                         if (loginMethod.recipeId.equals(RECIPE_ID.THIRD_PARTY)
                                 && Objects.equals(loginMethod.thirdParty.id, thirdPartyId)
                                 && Objects.equals(loginMethod.thirdParty.userId, thirdPartyUserId)) {
-                            result.addProperty("recipeUserId", loginMethod.getUserIdToBeReturnedFromAPI());
+                            result.addProperty("recipeUserId", loginMethod.getUserId());
                             break;
                         }
                     }

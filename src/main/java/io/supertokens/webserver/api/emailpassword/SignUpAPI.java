@@ -95,7 +95,7 @@ public class SignUpAPI extends WebserverAPI {
 
             result.add("user", userJson);
             if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0)) {
-                result.addProperty("recipeUserId", user.getUserIdToBeReturnedFromAPI());
+                result.addProperty("recipeUserId", user.getUserId());
             }
             super.sendJsonResponse(200, result, resp);
         } catch (DuplicateEmailException e) {
