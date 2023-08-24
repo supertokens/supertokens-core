@@ -71,7 +71,7 @@ public class GetUsersAPIWithUserIdMappingTest {
         for (int i = 1; i <= 10; i++) {
             // create User
             UserInfo userInfo = EmailPassword.signUp(process.main, "test" + i + "@example.com", "testPass123");
-            String superTokensUserId = userInfo.id;
+            String superTokensUserId = userInfo.getSupertokensUserId();
             String externalUserId = "externalId" + i;
             externalUserIdList.add(externalUserId);
 
@@ -111,7 +111,7 @@ public class GetUsersAPIWithUserIdMappingTest {
         for (int i = 1; i <= 20; i++) {
             // create User
             UserInfo userInfo = EmailPassword.signUp(process.main, "test" + i + "@example.com", "testPass123");
-            String superTokensUserId = userInfo.id;
+            String superTokensUserId = userInfo.getSupertokensUserId();
             String externalUserId = "externalId" + i;
             externalUserIdList.add(externalUserId);
 

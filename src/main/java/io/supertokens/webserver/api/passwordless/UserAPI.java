@@ -102,7 +102,7 @@ public class UserAPI extends WebserverAPI {
                 if (user != null) {
                     UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
                             this.getAppIdentifierWithStorage(req),
-                            user.id, UserIdType.SUPERTOKENS);
+                            user.getSupertokensUserId(), UserIdType.SUPERTOKENS);
                     if (userIdMapping != null) {
                         user.setExternalUserId(userIdMapping.externalUserId);
                     } else {
@@ -115,7 +115,7 @@ public class UserAPI extends WebserverAPI {
                 if (user != null) {
                     UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
                             this.getAppIdentifierWithStorage(req),
-                            user.id, UserIdType.SUPERTOKENS);
+                            user.getSupertokensUserId(), UserIdType.SUPERTOKENS);
                     if (userIdMapping != null) {
                         user.setExternalUserId(userIdMapping.externalUserId);
                     } else {

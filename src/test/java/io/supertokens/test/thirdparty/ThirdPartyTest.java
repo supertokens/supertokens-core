@@ -104,7 +104,7 @@ public class ThirdPartyTest {
                 thirdPartyUserId, email);
         checkSignInUpResponse(signUpResponse, thirdPartyUserId, thirdPartyId, email, true);
 
-        assertFalse(EmailVerification.isEmailVerified(process.getProcess(), signUpResponse.user.id,
+        assertFalse(EmailVerification.isEmailVerified(process.getProcess(), signUpResponse.user.getSupertokensUserId(),
                 signUpResponse.user.loginMethods[0].email));
 
         process.kill();
@@ -156,7 +156,7 @@ public class ThirdPartyTest {
                 thirdPartyUserId, email);
         checkSignInUpResponse(signUpResponse, thirdPartyUserId, thirdPartyId, email, true);
 
-        assertFalse(EmailVerification.isEmailVerified(process.getProcess(), signUpResponse.user.id,
+        assertFalse(EmailVerification.isEmailVerified(process.getProcess(), signUpResponse.user.getSupertokensUserId(),
                 signUpResponse.user.loginMethods[0].email));
 
         ThirdParty.SignInUpResponse signInResponse = ThirdParty.signInUp(process.getProcess(), thirdPartyId,
@@ -194,7 +194,7 @@ public class ThirdPartyTest {
                 thirdPartyUserId, email_2);
         checkSignInUpResponse(signInResponse, thirdPartyUserId, thirdPartyId, email_2, false);
 
-        assertFalse(EmailVerification.isEmailVerified(process.getProcess(), signInResponse.user.id,
+        assertFalse(EmailVerification.isEmailVerified(process.getProcess(), signInResponse.user.getSupertokensUserId(),
                 signInResponse.user.loginMethods[0].email));
 
         AuthRecipeUserInfo updatedUserInfo = ThirdParty.getUser(process.getProcess(), thirdPartyId, thirdPartyUserId);
@@ -325,7 +325,7 @@ public class ThirdPartyTest {
         checkSignInUpResponse(signUpResponse, thirdPartyUserId, thirdPartyId, email, true);
         try {
             ((ThirdPartySQLStorage) StorageLayer.getStorage(process.getProcess()))
-                    .signUp(new TenantIdentifier(null, null, null), signUpResponse.user.id, email,
+                    .signUp(new TenantIdentifier(null, null, null), signUpResponse.user.getSupertokensUserId(), email,
                             new LoginMethod.ThirdParty("newThirdParty", "newThirdPartyUserId"),
                             System.currentTimeMillis());
             throw new Exception("Should not come here");
@@ -389,8 +389,8 @@ public class ThirdPartyTest {
 
         checkSignInUpResponse(signUpResponse, thirdPartyUserId, thirdPartyId, email, true);
 
-        UserInfo getUserInfoFromId = ThirdParty.getUser(process.getProcess(), signUpResponse.user.id);
-        assertEquals(getUserInfoFromId.id, signUpResponse.user.id);
+        UserInfo getUserInfoFromId = ThirdParty.getUser(process.getProcess(), signUpResponse.user.getSupertokensUserId());
+        assertEquals(getUserInfoFromId.getSupertokensUserId(), signUpResponse.user.getSupertokensUserId());
         assertEquals(getUserInfoFromId.timeJoined, signUpResponse.user.timeJoined);
         assertEquals(getUserInfoFromId.email, signUpResponse.user.loginMethods[0].email);
         assertEquals(getUserInfoFromId.thirdParty.userId, signUpResponse.user.loginMethods[0].thirdParty.userId);
@@ -399,7 +399,7 @@ public class ThirdPartyTest {
         AuthRecipeUserInfo getUserInfoFromThirdParty = ThirdParty.getUser(process.getProcess(),
                 signUpResponse.user.loginMethods[0].thirdParty.id,
                 signUpResponse.user.loginMethods[0].thirdParty.userId);
-        assertEquals(getUserInfoFromThirdParty.id, signUpResponse.user.id);
+        assertEquals(getUserInfoFromThirdParty.getSupertokensUserId(), signUpResponse.user.getSupertokensUserId());
         assertEquals(getUserInfoFromThirdParty.timeJoined, signUpResponse.user.timeJoined);
         assertEquals(getUserInfoFromThirdParty.loginMethods[0].email, signUpResponse.user.loginMethods[0].email);
         assertEquals(getUserInfoFromThirdParty.loginMethods[0].thirdParty.userId,
@@ -414,7 +414,7 @@ public class ThirdPartyTest {
     public static void checkSignInUpResponse(ThirdParty.SignInUpResponse response, String thirdPartyUserId,
                                              String thirdPartyId, String email, boolean createNewUser) {
         assertEquals(response.createdNewUser, createNewUser);
-        assertNotNull(response.user.id);
+        assertNotNull(response.user.getSupertokensUserId());
         assertEquals(response.user.loginMethods[0].thirdParty.userId, thirdPartyUserId);
         assertEquals(response.user.loginMethods[0].thirdParty.id, thirdPartyId);
         assertEquals(response.user.loginMethods[0].email, email);

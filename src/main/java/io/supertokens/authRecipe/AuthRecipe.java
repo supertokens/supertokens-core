@@ -89,10 +89,10 @@ public class AuthRecipe {
                                 appIdentifierWithStorage,
                                 recipeUserId, UserIdType.SUPERTOKENS);
 
-                if (primaryUser.id.equals(recipeUserId)) {
+                if (primaryUser.getSupertokensUserId().equals(recipeUserId)) {
                     // we are trying to unlink the user ID which is the same as the primary one.
                     if (primaryUser.loginMethods.length == 1) {
-                        storage.unlinkAccounts_Transaction(appIdentifierWithStorage, con, primaryUser.id, recipeUserId);
+                        storage.unlinkAccounts_Transaction(appIdentifierWithStorage, con, primaryUser.getSupertokensUserId(), recipeUserId);
                         Session.revokeAllSessionsForUser(main, appIdentifierWithStorage,
                                 mappingResult == null ? recipeUserId : mappingResult.externalUserId,
                                 false);
@@ -109,7 +109,7 @@ public class AuthRecipe {
                         return true;
                     }
                 } else {
-                    storage.unlinkAccounts_Transaction(appIdentifierWithStorage, con, primaryUser.id, recipeUserId);
+                    storage.unlinkAccounts_Transaction(appIdentifierWithStorage, con, primaryUser.getSupertokensUserId(), recipeUserId);
                     Session.revokeAllSessionsForUser(main, appIdentifierWithStorage,
                             mappingResult == null ? recipeUserId : mappingResult.externalUserId, false);
                     return false;
@@ -221,7 +221,7 @@ public class AuthRecipe {
         }
 
         if (!primaryUser.isPrimaryUser) {
-            throw new InputUserIdIsNotAPrimaryUserException(primaryUser.id);
+            throw new InputUserIdIsNotAPrimaryUserException(primaryUser.getSupertokensUserId());
         }
 
         AuthRecipeUserInfo recipeUser = storage.getPrimaryUserById_Transaction(appIdentifierWithStorage, con,
@@ -231,10 +231,10 @@ public class AuthRecipe {
         }
 
         if (recipeUser.isPrimaryUser) {
-            if (recipeUser.id.equals(primaryUser.id)) {
-                return new CanLinkAccountsResult(recipeUser.id, primaryUser.id, true);
+            if (recipeUser.getSupertokensUserId().equals(primaryUser.getSupertokensUserId())) {
+                return new CanLinkAccountsResult(recipeUser.getSupertokensUserId(), primaryUser.getSupertokensUserId(), true);
             } else {
-                throw new RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException(recipeUser.id,
+                throw new RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException(recipeUser.getSupertokensUserId(),
                         "The input recipe user ID is already linked to another user ID");
             }
         }
@@ -270,8 +270,8 @@ public class AuthRecipe {
                         .listPrimaryUsersByEmail_Transaction(tenantIdentifier, con,
                                 recipeUserIdLM.email);
                 for (AuthRecipeUserInfo user : usersWithSameEmail) {
-                    if (user.isPrimaryUser && !user.id.equals(primaryUser.id)) {
-                        throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(user.id,
+                    if (user.isPrimaryUser && !user.getSupertokensUserId().equals(primaryUser.getSupertokensUserId())) {
+                        throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(user.getSupertokensUserId(),
                                 "This user's email is already associated with another user ID");
                     }
                 }
@@ -282,8 +282,8 @@ public class AuthRecipe {
                         .listPrimaryUsersByPhoneNumber_Transaction(tenantIdentifier, con,
                                 recipeUserIdLM.phoneNumber);
                 for (AuthRecipeUserInfo user : usersWithSamePhoneNumber) {
-                    if (user.isPrimaryUser && !user.id.equals(primaryUser.id)) {
-                        throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(user.id,
+                    if (user.isPrimaryUser && !user.getSupertokensUserId().equals(primaryUser.getSupertokensUserId())) {
+                        throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(user.getSupertokensUserId(),
                                 "This user's phone number is already associated with another user" +
                                         " ID");
                     }
@@ -295,16 +295,16 @@ public class AuthRecipe {
                         .getPrimaryUsersByThirdPartyInfo_Transaction(tenantIdentifier, con,
                                 recipeUserIdLM.thirdParty.id, recipeUserIdLM.thirdParty.userId);
                 if (userWithSameThirdParty != null && userWithSameThirdParty.isPrimaryUser &&
-                        !userWithSameThirdParty.id.equals(primaryUser.id)) {
+                        !userWithSameThirdParty.getSupertokensUserId().equals(primaryUser.getSupertokensUserId())) {
                     throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(
-                            userWithSameThirdParty.id,
+                            userWithSameThirdParty.getSupertokensUserId(),
                             "This user's third party login is already associated with another" +
                                     " user ID");
                 }
             }
         }
 
-        return new CanLinkAccountsResult(recipeUser.id, primaryUser.id, false);
+        return new CanLinkAccountsResult(recipeUser.getSupertokensUserId(), primaryUser.getSupertokensUserId(), false);
     }
 
     @TestOnly
@@ -437,10 +437,10 @@ public class AuthRecipe {
             throw new UnknownUserIdException();
         }
         if (targetUser.isPrimaryUser) {
-            if (targetUser.id.equals(recipeUserId)) {
+            if (targetUser.getSupertokensUserId().equals(recipeUserId)) {
                 return new CreatePrimaryUserResult(targetUser, true);
             } else {
-                throw new RecipeUserIdAlreadyLinkedWithPrimaryUserIdException(targetUser.id,
+                throw new RecipeUserIdAlreadyLinkedWithPrimaryUserIdException(targetUser.getSupertokensUserId(),
                         "This user ID is already linked to another user ID");
             }
         }
@@ -464,7 +464,7 @@ public class AuthRecipe {
                                 loginMethod.email);
                 for (AuthRecipeUserInfo user : usersWithSameEmail) {
                     if (user.isPrimaryUser) {
-                        throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(user.id,
+                        throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(user.getSupertokensUserId(),
                                 "This user's email is already associated with another user ID");
                     }
                 }
@@ -476,7 +476,7 @@ public class AuthRecipe {
                                 loginMethod.phoneNumber);
                 for (AuthRecipeUserInfo user : usersWithSamePhoneNumber) {
                     if (user.isPrimaryUser) {
-                        throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(user.id,
+                        throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(user.getSupertokensUserId(),
                                 "This user's phone number is already associated with another user" +
                                         " ID");
                     }
@@ -489,7 +489,7 @@ public class AuthRecipe {
                                 loginMethod.thirdParty.id, loginMethod.thirdParty.userId);
                 if (userWithSameThirdParty != null && userWithSameThirdParty.isPrimaryUser) {
                     throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(
-                            userWithSameThirdParty.id,
+                            userWithSameThirdParty.getSupertokensUserId(),
                             "This user's third party login is already associated with another" +
                                     " user ID");
                 }
@@ -537,7 +537,7 @@ public class AuthRecipe {
                     if (result.wasAlreadyAPrimaryUser) {
                         return result;
                     }
-                    storage.makePrimaryUser_Transaction(appIdentifierWithStorage, con, result.user.id);
+                    storage.makePrimaryUser_Transaction(appIdentifierWithStorage, con, result.user.getSupertokensUserId());
 
                     storage.commitTransaction(con);
 
@@ -681,7 +681,7 @@ public class AuthRecipe {
         int maxLoop = users.length;
         if (users.length == limit + 1) {
             maxLoop = limit;
-            nextPaginationToken = new UserPaginationToken(users[limit].id,
+            nextPaginationToken = new UserPaginationToken(users[limit].getSupertokensUserId(),
                     users[limit].timeJoined).generateToken();
         }
         AuthRecipeUserInfo[] resultUsers = new AuthRecipeUserInfo[maxLoop];
@@ -791,23 +791,23 @@ public class AuthRecipe {
         }
 
         if (removeAllLinkedAccounts || userToDelete.loginMethods.length == 1) {
-            if (userToDelete.id.equals(userIdToDeleteForAuthRecipe)) {
+            if (userToDelete.getSupertokensUserId().equals(userIdToDeleteForAuthRecipe)) {
                 primaryUserIdToDeleteNonAuthRecipe = userIdToDeleteForNonAuthRecipeForRecipeUserId;
             } else {
                 // this is always type supertokens user ID cause it's from a user from the database.
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping mappingResult =
                         io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
                                 appIdentifierWithStorage,
-                                userToDelete.id, UserIdType.SUPERTOKENS);
+                                userToDelete.getSupertokensUserId(), UserIdType.SUPERTOKENS);
                 if (mappingResult != null) {
                     primaryUserIdToDeleteNonAuthRecipe = mappingResult.externalUserId;
                 } else {
-                    primaryUserIdToDeleteNonAuthRecipe = userToDelete.id;
+                    primaryUserIdToDeleteNonAuthRecipe = userToDelete.getSupertokensUserId();
                 }
 
             }
         } else {
-            if (userToDelete.id.equals(userIdToDeleteForAuthRecipe)) {
+            if (userToDelete.getSupertokensUserId().equals(userIdToDeleteForAuthRecipe)) {
                 // this means we are deleting the primary user itself, but keeping other linked accounts
                 // so we keep the non auth recipe info of this user since other linked accounts can use it
                 userIdToDeleteForNonAuthRecipeForRecipeUserId = null;
@@ -816,7 +816,7 @@ public class AuthRecipe {
 
         if (!removeAllLinkedAccounts) {
             deleteAuthRecipeUser(con, appIdentifierWithStorage, userIdToDeleteForAuthRecipe,
-                    !userIdToDeleteForAuthRecipe.equals(userToDelete.id));
+                    !userIdToDeleteForAuthRecipe.equals(userToDelete.getSupertokensUserId()));
 
             if (userIdToDeleteForNonAuthRecipeForRecipeUserId != null) {
                 deleteNonAuthRecipeUser(con, appIdentifierWithStorage, userIdToDeleteForNonAuthRecipeForRecipeUserId);
@@ -827,17 +827,17 @@ public class AuthRecipe {
 
                 // this is only done to also delete the user ID mapping in case it exists, since we do not delete in the
                 // previous call to deleteAuthRecipeUser above.
-                deleteAuthRecipeUser(con, appIdentifierWithStorage, userToDelete.id,
+                deleteAuthRecipeUser(con, appIdentifierWithStorage, userToDelete.getSupertokensUserId(),
                         true);
             }
         } else {
             for (LoginMethod lM : userToDelete.loginMethods) {
-                io.supertokens.pluginInterface.useridmapping.UserIdMapping mappingResult = lM.recipeUserId.equals(
+                io.supertokens.pluginInterface.useridmapping.UserIdMapping mappingResult = lM.getSupertokensUserId().equals(
                         userIdToDeleteForAuthRecipe) ? userIdMapping :
                         io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
                                 appIdentifierWithStorage,
-                                lM.recipeUserId, UserIdType.SUPERTOKENS);
-                deleteUserHelper(con, appIdentifierWithStorage, lM.recipeUserId, false, mappingResult);
+                                lM.getSupertokensUserId(), UserIdType.SUPERTOKENS);
+                deleteUserHelper(con, appIdentifierWithStorage, lM.getSupertokensUserId(), false, mappingResult);
             }
         }
     }

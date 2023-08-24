@@ -78,20 +78,20 @@ public class GetUserByIdAPITest {
         AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "password");
         assert (!user2.isPrimaryUser);
 
-        AuthRecipe.createPrimaryUser(process.main, user.id);
+        AuthRecipe.createPrimaryUser(process.main, user.getSupertokensUserId());
 
-        AuthRecipe.linkAccounts(process.main, user2.id, user.id);
+        AuthRecipe.linkAccounts(process.main, user2.getSupertokensUserId(), user.getSupertokensUserId());
 
         {
             Map<String, String> params = new HashMap<>();
-            params.put("userId", user2.id);
+            params.put("userId", user2.getSupertokensUserId());
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/user/id", params, 1000, 1000, null,
                     WebserverAPI.getLatestCDIVersion().get(), "");
             assertEquals(2, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
             JsonObject jsonUser = response.get("user").getAsJsonObject();
-            assert (jsonUser.get("id").getAsString().equals(user.id));
+            assert (jsonUser.get("id").getAsString().equals(user.getSupertokensUserId()));
             assert (jsonUser.get("timeJoined").getAsLong() == user.timeJoined);
             assert (jsonUser.get("isPrimaryUser").getAsBoolean());
             assert (jsonUser.get("emails").getAsJsonArray().size() == 2);
@@ -108,7 +108,7 @@ public class GetUserByIdAPITest {
                 JsonObject lM = jsonUser.get("loginMethods").getAsJsonArray().get(0).getAsJsonObject();
                 assertFalse(lM.get("verified").getAsBoolean());
                 assertEquals(lM.get("timeJoined").getAsLong(), user.timeJoined);
-                assertEquals(lM.get("recipeUserId").getAsString(), user.id);
+                assertEquals(lM.get("recipeUserId").getAsString(), user.getSupertokensUserId());
                 assertEquals(lM.get("recipeId").getAsString(), "emailpassword");
                 assertEquals(lM.get("email").getAsString(), "test@example.com");
                 assert (lM.entrySet().size() == 6);
@@ -117,7 +117,7 @@ public class GetUserByIdAPITest {
                 JsonObject lM = jsonUser.get("loginMethods").getAsJsonArray().get(1).getAsJsonObject();
                 assertFalse(lM.get("verified").getAsBoolean());
                 assertEquals(lM.get("timeJoined").getAsLong(), user2.timeJoined);
-                assertEquals(lM.get("recipeUserId").getAsString(), user2.id);
+                assertEquals(lM.get("recipeUserId").getAsString(), user2.getSupertokensUserId());
                 assertEquals(lM.get("recipeId").getAsString(), "emailpassword");
                 assertEquals(lM.get("email").getAsString(), "test2@example.com");
                 assert (lM.entrySet().size() == 6);
@@ -144,17 +144,17 @@ public class GetUserByIdAPITest {
 
         AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
         assert (!user.isPrimaryUser);
-        UserIdMapping.createUserIdMapping(process.main, user.id, "e1", null, false);
+        UserIdMapping.createUserIdMapping(process.main, user.getSupertokensUserId(), "e1", null, false);
 
         Thread.sleep(50);
 
         AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "password");
         assert (!user2.isPrimaryUser);
-        UserIdMapping.createUserIdMapping(process.main, user2.id, "e2", null, false);
+        UserIdMapping.createUserIdMapping(process.main, user2.getSupertokensUserId(), "e2", null, false);
 
-        AuthRecipe.createPrimaryUser(process.main, user.id);
+        AuthRecipe.createPrimaryUser(process.main, user.getSupertokensUserId());
 
-        AuthRecipe.linkAccounts(process.main, user2.id, user.id);
+        AuthRecipe.linkAccounts(process.main, user2.getSupertokensUserId(), user.getSupertokensUserId());
 
         {
             Map<String, String> params = new HashMap<>();
@@ -191,7 +191,7 @@ public class GetUserByIdAPITest {
                 JsonObject lM = jsonUser.get("loginMethods").getAsJsonArray().get(1).getAsJsonObject();
                 assertFalse(lM.get("verified").getAsBoolean());
                 assertEquals(lM.get("timeJoined").getAsLong(), user2.timeJoined);
-                assertEquals(lM.get("recipeUserId").getAsString(), user2.id);
+                assertEquals(lM.get("recipeUserId").getAsString(), user2.getSupertokensUserId());
                 assertEquals(lM.get("recipeId").getAsString(), "emailpassword");
                 assertEquals(lM.get("email").getAsString(), "test2@example.com");
                 assert (lM.entrySet().size() == 6);
@@ -227,20 +227,20 @@ public class GetUserByIdAPITest {
         AuthRecipeUserInfo user2 = signInUpRespone.user;
         assert (!user2.isPrimaryUser);
 
-        AuthRecipe.createPrimaryUser(process.main, user2.id);
+        AuthRecipe.createPrimaryUser(process.main, user2.getSupertokensUserId());
 
-        AuthRecipe.linkAccounts(process.main, user.id, user2.id);
+        AuthRecipe.linkAccounts(process.main, user.getSupertokensUserId(), user2.getSupertokensUserId());
 
         {
             Map<String, String> params = new HashMap<>();
-            params.put("userId", user2.id);
+            params.put("userId", user2.getSupertokensUserId());
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/user/id", params, 1000, 1000, null,
                     WebserverAPI.getLatestCDIVersion().get(), "");
             assertEquals(2, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
             JsonObject jsonUser = response.get("user").getAsJsonObject();
-            assert (jsonUser.get("id").getAsString().equals(user2.id));
+            assert (jsonUser.get("id").getAsString().equals(user2.getSupertokensUserId()));
             assert (jsonUser.get("timeJoined").getAsLong() == user.timeJoined);
             assert (jsonUser.get("isPrimaryUser").getAsBoolean());
             assert (jsonUser.get("emails").getAsJsonArray().size() == 1);
@@ -252,7 +252,7 @@ public class GetUserByIdAPITest {
                 JsonObject lM = jsonUser.get("loginMethods").getAsJsonArray().get(0).getAsJsonObject();
                 assertFalse(lM.get("verified").getAsBoolean());
                 assertEquals(lM.get("timeJoined").getAsLong(), user.timeJoined);
-                assertEquals(lM.get("recipeUserId").getAsString(), user.id);
+                assertEquals(lM.get("recipeUserId").getAsString(), user.getSupertokensUserId());
                 assertEquals(lM.get("recipeId").getAsString(), "emailpassword");
                 assertEquals(lM.get("email").getAsString(), "test@example.com");
                 assert (lM.entrySet().size() == 6);
@@ -261,7 +261,7 @@ public class GetUserByIdAPITest {
                 JsonObject lM = jsonUser.get("loginMethods").getAsJsonArray().get(1).getAsJsonObject();
                 assertFalse(lM.get("verified").getAsBoolean());
                 assertEquals(lM.get("timeJoined").getAsLong(), user2.timeJoined);
-                assertEquals(lM.get("recipeUserId").getAsString(), user2.id);
+                assertEquals(lM.get("recipeUserId").getAsString(), user2.getSupertokensUserId());
                 assertEquals(lM.get("recipeId").getAsString(), "thirdparty");
                 assertEquals(lM.get("email").getAsString(), "test@example.com");
                 assert (lM.entrySet().size() == 7);

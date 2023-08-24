@@ -75,31 +75,31 @@ public class UnlinkAccountsTest {
         AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "password");
         assert (!user2.isPrimaryUser);
 
-        AuthRecipe.createPrimaryUser(process.main, user.id);
+        AuthRecipe.createPrimaryUser(process.main, user.getSupertokensUserId());
 
-        AuthRecipe.linkAccounts(process.main, user2.id, user.id);
+        AuthRecipe.linkAccounts(process.main, user2.getSupertokensUserId(), user.getSupertokensUserId());
 
-        Session.createNewSession(process.main, user2.id, new JsonObject(), new JsonObject());
-        String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(process.main, user2.id);
+        Session.createNewSession(process.main, user2.getSupertokensUserId(), new JsonObject(), new JsonObject());
+        String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(process.main, user2.getSupertokensUserId());
         assert (sessions.length == 1);
 
-        boolean didDelete = AuthRecipe.unlinkAccounts(process.main, user2.id);
+        boolean didDelete = AuthRecipe.unlinkAccounts(process.main, user2.getSupertokensUserId());
         assert (!didDelete);
 
-        AuthRecipeUserInfo refetchUser2 = AuthRecipe.getUserById(process.main, user2.id);
+        AuthRecipeUserInfo refetchUser2 = AuthRecipe.getUserById(process.main, user2.getSupertokensUserId());
         assert (!refetchUser2.isPrimaryUser);
-        assert (refetchUser2.id.equals(user2.id));
+        assert (refetchUser2.getSupertokensUserId().equals(user2.getSupertokensUserId()));
         assert (refetchUser2.loginMethods.length == 1);
-        assert (refetchUser2.loginMethods[0].recipeUserId.equals(user2.id));
+        assert (refetchUser2.loginMethods[0].getSupertokensUserId().equals(user2.getSupertokensUserId()));
 
-        AuthRecipeUserInfo refetchUser = AuthRecipe.getUserById(process.main, user.id);
+        AuthRecipeUserInfo refetchUser = AuthRecipe.getUserById(process.main, user.getSupertokensUserId());
         assert (!refetchUser2.equals(refetchUser));
         assert (refetchUser.isPrimaryUser);
         assert (refetchUser.loginMethods.length == 1);
-        assert (refetchUser.loginMethods[0].recipeUserId.equals(user.id));
+        assert (refetchUser.loginMethods[0].getSupertokensUserId().equals(user.getSupertokensUserId()));
 
         // cause linkAccounts revokes sessions for the recipe user ID
-        sessions = Session.getAllNonExpiredSessionHandlesForUser(process.main, user2.id);
+        sessions = Session.getAllNonExpiredSessionHandlesForUser(process.main, user2.getSupertokensUserId());
         assert (sessions.length == 0);
 
         process.kill();
@@ -124,10 +124,10 @@ public class UnlinkAccountsTest {
         assert (!user.isPrimaryUser);
 
         try {
-            AuthRecipe.unlinkAccounts(process.main, user.id);
+            AuthRecipe.unlinkAccounts(process.main, user.getSupertokensUserId());
             assert (false);
         } catch (InputUserIdIsNotAPrimaryUserException e) {
-            assert (e.userId.equals(user.id));
+            assert (e.userId.equals(user.getSupertokensUserId()));
         }
 
 
@@ -177,22 +177,22 @@ public class UnlinkAccountsTest {
         AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
         assert (!user.isPrimaryUser);
 
-        AuthRecipe.createPrimaryUser(process.main, user.id);
+        AuthRecipe.createPrimaryUser(process.main, user.getSupertokensUserId());
 
-        Session.createNewSession(process.main, user.id, new JsonObject(), new JsonObject());
-        String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(process.main, user.id);
+        Session.createNewSession(process.main, user.getSupertokensUserId(), new JsonObject(), new JsonObject());
+        String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(process.main, user.getSupertokensUserId());
         assert (sessions.length == 1);
 
-        boolean didDelete = AuthRecipe.unlinkAccounts(process.main, user.id);
+        boolean didDelete = AuthRecipe.unlinkAccounts(process.main, user.getSupertokensUserId());
         assert (!didDelete);
 
-        AuthRecipeUserInfo refetchUser = AuthRecipe.getUserById(process.main, user.id);
+        AuthRecipeUserInfo refetchUser = AuthRecipe.getUserById(process.main, user.getSupertokensUserId());
         assert (!refetchUser.isPrimaryUser);
         assert (refetchUser.loginMethods.length == 1);
-        assert (refetchUser.loginMethods[0].recipeUserId.equals(user.id));
+        assert (refetchUser.loginMethods[0].getSupertokensUserId().equals(user.getSupertokensUserId()));
 
         // cause linkAccounts revokes sessions for the recipe user ID
-        sessions = Session.getAllNonExpiredSessionHandlesForUser(process.main, user.id);
+        sessions = Session.getAllNonExpiredSessionHandlesForUser(process.main, user.getSupertokensUserId());
         assert (sessions.length == 0);
 
         process.kill();
@@ -221,28 +221,28 @@ public class UnlinkAccountsTest {
         AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "password");
         assert (!user2.isPrimaryUser);
 
-        AuthRecipe.createPrimaryUser(process.main, user.id);
+        AuthRecipe.createPrimaryUser(process.main, user.getSupertokensUserId());
 
-        AuthRecipe.linkAccounts(process.main, user2.id, user.id);
+        AuthRecipe.linkAccounts(process.main, user2.getSupertokensUserId(), user.getSupertokensUserId());
 
-        Session.createNewSession(process.main, user.id, new JsonObject(), new JsonObject());
-        String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(process.main, user.id);
+        Session.createNewSession(process.main, user.getSupertokensUserId(), new JsonObject(), new JsonObject());
+        String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(process.main, user.getSupertokensUserId());
         assert (sessions.length == 1);
 
-        boolean didDelete = AuthRecipe.unlinkAccounts(process.main, user.id);
+        boolean didDelete = AuthRecipe.unlinkAccounts(process.main, user.getSupertokensUserId());
         assert (didDelete);
 
-        AuthRecipeUserInfo refetchUser2 = AuthRecipe.getUserById(process.main, user2.id);
+        AuthRecipeUserInfo refetchUser2 = AuthRecipe.getUserById(process.main, user2.getSupertokensUserId());
         assert (refetchUser2.isPrimaryUser);
-        assert (refetchUser2.id.equals(user.id));
+        assert (refetchUser2.getSupertokensUserId().equals(user.getSupertokensUserId()));
         assert (refetchUser2.loginMethods.length == 1);
-        assert (refetchUser2.loginMethods[0].recipeUserId.equals(user2.id));
+        assert (refetchUser2.loginMethods[0].getSupertokensUserId().equals(user2.getSupertokensUserId()));
 
-        AuthRecipeUserInfo refetchUser = AuthRecipe.getUserById(process.main, user.id);
+        AuthRecipeUserInfo refetchUser = AuthRecipe.getUserById(process.main, user.getSupertokensUserId());
         assert (refetchUser2.equals(refetchUser));
 
         // cause linkAccounts revokes sessions for the recipe user ID
-        sessions = Session.getAllNonExpiredSessionHandlesForUser(process.main, user.id);
+        sessions = Session.getAllNonExpiredSessionHandlesForUser(process.main, user.getSupertokensUserId());
         assert (sessions.length == 0);
 
         process.kill();

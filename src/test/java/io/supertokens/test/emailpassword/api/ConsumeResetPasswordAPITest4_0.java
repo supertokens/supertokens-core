@@ -105,7 +105,7 @@ public class ConsumeResetPasswordAPITest4_0 {
 
         AuthRecipeUserInfo user = EmailPassword.signUp(process.main, "random@gmail.com", "validPass123");
 
-        String userId = user.id;
+        String userId = user.getSupertokensUserId();
 
         String token = EmailPassword.generatePasswordResetToken(process.main, userId, "random@gmail.com");
 
@@ -117,7 +117,7 @@ public class ConsumeResetPasswordAPITest4_0 {
                 SemVer.v4_0.get(), "emailpassword");
         assertEquals(passwordResetResponse.get("status").getAsString(), "OK");
         assertEquals(passwordResetResponse.get("email").getAsString(), "random@gmail.com");
-        assertEquals(passwordResetResponse.get("userId").getAsString(), user.id);
+        assertEquals(passwordResetResponse.get("userId").getAsString(), user.getSupertokensUserId());
         assertEquals(passwordResetResponse.entrySet().size(), 3);
 
         process.kill();
@@ -136,9 +136,9 @@ public class ConsumeResetPasswordAPITest4_0 {
         }
 
         AuthRecipeUserInfo user = EmailPassword.signUp(process.main, "random@gmail.com", "validPass123");
-        UserIdMapping.createUserIdMapping(process.main, user.id, "e1", null, false);
+        UserIdMapping.createUserIdMapping(process.main, user.getSupertokensUserId(), "e1", null, false);
 
-        String userId = user.id;
+        String userId = user.getSupertokensUserId();
 
         String token = EmailPassword.generatePasswordResetToken(process.main, userId, "random@gmail.com");
 

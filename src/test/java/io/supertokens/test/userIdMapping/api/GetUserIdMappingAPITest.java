@@ -197,7 +197,7 @@ public class GetUserIdMappingAPITest {
 
         // create a user and map their userId to an external userId
         UserInfo user = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        String superTokensUserId = user.id;
+        String superTokensUserId = user.getSupertokensUserId();
         String externalUserId = "externalUserId";
         String externalUserIdInfo = "externalUserIdInfo";
 
@@ -291,7 +291,7 @@ public class GetUserIdMappingAPITest {
 
         // create a user and map their userId to an external userId
         UserInfo user = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        String superTokensUserId = user.id;
+        String superTokensUserId = user.getSupertokensUserId();
         String externalUserId = "externalUserId";
         String externalUserIdInfo = "externalUserIdInfo";
 
@@ -346,7 +346,7 @@ public class GetUserIdMappingAPITest {
 
         // create a user and map their userId to an external userId
         UserInfo user = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        String superTokensUserId = user.id;
+        String superTokensUserId = user.getSupertokensUserId();
         String externalUserId = "externalUserId";
 
         UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, null, false);

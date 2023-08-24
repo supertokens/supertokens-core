@@ -20,9 +20,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.authRecipe.AuthRecipe;
-import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.thirdparty.UserInfo;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -72,7 +70,7 @@ public class ThirdPartyAPITest {
         String email = "test@example.com";
         ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, thirdPartyId, thirdPartyUserId,
                 email);
-        String superTokensUserId = signInUpResponse.user.id;
+        String superTokensUserId = signInUpResponse.user.getSupertokensUserId();
         String externalUserId = "externalId";
 
         // create the mapping
@@ -132,7 +130,7 @@ public class ThirdPartyAPITest {
         String email = "test@example.com";
         ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, thirdPartyId, thirdPartyUserId,
                 email);
-        String superTokensUserId = signInUpResponse.user.id;
+        String superTokensUserId = signInUpResponse.user.getSupertokensUserId();
         String externalUserId = "externalId";
 
         // create the mapping
@@ -174,7 +172,7 @@ public class ThirdPartyAPITest {
         String email = "test@example.com";
         ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, thirdPartyId, thirdPartyUserId,
                 email);
-        String superTokensUserId = signInUpResponse.user.id;
+        String superTokensUserId = signInUpResponse.user.getSupertokensUserId();
         String externalUserId = "externalId";
 
         // create the mapping
@@ -215,7 +213,7 @@ public class ThirdPartyAPITest {
         String email = "test@example.com";
         ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, thirdPartyId, thirdPartyUserId,
                 email);
-        String superTokensUserId = signInUpResponse.user.id;
+        String superTokensUserId = signInUpResponse.user.getSupertokensUserId();
         String externalUserId = "externalId";
 
         // create the mapping

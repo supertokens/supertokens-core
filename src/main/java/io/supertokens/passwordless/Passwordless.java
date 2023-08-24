@@ -418,7 +418,7 @@ public class Passwordless {
                     long timeJoined = System.currentTimeMillis();
                     user = passwordlessStorage.createUser(tenantIdentifierWithStorage, userId, consumedDevice.email,
                             consumedDevice.phoneNumber, timeJoined);
-                    return new ConsumeCodeResponse(true, user);
+                    return new ConsumeCodeResponse(true, user, consumedDevice.email, consumedDevice.phoneNumber);
                 } catch (DuplicateEmailException | DuplicatePhoneNumberException e) {
                     // Getting these would mean that between getting the user and trying creating it:
                     // 1. the user managed to do a full create+consume flow
@@ -441,7 +441,7 @@ public class Passwordless {
                 removeCodesByPhoneNumber(tenantIdentifierWithStorage, loginMethod.phoneNumber);
             }
         }
-        return new ConsumeCodeResponse(false, user);
+        return new ConsumeCodeResponse(false, user, consumedDevice.email, consumedDevice.phoneNumber);
     }
 
     @TestOnly
@@ -545,8 +545,8 @@ public class Passwordless {
             return null;
         }
         for (LoginMethod lM : result.loginMethods) {
-            if (lM.recipeUserId.equals(userId)) {
-                return new io.supertokens.pluginInterface.passwordless.UserInfo(lM.recipeUserId, result.isPrimaryUser,
+            if (lM.getSupertokensUserId().equals(userId)) {
+                return new io.supertokens.pluginInterface.passwordless.UserInfo(lM.getSupertokensUserId(), result.isPrimaryUser,
                         lM);
             }
         }
@@ -626,7 +626,7 @@ public class Passwordless {
         }
 
         LoginMethod lM = Arrays.stream(user.loginMethods)
-                .filter(currlM -> currlM.recipeUserId.equals(recipeUserId) && currlM.recipeId == RECIPE_ID.PASSWORDLESS)
+                .filter(currlM -> currlM.getSupertokensUserId().equals(recipeUserId) && currlM.recipeId == RECIPE_ID.PASSWORDLESS)
                 .findFirst().orElse(null);
 
         if (lM == null) {
@@ -660,7 +660,7 @@ public class Passwordless {
                                             emailUpdate.newValue);
 
                             for (AuthRecipeUserInfo userWithSameEmail : existingUsersWithNewEmail) {
-                                if (userWithSameEmail.isPrimaryUser && !userWithSameEmail.id.equals(user.id)) {
+                                if (userWithSameEmail.isPrimaryUser && !userWithSameEmail.getSupertokensUserId().equals(user.getSupertokensUserId())) {
                                     throw new StorageTransactionLogicException(
                                             new EmailChangeNotAllowedException());
                                 }
@@ -764,10 +764,14 @@ public class Passwordless {
     public static class ConsumeCodeResponse {
         public boolean createdNewUser;
         public AuthRecipeUserInfo user;
+        public String email;
+        public String phoneNumber;
 
-        public ConsumeCodeResponse(boolean createdNewUser, AuthRecipeUserInfo user) {
+        public ConsumeCodeResponse(boolean createdNewUser, AuthRecipeUserInfo user, String email, String phoneNumber) {
             this.createdNewUser = createdNewUser;
             this.user = user;
+            this.email = email;
+            this.phoneNumber = phoneNumber;
         }
     }
 

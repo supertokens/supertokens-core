@@ -81,7 +81,7 @@ public class ListUsersByAccountInfoAPI extends WebserverAPI {
                 // we intentionally do not use the function that accepts an array of user IDs to get the mapping cause
                 // this is simpler to use, and cause there shouldn't be that many userIds per email anyway
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                        .getUserIdMapping(appIdentifierWithStorage, users[i].id, UserIdType.SUPERTOKENS);
+                        .getUserIdMapping(appIdentifierWithStorage, users[i].getSupertokensUserId(), UserIdType.SUPERTOKENS);
                 if (userIdMapping != null) {
                     users[i].setExternalUserId(userIdMapping.externalUserId);
                 } else {

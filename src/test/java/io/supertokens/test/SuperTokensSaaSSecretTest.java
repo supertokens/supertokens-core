@@ -209,7 +209,7 @@ public class SuperTokensSaaSSecretTest {
 
         JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session", request, 1000, 1000, null,
-                Utils.getCdiVersionStringLatestForTests(),
+                SemVer.v3_0.get(),
                 apiKey, "");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
@@ -296,7 +296,7 @@ public class SuperTokensSaaSSecretTest {
         {
             JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/session", request, 1000, 1000, null,
-                    Utils.getCdiVersionStringLatestForTests(),
+                    SemVer.v3_0.get(),
                     apiKey, "");
             assertEquals(sessionInfo.get("status").getAsString(), "OK");
             checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
@@ -305,7 +305,7 @@ public class SuperTokensSaaSSecretTest {
         {
             JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/session", request, 1000, 1000, null,
-                    Utils.getCdiVersionStringLatestForTests(),
+                    SemVer.v3_0.get(),
                     saasSecret, "");
             assertEquals(sessionInfo.get("status").getAsString(), "OK");
             checkSessionResponse(sessionInfo, process, userId, userDataInJWT);

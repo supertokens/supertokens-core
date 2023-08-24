@@ -848,7 +848,7 @@ public class Session {
                     .getPrimaryUserById(appIdentifierWithStorage, userId);
             if (primaryUser != null) {
                 for (LoginMethod lM : primaryUser.loginMethods) {
-                    userIds.add(lM.recipeUserId);
+                    userIds.add(lM.getSupertokensUserId());
                 }
             }
         }
@@ -883,7 +883,7 @@ public class Session {
                     .getPrimaryUserById(tenantIdentifierWithStorage.toAppIdentifier(), userId);
             if (primaryUser != null) {
                 for (LoginMethod lM : primaryUser.loginMethods) {
-                    userIds.add(lM.recipeUserId);
+                    userIds.add(lM.getSupertokensUserId());
                 }
             }
         }

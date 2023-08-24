@@ -80,7 +80,7 @@ public class SignUpAPI extends WebserverAPI {
             TenantIdentifierWithStorage tenant = this.getTenantIdentifierWithStorageFromRequest(req);
             UserInfo user = EmailPassword.signUp(tenant, super.main, normalisedEmail, password);
 
-            ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main, user.id);
+            ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main, user.getSupertokensUserId());
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
@@ -94,8 +94,10 @@ public class SignUpAPI extends WebserverAPI {
             }
 
             result.add("user", userJson);
+            if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0)) {
+                result.addProperty("recipeUserId", user.getSupertokensOrExternalUserId());
+            }
             super.sendJsonResponse(200, result, resp);
-
         } catch (DuplicateEmailException e) {
             Logging.debug(main, tenantIdentifier, Utils.exceptionStacktraceToString(e));
             JsonObject result = new JsonObject();

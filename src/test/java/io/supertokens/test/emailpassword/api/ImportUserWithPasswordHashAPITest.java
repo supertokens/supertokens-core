@@ -537,7 +537,7 @@ public class ImportUserWithPasswordHashAPITest {
         assertTrue(response.get("didUserAlreadyExist").getAsBoolean());
 
         // check that a new user was not created by comparing userIds
-        assertEquals(initialUserInfo.id, response.get("user").getAsJsonObject().get("id").getAsString());
+        assertEquals(initialUserInfo.getSupertokensUserId(), response.get("user").getAsJsonObject().get("id").getAsString());
 
         // sign in with the new password to check if the password hash got updated
         AuthRecipeUserInfo updatedUserInfo = EmailPassword.signIn(process.main, email, newPassword);

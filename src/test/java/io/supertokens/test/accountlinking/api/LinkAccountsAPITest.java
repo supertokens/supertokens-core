@@ -72,34 +72,36 @@ public class LinkAccountsAPITest {
 
         AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "abcd1234");
 
-        AuthRecipe.createPrimaryUser(process.main, user2.id);
+        AuthRecipe.createPrimaryUser(process.main, user2.getSupertokensUserId());
 
         {
             JsonObject params = new JsonObject();
-            params.addProperty("recipeUserId", user.id);
-            params.addProperty("primaryUserId", user2.id);
+            params.addProperty("recipeUserId", user.getSupertokensUserId());
+            params.addProperty("primaryUserId", user2.getSupertokensUserId());
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/accountlinking/user/link", params, 1000, 1000, null,
                     WebserverAPI.getLatestCDIVersion().get(), "");
-            assertEquals(2, response.entrySet().size());
+            assertEquals(3, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
             assertFalse(response.get("accountsAlreadyLinked").getAsBoolean());
+            assertTrue(response.has("user"));
         }
 
-        AuthRecipe.linkAccounts(process.main, user.id, user2.id);
+        AuthRecipe.linkAccounts(process.main, user.getSupertokensUserId(), user2.getSupertokensUserId());
 
         {
             JsonObject params = new JsonObject();
-            params.addProperty("recipeUserId", user.id);
-            params.addProperty("primaryUserId", user2.id);
+            params.addProperty("recipeUserId", user.getSupertokensUserId());
+            params.addProperty("primaryUserId", user2.getSupertokensUserId());
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/accountlinking/user/link", params, 1000, 1000, null,
                     WebserverAPI.getLatestCDIVersion().get(), "");
-            assertEquals(2, response.entrySet().size());
+            assertEquals(3, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
             assertTrue(response.get("accountsAlreadyLinked").getAsBoolean());
+            assertTrue(response.has("user"));
         }
 
         process.kill();
@@ -121,12 +123,12 @@ public class LinkAccountsAPITest {
         }
 
         AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "abcd1234");
-        UserIdMapping.createUserIdMapping(process.main, user.id, "r1", null, false);
+        UserIdMapping.createUserIdMapping(process.main, user.getSupertokensUserId(), "r1", null, false);
 
         AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "abcd1234");
-        UserIdMapping.createUserIdMapping(process.main, user2.id, "r2", null, false);
+        UserIdMapping.createUserIdMapping(process.main, user2.getSupertokensUserId(), "r2", null, false);
 
-        AuthRecipe.createPrimaryUser(process.main, user2.id);
+        AuthRecipe.createPrimaryUser(process.main, user2.getSupertokensUserId());
 
         {
             JsonObject params = new JsonObject();
@@ -136,12 +138,13 @@ public class LinkAccountsAPITest {
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/accountlinking/user/link", params, 1000, 1000, null,
                     WebserverAPI.getLatestCDIVersion().get(), "");
-            assertEquals(2, response.entrySet().size());
+            assertEquals(3, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
             assertFalse(response.get("accountsAlreadyLinked").getAsBoolean());
+            assertTrue(response.has("user"));
         }
 
-        AuthRecipe.linkAccounts(process.main, user.id, user2.id);
+        AuthRecipe.linkAccounts(process.main, user.getSupertokensUserId(), user2.getSupertokensUserId());
 
         {
             JsonObject params = new JsonObject();
@@ -151,9 +154,10 @@ public class LinkAccountsAPITest {
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/accountlinking/user/link", params, 1000, 1000, null,
                     WebserverAPI.getLatestCDIVersion().get(), "");
-            assertEquals(2, response.entrySet().size());
+            assertEquals(3, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
             assertTrue(response.get("accountsAlreadyLinked").getAsBoolean());
+            assertTrue(response.has("user"));
         }
 
         process.kill();
@@ -208,13 +212,13 @@ public class LinkAccountsAPITest {
         }
 
         AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "abcd1234");
-        AuthRecipe.createPrimaryUser(process.main, user.id);
+        AuthRecipe.createPrimaryUser(process.main, user.getSupertokensUserId());
 
         AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "abcd1234");
 
         {
             JsonObject params = new JsonObject();
-            params.addProperty("recipeUserId", user2.id);
+            params.addProperty("recipeUserId", user2.getSupertokensUserId());
             params.addProperty("primaryUserId", "random");
 
             try {
@@ -232,7 +236,7 @@ public class LinkAccountsAPITest {
         {
             JsonObject params = new JsonObject();
             params.addProperty("recipeUserId", "random");
-            params.addProperty("primaryUserId", user.id);
+            params.addProperty("primaryUserId", user.getSupertokensUserId());
 
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
@@ -263,13 +267,13 @@ public class LinkAccountsAPITest {
         AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(process.getProcess(), "test@example.com",
                 "pass1234");
 
-        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.id);
+        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.getSupertokensUserId());
         assert (!result.wasAlreadyAPrimaryUser);
 
         ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, "google", "user-google",
                 "test2@example.com");
 
-        AuthRecipe.createPrimaryUser(process.main, signInUpResponse.user.id);
+        AuthRecipe.createPrimaryUser(process.main, signInUpResponse.user.getSupertokensUserId());
 
         ThirdParty.SignInUpResponse signInUpResponse2 = ThirdParty.signInUp(process.main, "fb", "user-fb",
                 "test@example.com");
@@ -277,8 +281,8 @@ public class LinkAccountsAPITest {
 
         {
             JsonObject params = new JsonObject();
-            params.addProperty("primaryUserId", signInUpResponse.user.id);
-            params.addProperty("recipeUserId", signInUpResponse2.user.id);
+            params.addProperty("primaryUserId", signInUpResponse.user.getSupertokensUserId());
+            params.addProperty("recipeUserId", signInUpResponse2.user.getSupertokensUserId());
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/accountlinking/user/link", params, 1000, 1000, null,
@@ -286,7 +290,7 @@ public class LinkAccountsAPITest {
             assertEquals(3, response.entrySet().size());
             assertEquals("ACCOUNT_INFO_ALREADY_ASSOCIATED_WITH_ANOTHER_PRIMARY_USER_ID_ERROR",
                     response.get("status").getAsString());
-            assertEquals(emailPasswordUser.id, response.get("primaryUserId").getAsString());
+            assertEquals(emailPasswordUser.getSupertokensUserId(), response.get("primaryUserId").getAsString());
             assertEquals("This user's email is already associated with another user ID",
                     response.get("description").getAsString());
         }
@@ -308,20 +312,20 @@ public class LinkAccountsAPITest {
 
         AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(process.getProcess(), "test@example.com",
                 "pass1234");
-        UserIdMapping.createUserIdMapping(process.main, emailPasswordUser.id, "e1", null, false);
+        UserIdMapping.createUserIdMapping(process.main, emailPasswordUser.getSupertokensUserId(), "e1", null, false);
 
-        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.id);
+        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.getSupertokensUserId());
         assert (!result.wasAlreadyAPrimaryUser);
 
         ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, "google", "user-google",
                 "test2@example.com");
-        UserIdMapping.createUserIdMapping(process.main, signInUpResponse.user.id, "e2", null, false);
+        UserIdMapping.createUserIdMapping(process.main, signInUpResponse.user.getSupertokensUserId(), "e2", null, false);
 
-        AuthRecipe.createPrimaryUser(process.main, signInUpResponse.user.id);
+        AuthRecipe.createPrimaryUser(process.main, signInUpResponse.user.getSupertokensUserId());
 
         ThirdParty.SignInUpResponse signInUpResponse2 = ThirdParty.signInUp(process.main, "fb", "user-fb",
                 "test@example.com");
-        UserIdMapping.createUserIdMapping(process.main, signInUpResponse2.user.id, "e3", null, false);
+        UserIdMapping.createUserIdMapping(process.main, signInUpResponse2.user.getSupertokensUserId(), "e3", null, false);
 
 
         {
@@ -359,28 +363,29 @@ public class LinkAccountsAPITest {
         AuthRecipeUserInfo emailPasswordUser2 = EmailPassword.signUp(process.getProcess(), "test2@example.com",
                 "pass1234");
 
-        AuthRecipe.createPrimaryUser(process.main, emailPasswordUser1.id);
-        AuthRecipe.linkAccounts(process.main, emailPasswordUser2.id, emailPasswordUser1.id);
+        AuthRecipe.createPrimaryUser(process.main, emailPasswordUser1.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.main, emailPasswordUser2.getSupertokensUserId(), emailPasswordUser1.getSupertokensUserId());
 
         AuthRecipeUserInfo emailPasswordUser3 = EmailPassword.signUp(process.getProcess(), "test3@example.com",
                 "pass1234");
 
-        AuthRecipe.createPrimaryUser(process.main, emailPasswordUser3.id);
+        AuthRecipe.createPrimaryUser(process.main, emailPasswordUser3.getSupertokensUserId());
 
         {
             JsonObject params = new JsonObject();
-            params.addProperty("recipeUserId", emailPasswordUser2.id);
-            params.addProperty("primaryUserId", emailPasswordUser3.id);
+            params.addProperty("recipeUserId", emailPasswordUser2.getSupertokensUserId());
+            params.addProperty("primaryUserId", emailPasswordUser3.getSupertokensUserId());
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/accountlinking/user/link", params, 1000, 1000, null,
                     WebserverAPI.getLatestCDIVersion().get(), "");
-            assertEquals(3, response.entrySet().size());
+            assertEquals(4, response.entrySet().size());
             assertEquals("RECIPE_USER_ID_ALREADY_LINKED_WITH_ANOTHER_PRIMARY_USER_ID_ERROR",
                     response.get("status").getAsString());
-            assertEquals(emailPasswordUser1.id, response.get("primaryUserId").getAsString());
+            assertEquals(emailPasswordUser1.getSupertokensUserId(), response.get("primaryUserId").getAsString());
             assertEquals("The input recipe user ID is already linked to another user ID",
                     response.get("description").getAsString());
+            assertTrue(response.has("user"));
         }
 
         process.kill();
@@ -400,19 +405,19 @@ public class LinkAccountsAPITest {
 
         AuthRecipeUserInfo emailPasswordUser1 = EmailPassword.signUp(process.getProcess(), "test@example.com",
                 "pass1234");
-        UserIdMapping.createUserIdMapping(process.main, emailPasswordUser1.id, "r1", null, false);
+        UserIdMapping.createUserIdMapping(process.main, emailPasswordUser1.getSupertokensUserId(), "r1", null, false);
         AuthRecipeUserInfo emailPasswordUser2 = EmailPassword.signUp(process.getProcess(), "test2@example.com",
                 "pass1234");
-        UserIdMapping.createUserIdMapping(process.main, emailPasswordUser2.id, "r2", null, false);
+        UserIdMapping.createUserIdMapping(process.main, emailPasswordUser2.getSupertokensUserId(), "r2", null, false);
 
-        AuthRecipe.createPrimaryUser(process.main, emailPasswordUser1.id);
-        AuthRecipe.linkAccounts(process.main, emailPasswordUser2.id, emailPasswordUser1.id);
+        AuthRecipe.createPrimaryUser(process.main, emailPasswordUser1.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.main, emailPasswordUser2.getSupertokensUserId(), emailPasswordUser1.getSupertokensUserId());
 
         AuthRecipeUserInfo emailPasswordUser3 = EmailPassword.signUp(process.getProcess(), "test3@example.com",
                 "pass1234");
-        UserIdMapping.createUserIdMapping(process.main, emailPasswordUser3.id, "r3", null, false);
+        UserIdMapping.createUserIdMapping(process.main, emailPasswordUser3.getSupertokensUserId(), "r3", null, false);
 
-        AuthRecipe.createPrimaryUser(process.main, emailPasswordUser3.id);
+        AuthRecipe.createPrimaryUser(process.main, emailPasswordUser3.getSupertokensUserId());
 
         {
             JsonObject params = new JsonObject();
@@ -422,12 +427,13 @@ public class LinkAccountsAPITest {
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/accountlinking/user/link", params, 1000, 1000, null,
                     WebserverAPI.getLatestCDIVersion().get(), "");
-            assertEquals(3, response.entrySet().size());
+            assertEquals(4, response.entrySet().size());
             assertEquals("RECIPE_USER_ID_ALREADY_LINKED_WITH_ANOTHER_PRIMARY_USER_ID_ERROR",
                     response.get("status").getAsString());
             assertEquals("r1", response.get("primaryUserId").getAsString());
             assertEquals("The input recipe user ID is already linked to another user ID",
                     response.get("description").getAsString());
+            assertTrue(response.has("user"));
         }
 
         process.kill();
@@ -454,8 +460,8 @@ public class LinkAccountsAPITest {
 
         {
             JsonObject params = new JsonObject();
-            params.addProperty("recipeUserId", user.id);
-            params.addProperty("primaryUserId", user2.id);
+            params.addProperty("recipeUserId", user.getSupertokensUserId());
+            params.addProperty("primaryUserId", user2.getSupertokensUserId());
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/accountlinking/user/link", params, 1000, 1000, null,
@@ -486,8 +492,8 @@ public class LinkAccountsAPITest {
         JsonObject userObj;
         {
             JsonObject params = new JsonObject();
-            params.addProperty("recipeUserId", user.id);
-            params.addProperty("primaryUserId", user2.id);
+            params.addProperty("recipeUserId", user.getSupertokensUserId());
+            params.addProperty("primaryUserId", user2.getSupertokensUserId());
 
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",

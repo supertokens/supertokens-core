@@ -69,7 +69,7 @@ public class EmailPasswordAPITest {
         String email = "test@example.com";
         String password = "testPass123";
         UserInfo userInfo = EmailPassword.signUp(process.main, email, password);
-        String superTokensUserId = userInfo.id;
+        String superTokensUserId = userInfo.getSupertokensUserId();
         String externalUserId = "externalId";
 
         // create the mapping
@@ -124,7 +124,7 @@ public class EmailPasswordAPITest {
         String email = "test@example.com";
         String password = "testPass123";
         UserInfo userInfo = EmailPassword.signUp(process.main, email, password);
-        String superTokensUserId = userInfo.id;
+        String superTokensUserId = userInfo.getSupertokensUserId();
         String externalUserId = "externalId";
 
         // create the mapping
@@ -183,7 +183,7 @@ public class EmailPasswordAPITest {
         String email = "test@example.com";
         String password = "testPass123";
         UserInfo userInfo = EmailPassword.signUp(process.main, email, password);
-        String superTokensUserId = userInfo.id;
+        String superTokensUserId = userInfo.getSupertokensUserId();
         String externalUserId = "externalId";
 
         // create the mapping
@@ -229,7 +229,7 @@ public class EmailPasswordAPITest {
         String email = "test@example.com";
         String password = "testPass123";
         UserInfo userInfo = EmailPassword.signUp(process.main, email, password);
-        String superTokensUserId = userInfo.id;
+        String superTokensUserId = userInfo.getSupertokensUserId();
         String externalUserId = "externalId";
 
         // create the mapping

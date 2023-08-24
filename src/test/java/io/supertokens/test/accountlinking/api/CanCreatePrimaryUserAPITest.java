@@ -75,7 +75,7 @@ public class CanCreatePrimaryUserAPITest {
 
         {
             Map<String, String> params = new HashMap<>();
-            params.put("recipeUserId", user.id);
+            params.put("recipeUserId", user.getSupertokensUserId());
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/accountlinking/user/primary/check", params, 1000, 1000, null,
@@ -85,11 +85,11 @@ public class CanCreatePrimaryUserAPITest {
             assertFalse(response.get("wasAlreadyAPrimaryUser").getAsBoolean());
         }
 
-        AuthRecipe.createPrimaryUser(process.main, user.id);
+        AuthRecipe.createPrimaryUser(process.main, user.getSupertokensUserId());
 
         {
             Map<String, String> params = new HashMap<>();
-            params.put("recipeUserId", user.id);
+            params.put("recipeUserId", user.getSupertokensUserId());
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/accountlinking/user/primary/check", params, 1000, 1000, null,
@@ -118,7 +118,7 @@ public class CanCreatePrimaryUserAPITest {
         }
 
         AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "abcd1234");
-        UserIdMapping.createUserIdMapping(process.main, user.id, "r1", null, false);
+        UserIdMapping.createUserIdMapping(process.main, user.getSupertokensUserId(), "r1", null, false);
 
         {
             Map<String, String> params = new HashMap<>();
@@ -132,7 +132,7 @@ public class CanCreatePrimaryUserAPITest {
             assertFalse(response.get("wasAlreadyAPrimaryUser").getAsBoolean());
         }
 
-        AuthRecipe.createPrimaryUser(process.main, user.id);
+        AuthRecipe.createPrimaryUser(process.main, user.getSupertokensUserId());
 
         {
             Map<String, String> params = new HashMap<>();
@@ -213,7 +213,7 @@ public class CanCreatePrimaryUserAPITest {
         AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(process.getProcess(), "test@example.com",
                 "pass1234");
 
-        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.id);
+        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.getSupertokensUserId());
         assert (!result.wasAlreadyAPrimaryUser);
 
         ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, "google", "user-google",
@@ -221,7 +221,7 @@ public class CanCreatePrimaryUserAPITest {
 
         {
             Map<String, String> params = new HashMap<>();
-            params.put("recipeUserId", signInUpResponse.user.id);
+            params.put("recipeUserId", signInUpResponse.user.getSupertokensUserId());
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/accountlinking/user/primary/check", params, 1000, 1000, null,
@@ -229,7 +229,7 @@ public class CanCreatePrimaryUserAPITest {
             assertEquals(3, response.entrySet().size());
             assertEquals("ACCOUNT_INFO_ALREADY_ASSOCIATED_WITH_ANOTHER_PRIMARY_USER_ID_ERROR",
                     response.get("status").getAsString());
-            assertEquals(emailPasswordUser.id, response.get("primaryUserId").getAsString());
+            assertEquals(emailPasswordUser.getSupertokensUserId(), response.get("primaryUserId").getAsString());
             assertEquals("This user's email is already associated with another user ID",
                     response.get("description").getAsString());
         }
@@ -253,12 +253,12 @@ public class CanCreatePrimaryUserAPITest {
         AuthRecipeUserInfo emailPasswordUser2 = EmailPassword.signUp(process.getProcess(), "test2@example.com",
                 "pass1234");
 
-        AuthRecipe.createPrimaryUser(process.main, emailPasswordUser1.id);
-        AuthRecipe.linkAccounts(process.main, emailPasswordUser2.id, emailPasswordUser1.id);
+        AuthRecipe.createPrimaryUser(process.main, emailPasswordUser1.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.main, emailPasswordUser2.getSupertokensUserId(), emailPasswordUser1.getSupertokensUserId());
 
         {
             Map<String, String> params = new HashMap<>();
-            params.put("recipeUserId", emailPasswordUser2.id);
+            params.put("recipeUserId", emailPasswordUser2.getSupertokensUserId());
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/accountlinking/user/primary/check", params, 1000, 1000, null,
@@ -266,7 +266,7 @@ public class CanCreatePrimaryUserAPITest {
             assertEquals(3, response.entrySet().size());
             assertEquals("RECIPE_USER_ID_ALREADY_LINKED_WITH_PRIMARY_USER_ID_ERROR",
                     response.get("status").getAsString());
-            assertEquals(emailPasswordUser1.id, response.get("primaryUserId").getAsString());
+            assertEquals(emailPasswordUser1.getSupertokensUserId(), response.get("primaryUserId").getAsString());
             assertEquals("This user ID is already linked to another user ID",
                     response.get("description").getAsString());
         }
@@ -288,9 +288,9 @@ public class CanCreatePrimaryUserAPITest {
 
         AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(process.getProcess(), "test@example.com",
                 "pass1234");
-        UserIdMapping.createUserIdMapping(process.main, emailPasswordUser.id, "r1", null, false);
+        UserIdMapping.createUserIdMapping(process.main, emailPasswordUser.getSupertokensUserId(), "r1", null, false);
 
-        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.id);
+        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.getSupertokensUserId());
         assert (!result.wasAlreadyAPrimaryUser);
 
         ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, "google", "user-google",
@@ -298,7 +298,7 @@ public class CanCreatePrimaryUserAPITest {
 
         {
             Map<String, String> params = new HashMap<>();
-            params.put("recipeUserId", signInUpResponse.user.id);
+            params.put("recipeUserId", signInUpResponse.user.getSupertokensUserId());
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/accountlinking/user/primary/check", params, 1000, 1000, null,
@@ -327,16 +327,16 @@ public class CanCreatePrimaryUserAPITest {
 
         AuthRecipeUserInfo emailPasswordUser1 = EmailPassword.signUp(process.getProcess(), "test@example.com",
                 "pass1234");
-        UserIdMapping.createUserIdMapping(process.main, emailPasswordUser1.id, "r1", null, false);
+        UserIdMapping.createUserIdMapping(process.main, emailPasswordUser1.getSupertokensUserId(), "r1", null, false);
         AuthRecipeUserInfo emailPasswordUser2 = EmailPassword.signUp(process.getProcess(), "test2@example.com",
                 "pass1234");
 
-        AuthRecipe.createPrimaryUser(process.main, emailPasswordUser1.id);
-        AuthRecipe.linkAccounts(process.main, emailPasswordUser2.id, emailPasswordUser1.id);
+        AuthRecipe.createPrimaryUser(process.main, emailPasswordUser1.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.main, emailPasswordUser2.getSupertokensUserId(), emailPasswordUser1.getSupertokensUserId());
 
         {
             Map<String, String> params = new HashMap<>();
-            params.put("recipeUserId", emailPasswordUser2.id);
+            params.put("recipeUserId", emailPasswordUser2.getSupertokensUserId());
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/accountlinking/user/primary/check", params, 1000, 1000, null,

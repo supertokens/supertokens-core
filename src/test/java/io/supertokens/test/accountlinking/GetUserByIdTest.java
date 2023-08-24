@@ -115,27 +115,27 @@ public class GetUserByIdTest {
         assertFalse(user3.isPrimaryUser);
         assertFalse(user4.isPrimaryUser);
 
-        AuthRecipeUserInfo userToTest = AuthRecipe.getUserById(process.getProcess(), user1.id);
-        assertNotNull(userToTest.id);
+        AuthRecipeUserInfo userToTest = AuthRecipe.getUserById(process.getProcess(), user1.getSupertokensUserId());
+        assertNotNull(userToTest.getSupertokensUserId());
         assertFalse(userToTest.isPrimaryUser);
         assertEquals(1, userToTest.loginMethods.length);
         assertEquals("test@example.com", userToTest.loginMethods[0].email);
         assertEquals(RECIPE_ID.EMAIL_PASSWORD, userToTest.loginMethods[0].recipeId);
-        assertEquals(user1.id, userToTest.loginMethods[0].recipeUserId);
+        assertEquals(user1.getSupertokensUserId(), userToTest.loginMethods[0].getSupertokensUserId());
         assertFalse(userToTest.loginMethods[0].verified);
         assert(userToTest.loginMethods[0].timeJoined > 0);
 
-        assertEquals(user1, AuthRecipe.getUserById(process.getProcess(), user1.id));
-        assertEquals(user2, AuthRecipe.getUserById(process.getProcess(), user2.id));
-        assertEquals(user3, AuthRecipe.getUserById(process.getProcess(), user3.id));
-        assertEquals(user4, AuthRecipe.getUserById(process.getProcess(), user4.id));
+        assertEquals(user1, AuthRecipe.getUserById(process.getProcess(), user1.getSupertokensUserId()));
+        assertEquals(user2, AuthRecipe.getUserById(process.getProcess(), user2.getSupertokensUserId()));
+        assertEquals(user3, AuthRecipe.getUserById(process.getProcess(), user3.getSupertokensUserId()));
+        assertEquals(user4, AuthRecipe.getUserById(process.getProcess(), user4.getSupertokensUserId()));
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user4.id).user;
-        AuthRecipe.linkAccounts(process.getProcess(), user3.id, primaryUser.id);
-        AuthRecipe.linkAccounts(process.getProcess(), user2.id, primaryUser.id);
-        AuthRecipe.linkAccounts(process.getProcess(), user1.id, primaryUser.id);
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user4.getSupertokensUserId()).user;
+        AuthRecipe.linkAccounts(process.getProcess(), user3.getSupertokensUserId(), primaryUser.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), primaryUser.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.getProcess(), user1.getSupertokensUserId(), primaryUser.getSupertokensUserId());
 
-        for (String userId : new String[]{user1.id, user2.id, user3.id, user4.id}) {
+        for (String userId : new String[]{user1.getSupertokensUserId(), user2.getSupertokensUserId(), user3.getSupertokensUserId(), user4.getSupertokensUserId()}) {
             AuthRecipeUserInfo result = AuthRecipe.getUserById(process.getProcess(), userId);
             assertTrue(result.isPrimaryUser);
 
@@ -189,12 +189,12 @@ public class GetUserByIdTest {
             AuthRecipeUserInfo user1 = createEmailPasswordUser(process.getProcess(), "test@example.com", "password1");
 
             // Link accounts randomly
-            String[] userIds = new String[]{user1.id, user2.id, user3.id, user4.id};
+            String[] userIds = new String[]{user1.getSupertokensUserId(), user2.getSupertokensUserId(), user3.getSupertokensUserId(), user4.getSupertokensUserId()};
             Collections.shuffle(Arrays.asList(userIds));
             AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), userIds[0]).user;
-            AuthRecipe.linkAccounts(process.getProcess(), userIds[1], primaryUser.id);
-            AuthRecipe.linkAccounts(process.getProcess(), userIds[2], primaryUser.id);
-            AuthRecipe.linkAccounts(process.getProcess(), userIds[3], primaryUser.id);
+            AuthRecipe.linkAccounts(process.getProcess(), userIds[1], primaryUser.getSupertokensUserId());
+            AuthRecipe.linkAccounts(process.getProcess(), userIds[2], primaryUser.getSupertokensUserId());
+            AuthRecipe.linkAccounts(process.getProcess(), userIds[3], primaryUser.getSupertokensUserId());
 
             for (String userId : userIds) {
                 AuthRecipeUserInfo result = AuthRecipe.getUserById(process.getProcess(), userId);

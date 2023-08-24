@@ -530,7 +530,7 @@ public class PasswordHashingTest {
 
         Config.getConfig(process.getProcess()).setPasswordHashingAlg(CoreConfig.PASSWORD_HASHING_ALG.ARGON2);
 
-        String token = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.id);
+        String token = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.getSupertokensUserId());
         EmailPassword.resetPassword(process.getProcess(), token, "somePass2");
 
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_HASH_ARGON));
@@ -561,7 +561,7 @@ public class PasswordHashingTest {
 
         Config.getConfig(process.getProcess()).setPasswordHashingAlg(CoreConfig.PASSWORD_HASHING_ALG.BCRYPT);
 
-        String token = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.id);
+        String token = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.getSupertokensUserId());
         EmailPassword.resetPassword(process.getProcess(), token, "somePass2");
 
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_HASH_BCRYPT));
@@ -591,7 +591,7 @@ public class PasswordHashingTest {
 
         Config.getConfig(process.getProcess()).setPasswordHashingAlg(CoreConfig.PASSWORD_HASHING_ALG.ARGON2);
 
-        EmailPassword.updateUsersEmailOrPassword(process.getProcess(), user.id, null, "somePass2");
+        EmailPassword.updateUsersEmailOrPassword(process.getProcess(), user.getSupertokensUserId(), null, "somePass2");
 
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_HASH_ARGON));
 
@@ -621,7 +621,7 @@ public class PasswordHashingTest {
 
         Config.getConfig(process.getProcess()).setPasswordHashingAlg(CoreConfig.PASSWORD_HASHING_ALG.BCRYPT);
 
-        EmailPassword.updateUsersEmailOrPassword(process.getProcess(), user.id, null, "somePass2");
+        EmailPassword.updateUsersEmailOrPassword(process.getProcess(), user.getSupertokensUserId(), null, "somePass2");
 
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_HASH_BCRYPT));
 

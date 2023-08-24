@@ -170,7 +170,7 @@ public class UsersAPI extends WebserverAPI {
 
             ArrayList<String> userIds = new ArrayList<>();
             for (int i = 0; i < users.users.length; i++) {
-                userIds.add(users.users[i].id);
+                userIds.add(users.users[i].getSupertokensUserId());
             }
             HashMap<String, String> userIdMapping = UserIdMapping.getUserIdMappingForSuperTokensUserIds(
                     tenantIdentifierWithStorage, userIds);

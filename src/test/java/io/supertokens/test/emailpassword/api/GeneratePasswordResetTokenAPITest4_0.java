@@ -106,7 +106,7 @@ public class GeneratePasswordResetTokenAPITest4_0 {
         {
             AuthRecipeUserInfo user = EmailPassword.signUp(process.main, "a@a.com", "p1234");
             JsonObject requestBody = new JsonObject();
-            requestBody.addProperty("userId", user.id);
+            requestBody.addProperty("userId", user.getSupertokensUserId());
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/user/password/reset/token", requestBody, 1000, 1000, null,
@@ -167,7 +167,7 @@ public class GeneratePasswordResetTokenAPITest4_0 {
         }
 
         AuthRecipeUserInfo user = EmailPassword.signUp(process.main, "a@a.com", "p1234");
-        UserIdMapping.createUserIdMapping(process.main, user.id, "e1", null, false);
+        UserIdMapping.createUserIdMapping(process.main, user.getSupertokensUserId(), "e1", null, false);
 
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("userId", "e1");
@@ -226,7 +226,7 @@ public class GeneratePasswordResetTokenAPITest4_0 {
         ThirdParty.SignInUpResponse res = ThirdParty.signInUp(process.main, "google", "ug", "t@example.com");
 
         JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("userId", res.user.id);
+        requestBody.addProperty("userId", res.user.getSupertokensUserId());
         requestBody.addProperty("email", res.user.loginMethods[0].email);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",

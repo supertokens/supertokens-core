@@ -22,6 +22,7 @@ import io.supertokens.Main;
 import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.thirdparty.ThirdParty;
@@ -36,6 +37,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
+import java.util.Objects;
 
 public class SignInUpAPI extends WebserverAPI {
 
@@ -77,7 +79,7 @@ public class SignInUpAPI extends WebserverAPI {
                         thirdPartyId,
                         thirdPartyUserId, email, isEmailVerified);
 
-                ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main, response.user.id);
+                ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main, response.user.getSupertokensUserId());
 
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
@@ -89,6 +91,16 @@ public class SignInUpAPI extends WebserverAPI {
                 }
 
                 result.add("user", userJson);
+                if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0)) {
+                    for (LoginMethod loginMethod : response.user.loginMethods) {
+                        if (loginMethod.recipeId.equals(RECIPE_ID.THIRD_PARTY)
+                                && Objects.equals(loginMethod.thirdParty.id, thirdPartyId)
+                                && Objects.equals(loginMethod.thirdParty.userId, thirdPartyUserId)) {
+                            result.addProperty("recipeUserId", loginMethod.getSupertokensOrExternalUserId());
+                            break;
+                        }
+                    }
+                }
                 super.sendJsonResponse(200, result, resp);
 
             } catch (StorageQueryException | TenantOrAppNotFoundException e) {
@@ -117,11 +129,11 @@ public class SignInUpAPI extends WebserverAPI {
                         this.getTenantIdentifierWithStorageFromRequest(req), super.main, thirdPartyId, thirdPartyUserId,
                         email);
 
-                ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main, response.user.id);
+                ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main, response.user.getSupertokensUserId());
 
                 //
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                        .getUserIdMapping(this.getAppIdentifierWithStorage(req), response.user.id,
+                        .getUserIdMapping(this.getAppIdentifierWithStorage(req), response.user.getSupertokensUserId(),
                                 UserIdType.SUPERTOKENS);
                 if (userIdMapping != null) {
                     response.user.setExternalUserId(userIdMapping.externalUserId);
@@ -141,6 +153,16 @@ public class SignInUpAPI extends WebserverAPI {
                 }
 
                 result.add("user", userJson);
+                if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0)) {
+                    for (LoginMethod loginMethod : response.user.loginMethods) {
+                        if (loginMethod.recipeId.equals(RECIPE_ID.THIRD_PARTY)
+                                && Objects.equals(loginMethod.thirdParty.id, thirdPartyId)
+                                && Objects.equals(loginMethod.thirdParty.userId, thirdPartyUserId)) {
+                            result.addProperty("recipeUserId", loginMethod.getSupertokensOrExternalUserId());
+                            break;
+                        }
+                    }
+                }
                 super.sendJsonResponse(200, result, resp);
 
             } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {

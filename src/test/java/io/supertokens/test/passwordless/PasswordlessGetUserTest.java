@@ -71,7 +71,7 @@ public class PasswordlessGetUserTest {
 
         Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, EMAIL, null);
 
-        UserInfo user = Passwordless.getUserById(process.getProcess(), consumeCodeResponse.user.id);
+        UserInfo user = Passwordless.getUserById(process.getProcess(), consumeCodeResponse.user.getSupertokensUserId());
         assertNotNull(user);
         assertEquals(user.email, EMAIL);
 
@@ -98,7 +98,7 @@ public class PasswordlessGetUserTest {
 
         Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, null, PHONE_NUMBER);
 
-        UserInfo user = Passwordless.getUserById(process.getProcess(), consumeCodeResponse.user.id);
+        UserInfo user = Passwordless.getUserById(process.getProcess(), consumeCodeResponse.user.getSupertokensUserId());
         assertNotNull(user);
         assertEquals(user.phoneNumber, PHONE_NUMBER);
 
@@ -125,7 +125,7 @@ public class PasswordlessGetUserTest {
 
         Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, EMAIL, PHONE_NUMBER);
 
-        UserInfo user = Passwordless.getUserById(process.getProcess(), consumeCodeResponse.user.id);
+        UserInfo user = Passwordless.getUserById(process.getProcess(), consumeCodeResponse.user.getSupertokensUserId());
         assertNotNull(user);
         assertEquals(user.email, EMAIL);
         assertEquals(user.phoneNumber, PHONE_NUMBER);
@@ -153,7 +153,7 @@ public class PasswordlessGetUserTest {
 
         Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, EMAIL, null);
 
-        UserInfo user = Passwordless.getUserById(process.getProcess(), consumeCodeResponse.user.id + "1");
+        UserInfo user = Passwordless.getUserById(process.getProcess(), consumeCodeResponse.user.getSupertokensUserId() + "1");
         assertNull(user);
 
         process.kill();
