@@ -73,7 +73,7 @@ public class SignUpAPITest4_0 {
                 "emailpassword");
 
         assertEquals(signInResponse.get("status").getAsString(), "OK");
-        assertEquals(signInResponse.entrySet().size(), 2);
+        assertEquals(signInResponse.entrySet().size(), 3);
 
         JsonObject jsonUser = signInResponse.get("user").getAsJsonObject();
         assertNotNull(jsonUser.get("id"));

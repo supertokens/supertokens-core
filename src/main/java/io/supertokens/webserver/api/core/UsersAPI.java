@@ -168,21 +168,7 @@ public class UsersAPI extends WebserverAPI {
                     limit, timeJoinedOrder, paginationToken,
                     recipeIdsEnumBuilder.build().toArray(RECIPE_ID[]::new), searchTags);
 
-            ArrayList<String> userIds = new ArrayList<>();
-            for (int i = 0; i < users.users.length; i++) {
-                userIds.add(users.users[i].getSupertokensUserId());
-            }
-            HashMap<String, String> userIdMapping = UserIdMapping.getUserIdMappingForSuperTokensUserIds(
-                    tenantIdentifierWithStorage, userIds);
-
-            for (int i = 0; i < users.users.length; i++) {
-                String externalId = userIdMapping.get(userIds.get(i));
-                if (externalId != null) {
-                    users.users[i].setExternalUserId(externalId);
-                } else {
-                    users.users[i].setExternalUserId(null);
-                }
-            }
+            UserIdMapping.populateExternalUserIdForUsers(tenantIdentifierWithStorage, users.users);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

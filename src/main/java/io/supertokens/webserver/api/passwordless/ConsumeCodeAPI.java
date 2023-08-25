@@ -24,6 +24,7 @@ import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.Passwordless.ConsumeCodeResponse;
 import io.supertokens.passwordless.exceptions.*;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -86,17 +87,9 @@ public class ConsumeCodeAPI extends WebserverAPI {
                     this.getTenantIdentifierWithStorageFromRequest(req), main,
                     deviceId, deviceIdHash,
                     userInputCode, linkCode);
+            io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(this.getTenantIdentifierWithStorageFromRequest(req), new AuthRecipeUserInfo[]{consumeCodeResponse.user});
 
             ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main, consumeCodeResponse.user.getSupertokensUserId());
-
-            UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                    this.getAppIdentifierWithStorage(req),
-                    consumeCodeResponse.user.getSupertokensUserId(), UserIdType.ANY);
-            if (userIdMapping != null) {
-                consumeCodeResponse.user.setExternalUserId(userIdMapping.externalUserId);
-            } else {
-                consumeCodeResponse.user.setExternalUserId(null);
-            }
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

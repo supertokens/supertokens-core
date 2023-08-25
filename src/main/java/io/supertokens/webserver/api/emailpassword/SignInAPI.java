@@ -77,19 +77,10 @@ public class SignInAPI extends WebserverAPI {
         try {
             AuthRecipeUserInfo user = EmailPassword.signIn(tenantIdentifierWithStorage, super.main, normalisedEmail,
                     password);
+            io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(tenantIdentifierWithStorage, new AuthRecipeUserInfo[]{user});
 
             ActiveUsers.updateLastActive(tenantIdentifierWithStorage.toAppIdentifierWithStorage(), main,
                     user.getSupertokensUserId()); // use the internal user id
-
-            // if a userIdMapping exists, pass the externalUserId to the response
-            UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                    tenantIdentifierWithStorage.toAppIdentifierWithStorage(), user.getSupertokensUserId(), UserIdType.SUPERTOKENS);
-
-            if (userIdMapping != null) {
-                user.setExternalUserId(userIdMapping.externalUserId);
-            } else {
-                user.setExternalUserId(null);
-            }
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

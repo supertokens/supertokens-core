@@ -23,10 +23,12 @@ import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.exceptions.UnsupportedPasswordHashingFormatException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
@@ -96,6 +98,7 @@ public class ImportUserWithPasswordHashAPI extends WebserverAPI {
             EmailPassword.ImportUserResponse importUserResponse = EmailPassword.importUserWithPasswordHash(
                     tenant, main, email,
                     passwordHash, passwordHashingAlgorithm);
+            UserIdMapping.populateExternalUserIdForUsers(getTenantIdentifierWithStorageFromRequest(req), new AuthRecipeUserInfo[]{importUserResponse.user});
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             JsonObject userJson =

@@ -37,6 +37,7 @@ import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.useridmapping.UserIdMapping;
+import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.WebserverAPI;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -466,7 +467,7 @@ public class GetUserByIdTest {
             params.put("userId", userId);
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/user/id", params, 1000, 1000, null,
-                    WebserverAPI.getLatestCDIVersion().get(), "");
+                    SemVer.v4_0.get(), "");
             JsonObject user = response.get("user").getAsJsonObject();
             assertEquals("ext1", user.get("id").getAsString());
             assertEquals("ext1", user.get("loginMethods").getAsJsonArray().get(0).getAsJsonObject().get("recipeUserId").getAsString());

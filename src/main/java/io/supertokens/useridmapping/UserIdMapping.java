@@ -20,6 +20,8 @@ import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.emailverification.EmailVerificationStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -42,6 +44,8 @@ import org.jetbrains.annotations.TestOnly;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 public class UserIdMapping {
 
@@ -261,6 +265,14 @@ public class UserIdMapping {
         return tenantIdentifierWithStorage.getUserIdMappingStorage().getUserIdMappingForSuperTokensIds(userIds);
     }
 
+    public static HashMap<String, String> getUserIdMappingForSuperTokensUserIds(
+            AppIdentifierWithStorage appIdentifierWithStorage,
+            ArrayList<String> userIds)
+            throws StorageQueryException {
+        // userIds are already filtered for a tenant, so this becomes a tenant specific operation.
+        return appIdentifierWithStorage.getUserIdMappingStorage().getUserIdMappingForSuperTokensIds(userIds);
+    }
+
     @TestOnly
     public static HashMap<String, String> getUserIdMappingForSuperTokensUserIds(Main main,
                                                                                 ArrayList<String> userIds)
@@ -318,6 +330,56 @@ public class UserIdMapping {
                     userId)) {
                 throw new ServletException(
                         new WebserverAPI.BadRequestException("UserId is already in use in TOTP recipe"));
+            }
+        }
+    }
+
+    public static void populateExternalUserIdForUsers(AppIdentifierWithStorage appIdentifierWithStorage, AuthRecipeUserInfo[] users)
+            throws StorageQueryException {
+        Set<String> userIds = new HashSet<>();
+
+        for (AuthRecipeUserInfo user : users) {
+            userIds.add(user.getSupertokensUserId());
+
+            for (LoginMethod lm : user.loginMethods) {
+                userIds.add(lm.getSupertokensUserId());
+            }
+        }
+        ArrayList<String> userIdsList = new ArrayList<>(userIds);
+        userIdsList.addAll(userIds);
+        HashMap<String, String> userIdMappings = getUserIdMappingForSuperTokensUserIds(appIdentifierWithStorage,
+                userIdsList);
+
+        for (AuthRecipeUserInfo user : users) {
+            user.setExternalUserId(userIdMappings.get(user.getSupertokensUserId()));
+
+            for (LoginMethod lm : user.loginMethods) {
+                lm.setExternalUserId(userIdMappings.get(lm.getSupertokensUserId()));
+            }
+        }
+    }
+
+    public static void populateExternalUserIdForUsers(TenantIdentifierWithStorage tenantIdentifierWithStorage, AuthRecipeUserInfo[] users)
+            throws StorageQueryException {
+        Set<String> userIds = new HashSet<>();
+
+        for (AuthRecipeUserInfo user : users) {
+            userIds.add(user.getSupertokensUserId());
+
+            for (LoginMethod lm : user.loginMethods) {
+                userIds.add(lm.getSupertokensUserId());
+            }
+        }
+        ArrayList<String> userIdsList = new ArrayList<>(userIds);
+        userIdsList.addAll(userIds);
+        HashMap<String, String> userIdMappings = getUserIdMappingForSuperTokensUserIds(tenantIdentifierWithStorage,
+                userIdsList);
+
+        for (AuthRecipeUserInfo user : users) {
+            user.setExternalUserId(userIdMappings.get(user.getSupertokensUserId()));
+
+            for (LoginMethod lm : user.loginMethods) {
+                lm.setExternalUserId(userIdMappings.get(lm.getSupertokensUserId()));
             }
         }
     }

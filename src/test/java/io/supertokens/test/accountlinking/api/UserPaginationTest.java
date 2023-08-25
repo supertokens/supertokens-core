@@ -152,19 +152,19 @@ public class UserPaginationTest {
         AuthRecipeUserInfo user8 = createThirdPartyUser(process.getProcess(), "google", "test8", "test8@example.com");
 
         {
-            AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.id).user;
-            AuthRecipe.linkAccounts(process.getProcess(), user3.id, primaryUser.id);
+            AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId()).user;
+            AuthRecipe.linkAccounts(process.getProcess(), user3.getSupertokensUserId(), primaryUser.getSupertokensUserId());
         }
 
         {
-            AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user2.id).user;
-            AuthRecipe.linkAccounts(process.getProcess(), user5.id, primaryUser.id);
-            AuthRecipe.linkAccounts(process.getProcess(), user7.id, primaryUser.id);
+            AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user2.getSupertokensUserId()).user;
+            AuthRecipe.linkAccounts(process.getProcess(), user5.getSupertokensUserId(), primaryUser.getSupertokensUserId());
+            AuthRecipe.linkAccounts(process.getProcess(), user7.getSupertokensUserId(), primaryUser.getSupertokensUserId());
         }
 
         {
-            AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user6.id).user;
-            AuthRecipe.linkAccounts(process.getProcess(), user8.id, primaryUser.id);
+            AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user6.getSupertokensUserId()).user;
+            AuthRecipe.linkAccounts(process.getProcess(), user8.getSupertokensUserId(), primaryUser.getSupertokensUserId());
         }
 
 
@@ -178,7 +178,7 @@ public class UserPaginationTest {
 
         {
             params = new HashMap<>();
-            params.put("userId", user1.id);
+            params.put("userId", user1.getSupertokensUserId());
             JsonObject userResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/user/id", params, 1000, 1000, null,
                     SemVer.v4_0.get(), "");
@@ -188,7 +188,7 @@ public class UserPaginationTest {
 
         {
             params = new HashMap<>();
-            params.put("userId", user2.id);
+            params.put("userId", user2.getSupertokensUserId());
             JsonObject userResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/user/id", params, 1000, 1000, null,
                     SemVer.v4_0.get(), "");
@@ -198,7 +198,7 @@ public class UserPaginationTest {
 
         {
             params = new HashMap<>();
-            params.put("userId", user4.id);
+            params.put("userId", user4.getSupertokensUserId());
             JsonObject userResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/user/id", params, 1000, 1000, null,
                     SemVer.v4_0.get(), "");
@@ -208,7 +208,7 @@ public class UserPaginationTest {
 
         {
             params = new HashMap<>();
-            params.put("userId", user6.id);
+            params.put("userId", user6.getSupertokensUserId());
             JsonObject userResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/user/id", params, 1000, 1000, null,
                     SemVer.v4_0.get(), "");
@@ -239,36 +239,36 @@ public class UserPaginationTest {
         // emailpassword users
         for (int i=0; i < 200; i++) {
             AuthRecipeUserInfo user = createEmailPasswordUser(process.getProcess(), "epuser" + i  + "@gmail.com", "password" + i);
-            userInfoMap.put(user.id, user);
-            userIds.add(user.id);
-            emailPasswordUsers.add(user.id);
+            userInfoMap.put(user.getSupertokensUserId(), user);
+            userIds.add(user.getSupertokensUserId());
+            emailPasswordUsers.add(user.getSupertokensUserId());
             Thread.sleep(10);
         }
 
         // passwordless users with email
         for (int i=0; i < 200; i++) {
             AuthRecipeUserInfo user = createPasswordlessUserWithEmail(process.getProcess(), "pluser" + i  + "@gmail.com");
-            userInfoMap.put(user.id, user);
-            userIds.add(user.id);
-            passwordlessUsers.add(user.id);
+            userInfoMap.put(user.getSupertokensUserId(), user);
+            userIds.add(user.getSupertokensUserId());
+            passwordlessUsers.add(user.getSupertokensUserId());
             Thread.sleep(10);
         }
 
         // passwordless users with phone
         for (int i=0; i < 200; i++) {
             AuthRecipeUserInfo user = createPasswordlessUserWithPhone(process.getProcess(), "+1234567890" + i);
-            userInfoMap.put(user.id, user);
-            userIds.add(user.id);
-            passwordlessUsers.add(user.id);
+            userInfoMap.put(user.getSupertokensUserId(), user);
+            userIds.add(user.getSupertokensUserId());
+            passwordlessUsers.add(user.getSupertokensUserId());
             Thread.sleep(10);
         }
 
         // thirdparty users
         for (int i=0; i < 200; i++) {
             AuthRecipeUserInfo user = createThirdPartyUser(process.getProcess(), "google", "tpuser" + i, "tpuser" + i + "@gmail.com");
-            userInfoMap.put(user.id, user);
-            userIds.add(user.id);
-            thirdPartyUsers.add(user.id);
+            userInfoMap.put(user.getSupertokensUserId(), user);
+            userIds.add(user.getSupertokensUserId());
+            thirdPartyUsers.add(user.getSupertokensUserId());
             Thread.sleep(10);
         }
 
@@ -294,10 +294,10 @@ public class UserPaginationTest {
 
             if (userIdsToLink.size() > 1) {
                 AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), userIdsToLink.get(0)).user;
-                primaryUserIds.add(primaryUser.id);
+                primaryUserIds.add(primaryUser.getSupertokensUserId());
 
                 for (int i=1; i < userIdsToLink.size(); i++) {
-                    AuthRecipe.linkAccounts(process.getProcess(), userIdsToLink.get(i), primaryUser.id);
+                    AuthRecipe.linkAccounts(process.getProcess(), userIdsToLink.get(i), primaryUser.getSupertokensUserId());
                 }
             } else {
                 primaryUserIds.add(userIdsToLink.get(0));
