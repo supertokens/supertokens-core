@@ -519,7 +519,7 @@ public class AuthRecipeTest {
                         AuthRecipeUserInfo expected = usersCreated.get(indexIntoUsers);
                         AuthRecipeUserInfo actualUser = uc;
 
-                        assert (actualUser.equals(expected) && uc.loginMethods[0].recipeId.toString().equals(expected.getRecipeId().toString()));
+                        assert (actualUser.equals(expected) && uc.loginMethods[0].recipeId.toString().equals(expected.loginMethods[0].recipeId.toString()));
                         indexIntoUsers++;
                     }
 
@@ -558,7 +558,7 @@ public class AuthRecipeTest {
                         AuthRecipeUserInfo expected = usersCreated.get(indexIntoUsers);
                         AuthRecipeUserInfo actualUser = uc;
 
-                        assert (actualUser.equals(expected) && uc.loginMethods[0].recipeId.toString().equals(expected.getRecipeId().toString()));
+                        assert (actualUser.equals(expected) && uc.loginMethods[0].recipeId.toString().equals(expected.loginMethods[0].recipeId.toString()));
                         indexIntoUsers--;
                     }
 
@@ -609,16 +609,16 @@ public class AuthRecipeTest {
             String emailVerificationToken2 = EmailVerification.generateEmailVerificationToken(process.getProcess(),
                     user2.getSupertokensUserId(), "email");
 
-            assertEquals(2, AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[]{user1.getRecipeId()}));
+            assertEquals(2, AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[]{user1.loginMethods[0].recipeId}));
             AuthRecipe.deleteUser(process.getProcess(), user1.getSupertokensUserId());
-            assertEquals(1, AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[]{user1.getRecipeId()}));
+            assertEquals(1, AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[]{user1.loginMethods[0].recipeId}));
             assertEquals(0, Session.getAllNonExpiredSessionHandlesForUser(process.getProcess(), user1.getSupertokensUserId()).length);
             assertEquals(1, Session.getAllNonExpiredSessionHandlesForUser(process.getProcess(), user2.getSupertokensUserId()).length);
             assertFalse(EmailVerification.isEmailVerified(process.getProcess(), user1.getSupertokensUserId(), "email"));
             assertEquals(0, UserMetadata.getUserMetadata(process.getProcess(), user1.getSupertokensUserId()).entrySet().size());
 
             AuthRecipe.deleteUser(process.getProcess(), user2.getSupertokensUserId());
-            assertEquals(0, AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[]{user1.getRecipeId()}));
+            assertEquals(0, AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[]{user1.loginMethods[0].recipeId}));
             assertEquals(0, Session.getAllNonExpiredSessionHandlesForUser(process.getProcess(), user2.getSupertokensUserId()).length);
             assertEquals(0, UserMetadata.getUserMetadata(process.getProcess(), user2.getSupertokensUserId()).entrySet().size());
 
