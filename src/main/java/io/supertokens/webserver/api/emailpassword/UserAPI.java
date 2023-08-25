@@ -89,16 +89,9 @@ public class UserAPI extends WebserverAPI {
 
                     user = EmailPassword.getUserUsingId(
                             appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage, userId);
-
-                    // if the userIdMapping exists set the userId in the response to the externalUserId
-                    if (user != null) {
-                        if (appIdentifierWithStorageAndUserIdMapping.userIdMapping != null) {
-                            user.setExternalUserId(
-                                    appIdentifierWithStorageAndUserIdMapping.userIdMapping.externalUserId);
-                        } else {
-                            user.setExternalUserId(null);
-                        }
-                    }
+                            if (user != null) {
+                                UserIdMapping.populateExternalUserIdForUsers(appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage, new AuthRecipeUserInfo[]{user});
+                            }
 
                 } else {
                     // API is tenant specific for get by Email
@@ -111,14 +104,7 @@ public class UserAPI extends WebserverAPI {
 
                     // if a userIdMapping exists, set the userId in the response to the externalUserId
                     if (user != null) {
-                        io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping =
-                                UserIdMapping.getUserIdMapping(
-                                        getAppIdentifierWithStorage(req), user.getSupertokensUserId(), UserIdType.SUPERTOKENS);
-                        if (userIdMapping != null) {
-                            user.setExternalUserId(userIdMapping.externalUserId);
-                        } else {
-                            user.setExternalUserId(null);
-                        }
+                        UserIdMapping.populateExternalUserIdForUsers(tenantIdentifierWithStorage, new AuthRecipeUserInfo[]{user});
                     }
                 }
             } catch (UnknownUserIdException e) {

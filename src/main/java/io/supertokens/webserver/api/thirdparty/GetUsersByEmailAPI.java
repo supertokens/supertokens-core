@@ -63,19 +63,7 @@ public class GetUsersByEmailAPI extends WebserverAPI {
             String email = InputParser.getQueryParamOrThrowError(req, "email", false);
             email = Utils.normaliseEmail(email);
             AuthRecipeUserInfo[] users = ThirdParty.getUsersByEmail(tenantIdentifierWithStorage, email);
-
-            // return the externalUserId if a mapping exists for a user
-            for (int i = 0; i < users.length; i++) {
-                // we intentionally do not use the function that accepts an array of user IDs to get the mapping cause
-                // this is simpler to use, and cause there shouldn't be that many userIds per email anyway
-                io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                        .getUserIdMapping(appIdentifierWithStorage, users[i].getSupertokensUserId(), UserIdType.SUPERTOKENS);
-                if (userIdMapping != null) {
-                    users[i].setExternalUserId(userIdMapping.externalUserId);
-                } else {
-                    users[i].setExternalUserId(null);
-                }
-            }
+            UserIdMapping.populateExternalUserIdForUsers(tenantIdentifierWithStorage, users);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

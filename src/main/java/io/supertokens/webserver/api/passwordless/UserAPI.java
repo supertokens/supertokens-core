@@ -86,12 +86,7 @@ public class UserAPI extends WebserverAPI {
 
                     // if the userIdMapping exists set the userId in the response to the externalUserId
                     if (user != null) {
-                        if (appIdentifierWithStorageAndUserIdMapping.userIdMapping != null) {
-                            user.setExternalUserId(
-                                    appIdentifierWithStorageAndUserIdMapping.userIdMapping.externalUserId);
-                        } else {
-                            user.setExternalUserId(null);
-                        }
+                        io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage, new AuthRecipeUserInfo[]{user});
                     }
                 } catch (UnknownUserIdException e) {
                     user = null;
@@ -100,27 +95,13 @@ public class UserAPI extends WebserverAPI {
                 email = Utils.normaliseEmail(email);
                 user = Passwordless.getUserByEmail(this.getTenantIdentifierWithStorageFromRequest(req), email);
                 if (user != null) {
-                    UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                            this.getAppIdentifierWithStorage(req),
-                            user.getSupertokensUserId(), UserIdType.SUPERTOKENS);
-                    if (userIdMapping != null) {
-                        user.setExternalUserId(userIdMapping.externalUserId);
-                    } else {
-                        user.setExternalUserId(null);
-                    }
+                    io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(this.getTenantIdentifierWithStorageFromRequest(req), new AuthRecipeUserInfo[]{user});
                 }
             } else {
                 user = Passwordless.getUserByPhoneNumber(this.getTenantIdentifierWithStorageFromRequest(req),
                         phoneNumber);
                 if (user != null) {
-                    UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                            this.getAppIdentifierWithStorage(req),
-                            user.getSupertokensUserId(), UserIdType.SUPERTOKENS);
-                    if (userIdMapping != null) {
-                        user.setExternalUserId(userIdMapping.externalUserId);
-                    } else {
-                        user.setExternalUserId(null);
-                    }
+                    io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(this.getTenantIdentifierWithStorageFromRequest(req), new AuthRecipeUserInfo[]{user});
                 }
             }
 

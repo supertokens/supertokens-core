@@ -81,7 +81,7 @@ public class SignInAPITest4_0 {
                 "emailpassword");
 
         assertEquals(signInResponse.get("status").getAsString(), "OK");
-        assertEquals(signInResponse.entrySet().size(), 2);
+        assertEquals(signInResponse.entrySet().size(), 3);
 
         JsonObject jsonUser = signInResponse.get("user").getAsJsonObject();
         assert (jsonUser.get("id").getAsString().equals(user.getSupertokensUserId()));
@@ -133,7 +133,7 @@ public class SignInAPITest4_0 {
                 "emailpassword");
 
         assertEquals(signInResponse.get("status").getAsString(), "OK");
-        assertEquals(signInResponse.entrySet().size(), 2);
+        assertEquals(signInResponse.entrySet().size(), 3);
 
         JsonObject jsonUser = signInResponse.get("user").getAsJsonObject();
         assert (jsonUser.get("id").getAsString().equals("e1"));
@@ -196,7 +196,7 @@ public class SignInAPITest4_0 {
                 "emailpassword");
 
         assertEquals(signInResponse.get("status").getAsString(), "OK");
-        assertEquals(signInResponse.entrySet().size(), 2);
+        assertEquals(signInResponse.entrySet().size(), 3);
 
         JsonObject jsonUser = signInResponse.get("user").getAsJsonObject();
         assert (jsonUser.get("id").getAsString().equals("e1"));
@@ -225,7 +225,7 @@ public class SignInAPITest4_0 {
             JsonObject lM = jsonUser.get("loginMethods").getAsJsonArray().get(0).getAsJsonObject();
             assertFalse(lM.get("verified").getAsBoolean());
             assertEquals(lM.get("timeJoined").getAsLong(), user0.timeJoined);
-            assertEquals(lM.get("recipeUserId").getAsString(), user0.getSupertokensUserId());
+            assertEquals(lM.get("recipeUserId").getAsString(), "e0");
             assertEquals(lM.get("recipeId").getAsString(), "emailpassword");
             assertEquals(lM.get("email").getAsString(), "random1@gmail.com");
             assert (lM.entrySet().size() == 6);

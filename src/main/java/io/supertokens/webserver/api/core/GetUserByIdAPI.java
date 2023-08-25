@@ -66,14 +66,7 @@ public class GetUserByIdAPI extends WebserverAPI {
 
                 // if a userIdMapping exists, set the userId in the response to the externalUserId
                 if (user != null) {
-                    io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping =
-                            UserIdMapping.getUserIdMapping(
-                                    getAppIdentifierWithStorage(req), user.getSupertokensUserId(), UserIdType.SUPERTOKENS);
-                    if (userIdMapping != null) {
-                        user.setExternalUserId(userIdMapping.externalUserId);
-                    } else {
-                        user.setExternalUserId(null);
-                    }
+                    UserIdMapping.populateExternalUserIdForUsers(appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage, new AuthRecipeUserInfo[]{user});
                 }
 
             } catch (UnknownUserIdException e) {

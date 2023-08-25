@@ -85,12 +85,7 @@ public class UserAPI extends WebserverAPI {
                     user = ThirdParty.getUser(appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage,
                             userId);
                     if (user != null) {
-                        if (appIdentifierWithStorageAndUserIdMapping.userIdMapping != null) {
-                            user.setExternalUserId(
-                                    appIdentifierWithStorageAndUserIdMapping.userIdMapping.externalUserId);
-                        } else {
-                            user.setExternalUserId(null);
-                        }
+                        UserIdMapping.populateExternalUserIdForUsers(appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage, new AuthRecipeUserInfo[]{user});
                     }
                 } catch (UnknownUserIdException e) {
                     // let the user be null
@@ -99,13 +94,7 @@ public class UserAPI extends WebserverAPI {
                 user = ThirdParty.getUser(this.getTenantIdentifierWithStorageFromRequest(req), thirdPartyId,
                         thirdPartyUserId);
                 if (user != null) {
-                    io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                            .getUserIdMapping(this.getAppIdentifierWithStorage(req), user.getSupertokensUserId(), UserIdType.SUPERTOKENS);
-                    if (userIdMapping != null) {
-                        user.setExternalUserId(userIdMapping.externalUserId);
-                    } else {
-                        user.setExternalUserId(null);
-                    }
+                    UserIdMapping.populateExternalUserIdForUsers(getTenantIdentifierWithStorageFromRequest(req), new AuthRecipeUserInfo[]{user});
                 }
             }
 

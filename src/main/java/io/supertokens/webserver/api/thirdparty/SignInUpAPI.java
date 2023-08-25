@@ -22,6 +22,7 @@ import io.supertokens.Main;
 import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -78,6 +79,7 @@ public class SignInUpAPI extends WebserverAPI {
                         this.getTenantIdentifierWithStorageFromRequest(req), super.main,
                         thirdPartyId,
                         thirdPartyUserId, email, isEmailVerified);
+                UserIdMapping.populateExternalUserIdForUsers(this.getTenantIdentifierWithStorageFromRequest(req), new AuthRecipeUserInfo[]{response.user});
 
                 ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main, response.user.getSupertokensUserId());
 
@@ -128,18 +130,9 @@ public class SignInUpAPI extends WebserverAPI {
                 ThirdParty.SignInUpResponse response = ThirdParty.signInUp(
                         this.getTenantIdentifierWithStorageFromRequest(req), super.main, thirdPartyId, thirdPartyUserId,
                         email);
+                UserIdMapping.populateExternalUserIdForUsers(this.getTenantIdentifierWithStorageFromRequest(req), new AuthRecipeUserInfo[]{response.user});
 
                 ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main, response.user.getSupertokensUserId());
-
-                //
-                io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                        .getUserIdMapping(this.getAppIdentifierWithStorage(req), response.user.getSupertokensUserId(),
-                                UserIdType.SUPERTOKENS);
-                if (userIdMapping != null) {
-                    response.user.setExternalUserId(userIdMapping.externalUserId);
-                } else {
-                    response.user.setExternalUserId(null);
-                }
 
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
