@@ -352,7 +352,7 @@ public class AuthRecipe {
 
                     storage.commitTransaction(con);
 
-                    return new LinkAccountsResult(getUserById(appIdentifierWithStorage, canLinkAccounts.primaryUserId), true);
+                    return new LinkAccountsResult(getUserById(appIdentifierWithStorage, canLinkAccounts.primaryUserId), false);
                 } catch (UnknownUserIdException | InputUserIdIsNotAPrimaryUserException |
                          RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException |
                          AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException e) {
