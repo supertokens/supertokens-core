@@ -16,11 +16,13 @@
 
 package io.supertokens.authRecipe.exception;
 
-public class RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException extends Exception {
-    public final String primaryUserId;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 
-    public RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException(String primaryUserId, String description) {
+public class RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException extends Exception {
+    public final AuthRecipeUserInfo recipeUser;
+
+    public RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException(AuthRecipeUserInfo recipeUser, String description) {
         super(description);
-        this.primaryUserId = primaryUserId;
+        this.recipeUser = recipeUser;
     }
 }

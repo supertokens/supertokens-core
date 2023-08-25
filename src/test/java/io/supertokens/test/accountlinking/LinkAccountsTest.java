@@ -88,7 +88,7 @@ public class LinkAccountsTest {
         String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(process.main, user2.getSupertokensUserId());
         assert (sessions.length == 1);
 
-        boolean wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user2.getSupertokensUserId(), user.getSupertokensUserId());
+        boolean wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user2.getSupertokensUserId(), user.getSupertokensUserId()).wasAlreadyLinked;
         assert (!wasAlreadyLinked);
 
         AuthRecipeUserInfo refetchUser2 = AuthRecipe.getUserById(process.main, user2.getSupertokensUserId());
@@ -140,7 +140,7 @@ public class LinkAccountsTest {
         String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(process.main, user2.getSupertokensUserId());
         assert (sessions.length == 1);
 
-        boolean wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user2.getSupertokensUserId(), user.getSupertokensUserId());
+        boolean wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user2.getSupertokensUserId(), user.getSupertokensUserId()).wasAlreadyLinked;
         assert (!wasAlreadyLinked);
 
         AuthRecipeUserInfo refetchUser2 = AuthRecipe.getUserById(process.main, user2.getSupertokensUserId());
@@ -204,13 +204,13 @@ public class LinkAccountsTest {
 
         AuthRecipe.createPrimaryUser(process.main, user.getSupertokensUserId());
 
-        boolean wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user2.getSupertokensUserId(), user.getSupertokensUserId());
+        boolean wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user2.getSupertokensUserId(), user.getSupertokensUserId()).wasAlreadyLinked;
         assert (!wasAlreadyLinked);
 
         AuthRecipeUserInfo user3 = EmailPassword.signUp(process.getProcess(), "test3@example.com", "password");
         assert (!user3.isPrimaryUser);
 
-        wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user3.getSupertokensUserId(), user2.getSupertokensUserId());
+        wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user3.getSupertokensUserId(), user2.getSupertokensUserId()).wasAlreadyLinked;
         assert (!wasAlreadyLinked);
 
         AuthRecipeUserInfo refetchUser = AuthRecipe.getUserById(process.main, user.getSupertokensUserId());
@@ -256,14 +256,14 @@ public class LinkAccountsTest {
 
         AuthRecipe.createPrimaryUser(process.main, user.getSupertokensUserId());
 
-        boolean wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user2.getSupertokensUserId(), user.getSupertokensUserId());
+        boolean wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user2.getSupertokensUserId(), user.getSupertokensUserId()).wasAlreadyLinked;
         assert (!wasAlreadyLinked);
 
         Session.createNewSession(process.main, user2.getSupertokensUserId(), new JsonObject(), new JsonObject());
         String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(process.main, user2.getSupertokensUserId());
         assert (sessions.length == 1);
 
-        wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user2.getSupertokensUserId(), user.getSupertokensUserId());
+        wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user2.getSupertokensUserId(), user.getSupertokensUserId()).wasAlreadyLinked;
         assert (wasAlreadyLinked);
 
         // cause linkAccounts revokes sessions for the recipe user ID
@@ -301,7 +301,7 @@ public class LinkAccountsTest {
 
         AuthRecipe.createPrimaryUser(process.main, user.getSupertokensUserId());
 
-        boolean wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user2.getSupertokensUserId(), user.getSupertokensUserId());
+        boolean wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user2.getSupertokensUserId(), user.getSupertokensUserId()).wasAlreadyLinked;
         assert (!wasAlreadyLinked);
 
         AuthRecipeUserInfo user3 = EmailPassword.signUp(process.getProcess(), "test3@example.com", "password");
@@ -312,7 +312,7 @@ public class LinkAccountsTest {
             AuthRecipe.linkAccounts(process.main, user2.getSupertokensUserId(), user3.getSupertokensUserId());
             assert (false);
         } catch (RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException e) {
-            assert (e.primaryUserId.equals(user.getSupertokensUserId()));
+            assert (e.recipeUser.getSupertokensUserId().equals(user.getSupertokensUserId()));
             assert (e.getMessage().equals("The input recipe user ID is already linked to another user ID"));
         }
 
@@ -533,7 +533,7 @@ public class LinkAccountsTest {
         AuthRecipeUserInfo user2 = signInUpResponse.user;
         assert (!user2.isPrimaryUser);
 
-        boolean wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user2.getSupertokensUserId(), user.getSupertokensUserId());
+        boolean wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user2.getSupertokensUserId(), user.getSupertokensUserId()).wasAlreadyLinked;
         assert (!wasAlreadyLinked);
 
         AuthRecipeUserInfo refetchedUser1 = AuthRecipe.getUserById(process.main, user.getSupertokensUserId());
@@ -584,7 +584,7 @@ public class LinkAccountsTest {
         Passwordless.updateUser(process.main, user2.getSupertokensUserId(), null, new Passwordless.FieldUpdate("1234"));
         user2 = AuthRecipe.getUserById(process.main, user2.getSupertokensUserId());
 
-        boolean wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user2.getSupertokensUserId(), user.getSupertokensUserId());
+        boolean wasAlreadyLinked = AuthRecipe.linkAccounts(process.main, user2.getSupertokensUserId(), user.getSupertokensUserId()).wasAlreadyLinked;
         assert (!wasAlreadyLinked);
 
         AuthRecipeUserInfo refetchUser2 = AuthRecipe.getUserById(process.main, user2.getSupertokensUserId());
