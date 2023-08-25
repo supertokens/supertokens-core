@@ -22,7 +22,6 @@ import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -68,7 +67,7 @@ public class EmailPasswordAPITest {
         // create a User
         String email = "test@example.com";
         String password = "testPass123";
-        UserInfo userInfo = EmailPassword.signUp(process.main, email, password);
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, email, password);
         String superTokensUserId = userInfo.getSupertokensUserId();
         String externalUserId = "externalId";
 
@@ -123,7 +122,7 @@ public class EmailPasswordAPITest {
         // create a User
         String email = "test@example.com";
         String password = "testPass123";
-        UserInfo userInfo = EmailPassword.signUp(process.main, email, password);
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, email, password);
         String superTokensUserId = userInfo.getSupertokensUserId();
         String externalUserId = "externalId";
 
@@ -182,7 +181,7 @@ public class EmailPasswordAPITest {
         // create a User
         String email = "test@example.com";
         String password = "testPass123";
-        UserInfo userInfo = EmailPassword.signUp(process.main, email, password);
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, email, password);
         String superTokensUserId = userInfo.getSupertokensUserId();
         String externalUserId = "externalId";
 
@@ -228,7 +227,7 @@ public class EmailPasswordAPITest {
         // create a User
         String email = "test@example.com";
         String password = "testPass123";
-        UserInfo userInfo = EmailPassword.signUp(process.main, email, password);
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, email, password);
         String superTokensUserId = userInfo.getSupertokensUserId();
         String externalUserId = "externalId";
 

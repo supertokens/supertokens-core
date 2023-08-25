@@ -20,7 +20,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -65,7 +65,7 @@ public class DeleteUserAPIWithUserIdMappingTest {
         // deleting with superTokensUserId
         {
             // create User
-            UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+            AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
             String superTokensUserId = userInfo.getSupertokensUserId();
             String externalId = "externalId";
 
@@ -87,7 +87,7 @@ public class DeleteUserAPIWithUserIdMappingTest {
 
             // check that user doesnt exist
             {
-                UserInfo response = EmailPassword.getUserUsingId(process.main, superTokensUserId);
+                AuthRecipeUserInfo response = EmailPassword.getUserUsingId(process.main, superTokensUserId);
                 assertNull(response);
             }
 
@@ -122,7 +122,7 @@ public class DeleteUserAPIWithUserIdMappingTest {
         }
 
         // create an EmailPassword User
-        UserInfo userInfo_1 = EmailPassword.signUp(process.main, "test@example.com", "testPassword123");
+        AuthRecipeUserInfo userInfo_1 = EmailPassword.signUp(process.main, "test@example.com", "testPassword123");
 
         // associate some data with user
         JsonObject data = new JsonObject();
@@ -150,7 +150,7 @@ public class DeleteUserAPIWithUserIdMappingTest {
         // check that only auth tables for EmailPassword user have been deleted and the userMetadata table entries still
         // exist
         {
-            UserInfo epUser = EmailPassword.getUserUsingId(process.main, userInfo_1.getSupertokensUserId());
+            AuthRecipeUserInfo epUser = EmailPassword.getUserUsingId(process.main, userInfo_1.getSupertokensUserId());
             assertNull(epUser);
 
             JsonObject epUserMetadata = UserMetadata.getUserMetadata(process.main, userInfo_1.getSupertokensUserId());
@@ -182,7 +182,7 @@ public class DeleteUserAPIWithUserIdMappingTest {
         }
 
         // create an EmailPassword User
-        UserInfo userInfo_1 = EmailPassword.signUp(process.main, "test@example.com", "testPassword123");
+        AuthRecipeUserInfo userInfo_1 = EmailPassword.signUp(process.main, "test@example.com", "testPassword123");
 
         // associate some data with user
         JsonObject data = new JsonObject();
@@ -210,7 +210,7 @@ public class DeleteUserAPIWithUserIdMappingTest {
         // check that only auth tables for thirdParty user have been deleted and the userMetadata table entries still
         // exist
         {
-            io.supertokens.pluginInterface.thirdparty.UserInfo tpUserInfo = ThirdParty.getUser(process.main,
+            AuthRecipeUserInfo tpUserInfo = ThirdParty.getUser(process.main,
                     userInfo_2.user.getSupertokensUserId());
             assertNull(tpUserInfo);
 

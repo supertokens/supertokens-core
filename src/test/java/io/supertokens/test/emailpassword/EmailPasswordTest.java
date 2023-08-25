@@ -32,7 +32,6 @@ import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicatePasswordResetTokenException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateUserIdException;
@@ -148,8 +147,8 @@ public class EmailPasswordTest {
             return;
         }
 
-        UserInfo userInfo = EmailPassword.signUp(process.getProcess(), "random@gmail.com", "validPass123");
-        assertEquals(userInfo.email, "random@gmail.com");
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.getProcess(), "random@gmail.com", "validPass123");
+        assertEquals(userInfo.loginMethods[0].email, "random@gmail.com");
         assertNotNull(userInfo.getSupertokensUserId());
 
         for (int i = 0; i < 100; i++) {
@@ -179,10 +178,10 @@ public class EmailPasswordTest {
             return;
         }
 
-        UserInfo user = EmailPassword.signUp(process.getProcess(), "random@gmail.com", "validPass123");
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "random@gmail.com", "validPass123");
 
         AuthRecipeUserInfo userInfo = ((AuthRecipeStorage) StorageLayer.getStorage(process.getProcess()))
-                .listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), user.email)[0];
+                .listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), user.loginMethods[0].email)[0];
         assertNotEquals(userInfo.loginMethods[0].passwordHash, "validPass123");
         assertTrue(PasswordHashing.getInstance(process.getProcess()).verifyPasswordWithHash("validPass123",
                 userInfo.loginMethods[0].passwordHash));
@@ -205,7 +204,7 @@ public class EmailPasswordTest {
             return;
         }
 
-        UserInfo user = EmailPassword.signUp(process.getProcess(), "random@gmail.com", "validPass123");
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "random@gmail.com", "validPass123");
 
         String resetToken = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.getSupertokensUserId());
         PasswordResetTokenInfo resetTokenInfo = ((EmailPasswordSQLStorage) StorageLayer.getStorage(
@@ -234,14 +233,14 @@ public class EmailPasswordTest {
             return;
         }
 
-        UserInfo user = EmailPassword.signUp(process.getProcess(), "random@gmail.com", "validPass123");
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "random@gmail.com", "validPass123");
 
         String resetToken = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.getSupertokensUserId());
 
         EmailPassword.resetPassword(process.getProcess(), resetToken, "newValidPass123");
 
         AuthRecipeUserInfo userInfo = ((AuthRecipeStorage) StorageLayer.getStorage(process.getProcess()))
-                .listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), user.email)[0];
+                .listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), user.loginMethods[0].email)[0];
         assertNotEquals(userInfo.loginMethods[0].passwordHash, "newValidPass123");
 
         assertTrue(PasswordHashing.getInstance(process.getProcess()).verifyPasswordWithHash("newValidPass123",
@@ -264,7 +263,7 @@ public class EmailPasswordTest {
             return;
         }
 
-        UserInfo user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
 
         String tok = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.getSupertokensUserId());
 
@@ -298,7 +297,7 @@ public class EmailPasswordTest {
             return;
         }
 
-        UserInfo user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
 
         EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.getSupertokensUserId());
         String tok = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.getSupertokensUserId());
@@ -324,7 +323,7 @@ public class EmailPasswordTest {
 
         AuthRecipeUserInfo user1 = EmailPassword.signIn(process.getProcess(), "test1@example.com", "newPassword");
 
-        assertEquals(user1.loginMethods[0].email, user.email);
+        assertEquals(user1.loginMethods[0].email, user.loginMethods[0].email);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -384,7 +383,7 @@ public class EmailPasswordTest {
         }
 
         // we add a user first.
-        UserInfo user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
 
         ((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
                 .addPasswordResetToken(new AppIdentifier(null, null), new PasswordResetTokenInfo(
@@ -523,7 +522,7 @@ public class EmailPasswordTest {
             return;
         }
 
-        UserInfo userSignUp = EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
+        AuthRecipeUserInfo userSignUp = EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
 
         AuthRecipeUserInfo user = EmailPassword.signIn(process.getProcess(), "test@example.com", "password");
 
@@ -776,7 +775,7 @@ public class EmailPasswordTest {
             return;
         }
 
-        UserInfo user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
 
         String tok = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.getSupertokensUserId());
 
@@ -810,7 +809,7 @@ public class EmailPasswordTest {
             return;
         }
 
-        UserInfo user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
 
         EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.getSupertokensUserId());
         String tok = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.getSupertokensUserId());
@@ -865,7 +864,7 @@ public class EmailPasswordTest {
             return;
         }
 
-        UserInfo user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
 
         String tok = EmailPassword.generatePasswordResetTokenBeforeCdi4_0WithoutAddingEmail(process.getProcess(),
                 user.getSupertokensUserId());
@@ -902,10 +901,10 @@ public class EmailPasswordTest {
             return;
         }
 
-        UserInfo user0 = EmailPassword.signUp(process.getProcess(), "someemail1@gmail.com", "somePass");
+        AuthRecipeUserInfo user0 = EmailPassword.signUp(process.getProcess(), "someemail1@gmail.com", "somePass");
         AuthRecipe.createPrimaryUser(process.main, user0.getSupertokensUserId());
 
-        UserInfo user = EmailPassword.signUp(process.getProcess(), "someemail@gmail.com", "somePass");
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "someemail@gmail.com", "somePass");
         AuthRecipe.createPrimaryUser(process.main, user.getSupertokensUserId());
 
         try {
@@ -947,7 +946,7 @@ public class EmailPasswordTest {
 
         AuthRecipe.createPrimaryUser(process.main, user0.getSupertokensUserId());
 
-        UserInfo user = EmailPassword.signUp(process.getProcess(), "someemail@gmail.com", "somePass");
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "someemail@gmail.com", "somePass");
         AuthRecipe.createPrimaryUser(process.main, user.getSupertokensUserId());
 
         EmailPassword.updateUsersEmailOrPassword(process.main, user.getSupertokensUserId(), "someemail1@gmail.com", null);
@@ -984,7 +983,7 @@ public class EmailPasswordTest {
 
         AuthRecipe.createPrimaryUser(process.main, user0.getSupertokensUserId());
 
-        UserInfo user = EmailPassword.signUp(process.getProcess(), "someemail@gmail.com", "somePass");
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "someemail@gmail.com", "somePass");
         AuthRecipe.createPrimaryUser(process.main, user.getSupertokensUserId());
 
         Multitenancy.addUserIdToTenant(process.main, tenantIdentifierWithStorage, user.getSupertokensUserId());

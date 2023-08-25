@@ -31,7 +31,7 @@ import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.exceptions.*;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -189,7 +189,7 @@ public class MultitenantAPITest {
                     tenantToUsers.put(tenant, new ArrayList<>());
                 }
 
-                UserInfo user1 = EmailPassword.signUp(
+                AuthRecipeUserInfo user1 = EmailPassword.signUp(
                         tenant.withStorage(StorageLayer.getStorage(tenant, process.getProcess())),
                         process.getProcess(),
                         "user@example.com",
@@ -197,7 +197,7 @@ public class MultitenantAPITest {
                 );
                 tenantToUsers.get(tenant).add(user1.getSupertokensUserId());
                 recipeToUsers.get("emailpassword").add(user1.getSupertokensUserId());
-                UserInfo user2 = EmailPassword.signUp(
+                AuthRecipeUserInfo user2 = EmailPassword.signUp(
                         tenant.withStorage(StorageLayer.getStorage(tenant, process.getProcess())),
                         process.getProcess(),
                         "user@gmail.com",

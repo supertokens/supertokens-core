@@ -21,9 +21,9 @@ import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.Utils;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.RowMapper;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
@@ -228,8 +228,8 @@ public class EmailPasswordQueries {
         });
     }
 
-    public static UserInfo signUp(Start start, TenantIdentifier tenantIdentifier, String userId, String email,
-                                  String passwordHash, long timeJoined)
+    public static AuthRecipeUserInfo signUp(Start start, TenantIdentifier tenantIdentifier, String userId, String email,
+                                            String passwordHash, long timeJoined)
             throws StorageQueryException, StorageTransactionLogicException {
         return start.startTransaction(con -> {
             Connection sqlCon = (Connection) con.getConnection();
@@ -287,7 +287,7 @@ public class EmailPasswordQueries {
                 fillUserInfoWithTenantIds_transaction(start, sqlCon, tenantIdentifier.toAppIdentifier(), userInfo);
                 fillUserInfoWithVerified_transaction(start, sqlCon, tenantIdentifier.toAppIdentifier(), userInfo);
                 sqlCon.commit();
-                return new UserInfo(userId, false, userInfo.toLoginMethod());
+                return AuthRecipeUserInfo.create(userId, false, userInfo.toLoginMethod());
             } catch (SQLException throwables) {
                 throw new StorageTransactionLogicException(throwables);
             }
@@ -511,7 +511,7 @@ public class EmailPasswordQueries {
         Map<String, List<String>> tenantIdsForUserIds = GeneralQueries.getTenantIdsForUserIds_transaction(start, sqlCon,
                 appIdentifier,
                 userIds);
-        List<UserInfo> result = new ArrayList<>();
+        List<AuthRecipeUserInfo> result = new ArrayList<>();
         for (UserInfoPartial userInfo : userInfos) {
             userInfo.tenantIds = tenantIdsForUserIds.get(userInfo.id).toArray(new String[0]);
         }

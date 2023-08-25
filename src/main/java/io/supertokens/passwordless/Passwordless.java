@@ -40,7 +40,6 @@ import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
 import io.supertokens.pluginInterface.passwordless.PasswordlessDevice;
-import io.supertokens.pluginInterface.passwordless.UserInfo;
 import io.supertokens.pluginInterface.passwordless.exception.*;
 import io.supertokens.pluginInterface.passwordless.sqlStorage.PasswordlessSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
@@ -529,7 +528,7 @@ public class Passwordless {
 
     @TestOnly
     @Deprecated
-    public static UserInfo getUserById(Main main, String userId)
+    public static AuthRecipeUserInfo getUserById(Main main, String userId)
             throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
         return getUserById(
@@ -537,7 +536,7 @@ public class Passwordless {
     }
 
     @Deprecated
-    public static UserInfo getUserById(AppIdentifierWithStorage appIdentifierWithStorage, String userId)
+    public static AuthRecipeUserInfo getUserById(AppIdentifierWithStorage appIdentifierWithStorage, String userId)
             throws StorageQueryException {
         AuthRecipeUserInfo result = appIdentifierWithStorage.getAuthRecipeStorage()
                 .getPrimaryUserById(appIdentifierWithStorage, userId);
@@ -546,7 +545,7 @@ public class Passwordless {
         }
         for (LoginMethod lM : result.loginMethods) {
             if (lM.getSupertokensUserId().equals(userId)) {
-                return new io.supertokens.pluginInterface.passwordless.UserInfo(lM.getSupertokensUserId(), result.isPrimaryUser,
+                return AuthRecipeUserInfo.create(lM.getSupertokensUserId(), result.isPrimaryUser,
                         lM);
             }
         }

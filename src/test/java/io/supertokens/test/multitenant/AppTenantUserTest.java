@@ -25,7 +25,7 @@ import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.ActiveUsersStorage;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.nonAuthRecipe.NonAuthRecipeStorage;
 import io.supertokens.storageLayer.StorageLayer;
@@ -120,7 +120,7 @@ public class AppTenantUserTest {
                         StorageLayer.getStorage(t, process.getProcess()));
 
 
-                UserInfo user = EmailPassword.signUp(tWithStorage, process.getProcess(), "test@example.com",
+                AuthRecipeUserInfo user = EmailPassword.signUp(tWithStorage, process.getProcess(), "test@example.com",
                         "password");
                 String userId = user.getSupertokensUserId();
 
@@ -223,7 +223,7 @@ public class AppTenantUserTest {
                 continue;
             }
 
-            UserInfo user = EmailPassword.signUp(appWithStorage, process.getProcess(), "test@example.com", "password");
+            AuthRecipeUserInfo user = EmailPassword.signUp(appWithStorage, process.getProcess(), "test@example.com", "password");
             String userId = user.getSupertokensUserId();
 
             Multitenancy.addUserIdToTenant(process.getProcess(), tenantWithStorage, userId);
@@ -291,7 +291,7 @@ public class AppTenantUserTest {
         TenantIdentifierWithStorage tenantWithStorage = tenant.withStorage(
                 StorageLayer.getStorage(tenant, process.getProcess()));
 
-        UserInfo user = EmailPassword.signUp(tenantWithStorage, process.getProcess(), "test@example.com", "password");
+        AuthRecipeUserInfo user = EmailPassword.signUp(tenantWithStorage, process.getProcess(), "test@example.com", "password");
         String userId = user.getSupertokensUserId();
 
         Multitenancy.deleteTenant(tenant, process.getProcess());
@@ -299,7 +299,7 @@ public class AppTenantUserTest {
         Multitenancy.addUserIdToTenant(process.getProcess(), appWithStorage,
                 userId); // user id must be intact to do this
 
-        UserInfo appUser = EmailPassword.getUserUsingId(appWithStorage.toAppIdentifierWithStorage(), userId);
+        AuthRecipeUserInfo appUser = EmailPassword.getUserUsingId(appWithStorage.toAppIdentifierWithStorage(), userId);
 
         assertNotNull(appUser);
         assertEquals(userId, appUser.getSupertokensUserId());

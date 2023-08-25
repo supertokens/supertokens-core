@@ -29,7 +29,6 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.thirdparty.UserInfo;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateUserIdException;
 import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
@@ -158,7 +157,7 @@ public class ThirdParty {
                 long timeJoined = System.currentTimeMillis();
 
                 try {
-                    UserInfo createdUser = storage.signUp(tenantIdentifierWithStorage, userId, email,
+                    AuthRecipeUserInfo createdUser = storage.signUp(tenantIdentifierWithStorage, userId, email,
                             new LoginMethod.ThirdParty(thirdPartyId, thirdPartyUserId), timeJoined);
 
                     return new SignInUpResponse(true, createdUser);
@@ -249,7 +248,7 @@ public class ThirdParty {
     }
 
     @Deprecated
-    public static UserInfo getUser(AppIdentifierWithStorage appIdentifierWithStorage, String userId)
+    public static AuthRecipeUserInfo getUser(AppIdentifierWithStorage appIdentifierWithStorage, String userId)
             throws StorageQueryException {
         AuthRecipeUserInfo result = appIdentifierWithStorage.getAuthRecipeStorage()
                 .getPrimaryUserById(appIdentifierWithStorage, userId);
@@ -258,7 +257,7 @@ public class ThirdParty {
         }
         for (LoginMethod lM : result.loginMethods) {
             if (lM.getSupertokensUserId().equals(userId)) {
-                return new io.supertokens.pluginInterface.thirdparty.UserInfo(lM.getSupertokensUserId(), result.isPrimaryUser,
+                return AuthRecipeUserInfo.create(lM.getSupertokensUserId(), result.isPrimaryUser,
                         lM);
             }
         }
@@ -267,7 +266,7 @@ public class ThirdParty {
 
     @Deprecated
     @TestOnly
-    public static UserInfo getUser(Main main, String userId) throws StorageQueryException {
+    public static AuthRecipeUserInfo getUser(Main main, String userId) throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
         return getUser(new AppIdentifierWithStorage(null, null, storage), userId);
     }

@@ -31,7 +31,7 @@ import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.exceptions.*;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -185,7 +185,7 @@ public class UserPaginationTest {
                 StorageLayer.getStorage(tenantIdentifier, process.getProcess()));
         for (int i = 0; i < numUsers; i++) {
             {
-                UserInfo user = EmailPassword.signUp(
+                AuthRecipeUserInfo user = EmailPassword.signUp(
                         tenantIdentifierWithStorage, process.getProcess(),
                         prefix + "epuser" + i + "@example.com", "password" + i);
                 tenantToUsers.get(tenantIdentifier).add(user.getSupertokensUserId());

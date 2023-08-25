@@ -23,7 +23,6 @@ import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.ParsedFirebaseSCryptResponse;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
@@ -519,7 +518,7 @@ public class ImportUserWithPasswordHashAPITest {
         String email = "test@example.com";
         String password = "testPass123";
 
-        UserInfo initialUserInfo = EmailPassword.signUp(process.main, email, password);
+        AuthRecipeUserInfo initialUserInfo = EmailPassword.signUp(process.main, email, password);
 
         // update a user's passwordHash
 

@@ -28,7 +28,6 @@ import io.supertokens.passwordless.Passwordless.CreateCodeResponse;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.session.Session;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.thirdparty.ThirdParty;
@@ -199,10 +198,10 @@ public class AuthRecipeTest {
             assert (users.users.length == 0);
         }
 
-        UserInfo user1 = EmailPassword.signUp(process.getProcess(), "test0@example.com", "password0");
-        UserInfo user2 = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password1");
-        UserInfo user3 = EmailPassword.signUp(process.getProcess(), "test20@example.com", "password2");
-        UserInfo user4 = EmailPassword.signUp(process.getProcess(), "test3@example.com", "password3");
+        AuthRecipeUserInfo user1 = EmailPassword.signUp(process.getProcess(), "test0@example.com", "password0");
+        AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password1");
+        AuthRecipeUserInfo user3 = EmailPassword.signUp(process.getProcess(), "test20@example.com", "password2");
+        AuthRecipeUserInfo user4 = EmailPassword.signUp(process.getProcess(), "test3@example.com", "password3");
 
         {
             UserPaginationContainer users = AuthRecipe.getUsers(process.getProcess(), 100, "ASC", null,
@@ -648,7 +647,7 @@ public class AuthRecipeTest {
         AtomicInteger count = new AtomicInteger();
 
         Map<String, Function<Object, ? extends AuthRecipeUserInfo>> signUpMap = new HashMap<>();
-        signUpMap.put("io.supertokens.pluginInterface.emailpassword.UserInfo", o -> {
+        signUpMap.put("io.supertokens.pluginInterface.emailpassword.AuthRecipeUserInfo", o -> {
             try {
                 return EmailPassword.signUp(process.getProcess(), "test" + count.getAndIncrement() + "@example.com",
                         "password0");
@@ -656,7 +655,7 @@ public class AuthRecipeTest {
             }
             return null;
         });
-        signUpMap.put("io.supertokens.pluginInterface.thirdparty.UserInfo", o -> {
+        signUpMap.put("io.supertokens.pluginInterface.thirdparty.AuthRecipeUserInfo", o -> {
             try {
                 String thirdPartyId = "testThirdParty";
                 String thirdPartyUserId = "thirdPartyUserId" + count.getAndIncrement();
@@ -667,7 +666,7 @@ public class AuthRecipeTest {
             }
             return null;
         });
-        signUpMap.put("io.supertokens.pluginInterface.passwordless.UserInfo", o -> {
+        signUpMap.put("io.supertokens.pluginInterface.passwordless.AuthRecipeUserInfo", o -> {
             try {
                 String email = "test" + count.getAndIncrement() + "@example.com";
                 CreateCodeResponse createCode = Passwordless.createCode(process.getProcess(), email, null, null, null);

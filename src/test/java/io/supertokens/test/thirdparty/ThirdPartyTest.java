@@ -22,7 +22,6 @@ import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
-import io.supertokens.pluginInterface.thirdparty.UserInfo;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateUserIdException;
 import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
@@ -389,12 +388,12 @@ public class ThirdPartyTest {
 
         checkSignInUpResponse(signUpResponse, thirdPartyUserId, thirdPartyId, email, true);
 
-        UserInfo getUserInfoFromId = ThirdParty.getUser(process.getProcess(), signUpResponse.user.getSupertokensUserId());
+        AuthRecipeUserInfo getUserInfoFromId = ThirdParty.getUser(process.getProcess(), signUpResponse.user.getSupertokensUserId());
         assertEquals(getUserInfoFromId.getSupertokensUserId(), signUpResponse.user.getSupertokensUserId());
         assertEquals(getUserInfoFromId.timeJoined, signUpResponse.user.timeJoined);
-        assertEquals(getUserInfoFromId.email, signUpResponse.user.loginMethods[0].email);
-        assertEquals(getUserInfoFromId.thirdParty.userId, signUpResponse.user.loginMethods[0].thirdParty.userId);
-        assertEquals(getUserInfoFromId.thirdParty.id, signUpResponse.user.loginMethods[0].thirdParty.id);
+        assertEquals(getUserInfoFromId.loginMethods[0].email, signUpResponse.user.loginMethods[0].email);
+        assertEquals(getUserInfoFromId.loginMethods[0].thirdParty.userId, signUpResponse.user.loginMethods[0].thirdParty.userId);
+        assertEquals(getUserInfoFromId.loginMethods[0].thirdParty.id, signUpResponse.user.loginMethods[0].thirdParty.id);
 
         AuthRecipeUserInfo getUserInfoFromThirdParty = ThirdParty.getUser(process.getProcess(),
                 signUpResponse.user.loginMethods[0].thirdParty.id,

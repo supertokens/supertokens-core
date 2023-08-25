@@ -32,7 +32,6 @@ import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
 import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicatePasswordResetTokenException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateUserIdException;
@@ -83,7 +82,7 @@ public class EmailPassword {
     }
 
     @TestOnly
-    public static UserInfo signUp(Main main, @Nonnull String email, @Nonnull String password)
+    public static AuthRecipeUserInfo signUp(Main main, @Nonnull String email, @Nonnull String password)
             throws DuplicateEmailException, StorageQueryException {
         try {
             Storage storage = StorageLayer.getStorage(main);
@@ -94,7 +93,7 @@ public class EmailPassword {
         }
     }
 
-    public static UserInfo signUp(TenantIdentifierWithStorage tenantIdentifierWithStorage, Main main,
+    public static AuthRecipeUserInfo signUp(TenantIdentifierWithStorage tenantIdentifierWithStorage, Main main,
                                   @Nonnull String email, @Nonnull String password)
             throws DuplicateEmailException, StorageQueryException, TenantOrAppNotFoundException,
             BadPermissionException {
@@ -167,7 +166,7 @@ public class EmailPassword {
             EmailPasswordSQLStorage storage = tenantIdentifierWithStorage.getEmailPasswordStorage();
 
             try {
-                UserInfo userInfo = storage.signUp(tenantIdentifierWithStorage, userId, email, passwordHash,
+                AuthRecipeUserInfo userInfo = storage.signUp(tenantIdentifierWithStorage, userId, email, passwordHash,
                         timeJoined);
                 return new ImportUserResponse(false, userInfo);
             } catch (DuplicateUserIdException e) {
@@ -663,7 +662,7 @@ public class EmailPassword {
 
     @Deprecated
     @TestOnly
-    public static UserInfo getUserUsingId(Main main, String userId)
+    public static AuthRecipeUserInfo getUserUsingId(Main main, String userId)
             throws StorageQueryException {
         try {
             Storage storage = StorageLayer.getStorage(main);
@@ -674,7 +673,7 @@ public class EmailPassword {
     }
 
     @Deprecated
-    public static UserInfo getUserUsingId(AppIdentifierWithStorage appIdentifierWithStorage, String userId)
+    public static AuthRecipeUserInfo getUserUsingId(AppIdentifierWithStorage appIdentifierWithStorage, String userId)
             throws StorageQueryException, TenantOrAppNotFoundException {
         AuthRecipeUserInfo result = appIdentifierWithStorage.getAuthRecipeStorage()
                 .getPrimaryUserById(appIdentifierWithStorage, userId);
@@ -683,7 +682,7 @@ public class EmailPassword {
         }
         for (LoginMethod lM : result.loginMethods) {
             if (lM.getSupertokensUserId().equals(userId)) {
-                return new UserInfo(lM.getSupertokensUserId(), result.isPrimaryUser, lM);
+                return AuthRecipeUserInfo.create(lM.getSupertokensUserId(), result.isPrimaryUser, lM);
             }
         }
         return null;
