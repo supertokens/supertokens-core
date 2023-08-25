@@ -82,9 +82,10 @@ public class LinkAccountsAPITest {
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/accountlinking/user/link", params, 1000, 1000, null,
                     WebserverAPI.getLatestCDIVersion().get(), "");
-            assertEquals(2, response.entrySet().size());
+            assertEquals(3, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
             assertFalse(response.get("accountsAlreadyLinked").getAsBoolean());
+            assertTrue(response.has("user"));
         }
 
         AuthRecipe.linkAccounts(process.main, user.getSupertokensUserId(), user2.getSupertokensUserId());
@@ -97,9 +98,10 @@ public class LinkAccountsAPITest {
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/accountlinking/user/link", params, 1000, 1000, null,
                     WebserverAPI.getLatestCDIVersion().get(), "");
-            assertEquals(2, response.entrySet().size());
+            assertEquals(3, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
             assertTrue(response.get("accountsAlreadyLinked").getAsBoolean());
+            assertTrue(response.has("user"));
         }
 
         process.kill();
@@ -136,9 +138,10 @@ public class LinkAccountsAPITest {
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/accountlinking/user/link", params, 1000, 1000, null,
                     WebserverAPI.getLatestCDIVersion().get(), "");
-            assertEquals(2, response.entrySet().size());
+            assertEquals(3, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
             assertFalse(response.get("accountsAlreadyLinked").getAsBoolean());
+            assertTrue(response.has("user"));
         }
 
         AuthRecipe.linkAccounts(process.main, user.getSupertokensUserId(), user2.getSupertokensUserId());
@@ -151,9 +154,10 @@ public class LinkAccountsAPITest {
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/accountlinking/user/link", params, 1000, 1000, null,
                     WebserverAPI.getLatestCDIVersion().get(), "");
-            assertEquals(2, response.entrySet().size());
+            assertEquals(3, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
             assertTrue(response.get("accountsAlreadyLinked").getAsBoolean());
+            assertTrue(response.has("user"));
         }
 
         process.kill();
@@ -375,12 +379,13 @@ public class LinkAccountsAPITest {
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/accountlinking/user/link", params, 1000, 1000, null,
                     WebserverAPI.getLatestCDIVersion().get(), "");
-            assertEquals(3, response.entrySet().size());
+            assertEquals(4, response.entrySet().size());
             assertEquals("RECIPE_USER_ID_ALREADY_LINKED_WITH_ANOTHER_PRIMARY_USER_ID_ERROR",
                     response.get("status").getAsString());
             assertEquals(emailPasswordUser1.getSupertokensUserId(), response.get("primaryUserId").getAsString());
             assertEquals("The input recipe user ID is already linked to another user ID",
                     response.get("description").getAsString());
+            assertTrue(response.has("user"));
         }
 
         process.kill();
@@ -422,12 +427,13 @@ public class LinkAccountsAPITest {
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/accountlinking/user/link", params, 1000, 1000, null,
                     WebserverAPI.getLatestCDIVersion().get(), "");
-            assertEquals(3, response.entrySet().size());
+            assertEquals(4, response.entrySet().size());
             assertEquals("RECIPE_USER_ID_ALREADY_LINKED_WITH_ANOTHER_PRIMARY_USER_ID_ERROR",
                     response.get("status").getAsString());
             assertEquals("r1", response.get("primaryUserId").getAsString());
             assertEquals("The input recipe user ID is already linked to another user ID",
                     response.get("description").getAsString());
+            assertTrue(response.has("user"));
         }
 
         process.kill();
