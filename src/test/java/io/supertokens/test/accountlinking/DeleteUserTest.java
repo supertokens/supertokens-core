@@ -73,7 +73,7 @@ public class DeleteUserTest {
 
         AuthRecipe.createPrimaryUser(process.main, r2.getSupertokensUserId());
 
-        assert (!AuthRecipe.linkAccounts(process.main, r1.getSupertokensUserId(), r2.getSupertokensUserId()));
+        assert (!AuthRecipe.linkAccounts(process.main, r1.getSupertokensUserId(), r2.getSupertokensUserId()).wasAlreadyLinked);
 
         AuthRecipe.deleteUser(process.main, r1.getSupertokensUserId(), false);
 
@@ -110,7 +110,7 @@ public class DeleteUserTest {
 
         AuthRecipe.createPrimaryUser(process.main, r2.getSupertokensUserId());
 
-        assert (!AuthRecipe.linkAccounts(process.main, r1.getSupertokensUserId(), r2.getSupertokensUserId()));
+        assert (!AuthRecipe.linkAccounts(process.main, r1.getSupertokensUserId(), r2.getSupertokensUserId()).wasAlreadyLinked);
 
         AuthRecipe.deleteUser(process.main, r2.getSupertokensUserId(), false);
 
@@ -148,7 +148,7 @@ public class DeleteUserTest {
 
         AuthRecipe.createPrimaryUser(process.main, r2.getSupertokensUserId());
 
-        assert (!AuthRecipe.linkAccounts(process.main, r1.getSupertokensUserId(), r2.getSupertokensUserId()));
+        assert (!AuthRecipe.linkAccounts(process.main, r1.getSupertokensUserId(), r2.getSupertokensUserId()).wasAlreadyLinked);
 
         AuthRecipe.deleteUser(process.main, r2.getSupertokensUserId());
 
@@ -183,7 +183,7 @@ public class DeleteUserTest {
 
         AuthRecipe.createPrimaryUser(process.main, r2.getSupertokensUserId());
 
-        assert (!AuthRecipe.linkAccounts(process.main, r1.getSupertokensUserId(), r2.getSupertokensUserId()));
+        assert (!AuthRecipe.linkAccounts(process.main, r1.getSupertokensUserId(), r2.getSupertokensUserId()).wasAlreadyLinked);
 
         AuthRecipe.deleteUser(process.main, r1.getSupertokensUserId());
 
@@ -228,7 +228,7 @@ public class DeleteUserTest {
 
         AuthRecipe.createPrimaryUser(process.main, r2.getSupertokensUserId());
 
-        assert (!AuthRecipe.linkAccounts(process.main, r1.getSupertokensUserId(), r2.getSupertokensUserId()));
+        assert (!AuthRecipe.linkAccounts(process.main, r1.getSupertokensUserId(), r2.getSupertokensUserId()).wasAlreadyLinked);
 
         AuthRecipe.deleteUser(process.main, r1.getSupertokensUserId(), false);
 
@@ -280,7 +280,7 @@ public class DeleteUserTest {
 
         AuthRecipe.createPrimaryUser(process.main, r2.getSupertokensUserId());
 
-        assert (!AuthRecipe.linkAccounts(process.main, r1.getSupertokensUserId(), r2.getSupertokensUserId()));
+        assert (!AuthRecipe.linkAccounts(process.main, r1.getSupertokensUserId(), r2.getSupertokensUserId()).wasAlreadyLinked);
 
         AuthRecipe.deleteUser(process.main, r1.getSupertokensUserId());
 
@@ -338,8 +338,8 @@ public class DeleteUserTest {
 
         AuthRecipe.createPrimaryUser(process.main, r2.getSupertokensUserId());
 
-        assert (!AuthRecipe.linkAccounts(process.main, r1.getSupertokensUserId(), r2.getSupertokensUserId()));
-        assert (!AuthRecipe.linkAccounts(process.main, r3.getSupertokensUserId(), r1.getSupertokensUserId()));
+        assert (!AuthRecipe.linkAccounts(process.main, r1.getSupertokensUserId(), r2.getSupertokensUserId()).wasAlreadyLinked);
+        assert (!AuthRecipe.linkAccounts(process.main, r3.getSupertokensUserId(), r1.getSupertokensUserId()).wasAlreadyLinked);
 
         AuthRecipe.deleteUser(process.main, r1.getSupertokensUserId(), false);
 

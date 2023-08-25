@@ -24,6 +24,7 @@ import io.supertokens.authRecipe.exception.AccountInfoAlreadyAssociatedWithAnoth
 import io.supertokens.authRecipe.exception.InputUserIdIsNotAPrimaryUserException;
 import io.supertokens.authRecipe.exception.RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
@@ -121,14 +122,8 @@ public class CanLinkAccountsAPI extends WebserverAPI {
             try {
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "RECIPE_USER_ID_ALREADY_LINKED_WITH_ANOTHER_PRIMARY_USER_ID_ERROR");
-                io.supertokens.pluginInterface.useridmapping.UserIdMapping result = UserIdMapping.getUserIdMapping(
-                        recipeUserIdAppIdentifierWithStorage, e.primaryUserId,
-                        UserIdType.SUPERTOKENS);
-                if (result != null) {
-                    response.addProperty("primaryUserId", result.externalUserId);
-                } else {
-                    response.addProperty("primaryUserId", e.primaryUserId);
-                }
+                UserIdMapping.populateExternalUserIdForUsers(recipeUserIdAppIdentifierWithStorage, new AuthRecipeUserInfo[]{e.recipeUser});
+                response.addProperty("primaryUserId", e.recipeUser.getSupertokensOrExternalUserId());
                 response.addProperty("description", e.getMessage());
                 super.sendJsonResponse(200, response, resp);
             } catch (StorageQueryException ex) {

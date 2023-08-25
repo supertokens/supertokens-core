@@ -31,12 +31,16 @@ import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.useridmapping.UserIdMapping;
+import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.WebserverAPI;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -507,6 +511,105 @@ public class LinkAccountsAPITest {
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
         }
+    }
+
+    @Test
+    public void testUserObjectInLinkAccountsResponse() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "abcd1234");
+
+        AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "abcd1234");
+
+        AuthRecipe.createPrimaryUser(process.main, user2.getSupertokensUserId());
+
+        {
+            JsonObject params = new JsonObject();
+            params.addProperty("recipeUserId", user.getSupertokensUserId());
+            params.addProperty("primaryUserId", user2.getSupertokensUserId());
+
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/accountlinking/user/link", params, 1000, 1000, null,
+                    WebserverAPI.getLatestCDIVersion().get(), "");
+            assertEquals(3, response.entrySet().size());
+            assertEquals("OK", response.get("status").getAsString());
+            assertFalse(response.get("accountsAlreadyLinked").getAsBoolean());
+            JsonObject userObj = response.get("user").getAsJsonObject();
+
+            Map<String, String> getUserParams = new HashMap<>();
+            getUserParams.put("userId", user.getSupertokensUserId());
+            JsonObject getUserResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/user/id", getUserParams, 1000, 1000, null,
+                    SemVer.v4_0.get(), "");
+            JsonObject userObj2 = response.get("user").getAsJsonObject();
+            assertEquals(userObj, userObj2);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void linkingUserFailsCauseAlreadyLinkedToAnotherAccountReturnsUserObject() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        AuthRecipeUserInfo emailPasswordUser1 = EmailPassword.signUp(process.getProcess(), "test@example.com",
+                "pass1234");
+        AuthRecipeUserInfo emailPasswordUser2 = EmailPassword.signUp(process.getProcess(), "test2@example.com",
+                "pass1234");
+
+        AuthRecipe.createPrimaryUser(process.main, emailPasswordUser1.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.main, emailPasswordUser2.getSupertokensUserId(), emailPasswordUser1.getSupertokensUserId());
+
+        AuthRecipeUserInfo emailPasswordUser3 = EmailPassword.signUp(process.getProcess(), "test3@example.com",
+                "pass1234");
+
+        AuthRecipe.createPrimaryUser(process.main, emailPasswordUser3.getSupertokensUserId());
+
+        {
+            JsonObject params = new JsonObject();
+            params.addProperty("recipeUserId", emailPasswordUser2.getSupertokensUserId());
+            params.addProperty("primaryUserId", emailPasswordUser3.getSupertokensUserId());
+
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/accountlinking/user/link", params, 1000, 1000, null,
+                    WebserverAPI.getLatestCDIVersion().get(), "");
+            assertEquals(4, response.entrySet().size());
+            assertEquals("RECIPE_USER_ID_ALREADY_LINKED_WITH_ANOTHER_PRIMARY_USER_ID_ERROR",
+                    response.get("status").getAsString());
+            assertEquals(emailPasswordUser1.getSupertokensUserId(), response.get("primaryUserId").getAsString());
+            assertEquals("The input recipe user ID is already linked to another user ID",
+                    response.get("description").getAsString());
+
+            JsonObject userObj = response.get("user").getAsJsonObject();
+
+            Map<String, String> getUserParams = new HashMap<>();
+            getUserParams.put("userId", emailPasswordUser1.getSupertokensUserId());
+            JsonObject getUserResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/user/id", getUserParams, 1000, 1000, null,
+                    SemVer.v4_0.get(), "");
+            JsonObject userObj2 = response.get("user").getAsJsonObject();
+            assertEquals(userObj, userObj2);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
 }

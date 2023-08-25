@@ -191,7 +191,7 @@ public class GetUserByIdAPITest {
                 JsonObject lM = jsonUser.get("loginMethods").getAsJsonArray().get(1).getAsJsonObject();
                 assertFalse(lM.get("verified").getAsBoolean());
                 assertEquals(lM.get("timeJoined").getAsLong(), user2.timeJoined);
-                assertEquals(lM.get("recipeUserId").getAsString(), user2.getSupertokensUserId());
+                assertEquals(lM.get("recipeUserId").getAsString(), "e2");
                 assertEquals(lM.get("recipeId").getAsString(), "emailpassword");
                 assertEquals(lM.get("email").getAsString(), "test2@example.com");
                 assert (lM.entrySet().size() == 6);

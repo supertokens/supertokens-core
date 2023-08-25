@@ -435,8 +435,8 @@ public class GetUserByAccountInfoTest {
         JsonObject primaryUserInfo = getUsersByAccountInfo(process.getProcess(), false,
                 "test@example.com", null, null, null).get(0).getAsJsonObject();
         assertEquals("ext1", primaryUserInfo.get("loginMethods").getAsJsonArray().get(0).getAsJsonObject().get("recipeUserId").getAsString());
-        assertNotEquals("ext2", primaryUserInfo.get("loginMethods").getAsJsonArray().get(1).getAsJsonObject().get("recipeUserId").getAsString()); // TODO should be equal once userIdMapping is fixed
-        assertNotEquals("ext3", primaryUserInfo.get("loginMethods").getAsJsonArray().get(2).getAsJsonObject().get("recipeUserId").getAsString()); // TODO should be equal once userIdMapping is fixed
+        assertEquals("ext2", primaryUserInfo.get("loginMethods").getAsJsonArray().get(1).getAsJsonObject().get("recipeUserId").getAsString());
+        assertEquals("ext3", primaryUserInfo.get("loginMethods").getAsJsonArray().get(2).getAsJsonObject().get("recipeUserId").getAsString());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
