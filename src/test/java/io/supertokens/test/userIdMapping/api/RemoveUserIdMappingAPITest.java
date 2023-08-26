@@ -20,7 +20,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -230,7 +230,7 @@ public class RemoveUserIdMappingAPITest {
         }
 
         // create a userId mapping
-        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
         UserIdMapping userIdMapping = new UserIdMapping(userInfo.getSupertokensUserId(), "externalUserId", "externalUserIdInfo");
         createUserIdMappingAndCheckThatItExists(process.main, userIdMapping);
 
@@ -332,7 +332,7 @@ public class RemoveUserIdMappingAPITest {
         }
 
         // create a userId mapping
-        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
         UserIdMapping userIdMapping = new UserIdMapping(userInfo.getSupertokensUserId(), "externalUserId", "externalUserIdInfo");
         createUserIdMappingAndCheckThatItExists(process.main, userIdMapping);
 
@@ -389,7 +389,7 @@ public class RemoveUserIdMappingAPITest {
             return;
         }
 
-        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
         String superTokensUserId = userInfo.getSupertokensUserId();
         String externalId = "externalId";
         io.supertokens.useridmapping.UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalId,

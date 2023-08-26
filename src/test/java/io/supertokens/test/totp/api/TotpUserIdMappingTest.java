@@ -5,7 +5,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.totp.TOTPDevice;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
@@ -52,7 +52,7 @@ public class TotpUserIdMappingTest {
 
         JsonObject body = new JsonObject();
 
-        UserInfo user = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
         String superTokensUserId = user.getSupertokensUserId();
         String externalUserId = "external-user-id";
 

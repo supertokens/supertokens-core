@@ -22,6 +22,7 @@ import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.Utils;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.RowMapper;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -29,7 +30,6 @@ import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
 import io.supertokens.pluginInterface.passwordless.PasswordlessDevice;
-import io.supertokens.pluginInterface.passwordless.UserInfo;
 import io.supertokens.pluginInterface.sqlStorage.SQLStorage.TransactionIsolationLevel;
 
 import javax.annotation.Nonnull;
@@ -365,8 +365,8 @@ public class PasswordlessQueries {
         });
     }
 
-    public static UserInfo createUser(Start start, TenantIdentifier tenantIdentifier, String id, @Nullable String email,
-                                      @Nullable String phoneNumber, long timeJoined)
+    public static AuthRecipeUserInfo createUser(Start start, TenantIdentifier tenantIdentifier, String id, @Nullable String email,
+                                                @Nullable String phoneNumber, long timeJoined)
             throws StorageTransactionLogicException, StorageQueryException {
         return start.startTransaction(con -> {
             Connection sqlCon = (Connection) con.getConnection();
@@ -424,7 +424,7 @@ public class PasswordlessQueries {
                 fillUserInfoWithTenantIds_transaction(start, sqlCon, tenantIdentifier.toAppIdentifier(), userInfo);
                 fillUserInfoWithVerified_transaction(start, sqlCon, tenantIdentifier.toAppIdentifier(), userInfo);
                 sqlCon.commit();
-                return new UserInfo(id, false,
+                return AuthRecipeUserInfo.create(id, false,
                         userInfo.toLoginMethod());
             } catch (SQLException throwables) {
                 throw new StorageTransactionLogicException(throwables);
@@ -931,7 +931,7 @@ public class PasswordlessQueries {
         Map<String, List<String>> tenantIdsForUserIds = GeneralQueries.getTenantIdsForUserIds_transaction(start, sqlCon,
                 appIdentifier,
                 userIds);
-        List<UserInfo> result = new ArrayList<>();
+        List<AuthRecipeUserInfo> result = new ArrayList<>();
         for (UserInfoPartial userInfo : userInfos) {
             userInfo.tenantIds = tenantIdsForUserIds.get(userInfo.id).toArray(new String[0]);
         }

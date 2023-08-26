@@ -20,7 +20,6 @@ import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.storageLayer.StorageLayer;
@@ -72,7 +71,7 @@ public class UpdateUsersEmailAndPasswordTest {
             }
 
             // given
-            UserInfo userInfo = EmailPassword.signUp(main, "john.doe@example.com", "password");
+            AuthRecipeUserInfo userInfo = EmailPassword.signUp(main, "john.doe@example.com", "password");
 
             // when
             EmailPassword.updateUsersEmailOrPassword(main, userInfo.getSupertokensUserId(), "dave.doe@example.com", null);
@@ -95,12 +94,12 @@ public class UpdateUsersEmailAndPasswordTest {
             }
 
             // given
-            UserInfo userInfo = EmailPassword.signUp(main, "john.doe@example.com", "password");
-            UserInfo userInfo2 = EmailPassword.signUp(main, "john.doe1@example.com", "password");
+            AuthRecipeUserInfo userInfo = EmailPassword.signUp(main, "john.doe@example.com", "password");
+            AuthRecipeUserInfo userInfo2 = EmailPassword.signUp(main, "john.doe1@example.com", "password");
 
             // when
             try {
-                EmailPassword.updateUsersEmailOrPassword(main, userInfo.getSupertokensUserId(), userInfo2.email, null);
+                EmailPassword.updateUsersEmailOrPassword(main, userInfo.getSupertokensUserId(), userInfo2.loginMethods[0].email, null);
                 Assert.fail();
             } catch (DuplicateEmailException ignored) {
             }
@@ -118,7 +117,7 @@ public class UpdateUsersEmailAndPasswordTest {
             }
 
             // given
-            UserInfo userInfo = EmailPassword.signUp(main, "john.doe@example.com", "password");
+            AuthRecipeUserInfo userInfo = EmailPassword.signUp(main, "john.doe@example.com", "password");
 
             // when
             EmailPassword.updateUsersEmailOrPassword(main, userInfo.getSupertokensUserId(), null, "newPassword");
@@ -140,7 +139,7 @@ public class UpdateUsersEmailAndPasswordTest {
             }
 
             // given
-            UserInfo userInfo = EmailPassword.signUp(main, "john.doe@example.com", "password");
+            AuthRecipeUserInfo userInfo = EmailPassword.signUp(main, "john.doe@example.com", "password");
 
             // when
             EmailPassword.updateUsersEmailOrPassword(main, userInfo.getSupertokensUserId(), "dave.doe@example.com", "newPassword");

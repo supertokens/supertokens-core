@@ -21,8 +21,8 @@ import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.cronjobs.deleteExpiredPasswordResetTokens.DeleteExpiredPasswordResetTokens;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
@@ -64,7 +64,7 @@ public class DeleteExpiredPasswordResetTokensCronjobTest {
             return;
         }
 
-        UserInfo user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
 
         String tok = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.getSupertokensUserId());
         String tok2 = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.getSupertokensUserId());

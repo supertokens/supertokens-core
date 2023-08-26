@@ -23,7 +23,7 @@ import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
@@ -78,7 +78,7 @@ public class SignUpAPI extends WebserverAPI {
 
         try {
             TenantIdentifierWithStorage tenant = this.getTenantIdentifierWithStorageFromRequest(req);
-            UserInfo user = EmailPassword.signUp(tenant, super.main, normalisedEmail, password);
+            AuthRecipeUserInfo user = EmailPassword.signUp(tenant, super.main, normalisedEmail, password);
 
             ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main, user.getSupertokensUserId());
 

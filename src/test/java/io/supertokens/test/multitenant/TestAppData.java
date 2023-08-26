@@ -29,7 +29,7 @@ import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.totp.TOTPDevice;
@@ -123,7 +123,7 @@ public class TestAppData {
         Arrays.sort(allTableNames);
 
         // Add all recipe data
-        UserInfo epUser = EmailPassword.signUp(appWithStorage, process.getProcess(), "test@example.com", "password");
+        AuthRecipeUserInfo epUser = EmailPassword.signUp(appWithStorage, process.getProcess(), "test@example.com", "password");
         EmailPassword.generatePasswordResetTokenBeforeCdi4_0(appWithStorage, process.getProcess(), epUser.getSupertokensUserId());
 
         ThirdParty.SignInUpResponse tpUser = ThirdParty.signInUp(appWithStorage, process.getProcess(), "google",
@@ -141,7 +141,7 @@ public class TestAppData {
                 "user@example.com", "password");
 
         String evToken = EmailVerification.generateEmailVerificationToken(appWithStorage, process.getProcess(),
-                epUser.getSupertokensUserId(), epUser.email);
+                epUser.getSupertokensUserId(), epUser.loginMethods[0].email);
         EmailVerification.verifyEmail(appWithStorage, evToken);
         EmailVerification.generateEmailVerificationToken(appWithStorage, process.getProcess(), tpUser.user.getSupertokensUserId(),
                 tpUser.user.loginMethods[0].email);

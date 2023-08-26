@@ -20,7 +20,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
@@ -67,7 +67,7 @@ public class AuthRecipeAPITest2_10 {
             assertEquals(response.entrySet().size(), 1);
         }
 
-        UserInfo user = EmailPassword.signUp(process.getProcess(), "test0@example.com", "password0");
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test0@example.com", "password0");
 
         {
             JsonObject requestBody = new JsonObject();

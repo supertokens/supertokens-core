@@ -24,7 +24,7 @@ import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -67,10 +67,10 @@ public class UserPutAPITest4_0 {
             return;
         }
 
-        UserInfo user0 = EmailPassword.signUp(process.getProcess(), "someemail1@gmail.com", "somePass");
+        AuthRecipeUserInfo user0 = EmailPassword.signUp(process.getProcess(), "someemail1@gmail.com", "somePass");
         AuthRecipe.createPrimaryUser(process.main, user0.getSupertokensUserId());
 
-        UserInfo user = EmailPassword.signUp(process.getProcess(), "someemail@gmail.com", "somePass");
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "someemail@gmail.com", "somePass");
         AuthRecipe.createPrimaryUser(process.main, user.getSupertokensUserId());
 
         JsonObject body = new JsonObject();

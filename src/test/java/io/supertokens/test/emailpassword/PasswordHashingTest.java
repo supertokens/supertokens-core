@@ -26,7 +26,6 @@ import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -523,7 +522,7 @@ public class PasswordHashingTest {
             return;
         }
 
-        UserInfo user = EmailPassword.signUp(process.getProcess(), "t@example.com", "somePass");
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "t@example.com", "somePass");
 
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_HASH_BCRYPT));
         ProcessState.getInstance(process.getProcess()).clear();
@@ -554,7 +553,7 @@ public class PasswordHashingTest {
             return;
         }
 
-        UserInfo user = EmailPassword.signUp(process.getProcess(), "t@example.com", "somePass");
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "t@example.com", "somePass");
 
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_HASH_ARGON));
         ProcessState.getInstance(process.getProcess()).clear();
@@ -584,7 +583,7 @@ public class PasswordHashingTest {
             return;
         }
 
-        UserInfo user = EmailPassword.signUp(process.getProcess(), "t@example.com", "somePass");
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "t@example.com", "somePass");
 
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_HASH_BCRYPT));
         ProcessState.getInstance(process.getProcess()).clear();
@@ -614,7 +613,7 @@ public class PasswordHashingTest {
             return;
         }
 
-        UserInfo user = EmailPassword.signUp(process.getProcess(), "t@example.com", "somePass");
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "t@example.com", "somePass");
 
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_HASH_ARGON));
         ProcessState.getInstance(process.getProcess()).clear();

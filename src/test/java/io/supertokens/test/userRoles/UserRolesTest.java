@@ -20,7 +20,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
@@ -1005,7 +1005,7 @@ public class UserRolesTest {
         UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
 
         // Create an Auth User
-        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPassword");
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPassword");
 
         // assign role to user
         UserRoles.addRoleToUser(process.main, userInfo.getSupertokensUserId(), role);

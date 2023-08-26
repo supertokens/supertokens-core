@@ -23,7 +23,6 @@ import io.supertokens.emailpassword.ParsedFirebaseSCryptResponse;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -179,7 +178,7 @@ public class UserMigrationTest {
         String email = "test@example.com";
         String originalPassword = "testPass123";
 
-        UserInfo signUpUserInfo = EmailPassword.signUp(process.main, email, originalPassword);
+        AuthRecipeUserInfo signUpUserInfo = EmailPassword.signUp(process.main, email, originalPassword);
 
         // update passwordHash with new passwordHash
         String newPassword = "newTestPass123";
@@ -201,7 +200,7 @@ public class UserMigrationTest {
 
         // sign in with the newPassword and check that it works
         AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.main, email, newPassword);
-        assertEquals(userInfo.loginMethods[0].email, signUpUserInfo.email);
+        assertEquals(userInfo.loginMethods[0].email, signUpUserInfo.loginMethods[0].email);
         assertEquals(userInfo.getSupertokensUserId(), signUpUserInfo.getSupertokensUserId());
         assertEquals(userInfo.timeJoined, signUpUserInfo.timeJoined);
         assertEquals(userInfo.loginMethods[0].passwordHash, newPasswordHash);

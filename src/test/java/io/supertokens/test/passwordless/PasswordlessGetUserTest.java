@@ -20,7 +20,6 @@ import io.supertokens.ProcessState;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
-import io.supertokens.pluginInterface.passwordless.UserInfo;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -71,9 +70,9 @@ public class PasswordlessGetUserTest {
 
         Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, EMAIL, null);
 
-        UserInfo user = Passwordless.getUserById(process.getProcess(), consumeCodeResponse.user.getSupertokensUserId());
+        AuthRecipeUserInfo user = Passwordless.getUserById(process.getProcess(), consumeCodeResponse.user.getSupertokensUserId());
         assertNotNull(user);
-        assertEquals(user.email, EMAIL);
+        assertEquals(user.loginMethods[0].email, EMAIL);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -98,9 +97,9 @@ public class PasswordlessGetUserTest {
 
         Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, null, PHONE_NUMBER);
 
-        UserInfo user = Passwordless.getUserById(process.getProcess(), consumeCodeResponse.user.getSupertokensUserId());
+        AuthRecipeUserInfo user = Passwordless.getUserById(process.getProcess(), consumeCodeResponse.user.getSupertokensUserId());
         assertNotNull(user);
-        assertEquals(user.phoneNumber, PHONE_NUMBER);
+        assertEquals(user.loginMethods[0].phoneNumber, PHONE_NUMBER);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -125,10 +124,10 @@ public class PasswordlessGetUserTest {
 
         Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, EMAIL, PHONE_NUMBER);
 
-        UserInfo user = Passwordless.getUserById(process.getProcess(), consumeCodeResponse.user.getSupertokensUserId());
+        AuthRecipeUserInfo user = Passwordless.getUserById(process.getProcess(), consumeCodeResponse.user.getSupertokensUserId());
         assertNotNull(user);
-        assertEquals(user.email, EMAIL);
-        assertEquals(user.phoneNumber, PHONE_NUMBER);
+        assertEquals(user.loginMethods[0].email, EMAIL);
+        assertEquals(user.loginMethods[0].phoneNumber, PHONE_NUMBER);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -153,7 +152,7 @@ public class PasswordlessGetUserTest {
 
         Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, EMAIL, null);
 
-        UserInfo user = Passwordless.getUserById(process.getProcess(), consumeCodeResponse.user.getSupertokensUserId() + "1");
+        AuthRecipeUserInfo user = Passwordless.getUserById(process.getProcess(), consumeCodeResponse.user.getSupertokensUserId() + "1");
         assertNull(user);
 
         process.kill();
