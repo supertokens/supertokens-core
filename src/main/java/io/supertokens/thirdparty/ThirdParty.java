@@ -153,29 +153,31 @@ public class ThirdParty {
                 email);
 
         if (isEmailVerified) {
-            try {
-                tenantIdentifierWithStorage.getEmailVerificationStorage().startTransaction(con -> {
+            for (LoginMethod lM : response.user.loginMethods) {
+                if (lM.thirdParty != null && lM.thirdParty.id.equals(thirdPartyId) && lM.thirdParty.userId.equals(thirdPartyUserId)) {
                     try {
-                        for (LoginMethod lM : response.user.loginMethods) {
-                            if (lM.thirdParty != null && lM.thirdParty.id.equals(thirdPartyId) && lM.thirdParty.userId.equals(thirdPartyUserId)) {
+                        tenantIdentifierWithStorage.getEmailVerificationStorage().startTransaction(con -> {
+                            try {
                                 tenantIdentifierWithStorage.getEmailVerificationStorage()
                                         .updateIsEmailVerified_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con,
-                                                response.user.getSupertokensUserId(), lM.email, true);
+                                                lM.getSupertokensUserId(), lM.email, true);
                                 tenantIdentifierWithStorage.getEmailVerificationStorage()
                                         .commitTransaction(con);
-                            }
-                        }
 
-                        return null;
-                    } catch (TenantOrAppNotFoundException e) {
-                        throw new StorageTransactionLogicException(e);
+                                return null;
+                            } catch (TenantOrAppNotFoundException e) {
+                                throw new StorageTransactionLogicException(e);
+                            }
+                        });
+                        lM.setVerified();
+                    } catch (StorageTransactionLogicException e) {
+                        if (e.actualException instanceof TenantOrAppNotFoundException) {
+                            throw (TenantOrAppNotFoundException) e.actualException;
+                        }
+                        throw new StorageQueryException(e);
                     }
-                });
-            } catch (StorageTransactionLogicException e) {
-                if (e.actualException instanceof TenantOrAppNotFoundException) {
-                    throw (TenantOrAppNotFoundException) e.actualException;
+                    break;
                 }
-                throw new StorageQueryException(e);
             }
         }
 
