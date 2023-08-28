@@ -417,6 +417,32 @@ public class Passwordless {
                     long timeJoined = System.currentTimeMillis();
                     user = passwordlessStorage.createUser(tenantIdentifierWithStorage, userId, consumedDevice.email,
                             consumedDevice.phoneNumber, timeJoined);
+
+                    // Set email as verified, if using email
+                    if (consumedDevice.email != null) {
+                        try {
+                            AuthRecipeUserInfo finalUser = user;
+                            tenantIdentifierWithStorage.getEmailVerificationStorage().startTransaction(con -> {
+                                try {
+                                        tenantIdentifierWithStorage.getEmailVerificationStorage()
+                                                .updateIsEmailVerified_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con,
+                                                        finalUser.getSupertokensUserId(), consumedDevice.email, true);
+                                        tenantIdentifierWithStorage.getEmailVerificationStorage()
+                                                .commitTransaction(con);
+
+                                    return null;
+                                } catch (TenantOrAppNotFoundException e) {
+                                    throw new StorageTransactionLogicException(e);
+                                }
+                            });
+                        } catch (StorageTransactionLogicException e) {
+                            if (e.actualException instanceof TenantOrAppNotFoundException) {
+                                throw (TenantOrAppNotFoundException) e.actualException;
+                            }
+                            throw new StorageQueryException(e);
+                        }
+                    }
+
                     return new ConsumeCodeResponse(true, user, consumedDevice.email, consumedDevice.phoneNumber);
                 } catch (DuplicateEmailException | DuplicatePhoneNumberException e) {
                     // Getting these would mean that between getting the user and trying creating it:

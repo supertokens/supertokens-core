@@ -120,7 +120,7 @@ public class ThirdParty {
             Storage storage = StorageLayer.getStorage(main);
             return signInUp(
                     new TenantIdentifierWithStorage(null, null, null, storage), main,
-                    thirdPartyId, thirdPartyUserId, email);
+                    thirdPartyId, thirdPartyUserId, email, false);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
         }
@@ -128,7 +128,7 @@ public class ThirdParty {
 
     public static SignInUpResponse signInUp(TenantIdentifierWithStorage tenantIdentifierWithStorage, Main main,
                                             String thirdPartyId,
-                                            String thirdPartyUserId, String email)
+                                            String thirdPartyUserId, String email, boolean isEmailVerified)
             throws StorageQueryException, TenantOrAppNotFoundException, BadPermissionException,
             EmailChangeNotAllowedException {
 
@@ -140,7 +140,37 @@ public class ThirdParty {
             throw new BadPermissionException("Third Party login not enabled for tenant");
         }
 
-        return signInUpHelper(tenantIdentifierWithStorage, main, thirdPartyId, thirdPartyUserId, email);
+        SignInUpResponse response = signInUpHelper(tenantIdentifierWithStorage, main, thirdPartyId, thirdPartyUserId,
+                email);
+
+        if (isEmailVerified) {
+            try {
+                tenantIdentifierWithStorage.getEmailVerificationStorage().startTransaction(con -> {
+                    try {
+                        for (LoginMethod lM : response.user.loginMethods) {
+                            if (lM.thirdParty != null && lM.thirdParty.id.equals(thirdPartyId) && lM.thirdParty.userId.equals(thirdPartyUserId)) {
+                                tenantIdentifierWithStorage.getEmailVerificationStorage()
+                                        .updateIsEmailVerified_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con,
+                                                response.user.getSupertokensUserId(), lM.email, true);
+                                tenantIdentifierWithStorage.getEmailVerificationStorage()
+                                        .commitTransaction(con);
+                            }
+                        }
+
+                        return null;
+                    } catch (TenantOrAppNotFoundException e) {
+                        throw new StorageTransactionLogicException(e);
+                    }
+                });
+            } catch (StorageTransactionLogicException e) {
+                if (e.actualException instanceof TenantOrAppNotFoundException) {
+                    throw (TenantOrAppNotFoundException) e.actualException;
+                }
+                throw new StorageQueryException(e);
+            }
+        }
+
+        return response;
     }
 
     private static SignInUpResponse signInUpHelper(TenantIdentifierWithStorage tenantIdentifierWithStorage,

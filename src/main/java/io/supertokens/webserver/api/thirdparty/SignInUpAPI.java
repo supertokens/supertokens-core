@@ -114,6 +114,7 @@ public class SignInUpAPI extends WebserverAPI {
             String thirdPartyUserId = InputParser.parseStringOrThrowError(input, "thirdPartyUserId", false);
             JsonObject emailObject = InputParser.parseJsonObjectOrThrowError(input, "email", false);
             String email = InputParser.parseStringOrThrowError(emailObject, "id", false);
+            Boolean isEmailVerified = InputParser.parseBooleanOrThrowError(emailObject, "isVerified", false);
 
             assert thirdPartyId != null;
             assert thirdPartyUserId != null;
@@ -129,7 +130,7 @@ public class SignInUpAPI extends WebserverAPI {
             try {
                 ThirdParty.SignInUpResponse response = ThirdParty.signInUp(
                         this.getTenantIdentifierWithStorageFromRequest(req), super.main, thirdPartyId, thirdPartyUserId,
-                        email);
+                        email, isEmailVerified);
                 UserIdMapping.populateExternalUserIdForUsers(this.getTenantIdentifierWithStorageFromRequest(req), new AuthRecipeUserInfo[]{response.user});
 
                 ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main, response.user.getSupertokensUserId());
