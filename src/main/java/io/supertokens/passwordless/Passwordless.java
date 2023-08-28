@@ -447,6 +447,7 @@ public class Passwordless {
                                     throw new StorageTransactionLogicException(e);
                                 }
                             });
+                            user.loginMethods[0].setVerified(); // newly created user has only one loginMethod
                         } catch (StorageTransactionLogicException e) {
                             if (e.actualException instanceof TenantOrAppNotFoundException) {
                                 throw (TenantOrAppNotFoundException) e.actualException;
@@ -488,6 +489,7 @@ public class Passwordless {
                             throw new StorageTransactionLogicException(e);
                         }
                     });
+                    loginMethod.setVerified();
                 } catch (StorageTransactionLogicException e) {
                     if (e.actualException instanceof TenantOrAppNotFoundException) {
                         throw (TenantOrAppNotFoundException) e.actualException;
