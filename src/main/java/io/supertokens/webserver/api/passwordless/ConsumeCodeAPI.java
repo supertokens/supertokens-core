@@ -86,7 +86,9 @@ public class ConsumeCodeAPI extends WebserverAPI {
             ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(
                     this.getTenantIdentifierWithStorageFromRequest(req), main,
                     deviceId, deviceIdHash,
-                    userInputCode, linkCode);
+                    userInputCode, linkCode,
+                    // From CDI version 4.0 onwards, the email verification will be set
+                    getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0));
             io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(this.getTenantIdentifierWithStorageFromRequest(req), new AuthRecipeUserInfo[]{consumeCodeResponse.user});
 
             ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main, consumeCodeResponse.user.getSupertokensUserId());

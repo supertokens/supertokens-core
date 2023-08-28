@@ -251,15 +251,27 @@ public class Passwordless {
             Storage storage = StorageLayer.getStorage(main);
             return consumeCode(
                     new TenantIdentifierWithStorage(null, null, null, storage),
-                    main, deviceId, deviceIdHashFromUser, userInputCode, linkCode);
+                    main, deviceId, deviceIdHashFromUser, userInputCode, linkCode, false);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
         }
     }
 
+    @TestOnly
     public static ConsumeCodeResponse consumeCode(TenantIdentifierWithStorage tenantIdentifierWithStorage, Main main,
                                                   String deviceId, String deviceIdHashFromUser,
                                                   String userInputCode, String linkCode)
+            throws RestartFlowException, ExpiredUserInputCodeException,
+            IncorrectUserInputCodeException, DeviceIdHashMismatchException, StorageTransactionLogicException,
+            StorageQueryException, NoSuchAlgorithmException, InvalidKeyException, IOException, Base64EncodingException,
+            TenantOrAppNotFoundException, BadPermissionException {
+        return consumeCode(tenantIdentifierWithStorage, main, deviceId, deviceIdHashFromUser, userInputCode, linkCode,
+                false);
+    }
+
+    public static ConsumeCodeResponse consumeCode(TenantIdentifierWithStorage tenantIdentifierWithStorage, Main main,
+                                                  String deviceId, String deviceIdHashFromUser,
+                                                  String userInputCode, String linkCode, boolean setEmailVerified)
             throws RestartFlowException, ExpiredUserInputCodeException,
             IncorrectUserInputCodeException, DeviceIdHashMismatchException, StorageTransactionLogicException,
             StorageQueryException, NoSuchAlgorithmException, InvalidKeyException, IOException, Base64EncodingException,
@@ -417,6 +429,33 @@ public class Passwordless {
                     long timeJoined = System.currentTimeMillis();
                     user = passwordlessStorage.createUser(tenantIdentifierWithStorage, userId, consumedDevice.email,
                             consumedDevice.phoneNumber, timeJoined);
+
+                    // Set email as verified, if using email
+                    if (setEmailVerified && consumedDevice.email != null) {
+                        try {
+                            AuthRecipeUserInfo finalUser = user;
+                            tenantIdentifierWithStorage.getEmailVerificationStorage().startTransaction(con -> {
+                                try {
+                                    tenantIdentifierWithStorage.getEmailVerificationStorage()
+                                            .updateIsEmailVerified_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con,
+                                                    finalUser.getSupertokensUserId(), consumedDevice.email, true);
+                                    tenantIdentifierWithStorage.getEmailVerificationStorage()
+                                            .commitTransaction(con);
+
+                                    return null;
+                                } catch (TenantOrAppNotFoundException e) {
+                                    throw new StorageTransactionLogicException(e);
+                                }
+                            });
+                            user.loginMethods[0].setVerified(); // newly created user has only one loginMethod
+                        } catch (StorageTransactionLogicException e) {
+                            if (e.actualException instanceof TenantOrAppNotFoundException) {
+                                throw (TenantOrAppNotFoundException) e.actualException;
+                            }
+                            throw new StorageQueryException(e);
+                        }
+                    }
+
                     return new ConsumeCodeResponse(true, user, consumedDevice.email, consumedDevice.phoneNumber);
                 } catch (DuplicateEmailException | DuplicatePhoneNumberException e) {
                     // Getting these would mean that between getting the user and trying creating it:
@@ -433,6 +472,32 @@ public class Passwordless {
         } else {
             // We do not need this cleanup if we are creating the user, since it uses the email/phoneNumber of the
             // device, which has already been cleaned up
+            if (setEmailVerified && consumedDevice.email != null) {
+                // Set email verification
+                try {
+                    LoginMethod finalLoginMethod = loginMethod;
+                    tenantIdentifierWithStorage.getEmailVerificationStorage().startTransaction(con -> {
+                        try {
+                            tenantIdentifierWithStorage.getEmailVerificationStorage()
+                                    .updateIsEmailVerified_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con,
+                                            finalLoginMethod.getSupertokensUserId(), consumedDevice.email, true);
+                            tenantIdentifierWithStorage.getEmailVerificationStorage()
+                                    .commitTransaction(con);
+
+                            return null;
+                        } catch (TenantOrAppNotFoundException e) {
+                            throw new StorageTransactionLogicException(e);
+                        }
+                    });
+                    loginMethod.setVerified();
+                } catch (StorageTransactionLogicException e) {
+                    if (e.actualException instanceof TenantOrAppNotFoundException) {
+                        throw (TenantOrAppNotFoundException) e.actualException;
+                    }
+                    throw new StorageQueryException(e);
+                }
+            }
+
             if (loginMethod.email != null && !loginMethod.email.equals(consumedDevice.email)) {
                 removeCodesByEmail(tenantIdentifierWithStorage, loginMethod.email);
             }
