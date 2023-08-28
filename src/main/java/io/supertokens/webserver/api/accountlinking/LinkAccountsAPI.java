@@ -17,6 +17,7 @@
 package io.supertokens.webserver.api.accountlinking;
 
 import com.google.gson.JsonObject;
+import io.supertokens.ActiveUsers;
 import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
 import io.supertokens.authRecipe.AuthRecipe;
@@ -26,6 +27,7 @@ import io.supertokens.authRecipe.exception.RecipeUserIdAlreadyLinkedWithAnotherP
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
@@ -39,6 +41,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class LinkAccountsAPI extends WebserverAPI {
 
@@ -96,6 +100,9 @@ public class LinkAccountsAPI extends WebserverAPI {
             AuthRecipe.LinkAccountsResult linkAccountsResult = AuthRecipe.linkAccounts(main,
                     primaryUserIdAppIdentifierWithStorage,
                     recipeUserId, primaryUserId);
+            // Remove linked account user id from active user
+            ActiveUsers.removeActiveUser(recipeUserIdAppIdentifierWithStorage, recipeUserId);
+
             UserIdMapping.populateExternalUserIdForUsers(primaryUserIdAppIdentifierWithStorage, new AuthRecipeUserInfo[]{linkAccountsResult.user});
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
