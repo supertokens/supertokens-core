@@ -45,8 +45,10 @@ public class ActiveUsers {
         try {
             ((AuthRecipeSQLStorage) appIdentifierWithStorage.getActiveUsersStorage()).startTransaction(con -> {
                 appIdentifierWithStorage.getActiveUsersStorage().deleteUserActive_Transaction(con, appIdentifierWithStorage, userId);
-                return true;
+                ((AuthRecipeSQLStorage) appIdentifierWithStorage.getActiveUsersStorage()).commitTransaction(con);
+                return null;
             });
+
         } catch (StorageTransactionLogicException e) {
             throw new StorageQueryException(e.actualException);
         }
