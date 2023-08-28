@@ -126,6 +126,15 @@ public class ThirdParty {
         }
     }
 
+    @TestOnly
+    public static SignInUpResponse signInUp(TenantIdentifierWithStorage tenantIdentifierWithStorage, Main main,
+                                            String thirdPartyId,
+                                            String thirdPartyUserId, String email)
+            throws StorageQueryException, TenantOrAppNotFoundException, BadPermissionException,
+            EmailChangeNotAllowedException {
+        return signInUp(tenantIdentifierWithStorage, main, thirdPartyId, thirdPartyUserId, email, false);
+    }
+
     public static SignInUpResponse signInUp(TenantIdentifierWithStorage tenantIdentifierWithStorage, Main main,
                                             String thirdPartyId,
                                             String thirdPartyUserId, String email, boolean isEmailVerified)

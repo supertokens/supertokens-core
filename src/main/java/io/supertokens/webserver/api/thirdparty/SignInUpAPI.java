@@ -114,7 +114,13 @@ public class SignInUpAPI extends WebserverAPI {
             String thirdPartyUserId = InputParser.parseStringOrThrowError(input, "thirdPartyUserId", false);
             JsonObject emailObject = InputParser.parseJsonObjectOrThrowError(input, "email", false);
             String email = InputParser.parseStringOrThrowError(emailObject, "id", false);
-            Boolean isEmailVerified = InputParser.parseBooleanOrThrowError(emailObject, "isVerified", false);
+
+            // setting email verified behaviour is to be done only for CDI 4.0 onwards. version 3.0 and earlier
+            // do not have this field
+            Boolean isEmailVerified = false;
+            if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0)) {
+                isEmailVerified = InputParser.parseBooleanOrThrowError(emailObject, "isVerified", false);
+            }
 
             assert thirdPartyId != null;
             assert thirdPartyUserId != null;
