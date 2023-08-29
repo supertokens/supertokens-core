@@ -21,11 +21,13 @@ import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.multitenancy.exception.DisassociationNotAllowedException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.useridmapping.UserIdType;
+import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -68,7 +70,8 @@ public class DisassociateUserFromTenant extends WebserverAPI {
             }
 
             boolean wasAssociated = Multitenancy.removeUserIdFromTenant(main,
-                    getTenantIdentifierWithStorageFromRequest(req), userId, externalUserId);
+                    getTenantIdentifierWithStorageFromRequest(req), userId, externalUserId, getVersionFromRequest(req).greaterThanOrEqualTo(
+                            SemVer.v4_0));
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
@@ -79,7 +82,10 @@ public class DisassociateUserFromTenant extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", "UNKNOWN_USER_ID_ERROR");
             super.sendJsonResponse(200, result, resp);
-
+        } catch (DisassociationNotAllowedException e) {
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "DISASSOCIATION_NOT_ALLOWED_ERROR");
+            super.sendJsonResponse(200, result, resp);
         } catch (StorageQueryException | TenantOrAppNotFoundException | FeatureNotEnabledException e) {
             throw new ServletException(e);
         }

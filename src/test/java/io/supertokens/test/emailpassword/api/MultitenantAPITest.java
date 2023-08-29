@@ -720,7 +720,7 @@ public class MultitenantAPITest {
     }
 
     @Test
-    public void testGetUserByIdForUserThatBelongsToNoTenant() throws Exception {
+    public void testThatDisassociationFromAllTenantsIsDisallowed() throws Exception {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
@@ -729,11 +729,16 @@ public class MultitenantAPITest {
 
         {
             JsonObject user = TestMultitenancyAPIHelper.epSignUp(t1, "test@example.com", "password", process.getProcess());
-            TestMultitenancyAPIHelper.disassociateUserFromTenant(t1, user.get("id").getAsString(), process.getProcess());
-            JsonObject userInfoFromId = TestMultitenancyAPIHelper.getEpUserById(t1, user.get("id").getAsString(),
-                    process.getProcess());
+            {
+                JsonObject requestBody = new JsonObject();
+                requestBody.addProperty("userId", user.get("id").getAsString());
 
-            assertEquals(0, userInfoFromId.get("tenantIds").getAsJsonArray().size());
+                JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        HttpRequestForTesting.getMultitenantUrl(t1, "/recipe/multitenancy/tenant/user/remove"),
+                        requestBody, 1000, 1000, null,
+                        SemVer.v4_0.get(), "multitenancy");
+                assertEquals("DISASSOCIATION_NOT_ALLOWED_ERROR", response.get("status").getAsString());
+            }
         }
     }
 }
