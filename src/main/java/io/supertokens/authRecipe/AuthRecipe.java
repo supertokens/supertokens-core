@@ -826,7 +826,8 @@ public class AuthRecipe {
 
         if (!removeAllLinkedAccounts) {
             deleteAuthRecipeUser(con, appIdentifierWithStorage, userIdToDeleteForAuthRecipe,
-                    !userIdToDeleteForAuthRecipe.equals(userToDelete.getSupertokensUserId()));
+                    !userIdToDeleteForAuthRecipe.equals(userToDelete.getSupertokensUserId()) ||
+                            userToDelete.loginMethods.length == 1);
 
             if (userIdToDeleteForNonAuthRecipeForRecipeUserId != null) {
                 deleteNonAuthRecipeUser(con, appIdentifierWithStorage, userIdToDeleteForNonAuthRecipeForRecipeUserId);
@@ -840,7 +841,6 @@ public class AuthRecipe {
                 deleteAuthRecipeUser(con, appIdentifierWithStorage, userToDelete.getSupertokensUserId(),
                         true);
             }
-
         } else {
             for (LoginMethod lM : userToDelete.loginMethods) {
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping mappingResult = lM.getSupertokensUserId().equals(
@@ -905,15 +905,15 @@ public class AuthRecipe {
 
     private static void deleteAuthRecipeUser(TransactionConnection con,
                                              AppIdentifierWithStorage appIdentifierWithStorage, String
-                                                     userId, boolean deleteUserIdMappingToo)
+                                                     userId, boolean deleteFromUserIdToAppIdTableToo)
             throws StorageQueryException {
         // auth recipe deletions here only
         appIdentifierWithStorage.getEmailPasswordStorage()
-                .deleteEmailPasswordUser_Transaction(con, appIdentifierWithStorage, userId, deleteUserIdMappingToo);
+                .deleteEmailPasswordUser_Transaction(con, appIdentifierWithStorage, userId, deleteFromUserIdToAppIdTableToo);
         appIdentifierWithStorage.getThirdPartyStorage()
-                .deleteThirdPartyUser_Transaction(con, appIdentifierWithStorage, userId, deleteUserIdMappingToo);
+                .deleteThirdPartyUser_Transaction(con, appIdentifierWithStorage, userId, deleteFromUserIdToAppIdTableToo);
         appIdentifierWithStorage.getPasswordlessStorage()
-                .deletePasswordlessUser_Transaction(con, appIdentifierWithStorage, userId, deleteUserIdMappingToo);
+                .deletePasswordlessUser_Transaction(con, appIdentifierWithStorage, userId, deleteFromUserIdToAppIdTableToo);
     }
 
     public static boolean deleteNonAuthRecipeUser(TenantIdentifierWithStorage
