@@ -128,6 +128,7 @@ public class ActiveUserTest {
         {
             JsonObject emailObject = new JsonObject();
             emailObject.addProperty("id", "test@example.com");
+            emailObject.addProperty("isVerified", false);
 
             JsonObject signUpRequestBody = new JsonObject();
             signUpRequestBody.addProperty("thirdPartyId", "google");
@@ -173,6 +174,7 @@ public class ActiveUserTest {
         {
             JsonObject emailObject = new JsonObject();
             emailObject.addProperty("id", "test@example.com");
+            emailObject.addProperty("isVerified", false);
 
             JsonObject signUpRequestBody = new JsonObject();
             signUpRequestBody.addProperty("thirdPartyId", "google");

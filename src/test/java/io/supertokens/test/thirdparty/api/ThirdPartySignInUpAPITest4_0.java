@@ -72,6 +72,7 @@ public class ThirdPartySignInUpAPITest4_0 {
 
         JsonObject emailObject = new JsonObject();
         emailObject.addProperty("id", "test@example.com");
+        emailObject.addProperty("isVerified", false);
 
         JsonObject signUpRequestBody = new JsonObject();
         signUpRequestBody.addProperty("thirdPartyId", "google");
@@ -142,6 +143,7 @@ public class ThirdPartySignInUpAPITest4_0 {
 
         JsonObject emailObject = new JsonObject();
         emailObject.addProperty("id", "someemail1@gmail.com");
+        emailObject.addProperty("isVerified", false);
 
         JsonObject signUpRequestBody = new JsonObject();
         signUpRequestBody.addProperty("thirdPartyId", "google");
