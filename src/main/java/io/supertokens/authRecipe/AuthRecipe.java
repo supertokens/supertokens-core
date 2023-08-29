@@ -834,12 +834,12 @@ public class AuthRecipe {
 
             if (primaryUserIdToDeleteNonAuthRecipe != null) {
                 deleteNonAuthRecipeUser(con, appIdentifierWithStorage, primaryUserIdToDeleteNonAuthRecipe);
-
-                // this is only done to also delete the user ID mapping in case it exists, since we do not delete in the
-                // previous call to deleteAuthRecipeUser above.
-                deleteAuthRecipeUser(con, appIdentifierWithStorage, userToDelete.getSupertokensUserId(),
-                        true);
             }
+
+            // this is only done to also delete the user ID mapping in case it exists, since we do not delete in the
+            // previous call to deleteAuthRecipeUser above.
+            deleteAuthRecipeUser(con, appIdentifierWithStorage, userToDelete.getSupertokensUserId(),
+                    true);
         } else {
             for (LoginMethod lM : userToDelete.loginMethods) {
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping mappingResult = lM.getSupertokensUserId().equals(
