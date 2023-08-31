@@ -217,10 +217,20 @@ public class ThirdParty {
                         (AuthRecipeSQLStorage) tenantIdentifierWithStorage.getAuthRecipeStorage();
 
                 storage.startTransaction(con -> {
-                    AuthRecipeUserInfo userFromDb = authRecipeStorage.getPrimaryUsersByThirdPartyInfo_Transaction(
-                            tenantIdentifierWithStorage,
+                    AuthRecipeUserInfo userFromDb = null;
+
+                    AuthRecipeUserInfo[] usersFromDb = authRecipeStorage.listPrimaryUsersByThirdPartyInfo_Transaction(
+                            appIdentifier,
                             con,
                             thirdPartyId, thirdPartyUserId);
+                    for (AuthRecipeUserInfo user : usersFromDb) {
+                        if (user.tenantIds.contains(tenantIdentifierWithStorage.getTenantId())) {
+                            if (userFromDb != null) {
+                                throw new IllegalStateException("Should never happen");
+                            }
+                            userFromDb = user;
+                        }
+                    }
 
                     if (userFromDb == null) {
                         storage.commitTransaction(con);
@@ -246,19 +256,14 @@ public class ThirdParty {
                         // email, and if they do, then we do not allow the update.
                         if (userFromDb.isPrimaryUser) {
                             for (String tenantId : userFromDb.tenantIds) {
-                                // we do not bother with getting the tenantIdentifierWithStorage here because
-                                // we get the tenants from the user itself, and the user can only be shared across
-                                // tenants of the same storage - therefore, the storage will be the same.
-                                TenantIdentifier tenantIdentifier = new TenantIdentifier(
-                                        tenantIdentifierWithStorage.getConnectionUriDomain(),
-                                        tenantIdentifierWithStorage.getAppId(),
-                                        tenantId);
-
                                 AuthRecipeUserInfo[] userBasedOnEmail =
                                         authRecipeStorage.listPrimaryUsersByEmail_Transaction(
-                                                tenantIdentifier, con, email
+                                                appIdentifier, con, email
                                         );
                                 for (AuthRecipeUserInfo userWithSameEmail : userBasedOnEmail) {
+                                    if (!userWithSameEmail.tenantIds.contains(tenantId)) {
+                                        continue;
+                                    }
                                     if (userWithSameEmail.isPrimaryUser &&
                                             !userWithSameEmail.getSupertokensUserId().equals(userFromDb.getSupertokensUserId())) {
                                         throw new StorageTransactionLogicException(

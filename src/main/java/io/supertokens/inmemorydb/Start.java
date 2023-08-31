@@ -57,6 +57,7 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateClientTyp
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateTenantException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateThirdPartyIdException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.multitenancy.sqlStorage.MultitenancySQLStorage;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
 import io.supertokens.pluginInterface.passwordless.PasswordlessDevice;
 import io.supertokens.pluginInterface.passwordless.exception.*;
@@ -102,7 +103,7 @@ import java.util.Set;
 public class Start
         implements SessionSQLStorage, EmailPasswordSQLStorage, EmailVerificationSQLStorage, ThirdPartySQLStorage,
         JWTRecipeSQLStorage, PasswordlessSQLStorage, UserMetadataSQLStorage, UserRolesSQLStorage, UserIdMappingStorage,
-        MultitenancyStorage, TOTPSQLStorage, ActiveUsersStorage, DashboardSQLStorage, AuthRecipeSQLStorage {
+        MultitenancyStorage, MultitenancySQLStorage, TOTPSQLStorage, ActiveUsersStorage, DashboardSQLStorage, AuthRecipeSQLStorage {
 
     private static final Object appenderLock = new Object();
     private static final String APP_ID_KEY_NAME = "app_id";
@@ -2245,9 +2246,9 @@ public class Start
     }
 
     @Override
-    public boolean addUserIdToTenant(TenantIdentifier tenantIdentifier, String userId)
-            throws TenantOrAppNotFoundException, UnknownUserIdException, StorageQueryException,
-            DuplicateEmailException, DuplicateThirdPartyUserException, DuplicatePhoneNumberException {
+    public boolean addUserIdToTenant_Transaction(TenantIdentifier tenantIdentifier, TransactionConnection conn, String userId)
+            throws StorageQueryException, TenantOrAppNotFoundException, DuplicateEmailException,
+            DuplicateThirdPartyUserException, DuplicatePhoneNumberException, UnknownUserIdException {
         try {
             return this.startTransaction(con -> {
                 Connection sqlCon = (Connection) con.getConnection();
@@ -2758,44 +2759,47 @@ public class Start
     }
 
     @Override
-    public AuthRecipeUserInfo[] listPrimaryUsersByEmail_Transaction(TenantIdentifier tenantIdentifier,
+    public AuthRecipeUserInfo[] listPrimaryUsersByEmail_Transaction(AppIdentifier appIdentifier,
                                                                     TransactionConnection con, String email)
             throws StorageQueryException {
-        try {
-            Connection sqlCon = (Connection) con.getConnection();
-            return GeneralQueries.listPrimaryUsersByEmail_Transaction(this, sqlCon, tenantIdentifier, email);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
+        return null; // TODO
+//        try {
+//            Connection sqlCon = (Connection) con.getConnection();
+//            return GeneralQueries.listPrimaryUsersByEmail_Transaction(this, sqlCon, appIdentifier, email);
+//        } catch (SQLException e) {
+//            throw new StorageQueryException(e);
+//        }
     }
 
     @Override
-    public AuthRecipeUserInfo[] listPrimaryUsersByPhoneNumber_Transaction(TenantIdentifier tenantIdentifier,
+    public AuthRecipeUserInfo[] listPrimaryUsersByPhoneNumber_Transaction(AppIdentifier appIdentifier,
                                                                           TransactionConnection con,
                                                                           String phoneNumber)
             throws StorageQueryException {
-        try {
-            Connection sqlCon = (Connection) con.getConnection();
-            return GeneralQueries.listPrimaryUsersByPhoneNumber_Transaction(this, sqlCon, tenantIdentifier,
-                    phoneNumber);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
+        return null; // TODO
+//        try {
+//            Connection sqlCon = (Connection) con.getConnection();
+//            return GeneralQueries.listPrimaryUsersByPhoneNumber_Transaction(this, sqlCon, tenantIdentifier,
+//                    phoneNumber);
+//        } catch (SQLException e) {
+//            throw new StorageQueryException(e);
+//        }
     }
 
     @Override
-    public AuthRecipeUserInfo getPrimaryUsersByThirdPartyInfo_Transaction(TenantIdentifier tenantIdentifier,
-                                                                          TransactionConnection con,
-                                                                          String thirdPartyId,
-                                                                          String thirdPartyUserId)
+    public AuthRecipeUserInfo[] listPrimaryUsersByThirdPartyInfo_Transaction(AppIdentifier appIdentifier,
+                                                                             TransactionConnection con,
+                                                                             String thirdPartyId,
+                                                                             String thirdPartyUserId)
             throws StorageQueryException {
-        try {
-            Connection sqlCon = (Connection) con.getConnection();
-            return GeneralQueries.getPrimaryUsersByThirdPartyInfo_Transaction(this, sqlCon, tenantIdentifier,
-                    thirdPartyId, thirdPartyUserId);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
+        return null; // TODO
+//        try {
+//            Connection sqlCon = (Connection) con.getConnection();
+//            return GeneralQueries.getPrimaryUsersByThirdPartyInfo_Transaction(this, sqlCon, tenantIdentifier,
+//                    thirdPartyId, thirdPartyUserId);
+//        } catch (SQLException e) {
+//            throw new StorageQueryException(e);
+//        }
     }
 
     @Override

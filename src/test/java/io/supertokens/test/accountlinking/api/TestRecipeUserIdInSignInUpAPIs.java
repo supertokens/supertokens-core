@@ -236,6 +236,7 @@ public class TestRecipeUserIdInSignInUpAPIs {
         {
             JsonObject emailObject = new JsonObject();
             emailObject.addProperty("id", "test@example.com");
+            emailObject.addProperty("isVerified", false);
 
             JsonObject signUpRequestBody = new JsonObject();
             signUpRequestBody.addProperty("thirdPartyId", "google");
@@ -255,6 +256,7 @@ public class TestRecipeUserIdInSignInUpAPIs {
             // Without account linking
             JsonObject emailObject = new JsonObject();
             emailObject.addProperty("id", "test@example.com");
+            emailObject.addProperty("isVerified", false);
 
             JsonObject signUpRequestBody = new JsonObject();
             signUpRequestBody.addProperty("thirdPartyId", "google");
@@ -279,6 +281,7 @@ public class TestRecipeUserIdInSignInUpAPIs {
             // After account linking
             JsonObject emailObject = new JsonObject();
             emailObject.addProperty("id", "test@example.com");
+            emailObject.addProperty("isVerified", false);
 
             JsonObject signUpRequestBody = new JsonObject();
             signUpRequestBody.addProperty("thirdPartyId", "google");
@@ -300,6 +303,7 @@ public class TestRecipeUserIdInSignInUpAPIs {
             // After account linking
             JsonObject emailObject = new JsonObject();
             emailObject.addProperty("id", "test@example.com");
+            emailObject.addProperty("isVerified", false);
 
             JsonObject signUpRequestBody = new JsonObject();
             signUpRequestBody.addProperty("thirdPartyId", "google");
@@ -317,6 +321,7 @@ public class TestRecipeUserIdInSignInUpAPIs {
             // After account linking
             JsonObject emailObject = new JsonObject();
             emailObject.addProperty("id", "test@example.com");
+            emailObject.addProperty("isVerified", false);
 
             JsonObject signUpRequestBody = new JsonObject();
             signUpRequestBody.addProperty("thirdPartyId", "facebook");
