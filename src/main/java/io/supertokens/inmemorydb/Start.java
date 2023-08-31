@@ -57,6 +57,7 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateClientTyp
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateTenantException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateThirdPartyIdException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.multitenancy.sqlStorage.MultitenancySQLStorage;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
 import io.supertokens.pluginInterface.passwordless.PasswordlessDevice;
 import io.supertokens.pluginInterface.passwordless.exception.*;
@@ -102,7 +103,7 @@ import java.util.Set;
 public class Start
         implements SessionSQLStorage, EmailPasswordSQLStorage, EmailVerificationSQLStorage, ThirdPartySQLStorage,
         JWTRecipeSQLStorage, PasswordlessSQLStorage, UserMetadataSQLStorage, UserRolesSQLStorage, UserIdMappingStorage,
-        MultitenancyStorage, TOTPSQLStorage, ActiveUsersStorage, DashboardSQLStorage, AuthRecipeSQLStorage {
+        MultitenancyStorage, MultitenancySQLStorage, TOTPSQLStorage, ActiveUsersStorage, DashboardSQLStorage, AuthRecipeSQLStorage {
 
     private static final Object appenderLock = new Object();
     private static final String APP_ID_KEY_NAME = "app_id";
@@ -2245,9 +2246,9 @@ public class Start
     }
 
     @Override
-    public boolean addUserIdToTenant(TenantIdentifier tenantIdentifier, String userId)
-            throws TenantOrAppNotFoundException, UnknownUserIdException, StorageQueryException,
-            DuplicateEmailException, DuplicateThirdPartyUserException, DuplicatePhoneNumberException {
+    public boolean addUserIdToTenant_Transaction(TenantIdentifier tenantIdentifier, TransactionConnection conn, String userId)
+            throws StorageQueryException, TenantOrAppNotFoundException, DuplicateEmailException,
+            DuplicateThirdPartyUserException, DuplicatePhoneNumberException, UnknownUserIdException {
         try {
             return this.startTransaction(con -> {
                 Connection sqlCon = (Connection) con.getConnection();

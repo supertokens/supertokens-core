@@ -474,13 +474,6 @@ public class AuthRecipe {
         LoginMethod loginMethod = targetUser.loginMethods[0];
 
         for (String tenantId : targetUser.tenantIds) {
-            TenantIdentifier tenantIdentifier = new TenantIdentifier(
-                    appIdentifierWithStorage.getConnectionUriDomain(), appIdentifierWithStorage.getAppId(),
-                    tenantId);
-            // we do not bother with getting the tenantIdentifierWithStorage here because
-            // we get the tenants from the user itself, and the user can only be shared across
-            // tenants of the same storage - therefore, the storage will be the same.
-
             if (loginMethod.email != null) {
                 AuthRecipeUserInfo[] usersWithSameEmail = storage
                         .listPrimaryUsersByEmail_Transaction(appIdentifierWithStorage, con,
