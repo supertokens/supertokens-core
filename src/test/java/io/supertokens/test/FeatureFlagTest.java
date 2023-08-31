@@ -709,7 +709,7 @@ public class FeatureFlagTest {
     }
 
     @Test
-    public void testNetworkCallIsMadeFromLicenseCheckCronJob() throws Exception {
+    public void testNetworkCallIsMadeInCoreInit() throws Exception {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -722,6 +722,7 @@ public class FeatureFlagTest {
 
         // While adding license
         TestMultitenancyAPIHelper.addLicense(OPAQUE_KEY_WITH_MULTITENANCY_FEATURE, process.getProcess());
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL));
         ProcessState.getInstance(process.getProcess()).clear();
 
         process.kill(false);
@@ -732,12 +733,6 @@ public class FeatureFlagTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL));
-
-        // ensure none of the tasks have an interval more than a day
-        for (CronTask task : Cronjobs.getInstance(process.getProcess()).getTasks()) {
-            assertTrue(task.getIntervalTimeSeconds() <= 3600 * 24);
-            assertTrue(task.getInitialWaitTimeSeconds() <= 3600 * 24);
-        }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
