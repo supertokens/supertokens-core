@@ -21,7 +21,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.ProcessState;
+import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
+import io.supertokens.cronjobs.Cronjobs;
 import io.supertokens.cronjobs.syncCoreConfigWithDb.SyncCoreConfigWithDb;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.featureflag.EE_FEATURES;
@@ -711,9 +713,6 @@ public class FeatureFlagTest {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        CronTaskTest.getInstance(process.getProcess()).setIntervalInSeconds("io.supertokens.ee.cronjobs.EELicenseCheck",
-                3);
-
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -723,14 +722,22 @@ public class FeatureFlagTest {
 
         // While adding license
         TestMultitenancyAPIHelper.addLicense(OPAQUE_KEY_WITH_MULTITENANCY_FEATURE, process.getProcess());
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL));
-
         ProcessState.getInstance(process.getProcess()).clear();
 
-        Thread.sleep(3500);
+        process.kill(false);
 
-        // from cron job
+
+        // Restart core and check if the call was made during init
+        process = TestingProcessManager.start(args);
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL));
+
+        // ensure none of the tasks have an interval more than a day
+        for (CronTask task : Cronjobs.getInstance(process.getProcess()).getTasks()) {
+            assertTrue(task.getIntervalTimeSeconds() <= 3600 * 24);
+            assertTrue(task.getInitialWaitTimeSeconds() <= 3600 * 24);
+        }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
