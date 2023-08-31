@@ -244,7 +244,8 @@ public class AuthRecipe {
         assert (recipeUser.loginMethods.length == 1);
         LoginMethod recipeUserIdLM = recipeUser.loginMethods[0];
 
-        Set<String> tenantIds = recipeUser.tenantIds;
+        Set<String> tenantIds = new HashSet<>();
+        tenantIds.addAll(recipeUser.tenantIds);
         tenantIds.addAll(primaryUser.tenantIds);
 
         // we loop through the union of both the user's tenantIds and check that the criteria for
@@ -267,9 +268,12 @@ public class AuthRecipe {
 
             if (recipeUserIdLM.email != null) {
                 AuthRecipeUserInfo[] usersWithSameEmail = storage
-                        .listPrimaryUsersByEmail_Transaction(tenantIdentifier, con,
+                        .listPrimaryUsersByEmail_Transaction(appIdentifierWithStorage, con,
                                 recipeUserIdLM.email);
                 for (AuthRecipeUserInfo user : usersWithSameEmail) {
+                    if (!user.tenantIds.contains(tenantId)) {
+                        continue;
+                    }
                     if (user.isPrimaryUser && !user.getSupertokensUserId().equals(primaryUser.getSupertokensUserId())) {
                         throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(user.getSupertokensUserId(),
                                 "This user's email is already associated with another user ID");
@@ -279,9 +283,12 @@ public class AuthRecipe {
 
             if (recipeUserIdLM.phoneNumber != null) {
                 AuthRecipeUserInfo[] usersWithSamePhoneNumber = storage
-                        .listPrimaryUsersByPhoneNumber_Transaction(tenantIdentifier, con,
+                        .listPrimaryUsersByPhoneNumber_Transaction(appIdentifierWithStorage, con,
                                 recipeUserIdLM.phoneNumber);
                 for (AuthRecipeUserInfo user : usersWithSamePhoneNumber) {
+                    if (!user.tenantIds.contains(tenantId)) {
+                        continue;
+                    }
                     if (user.isPrimaryUser && !user.getSupertokensUserId().equals(primaryUser.getSupertokensUserId())) {
                         throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(user.getSupertokensUserId(),
                                 "This user's phone number is already associated with another user" +
@@ -291,16 +298,22 @@ public class AuthRecipe {
             }
 
             if (recipeUserIdLM.thirdParty != null) {
-                AuthRecipeUserInfo userWithSameThirdParty = storage
-                        .getPrimaryUsersByThirdPartyInfo_Transaction(tenantIdentifier, con,
+                AuthRecipeUserInfo[] usersWithSameThirdParty = storage
+                        .listPrimaryUsersByThirdPartyInfo_Transaction(appIdentifierWithStorage, con,
                                 recipeUserIdLM.thirdParty.id, recipeUserIdLM.thirdParty.userId);
-                if (userWithSameThirdParty != null && userWithSameThirdParty.isPrimaryUser &&
-                        !userWithSameThirdParty.getSupertokensUserId().equals(primaryUser.getSupertokensUserId())) {
-                    throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(
-                            userWithSameThirdParty.getSupertokensUserId(),
-                            "This user's third party login is already associated with another" +
-                                    " user ID");
+                for (AuthRecipeUserInfo userWithSameThirdParty : usersWithSameThirdParty) {
+                    if (!userWithSameThirdParty.tenantIds.contains(tenantId)) {
+                        continue;
+                    }
+                    if (userWithSameThirdParty.isPrimaryUser &&
+                            !userWithSameThirdParty.getSupertokensUserId().equals(primaryUser.getSupertokensUserId())) {
+                        throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(
+                                userWithSameThirdParty.getSupertokensUserId(),
+                                "This user's third party login is already associated with another" +
+                                        " user ID");
+                    }
                 }
+
             }
         }
 
@@ -461,18 +474,14 @@ public class AuthRecipe {
         LoginMethod loginMethod = targetUser.loginMethods[0];
 
         for (String tenantId : targetUser.tenantIds) {
-            TenantIdentifier tenantIdentifier = new TenantIdentifier(
-                    appIdentifierWithStorage.getConnectionUriDomain(), appIdentifierWithStorage.getAppId(),
-                    tenantId);
-            // we do not bother with getting the tenantIdentifierWithStorage here because
-            // we get the tenants from the user itself, and the user can only be shared across
-            // tenants of the same storage - therefore, the storage will be the same.
-
             if (loginMethod.email != null) {
                 AuthRecipeUserInfo[] usersWithSameEmail = storage
-                        .listPrimaryUsersByEmail_Transaction(tenantIdentifier, con,
+                        .listPrimaryUsersByEmail_Transaction(appIdentifierWithStorage, con,
                                 loginMethod.email);
                 for (AuthRecipeUserInfo user : usersWithSameEmail) {
+                    if (!user.tenantIds.contains(tenantId)) {
+                        continue;
+                    }
                     if (user.isPrimaryUser) {
                         throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(user.getSupertokensUserId(),
                                 "This user's email is already associated with another user ID");
@@ -482,7 +491,7 @@ public class AuthRecipe {
 
             if (loginMethod.phoneNumber != null) {
                 AuthRecipeUserInfo[] usersWithSamePhoneNumber = storage
-                        .listPrimaryUsersByPhoneNumber_Transaction(tenantIdentifier, con,
+                        .listPrimaryUsersByPhoneNumber_Transaction(appIdentifierWithStorage, con,
                                 loginMethod.phoneNumber);
                 for (AuthRecipeUserInfo user : usersWithSamePhoneNumber) {
                     if (user.isPrimaryUser) {
@@ -494,14 +503,19 @@ public class AuthRecipe {
             }
 
             if (loginMethod.thirdParty != null) {
-                AuthRecipeUserInfo userWithSameThirdParty = storage
-                        .getPrimaryUsersByThirdPartyInfo_Transaction(tenantIdentifier, con,
+                AuthRecipeUserInfo[] usersWithSameThirdParty = storage
+                        .listPrimaryUsersByThirdPartyInfo_Transaction(appIdentifierWithStorage, con,
                                 loginMethod.thirdParty.id, loginMethod.thirdParty.userId);
-                if (userWithSameThirdParty != null && userWithSameThirdParty.isPrimaryUser) {
-                    throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(
-                            userWithSameThirdParty.getSupertokensUserId(),
-                            "This user's third party login is already associated with another" +
-                                    " user ID");
+                for (AuthRecipeUserInfo userWithSameThirdParty : usersWithSameThirdParty) {
+                    if (!userWithSameThirdParty.tenantIds.contains(tenantId)) {
+                        continue;
+                    }
+                    if (userWithSameThirdParty.isPrimaryUser) {
+                        throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(
+                                userWithSameThirdParty.getSupertokensUserId(),
+                                "This user's third party login is already associated with another" +
+                                        " user ID");
+                    }
                 }
             }
         }

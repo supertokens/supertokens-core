@@ -501,4 +501,76 @@ public class TestTenantUserAssociation {
             // OK
         }
     }
+
+    @Test
+    public void testThatUserWithSameEmailCannotBeAssociatedToATenantForEp() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        createTenants();
+        JsonObject user1 = TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", "t1"), "user@example.com",
+                "password", process.getProcess());
+        String userId1 = user1.get("id").getAsString();
+
+        TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", "t2"), "user@example.com",
+                "password", process.getProcess());
+
+        JsonObject response = TestMultitenancyAPIHelper.associateUserToTenant(new TenantIdentifier(null, "a1", "t2"), userId1, process.getProcess());
+        assertEquals("EMAIL_ALREADY_EXISTS_ERROR", response.getAsJsonPrimitive("status").getAsString());
+    }
+
+    @Test
+    public void testThatUserWithSameThirdPartyInfoCannotBeAssociatedToATenantForTp() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        createTenants();
+        JsonObject user1 = TestMultitenancyAPIHelper.tpSignInUp(new TenantIdentifier(null, "a1", "t1"), "google", "google-user", "user@example.com",
+                process.getProcess());
+        String userId1 = user1.get("id").getAsString();
+
+        TestMultitenancyAPIHelper.tpSignInUp(new TenantIdentifier(null, "a1", "t2"), "google", "google-user", "user@example.com",
+                process.getProcess());
+
+        JsonObject response = TestMultitenancyAPIHelper.associateUserToTenant(new TenantIdentifier(null, "a1", "t2"), userId1, process.getProcess());
+        assertEquals("THIRD_PARTY_USER_ALREADY_EXISTS_ERROR", response.getAsJsonPrimitive("status").getAsString());
+    }
+
+    @Test
+    public void testThatUserWithSameEmailCannotBeAssociatedToATenantForPless() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        createTenants();
+        JsonObject user1 = TestMultitenancyAPIHelper.plSignInUpEmail(new TenantIdentifier(null, "a1", "t1"), "user@example.com",
+                process.getProcess());
+        String userId1 = user1.get("id").getAsString();
+
+        TestMultitenancyAPIHelper.plSignInUpEmail(new TenantIdentifier(null, "a1", "t2"), "user@example.com",
+                process.getProcess());
+
+        JsonObject response = TestMultitenancyAPIHelper.associateUserToTenant(new TenantIdentifier(null, "a1", "t2"), userId1, process.getProcess());
+        assertEquals("EMAIL_ALREADY_EXISTS_ERROR", response.getAsJsonPrimitive("status").getAsString());
+    }
+
+    @Test
+    public void testThatUserWithSamePhoneCannotBeAssociatedToATenantForPless() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        createTenants();
+        JsonObject user1 = TestMultitenancyAPIHelper.plSignInUpNumber(new TenantIdentifier(null, "a1", "t1"), "+919876543210",
+                process.getProcess());
+        String userId1 = user1.get("id").getAsString();
+
+        TestMultitenancyAPIHelper.plSignInUpNumber(new TenantIdentifier(null, "a1", "t2"), "+919876543210",
+                process.getProcess());
+
+        JsonObject response = TestMultitenancyAPIHelper.associateUserToTenant(new TenantIdentifier(null, "a1", "t2"), userId1, process.getProcess());
+        assertEquals("PHONE_NUMBER_ALREADY_EXISTS_ERROR", response.getAsJsonPrimitive("status").getAsString());
+    }
 }

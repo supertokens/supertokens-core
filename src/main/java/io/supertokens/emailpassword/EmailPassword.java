@@ -603,20 +603,15 @@ public class EmailPassword {
                     if (email != null) {
                         if (user.isPrimaryUser) {
                             for (String tenantId : user.tenantIds) {
-                                // we do not bother with getting the tenantIdentifierWithStorage here because
-                                // we get the tenants from the user itself, and the user can only be shared across
-                                // tenants of the same storage - therefore, the storage will be the same.
-                                TenantIdentifier tenantIdentifier = new TenantIdentifier(
-                                        appIdentifierWithStorage.getConnectionUriDomain(),
-                                        appIdentifierWithStorage.getAppId(),
-                                        tenantId);
-
                                 AuthRecipeUserInfo[] existingUsersWithNewEmail =
                                         authRecipeStorage.listPrimaryUsersByEmail_Transaction(
-                                                tenantIdentifier, transaction,
+                                                appIdentifierWithStorage, transaction,
                                                 email);
 
                                 for (AuthRecipeUserInfo userWithSameEmail : existingUsersWithNewEmail) {
+                                    if (!userWithSameEmail.tenantIds.contains(tenantId)) {
+                                        continue;
+                                    }
                                     if (userWithSameEmail.isPrimaryUser && !userWithSameEmail.getSupertokensUserId().equals(user.getSupertokensUserId())) {
                                         throw new StorageTransactionLogicException(
                                                 new EmailChangeNotAllowedException());

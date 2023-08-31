@@ -36,7 +36,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 
 public class UnlinkAccountsTest {
@@ -247,5 +247,42 @@ public class UnlinkAccountsTest {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testUnlinkUserDeletesRecipeUserAndAnotherUserLinkToIt() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        AuthRecipeUserInfo user1 = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
+        AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "password");
+        AuthRecipeUserInfo user3 = EmailPassword.signUp(process.getProcess(), "test3@example.com", "password");
+
+        AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), user1.getSupertokensUserId());
+
+        AuthRecipe.unlinkAccounts(process.getProcess(), user1.getSupertokensUserId());
+
+        AuthRecipeUserInfo refetchUser2 = AuthRecipe.getUserById(process.getProcess(), user2.getSupertokensUserId());
+        assertEquals(refetchUser2.getSupertokensUserId(), user1.getSupertokensUserId());
+
+        AuthRecipe.linkAccounts(process.getProcess(), user3.getSupertokensUserId(), user2.getSupertokensUserId());
+        AuthRecipeUserInfo refetchUser3 = AuthRecipe.getUserById(process.getProcess(), user3.getSupertokensUserId());
+        assertEquals(refetchUser3.getSupertokensUserId(), user1.getSupertokensUserId());
+
+        assertEquals(refetchUser3.loginMethods.length, 2);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
     }
 }

@@ -30,15 +30,18 @@ import io.supertokens.multitenancy.exception.*;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
+import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateClientTypeException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateTenantException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateThirdPartyIdException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.multitenancy.sqlStorage.MultitenancySQLStorage;
 import io.supertokens.pluginInterface.passwordless.exception.DuplicatePhoneNumberException;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
 import io.supertokens.storageLayer.StorageLayer;
@@ -387,8 +390,81 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             throw new FeatureNotEnabledException(EE_FEATURES.MULTI_TENANCY);
         }
 
-        return tenantIdentifierWithStorage.getMultitenancyStorageWithTargetStorage()
-                .addUserIdToTenant(tenantIdentifierWithStorage, userId);
+        AuthRecipeSQLStorage storage = (AuthRecipeSQLStorage) tenantIdentifierWithStorage.getAuthRecipeStorage();
+        try {
+            return storage.startTransaction(con -> {
+                String tenantId = tenantIdentifierWithStorage.getTenantId();
+                AuthRecipeUserInfo userToAssociate = storage.getPrimaryUserById_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con, userId);
+
+                if (userToAssociate.isPrimaryUser) {
+                    Set<String> emails = new HashSet<>();
+                    Set<String> phoneNumbers = new HashSet<>();
+                    Set<LoginMethod.ThirdParty> thirdParties = new HashSet<>();
+
+                    // Loop through all the emails, phoneNumbers and thirdPartyInfos and check for conflicts
+                    for (LoginMethod lM : userToAssociate.loginMethods) {
+                        if (lM.email != null) {
+                            emails.add(lM.email);
+                        }
+                        if (lM.phoneNumber != null) {
+                            phoneNumbers.add(lM.phoneNumber);
+                        }
+                        if (lM.thirdParty != null) {
+                            thirdParties.add(lM.thirdParty);
+                        }
+                    }
+
+                    for (String email : emails) {
+                        AuthRecipeUserInfo[] users = storage.listPrimaryUsersByEmail_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con, email);
+                        for (AuthRecipeUserInfo user : users) {
+                            if (user.tenantIds.contains(tenantId) && !user.getSupertokensUserId().equals(userId)) {
+                                throw new StorageTransactionLogicException(new DuplicateEmailException());
+                            }
+                        }
+                    }
+
+                    for (String phoneNumber : phoneNumbers) {
+                        AuthRecipeUserInfo[] users = storage.listPrimaryUsersByPhoneNumber_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con, phoneNumber);
+                        for (AuthRecipeUserInfo user : users) {
+                            if (user.tenantIds.contains(tenantId) && !user.getSupertokensUserId().equals(userId)) {
+                                throw new StorageTransactionLogicException(new DuplicatePhoneNumberException());
+                            }
+                        }
+                    }
+
+                    for (LoginMethod.ThirdParty tp : thirdParties) {
+                        AuthRecipeUserInfo[] users = storage.listPrimaryUsersByThirdPartyInfo_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con, tp.id, tp.userId);
+                        for (AuthRecipeUserInfo user : users) {
+                            if (user.tenantIds.contains(tenantId) && !user.getSupertokensUserId().equals(userId)) {
+                                throw new StorageTransactionLogicException(new DuplicateThirdPartyUserException());
+                            }
+                        }
+                    }
+                }
+
+                try {
+                    boolean result = ((MultitenancySQLStorage) storage).addUserIdToTenant_Transaction(tenantIdentifierWithStorage, con, userId);
+                    storage.commitTransaction(con);
+                    return result;
+                } catch (TenantOrAppNotFoundException | UnknownUserIdException | DuplicatePhoneNumberException |
+                         DuplicateThirdPartyUserException | DuplicateEmailException e) {
+                    throw new StorageTransactionLogicException(e);
+                }
+            });
+        } catch (StorageTransactionLogicException e) {
+            if (e.actualException instanceof DuplicateEmailException) {
+                throw (DuplicateEmailException) e.actualException;
+            } else if (e.actualException instanceof DuplicatePhoneNumberException) {
+                throw (DuplicatePhoneNumberException) e.actualException;
+            } else if (e.actualException instanceof DuplicateThirdPartyUserException) {
+                throw (DuplicateThirdPartyUserException) e.actualException;
+            } else if (e.actualException instanceof TenantOrAppNotFoundException) {
+                throw (TenantOrAppNotFoundException) e.actualException;
+            } else if (e.actualException instanceof UnknownUserIdException) {
+                throw (UnknownUserIdException) e.actualException;
+            }
+            throw new StorageQueryException(e.actualException);
+        }
     }
 
     @TestOnly
