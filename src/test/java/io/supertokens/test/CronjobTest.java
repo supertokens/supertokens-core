@@ -826,7 +826,7 @@ public class CronjobTest {
 
         // Note that the time is in seconds
         Map<String, Integer> intervals = new HashMap<>();
-        intervals.put("io.supertokens.ee.cronjobs.EELicenseCheck", 10);
+        intervals.put("io.supertokens.ee.cronjobs.EELicenseCheck", 86400);
         intervals.put("io.supertokens.cronjobs.syncCoreConfigWithDb.SyncCoreConfigWithDb", 60);
         intervals.put("io.supertokens.cronjobs.deleteExpiredSessions.DeleteExpiredSessions", 43200);
         intervals.put("io.supertokens.cronjobs.deleteExpiredPasswordResetTokens.DeleteExpiredPasswordResetTokens", 3600);
@@ -838,7 +838,7 @@ public class CronjobTest {
         intervals.put("io.supertokens.cronjobs.deleteExpiredAccessTokenSigningKeys.DeleteExpiredAccessTokenSigningKeys", 86400);
 
         Map<String, Integer> delays = new HashMap<>();
-        delays.put("io.supertokens.ee.cronjobs.EELicenseCheck", 10);
+        delays.put("io.supertokens.ee.cronjobs.EELicenseCheck", 86400);
         delays.put("io.supertokens.cronjobs.syncCoreConfigWithDb.SyncCoreConfigWithDb", 0);
         delays.put("io.supertokens.cronjobs.deleteExpiredSessions.DeleteExpiredSessions", 0);
         delays.put("io.supertokens.cronjobs.deleteExpiredPasswordResetTokens.DeleteExpiredPasswordResetTokens", 0);
