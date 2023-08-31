@@ -225,8 +225,10 @@ public class ThirdParty {
                             thirdPartyId, thirdPartyUserId);
                     for (AuthRecipeUserInfo user : usersFromDb) {
                         if (user.tenantIds.contains(tenantIdentifierWithStorage.getTenantId())) {
+                            if (userFromDb != null) {
+                                throw new IllegalStateException("Should never happen");
+                            }
                             userFromDb = user;
-                            break;
                         }
                     }
 
