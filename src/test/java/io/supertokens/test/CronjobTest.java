@@ -809,6 +809,10 @@ public class CronjobTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         Reflections reflections = new Reflections("io.supertokens");
         Set<Class<? extends CronTask>> classes = reflections.getSubTypesOf(CronTask.class);
 
