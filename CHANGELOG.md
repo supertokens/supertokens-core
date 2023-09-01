@@ -55,6 +55,18 @@ ALTER TABLE emailpassword_pswd_reset_tokens ADD CONSTRAINT emailpassword_pswd_re
 ALTER TABLE emailpassword_pswd_reset_tokens ADD COLUMN email VARCHAR(256);
 ```
 
+## [6.0.11] - 2023-08-16
+
+- Fixed feature flag cron job
+
+## [6.0.10] - 2023-08-16
+
+- Fixed an encoding/decoding issue for certain access token payloads
+
+## [6.0.9] - 2023-08-14
+
+- Now using decimal notation to add numbers into the access token payload (instead of scientific notation) 
+
 ## [6.0.8] - 2023-08-01
 
 - Fixes CUD validation starting with number.
