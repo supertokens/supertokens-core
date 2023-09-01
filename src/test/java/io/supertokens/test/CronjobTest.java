@@ -31,6 +31,7 @@ import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.MultitenancyHelper;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
@@ -39,11 +40,9 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
+import org.reflections.Reflections;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -776,6 +775,87 @@ public class CronjobTest {
             }
         }
         assertTrue(found);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testThatNoCronJobIntervalIsMoreThanADay() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // ensure none of the tasks have an interval more than a day
+        for (CronTask task : Cronjobs.getInstance(process.getProcess()).getTasks()) {
+            assertTrue(task.getIntervalTimeSeconds() <= 3600 * 24);
+            assertTrue(task.getInitialWaitTimeSeconds() <= 3600 * 24);
+        }
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testThatThereAreTasksOfAllCronTaskClassesAndHaveCorrectIntervals() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        Reflections reflections = new Reflections("io.supertokens");
+        Set<Class<? extends CronTask>> classes = reflections.getSubTypesOf(CronTask.class);
+
+        Set<String> classNames = new HashSet<>();
+
+        for (Class cls : classes) {
+            if (!cls.getName().contains("io.supertokens.test")) {
+                classNames.add(cls.getName());
+            }
+        }
+
+        // Note that the time is in seconds
+        Map<String, Integer> intervals = new HashMap<>();
+        intervals.put("io.supertokens.ee.cronjobs.EELicenseCheck", 86400);
+        intervals.put("io.supertokens.cronjobs.syncCoreConfigWithDb.SyncCoreConfigWithDb", 60);
+        intervals.put("io.supertokens.cronjobs.deleteExpiredSessions.DeleteExpiredSessions", 43200);
+        intervals.put("io.supertokens.cronjobs.deleteExpiredPasswordResetTokens.DeleteExpiredPasswordResetTokens", 3600);
+        intervals.put("io.supertokens.cronjobs.deleteExpiredEmailVerificationTokens.DeleteExpiredEmailVerificationTokens", 43200);
+        intervals.put("io.supertokens.cronjobs.deleteExpiredPasswordlessDevices.DeleteExpiredPasswordlessDevices", 3600);
+        intervals.put("io.supertokens.cronjobs.deleteExpiredTotpTokens.DeleteExpiredTotpTokens", 3600);
+        intervals.put("io.supertokens.cronjobs.deleteExpiredDashboardSessions.DeleteExpiredDashboardSessions", 43200);
+        intervals.put("io.supertokens.cronjobs.telemetry.Telemetry", 86400);
+        intervals.put("io.supertokens.cronjobs.deleteExpiredAccessTokenSigningKeys.DeleteExpiredAccessTokenSigningKeys", 86400);
+
+        Map<String, Integer> delays = new HashMap<>();
+        delays.put("io.supertokens.ee.cronjobs.EELicenseCheck", 86400);
+        delays.put("io.supertokens.cronjobs.syncCoreConfigWithDb.SyncCoreConfigWithDb", 0);
+        delays.put("io.supertokens.cronjobs.deleteExpiredSessions.DeleteExpiredSessions", 0);
+        delays.put("io.supertokens.cronjobs.deleteExpiredPasswordResetTokens.DeleteExpiredPasswordResetTokens", 0);
+        delays.put("io.supertokens.cronjobs.deleteExpiredEmailVerificationTokens.DeleteExpiredEmailVerificationTokens", 0);
+        delays.put("io.supertokens.cronjobs.deleteExpiredPasswordlessDevices.DeleteExpiredPasswordlessDevices", 0);
+        delays.put("io.supertokens.cronjobs.deleteExpiredTotpTokens.DeleteExpiredTotpTokens", 0);
+        delays.put("io.supertokens.cronjobs.deleteExpiredDashboardSessions.DeleteExpiredDashboardSessions", 0);
+        delays.put("io.supertokens.cronjobs.telemetry.Telemetry", 0);
+        delays.put("io.supertokens.cronjobs.deleteExpiredAccessTokenSigningKeys.DeleteExpiredAccessTokenSigningKeys", 0);
+
+        List<CronTask> allTasks = Cronjobs.getInstance(process.getProcess()).getTasks();
+        assertEquals(10, allTasks.size());
+
+        for (CronTask task : allTasks) {
+            assertEquals(intervals.get(task.getClass().getName()).intValue(), task.getIntervalTimeSeconds());
+            assertEquals(delays.get(task.getClass().getName()).intValue(), task.getInitialWaitTimeSeconds());
+        }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
