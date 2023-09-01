@@ -396,7 +396,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                 String tenantId = tenantIdentifierWithStorage.getTenantId();
                 AuthRecipeUserInfo userToAssociate = storage.getPrimaryUserById_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con, userId);
 
-                if (userToAssociate.isPrimaryUser) {
+                if (userToAssociate != null && userToAssociate.isPrimaryUser) {
                     Set<String> emails = new HashSet<>();
                     Set<String> phoneNumbers = new HashSet<>();
                     Set<LoginMethod.ThirdParty> thirdParties = new HashSet<>();
@@ -442,6 +442,9 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                     }
                 }
 
+                // userToAssociate may be null if the user is not associated to any tenants, we can still try and
+                // associate it. This happens only in CDI 3.0 where we allow disassociation from all tenants
+                // This will not happen in CDI >= 4.0 because we will not allow disassociation from all tenants
                 try {
                     boolean result = ((MultitenancySQLStorage) storage).addUserIdToTenant_Transaction(tenantIdentifierWithStorage, con, userId);
                     storage.commitTransaction(con);
