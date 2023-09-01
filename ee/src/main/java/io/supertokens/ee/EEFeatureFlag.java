@@ -52,8 +52,8 @@ import java.util.Base64;
 import java.util.List;
 
 public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagInterface {
-    public static final int INTERVAL_BETWEEN_SERVER_SYNC = 1000 * 3600 * 24; // 1 day.
-    private static final long INTERVAL_BETWEEN_DB_READS = (long) 1000 * 3600 * 4; // 4 hour.
+    public static final int INTERVAL_BETWEEN_SERVER_SYNC = 3600 * 24; // 1 day (in seconds).
+    private static final long INTERVAL_BETWEEN_DB_READS = (long) 1000 * 3600 * 4; // 4 hour (in millis).
     public static final String REQUEST_ID = "licensecheck";
 
     public static final String FEATURE_FLAG_KEY_IN_DB = "FEATURE_FLAG";
