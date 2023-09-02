@@ -2787,6 +2787,14 @@ public class Start
     }
 
     @Override
+    public AuthRecipeUserInfo[] listPrimaryUsersByThirdPartyInfo(AppIdentifier appIdentifier,
+                                                                             String thirdPartyId,
+                                                                             String thirdPartyUserId)
+            throws StorageQueryException {
+        return null; // TODO
+    }
+
+    @Override
     public AuthRecipeUserInfo[] listPrimaryUsersByThirdPartyInfo_Transaction(AppIdentifier appIdentifier,
                                                                              TransactionConnection con,
                                                                              String thirdPartyId,
