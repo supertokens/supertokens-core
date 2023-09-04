@@ -119,7 +119,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
             Multitenancy.checkPermissionsForCreateOrUpdate(
                     main, sourceTenantIdentifier, tenantConfig.tenantIdentifier);
 
-            Multitenancy.addNewOrUpdateAppOrTenant(main, tenantConfig, shouldProtectProtectedConfig(req));
+            Multitenancy.addNewOrUpdateAppOrTenant(main, tenantConfig, shouldProtectProtectedConfig(req), true);
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             result.addProperty("createdNew", createdNew);

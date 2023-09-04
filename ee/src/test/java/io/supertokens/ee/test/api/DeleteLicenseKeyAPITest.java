@@ -33,6 +33,7 @@ public class DeleteLicenseKeyAPITest {
     @Before
     public void beforeEach() {
         Utils.reset();
+        FeatureFlag.clearURLClassLoader();
     }
 
     @Test

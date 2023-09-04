@@ -84,7 +84,7 @@ public class RemoveThirdPartyConfigAPI extends WebserverAPI {
                     config.passwordlessConfig,
                     config.coreConfig);
 
-            Multitenancy.addNewOrUpdateAppOrTenant(main, updatedConfig, shouldProtectProtectedConfig(req));
+            Multitenancy.addNewOrUpdateAppOrTenant(main, updatedConfig, shouldProtectProtectedConfig(req), true);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
