@@ -204,7 +204,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             StorageQueryException, FeatureNotEnabledException, IOException, InvalidConfigException,
             InvalidProviderConfigException, TenantOrAppNotFoundException {
         checkPermissionsForCreateOrUpdate(main, sourceTenant, newTenant.tenantIdentifier);
-        return addNewOrUpdateAppOrTenant(main, newTenant, false, true);
+        return addNewOrUpdateAppOrTenant(main, newTenant, false);
     }
 
     @TestOnly
@@ -213,15 +213,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             throws InvalidProviderConfigException, StorageQueryException, FeatureNotEnabledException,
             TenantOrAppNotFoundException, IOException, InvalidConfigException, CannotModifyBaseConfigException,
             BadPermissionException {
-        return addNewOrUpdateAppOrTenant(main, newTenant, shouldPreventDbConfigUpdate, true);
-    }
-
-    public static boolean addNewOrUpdateAppOrTenant(Main main, TenantConfig newTenant,
-                                                    boolean shouldPreventDbConfigUpdate, boolean forceReloadResources)
-            throws CannotModifyBaseConfigException, BadPermissionException,
-            StorageQueryException, FeatureNotEnabledException, IOException, InvalidConfigException,
-            InvalidProviderConfigException, TenantOrAppNotFoundException {
-        return addNewOrUpdateAppOrTenant(main, newTenant, shouldPreventDbConfigUpdate, false, forceReloadResources);
+        return addNewOrUpdateAppOrTenant(main, newTenant, shouldPreventDbConfigUpdate, false, true);
     }
 
 
@@ -265,7 +257,8 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                         .addTenantIdInTargetStorage(newTenant.tenantIdentifier);
             } catch (TenantOrAppNotFoundException e) {
                 // it should never come here, since we just added the tenant above.. but just in case.
-                return addNewOrUpdateAppOrTenant(main, newTenant, shouldPreventProtectedConfigUpdate, true);
+                return addNewOrUpdateAppOrTenant(main, newTenant, shouldPreventProtectedConfigUpdate,
+                        skipThirdPartyConfigValidation, forceReloadResources);
             }
             return true;
         } catch (DuplicateTenantException e) {
@@ -285,7 +278,8 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                 } catch (TenantOrAppNotFoundException ex) {
                     // this can happen cause of a race condition if the tenant was deleted in the middle
                     // of it being recreated.
-                    return addNewOrUpdateAppOrTenant(main, newTenant, shouldPreventProtectedConfigUpdate, true);
+                    return addNewOrUpdateAppOrTenant(main, newTenant, shouldPreventProtectedConfigUpdate,
+                            skipThirdPartyConfigValidation, forceReloadResources);
                 } catch (DuplicateTenantException ex) {
                     // we treat this as a success
                     return false;
