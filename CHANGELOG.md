@@ -10,6 +10,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [6.0.12] - 2023-09-04
 
 - Fixes randomly occurring `serialization error for concurrent update` in `verifySession` API
+- Fixes `MISSING_EE_FOLDER_ERROR` error when the core starts up with an empty database
 
 ## [6.0.11] - 2023-08-16
 
