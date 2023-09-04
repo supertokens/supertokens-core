@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+## [4.6.1] - 2023-09-04
+
+- Fixes randomly occurring `serialization error for concurrent update` in `verifySession` API
+
 ## [4.6.0] - 2023-03-30
 
 - Add Optional Search Tags to Pagination API to enable dashboard search
