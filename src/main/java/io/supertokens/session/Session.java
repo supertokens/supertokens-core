@@ -35,6 +35,7 @@ import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.session.noSqlStorage.SessionNoSQLStorage_1;
 import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
+import io.supertokens.pluginInterface.sqlStorage.SQLStorage;
 import io.supertokens.session.accessToken.AccessToken;
 import io.supertokens.session.accessToken.AccessToken.AccessTokenInfo;
 import io.supertokens.session.info.SessionInfo;
@@ -388,7 +389,7 @@ public class Session {
                             UnsupportedJWTSigningAlgorithmException | AccessTokenPayloadError | TenantOrAppNotFoundException e) {
                         throw new StorageTransactionLogicException(e);
                     }
-                });
+                }, SQLStorage.TransactionIsolationLevel.REPEATABLE_READ);
             } catch (StorageTransactionLogicException e) {
                 if (e.actualException instanceof UnauthorisedException) {
                     throw (UnauthorisedException) e.actualException;
