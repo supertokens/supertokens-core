@@ -154,6 +154,75 @@ public class EmailVerificationTest {
     }
 
     @Test
+    public void testEmailVerificationStateDoesNotChangeWhenFalseIsPassed() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        {
+            JsonObject emailObject = new JsonObject();
+            emailObject.addProperty("id", "test@example.com");
+            emailObject.addProperty("isVerified", false);
+
+            JsonObject signUpRequestBody = new JsonObject();
+            signUpRequestBody.addProperty("thirdPartyId", "google");
+            signUpRequestBody.addProperty("thirdPartyUserId", "google-user");
+            signUpRequestBody.add("email", emailObject);
+
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/signinup", signUpRequestBody, 1000, 1000, null,
+                    SemVer.v4_0.get(), "thirdparty");
+
+            String userId = response.get("user").getAsJsonObject().get("id").getAsString();
+            assertFalse(EmailVerification.isEmailVerified(process.getProcess(), userId, "test@example.com"));
+        }
+
+        {
+            JsonObject emailObject = new JsonObject();
+            emailObject.addProperty("id", "test@example.com");
+            emailObject.addProperty("isVerified", true);
+
+            JsonObject signUpRequestBody = new JsonObject();
+            signUpRequestBody.addProperty("thirdPartyId", "google");
+            signUpRequestBody.addProperty("thirdPartyUserId", "google-user");
+            signUpRequestBody.add("email", emailObject);
+
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/signinup", signUpRequestBody, 1000, 1000, null,
+                    SemVer.v4_0.get(), "thirdparty");
+
+            String userId = response.get("user").getAsJsonObject().get("id").getAsString();
+            assertTrue(EmailVerification.isEmailVerified(process.getProcess(), userId, "test@example.com"));
+        }
+
+        {
+            JsonObject emailObject = new JsonObject();
+            emailObject.addProperty("id", "test@example.com");
+            emailObject.addProperty("isVerified", false);
+
+            JsonObject signUpRequestBody = new JsonObject();
+            signUpRequestBody.addProperty("thirdPartyId", "google");
+            signUpRequestBody.addProperty("thirdPartyUserId", "google-user");
+            signUpRequestBody.add("email", emailObject);
+
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/signinup", signUpRequestBody, 1000, 1000, null,
+                    SemVer.v4_0.get(), "thirdparty");
+
+            String userId = response.get("user").getAsJsonObject().get("id").getAsString();
+            assertTrue(EmailVerification.isEmailVerified(process.getProcess(), userId, "test@example.com"));
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
     public void testWithAccountLinking() throws Exception {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
