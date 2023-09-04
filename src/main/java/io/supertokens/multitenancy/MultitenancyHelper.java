@@ -76,7 +76,11 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
                         new TenantConfig(
                                 new TenantIdentifier(null, null, null),
                                 new EmailPasswordConfig(true), new ThirdPartyConfig(true, null),
-                                new PasswordlessConfig(true), new JsonObject()), false);
+                                new PasswordlessConfig(true), new JsonObject()), false, false);
+                // Not force reloading all resources here (the last boolean in the function above)
+                // because the ucl for the FeatureFlag is not yet loaded and results in an empty
+                // instance of eeFeatureFlag. This is applicable only when the core is starting on
+                // an empty database as no tenants are loaded from the db yet.
             } catch (CannotModifyBaseConfigException | BadPermissionException | FeatureNotEnabledException | InvalidConfigException | InvalidProviderConfigException | TenantOrAppNotFoundException e) {
                 throw new IllegalStateException(e);
             }

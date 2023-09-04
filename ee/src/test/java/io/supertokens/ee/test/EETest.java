@@ -81,6 +81,7 @@ public class EETest extends Mockito {
     @Before
     public void beforeEach() {
         Utils.reset();
+        FeatureFlag.clearURLClassLoader();
     }
 
     @Rule
