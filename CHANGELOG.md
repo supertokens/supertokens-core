@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+## [6.0.12] - 2023-09-04
+
+- Fixes randomly occurring `serialization error for concurrent update` in `verifySession` API
+
 ## [6.0.11] - 2023-08-16
 
 - Fixed feature flag cron job
