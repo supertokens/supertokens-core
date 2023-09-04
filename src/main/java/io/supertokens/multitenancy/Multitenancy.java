@@ -207,6 +207,15 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         return addNewOrUpdateAppOrTenant(main, newTenant, false, true);
     }
 
+    @TestOnly
+    public static boolean addNewOrUpdateAppOrTenant(Main main, TenantConfig newTenant,
+                                                    boolean shouldPreventDbConfigUpdate)
+            throws InvalidProviderConfigException, StorageQueryException, FeatureNotEnabledException,
+            TenantOrAppNotFoundException, IOException, InvalidConfigException, CannotModifyBaseConfigException,
+            BadPermissionException {
+        return addNewOrUpdateAppOrTenant(main, newTenant, shouldPreventDbConfigUpdate, true);
+    }
+
     public static boolean addNewOrUpdateAppOrTenant(Main main, TenantConfig newTenant,
                                                     boolean shouldPreventDbConfigUpdate, boolean forceReloadResources)
             throws CannotModifyBaseConfigException, BadPermissionException,
