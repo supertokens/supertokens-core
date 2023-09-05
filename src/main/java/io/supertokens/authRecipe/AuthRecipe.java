@@ -817,6 +817,10 @@ public class AuthRecipe {
         if (removeAllLinkedAccounts || userToDelete.loginMethods.length == 1) {
             if (userToDelete.getSupertokensUserId().equals(userIdToDeleteForAuthRecipe)) {
                 primaryUserIdToDeleteNonAuthRecipe = userIdToDeleteForNonAuthRecipeForRecipeUserId;
+                if (primaryUserIdToDeleteNonAuthRecipe == null) {
+                    deleteAuthRecipeUser(con, appIdentifierWithStorage, userToDelete.getSupertokensUserId(),
+                            true);
+                }
             } else {
                 // this is always type supertokens user ID cause it's from a user from the database.
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping mappingResult =
@@ -840,8 +844,7 @@ public class AuthRecipe {
 
         if (!removeAllLinkedAccounts) {
             deleteAuthRecipeUser(con, appIdentifierWithStorage, userIdToDeleteForAuthRecipe,
-                    !userIdToDeleteForAuthRecipe.equals(userToDelete.getSupertokensUserId()) ||
-                            userToDelete.loginMethods.length == 1);
+                    !userIdToDeleteForAuthRecipe.equals(userToDelete.getSupertokensUserId()));
 
             if (userIdToDeleteForNonAuthRecipeForRecipeUserId != null) {
                 deleteNonAuthRecipeUser(con, appIdentifierWithStorage, userIdToDeleteForNonAuthRecipeForRecipeUserId);

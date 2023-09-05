@@ -85,6 +85,7 @@ public class DisassociateUserFromTenant extends WebserverAPI {
         } catch (DisassociationNotAllowedException e) {
             JsonObject result = new JsonObject();
             result.addProperty("status", "DISASSOCIATION_NOT_ALLOWED_ERROR");
+            result.addProperty("reason", "The user belongs to only one tenant and cannot be disassociated from that");
             super.sendJsonResponse(200, result, resp);
         } catch (StorageQueryException | TenantOrAppNotFoundException | FeatureNotEnabledException e) {
             throw new ServletException(e);

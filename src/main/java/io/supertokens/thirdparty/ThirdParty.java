@@ -211,46 +211,46 @@ public class ThirdParty {
             }
 
             // we try to get user and update their email
-            try {
-                AppIdentifier appIdentifier = tenantIdentifierWithStorage.toAppIdentifier();
-                AuthRecipeSQLStorage authRecipeStorage =
-                        (AuthRecipeSQLStorage) tenantIdentifierWithStorage.getAuthRecipeStorage();
+            AppIdentifier appIdentifier = tenantIdentifierWithStorage.toAppIdentifier();
+            AuthRecipeSQLStorage authRecipeStorage =
+                    (AuthRecipeSQLStorage) tenantIdentifierWithStorage.getAuthRecipeStorage();
 
-                { // Try without transaction
-                    AuthRecipeUserInfo userFromDb = null;
+            { // Try without transaction, because in most cases we might not need to update the email
+                AuthRecipeUserInfo userFromDb = null;
 
-                    AuthRecipeUserInfo[] usersFromDb = authRecipeStorage.listPrimaryUsersByThirdPartyInfo(
-                            appIdentifier,
-                            thirdPartyId, thirdPartyUserId);
-                    for (AuthRecipeUserInfo user : usersFromDb) {
-                        if (user.tenantIds.contains(tenantIdentifierWithStorage.getTenantId())) {
-                            if (userFromDb != null) {
-                                throw new IllegalStateException("Should never happen");
-                            }
-                            userFromDb = user;
+                AuthRecipeUserInfo[] usersFromDb = authRecipeStorage.listPrimaryUsersByThirdPartyInfo(
+                        appIdentifier,
+                        thirdPartyId, thirdPartyUserId);
+                for (AuthRecipeUserInfo user : usersFromDb) {
+                    if (user.tenantIds.contains(tenantIdentifierWithStorage.getTenantId())) {
+                        if (userFromDb != null) {
+                            throw new IllegalStateException("Should never happen");
                         }
+                        userFromDb = user;
                     }
-                    if (userFromDb == null) {
-                        continue; // try to create the user again
-                    }
+                }
+                if (userFromDb == null) {
+                    continue; // try to create the user again
+                }
 
-                    LoginMethod lM = null;
-                    for (LoginMethod loginMethod : userFromDb.loginMethods) {
-                        if (loginMethod.thirdParty != null && loginMethod.thirdParty.id.equals(thirdPartyId) &&
-                                loginMethod.thirdParty.userId.equals(thirdPartyUserId)) {
-                            lM = loginMethod;
-                            break;
-                        }
+                LoginMethod lM = null;
+                for (LoginMethod loginMethod : userFromDb.loginMethods) {
+                    if (loginMethod.thirdParty != null && loginMethod.thirdParty.id.equals(thirdPartyId) &&
+                            loginMethod.thirdParty.userId.equals(thirdPartyUserId)) {
+                        lM = loginMethod;
+                        break;
                     }
+                }
 
-                    if (lM == null) {
-                        throw new IllegalStateException("Should never come here");
-                    }
+                if (lM == null) {
+                    throw new IllegalStateException("Should never come here");
+                }
 
-                    if (email.equals(lM.email)) {
-                        return new SignInUpResponse(false, userFromDb);
-                    } else {
-                        // Email needs updating, so repeat everything in a transaction
+                if (email.equals(lM.email)) {
+                    return new SignInUpResponse(false, userFromDb);
+                } else {
+                    // Email needs updating, so repeat everything in a transaction
+                    try {
 
                         storage.startTransaction(con -> {
                             AuthRecipeUserInfo userFromDb1 = null;
@@ -314,19 +314,17 @@ public class ThirdParty {
                             storage.commitTransaction(con);
                             return null;
                         });
+                    } catch (StorageTransactionLogicException e) {
+                        if (e.actualException instanceof EmailChangeNotAllowedException) {
+                            throw (EmailChangeNotAllowedException) e.actualException;
+                        }
+                        throw new StorageQueryException(e);
                     }
                 }
-
-                AuthRecipeUserInfo user = getUser(tenantIdentifierWithStorage, thirdPartyId, thirdPartyUserId);
-                return new SignInUpResponse(false, user);
-            } catch (StorageTransactionLogicException e) {
-                if (e.actualException instanceof EmailChangeNotAllowedException) {
-                    throw (EmailChangeNotAllowedException) e.actualException;
-                }
-                throw new StorageQueryException(e);
             }
 
-            // retry..
+            AuthRecipeUserInfo user = getUser(tenantIdentifierWithStorage, thirdPartyId, thirdPartyUserId);
+            return new SignInUpResponse(false, user);
         }
     }
 
