@@ -28,10 +28,7 @@ import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.Multitenancy;
-import io.supertokens.multitenancy.exception.AnotherPrimaryUserWithEmailAlreadyExistsException;
-import io.supertokens.multitenancy.exception.AnotherPrimaryUserWithThirdPartyInfoAlreadyExistsException;
-import io.supertokens.multitenancy.exception.BadPermissionException;
-import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
+import io.supertokens.multitenancy.exception.*;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
@@ -39,6 +36,8 @@ import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.passwordless.exception.DuplicatePhoneNumberException;
+import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -376,6 +375,38 @@ public class MultitenantTest {
                         new MakePrimaryUser(t2, 1),
                         new CreateThirdPartyUser(t1, "google", "googleid3", "test1@example.com").expect(new EmailChangeNotAllowedException()),
                 }),
+
+                new TestCase(new TestCaseStep[]{
+                        new CreatePlessUserWithPhone(t1, "+1000001"),
+                        new CreatePlessUserWithPhone(t2, "+1000002"),
+                        new CreatePlessUserWithPhone(t3, "+1000001"),
+                        new MakePrimaryUser(t1, 0),
+                        new LinkAccounts(t1, 0, 1),
+                        new MakePrimaryUser(t3, 2),
+                        new AssociateUserToTenant(t1, 2).expect(new DuplicatePhoneNumberException()),
+                        new AssociateUserToTenant(t2, 2).expect(new AnotherPrimaryUserWithPhoneNumberAlreadyExistsException("")),
+                }),
+
+                new TestCase(new TestCaseStep[]{
+                        new CreateThirdPartyUser(t1, "google", "googleid1", "test1@example.com"),
+                        new CreateThirdPartyUser(t2, "google", "googleid2", "test2@example.com"),
+                        new CreateThirdPartyUser(t3, "google", "googleid1", "test3@example.com"),
+                        new MakePrimaryUser(t1, 0),
+                        new LinkAccounts(t1, 0, 1),
+                        new MakePrimaryUser(t3, 2),
+                        new AssociateUserToTenant(t1, 2).expect(new DuplicateThirdPartyUserException()),
+                        new AssociateUserToTenant(t2, 2).expect(new AnotherPrimaryUserWithThirdPartyInfoAlreadyExistsException("")),
+                }),
+                new TestCase(new TestCaseStep[]{
+                        new CreateThirdPartyUser(t1, "google", "googleid1", "test1@example.com"),
+                        new CreateThirdPartyUser(t2, "google", "googleid2", "test2@example.com"),
+                        new CreateThirdPartyUser(t1, "google", "googleid3", "test3@example.com"),
+                        new MakePrimaryUser(t1, 0),
+                        new LinkAccounts(t1, 0, 1),
+                        new MakePrimaryUser(t1, 2),
+                        new CreateThirdPartyUser(t1, "google", "googleid1", "test3@example.com").expect(new EmailChangeNotAllowedException()),
+                        new CreateThirdPartyUser(t1, "google", "googleid3", "test1@example.com").expect(new EmailChangeNotAllowedException()),
+                }),
         };
 
         int i = 0;
@@ -480,6 +511,25 @@ public class MultitenantTest {
             TenantIdentifierWithStorage tenantIdentifierWithStorage = tenantIdentifier.withStorage(StorageLayer.getStorage(tenantIdentifier, main));
             Passwordless.CreateCodeResponse code = Passwordless.createCode(tenantIdentifierWithStorage, main,
                     email, null, null, null);
+            AuthRecipeUserInfo user = Passwordless.consumeCode(tenantIdentifierWithStorage, main, code.deviceId, code.deviceIdHash, code.userInputCode, null).user;
+            TestCase.addUser(user);
+        }
+    }
+
+    private static class CreatePlessUserWithPhone extends TestCaseStep {
+        private final TenantIdentifier tenantIdentifier;
+        private final String phoneNumber;
+
+        public CreatePlessUserWithPhone(TenantIdentifier tenantIdentifier, String phoneNumber) {
+            this.tenantIdentifier = tenantIdentifier;
+            this.phoneNumber = phoneNumber;
+        }
+
+        @Override
+        public void execute(Main main) throws Exception {
+            TenantIdentifierWithStorage tenantIdentifierWithStorage = tenantIdentifier.withStorage(StorageLayer.getStorage(tenantIdentifier, main));
+            Passwordless.CreateCodeResponse code = Passwordless.createCode(tenantIdentifierWithStorage, main,
+                    null, phoneNumber, null, null);
             AuthRecipeUserInfo user = Passwordless.consumeCode(tenantIdentifierWithStorage, main, code.deviceId, code.deviceIdHash, code.userInputCode, null).user;
             TestCase.addUser(user);
         }

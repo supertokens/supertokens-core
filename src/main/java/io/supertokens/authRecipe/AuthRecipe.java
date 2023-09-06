@@ -494,6 +494,9 @@ public class AuthRecipe {
                         .listPrimaryUsersByPhoneNumber_Transaction(appIdentifierWithStorage, con,
                                 loginMethod.phoneNumber);
                 for (AuthRecipeUserInfo user : usersWithSamePhoneNumber) {
+                    if (!user.tenantIds.contains(tenantId)) {
+                        continue;
+                    }
                     if (user.isPrimaryUser) {
                         throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(user.getSupertokensUserId(),
                                 "This user's phone number is already associated with another user" +
