@@ -608,7 +608,7 @@ public class Passwordless {
             return null;
         }
         for (LoginMethod lM : result.loginMethods) {
-            if (lM.getSupertokensUserId().equals(userId)) {
+            if (lM.getSupertokensUserId().equals(userId) && lM.recipeId == RECIPE_ID.PASSWORDLESS) {
                 return AuthRecipeUserInfo.create(lM.getSupertokensUserId(), result.isPrimaryUser,
                         lM);
             }

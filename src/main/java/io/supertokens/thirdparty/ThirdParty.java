@@ -337,7 +337,7 @@ public class ThirdParty {
             return null;
         }
         for (LoginMethod lM : result.loginMethods) {
-            if (lM.getSupertokensUserId().equals(userId)) {
+            if (lM.getSupertokensUserId().equals(userId) && lM.recipeId == RECIPE_ID.THIRD_PARTY) {
                 return AuthRecipeUserInfo.create(lM.getSupertokensUserId(), result.isPrimaryUser,
                         lM);
             }

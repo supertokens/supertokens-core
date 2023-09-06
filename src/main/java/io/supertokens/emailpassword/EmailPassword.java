@@ -676,7 +676,7 @@ public class EmailPassword {
             return null;
         }
         for (LoginMethod lM : result.loginMethods) {
-            if (lM.getSupertokensUserId().equals(userId)) {
+            if (lM.getSupertokensUserId().equals(userId) && lM.recipeId == RECIPE_ID.EMAIL_PASSWORD) {
                 return AuthRecipeUserInfo.create(lM.getSupertokensUserId(), result.isPrimaryUser, lM);
             }
         }
