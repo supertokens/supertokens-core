@@ -22,6 +22,7 @@ import io.supertokens.Main;
 import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.Passwordless.FieldUpdate;
+import io.supertokens.passwordless.exceptions.PhoneNumberChangeNotAllowedException;
 import io.supertokens.passwordless.exceptions.UserWithoutContactInfoException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
@@ -30,7 +31,6 @@ import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdExce
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.passwordless.exception.DuplicatePhoneNumberException;
-import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
@@ -186,6 +186,11 @@ public class UserAPI extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", "EMAIL_CHANGE_NOT_ALLOWED_ERROR");
             result.addProperty("reason", "New email is associated with another primary user ID");
+            super.sendJsonResponse(200, result, resp);
+        } catch (PhoneNumberChangeNotAllowedException e) {
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "PHONE_NUMBER_CHANGE_NOT_ALLOWED_ERROR");
+            result.addProperty("reason", "New phone number is associated with another primary user ID");
             super.sendJsonResponse(200, result, resp);
         }
     }

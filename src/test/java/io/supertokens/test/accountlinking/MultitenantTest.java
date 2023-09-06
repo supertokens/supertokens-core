@@ -23,13 +23,13 @@ import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.authRecipe.exception.AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
-import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.*;
 import io.supertokens.passwordless.Passwordless;
+import io.supertokens.passwordless.exceptions.PhoneNumberChangeNotAllowedException;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
@@ -52,7 +52,6 @@ import org.junit.rules.TestRule;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
 
 import static org.junit.Assert.*;
 
@@ -285,6 +284,46 @@ public class MultitenantTest {
                         new LinkAccounts(t1, 0, 2),
                         new MakePrimaryUser(t2, 1),
                         new UpdatePlessUserEmail(t1, 1, "test1@example.com").expect(new EmailChangeNotAllowedException()),
+                }),
+
+                new TestCase(new TestCaseStep[]{
+                        new CreatePlessUserWithPhone(t1, "+1000001"),
+                        new CreatePlessUserWithPhone(t1, "+1000003"),
+                        new CreatePlessUserWithPhone(t2, "+1000002"),
+                        new MakePrimaryUser(t1, 0),
+                        new LinkAccounts(t1, 0, 2),
+                        new MakePrimaryUser(t2, 1),
+                        new UpdatePlessUserPhone(t1, 0, "+1000003").expect(new PhoneNumberChangeNotAllowedException()),
+                }),
+
+                new TestCase(new TestCaseStep[]{
+                        new CreatePlessUserWithPhone(t1, "+1000001"),
+                        new CreatePlessUserWithPhone(t1, "+1000003"),
+                        new CreatePlessUserWithPhone(t2, "+1000002"),
+                        new MakePrimaryUser(t1, 0),
+                        new LinkAccounts(t1, 0, 2),
+                        new MakePrimaryUser(t2, 1),
+                        new UpdatePlessUserPhone(t1, 1, "+1000001").expect(new PhoneNumberChangeNotAllowedException()),
+                }),
+
+                new TestCase(new TestCaseStep[]{
+                        new CreateEmailPasswordUser(t1, "test1@example.com"),
+                        new CreateEmailPasswordUser(t1, "test3@example.com"),
+                        new CreateEmailPasswordUser(t2, "test2@example.com"),
+                        new MakePrimaryUser(t1, 0),
+                        new LinkAccounts(t1, 0, 2),
+                        new MakePrimaryUser(t2, 1),
+                        new UpdateEmailPasswordUserEmail(t1, 0, "test3@example.com").expect(new EmailChangeNotAllowedException()),
+                }),
+
+                new TestCase(new TestCaseStep[]{
+                        new CreateEmailPasswordUser(t1, "test1@example.com"),
+                        new CreateEmailPasswordUser(t1, "test3@example.com"),
+                        new CreateEmailPasswordUser(t2, "test2@example.com"),
+                        new MakePrimaryUser(t1, 0),
+                        new LinkAccounts(t1, 0, 2),
+                        new MakePrimaryUser(t2, 1),
+                        new UpdateEmailPasswordUserEmail(t1, 1, "test1@example.com").expect(new EmailChangeNotAllowedException()),
                 }),
 
                 new TestCase(new TestCaseStep[]{
@@ -606,6 +645,24 @@ public class MultitenantTest {
         }
     }
 
+    private static class UpdateEmailPasswordUserEmail extends TestCaseStep {
+        TenantIdentifier tenantIdentifier;
+        int userIndex;
+        String email;
+
+        public UpdateEmailPasswordUserEmail(TenantIdentifier tenantIdentifier, int userIndex, String email) {
+            this.tenantIdentifier = tenantIdentifier;
+            this.userIndex = userIndex;
+            this.email = email;
+        }
+
+        @Override
+        public void execute(Main main) throws Exception {
+            TenantIdentifierWithStorage tenantIdentifierWithStorage = tenantIdentifier.withStorage(StorageLayer.getStorage(tenantIdentifier, main));
+            EmailPassword.updateUsersEmailOrPassword(tenantIdentifierWithStorage.toAppIdentifierWithStorage(), main, TestCase.users.get(userIndex).getSupertokensUserId(), email, null);
+        }
+    }
+
     private static class UpdatePlessUserEmail extends TestCaseStep {
         TenantIdentifier tenantIdentifier;
         int userIndex;
@@ -621,6 +678,24 @@ public class MultitenantTest {
         public void execute(Main main) throws Exception {
             TenantIdentifierWithStorage tenantIdentifierWithStorage = tenantIdentifier.withStorage(StorageLayer.getStorage(tenantIdentifier, main));
             Passwordless.updateUser(tenantIdentifierWithStorage.toAppIdentifierWithStorage(), TestCase.users.get(userIndex).getSupertokensUserId(), new Passwordless.FieldUpdate(email), null);
+        }
+    }
+
+    private static class UpdatePlessUserPhone extends TestCaseStep {
+        TenantIdentifier tenantIdentifier;
+        int userIndex;
+        String phoneNumber;
+
+        public UpdatePlessUserPhone(TenantIdentifier tenantIdentifier, int userIndex, String phoneNumber) {
+            this.tenantIdentifier = tenantIdentifier;
+            this.userIndex = userIndex;
+            this.phoneNumber = phoneNumber;
+        }
+
+        @Override
+        public void execute(Main main) throws Exception {
+            TenantIdentifierWithStorage tenantIdentifierWithStorage = tenantIdentifier.withStorage(StorageLayer.getStorage(tenantIdentifier, main));
+            Passwordless.updateUser(tenantIdentifierWithStorage.toAppIdentifierWithStorage(), TestCase.users.get(userIndex).getSupertokensUserId(), null, new Passwordless.FieldUpdate(phoneNumber));
         }
     }
 }
