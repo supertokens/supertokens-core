@@ -494,6 +494,9 @@ public class AuthRecipe {
                         .listPrimaryUsersByPhoneNumber_Transaction(appIdentifierWithStorage, con,
                                 loginMethod.phoneNumber);
                 for (AuthRecipeUserInfo user : usersWithSamePhoneNumber) {
+                    if (!user.tenantIds.contains(tenantId)) {
+                        continue;
+                    }
                     if (user.isPrimaryUser) {
                         throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(user.getSupertokensUserId(),
                                 "This user's phone number is already associated with another user" +
@@ -817,6 +820,10 @@ public class AuthRecipe {
         if (removeAllLinkedAccounts || userToDelete.loginMethods.length == 1) {
             if (userToDelete.getSupertokensUserId().equals(userIdToDeleteForAuthRecipe)) {
                 primaryUserIdToDeleteNonAuthRecipe = userIdToDeleteForNonAuthRecipeForRecipeUserId;
+                if (primaryUserIdToDeleteNonAuthRecipe == null) {
+                    deleteAuthRecipeUser(con, appIdentifierWithStorage, userToDelete.getSupertokensUserId(),
+                            true);
+                }
             } else {
                 // this is always type supertokens user ID cause it's from a user from the database.
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping mappingResult =
@@ -918,15 +925,15 @@ public class AuthRecipe {
 
     private static void deleteAuthRecipeUser(TransactionConnection con,
                                              AppIdentifierWithStorage appIdentifierWithStorage, String
-                                                     userId, boolean deleteUserIdMappingToo)
+                                                     userId, boolean deleteFromUserIdToAppIdTableToo)
             throws StorageQueryException {
         // auth recipe deletions here only
         appIdentifierWithStorage.getEmailPasswordStorage()
-                .deleteEmailPasswordUser_Transaction(con, appIdentifierWithStorage, userId, deleteUserIdMappingToo);
+                .deleteEmailPasswordUser_Transaction(con, appIdentifierWithStorage, userId, deleteFromUserIdToAppIdTableToo);
         appIdentifierWithStorage.getThirdPartyStorage()
-                .deleteThirdPartyUser_Transaction(con, appIdentifierWithStorage, userId, deleteUserIdMappingToo);
+                .deleteThirdPartyUser_Transaction(con, appIdentifierWithStorage, userId, deleteFromUserIdToAppIdTableToo);
         appIdentifierWithStorage.getPasswordlessStorage()
-                .deletePasswordlessUser_Transaction(con, appIdentifierWithStorage, userId, deleteUserIdMappingToo);
+                .deletePasswordlessUser_Transaction(con, appIdentifierWithStorage, userId, deleteFromUserIdToAppIdTableToo);
     }
 
     public static boolean deleteNonAuthRecipeUser(TenantIdentifierWithStorage

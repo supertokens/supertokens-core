@@ -211,85 +211,120 @@ public class ThirdParty {
             }
 
             // we try to get user and update their email
-            try {
-                AppIdentifier appIdentifier = tenantIdentifierWithStorage.toAppIdentifier();
-                AuthRecipeSQLStorage authRecipeStorage =
-                        (AuthRecipeSQLStorage) tenantIdentifierWithStorage.getAuthRecipeStorage();
+            AppIdentifier appIdentifier = tenantIdentifierWithStorage.toAppIdentifier();
+            AuthRecipeSQLStorage authRecipeStorage =
+                    (AuthRecipeSQLStorage) tenantIdentifierWithStorage.getAuthRecipeStorage();
 
-                storage.startTransaction(con -> {
-                    AuthRecipeUserInfo userFromDb = null;
+            { // Try without transaction, because in most cases we might not need to update the email
+                AuthRecipeUserInfo userFromDb = null;
 
-                    AuthRecipeUserInfo[] usersFromDb = authRecipeStorage.listPrimaryUsersByThirdPartyInfo_Transaction(
-                            appIdentifier,
-                            con,
-                            thirdPartyId, thirdPartyUserId);
-                    for (AuthRecipeUserInfo user : usersFromDb) {
-                        if (user.tenantIds.contains(tenantIdentifierWithStorage.getTenantId())) {
-                            if (userFromDb != null) {
-                                throw new IllegalStateException("Should never happen");
-                            }
-                            userFromDb = user;
+                AuthRecipeUserInfo[] usersFromDb = authRecipeStorage.listPrimaryUsersByThirdPartyInfo(
+                        appIdentifier,
+                        thirdPartyId, thirdPartyUserId);
+                for (AuthRecipeUserInfo user : usersFromDb) {
+                    if (user.tenantIds.contains(tenantIdentifierWithStorage.getTenantId())) {
+                        if (userFromDb != null) {
+                            throw new IllegalStateException("Should never happen");
                         }
+                        userFromDb = user;
                     }
+                }
+                if (userFromDb == null) {
+                    continue; // try to create the user again
+                }
 
-                    if (userFromDb == null) {
-                        storage.commitTransaction(con);
-                        return null;
+                LoginMethod lM = null;
+                for (LoginMethod loginMethod : userFromDb.loginMethods) {
+                    if (loginMethod.thirdParty != null && loginMethod.thirdParty.id.equals(thirdPartyId) &&
+                            loginMethod.thirdParty.userId.equals(thirdPartyUserId)) {
+                        lM = loginMethod;
+                        break;
                     }
+                }
 
-                    LoginMethod lM = null;
-                    for (LoginMethod loginMethod : userFromDb.loginMethods) {
-                        if (loginMethod.thirdParty != null && loginMethod.thirdParty.id.equals(thirdPartyId) &&
-                                loginMethod.thirdParty.userId.equals(thirdPartyUserId)) {
-                            lM = loginMethod;
-                            break;
-                        }
-                    }
+                if (lM == null) {
+                    throw new IllegalStateException("Should never come here");
+                }
 
-                    if (lM == null) {
-                        throw new IllegalStateException("Should never come here");
-                    }
+                if (email.equals(lM.email)) {
+                    return new SignInUpResponse(false, userFromDb);
+                } else {
+                    // Email needs updating, so repeat everything in a transaction
+                    try {
 
+                        storage.startTransaction(con -> {
+                            AuthRecipeUserInfo userFromDb1 = null;
 
-                    if (!email.equals(lM.email)) {
-                        // before updating the email, we must check for if another primary user has the same
-                        // email, and if they do, then we do not allow the update.
-                        if (userFromDb.isPrimaryUser) {
-                            for (String tenantId : userFromDb.tenantIds) {
-                                AuthRecipeUserInfo[] userBasedOnEmail =
-                                        authRecipeStorage.listPrimaryUsersByEmail_Transaction(
-                                                appIdentifier, con, email
-                                        );
-                                for (AuthRecipeUserInfo userWithSameEmail : userBasedOnEmail) {
-                                    if (!userWithSameEmail.tenantIds.contains(tenantId)) {
-                                        continue;
+                            AuthRecipeUserInfo[] usersFromDb1 = authRecipeStorage.listPrimaryUsersByThirdPartyInfo_Transaction(
+                                    appIdentifier,
+                                    con,
+                                    thirdPartyId, thirdPartyUserId);
+                            for (AuthRecipeUserInfo user : usersFromDb1) {
+                                if (user.tenantIds.contains(tenantIdentifierWithStorage.getTenantId())) {
+                                    if (userFromDb1 != null) {
+                                        throw new IllegalStateException("Should never happen");
                                     }
-                                    if (userWithSameEmail.isPrimaryUser &&
-                                            !userWithSameEmail.getSupertokensUserId().equals(userFromDb.getSupertokensUserId())) {
-                                        throw new StorageTransactionLogicException(
-                                                new EmailChangeNotAllowedException());
-                                    }
+                                    userFromDb1 = user;
                                 }
                             }
+
+                            if (userFromDb1 == null) {
+                                storage.commitTransaction(con);
+                                return null;
+                            }
+
+                            LoginMethod lM1 = null;
+                            for (LoginMethod loginMethod : userFromDb1.loginMethods) {
+                                if (loginMethod.thirdParty != null && loginMethod.thirdParty.id.equals(thirdPartyId) &&
+                                        loginMethod.thirdParty.userId.equals(thirdPartyUserId)) {
+                                    lM1 = loginMethod;
+                                    break;
+                                }
+                            }
+
+                            if (lM1 == null) {
+                                throw new IllegalStateException("Should never come here");
+                            }
+
+                            if (!email.equals(lM1.email)) {
+                                // before updating the email, we must check for if another primary user has the same
+                                // email, and if they do, then we do not allow the update.
+                                if (userFromDb1.isPrimaryUser) {
+                                    for (String tenantId : userFromDb1.tenantIds) {
+                                        AuthRecipeUserInfo[] userBasedOnEmail =
+                                                authRecipeStorage.listPrimaryUsersByEmail_Transaction(
+                                                        appIdentifier, con, email
+                                                );
+                                        for (AuthRecipeUserInfo userWithSameEmail : userBasedOnEmail) {
+                                            if (!userWithSameEmail.tenantIds.contains(tenantId)) {
+                                                continue;
+                                            }
+                                            if (userWithSameEmail.isPrimaryUser &&
+                                                    !userWithSameEmail.getSupertokensUserId().equals(userFromDb1.getSupertokensUserId())) {
+                                                throw new StorageTransactionLogicException(
+                                                        new EmailChangeNotAllowedException());
+                                            }
+                                        }
+                                    }
+                                }
+                                storage.updateUserEmail_Transaction(appIdentifier, con,
+                                        thirdPartyId, thirdPartyUserId, email);
+                            }
+
+                            storage.commitTransaction(con);
+                            return null;
+                        });
+                    } catch (StorageTransactionLogicException e) {
+                        if (e.actualException instanceof EmailChangeNotAllowedException) {
+                            throw (EmailChangeNotAllowedException) e.actualException;
                         }
-                        storage.updateUserEmail_Transaction(appIdentifier, con,
-                                thirdPartyId, thirdPartyUserId, email);
+                        throw new StorageQueryException(e);
                     }
-
-                    storage.commitTransaction(con);
-                    return null;
-                });
-
-                AuthRecipeUserInfo user = getUser(tenantIdentifierWithStorage, thirdPartyId, thirdPartyUserId);
-                return new SignInUpResponse(false, user);
-            } catch (StorageTransactionLogicException e) {
-                if (e.actualException instanceof EmailChangeNotAllowedException) {
-                    throw (EmailChangeNotAllowedException) e.actualException;
                 }
-                throw new StorageQueryException(e);
             }
 
-            // retry..
+            AuthRecipeUserInfo user = getUser(tenantIdentifierWithStorage, thirdPartyId, thirdPartyUserId);
+            return new SignInUpResponse(false, user);
         }
     }
 

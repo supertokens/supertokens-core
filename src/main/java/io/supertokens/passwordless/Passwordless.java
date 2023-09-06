@@ -35,7 +35,6 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
@@ -670,7 +669,8 @@ public class Passwordless {
     public static void updateUser(Main main, String userId,
                                   FieldUpdate emailUpdate, FieldUpdate phoneNumberUpdate)
             throws StorageQueryException, UnknownUserIdException, DuplicateEmailException,
-            DuplicatePhoneNumberException, UserWithoutContactInfoException, EmailChangeNotAllowedException {
+            DuplicatePhoneNumberException, UserWithoutContactInfoException, EmailChangeNotAllowedException,
+            PhoneNumberChangeNotAllowedException {
         Storage storage = StorageLayer.getStorage(main);
         updateUser(new AppIdentifierWithStorage(null, null, storage),
                 userId, emailUpdate, phoneNumberUpdate);
@@ -679,7 +679,8 @@ public class Passwordless {
     public static void updateUser(AppIdentifierWithStorage appIdentifierWithStorage, String recipeUserId,
                                   FieldUpdate emailUpdate, FieldUpdate phoneNumberUpdate)
             throws StorageQueryException, UnknownUserIdException, DuplicateEmailException,
-            DuplicatePhoneNumberException, UserWithoutContactInfoException, EmailChangeNotAllowedException {
+            DuplicatePhoneNumberException, UserWithoutContactInfoException, EmailChangeNotAllowedException,
+            PhoneNumberChangeNotAllowedException {
         PasswordlessSQLStorage storage = appIdentifierWithStorage.getPasswordlessStorage();
 
         // We do not lock the user here, because we decided that even if the device cleanup used outdated information
@@ -742,6 +743,24 @@ public class Passwordless {
                     }
                 }
                 if (phoneNumberUpdate != null && !Objects.equals(phoneNumberUpdate.newValue, lM.phoneNumber)) {
+                    if (user.isPrimaryUser) {
+                        for (String tenantId : user.tenantIds) {
+                            AuthRecipeUserInfo[] existingUsersWithNewPhoneNumber =
+                                    authRecipeSQLStorage.listPrimaryUsersByPhoneNumber_Transaction(
+                                            appIdentifierWithStorage, con,
+                                            phoneNumberUpdate.newValue);
+
+                            for (AuthRecipeUserInfo userWithSamePhoneNumber : existingUsersWithNewPhoneNumber) {
+                                if (!userWithSamePhoneNumber.tenantIds.contains(tenantId)) {
+                                    continue;
+                                }
+                                if (userWithSamePhoneNumber.isPrimaryUser && !userWithSamePhoneNumber.getSupertokensUserId().equals(user.getSupertokensUserId())) {
+                                    throw new StorageTransactionLogicException(
+                                            new PhoneNumberChangeNotAllowedException());
+                                }
+                            }
+                        }
+                    }
                     try {
                         storage.updateUserPhoneNumber_Transaction(appIdentifierWithStorage, con, recipeUserId,
                                 phoneNumberUpdate.newValue);
@@ -775,6 +794,10 @@ public class Passwordless {
 
             if (e.actualException instanceof EmailChangeNotAllowedException) {
                 throw (EmailChangeNotAllowedException) e.actualException;
+            }
+
+            if (e.actualException instanceof PhoneNumberChangeNotAllowedException) {
+                throw (PhoneNumberChangeNotAllowedException) e.actualException;
             }
         }
     }

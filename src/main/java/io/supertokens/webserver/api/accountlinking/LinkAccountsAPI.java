@@ -100,8 +100,6 @@ public class LinkAccountsAPI extends WebserverAPI {
             AuthRecipe.LinkAccountsResult linkAccountsResult = AuthRecipe.linkAccounts(main,
                     primaryUserIdAppIdentifierWithStorage,
                     recipeUserId, primaryUserId);
-            // Remove linked account user id from active user
-            ActiveUsers.removeActiveUser(recipeUserIdAppIdentifierWithStorage, recipeUserId);
 
             UserIdMapping.populateExternalUserIdForUsers(primaryUserIdAppIdentifierWithStorage, new AuthRecipeUserInfo[]{linkAccountsResult.user});
             JsonObject response = new JsonObject();

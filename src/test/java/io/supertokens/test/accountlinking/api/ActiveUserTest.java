@@ -128,6 +128,7 @@ public class ActiveUserTest {
         {
             JsonObject emailObject = new JsonObject();
             emailObject.addProperty("id", "test@example.com");
+            emailObject.addProperty("isVerified", false);
 
             JsonObject signUpRequestBody = new JsonObject();
             signUpRequestBody.addProperty("thirdPartyId", "google");
@@ -155,9 +156,9 @@ public class ActiveUserTest {
                     WebserverAPI.getLatestCDIVersion().get(), "");
         }
 
-        // Now there should be only one active user
+        // we don't remove the active user for the recipe user, so it should still be 2
         userCount = ActiveUsers.countUsersActiveSince(process.getProcess(), System.currentTimeMillis() - 10000);
-        assertEquals(1, userCount);
+        assertEquals(2, userCount);
 
         // Sign in to the accounts once again
         {
@@ -173,6 +174,7 @@ public class ActiveUserTest {
         {
             JsonObject emailObject = new JsonObject();
             emailObject.addProperty("id", "test@example.com");
+            emailObject.addProperty("isVerified", false);
 
             JsonObject signUpRequestBody = new JsonObject();
             signUpRequestBody.addProperty("thirdPartyId", "google");
@@ -186,7 +188,7 @@ public class ActiveUserTest {
 
         // there should still be only one active user
         userCount = ActiveUsers.countUsersActiveSince(process.getProcess(), System.currentTimeMillis() - 10000);
-        assertEquals(1, userCount);
+        assertEquals(2, userCount);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

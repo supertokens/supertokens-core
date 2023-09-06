@@ -439,11 +439,11 @@ public class AuthRecipeTest {
             return;
         }
 
-        Map<String, Function<Object, ? extends AuthRecipeUserInfo>> signUpMap = getSignUpMap(process);
+        Map<String, Function<Object, AuthRecipeUserInfo>> signUpMap = getSignUpMap(process);
 
-        List<String> classes = getUserInfoClassNameList();
+        List<String> authRecipes = getAuthRecipes();
 
-        for (String className : classes) {
+        for (String className : authRecipes) {
             if (!signUpMap.containsKey(className)) {
                 fail();
             }
@@ -456,7 +456,7 @@ public class AuthRecipeTest {
         for (int i = 0; i < numberOfUsers; i++) {
             if (Math.random() > 0.5) {
                 while (true) {
-                    String currUserType = classes.get((int) (Math.random() * classes.size()));
+                    String currUserType = authRecipes.get((int) (Math.random() * authRecipes.size()));
                     AuthRecipeUserInfo user = signUpMap.get(currUserType).apply(null);
                     if (user != null) {
                         synchronized (usersCreated) {
@@ -468,7 +468,7 @@ public class AuthRecipeTest {
             } else {
                 es.execute(() -> {
                     while (true) {
-                        String currUserType = classes.get((int) (Math.random() * classes.size()));
+                        String currUserType = authRecipes.get((int) (Math.random() * authRecipes.size()));
                         AuthRecipeUserInfo user = signUpMap.get(currUserType).apply(null);
                         if (user != null) {
                             synchronized (usersCreated) {
@@ -584,17 +584,17 @@ public class AuthRecipeTest {
             return;
         }
 
-        Map<String, Function<Object, ? extends AuthRecipeUserInfo>> signUpMap = getSignUpMap(process);
+        Map<String, Function<Object, AuthRecipeUserInfo>> signUpMap = getSignUpMap(process);
 
-        List<String> classes = getUserInfoClassNameList();
+        List<String> authRecipes = getAuthRecipes();
 
-        for (String className : classes) {
+        for (String className : authRecipes) {
             if (!signUpMap.containsKey(className)) {
                 fail();
             }
         }
 
-        for (String userType : classes) {
+        for (String userType : authRecipes) {
             AuthRecipeUserInfo user1 = signUpMap.get(userType).apply(null);
             JsonObject testMetadata = new JsonObject();
             testMetadata.addProperty("test", "test");
@@ -635,19 +635,16 @@ public class AuthRecipeTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    private static List<String> getUserInfoClassNameList() {
-        Reflections reflections = new Reflections("io.supertokens");
-        Set<Class<? extends AuthRecipeUserInfo>> classes = reflections.getSubTypesOf(AuthRecipeUserInfo.class);
-
-        return classes.stream().map(Class::getCanonicalName).collect(Collectors.toList());
+    private static List<String> getAuthRecipes() {
+        return Arrays.asList("emailpassword", "thirdparty", "passwordless");
     }
 
-    private static Map<String, Function<Object, ? extends AuthRecipeUserInfo>> getSignUpMap(
+    private static Map<String, Function<Object, AuthRecipeUserInfo>> getSignUpMap(
             TestingProcessManager.TestingProcess process) {
         AtomicInteger count = new AtomicInteger();
 
-        Map<String, Function<Object, ? extends AuthRecipeUserInfo>> signUpMap = new HashMap<>();
-        signUpMap.put("io.supertokens.pluginInterface.emailpassword.AuthRecipeUserInfo", o -> {
+        Map<String, Function<Object, AuthRecipeUserInfo>> signUpMap = new HashMap<>();
+        signUpMap.put("emailpassword", o -> {
             try {
                 return EmailPassword.signUp(process.getProcess(), "test" + count.getAndIncrement() + "@example.com",
                         "password0");
@@ -655,7 +652,7 @@ public class AuthRecipeTest {
             }
             return null;
         });
-        signUpMap.put("io.supertokens.pluginInterface.thirdparty.AuthRecipeUserInfo", o -> {
+        signUpMap.put("thirdparty", o -> {
             try {
                 String thirdPartyId = "testThirdParty";
                 String thirdPartyUserId = "thirdPartyUserId" + count.getAndIncrement();
@@ -666,7 +663,7 @@ public class AuthRecipeTest {
             }
             return null;
         });
-        signUpMap.put("io.supertokens.pluginInterface.passwordless.AuthRecipeUserInfo", o -> {
+        signUpMap.put("passwordless", o -> {
             try {
                 String email = "test" + count.getAndIncrement() + "@example.com";
                 CreateCodeResponse createCode = Passwordless.createCode(process.getProcess(), email, null, null, null);
