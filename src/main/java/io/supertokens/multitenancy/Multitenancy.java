@@ -384,7 +384,9 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                                             String userId)
             throws TenantOrAppNotFoundException, UnknownUserIdException, StorageQueryException,
             FeatureNotEnabledException, DuplicateEmailException, DuplicatePhoneNumberException,
-            DuplicateThirdPartyUserException {
+            DuplicateThirdPartyUserException, AnotherPrimaryUserWithPhoneNumberAlreadyExistsException,
+            AnotherPrimaryUserWithEmailAlreadyExistsException,
+            AnotherPrimaryUserWithThirdPartyInfoAlreadyExistsException {
         if (Arrays.stream(FeatureFlag.getInstance(main, new AppIdentifier(null, null)).getEnabledFeatures())
                 .noneMatch(ee_features -> ee_features == EE_FEATURES.MULTI_TENANCY)) {
             throw new FeatureNotEnabledException(EE_FEATURES.MULTI_TENANCY);
@@ -418,7 +420,16 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                         AuthRecipeUserInfo[] users = storage.listPrimaryUsersByEmail_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con, email);
                         for (AuthRecipeUserInfo user : users) {
                             if (user.tenantIds.contains(tenantId) && !user.getSupertokensUserId().equals(userId)) {
-                                throw new StorageTransactionLogicException(new DuplicateEmailException());
+                                for (LoginMethod lm1 : user.loginMethods) {
+                                    if (lm1.tenantIds.contains(tenantId)) {
+                                        for (LoginMethod lm2 : userToAssociate.loginMethods) {
+                                            if (lm1.recipeId.equals(lm2.recipeId) && email.equals(lm1.email) && lm1.email.equals(lm2.email)) {
+                                                throw new StorageTransactionLogicException(new DuplicateEmailException());
+                                            }
+                                        }
+                                    }
+                                }
+                                throw new StorageTransactionLogicException(new AnotherPrimaryUserWithEmailAlreadyExistsException(user.getSupertokensUserId()));
                             }
                         }
                     }
@@ -427,7 +438,16 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                         AuthRecipeUserInfo[] users = storage.listPrimaryUsersByPhoneNumber_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con, phoneNumber);
                         for (AuthRecipeUserInfo user : users) {
                             if (user.tenantIds.contains(tenantId) && !user.getSupertokensUserId().equals(userId)) {
-                                throw new StorageTransactionLogicException(new DuplicatePhoneNumberException());
+                                for (LoginMethod lm1 : user.loginMethods) {
+                                    if (lm1.tenantIds.contains(tenantId)) {
+                                        for (LoginMethod lm2 : userToAssociate.loginMethods) {
+                                            if (lm1.recipeId.equals(lm2.recipeId) && phoneNumber.equals(lm1.phoneNumber) && lm1.phoneNumber.equals(lm2.phoneNumber)) {
+                                                throw new StorageTransactionLogicException(new DuplicatePhoneNumberException());
+                                            }
+                                        }
+                                    }
+                                }
+                                throw new StorageTransactionLogicException(new AnotherPrimaryUserWithPhoneNumberAlreadyExistsException(user.getSupertokensUserId()));
                             }
                         }
                     }
@@ -436,7 +456,17 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                         AuthRecipeUserInfo[] users = storage.listPrimaryUsersByThirdPartyInfo_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con, tp.id, tp.userId);
                         for (AuthRecipeUserInfo user : users) {
                             if (user.tenantIds.contains(tenantId) && !user.getSupertokensUserId().equals(userId)) {
-                                throw new StorageTransactionLogicException(new DuplicateThirdPartyUserException());
+                                for (LoginMethod lm1 : user.loginMethods) {
+                                    if (lm1.tenantIds.contains(tenantId)) {
+                                        for (LoginMethod lm2 : userToAssociate.loginMethods) {
+                                            if (lm1.recipeId.equals(lm2.recipeId) && tp.equals(lm1.thirdParty) && lm1.thirdParty.equals(lm2.thirdParty)) {
+                                                throw new StorageTransactionLogicException(new DuplicateThirdPartyUserException());
+                                            }
+                                        }
+                                    }
+                                }
+
+                                throw new StorageTransactionLogicException(new AnotherPrimaryUserWithThirdPartyInfoAlreadyExistsException(user.getSupertokensUserId()));
                             }
                         }
                     }
@@ -465,6 +495,12 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                 throw (TenantOrAppNotFoundException) e.actualException;
             } else if (e.actualException instanceof UnknownUserIdException) {
                 throw (UnknownUserIdException) e.actualException;
+            } else if (e.actualException instanceof AnotherPrimaryUserWithPhoneNumberAlreadyExistsException) {
+                throw (AnotherPrimaryUserWithPhoneNumberAlreadyExistsException) e.actualException;
+            } else if (e.actualException instanceof AnotherPrimaryUserWithEmailAlreadyExistsException) {
+                throw (AnotherPrimaryUserWithEmailAlreadyExistsException) e.actualException;
+            } else if (e.actualException instanceof AnotherPrimaryUserWithThirdPartyInfoAlreadyExistsException) {
+                throw (AnotherPrimaryUserWithThirdPartyInfoAlreadyExistsException) e.actualException;
             }
             throw new StorageQueryException(e.actualException);
         }
