@@ -76,7 +76,7 @@ public class Utils {
     }
 
     public static String convertFromBase64(String str) {
-        return new String(Base64.getDecoder().decode(stringToBytes(str)), StandardCharsets.UTF_8);
+        return new String(Base64.getDecoder().decode(stringToBytes(str.replace("-", "+").replace("_", "/"))), StandardCharsets.UTF_8);
     }
 
     public static String throwableStacktraceToString(Throwable e) {
