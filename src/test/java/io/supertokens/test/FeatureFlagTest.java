@@ -513,6 +513,7 @@ public class FeatureFlagTest {
                 null, 1000, 1000, null, WebserverAPI.getLatestCDIVersion().get(), "");
         Assert.assertEquals("OK", response.get("status").getAsString());
 
+        assertFalse(response.get("usageStats").getAsJsonObject().has("account_linking"));
         JsonArray multitenancyStats = response.get("usageStats").getAsJsonObject().get("multi_tenancy")
                 .getAsJsonObject().get("tenants").getAsJsonArray();
         assertEquals(6, multitenancyStats.size());
