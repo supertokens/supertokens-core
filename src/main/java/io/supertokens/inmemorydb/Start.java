@@ -2834,4 +2834,22 @@ public class Start
             throws StorageQueryException {
         // TODO:..
     }
+
+    @Override
+    public boolean checkIfUsesAccountLinking(AppIdentifier appIdentifier) throws StorageQueryException {
+        // TODO
+        return false;
+    }
+
+    @Override
+    public int countUsersThatHaveMoreThanOneLoginMethodAndActiveSince(AppIdentifier appIdentifier, long sinceTime) throws StorageQueryException {
+        // TODO
+        return 0;
+    }
+
+    @Override
+    public int getUsersCountWithMoreThanOneLoginMethod(AppIdentifier appIdentifier) throws StorageQueryException {
+        // TODO
+        return 0;
+    }
 }
