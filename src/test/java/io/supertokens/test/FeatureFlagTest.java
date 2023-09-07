@@ -925,10 +925,13 @@ public class FeatureFlagTest {
             AuthRecipeUserInfo user1 = EmailPassword.signUp(ts, process.getProcess(), "test1@example.com", "password");
             AuthRecipeUserInfo user2 = EmailPassword.signUp(ts, process.getProcess(), "test2@example.com", "password");
             AuthRecipeUserInfo user3 = EmailPassword.signUp(ts, process.getProcess(), "test3@example.com", "password");
+            AuthRecipeUserInfo user4 = EmailPassword.signUp(ts, process.getProcess(), "test4@example.com", "password");
+            AuthRecipeUserInfo user5 = EmailPassword.signUp(ts, process.getProcess(), "test5@example.com", "password");
 
             AuthRecipe.createPrimaryUser(process.getProcess(), ts.toAppIdentifierWithStorage(), user1.getSupertokensUserId());
             AuthRecipe.linkAccounts(process.getProcess(), ts.toAppIdentifierWithStorage(), user2.getSupertokensUserId(), user1.getSupertokensUserId());
             AuthRecipe.createPrimaryUser(process.getProcess(), ts.toAppIdentifierWithStorage(), user3.getSupertokensUserId());
+            AuthRecipe.linkAccounts(process.getProcess(), ts.toAppIdentifierWithStorage(), user4.getSupertokensUserId(), user3.getSupertokensUserId());
         }
 
         { // tenant 1
@@ -1001,6 +1004,28 @@ public class FeatureFlagTest {
 
                 assertEquals(signInResponse.get("status").getAsString(), "OK");
             }
+            {
+                JsonObject responseBody = new JsonObject();
+                responseBody.addProperty("email", "test4@example.com");
+                responseBody.addProperty("password", "password");
+
+                JsonObject signInResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/t1/recipe/signin", responseBody, 1000, 1000, null, SemVer.v4_0.get(),
+                        "emailpassword");
+
+                assertEquals(signInResponse.get("status").getAsString(), "OK");
+            }
+            {
+                JsonObject responseBody = new JsonObject();
+                responseBody.addProperty("email", "test5@example.com");
+                responseBody.addProperty("password", "password");
+
+                JsonObject signInResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/t1/recipe/signin", responseBody, 1000, 1000, null, SemVer.v4_0.get(),
+                        "emailpassword");
+
+                assertEquals(signInResponse.get("status").getAsString(), "OK");
+            }
         }
 
 
@@ -1015,11 +1040,11 @@ public class FeatureFlagTest {
 
             assertEquals(3, alStats.entrySet().size());
             assertTrue(alStats.get("usesAccountLinking").getAsBoolean());
-            assertEquals(2, alStats.get("totalUserCountWithMoreThanOneLoginMethod").getAsInt());
+            assertEquals(3, alStats.get("totalUserCountWithMoreThanOneLoginMethod").getAsInt());
 
             JsonArray maus = alStats.get("mauWithMoreThanOneLoginMethod").getAsJsonArray();
             assertEquals(30, maus.size());
-            assertEquals(2, maus.get(0).getAsInt());
+            assertEquals(3, maus.get(0).getAsInt());
         }
 
         process.kill();
