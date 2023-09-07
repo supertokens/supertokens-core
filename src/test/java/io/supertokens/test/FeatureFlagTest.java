@@ -21,6 +21,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.ProcessState;
+import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.cronjobs.Cronjobs;
@@ -32,7 +33,9 @@ import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.featureflag.exceptions.NoLicenseKeyFoundException;
 import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.multitenancy.MultitenancyHelper;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -40,6 +43,7 @@ import io.supertokens.session.Session;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.multitenant.api.TestMultitenancyAPIHelper;
+import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.WebserverAPI;
 import org.junit.*;
 import org.junit.rules.TestRule;
@@ -737,6 +741,285 @@ public class FeatureFlagTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    private static String OPAQUE_KEY_WITH_MULTITENANCY_AND_ACCOUNTLINKING_FEATURE = "N2uEOdEzd1XZZ5VBSTGYaM7Ia4s8wAq" +
+            "RWFAxLqTYrB6GQ=vssOLo3c=PkFgcExkaXs=IA-d9UWccoNKsyUgNhOhcKtM1bjC5OLrYRpTAgN-2EbKYsQGGQRQHuUN4EO1V";
+
+    @Test
+    public void testAccountLinkingStatsArePresent() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(OPAQUE_KEY_WITH_MULTITENANCY_AND_ACCOUNTLINKING_FEATURE);
+
+        Multitenancy.addNewOrUpdateAppOrTenant(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                new TenantConfig(
+                        new TenantIdentifier(null, "a1", null),
+                        new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true),
+                        new JsonObject()
+                )
+        );
+
+        {
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://127.0.0.1:3567/ee/featureflag",
+                    null, 1000, 1000, null, WebserverAPI.getLatestCDIVersion().get(), "");
+            Assert.assertEquals("OK", response.get("status").getAsString());
+
+            JsonObject alStats = response.get("usageStats").getAsJsonObject().get("account_linking").getAsJsonObject();
+            assertNotNull(alStats);
+
+            assertEquals(3, alStats.entrySet().size());
+            assertFalse(alStats.get("usesAccountLinking").getAsBoolean());
+            assertEquals(0, alStats.get("totalUserCountWithMoreThanOneLoginMethod").getAsInt());
+
+            JsonArray maus = alStats.get("mauWithMoreThanOneLoginMethod").getAsJsonArray();
+            assertEquals(30, maus.size());
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testAccountLinkingStatsAreAccurate() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(OPAQUE_KEY_WITH_MULTITENANCY_AND_ACCOUNTLINKING_FEATURE);
+
+        AuthRecipeUserInfo user1 = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
+        AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "password");
+        AuthRecipeUserInfo user3 = EmailPassword.signUp(process.getProcess(), "test3@example.com", "password");
+
+        AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), user1.getSupertokensUserId());
+        AuthRecipe.createPrimaryUser(process.getProcess(), user3.getSupertokensUserId());
+
+        {
+            JsonObject responseBody = new JsonObject();
+            responseBody.addProperty("email", "test1@example.com");
+            responseBody.addProperty("password", "password");
+
+            JsonObject signInResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/signin", responseBody, 1000, 1000, null, SemVer.v4_0.get(),
+                    "emailpassword");
+
+            assertEquals(signInResponse.get("status").getAsString(), "OK");
+        }
+        {
+            JsonObject responseBody = new JsonObject();
+            responseBody.addProperty("email", "test2@example.com");
+            responseBody.addProperty("password", "password");
+
+            JsonObject signInResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/signin", responseBody, 1000, 1000, null, SemVer.v4_0.get(),
+                    "emailpassword");
+
+            assertEquals(signInResponse.get("status").getAsString(), "OK");
+        }
+        {
+            JsonObject responseBody = new JsonObject();
+            responseBody.addProperty("email", "test3@example.com");
+            responseBody.addProperty("password", "password");
+
+            JsonObject signInResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/signin", responseBody, 1000, 1000, null, SemVer.v4_0.get(),
+                    "emailpassword");
+
+            assertEquals(signInResponse.get("status").getAsString(), "OK");
+        }
+
+        {
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://127.0.0.1:3567/ee/featureflag",
+                    null, 1000, 1000, null, WebserverAPI.getLatestCDIVersion().get(), "");
+            Assert.assertEquals("OK", response.get("status").getAsString());
+
+            JsonObject alStats = response.get("usageStats").getAsJsonObject().get("account_linking").getAsJsonObject();
+            assertNotNull(alStats);
+
+            assertEquals(3, alStats.entrySet().size());
+            assertTrue(alStats.get("usesAccountLinking").getAsBoolean());
+            assertEquals(1, alStats.get("totalUserCountWithMoreThanOneLoginMethod").getAsInt());
+
+            JsonArray maus = alStats.get("mauWithMoreThanOneLoginMethod").getAsJsonArray();
+            assertEquals(30, maus.size());
+            assertEquals(1, maus.get(0).getAsInt());
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testAccountLinkingStatsWithDifferentStorages() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(OPAQUE_KEY_WITH_MULTITENANCY_AND_ACCOUNTLINKING_FEATURE);
+
+        {
+            JsonObject coreConfig = new JsonObject();
+            StorageLayer.getStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(coreConfig, 1);
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    new TenantConfig(
+                            new TenantIdentifier(null, null, "t1"),
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(true),
+                            coreConfig
+                    )
+            );
+        }
+
+        {
+            // tenant 1 users
+            AuthRecipeUserInfo user1 = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
+            AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "password");
+            AuthRecipeUserInfo user3 = EmailPassword.signUp(process.getProcess(), "test3@example.com", "password");
+
+            AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId());
+            AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), user1.getSupertokensUserId());
+            AuthRecipe.createPrimaryUser(process.getProcess(), user3.getSupertokensUserId());
+        }
+
+        {
+            // tenant 2 users
+            TenantIdentifier t = new TenantIdentifier(null, null, "t1");
+            TenantIdentifierWithStorage ts = t.withStorage(StorageLayer.getStorage(t, process.getProcess()));
+
+            // tenant 1 users
+            AuthRecipeUserInfo user1 = EmailPassword.signUp(ts, process.getProcess(), "test1@example.com", "password");
+            AuthRecipeUserInfo user2 = EmailPassword.signUp(ts, process.getProcess(), "test2@example.com", "password");
+            AuthRecipeUserInfo user3 = EmailPassword.signUp(ts, process.getProcess(), "test3@example.com", "password");
+
+            AuthRecipe.createPrimaryUser(process.getProcess(), ts.toAppIdentifierWithStorage(), user1.getSupertokensUserId());
+            AuthRecipe.linkAccounts(process.getProcess(), ts.toAppIdentifierWithStorage(), user2.getSupertokensUserId(), user1.getSupertokensUserId());
+            AuthRecipe.createPrimaryUser(process.getProcess(), ts.toAppIdentifierWithStorage(), user3.getSupertokensUserId());
+        }
+
+        { // tenant 1
+            {
+                JsonObject responseBody = new JsonObject();
+                responseBody.addProperty("email", "test1@example.com");
+                responseBody.addProperty("password", "password");
+
+                JsonObject signInResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/signin", responseBody, 1000, 1000, null, SemVer.v4_0.get(),
+                        "emailpassword");
+
+                assertEquals(signInResponse.get("status").getAsString(), "OK");
+            }
+            {
+                JsonObject responseBody = new JsonObject();
+                responseBody.addProperty("email", "test2@example.com");
+                responseBody.addProperty("password", "password");
+
+                JsonObject signInResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/signin", responseBody, 1000, 1000, null, SemVer.v4_0.get(),
+                        "emailpassword");
+
+                assertEquals(signInResponse.get("status").getAsString(), "OK");
+            }
+            {
+                JsonObject responseBody = new JsonObject();
+                responseBody.addProperty("email", "test3@example.com");
+                responseBody.addProperty("password", "password");
+
+                JsonObject signInResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/signin", responseBody, 1000, 1000, null, SemVer.v4_0.get(),
+                        "emailpassword");
+
+                assertEquals(signInResponse.get("status").getAsString(), "OK");
+            }
+        }
+
+        { // tenant 2
+            {
+                JsonObject responseBody = new JsonObject();
+                responseBody.addProperty("email", "test1@example.com");
+                responseBody.addProperty("password", "password");
+
+                JsonObject signInResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/t1/recipe/signin", responseBody, 1000, 1000, null, SemVer.v4_0.get(),
+                        "emailpassword");
+
+                assertEquals(signInResponse.get("status").getAsString(), "OK");
+            }
+            {
+                JsonObject responseBody = new JsonObject();
+                responseBody.addProperty("email", "test2@example.com");
+                responseBody.addProperty("password", "password");
+
+                JsonObject signInResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/t1/recipe/signin", responseBody, 1000, 1000, null, SemVer.v4_0.get(),
+                        "emailpassword");
+
+                assertEquals(signInResponse.get("status").getAsString(), "OK");
+            }
+            {
+                JsonObject responseBody = new JsonObject();
+                responseBody.addProperty("email", "test3@example.com");
+                responseBody.addProperty("password", "password");
+
+                JsonObject signInResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/t1/recipe/signin", responseBody, 1000, 1000, null, SemVer.v4_0.get(),
+                        "emailpassword");
+
+                assertEquals(signInResponse.get("status").getAsString(), "OK");
+            }
+        }
+
+
+        {
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://127.0.0.1:3567/ee/featureflag",
+                    null, 1000, 1000, null, WebserverAPI.getLatestCDIVersion().get(), "");
+            Assert.assertEquals("OK", response.get("status").getAsString());
+
+            JsonObject alStats = response.get("usageStats").getAsJsonObject().get("account_linking").getAsJsonObject();
+            assertNotNull(alStats);
+
+            assertEquals(3, alStats.entrySet().size());
+            assertTrue(alStats.get("usesAccountLinking").getAsBoolean());
+            assertEquals(2, alStats.get("totalUserCountWithMoreThanOneLoginMethod").getAsInt());
+
+            JsonArray maus = alStats.get("mauWithMoreThanOneLoginMethod").getAsJsonArray();
+            assertEquals(30, maus.size());
+            assertEquals(2, maus.get(0).getAsInt());
+        }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
