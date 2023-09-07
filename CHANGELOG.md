@@ -51,6 +51,10 @@ UPDATE all_auth_recipe_users
 SET primary_or_recipe_user_time_joined = time_joined
 WHERE primary_or_recipe_user_time_joined = 0;
 
+ALTER TABLE all_auth_recipe_users
+  ADD CONSTRAINT all_auth_recipe_users_primary_or_recipe_user_id_fkey
+    FOREIGN KEY (app_id, primary_or_recipe_user_id)
+    REFERENCES app_id_to_user_id (app_id, user_id) ON DELETE CASCADE;
 
 ALTER TABLE all_auth_recipe_users
     ALTER primary_or_recipe_user_id DROP DEFAULT;
