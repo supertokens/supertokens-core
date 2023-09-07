@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+## [5.0.2] - 2023-09-07
+
+- Fixed an encoding/decoding issue for certain access token payloads
+
 ## [5.0.1] - 2023-07-27
 
 - Fixes issue with access token parsing for really old access tokens (v1 and v2 access tokens)
