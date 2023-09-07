@@ -18,9 +18,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Db schema changes:
 
+- Removed index `all_auth_recipe_users_pagination_index` and added these instead:
+  - `all_auth_recipe_users_pagination_index1`
+  - `all_auth_recipe_users_pagination_index2`
+  - `all_auth_recipe_users_pagination_index3`
+  - `all_auth_recipe_users_pagination_index4`
+- Added new index `all_auth_recipe_users_recipe_id_index`
 - Added new index `all_auth_recipe_users_primary_user_id_index`.
-- Added new index `all_auth_recipe_users_primary_user_id_and_tenant_id_index`.
-- Modified `all_auth_recipe_users_pagination_index` index to be on `primary_or_recipe_user_id` instead of `user_id`
 - Added a two new columns in `all_auth_recipe_users`:
     - `primary_or_recipe_user_id` (default value is equal to `user_id` column)
     - `is_linked_or_is_a_primary_user` (default value is false)
@@ -44,11 +48,16 @@ ALTER TABLE all_auth_recipe_users
     ALTER primary_or_recipe_user_id DROP DEFAULT;
 
 DROP INDEX all_auth_recipe_users_pagination_index;
-CREATE INDEX all_auth_recipe_users_pagination_index ON all_auth_recipe_users (time_joined DESC,
-                                                                              primary_or_recipe_user_id DESC, tenant_id
-                                                                              DESC, app_id DESC);
-CREATE INDEX all_auth_recipe_users_primary_user_id_index ON all_auth_recipe_users (app_id, primary_or_recipe_user_id);
-CREATE INDEX all_auth_recipe_users_primary_user_id_and_tenant_id_index ON all_auth_recipe_users (app_id, tenant_id, primary_or_recipe_user_id);
+CREATE INDEX all_auth_recipe_users_pagination_index1 ON all_auth_recipe_users (
+  app_id, tenant_id, primary_or_recipe_user_time_joined DESC, primary_or_recipe_user_id DESC);
+CREATE INDEX all_auth_recipe_users_pagination_index2 ON all_auth_recipe_users (
+  app_id, tenant_id, primary_or_recipe_user_time_joined ASC, primary_or_recipe_user_id DESC);
+CREATE INDEX all_auth_recipe_users_pagination_index3 ON all_auth_recipe_users (
+  recipe_id, app_id, tenant_id, primary_or_recipe_user_time_joined DESC, primary_or_recipe_user_id DESC);
+CREATE INDEX all_auth_recipe_users_pagination_index4 ON all_auth_recipe_users (
+  recipe_id, app_id, tenant_id, primary_or_recipe_user_time_joined ASC, primary_or_recipe_user_id DESC);
+
+CREATE INDEX all_auth_recipe_users_primary_user_id_index ON all_auth_recipe_users (primary_or_recipe_user_id, app_id);
 
 ALTER TABLE emailpassword_pswd_reset_tokens DROP CONSTRAINT IF EXISTS emailpassword_pswd_reset_tokens_user_id_fkey;
 ALTER TABLE emailpassword_pswd_reset_tokens ADD CONSTRAINT emailpassword_pswd_reset_tokens_user_id_fkey FOREIGN KEY (app_id, user_id) REFERENCES app_id_to_user_id (app_id, user_id) ON DELETE CASCADE;
