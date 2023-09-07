@@ -40,9 +40,17 @@ ALTER TABLE all_auth_recipe_users
 ALTER TABLE all_auth_recipe_users
     ADD COLUMN is_linked_or_is_a_primary_user BOOLEAN NOT NULL DEFAULT FALSE;
 
+ALTER TABLE all_auth_recipe_users
+    ADD COLUMN primary_or_recipe_user_time_joined BIGINT NOT NULL DEFAULT 0;
+
 UPDATE all_auth_recipe_users
 SET primary_or_recipe_user_id = user_id
 WHERE primary_or_recipe_user_id = '0';
+
+UPDATE all_auth_recipe_users
+SET primary_or_recipe_user_time_joined = time_joined
+WHERE primary_or_recipe_user_time_joined = 0;
+
 
 ALTER TABLE all_auth_recipe_users
     ALTER primary_or_recipe_user_id DROP DEFAULT;
