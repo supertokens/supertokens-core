@@ -87,7 +87,7 @@ public class CreateOrUpdateThirdPartyConfigAPI extends WebserverAPI {
 
             boolean found = false;
 
-            for (ThirdPartyConfig.Provider provider: tenantConfig.thirdPartyConfig.providers) {
+            for (ThirdPartyConfig.Provider provider : tenantConfig.thirdPartyConfig.providers) {
                 // Loop through all the existing thirdParty providers in the db
 
                 if (!provider.thirdPartyId.equals(thirdPartyId)) {
@@ -96,7 +96,8 @@ public class CreateOrUpdateThirdPartyConfigAPI extends WebserverAPI {
                 } else {
                     // if the thirdPartyId is the same as the one we are trying to update, add the one from json input
                     // to the new list
-                    ThirdPartyConfig.Provider newProvider = new Gson().fromJson(config, ThirdPartyConfig.Provider.class);
+                    ThirdPartyConfig.Provider newProvider = new Gson().fromJson(config,
+                            ThirdPartyConfig.Provider.class);
                     newProviders.add(normalize(newProvider));
                     found = true;
                 }
@@ -110,11 +111,13 @@ public class CreateOrUpdateThirdPartyConfigAPI extends WebserverAPI {
                     tenantConfig.tenantIdentifier,
                     tenantConfig.emailPasswordConfig,
                     new ThirdPartyConfig(
-                            tenantConfig.thirdPartyConfig.enabled, newProviders.toArray(new ThirdPartyConfig.Provider[0])),
+                            tenantConfig.thirdPartyConfig.enabled,
+                            newProviders.toArray(new ThirdPartyConfig.Provider[0])),
                     tenantConfig.passwordlessConfig,
                     tenantConfig.coreConfig);
 
-            Multitenancy.addNewOrUpdateAppOrTenant(main, updatedConfig, shouldProtectProtectedConfig(req), skipValidation);
+            Multitenancy.addNewOrUpdateAppOrTenant(main, updatedConfig, shouldProtectProtectedConfig(req),
+                    skipValidation, true);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
@@ -134,7 +137,8 @@ public class CreateOrUpdateThirdPartyConfigAPI extends WebserverAPI {
     private ThirdPartyConfig.Provider normalize(ThirdPartyConfig.Provider provider) {
         ThirdPartyConfig.UserInfoMap normalizedUserInfoMap = provider.userInfoMap;
         if (normalizedUserInfoMap != null) {
-            normalizedUserInfoMap = new ThirdPartyConfig.UserInfoMap(normalizedUserInfoMap.fromIdTokenPayload, normalizedUserInfoMap.fromUserInfoAPI);
+            normalizedUserInfoMap = new ThirdPartyConfig.UserInfoMap(normalizedUserInfoMap.fromIdTokenPayload,
+                    normalizedUserInfoMap.fromUserInfoAPI);
         }
 
         return new ThirdPartyConfig.Provider(

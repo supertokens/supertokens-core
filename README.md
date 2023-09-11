@@ -15,7 +15,7 @@ Supertokens architecture is optimized to add secure authentication for your user
 **Three building blocks of SuperTokens architecture**
 
 1. Frontend SDK: Manages session tokens and renders login UI widgets
-2. Backend SDK: Provides APIs for sign-up, sign-in, signout, session refreshing etc. Your Frontend will talk to these APIs
+2. Backend SDK: Provides APIs for sign-up, sign-in, signout, session refreshing, etc. Your Frontend will talk to these APIs
 3. SuperTokens Core: The HTTP service for the core auth logic and database operations. This service is used by the Backend SDK
 
 ## Supports multiple auth strategies
@@ -49,29 +49,29 @@ Guides to setup different recipes
 ### If you like our project, please :star2: this repository! For feedback, feel free to join our [Discord](https://supertokens.io/discord), or create an issue on this repo
 
 ## 🚀 What is SuperTokens?
-SuperTokens is an open core alternative to proprietary login providers like Auth0 or AWS Cognito. We are
+SuperTokens is an open-core alternative to proprietary login providers like Auth0 or AWS Cognito. We are
  different because we offer:
 - Open source: SuperTokens can be used for free, forever, with no limits on the number of users.
 - An on-premises deployment so that you control 100% of your user data, using your own database.
-- An end to end solution with login, sign ups, user and session management, without all the complexities of OAuth protocols.
+- An end-to-end solution with login, sign-ups, user and session management, without all the complexities of OAuth protocols.
 - Ease of implementation and higher security.
 - Extensibility: Anyone can contribute and make SuperTokens better!
 
 ### Philosophy
-Authentication directly affects UX, dev experience and security of any app. We believe that
- current solutions are unable to optimise for all three "pillars", leading to a large number of
-  applications hand rolling their own auth. This not only leads to security issues, but is also a massive
+Authentication directly affects the UX, dev experience, and security of any app. We believe that
+ current solutions cannot optimize for all three "pillars", leading to many
+  applications hand-rolling their own auth. This not only leads to security issues but is also a massive
    time drain.
   
 We want to change that - we believe the only way is to provide a solution that has the right level of
- abstraction, gives you maximum control, is secure, and is simple to use - just like if you build it yourself,
-  from scratch (minus the time to learn, build and maintain).
+ abstraction gives you maximum control, is secure, and is simple to use - just like if you build it yourself,
+  from scratch (minus the time to learn, build, and maintain).
   
-We also believe in the principle of least vendor lockin. Your having full control of your user's data means that you can switch away from SuperTokens without forcing your existing users to logout, reset their passwords or in the worst case, sign up again. 
+We also believe in the principle of least vendor lock-in. Your having full control of your user's data means that you can switch away from SuperTokens without forcing your existing users to logout, reset their passwords, or in the worst case, sign up again. 
 
 ### Features - [Click here](https://thirdpartyemailpassword.demo.supertokens.io/) to see the demo app.
 - Please visit [our website](https://supertokens.io/pricing) to see the list of features.
-- We want to make features as decoupled as possible. This means, you can use SuperTokens for just login, or just session management, or both. In fact, we also offer session management integrations with other login providers like Auth0.
+- We want to make features as decoupled as possible. This means you can use SuperTokens for just login, or just session management, or both. In fact, we also offer session management integrations with other login providers like Auth0.
 
 
 ### Documentation
@@ -85,15 +85,15 @@ Please find an [architecture diagram here](https://supertokens.io/docs/community
 **For more information, please visit our [GitHub wiki section](https://github.com/supertokens/supertokens-core/wiki/SuperTokens-Architecture).**
 
 ## ☕ Why Java?
-- ✅ Whilst running Java can seem difficult, we provide the JDK along with the binary / docker image when distributing it. This makes running SuperTokens just like running any other http microservice.
-- ✅ Java has a very mature ecosystem. This implies that third party libraries have been battle tested.
+- ✅ Whilst running Java can seem difficult, we provide the JDK along with the binary/docker image when distributing it. This makes running SuperTokens just like running any other HTTP microservice.
+- ✅ Java has a very mature ecosystem. This implies that third-party libraries have been battle-tested.
 - ✅ Java's strong type system ensures fewer bugs and easier maintainability. This is especially important when many people are expected to work on the same project.
-- ✅ Our team is most comfortable with Java and hiring for great Java developers is relatively easy as well.
+- ✅ Our team is most comfortable with Java and hiring great Java developers is relatively easy as well.
 - ✅ One of the biggest criticisms of Java is memory usage. We have three solutions to this: 
-   - The most frequent auth related operation is session verification - this happens within the backend SDK (node, python, Go) without contacting the Java core. Therefore, a single instance of the core can handle several 10s of thousands of users fairly easily.
-   - We have carefully chosen our dependencies. For eg: we use an embedded tomcat server instead of a higher level web framework.
-   - We also plan on using [GraalVM](https://www.graalvm.org/) in the future and this can reduce memory usage down by 95%! 
-- ✅ If you require any modifications to the auth APIs, those would need to be done on the backend SDK level (for example Node, Golang, Python..). So you’d rarely need to directly modify / work  with the Java code in this repo.
+   - The most frequent auth-related operation is session verification - this happens within the backend SDK (node, python, Go) without contacting the Java core. Therefore, a single instance of the core can handle several 10s of thousands of users fairly easily.
+   - We have carefully chosen our dependencies. For eg: we use an embedded tomcat server instead of a higher-level web framework.
+   - We also plan on using [GraalVM](https://www.graalvm.org/) in the future and this can reduce memory usage by 95%! 
+- ✅ If you require any modifications to the auth APIs, those would need to be done on the backend SDK level (for example Node, Golang, Python..). So you’d rarely need to directly modify/work  with the Java code in this repo.
 
 ## 🔥 SuperTokens vs others
 Please find a detailed comparison chart [on our website](https://supertokens.io/pricing#comparison-chart)
@@ -218,7 +218,7 @@ Portions of this software are licensed as follows:
 
 * All content that resides under the "ee/" directory of this repository, if that directory exists, is licensed under the
   license defined in "ee/LICENSE.md".
-* All third party components incorporated into the SuperTokens Software are licensed under the original license provided
+* All third-party components incorporated into the SuperTokens Software are licensed under the original license provided
   by the owner of the applicable component.
-* Content outside of the above mentioned directories or restrictions above is available under the "Apache 2.0"
+* Content outside of the above-mentioned directories or restrictions above is available under the "Apache 2.0"
   license as defined in the level "LICENSE.md" file

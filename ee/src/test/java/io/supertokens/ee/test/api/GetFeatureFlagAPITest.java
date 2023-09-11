@@ -28,6 +28,7 @@ public class GetFeatureFlagAPITest {
     @Before
     public void beforeEach() {
         Utils.reset();
+        FeatureFlag.clearURLClassLoader();
     }
 
     @Test

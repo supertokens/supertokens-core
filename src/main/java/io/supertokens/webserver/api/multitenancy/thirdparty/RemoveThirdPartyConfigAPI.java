@@ -68,7 +68,7 @@ public class RemoveThirdPartyConfigAPI extends WebserverAPI {
             // Create a new list of providers skipping the thirdPartyId provided in the input
             List<ThirdPartyConfig.Provider> newProviders = new ArrayList<>();
             boolean found = false;
-            for (ThirdPartyConfig.Provider provider: config.thirdPartyConfig.providers) {
+            for (ThirdPartyConfig.Provider provider : config.thirdPartyConfig.providers) {
                 if (!provider.thirdPartyId.equals(thirdPartyId)) {
                     newProviders.add(provider);
                 } else {
@@ -84,7 +84,7 @@ public class RemoveThirdPartyConfigAPI extends WebserverAPI {
                     config.passwordlessConfig,
                     config.coreConfig);
 
-            Multitenancy.addNewOrUpdateAppOrTenant(main, updatedConfig, shouldProtectProtectedConfig(req));
+            Multitenancy.addNewOrUpdateAppOrTenant(main, updatedConfig, shouldProtectProtectedConfig(req), false, true);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
