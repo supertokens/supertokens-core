@@ -212,17 +212,20 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         return addNewOrUpdateAppOrTenant(main, newTenant, false);
     }
 
+    @TestOnly
     public static boolean addNewOrUpdateAppOrTenant(Main main, TenantConfig newTenant,
                                                     boolean shouldPreventDbConfigUpdate)
-            throws CannotModifyBaseConfigException, BadPermissionException,
-            StorageQueryException, FeatureNotEnabledException, IOException, InvalidConfigException,
-            InvalidProviderConfigException, TenantOrAppNotFoundException {
-        return addNewOrUpdateAppOrTenant(main, newTenant, shouldPreventDbConfigUpdate, false);
+            throws InvalidProviderConfigException, StorageQueryException, FeatureNotEnabledException,
+            TenantOrAppNotFoundException, IOException, InvalidConfigException, CannotModifyBaseConfigException,
+            BadPermissionException {
+        return addNewOrUpdateAppOrTenant(main, newTenant, shouldPreventDbConfigUpdate, false, true);
     }
+
 
     public static boolean addNewOrUpdateAppOrTenant(Main main, TenantConfig newTenant,
                                                     boolean shouldPreventProtectedConfigUpdate,
-                                                    boolean skipThirdPartyConfigValidation)
+                                                    boolean skipThirdPartyConfigValidation,
+                                                    boolean forceReloadResources)
             throws CannotModifyBaseConfigException, BadPermissionException,
             StorageQueryException, FeatureNotEnabledException, IOException, InvalidConfigException,
             InvalidProviderConfigException, TenantOrAppNotFoundException {
@@ -259,7 +262,8 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                         .addTenantIdInTargetStorage(newTenant.tenantIdentifier);
             } catch (TenantOrAppNotFoundException e) {
                 // it should never come here, since we just added the tenant above.. but just in case.
-                return addNewOrUpdateAppOrTenant(main, newTenant, shouldPreventProtectedConfigUpdate);
+                return addNewOrUpdateAppOrTenant(main, newTenant, shouldPreventProtectedConfigUpdate,
+                        skipThirdPartyConfigValidation, forceReloadResources);
             }
             return true;
         } catch (DuplicateTenantException e) {
@@ -279,7 +283,8 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                 } catch (TenantOrAppNotFoundException ex) {
                     // this can happen cause of a race condition if the tenant was deleted in the middle
                     // of it being recreated.
-                    return addNewOrUpdateAppOrTenant(main, newTenant, shouldPreventProtectedConfigUpdate);
+                    return addNewOrUpdateAppOrTenant(main, newTenant, shouldPreventProtectedConfigUpdate,
+                            skipThirdPartyConfigValidation, forceReloadResources);
                 } catch (DuplicateTenantException ex) {
                     // we treat this as a success
                     return false;
@@ -300,7 +305,9 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         } catch (DuplicateClientTypeException e) {
             throw new InvalidProviderConfigException("Duplicate clientType was specified in the clients list.");
         } finally {
-            MultitenancyHelper.getInstance(main).forceReloadAllResources(tenantsThatChanged);
+            if (forceReloadResources) {
+                MultitenancyHelper.getInstance(main).forceReloadAllResources(tenantsThatChanged);
+            }
         }
     }
 

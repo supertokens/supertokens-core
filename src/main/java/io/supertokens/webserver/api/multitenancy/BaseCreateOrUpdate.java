@@ -43,11 +43,15 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
         super(main, RECIPE_ID.MULTITENANCY.toString());
     }
 
-    protected void handle(HttpServletRequest req, TenantIdentifier sourceTenantIdentifier, TenantIdentifier targetTenantIdentifier, Boolean emailPasswordEnabled, Boolean thirdPartyEnabled, Boolean passwordlessEnabled, JsonObject coreConfig, HttpServletResponse resp)
+    protected void handle(HttpServletRequest req, TenantIdentifier sourceTenantIdentifier,
+                          TenantIdentifier targetTenantIdentifier, Boolean emailPasswordEnabled,
+                          Boolean thirdPartyEnabled, Boolean passwordlessEnabled, JsonObject coreConfig,
+                          HttpServletResponse resp)
             throws ServletException, IOException {
 
         TenantConfig tenantConfig = Multitenancy.getTenantInfo(main,
-                new TenantIdentifier(targetTenantIdentifier.getConnectionUriDomain(), targetTenantIdentifier.getAppId(), targetTenantIdentifier.getTenantId()));
+                new TenantIdentifier(targetTenantIdentifier.getConnectionUriDomain(), targetTenantIdentifier.getAppId(),
+                        targetTenantIdentifier.getTenantId()));
 
         boolean createdNew = false;
 
@@ -119,7 +123,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
             Multitenancy.checkPermissionsForCreateOrUpdate(
                     main, sourceTenantIdentifier, tenantConfig.tenantIdentifier);
 
-            Multitenancy.addNewOrUpdateAppOrTenant(main, tenantConfig, shouldProtectProtectedConfig(req));
+            Multitenancy.addNewOrUpdateAppOrTenant(main, tenantConfig, shouldProtectProtectedConfig(req), false, true);
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             result.addProperty("createdNew", createdNew);

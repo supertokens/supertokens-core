@@ -29,6 +29,7 @@ public class CronjobTest {
     @Before
     public void beforeEach() {
         Utils.reset();
+        FeatureFlag.clearURLClassLoader();
     }
 
 
