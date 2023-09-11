@@ -591,7 +591,7 @@ public class EmailPassword {
                     }
                     boolean foundEmailPasswordLoginMethod = false;
                     for (LoginMethod lm : user.loginMethods) {
-                        if (lm.recipeId == RECIPE_ID.EMAIL_PASSWORD) {
+                        if (lm.recipeId == RECIPE_ID.EMAIL_PASSWORD && lm.getSupertokensUserId().equals(userId)) {
                             foundEmailPasswordLoginMethod = true;
                             break;
                         }

@@ -424,10 +424,10 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                     }
 
                     for (String email : emails) {
-                        AuthRecipeUserInfo[] users = storage.listPrimaryUsersByEmail_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con, email);
-                        for (AuthRecipeUserInfo user : users) {
-                            if (user.tenantIds.contains(tenantId) && !user.getSupertokensUserId().equals(userId)) {
-                                for (LoginMethod lm1 : user.loginMethods) {
+                        AuthRecipeUserInfo[] usersWithSameEmail = storage.listPrimaryUsersByEmail_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con, email);
+                        for (AuthRecipeUserInfo userWithSameEmail : usersWithSameEmail) {
+                            if (userWithSameEmail.isPrimaryUser && userWithSameEmail.tenantIds.contains(tenantId) && !userWithSameEmail.getSupertokensUserId().equals(userId)) {
+                                for (LoginMethod lm1 : userWithSameEmail.loginMethods) {
                                     if (lm1.tenantIds.contains(tenantId)) {
                                         for (LoginMethod lm2 : userToAssociate.loginMethods) {
                                             if (lm1.recipeId.equals(lm2.recipeId) && email.equals(lm1.email) && lm1.email.equals(lm2.email)) {
@@ -436,16 +436,16 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                                         }
                                     }
                                 }
-                                throw new StorageTransactionLogicException(new AnotherPrimaryUserWithEmailAlreadyExistsException(user.getSupertokensUserId()));
+                                throw new StorageTransactionLogicException(new AnotherPrimaryUserWithEmailAlreadyExistsException(userWithSameEmail.getSupertokensUserId()));
                             }
                         }
                     }
 
                     for (String phoneNumber : phoneNumbers) {
-                        AuthRecipeUserInfo[] users = storage.listPrimaryUsersByPhoneNumber_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con, phoneNumber);
-                        for (AuthRecipeUserInfo user : users) {
-                            if (user.tenantIds.contains(tenantId) && !user.getSupertokensUserId().equals(userId)) {
-                                for (LoginMethod lm1 : user.loginMethods) {
+                        AuthRecipeUserInfo[] usersWithSamePhoneNumber = storage.listPrimaryUsersByPhoneNumber_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con, phoneNumber);
+                        for (AuthRecipeUserInfo userWithSamePhoneNumber : usersWithSamePhoneNumber) {
+                            if (userWithSamePhoneNumber.tenantIds.contains(tenantId) && !userWithSamePhoneNumber.getSupertokensUserId().equals(userId)) {
+                                for (LoginMethod lm1 : userWithSamePhoneNumber.loginMethods) {
                                     if (lm1.tenantIds.contains(tenantId)) {
                                         for (LoginMethod lm2 : userToAssociate.loginMethods) {
                                             if (lm1.recipeId.equals(lm2.recipeId) && phoneNumber.equals(lm1.phoneNumber) && lm1.phoneNumber.equals(lm2.phoneNumber)) {
@@ -454,16 +454,16 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                                         }
                                     }
                                 }
-                                throw new StorageTransactionLogicException(new AnotherPrimaryUserWithPhoneNumberAlreadyExistsException(user.getSupertokensUserId()));
+                                throw new StorageTransactionLogicException(new AnotherPrimaryUserWithPhoneNumberAlreadyExistsException(userWithSamePhoneNumber.getSupertokensUserId()));
                             }
                         }
                     }
 
                     for (LoginMethod.ThirdParty tp : thirdParties) {
-                        AuthRecipeUserInfo[] users = storage.listPrimaryUsersByThirdPartyInfo_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con, tp.id, tp.userId);
-                        for (AuthRecipeUserInfo user : users) {
-                            if (user.tenantIds.contains(tenantId) && !user.getSupertokensUserId().equals(userId)) {
-                                for (LoginMethod lm1 : user.loginMethods) {
+                        AuthRecipeUserInfo[] usersWithSameThirdPartyInfo = storage.listPrimaryUsersByThirdPartyInfo_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con, tp.id, tp.userId);
+                        for (AuthRecipeUserInfo userWithSameThirdPartyInfo : usersWithSameThirdPartyInfo) {
+                            if (userWithSameThirdPartyInfo.tenantIds.contains(tenantId) && !userWithSameThirdPartyInfo.getSupertokensUserId().equals(userId)) {
+                                for (LoginMethod lm1 : userWithSameThirdPartyInfo.loginMethods) {
                                     if (lm1.tenantIds.contains(tenantId)) {
                                         for (LoginMethod lm2 : userToAssociate.loginMethods) {
                                             if (lm1.recipeId.equals(lm2.recipeId) && tp.equals(lm1.thirdParty) && lm1.thirdParty.equals(lm2.thirdParty)) {
@@ -473,7 +473,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                                     }
                                 }
 
-                                throw new StorageTransactionLogicException(new AnotherPrimaryUserWithThirdPartyInfoAlreadyExistsException(user.getSupertokensUserId()));
+                                throw new StorageTransactionLogicException(new AnotherPrimaryUserWithThirdPartyInfoAlreadyExistsException(userWithSameThirdPartyInfo.getSupertokensUserId()));
                             }
                         }
                     }
