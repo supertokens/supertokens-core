@@ -245,6 +245,19 @@ public class MultitenantTest {
 
         TestCase[] testCases = new TestCase[]{
                 new TestCase(new TestCaseStep[]{
+                        new CreateEmailPasswordUser(t1, "test@example.com"),
+                        new CreatePlessUserWithEmail(t2, "test@example.com"),
+                        new MakePrimaryUser(t1, 0),
+                        new AssociateUserToTenant(t2, 0),
+                }),
+                new TestCase(new TestCaseStep[]{
+                        new CreateEmailPasswordUser(t1, "test@example.com"),
+                        new CreatePlessUserWithEmail(t2, "test@example.com"),
+                        new AssociateUserToTenant(t2, 0),
+                        new MakePrimaryUser(t1, 0),
+                }),
+
+                new TestCase(new TestCaseStep[]{
                         new CreateEmailPasswordUser(t1, "test1@example.com"),
                         new CreateEmailPasswordUser(t2, "test2@example.com"),
                         new MakePrimaryUser(t1, 0),
