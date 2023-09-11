@@ -161,6 +161,82 @@ public class MultitenantTest {
     }
 
     @Test
+    public void testUserAreNotAutomaticallySharedBetweenTenantsOfLinkedAccountsForPless() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        createTenants(process.getProcess());
+
+        t1 = new TenantIdentifier(null, "a1", null);
+        t2 = new TenantIdentifier(null, "a1", "t1");
+
+        TenantIdentifierWithStorage t1WithStorage = t1.withStorage(StorageLayer.getStorage(t1, process.getProcess()));
+        TenantIdentifierWithStorage t2WithStorage = t2.withStorage(StorageLayer.getStorage(t2, process.getProcess()));
+
+        AuthRecipeUserInfo user1 = EmailPassword.signUp(t1WithStorage, process.getProcess(), "test@example.com", "password");
+        Passwordless.CreateCodeResponse user2Code = Passwordless.createCode(t1WithStorage, process.getProcess(),
+                "test@example.com", null, null, null);
+        AuthRecipeUserInfo user2 = Passwordless.consumeCode(t1WithStorage, process.getProcess(), user2Code.deviceId, user2Code.deviceIdHash, user2Code.userInputCode, null).user;
+
+        AuthRecipe.createPrimaryUser(process.getProcess(), t1WithStorage.toAppIdentifierWithStorage(), user1.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.getProcess(), t1WithStorage.toAppIdentifierWithStorage(), user2.getSupertokensUserId(), user1.getSupertokensUserId());
+
+        Multitenancy.addUserIdToTenant(process.getProcess(), t2WithStorage, user1.getSupertokensUserId());
+
+        {   // user2 should not be shared in tenant2
+            Passwordless.CreateCodeResponse user3Code = Passwordless.createCode(t2WithStorage, process.getProcess(),
+                    "test@example.com", null, null, null);
+            Passwordless.ConsumeCodeResponse res = Passwordless.consumeCode(t2WithStorage, process.getProcess(),
+                    user3Code.deviceId, user3Code.deviceIdHash, user3Code.userInputCode, null);
+            assertTrue(res.createdNewUser);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testUserAreNotAutomaticallySharedBetweenTenantsOfLinkedAccountsForTP() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        createTenants(process.getProcess());
+
+        t1 = new TenantIdentifier(null, "a1", null);
+        t2 = new TenantIdentifier(null, "a1", "t1");
+
+        TenantIdentifierWithStorage t1WithStorage = t1.withStorage(StorageLayer.getStorage(t1, process.getProcess()));
+        TenantIdentifierWithStorage t2WithStorage = t2.withStorage(StorageLayer.getStorage(t2, process.getProcess()));
+
+        AuthRecipeUserInfo user1 = EmailPassword.signUp(t1WithStorage, process.getProcess(), "test@example.com", "password");
+        AuthRecipeUserInfo user2 = ThirdParty.signInUp(t1WithStorage, process.getProcess(), "google", "googleid1", "test@example.com").user;
+
+        AuthRecipe.createPrimaryUser(process.getProcess(), t1WithStorage.toAppIdentifierWithStorage(), user1.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.getProcess(), t1WithStorage.toAppIdentifierWithStorage(), user2.getSupertokensUserId(), user1.getSupertokensUserId());
+
+        Multitenancy.addUserIdToTenant(process.getProcess(), t2WithStorage, user1.getSupertokensUserId());
+
+        {   // user2 should not be shared in tenant2
+            ThirdParty.SignInUpResponse res = ThirdParty.signInUp(t2WithStorage, process.getProcess(), "google",
+                    "googleid1", "test@example.com");
+            assertTrue(res.createdNewUser);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
     public void testVariousCases() throws Exception {
         t1 = new TenantIdentifier(null, "a1", null);
         t2 = new TenantIdentifier(null, "a1", "t1");
