@@ -23,6 +23,7 @@ import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.authRecipe.exception.AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
+import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
@@ -255,6 +256,13 @@ public class MultitenantTest {
                         new CreatePlessUserWithEmail(t2, "test@example.com"),
                         new AssociateUserToTenant(t2, 0),
                         new MakePrimaryUser(t1, 0),
+                }),
+                new TestCase(new TestCaseStep[]{
+                        new CreateEmailPasswordUser(t1, "test@example.com"),
+                        new CreatePlessUserWithEmail(t2, "test@example.com"),
+                        new MakePrimaryUser(t1, 0),
+                        new LinkAccounts(t1, 0, 1),
+                        new SignInEmailPasswordUser(t2, 0).expect(new WrongCredentialsException())
                 }),
 
                 new TestCase(new TestCaseStep[]{
@@ -829,5 +837,21 @@ public class MultitenantTest {
             TenantIdentifierWithStorage tenantIdentifierWithStorage = tenantIdentifier.withStorage(StorageLayer.getStorage(tenantIdentifier, main));
             AuthRecipe.unlinkAccounts(main, tenantIdentifierWithStorage.toAppIdentifierWithStorage(), TestCase.users.get(userIndex).getSupertokensUserId());
         }
+    }
+
+    private static class SignInEmailPasswordUser extends TestCaseStep {
+        TenantIdentifier tenantIdentifier;
+        int userIndex;
+
+            public SignInEmailPasswordUser(TenantIdentifier tenantIdentifier, int userIndex) {
+                this.tenantIdentifier = tenantIdentifier;
+                this.userIndex = userIndex;
+            }
+
+            @Override
+            public void execute(Main main) throws Exception {
+                TenantIdentifierWithStorage tenantIdentifierWithStorage = tenantIdentifier.withStorage(StorageLayer.getStorage(tenantIdentifier, main));
+                EmailPassword.signIn(tenantIdentifierWithStorage, main, TestCase.users.get(userIndex).loginMethods[0].email, "password");
+            }
     }
 }
