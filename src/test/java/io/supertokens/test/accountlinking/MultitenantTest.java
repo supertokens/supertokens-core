@@ -32,6 +32,7 @@ import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.exceptions.PhoneNumberChangeNotAllowedException;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
+import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
@@ -446,6 +447,32 @@ public class MultitenantTest {
                         new CreateThirdPartyUser(t1, "google", "googleid1", "test3@example.com").expect(new EmailChangeNotAllowedException()),
                         new CreateThirdPartyUser(t1, "google", "googleid3", "test1@example.com").expect(new EmailChangeNotAllowedException()),
                 }),
+                new TestCase(new TestCaseStep[]{
+                   new CreateEmailPasswordUser(t1, "test@example.com"),
+                   new CreateEmailPasswordUser(t1, "test2@example.com"),
+                   new MakePrimaryUser(t1, 0),
+                   new LinkAccounts(t1, 0, 1),
+                   new UnlinkAccount(t1, 0),
+                   new AssociateUserToTenant(t2, 0).expect(new UnknownUserIdException()),
+                }),
+
+                new TestCase(new TestCaseStep[]{
+                        new CreatePlessUserWithEmail(t1, "test@example.com"),
+                        new CreatePlessUserWithEmail(t1, "test2@example.com"),
+                        new MakePrimaryUser(t1, 0),
+                        new LinkAccounts(t1, 0, 1),
+                        new UnlinkAccount(t1, 0),
+                        new AssociateUserToTenant(t2, 0).expect(new UnknownUserIdException()),
+                }),
+
+                new TestCase(new TestCaseStep[]{
+                        new CreateThirdPartyUser(t1, "google", "googleid1", "test@example.com"),
+                        new CreateThirdPartyUser(t1, "google", "googleid2", "test2@example.com"),
+                        new MakePrimaryUser(t1, 0),
+                        new LinkAccounts(t1, 0, 1),
+                        new UnlinkAccount(t1, 0),
+                        new AssociateUserToTenant(t2, 0).expect(new UnknownUserIdException()),
+                }),
         };
 
         int i = 0;
@@ -696,6 +723,22 @@ public class MultitenantTest {
         public void execute(Main main) throws Exception {
             TenantIdentifierWithStorage tenantIdentifierWithStorage = tenantIdentifier.withStorage(StorageLayer.getStorage(tenantIdentifier, main));
             Passwordless.updateUser(tenantIdentifierWithStorage.toAppIdentifierWithStorage(), TestCase.users.get(userIndex).getSupertokensUserId(), null, new Passwordless.FieldUpdate(phoneNumber));
+        }
+    }
+
+    private static class UnlinkAccount extends TestCaseStep {
+        TenantIdentifier tenantIdentifier;
+        int userIndex;
+
+        public UnlinkAccount(TenantIdentifier tenantIdentifier, int userIndex) {
+            this.tenantIdentifier = tenantIdentifier;
+            this.userIndex = userIndex;
+        }
+
+        @Override
+        public void execute(Main main) throws Exception {
+            TenantIdentifierWithStorage tenantIdentifierWithStorage = tenantIdentifier.withStorage(StorageLayer.getStorage(tenantIdentifier, main));
+            AuthRecipe.unlinkAccounts(main, tenantIdentifierWithStorage.toAppIdentifierWithStorage(), TestCase.users.get(userIndex).getSupertokensUserId());
         }
     }
 }
