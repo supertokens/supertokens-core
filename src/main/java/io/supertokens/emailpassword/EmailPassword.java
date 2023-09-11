@@ -177,7 +177,7 @@ public class EmailPassword {
                 LoginMethod loginMethod = null;
                 for (AuthRecipeUserInfo currUser : allUsers) {
                     for (LoginMethod currLM : currUser.loginMethods) {
-                        if (currLM.email.equals(email) && currLM.recipeId == RECIPE_ID.EMAIL_PASSWORD) {
+                        if (currLM.email.equals(email) && currLM.recipeId == RECIPE_ID.EMAIL_PASSWORD && currLM.tenantIds.contains(tenantIdentifierWithStorage.getTenantId())) {
                             userInfoToBeUpdated = currUser;
                             loginMethod = currLM;
                             break;
@@ -246,7 +246,7 @@ public class EmailPassword {
         LoginMethod lM = null;
         for (AuthRecipeUserInfo currUser : users) {
             for (LoginMethod currLM : currUser.loginMethods) {
-                if (currLM.recipeId == RECIPE_ID.EMAIL_PASSWORD && currLM.email.equals(email)) {
+                if (currLM.recipeId == RECIPE_ID.EMAIL_PASSWORD && currLM.email.equals(email) && currLM.tenantIds.contains(tenantIdentifierWithStorage.getTenantId())) {
                     user = currUser;
                     lM = currLM;
                 }
