@@ -24,6 +24,7 @@ import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.utils.SemVer;
+import io.supertokens.webserver.WebserverAPI;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -207,7 +208,7 @@ public class TestMultitenancyAPIHelper {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/multitenancy/tenant/user"),
                 requestBody, 1000, 1000, null,
-                SemVer.v3_0.get(), "multitenancy");
+                WebserverAPI.getLatestCDIVersion().get(), "multitenancy");
 
         return response;
     }
@@ -220,7 +221,7 @@ public class TestMultitenancyAPIHelper {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/multitenancy/tenant/user/remove"),
                 requestBody, 1000, 1000, null,
-                SemVer.v3_0.get(), "multitenancy");
+                WebserverAPI.getLatestCDIVersion().get(), "multitenancy");
 
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
         return response;

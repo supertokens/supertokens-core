@@ -513,38 +513,13 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         }
     }
 
-    @TestOnly
     public static boolean removeUserIdFromTenant(Main main, TenantIdentifierWithStorage tenantIdentifierWithStorage,
                                                  String userId, String externalUserId)
             throws FeatureNotEnabledException, TenantOrAppNotFoundException, StorageQueryException,
             UnknownUserIdException {
-        try {
-            return removeUserIdFromTenant(main, tenantIdentifierWithStorage, userId, externalUserId, false);
-        } catch (DisassociationNotAllowedException e) {
-            throw new IllegalStateException("should never happen");
-        }
-    }
-
-    public static boolean removeUserIdFromTenant(Main main, TenantIdentifierWithStorage tenantIdentifierWithStorage,
-                                                 String userId, String externalUserId, boolean disallowLastTenantDisassociation)
-            throws FeatureNotEnabledException, TenantOrAppNotFoundException, StorageQueryException,
-            UnknownUserIdException, DisassociationNotAllowedException {
         if (Arrays.stream(FeatureFlag.getInstance(main, new AppIdentifier(null, null)).getEnabledFeatures())
                 .noneMatch(ee_features -> ee_features == EE_FEATURES.MULTI_TENANCY)) {
             throw new FeatureNotEnabledException(EE_FEATURES.MULTI_TENANCY);
-        }
-
-        if (disallowLastTenantDisassociation) {
-            AuthRecipeUserInfo userInfo = AuthRecipe.getUserById(tenantIdentifierWithStorage.toAppIdentifierWithStorage(), userId);
-            if (userInfo != null) {
-                for (LoginMethod lM : userInfo.loginMethods) {
-                    if (lM.getSupertokensUserId().equals(userId)) {
-                        if (lM.tenantIds.size() == 1 && lM.tenantIds.contains(tenantIdentifierWithStorage.getTenantId())) {
-                            throw new DisassociationNotAllowedException();
-                        }
-                    }
-                }
-            }
         }
 
         boolean finalDidExist = false;
