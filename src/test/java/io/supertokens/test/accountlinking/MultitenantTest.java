@@ -21,6 +21,7 @@ import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.authRecipe.exception.AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException;
+import io.supertokens.authRecipe.exception.RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
@@ -32,6 +33,7 @@ import io.supertokens.multitenancy.exception.*;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.exceptions.PhoneNumberChangeNotAllowedException;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
@@ -45,6 +47,7 @@ import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
 import io.supertokens.thirdparty.ThirdParty;
+import io.supertokens.userroles.UserRoles;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -232,6 +235,97 @@ public class MultitenantTest {
                     "googleid1", "test@example.com");
             assertTrue(res.createdNewUser);
         }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testTenantDeletionWithAccountLinking() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        createTenants(process.getProcess());
+
+        t1 = new TenantIdentifier(null, "a1", null);
+        t2 = new TenantIdentifier(null, "a1", "t1");
+
+        TenantIdentifierWithStorage t1WithStorage = t1.withStorage(StorageLayer.getStorage(t1, process.getProcess()));
+        TenantIdentifierWithStorage t2WithStorage = t2.withStorage(StorageLayer.getStorage(t2, process.getProcess()));
+
+        AuthRecipeUserInfo user1 = EmailPassword.signUp(t2WithStorage, process.getProcess(), "test@example.com", "password");
+        AuthRecipeUserInfo user2 = ThirdParty.signInUp(t2WithStorage, process.getProcess(), "google", "googleid1", "test@example.com").user;
+
+        AuthRecipe.createPrimaryUser(process.getProcess(), t2WithStorage.toAppIdentifierWithStorage(), user1.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.getProcess(), t2WithStorage.toAppIdentifierWithStorage(), user2.getSupertokensUserId(), user1.getSupertokensUserId());
+
+        Multitenancy.deleteTenant(t2, process.getProcess());
+
+        AuthRecipeUserInfo getUser1 = AuthRecipe.getUserById(t1WithStorage.toAppIdentifierWithStorage(), user1.getSupertokensUserId());
+        for (LoginMethod lm : getUser1.loginMethods) {
+            assertEquals(0, lm.tenantIds.size());
+        }
+
+        AuthRecipeUserInfo getUser2 = AuthRecipe.getUserById(t1WithStorage.toAppIdentifierWithStorage(), user2.getSupertokensUserId());
+        for (LoginMethod lm : getUser2.loginMethods) {
+            assertEquals(0, lm.tenantIds.size());
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testTenantDeletionWithAccountLinkingWithUserRoles() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        createTenants(process.getProcess());
+
+        t1 = new TenantIdentifier(null, "a1", null);
+        t2 = new TenantIdentifier(null, "a1", "t1");
+
+        TenantIdentifierWithStorage t1WithStorage = t1.withStorage(StorageLayer.getStorage(t1, process.getProcess()));
+        TenantIdentifierWithStorage t2WithStorage = t2.withStorage(StorageLayer.getStorage(t2, process.getProcess()));
+
+        AuthRecipeUserInfo user1 = EmailPassword.signUp(t2WithStorage, process.getProcess(), "test@example.com", "password");
+        AuthRecipeUserInfo user2 = ThirdParty.signInUp(t2WithStorage, process.getProcess(), "google", "googleid1", "test@example.com").user;
+
+        AuthRecipe.createPrimaryUser(process.getProcess(), t2WithStorage.toAppIdentifierWithStorage(), user1.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.getProcess(), t2WithStorage.toAppIdentifierWithStorage(), user2.getSupertokensUserId(), user1.getSupertokensUserId());
+
+        UserRoles.createNewRoleOrModifyItsPermissions(t2WithStorage.toAppIdentifierWithStorage(), "admin", new String[]{"p1"});
+        UserRoles.addRoleToUser(t2WithStorage, user1.getSupertokensUserId(), "admin");
+
+        Multitenancy.deleteTenant(t2, process.getProcess());
+
+        createTenants(process.getProcess()); // create the tenant again
+
+        Multitenancy.addUserIdToTenant(process.getProcess(), t2WithStorage, user1.getSupertokensUserId()); // add the user to the tenant again
+        Multitenancy.addUserIdToTenant(process.getProcess(), t2WithStorage, user2.getSupertokensUserId()); // add the user to the tenant again
+
+        AuthRecipeUserInfo getUser1 = AuthRecipe.getUserById(t1WithStorage.toAppIdentifierWithStorage(), user1.getSupertokensUserId());
+        for (LoginMethod lm : getUser1.loginMethods) {
+            assertEquals(1, lm.tenantIds.size());
+        }
+
+        AuthRecipeUserInfo getUser2 = AuthRecipe.getUserById(t1WithStorage.toAppIdentifierWithStorage(), user2.getSupertokensUserId());
+        for (LoginMethod lm : getUser2.loginMethods) {
+            assertEquals(1, lm.tenantIds.size());
+        }
+
+        String[] roles = UserRoles.getRolesForUser(t2WithStorage, user1.getSupertokensUserId());
+        assertEquals(0, roles.length); // must be deleted with tenant
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -545,12 +639,12 @@ public class MultitenantTest {
                         new CreateThirdPartyUser(t1, "google", "googleid3", "test1@example.com").expect(new EmailChangeNotAllowedException()),
                 }),
                 new TestCase(new TestCaseStep[]{
-                   new CreateEmailPasswordUser(t1, "test@example.com"),
-                   new CreateEmailPasswordUser(t1, "test2@example.com"),
-                   new MakePrimaryUser(t1, 0),
-                   new LinkAccounts(t1, 0, 1),
-                   new UnlinkAccount(t1, 0),
-                   new AssociateUserToTenant(t2, 0).expect(new UnknownUserIdException()),
+                       new CreateEmailPasswordUser(t1, "test@example.com"),
+                       new CreateEmailPasswordUser(t1, "test2@example.com"),
+                       new MakePrimaryUser(t1, 0),
+                       new LinkAccounts(t1, 0, 1),
+                       new UnlinkAccount(t1, 0),
+                       new AssociateUserToTenant(t2, 0).expect(new UnknownUserIdException()),
                 }),
 
                 new TestCase(new TestCaseStep[]{
@@ -569,6 +663,70 @@ public class MultitenantTest {
                         new LinkAccounts(t1, 0, 1),
                         new UnlinkAccount(t1, 0),
                         new AssociateUserToTenant(t2, 0).expect(new UnknownUserIdException()),
+                }),
+                new TestCase(new TestCaseStep[]{
+                        new CreateEmailPasswordUser(t1, "test@example.com"),
+                        new CreateEmailPasswordUser(t1, "test2@example.com"),
+                        new MakePrimaryUser(t1, 0),
+                        new LinkAccounts(t1, 0, 1),
+                        new DisassociateUserFromTenant(t1, 0),
+                        new AssociateUserToTenant(t2, 0),
+                        new TestCaseStep() {
+                            @Override
+                            public void execute(Main main) throws Exception {
+                                TenantIdentifierWithStorage t1WithStorage = t1.withStorage(StorageLayer.getStorage(t1, main));
+                                AuthRecipeUserInfo user = AuthRecipe.getUserById(t1WithStorage.toAppIdentifierWithStorage(), TestCase.users.get(0).getSupertokensUserId());
+                                assertEquals(2, user.loginMethods.length);
+                                assertTrue(user.loginMethods[0].tenantIds.contains(t2.getTenantId()));
+                                assertTrue(user.loginMethods[1].tenantIds.contains(t1.getTenantId()));
+                            }
+                        }
+                }),
+
+                new TestCase(new TestCaseStep[]{
+                        new CreateEmailPasswordUser(t1, "test@example.com"),
+                        new DisassociateUserFromTenant(t1, 0),
+                        new CreateEmailPasswordUser(t1, "test@example.com"),
+                        new DisassociateUserFromTenant(t1, 1),
+                        new MakePrimaryUser(t1, 0),
+                        new MakePrimaryUser(t1, 1),
+                        new AssociateUserToTenant(t1, 0),
+                        new AssociateUserToTenant(t1, 1).expect(new DuplicateEmailException()),
+                        new LinkAccounts(t1, 0, 1).expect(new RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException(null, "")),
+                }),
+
+                new TestCase(new TestCaseStep[]{
+                        new CreateEmailPasswordUser(t1, "test@example.com"),
+                        new DisassociateUserFromTenant(t1, 0),
+                        new CreateEmailPasswordUser(t1, "test@example.com"),
+                        new DisassociateUserFromTenant(t1, 1),
+                        new MakePrimaryUser(t1, 0),
+                        new AssociateUserToTenant(t1, 0),
+                        new LinkAccounts(t1, 0, 1),
+                        new AssociateUserToTenant(t1, 1).expect(new DuplicateEmailException()),
+                        new AssociateUserToTenant(t2, 1),
+                }),
+                new TestCase(new TestCaseStep[]{
+                        new CreateEmailPasswordUser(t1, "test1@example.com"),
+                        new CreateEmailPasswordUser(t1, "test2@example.com"),
+                        new MakePrimaryUser(t1, 0),
+                        new LinkAccounts(t1, 0, 1),
+                        new UnlinkAccount(t1, 0),
+                        new TestCaseStep() {
+                            @Override
+                            public void execute(Main main) throws Exception {
+                                TenantIdentifierWithStorage t1WithStorage = t1.withStorage(StorageLayer.getStorage(t1, main));
+                                AuthRecipe.deleteUser(t1WithStorage.toAppIdentifierWithStorage(), TestCase.users.get(1).getSupertokensUserId());
+                            }
+                        },
+                        new TestCaseStep() {
+                            @Override
+                            public void execute(Main main) throws Exception {
+                                TenantIdentifierWithStorage t1WithStorage = t1.withStorage(StorageLayer.getStorage(t1, main));
+                                AuthRecipeUserInfo user = AuthRecipe.getUserById(t1WithStorage.toAppIdentifierWithStorage(), TestCase.users.get(0).getSupertokensUserId());
+                                assertNull(user);
+                            }
+                        }
                 }),
         };
 
@@ -618,7 +776,7 @@ public class MultitenantTest {
         }
     }
 
-    private static class TestCaseStep {
+    private static abstract class TestCaseStep {
         Exception e;
 
         public TestCaseStep expect(Exception e) {
@@ -639,8 +797,7 @@ public class MultitenantTest {
             }
         }
 
-        public void execute(Main main) throws Exception {
-        }
+        abstract public void execute(Main main) throws Exception;
     }
 
     private static class CreateEmailPasswordUser extends TestCaseStep {
@@ -843,15 +1000,31 @@ public class MultitenantTest {
         TenantIdentifier tenantIdentifier;
         int userIndex;
 
-            public SignInEmailPasswordUser(TenantIdentifier tenantIdentifier, int userIndex) {
-                this.tenantIdentifier = tenantIdentifier;
-                this.userIndex = userIndex;
-            }
+        public SignInEmailPasswordUser(TenantIdentifier tenantIdentifier, int userIndex) {
+            this.tenantIdentifier = tenantIdentifier;
+            this.userIndex = userIndex;
+        }
 
-            @Override
-            public void execute(Main main) throws Exception {
-                TenantIdentifierWithStorage tenantIdentifierWithStorage = tenantIdentifier.withStorage(StorageLayer.getStorage(tenantIdentifier, main));
-                EmailPassword.signIn(tenantIdentifierWithStorage, main, TestCase.users.get(userIndex).loginMethods[0].email, "password");
-            }
+        @Override
+        public void execute(Main main) throws Exception {
+            TenantIdentifierWithStorage tenantIdentifierWithStorage = tenantIdentifier.withStorage(StorageLayer.getStorage(tenantIdentifier, main));
+            EmailPassword.signIn(tenantIdentifierWithStorage, main, TestCase.users.get(userIndex).loginMethods[0].email, "password");
+        }
+    }
+
+    private static class DisassociateUserFromTenant extends TestCaseStep {
+        TenantIdentifier tenantIdentifier;
+        int userIndex;
+
+        public DisassociateUserFromTenant(TenantIdentifier tenantIdentifier, int userIndex) {
+            this.tenantIdentifier = tenantIdentifier;
+            this.userIndex = userIndex;
+        }
+
+        @Override
+        public void execute(Main main) throws Exception {
+            TenantIdentifierWithStorage tenantIdentifierWithStorage = tenantIdentifier.withStorage(StorageLayer.getStorage(tenantIdentifier, main));
+            Multitenancy.removeUserIdFromTenant(main, tenantIdentifierWithStorage, TestCase.users.get(userIndex).getSupertokensUserId(), null);
+        }
     }
 }
