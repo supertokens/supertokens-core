@@ -1126,6 +1126,21 @@ public class GeneralQueries {
         return userIdToAuthRecipeUserInfo.get(pUserId);
     }
 
+    public static String getPrimaryUserIdStrForUserId(Start start, AppIdentifier appIdentifier, String id)
+            throws SQLException, StorageQueryException {
+        String QUERY = "SELECT primary_or_recipe_user_id FROM " + getConfig(start).getUsersTable() +
+                " WHERE user_id = ? AND app_id = ?";
+        return execute(start, QUERY, pst -> {
+            pst.setString(1, id);
+            pst.setString(2, appIdentifier.getAppId());
+        }, result -> {
+            if (result.next()) {
+                return result.getString("primary_or_recipe_user_id");
+            }
+            return null;
+        });
+    }
+
     public static AuthRecipeUserInfo getPrimaryUserInfoForUserId(Start start, AppIdentifier appIdentifier, String id)
             throws SQLException, StorageQueryException {
         try (Connection con = ConnectionPool.getConnection(start)) {
