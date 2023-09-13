@@ -2885,7 +2885,7 @@ public class Start
             Connection sqlCon = (Connection) con.getConnection();
             // we do not bother returning if a row was updated here or not, cause it's happening
             // in a transaction anyway.
-            GeneralQueries.unlinkAccounts_Transaction(this, sqlCon, appIdentifier, recipeUserId);
+            GeneralQueries.unlinkAccounts_Transaction(this, sqlCon, appIdentifier, primaryUserId, recipeUserId);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
