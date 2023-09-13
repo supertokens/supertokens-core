@@ -534,7 +534,12 @@ public class Start
     @Override
     public void deleteSessionsOfUser_Transaction(TransactionConnection con, AppIdentifier appIdentifier, String userId)
             throws StorageQueryException {
-        // TODO:..
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            SessionQueries.deleteSessionsOfUser_Transaction(sqlCon, this, appIdentifier, userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
@@ -871,7 +876,12 @@ public class Start
     public void deleteEmailPasswordUser_Transaction(TransactionConnection con, AppIdentifier appIdentifier,
                                                     String userId, boolean deleteUserIdMappingToo)
             throws StorageQueryException {
-        // TODO..
+        try {
+            Connection sqlCon = (Connection) con.getConnection();
+            EmailPasswordQueries.deleteUser_Transaction(sqlCon, this, appIdentifier, userId, deleteUserIdMappingToo);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
@@ -949,7 +959,12 @@ public class Start
     @Override
     public void deleteEmailVerificationUserInfo_Transaction(TransactionConnection con, AppIdentifier appIdentifier,
                                                             String userId) throws StorageQueryException {
-        // TODO..
+        try {
+            Connection sqlCon = (Connection) con.getConnection();
+            EmailVerificationQueries.deleteUserInfo_Transaction(sqlCon, this, appIdentifier, userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
@@ -1070,7 +1085,12 @@ public class Start
     public void deleteThirdPartyUser_Transaction(TransactionConnection con, AppIdentifier appIdentifier, String userId,
                                                  boolean deleteUserIdMappingToo)
             throws StorageQueryException {
-        // TODO..
+        try {
+            Connection sqlCon = (Connection) con.getConnection();
+            ThirdPartyQueries.deleteUser_Transaction(sqlCon, this, appIdentifier, userId, deleteUserIdMappingToo);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
@@ -1203,7 +1223,12 @@ public class Start
     @Override
     public void deleteUserActive_Transaction(TransactionConnection con, AppIdentifier appIdentifier, String userId)
             throws StorageQueryException {
-        // TODO:..
+        try {
+            Connection sqlCon = (Connection) con.getConnection();
+            ActiveUsersQueries.deleteUserActive_Transaction(sqlCon, this, appIdentifier, userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
@@ -1539,7 +1564,12 @@ public class Start
     public void deletePasswordlessUser_Transaction(TransactionConnection con, AppIdentifier appIdentifier,
                                                    String userId, boolean deleteUserIdMappingToo)
             throws StorageQueryException {
-        // TODO..
+        try {
+            Connection sqlCon = (Connection) con.getConnection();
+            PasswordlessQueries.deleteUser_Transaction(sqlCon, this, appIdentifier, userId, deleteUserIdMappingToo);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
@@ -1795,8 +1825,12 @@ public class Start
     @Override
     public int deleteUserMetadata_Transaction(TransactionConnection con, AppIdentifier appIdentifier, String userId)
             throws StorageQueryException {
-        // TODO:..
-        return 0;
+        try {
+            Connection sqlCon = (Connection) con.getConnection();
+            return UserMetadataQueries.deleteUserMetadata_Transaction(sqlCon, this, appIdentifier, userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
@@ -2032,7 +2066,12 @@ public class Start
     @Override
     public void deleteAllRolesForUser_Transaction(TransactionConnection con, AppIdentifier appIdentifier, String userId)
             throws StorageQueryException {
-        // TODO..
+        try {
+            Connection sqlCon = (Connection) con.getConnection();
+            UserRoleQueries.deleteAllRolesForUser_Transaction(sqlCon, this, appIdentifier, userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override

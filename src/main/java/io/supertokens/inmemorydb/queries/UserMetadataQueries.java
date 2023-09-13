@@ -58,6 +58,18 @@ public class UserMetadataQueries {
         });
     }
 
+    public static int deleteUserMetadata_Transaction(Connection sqlCon, Start start, AppIdentifier appIdentifier,
+                                                     String userId)
+            throws SQLException, StorageQueryException {
+        String QUERY = "DELETE FROM " + getConfig(start).getUserMetadataTable()
+                + " WHERE app_id = ? AND user_id = ?";
+
+        return update(sqlCon, QUERY.toString(), pst -> {
+            pst.setString(1, appIdentifier.getAppId());
+            pst.setString(2, userId);
+        });
+    }
+
     public static int setUserMetadata_Transaction(Start start, Connection con, AppIdentifier appIdentifier, String userId, JsonObject metadata)
             throws SQLException, StorageQueryException {
 

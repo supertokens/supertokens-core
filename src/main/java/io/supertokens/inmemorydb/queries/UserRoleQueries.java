@@ -324,10 +324,10 @@ public class UserRoleQueries {
         });
     }
 
-    public static int deleteAllRolesForUser(Start start, AppIdentifier appIdentifier, String userId) throws SQLException, StorageQueryException {
+    public static int deleteAllRolesForUser_Transaction(Connection con, Start start, AppIdentifier appIdentifier, String userId) throws SQLException, StorageQueryException {
         String QUERY = "DELETE FROM " + getConfig(start).getUserRolesTable()
                 + " WHERE app_id = ? AND user_id = ?";
-        return update(start, QUERY, pst -> {
+        return update(con, QUERY, pst -> {
             pst.setString(1, appIdentifier.getAppId());
             pst.setString(2, userId);
         });

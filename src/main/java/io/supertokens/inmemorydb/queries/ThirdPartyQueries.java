@@ -152,27 +152,35 @@ public class ThirdPartyQueries {
         });
     }
 
-    public static void deleteUser(Start start, AppIdentifier appIdentifier, String userId)
-            throws StorageQueryException, StorageTransactionLogicException {
-        start.startTransaction(con -> {
-            Connection sqlCon = (Connection) con.getConnection();
-            try {
-                {
-                    String QUERY = "DELETE FROM " + getConfig(start).getAppIdToUserIdTable()
-                            + " WHERE app_id = ? AND user_id = ?";
+    public static void deleteUser_Transaction(Connection sqlCon, Start start, AppIdentifier appIdentifier, String userId, boolean deleteUserIdMappingToo)
+            throws StorageQueryException, SQLException {
+        if (deleteUserIdMappingToo) {
+            String QUERY = "DELETE FROM " + getConfig(start).getAppIdToUserIdTable()
+                    + " WHERE app_id = ? AND user_id = ?";
 
-                    update(sqlCon, QUERY, pst -> {
-                        pst.setString(1, appIdentifier.getAppId());
-                        pst.setString(2, userId);
-                    });
-                }
-
-                sqlCon.commit();
-            } catch (SQLException throwables) {
-                throw new StorageTransactionLogicException(throwables);
+            update(sqlCon, QUERY, pst -> {
+                pst.setString(1, appIdentifier.getAppId());
+                pst.setString(2, userId);
+            });
+        } else {
+            {
+                String QUERY = "DELETE FROM " + getConfig(start).getUsersTable()
+                        + " WHERE app_id = ? AND user_id = ?";
+                update(sqlCon, QUERY, pst -> {
+                    pst.setString(1, appIdentifier.getAppId());
+                    pst.setString(2, userId);
+                });
             }
-            return null;
-        });
+
+            {
+                String QUERY = "DELETE FROM " + getConfig(start).getThirdPartyUsersTable()
+                        + " WHERE app_id = ? AND user_id = ?";
+                update(sqlCon, QUERY, pst -> {
+                    pst.setString(1, appIdentifier.getAppId());
+                    pst.setString(2, userId);
+                });
+            }
+        }
     }
 
     public static List<String> lockEmailAndTenant_Transaction(Start start, Connection con,

@@ -1,5 +1,6 @@
 package io.supertokens.inmemorydb.queries;
 
+import java.sql.Connection;
 import java.sql.SQLException;
 
 import io.supertokens.inmemorydb.config.Config;
@@ -101,12 +102,12 @@ public class ActiveUsersQueries {
         }
     }
 
-    public static void deleteUserActive(Start start, AppIdentifier appIdentifier, String userId)
+    public static void deleteUserActive_Transaction(Connection con, Start start, AppIdentifier appIdentifier, String userId)
             throws StorageQueryException, SQLException {
         String QUERY = "DELETE FROM " + Config.getConfig(start).getUserLastActiveTable()
                 + " WHERE app_id = ? AND user_id = ?";
 
-        update(start, QUERY, pst -> {
+        update(con, QUERY, pst -> {
             pst.setString(1, appIdentifier.getAppId());
             pst.setString(2, userId);
         });
