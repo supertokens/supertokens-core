@@ -777,7 +777,7 @@ public class Start
             throws StorageQueryException, UnknownUserIdException, DuplicatePasswordResetTokenException {
         try {
             EmailPasswordQueries.addPasswordResetToken(this, appIdentifier, passwordResetTokenInfo.userId,
-                    passwordResetTokenInfo.token, passwordResetTokenInfo.tokenExpiry);
+                    passwordResetTokenInfo.token, passwordResetTokenInfo.tokenExpiry, passwordResetTokenInfo.email);
         } catch (SQLException e) {
             if (e instanceof SQLiteException) {
                 String serverMessage = e.getMessage();
