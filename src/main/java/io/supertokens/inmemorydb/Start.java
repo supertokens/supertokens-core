@@ -2865,13 +2865,27 @@ public class Start
     @Override
     public void linkAccounts_Transaction(AppIdentifier appIdentifier, TransactionConnection con, String recipeUserId,
                                          String primaryUserId) throws StorageQueryException {
-        // TODO:...
+        try {
+            Connection sqlCon = (Connection) con.getConnection();
+            // we do not bother returning if a row was updated here or not, cause it's happening
+            // in a transaction anyway.
+            GeneralQueries.linkAccounts_Transaction(this, sqlCon, appIdentifier, recipeUserId, primaryUserId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }    
     }
 
     @Override
     public void unlinkAccounts_Transaction(AppIdentifier appIdentifier, TransactionConnection con, String primaryUserId, String recipeUserId)
             throws StorageQueryException {
-        // TODO:..
+        try {
+            Connection sqlCon = (Connection) con.getConnection();
+            // we do not bother returning if a row was updated here or not, cause it's happening
+            // in a transaction anyway.
+            GeneralQueries.unlinkAccounts_Transaction(this, sqlCon, appIdentifier, recipeUserId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
