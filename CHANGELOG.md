@@ -28,6 +28,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Added a two new columns in `all_auth_recipe_users`:
     - `primary_or_recipe_user_id` (default value is equal to `user_id` column)
     - `is_linked_or_is_a_primary_user` (default value is false)
+- Added a two new columns in `app_id_to_user_id`:
+    - `primary_or_recipe_user_id` (default value is equal to `user_id` column)
+    - `is_linked_or_is_a_primary_user` (default value is false)
 - Dropped existing fkey constraint on `emailpassword_pswd_reset_tokens`, and added a new fkey constraint on `app_id_to_user_id` table.
 - Added new column in `emailpassword_pswd_reset_tokens` to store email
 
@@ -57,6 +60,24 @@ ALTER TABLE all_auth_recipe_users
     REFERENCES app_id_to_user_id (app_id, user_id) ON DELETE CASCADE;
 
 ALTER TABLE all_auth_recipe_users
+    ALTER primary_or_recipe_user_id DROP DEFAULT;
+
+ALTER TABLE app_id_to_user_id
+    ADD COLUMN primary_or_recipe_user_id CHAR(36) NOT NULL DEFAULT ('0');
+
+ALTER TABLE app_id_to_user_id
+    ADD COLUMN is_linked_or_is_a_primary_user BOOLEAN NOT NULL DEFAULT FALSE;
+
+UPDATE app_id_to_user_id
+SET primary_or_recipe_user_id = user_id
+WHERE primary_or_recipe_user_id = '0';
+
+ALTER TABLE app_id_to_user_id
+  ADD CONSTRAINT app_id_to_user_id_primary_or_recipe_user_id_fkey
+    FOREIGN KEY (app_id, primary_or_recipe_user_id)
+    REFERENCES app_id_to_user_id (app_id, user_id) ON DELETE CASCADE;
+
+ALTER TABLE app_id_to_user_id
     ALTER primary_or_recipe_user_id DROP DEFAULT;
 
 DROP INDEX all_auth_recipe_users_pagination_index;

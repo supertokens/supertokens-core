@@ -21,7 +21,6 @@ import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.Multitenancy;
-import io.supertokens.multitenancy.exception.DisassociationNotAllowedException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -70,8 +69,7 @@ public class DisassociateUserFromTenant extends WebserverAPI {
             }
 
             boolean wasAssociated = Multitenancy.removeUserIdFromTenant(main,
-                    getTenantIdentifierWithStorageFromRequest(req), userId, externalUserId, getVersionFromRequest(req).greaterThanOrEqualTo(
-                            SemVer.v4_0));
+                    getTenantIdentifierWithStorageFromRequest(req), userId, externalUserId);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
@@ -82,11 +80,7 @@ public class DisassociateUserFromTenant extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", "UNKNOWN_USER_ID_ERROR");
             super.sendJsonResponse(200, result, resp);
-        } catch (DisassociationNotAllowedException e) {
-            JsonObject result = new JsonObject();
-            result.addProperty("status", "DISASSOCIATION_NOT_ALLOWED_ERROR");
-            result.addProperty("reason", "The user belongs to only one tenant and cannot be disassociated from that");
-            super.sendJsonResponse(200, result, resp);
+
         } catch (StorageQueryException | TenantOrAppNotFoundException | FeatureNotEnabledException e) {
             throw new ServletException(e);
         }
