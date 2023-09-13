@@ -460,46 +460,54 @@ public class PasswordlessQueries {
         });
     }
 
-    public static void deleteUser(Start start, AppIdentifier appIdentifier, String userId)
-            throws StorageQueryException, StorageTransactionLogicException {
-        start.startTransaction(con -> {
-            Connection sqlCon = (Connection) con.getConnection();
-            try {
-                UserInfoWithTenantId[] userInfos = getUserInfosWithTenant(start, sqlCon, appIdentifier, userId);
+    public static void deleteUser_Transaction(Connection sqlCon, Start start, AppIdentifier appIdentifier, String userId, boolean deleteUserIdMappingToo)
+            throws StorageQueryException, SQLException {
+        UserInfoWithTenantId[] userInfos = getUserInfosWithTenant(start, sqlCon, appIdentifier, userId);
 
-                {
-                    String QUERY = "DELETE FROM " + getConfig(start).getAppIdToUserIdTable()
-                            + " WHERE app_id = ? AND user_id = ?";
+        if (deleteUserIdMappingToo) {
+            String QUERY = "DELETE FROM " + getConfig(start).getAppIdToUserIdTable()
+                    + " WHERE app_id = ? AND user_id = ?";
 
-                    update(sqlCon, QUERY, pst -> {
-                        pst.setString(1, appIdentifier.getAppId());
-                        pst.setString(2, userId);
-                    });
-                }
-
-                for (UserInfoWithTenantId userInfo : userInfos) {
-                    if (userInfo.email != null) {
-                        deleteDevicesByEmail_Transaction(start, sqlCon,
-                                new TenantIdentifier(
-                                        appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(),
-                                        userInfo.tenantId),
-                                userInfo.email);
-                    }
-                    if (userInfo.phoneNumber != null) {
-                        deleteDevicesByPhoneNumber_Transaction(start, sqlCon,
-                                new TenantIdentifier(
-                                        appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(),
-                                        userInfo.tenantId),
-                                userInfo.phoneNumber);
-                    }
-                }
-
-                sqlCon.commit();
-            } catch (SQLException throwables) {
-                throw new StorageTransactionLogicException(throwables);
+            update(sqlCon, QUERY, pst -> {
+                pst.setString(1, appIdentifier.getAppId());
+                pst.setString(2, userId);
+            });
+        } else {
+            {
+                String QUERY = "DELETE FROM " + getConfig(start).getUsersTable()
+                        + " WHERE app_id = ? AND user_id = ?";
+                update(sqlCon, QUERY, pst -> {
+                    pst.setString(1, appIdentifier.getAppId());
+                    pst.setString(2, userId);
+                });
             }
-            return null;
-        });
+
+            {
+                String QUERY = "DELETE FROM " + getConfig(start).getPasswordlessUsersTable()
+                        + " WHERE app_id = ? AND user_id = ?";
+                update(sqlCon, QUERY, pst -> {
+                    pst.setString(1, appIdentifier.getAppId());
+                    pst.setString(2, userId);
+                });
+            }
+        }
+
+        for (UserInfoWithTenantId userInfo : userInfos) {
+            if (userInfo.email != null) {
+                deleteDevicesByEmail_Transaction(start, sqlCon,
+                        new TenantIdentifier(
+                                appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(),
+                                userInfo.tenantId),
+                        userInfo.email);
+            }
+            if (userInfo.phoneNumber != null) {
+                deleteDevicesByPhoneNumber_Transaction(start, sqlCon,
+                        new TenantIdentifier(
+                                appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(),
+                                userInfo.tenantId),
+                        userInfo.phoneNumber);
+            }
+        }
     }
 
     public static int updateUserEmail_Transaction(Start start, Connection con, AppIdentifier appIdentifier,
