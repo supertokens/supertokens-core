@@ -50,7 +50,13 @@ public class DisassociateUserFromTenant extends WebserverAPI {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-        String userId = InputParser.parseStringOrThrowError(input, "userId", false);
+        String userId;
+
+        if (getVersionFromRequest(req).lesserThan(SemVer.v4_0)) {
+            userId = InputParser.parseStringOrThrowError(input, "userId", false);
+        } else {
+            userId = InputParser.parseStringOrThrowError(input, "recipeUserId", false);
+        }
         // normalize userId
         userId = userId.trim();
 
