@@ -397,19 +397,18 @@ public class EmailPasswordQueries {
         return Collections.emptyList();
     }
 
-    public static String lockEmailAndTenant_Transaction(Start start, Connection con, TenantIdentifier tenantIdentifier,
-                                                        String email) throws SQLException, StorageQueryException {
+    public static String lockEmail_Transaction(Start start, Connection con, AppIdentifier appIdentifier,
+                                               String email) throws SQLException, StorageQueryException {
         // normally the query below will use a for update, but sqlite doesn't support it.
         ((ConnectionWithLocks) con).lock(
-                tenantIdentifier.getAppId() + tenantIdentifier.getTenantId() + "~" + email +
-                        Config.getConfig(start).getEmailPasswordUserToTenantTable());
+                appIdentifier.getAppId() + "~" + email +
+                        Config.getConfig(start).getEmailPasswordUsersTable());
 
-        String QUERY = "SELECT user_id FROM " + getConfig(start).getEmailPasswordUserToTenantTable() +
-                " WHERE app_id = ? AND tenant_id = ? AND email = ?";
+        String QUERY = "SELECT user_id FROM " + getConfig(start).getEmailPasswordUsersTable() +
+                " WHERE app_id = ? AND email = ?";
         return execute(con, QUERY, pst -> {
-            pst.setString(1, tenantIdentifier.getAppId());
-            pst.setString(2, tenantIdentifier.getTenantId());
-            pst.setString(3, email);
+            pst.setString(1, appIdentifier.getAppId());
+            pst.setString(2, email);
         }, result -> {
             if (result.next()) {
                 return result.getString("user_id");
@@ -436,6 +435,27 @@ public class EmailPasswordQueries {
                 return result.getString("user_id");
             }
             return null;
+        });
+    }
+
+    public static List<String> getPrimaryUserIdsUsingEmail(Start start, Connection con, AppIdentifier appIdentifier,
+                                                           String email)
+            throws StorageQueryException, SQLException {
+        String QUERY = "SELECT DISTINCT all_users.primary_or_recipe_user_id AS user_id "
+                + "FROM " + getConfig(start).getEmailPasswordUsersTable() + " AS ep" +
+                " JOIN " + getConfig(start).getUsersTable() + " AS all_users" +
+                " ON ep.app_id = all_users.app_id AND ep.user_id = all_users.user_id" +
+                " WHERE ep.app_id = ? AND ep.email = ?";
+
+        return execute(con, QUERY, pst -> {
+            pst.setString(1, appIdentifier.getAppId());
+            pst.setString(2, email);
+        }, result -> {
+            List<String> userIds = new ArrayList<>();
+            while (result.next()) {
+                userIds.add(result.getString("user_id"));
+            }
+            return userIds;
         });
     }
 

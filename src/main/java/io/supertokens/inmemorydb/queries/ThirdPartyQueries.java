@@ -185,25 +185,21 @@ public class ThirdPartyQueries {
         }
     }
 
-    public static List<String> lockEmailAndTenant_Transaction(Start start, Connection con,
-                                                              TenantIdentifier tenantIdentifier,
+    public static List<String> lockEmail_Transaction(Start start, Connection con,
+                                                              AppIdentifier appIdentifier,
                                                               String email) throws SQLException, StorageQueryException {
         // normally the query below will use a for update, but sqlite doesn't support it.
         ((ConnectionWithLocks) con).lock(
-                tenantIdentifier.getAppId() + tenantIdentifier.getTenantId() + "~" + email +
-                        Config.getConfig(start).getThirdPartyUserToTenantTable());
+                appIdentifier.getAppId() + "~" + email +
+                        Config.getConfig(start).getThirdPartyUsersTable());
 
-        // in psql / mysql dbs, this will lock the rows that are in both the tables that meet the ON criteria only.
         String QUERY = "SELECT tp.user_id as user_id "
                 + "FROM " + getConfig(start).getThirdPartyUsersTable() + " AS tp" +
-                " JOIN " + getConfig(start).getThirdPartyUserToTenantTable() + " AS tp_tenants" +
-                " ON tp_tenants.app_id = tp.app_id AND tp_tenants.user_id = tp.user_id" +
-                " WHERE tp.app_id = ? AND tp_tenants.tenant_id = ? AND tp.email = ?";
+                " WHERE tp.app_id = ? AND tp.email = ?";
 
         return execute(con, QUERY, pst -> {
-            pst.setString(1, tenantIdentifier.getAppId());
-            pst.setString(2, tenantIdentifier.getTenantId());
-            pst.setString(3, email);
+            pst.setString(1, appIdentifier.getAppId());
+            pst.setString(2, email);
         }, result -> {
             List<String> finalResult = new ArrayList<>();
             while (result.next()) {
@@ -213,25 +209,24 @@ public class ThirdPartyQueries {
         });
     }
 
-    public static List<String> lockThirdPartyInfoAndTenant_Transaction(Start start, Connection con,
-                                                                       TenantIdentifier tenantIdentifier,
-                                                                       String thirdPartyId, String thirdPartyUserId)
+    public static List<String> lockThirdPartyInfo_Transaction(Start start, Connection con,
+                                                              AppIdentifier appIdentifier,
+                                                              String thirdPartyId, String thirdPartyUserId)
             throws SQLException, StorageQueryException {
         // normally the query below will use a for update, but sqlite doesn't support it.
         ((ConnectionWithLocks) con).lock(
-                tenantIdentifier.getAppId() + tenantIdentifier.getTenantId() + "~" + thirdPartyId + thirdPartyUserId +
-                        Config.getConfig(start).getThirdPartyUserToTenantTable());
+                appIdentifier.getAppId() + "~" + thirdPartyId + thirdPartyUserId +
+                        Config.getConfig(start).getThirdPartyUsersTable());
 
         // in psql / mysql dbs, this will lock the rows that are in both the tables that meet the ON criteria only.
         String QUERY = "SELECT user_id " +
-                " FROM " + getConfig(start).getThirdPartyUserToTenantTable() +
-                " WHERE app_id = ? AND tenant_id = ? AND third_party_id = ? AND third_party_user_id = ?";
+                " FROM " + getConfig(start).getThirdPartyUsersTable() +
+                " WHERE app_id = ? AND third_party_id = ? AND third_party_user_id = ? FOR UPDATE";
 
         return execute(con, QUERY, pst -> {
-            pst.setString(1, tenantIdentifier.getAppId());
-            pst.setString(2, tenantIdentifier.getTenantId());
-            pst.setString(3, thirdPartyId);
-            pst.setString(4, thirdPartyUserId);
+            pst.setString(1, appIdentifier.getAppId());
+            pst.setString(2, thirdPartyId);
+            pst.setString(3, thirdPartyUserId);
         }, result -> {
             List<String> finalResult = new ArrayList<>();
             while (result.next()) {
@@ -271,7 +266,30 @@ public class ThirdPartyQueries {
         return Collections.emptyList();
     }
 
-    public static String getThirdPartyUserInfoUsingId(Start start, Connection con, TenantIdentifier tenantIdentifier,
+    public static List<String> listUserIdsByThirdPartyInfo(Start start, Connection con, AppIdentifier appIdentifier,
+                                                           String thirdPartyId, String thirdPartyUserId)
+            throws SQLException, StorageQueryException {
+
+        String QUERY = "SELECT DISTINCT all_users.primary_or_recipe_user_id AS user_id "
+                + "FROM " + getConfig(start).getThirdPartyUsersTable() + " AS tp" +
+                " JOIN " + getConfig(start).getUsersTable() + " AS all_users" +
+                " ON tp.app_id = all_users.app_id AND tp.user_id = all_users.user_id" +
+                " WHERE tp.app_id = ? AND tp.third_party_id = ? AND tp.third_party_user_id = ?";
+
+        return execute(con, QUERY, pst -> {
+            pst.setString(1, appIdentifier.getAppId());
+            pst.setString(2, thirdPartyId);
+            pst.setString(3, thirdPartyUserId);
+        }, result -> {
+            List<String> userIds = new ArrayList<>();
+            while (result.next()) {
+                userIds.add(result.getString("user_id"));
+            }
+            return userIds;
+        });
+    }
+
+    public static String getUserIdByThirdPartyInfo(Start start, Connection con, TenantIdentifier tenantIdentifier,
                                                       String thirdPartyId, String thirdPartyUserId)
             throws SQLException, StorageQueryException {
         String QUERY = "SELECT DISTINCT all_users.primary_or_recipe_user_id AS user_id "
@@ -290,6 +308,27 @@ public class ThirdPartyQueries {
                 return result.getString("user_id");
             }
             return null;
+        });
+    }
+
+    public static List<String> getPrimaryUserIdUsingEmail(Start start, Connection con,
+                                                          AppIdentifier appIdentifier, String email)
+            throws StorageQueryException, SQLException {
+        String QUERY = "SELECT DISTINCT all_users.primary_or_recipe_user_id AS user_id "
+                + "FROM " + getConfig(start).getThirdPartyUsersTable() + " AS tp" +
+                " JOIN " + getConfig(start).getUsersTable() + " AS all_users" +
+                " ON tp.app_id = all_users.app_id AND tp.user_id = all_users.user_id" +
+                " WHERE tp.app_id = ? AND tp.email = ?";
+
+        return execute(con, QUERY, pst -> {
+            pst.setString(1, appIdentifier.getAppId());
+            pst.setString(2, email);
+        }, result -> {
+            List<String> finalResult = new ArrayList<>();
+            while (result.next()) {
+                finalResult.add(result.getString("user_id"));
+            }
+            return finalResult;
         });
     }
 
