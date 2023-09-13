@@ -1254,8 +1254,11 @@ public class Start
     @Override
     public String getPrimaryUserIdStrForUserId(AppIdentifier appIdentifier, String userId)
             throws StorageQueryException {
-        // TODO:...
-        return null;
+        try {
+            return GeneralQueries.getPrimaryUserIdStrForUserId(this, appIdentifier, userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override

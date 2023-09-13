@@ -107,9 +107,17 @@ public class SessionQueries {
                 tenantIdentifier.getAppId() + "~" + tenantIdentifier.getTenantId() + "~" + sessionHandle +
                         Config.getConfig(start).getSessionInfoTable());
 
-        String QUERY = "SELECT session_handle, user_id, refresh_token_hash_2, session_data, expires_at, "
-                + "created_at_time, jwt_user_payload, use_static_key FROM " + getConfig(start).getSessionInfoTable()
-                + " WHERE app_id = ? AND tenant_id = ? AND session_handle = ?";
+        String QUERY =
+                "SELECT sess.session_handle, sess.user_id, sess.refresh_token_hash_2, sess.session_data, sess" +
+                        ".expires_at, "
+                        +
+                        "sess.created_at_time, sess.jwt_user_payload, sess.use_static_key, users" +
+                        ".primary_or_recipe_user_id FROM " +
+                        getConfig(start).getSessionInfoTable()
+                        + " AS sess LEFT JOIN " + getConfig(start).getUsersTable() +
+                        " as users ON sess.app_id = users.app_id AND sess.user_id = users.user_id WHERE sess.app_id =" +
+                        " ? AND " +
+                        "sess.tenant_id = ? AND sess.session_handle = ?";
         return execute(con, QUERY, pst -> {
             pst.setString(1, tenantIdentifier.getAppId());
             pst.setString(2, tenantIdentifier.getTenantId());
@@ -306,9 +314,17 @@ public class SessionQueries {
 
     public static SessionInfo getSession(Start start, TenantIdentifier tenantIdentifier, String sessionHandle)
             throws SQLException, StorageQueryException {
-        String QUERY = "SELECT session_handle, user_id, refresh_token_hash_2, session_data, expires_at, "
-                + "created_at_time, jwt_user_payload, use_static_key FROM " + getConfig(start).getSessionInfoTable()
-                + " WHERE app_id = ? AND tenant_id = ? AND session_handle = ?";
+        String QUERY =
+                "SELECT sess.session_handle, sess.user_id, sess.refresh_token_hash_2, sess.session_data, sess" +
+                        ".expires_at, "
+                        +
+                        "sess.created_at_time, sess.jwt_user_payload, sess.use_static_key, users" +
+                        ".primary_or_recipe_user_id FROM " +
+                        getConfig(start).getSessionInfoTable()
+                        + " AS sess LEFT JOIN " + getConfig(start).getUsersTable() +
+                        " as users ON sess.app_id = users.app_id AND sess.user_id = users.user_id WHERE sess.app_id =" +
+                        " ? AND " +
+                        "sess.tenant_id = ? AND sess.session_handle = ?";
         return execute(start, QUERY, pst -> {
             pst.setString(1, tenantIdentifier.getAppId());
             pst.setString(2, tenantIdentifier.getTenantId());
@@ -383,10 +399,14 @@ public class SessionQueries {
         @Override
         public SessionInfo map(ResultSet result) throws Exception {
             JsonParser jp = new JsonParser();
-            return new SessionInfo(result.getString("session_handle"), result.getString("user_id"),
+            // if result.getString("primary_or_recipe_user_id") is null, it will be handled by SessionInfo
+            // constructor
+            return new SessionInfo(result.getString("session_handle"),
+                    result.getString("primary_or_recipe_user_id"),
                     result.getString("user_id"),
                     result.getString("refresh_token_hash_2"),
-                    jp.parse(result.getString("session_data")).getAsJsonObject(), result.getLong("expires_at"),
+                    jp.parse(result.getString("session_data")).getAsJsonObject(),
+                    result.getLong("expires_at"),
                     jp.parse(result.getString("jwt_user_payload")).getAsJsonObject(),
                     result.getLong("created_at_time"), result.getBoolean("use_static_key"));
         }
