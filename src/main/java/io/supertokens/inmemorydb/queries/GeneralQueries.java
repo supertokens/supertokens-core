@@ -87,7 +87,7 @@ public class GeneralQueries {
 
     static String getQueryToCreateUserPaginationIndex(Start start) {
         return "CREATE INDEX all_auth_recipe_users_pagination_index ON " + Config.getConfig(start).getUsersTable()
-                + "(time_joined DESC, primary_or_recipe_user_id DESC, tenant_id DESC, app_id DESC);";
+                + "(primary_or_recipe_user_time_joined DESC, primary_or_recipe_user_id DESC, tenant_id DESC, app_id DESC);";
     }
 
     static String getQueryToCreatePrimaryUserIdIndex(Start start) {
@@ -558,7 +558,7 @@ public class GeneralQueries {
             throws SQLException, StorageQueryException {
 
         // This list will be used to keep track of the result's order from the db
-        List<UserInfoPaginationResultHolder> usersFromQuery;
+        List<String> usersFromQuery;
 
         if (dashboardSearchTags != null) {
             ArrayList<String> queryList = new ArrayList<>();
@@ -732,17 +732,16 @@ public class GeneralQueries {
                     usersFromQuery = new ArrayList<>();
                 } else {
 
-                    String finalQuery = "SELECT * FROM ( " + USER_SEARCH_TAG_CONDITION.toString() + " )"
-                            + " AS finalResultTable ORDER BY time_joined " + timeJoinedOrder + ", user_id DESC ";
+                    String finalQuery = "SELECT DISTINCT primary_or_recipe_user_id, primary_or_recipe_user_time_joined  FROM ( " + USER_SEARCH_TAG_CONDITION.toString() + " )"
+                            + " AS finalResultTable ORDER BY primary_or_recipe_user_time_joined " + timeJoinedOrder + ", primary_or_recipe_user_id DESC ";
                     usersFromQuery = execute(start, finalQuery, pst -> {
                         for (int i = 1; i <= queryList.size(); i++) {
                             pst.setString(i, queryList.get(i - 1));
                         }
                     }, result -> {
-                        List<UserInfoPaginationResultHolder> temp = new ArrayList<>();
+                        List<String> temp = new ArrayList<>();
                         while (result.next()) {
-                            temp.add(new UserInfoPaginationResultHolder(result.getString("user_id"),
-                                    result.getString("recipe_id")));
+                            temp.add(result.getString("primary_or_recipe_user_id"));
                         }
                         return temp;
                     });
@@ -771,11 +770,11 @@ public class GeneralQueries {
                     recipeIdCondition = recipeIdCondition + " AND";
                 }
                 String timeJoinedOrderSymbol = timeJoinedOrder.equals("ASC") ? ">" : "<";
-                String QUERY = "SELECT user_id, recipe_id FROM " + getConfig(start).getUsersTable() + " WHERE "
-                        + recipeIdCondition + " (time_joined " + timeJoinedOrderSymbol
-                        + " ? OR (time_joined = ? AND user_id <= ?)) AND app_id = ? AND tenant_id = ?"
-                        + " ORDER BY time_joined " + timeJoinedOrder
-                        + ", user_id DESC LIMIT ?";
+                String QUERY = "SELECT DISTINCT primary_or_recipe_user_id, primary_or_recipe_user_time_joined FROM " + getConfig(start).getUsersTable() + " WHERE "
+                        + recipeIdCondition + " (primary_or_recipe_user_time_joined " + timeJoinedOrderSymbol
+                        + " ? OR (primary_or_recipe_user_time_joined = ? AND primary_or_recipe_user_id <= ?)) AND app_id = ? AND tenant_id = ?"
+                        + " ORDER BY primary_or_recipe_user_time_joined " + timeJoinedOrder
+                        + ", primary_or_recipe_user_id DESC LIMIT ?";
                 usersFromQuery = execute(start, QUERY, pst -> {
                     if (includeRecipeIds != null) {
                         for (int i = 0; i < includeRecipeIds.length; i++) {
@@ -791,21 +790,20 @@ public class GeneralQueries {
                     pst.setString(baseIndex + 5, tenantIdentifier.getTenantId());
                     pst.setInt(baseIndex + 6, limit);
                 }, result -> {
-                    List<UserInfoPaginationResultHolder> temp = new ArrayList<>();
+                    List<String> temp = new ArrayList<>();
                     while (result.next()) {
-                        temp.add(new UserInfoPaginationResultHolder(result.getString("user_id"),
-                                result.getString("recipe_id")));
+                        temp.add(result.getString("primary_or_recipe_user_id"));
                     }
                     return temp;
                 });
             } else {
                 String recipeIdCondition = RECIPE_ID_CONDITION.toString();
-                String QUERY = "SELECT user_id, recipe_id FROM " + getConfig(start).getUsersTable() + " WHERE ";
+                String QUERY = "SELECT DISTINCT primary_or_recipe_user_id, primary_or_recipe_user_time_joined FROM " + getConfig(start).getUsersTable() + " WHERE ";
                 if (!recipeIdCondition.equals("")) {
                     QUERY += recipeIdCondition + " AND";
                 }
-                QUERY += " app_id = ? AND tenant_id = ? ORDER BY time_joined " + timeJoinedOrder
-                        + ", user_id DESC LIMIT ?";
+                QUERY += " app_id = ? AND tenant_id = ? ORDER BY primary_or_recipe_user_time_joined " + timeJoinedOrder
+                        + ", primary_or_recipe_user_id DESC LIMIT ?";
                 usersFromQuery = execute(start, QUERY, pst -> {
                     if (includeRecipeIds != null) {
                         for (int i = 0; i < includeRecipeIds.length; i++) {
@@ -818,49 +816,31 @@ public class GeneralQueries {
                     pst.setString(baseIndex + 2, tenantIdentifier.getTenantId());
                     pst.setInt(baseIndex + 3, limit);
                 }, result -> {
-                    List<UserInfoPaginationResultHolder> temp = new ArrayList<>();
+                    List<String> temp = new ArrayList<>();
                     while (result.next()) {
-                        temp.add(new UserInfoPaginationResultHolder(result.getString("user_id"),
-                                result.getString("recipe_id")));
+                        temp.add(result.getString("primary_or_recipe_user_id"));
                     }
                     return temp;
                 });
             }
         }
 
-        // we create a map from recipe ID -> userId[]
-        Map<RECIPE_ID, List<String>> recipeIdToUserIdListMap = new HashMap<>();
-        for (UserInfoPaginationResultHolder user : usersFromQuery) {
-            RECIPE_ID recipeId = RECIPE_ID.getEnumFromString(user.recipeId);
-            if (recipeId == null) {
-                throw new SQLException("Unrecognised recipe ID in database: " + user.recipeId);
-            }
-            List<String> userIdList = recipeIdToUserIdListMap.get(recipeId);
-            if (userIdList == null) {
-                userIdList = new ArrayList<>();
-            }
-            userIdList.add(user.userId);
-            recipeIdToUserIdListMap.put(recipeId, userIdList);
-        }
-
         AuthRecipeUserInfo[] finalResult = new AuthRecipeUserInfo[usersFromQuery.size()];
 
         // we give the userId[] for each recipe to fetch all those user's details
-        for (RECIPE_ID recipeId : recipeIdToUserIdListMap.keySet()) {
-            List<AuthRecipeUserInfo> users = getPrimaryUserInfoForUserIds(start,
-                    tenantIdentifier.toAppIdentifier(),
-                    recipeIdToUserIdListMap.get(recipeId));
+        List<AuthRecipeUserInfo> users = getPrimaryUserInfoForUserIds(start,
+                tenantIdentifier.toAppIdentifier(),
+                usersFromQuery);
 
-            // we fill in all the slots in finalResult based on their position in
-            // usersFromQuery
-            Map<String, AuthRecipeUserInfo> userIdToInfoMap = new HashMap<>();
-            for (AuthRecipeUserInfo user : users) {
-                userIdToInfoMap.put(user.getSupertokensUserId(), user);
-            }
-            for (int i = 0; i < usersFromQuery.size(); i++) {
-                if (finalResult[i] == null) {
-                    finalResult[i] = userIdToInfoMap.get(usersFromQuery.get(i).userId);
-                }
+        // we fill in all the slots in finalResult based on their position in
+        // usersFromQuery
+        Map<String, AuthRecipeUserInfo> userIdToInfoMap = new HashMap<>();
+        for (AuthRecipeUserInfo user : users) {
+            userIdToInfoMap.put(user.getSupertokensUserId(), user);
+        }
+        for (int i = 0; i < usersFromQuery.size(); i++) {
+            if (finalResult[i] == null) {
+                finalResult[i] = userIdToInfoMap.get(usersFromQuery.get(i));
             }
         }
 
@@ -882,28 +862,58 @@ public class GeneralQueries {
     public static void linkAccounts_Transaction(Start start, Connection sqlCon, AppIdentifier appIdentifier,
                                                 String recipeUserId, String primaryUserId)
             throws SQLException, StorageQueryException {
-        String QUERY = "UPDATE " + getConfig(start).getUsersTable() +
-                " SET is_linked_or_is_a_primary_user = true, primary_or_recipe_user_id = ? WHERE app_id = ? AND " +
-                "user_id = ?";
-        update(sqlCon, QUERY, pst -> {
-            pst.setString(1, primaryUserId);
-            pst.setString(2, appIdentifier.getAppId());
-            pst.setString(3, recipeUserId);
-        });
+        {
+            String QUERY = "UPDATE " + getConfig(start).getUsersTable() +
+                    " SET is_linked_or_is_a_primary_user = true, primary_or_recipe_user_id = ? WHERE app_id = ? AND " +
+                    "user_id = ?";
+
+            update(sqlCon, QUERY, pst -> {
+                pst.setString(1, primaryUserId);
+                pst.setString(2, appIdentifier.getAppId());
+                pst.setString(3, recipeUserId);
+            });
+        }
+        { // update primary_or_recipe_user_time_joined to min time joined
+            String QUERY = "UPDATE " + getConfig(start).getUsersTable() +
+                    " SET primary_or_recipe_user_time_joined = (SELECT MIN(time_joined) FROM " +
+                    getConfig(start).getUsersTable() + " WHERE app_id = ? AND primary_or_recipe_user_id = ?) WHERE " +
+                    " app_id = ? AND primary_or_recipe_user_id = ?";
+            update(sqlCon, QUERY, pst -> {
+                pst.setString(1, appIdentifier.getAppId());
+                pst.setString(2, primaryUserId);
+                pst.setString(3, appIdentifier.getAppId());
+                pst.setString(4, primaryUserId);
+            });
+        }
     }
 
     public static void unlinkAccounts_Transaction(Start start, Connection sqlCon, AppIdentifier appIdentifier,
-                                                  String recipeUserId)
+                                                  String primaryUserId, String recipeUserId)
             throws SQLException, StorageQueryException {
-        String QUERY = "UPDATE " + getConfig(start).getUsersTable() +
-                " SET is_linked_or_is_a_primary_user = false, primary_or_recipe_user_id = ? WHERE app_id = ? AND " +
-                "user_id = ?";
+        {
+            String QUERY = "UPDATE " + getConfig(start).getUsersTable() +
+                    " SET is_linked_or_is_a_primary_user = false, primary_or_recipe_user_id = ?, " +
+                    "primary_or_recipe_user_time_joined = time_joined WHERE app_id = ? AND " +
+                    "user_id = ?";
 
-        update(sqlCon, QUERY, pst -> {
-            pst.setString(1, recipeUserId);
-            pst.setString(2, appIdentifier.getAppId());
-            pst.setString(3, recipeUserId);
-        });
+            update(sqlCon, QUERY, pst -> {
+                pst.setString(1, recipeUserId);
+                pst.setString(2, appIdentifier.getAppId());
+                pst.setString(3, recipeUserId);
+            });
+        }
+        { // update primary_or_recipe_user_time_joined to min time joined
+            String QUERY = "UPDATE " + getConfig(start).getUsersTable() +
+                    " SET primary_or_recipe_user_time_joined = (SELECT MIN(time_joined) FROM " +
+                    getConfig(start).getUsersTable() + " WHERE app_id = ? AND primary_or_recipe_user_id = ?) WHERE " +
+                    " app_id = ? AND primary_or_recipe_user_id = ?";
+            update(sqlCon, QUERY, pst -> {
+                pst.setString(1, appIdentifier.getAppId());
+                pst.setString(2, primaryUserId);
+                pst.setString(3, appIdentifier.getAppId());
+                pst.setString(4, primaryUserId);
+            });
+        }
     }
 
     public static AuthRecipeUserInfo[] listPrimaryUsersByPhoneNumber_Transaction(Start start, Connection sqlCon,
