@@ -20,6 +20,7 @@ import io.supertokens.Main;
 import io.supertokens.inmemorydb.ConnectionPool;
 import io.supertokens.inmemorydb.ConnectionWithLocks;
 import io.supertokens.inmemorydb.Start;
+import io.supertokens.inmemorydb.Utils;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.RECIPE_ID;
@@ -1030,50 +1031,72 @@ public class GeneralQueries {
 
         // We use SELECT FOR UPDATE in the query below for other plugins.
         String QUERY = "SELECT * FROM " + getConfig(start).getUsersTable() +
-                " WHERE (user_id = ? OR primary_or_recipe_user_id = ?) AND app_id = ?";
+                " WHERE primary_or_recipe_user_id IN (SELECT primary_or_recipe_user_id FROM " +
+                getConfig(start).getUsersTable() +
+                " WHERE user_id = ? OR primary_or_recipe_user_id = ? AND app_id = ?) AND app_id = ?";
 
-        AllAuthRecipeUsersResultHolder allAuthUsersResult = execute(sqlCon, QUERY, pst -> {
+        List<AllAuthRecipeUsersResultHolder> allAuthUsersResult = execute(sqlCon, QUERY, pst -> {
             pst.setString(1, id);
             pst.setString(2, id);
             pst.setString(3, appIdentifier.getAppId());
         }, result -> {
-            AllAuthRecipeUsersResultHolder finalResult = null;
-            if (result.next()) {
-                finalResult = new AllAuthRecipeUsersResultHolder(result.getString("user_id"),
+            List<AllAuthRecipeUsersResultHolder> finalResult = new ArrayList<>();
+            while (result.next()) {
+                finalResult.add(new AllAuthRecipeUsersResultHolder(result.getString("user_id"),
                         result.getString("tenant_id"),
                         result.getString("primary_or_recipe_user_id"),
                         result.getBoolean("is_linked_or_is_a_primary_user"),
                         result.getString("recipe_id"),
-                        result.getLong("time_joined"));
+                        result.getLong("time_joined")));
             }
             return finalResult;
         });
 
-        if (allAuthUsersResult == null) {
+        if (allAuthUsersResult.size() == 0) {
             return null;
         }
 
         // Now we form the userIds again, but based on the user_id in the result from above.
         Set<String> recipeUserIdsToFetch = new HashSet<>();
-        recipeUserIdsToFetch.add(allAuthUsersResult.userId);
+        for (AllAuthRecipeUsersResultHolder user : allAuthUsersResult) {
+            // this will remove duplicate entries wherein a user id is shared across several tenants.
+            recipeUserIdsToFetch.add(user.userId);
+        }
 
         List<LoginMethod> loginMethods = new ArrayList<>();
         loginMethods.addAll(
-                EmailPasswordQueries.getUsersInfoUsingIdList(start, sqlCon, recipeUserIdsToFetch,
-                        appIdentifier));
-        loginMethods.addAll(ThirdPartyQueries.getUsersInfoUsingIdList(start, sqlCon, recipeUserIdsToFetch,
-                appIdentifier));
-        loginMethods.addAll(PasswordlessQueries.getUsersInfoUsingIdList(start, sqlCon, recipeUserIdsToFetch,
-                appIdentifier));
+                EmailPasswordQueries.getUsersInfoUsingIdList(start, sqlCon, recipeUserIdsToFetch, appIdentifier));
+        loginMethods.addAll(
+                ThirdPartyQueries.getUsersInfoUsingIdList(start, sqlCon, recipeUserIdsToFetch, appIdentifier));
+        loginMethods.addAll(
+                PasswordlessQueries.getUsersInfoUsingIdList(start, sqlCon, recipeUserIdsToFetch, appIdentifier));
 
-        // we do this in such a strange way cause the create function takes just one login method at the moment.
-        AuthRecipeUserInfo result = AuthRecipeUserInfo.create(allAuthUsersResult.primaryOrRecipeUserId,
-                allAuthUsersResult.isLinkedOrIsAPrimaryUser, loginMethods.get(0));
-        for (int i = 1; i < loginMethods.size(); i++) {
-            result.addLoginMethod(loginMethods.get(i));
+        Map<String, LoginMethod> recipeUserIdToLoginMethodMap = new HashMap<>();
+        for (LoginMethod loginMethod : loginMethods) {
+            recipeUserIdToLoginMethodMap.put(loginMethod.getSupertokensUserId(), loginMethod);
         }
 
-        return result;
+        Map<String, AuthRecipeUserInfo> userIdToAuthRecipeUserInfo = new HashMap<>();
+        String pUserId = null;
+        for (AllAuthRecipeUsersResultHolder authRecipeUsersResultHolder : allAuthUsersResult) {
+            String recipeUserId = authRecipeUsersResultHolder.userId;
+            LoginMethod loginMethod = recipeUserIdToLoginMethodMap.get(recipeUserId);
+            assert (loginMethod != null);
+            String primaryUserId = authRecipeUsersResultHolder.primaryOrRecipeUserId;
+            pUserId = primaryUserId;
+            AuthRecipeUserInfo curr = userIdToAuthRecipeUserInfo.get(primaryUserId);
+            if (curr == null) {
+                curr = AuthRecipeUserInfo.create(primaryUserId, authRecipeUsersResultHolder.isLinkedOrIsAPrimaryUser,
+                        loginMethod);
+            } else {
+                curr.addLoginMethod(loginMethod);
+            }
+            userIdToAuthRecipeUserInfo.put(primaryUserId, curr);
+        }
+
+        assert (userIdToAuthRecipeUserInfo.size() == 1 && pUserId != null);
+
+        return userIdToAuthRecipeUserInfo.get(pUserId);
     }
 
     public static AuthRecipeUserInfo getPrimaryUserInfoForUserId(Start start, AppIdentifier appIdentifier, String id)
@@ -1108,11 +1131,13 @@ public class GeneralQueries {
         // which is linked to a primary user ID in which case it won't be in the primary_or_recipe_user_id column,
         // or the input may have a primary user ID whose recipe user ID was removed, so it won't be in the user_id
         // column
-        String QUERY = "SELECT * FROM " + getConfig(start).getUsersTable() + " WHERE (user_id IN ("
-                + io.supertokens.inmemorydb.Utils.generateCommaSeperatedQuestionMarks(userIds.size()) +
+        String QUERY = "SELECT * FROM " + getConfig(start).getUsersTable() +
+                " WHERE primary_or_recipe_user_id IN (SELECT primary_or_recipe_user_id FROM " +
+                getConfig(start).getUsersTable() + " WHERE (user_id IN ("
+                + Utils.generateCommaSeperatedQuestionMarks(userIds.size()) +
                 ") OR primary_or_recipe_user_id IN (" +
-                io.supertokens.inmemorydb.Utils.generateCommaSeperatedQuestionMarks(userIds.size()) +
-                ")) AND app_id = ?";
+                Utils.generateCommaSeperatedQuestionMarks(userIds.size()) +
+                ")) AND app_id = ?) AND app_id = ?";
 
         List<AllAuthRecipeUsersResultHolder> allAuthUsersResult = execute(con, QUERY, pst -> {
             // IN user_id
@@ -1126,6 +1151,7 @@ public class GeneralQueries {
             }
             // for app_id
             pst.setString(index, appIdentifier.getAppId());
+            pst.setString(index + 1, appIdentifier.getAppId());
         }, result -> {
             List<AllAuthRecipeUsersResultHolder> parsedResult = new ArrayList<>();
             while (result.next()) {
