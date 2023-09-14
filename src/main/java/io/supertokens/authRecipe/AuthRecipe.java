@@ -73,7 +73,7 @@ public class AuthRecipe {
             throws StorageQueryException, UnknownUserIdException, InputUserIdIsNotAPrimaryUserException {
         AuthRecipeSQLStorage storage = (AuthRecipeSQLStorage) appIdentifierWithStorage.getAuthRecipeStorage();
         try {
-            return storage.startTransaction(con -> {
+            UnlinkResult res = storage.startTransaction(con -> {
                 AuthRecipeUserInfo primaryUser = storage.getPrimaryUserById_Transaction(appIdentifierWithStorage, con,
                         recipeUserId);
                 if (primaryUser == null) {
@@ -93,28 +93,23 @@ public class AuthRecipe {
                     // we are trying to unlink the user ID which is the same as the primary one.
                     if (primaryUser.loginMethods.length == 1) {
                         storage.unlinkAccounts_Transaction(appIdentifierWithStorage, con, primaryUser.getSupertokensUserId(), recipeUserId);
-                        Session.revokeAllSessionsForUser(main, appIdentifierWithStorage,
-                                mappingResult == null ? recipeUserId : mappingResult.externalUserId,
-                                false);
-                        return false;
+                        return new UnlinkResult(mappingResult == null ? recipeUserId : mappingResult.externalUserId, false);
                     } else {
                         // Here we delete the recipe user id cause if we just unlink, then there will be two
                         // distinct users with the same ID - which is a broken state.
                         // The delete will also cause the automatic unlinking.
                         // We need to make sure that it only deletes sessions for recipeUserId and not other linked
                         // users who have their sessions for primaryUserId (that is equal to the recipeUserId)
-                        Session.revokeAllSessionsForUser(main, appIdentifierWithStorage,
-                                mappingResult == null ? recipeUserId : mappingResult.externalUserId, false);
                         deleteUserHelper(con, appIdentifierWithStorage, recipeUserId, false, mappingResult);
-                        return true;
+                        return new UnlinkResult(mappingResult == null ? recipeUserId : mappingResult.externalUserId, true);
                     }
                 } else {
                     storage.unlinkAccounts_Transaction(appIdentifierWithStorage, con, primaryUser.getSupertokensUserId(), recipeUserId);
-                    Session.revokeAllSessionsForUser(main, appIdentifierWithStorage,
-                            mappingResult == null ? recipeUserId : mappingResult.externalUserId, false);
-                    return false;
+                    return new UnlinkResult(mappingResult == null ? recipeUserId : mappingResult.externalUserId, false);
                 }
             });
+            Session.revokeAllSessionsForUser(main, appIdentifierWithStorage, res.userId, false);
+            return res.wasLinked;
         } catch (StorageTransactionLogicException e) {
             if (e.actualException instanceof UnknownUserIdException) {
                 throw (UnknownUserIdException) e.actualException;
@@ -788,8 +783,8 @@ public class AuthRecipe {
             // in reference to
             // https://docs.google.com/spreadsheets/d/17hYV32B0aDCeLnSxbZhfRN2Y9b0LC2xUF44vV88RNAA/edit?usp=sharing
             // we want to check which state the db is in
-            if (appIdentifierWithStorage.getAuthRecipeStorage()
-                    .doesUserIdExist(appIdentifierWithStorage, userIdMapping.externalUserId)) {
+            if (((AuthRecipeSQLStorage) appIdentifierWithStorage.getAuthRecipeStorage())
+                    .doesUserIdExist_Transaction(con, appIdentifierWithStorage, userIdMapping.externalUserId)) {
                 // db is in state A4
                 // delete only from auth tables
                 userIdToDeleteForAuthRecipe = userId;
@@ -823,11 +818,13 @@ public class AuthRecipe {
                 if (primaryUserIdToDeleteNonAuthRecipe == null) {
                     deleteAuthRecipeUser(con, appIdentifierWithStorage, userToDelete.getSupertokensUserId(),
                             true);
+                    return;
                 }
             } else {
                 // this is always type supertokens user ID cause it's from a user from the database.
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping mappingResult =
                         io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+                                con,
                                 appIdentifierWithStorage,
                                 userToDelete.getSupertokensUserId(), UserIdType.SUPERTOKENS);
                 if (mappingResult != null) {
@@ -866,6 +863,7 @@ public class AuthRecipe {
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping mappingResult = lM.getSupertokensUserId().equals(
                         userIdToDeleteForAuthRecipe) ? userIdMapping :
                         io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+                                con,
                                 appIdentifierWithStorage,
                                 lM.getSupertokensUserId(), UserIdType.SUPERTOKENS);
                 deleteUserHelper(con, appIdentifierWithStorage, lM.getSupertokensUserId(), false, mappingResult);
@@ -962,5 +960,15 @@ public class AuthRecipe {
         finalDidExist = finalDidExist || didExist;
 
         return finalDidExist;
+    }
+
+    private static class UnlinkResult {
+        public final String userId;
+        public final boolean wasLinked;
+
+        public UnlinkResult(String userId, boolean wasLinked) {
+            this.userId = userId;
+            this.wasLinked = wasLinked;
+        }
     }
 }

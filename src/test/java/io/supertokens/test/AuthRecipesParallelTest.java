@@ -21,6 +21,7 @@ import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.thirdparty.ThirdParty;
@@ -102,6 +103,10 @@ public class AuthRecipesParallelTest {
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
 
         ExecutorService ex = Executors.newFixedThreadPool(1000);
         int numberOfThreads = 500;

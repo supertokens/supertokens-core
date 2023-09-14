@@ -203,6 +203,17 @@ public class SessionQueries {
         });
     }
 
+    public static void deleteSessionsOfUser(Start start, AppIdentifier appIdentifier, String userId)
+            throws SQLException, StorageQueryException {
+        String QUERY = "DELETE FROM " + getConfig(start).getSessionInfoTable()
+                + " WHERE app_id = ? AND user_id = ?";
+
+        update(start, QUERY.toString(), pst -> {
+            pst.setString(1, appIdentifier.getAppId());
+            pst.setString(2, userId);
+        });
+    }
+
     public static void deleteSessionsOfUser_Transaction(Connection sqlCon, Start start, AppIdentifier appIdentifier,
                                                         String userId)
             throws SQLException, StorageQueryException {
@@ -210,17 +221,6 @@ public class SessionQueries {
                 + " WHERE app_id = ? AND user_id = ?";
 
         update(sqlCon, QUERY.toString(), pst -> {
-            pst.setString(1, appIdentifier.getAppId());
-            pst.setString(2, userId);
-        });
-    }
-
-    public static void deleteSessionsOfUser(Start start, AppIdentifier appIdentifier, String userId)
-            throws SQLException, StorageQueryException {
-        String QUERY = "DELETE FROM " + getConfig(start).getSessionInfoTable()
-                + " WHERE app_id = ? AND user_id = ?";
-
-        update(start, QUERY.toString(), pst -> {
             pst.setString(1, appIdentifier.getAppId());
             pst.setString(2, userId);
         });

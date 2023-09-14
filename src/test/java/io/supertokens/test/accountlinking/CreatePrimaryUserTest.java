@@ -130,6 +130,11 @@ public class CreatePrimaryUserTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            // Features are enabled by default for inmemory db
+            return;
+        }
+
         try {
             AuthRecipe.createPrimaryUser(process.main,
                     new AppIdentifierWithStorage(null, null, StorageLayer.getStorage(process.main)), "");

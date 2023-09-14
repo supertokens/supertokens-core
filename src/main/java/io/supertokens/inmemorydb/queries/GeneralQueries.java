@@ -75,6 +75,7 @@ public class GeneralQueries {
                 + "user_id CHAR(36) NOT NULL,"
                 + "primary_or_recipe_user_id CHAR(36) NOT NULL,"
                 + "is_linked_or_is_a_primary_user BOOLEAN NOT NULL DEFAULT FALSE,"
+                + "primary_or_recipe_user_time_joined BIGINT UNSIGNED NOT NULL,"
                 + "recipe_id VARCHAR(128) NOT NULL,"
                 + "time_joined BIGINT UNSIGNED NOT NULL,"
                 + "PRIMARY KEY (app_id, tenant_id, user_id),"
@@ -353,22 +354,22 @@ public class GeneralQueries {
 
         if (!doesTableExists(start, Config.getConfig(start).getRolesTable())) {
             getInstance(main).addState(CREATING_NEW_TABLE, null);
-            update(start, UserRoleQueries.getQueryToCreateRolesTable(start), NO_OP_SETTER);
+            update(start, UserRolesQueries.getQueryToCreateRolesTable(start), NO_OP_SETTER);
         }
 
         if (!doesTableExists(start, Config.getConfig(start).getUserRolesPermissionsTable())) {
             getInstance(main).addState(CREATING_NEW_TABLE, null);
-            update(start, UserRoleQueries.getQueryToCreateRolePermissionsTable(start), NO_OP_SETTER);
+            update(start, UserRolesQueries.getQueryToCreateRolePermissionsTable(start), NO_OP_SETTER);
             // index
-            update(start, UserRoleQueries.getQueryToCreateRolePermissionsPermissionIndex(start), NO_OP_SETTER);
+            update(start, UserRolesQueries.getQueryToCreateRolePermissionsPermissionIndex(start), NO_OP_SETTER);
         }
 
         if (!doesTableExists(start, Config.getConfig(start).getUserRolesTable())) {
             getInstance(main).addState(CREATING_NEW_TABLE, null);
-            update(start, UserRoleQueries.getQueryToCreateUserRolesTable(start), NO_OP_SETTER);
+            update(start, UserRolesQueries.getQueryToCreateUserRolesTable(start), NO_OP_SETTER);
 
             // index
-            update(start, UserRoleQueries.getQueryToCreateUserRolesRoleIndex(start), NO_OP_SETTER);
+            update(start, UserRolesQueries.getQueryToCreateUserRolesRoleIndex(start), NO_OP_SETTER);
         }
 
         if (!doesTableExists(start, Config.getConfig(start).getUserIdMappingTable())) {
@@ -1255,10 +1256,12 @@ public class GeneralQueries {
         for (AllAuthRecipeUsersResultHolder authRecipeUsersResultHolder : allAuthUsersResult) {
             String recipeUserId = authRecipeUsersResultHolder.userId;
             LoginMethod loginMethod = recipeUserIdToLoginMethodMap.get(recipeUserId);
+
             if (loginMethod == null) {
                 // loginMethod will be null for primaryUserId for which the user has been deleted during unlink
                 continue;
             }
+
             String primaryUserId = authRecipeUsersResultHolder.primaryOrRecipeUserId;
                         AuthRecipeUserInfo curr = userIdToAuthRecipeUserInfo.get(primaryUserId);
             if (curr == null) {
@@ -1563,6 +1566,21 @@ public class GeneralQueries {
             });
         }
         return accountLinkingInfo;
+    }
+
+    public static boolean doesUserIdExist_Transaction(Start start, Connection sqlCon, AppIdentifier appIdentifier, String userId)
+            throws SQLException, StorageQueryException {
+        // We query both tables cause there is a case where a primary user ID exists, but its associated
+        // recipe user ID has been deleted AND there are other recipe user IDs linked to this primary user ID already.
+        String QUERY = "SELECT 1 FROM " + getConfig(start).getAppIdToUserIdTable()
+                + " WHERE app_id = ? AND user_id = ? UNION SELECT 1 FROM " + getConfig(start).getUsersTable() +
+                " WHERE app_id = ? AND primary_or_recipe_user_id = ?";
+        return execute(sqlCon, QUERY, pst -> {
+            pst.setString(1, appIdentifier.getAppId());
+            pst.setString(2, userId);
+            pst.setString(3, appIdentifier.getAppId());
+            pst.setString(4, userId);
+        }, ResultSet::next);
     }
 
     private static class AllAuthRecipeUsersResultHolder {

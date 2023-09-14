@@ -239,6 +239,9 @@ public class EmailVerificationQueries {
     public static List<String> isEmailVerified_transaction(Start start, Connection sqlCon, AppIdentifier appIdentifier,
                                                            List<UserIdAndEmail> userIdAndEmail)
             throws SQLException, StorageQueryException {
+        if (userIdAndEmail.isEmpty()) {
+            return new ArrayList<>();
+        }
         List<String> emails = new ArrayList<>();
         List<String> userIds = new ArrayList<>();
         Map<String, String> userIdToEmailMap = new HashMap<>();
@@ -323,7 +326,8 @@ public class EmailVerificationQueries {
         });
     }
 
-    public static void deleteUserInfo_Transaction(Connection sqlCon, Start start, AppIdentifier appIdentifier, String userId)
+    public static void deleteUserInfo_Transaction(Connection sqlCon, Start start, AppIdentifier appIdentifier,
+                                                  String userId)
             throws StorageQueryException, SQLException {
         {
             String QUERY = "DELETE FROM " + getConfig(start).getEmailVerificationTable()

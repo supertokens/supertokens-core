@@ -203,7 +203,7 @@ public class TestMultitenancyAPIHelper {
     public static JsonObject associateUserToTenant(TenantIdentifier tenantIdentifier, String userId, Main main)
             throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("userId", userId);
+        requestBody.addProperty("recipeUserId", userId);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/multitenancy/tenant/user"),
@@ -216,7 +216,7 @@ public class TestMultitenancyAPIHelper {
     public static JsonObject disassociateUserFromTenant(TenantIdentifier tenantIdentifier, String userId, Main main)
             throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("userId", userId);
+        requestBody.addProperty("recipeUserId", userId);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/multitenancy/tenant/user/remove"),

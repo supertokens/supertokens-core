@@ -512,6 +512,10 @@ public class CreatePrimaryUserAPITest {
             return;
         }
 
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "abcd1234");
 
         JsonObject userObj;

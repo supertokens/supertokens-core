@@ -104,8 +104,7 @@ public class ThirdPartyQueries {
 
                 { // all_auth_recipe_users
                     String QUERY = "INSERT INTO " + getConfig(start).getUsersTable()
-                            +
-                            "(app_id, tenant_id, user_id, primary_or_recipe_user_id, recipe_id, time_joined, primary_or_recipe_user_time_joined)" +
+                            + "(app_id, tenant_id, user_id, primary_or_recipe_user_id, recipe_id, time_joined, primary_or_recipe_user_time_joined)" +
                             " VALUES(?, ?, ?, ?, ?, ?, ?)";
                     update(sqlCon, QUERY, pst -> {
                         pst.setString(1, tenantIdentifier.getAppId());
@@ -157,7 +156,8 @@ public class ThirdPartyQueries {
         });
     }
 
-    public static void deleteUser_Transaction(Connection sqlCon, Start start, AppIdentifier appIdentifier, String userId, boolean deleteUserIdMappingToo)
+    public static void deleteUser_Transaction(Connection sqlCon, Start start, AppIdentifier appIdentifier,
+                                              String userId, boolean deleteUserIdMappingToo)
             throws StorageQueryException, SQLException {
         if (deleteUserIdMappingToo) {
             String QUERY = "DELETE FROM " + getConfig(start).getAppIdToUserIdTable()
@@ -224,7 +224,7 @@ public class ThirdPartyQueries {
         // in psql / mysql dbs, this will lock the rows that are in both the tables that meet the ON criteria only.
         String QUERY = "SELECT user_id " +
                 " FROM " + getConfig(start).getThirdPartyUsersTable() +
-                " WHERE app_id = ? AND third_party_id = ? AND third_party_user_id = ? FOR UPDATE";
+                " WHERE app_id = ? AND third_party_id = ? AND third_party_user_id = ?";
 
         return execute(con, QUERY, pst -> {
             pst.setString(1, appIdentifier.getAppId());
@@ -301,6 +301,7 @@ public class ThirdPartyQueries {
         return Collections.emptyList();
     }
 
+
     public static List<String> listUserIdsByThirdPartyInfo(Start start, AppIdentifier appIdentifier,
                                                            String thirdPartyId, String thirdPartyUserId)
             throws SQLException, StorageQueryException {
@@ -350,6 +351,7 @@ public class ThirdPartyQueries {
     public static String getUserIdByThirdPartyInfo(Start start, TenantIdentifier tenantIdentifier,
                                                       String thirdPartyId, String thirdPartyUserId)
             throws SQLException, StorageQueryException {
+
         String QUERY = "SELECT DISTINCT all_users.primary_or_recipe_user_id AS user_id "
                 + "FROM " + getConfig(start).getThirdPartyUserToTenantTable() + " AS tp" +
                 " JOIN " + getConfig(start).getUsersTable() + " AS all_users" +
@@ -366,27 +368,6 @@ public class ThirdPartyQueries {
                 return result.getString("user_id");
             }
             return null;
-        });
-    }
-
-    public static List<String> getPrimaryUserIdUsingEmail_Transaction(Start start, Connection con,
-                                                          AppIdentifier appIdentifier, String email)
-            throws StorageQueryException, SQLException {
-        String QUERY = "SELECT DISTINCT all_users.primary_or_recipe_user_id AS user_id "
-                + "FROM " + getConfig(start).getThirdPartyUsersTable() + " AS tp" +
-                " JOIN " + getConfig(start).getAppIdToUserIdTable() + " AS all_users" +
-                " ON tp.app_id = all_users.app_id AND tp.user_id = all_users.user_id" +
-                " WHERE tp.app_id = ? AND tp.email = ?";
-
-        return execute(con, QUERY, pst -> {
-            pst.setString(1, appIdentifier.getAppId());
-            pst.setString(2, email);
-        }, result -> {
-            List<String> finalResult = new ArrayList<>();
-            while (result.next()) {
-                finalResult.add(result.getString("user_id"));
-            }
-            return finalResult;
         });
     }
 
@@ -448,6 +429,27 @@ public class ThirdPartyQueries {
         });
     }
 
+    public static List<String> getPrimaryUserIdUsingEmail_Transaction(Start start, Connection con,
+                                                          AppIdentifier appIdentifier, String email)
+            throws StorageQueryException, SQLException {
+        String QUERY = "SELECT DISTINCT all_users.primary_or_recipe_user_id AS user_id "
+                + "FROM " + getConfig(start).getThirdPartyUsersTable() + " AS tp" +
+                " JOIN " + getConfig(start).getAppIdToUserIdTable() + " AS all_users" +
+                " ON tp.app_id = all_users.app_id AND tp.user_id = all_users.user_id" +
+                " WHERE tp.app_id = ? AND tp.email = ?";
+
+        return execute(con, QUERY, pst -> {
+            pst.setString(1, appIdentifier.getAppId());
+            pst.setString(2, email);
+        }, result -> {
+            List<String> finalResult = new ArrayList<>();
+            while (result.next()) {
+                finalResult.add(result.getString("user_id"));
+            }
+            return finalResult;
+        });
+    }
+
     public static boolean addUserIdToTenant_Transaction(Start start, Connection sqlCon,
                                                         TenantIdentifier tenantIdentifier, String userId)
             throws SQLException, StorageQueryException, UnknownUserIdException {
@@ -479,7 +481,7 @@ public class ThirdPartyQueries {
         { // thirdparty_user_to_tenant
             String QUERY = "INSERT INTO " + getConfig(start).getThirdPartyUserToTenantTable()
                     + "(app_id, tenant_id, user_id, third_party_id, third_party_user_id)"
-                    + " VALUES(?, ?, ?, ?, ?)" + " ON CONFLICT DO NOTHING";
+                    + " VALUES(?, ?, ?, ?, ?)" + " ON CONFLICT (app_id, tenant_id, user_id) DO NOTHING";
             int numRows = update(sqlCon, QUERY, pst -> {
                 pst.setString(1, tenantIdentifier.getAppId());
                 pst.setString(2, tenantIdentifier.getTenantId());
