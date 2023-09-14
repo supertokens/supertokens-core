@@ -188,7 +188,11 @@ public class GeneralQueries {
                 + "app_id VARCHAR(64) NOT NULL DEFAULT 'public',"
                 + "user_id CHAR(36) NOT NULL,"
                 + "recipe_id VARCHAR(128) NOT NULL,"
+                + "primary_or_recipe_user_id CHAR(36) NOT NULL,"
+                + "is_linked_or_is_a_primary_user BOOLEAN NOT NULL DEFAULT FALSE,"
                 + "PRIMARY KEY (app_id, user_id), "
+                + "FOREIGN KEY (app_id, primary_or_recipe_user_id) REFERENCES " + Config.getConfig(start).getAppIdToUserIdTable()
+                + " (app_id, user_id) ON DELETE CASCADE,"
                 + "FOREIGN KEY(app_id) REFERENCES " + Config.getConfig(start).getAppsTable()
                 + " (app_id) ON DELETE CASCADE"
                 + ");";
@@ -882,13 +886,24 @@ public class GeneralQueries {
     public static void makePrimaryUser_Transaction(Start start, Connection sqlCon, AppIdentifier appIdentifier,
                                                    String userId)
             throws SQLException, StorageQueryException {
-        String QUERY = "UPDATE " + getConfig(start).getUsersTable() +
-                " SET is_linked_or_is_a_primary_user = true WHERE app_id = ? AND user_id = ?";
+        {
+            String QUERY = "UPDATE " + getConfig(start).getUsersTable() +
+                    " SET is_linked_or_is_a_primary_user = true WHERE app_id = ? AND user_id = ?";
 
-        update(sqlCon, QUERY, pst -> {
-            pst.setString(1, appIdentifier.getAppId());
-            pst.setString(2, userId);
-        });
+            update(sqlCon, QUERY, pst -> {
+                pst.setString(1, appIdentifier.getAppId());
+                pst.setString(2, userId);
+            });
+        }
+        {
+            String QUERY = "UPDATE " + getConfig(start).getAppIdToUserIdTable() +
+                    " SET is_linked_or_is_a_primary_user = true WHERE app_id = ? AND user_id = ?";
+
+            update(sqlCon, QUERY, pst -> {
+                pst.setString(1, appIdentifier.getAppId());
+                pst.setString(2, userId);
+            });
+        }
     }
 
     public static void linkAccounts_Transaction(Start start, Connection sqlCon, AppIdentifier appIdentifier,
@@ -915,6 +930,17 @@ public class GeneralQueries {
                 pst.setString(2, primaryUserId);
                 pst.setString(3, appIdentifier.getAppId());
                 pst.setString(4, primaryUserId);
+            });
+        }
+        {
+            String QUERY = "UPDATE " + getConfig(start).getAppIdToUserIdTable() +
+                    " SET is_linked_or_is_a_primary_user = true, primary_or_recipe_user_id = ? WHERE app_id = ? AND " +
+                    "user_id = ?";
+
+            update(sqlCon, QUERY, pst -> {
+                pst.setString(1, primaryUserId);
+                pst.setString(2, appIdentifier.getAppId());
+                pst.setString(3, recipeUserId);
             });
         }
     }
@@ -944,6 +970,17 @@ public class GeneralQueries {
                 pst.setString(2, primaryUserId);
                 pst.setString(3, appIdentifier.getAppId());
                 pst.setString(4, primaryUserId);
+            });
+        }
+        {
+            String QUERY = "UPDATE " + getConfig(start).getAppIdToUserIdTable() +
+                    " SET is_linked_or_is_a_primary_user = false, primary_or_recipe_user_id = ?" +
+                    " WHERE app_id = ? AND user_id = ?";
+
+            update(sqlCon, QUERY, pst -> {
+                pst.setString(1, recipeUserId);
+                pst.setString(2, appIdentifier.getAppId());
+                pst.setString(3, recipeUserId);
             });
         }
     }
@@ -1151,7 +1188,7 @@ public class GeneralQueries {
                                                                           AppIdentifier appIdentifier,
                                                                            List<String> userIds)
             throws StorageQueryException, SQLException {
-if (userIds.size() == 0) {
+        if (userIds.size() == 0) {
              return new ArrayList<>();
          }
  
@@ -1159,13 +1196,14 @@ if (userIds.size() == 0) {
          // which is linked to a primary user ID in which case it won't be in the primary_or_recipe_user_id column,
          // or the input may have a primary user ID whose recipe user ID was removed, so it won't be in the user_id
          // column
-        String QUERY = "SELECT * FROM " + getConfig(start).getUsersTable() +
-                " WHERE primary_or_recipe_user_id IN (SELECT primary_or_recipe_user_id FROM " +
-                getConfig(start).getUsersTable() + " WHERE (user_id IN ("
-                 + Utils.generateCommaSeperatedQuestionMarks(userIds.size()) +
-                 ") OR primary_or_recipe_user_id IN (" +
-                 Utils.generateCommaSeperatedQuestionMarks(userIds.size()) +
-                 ")) AND app_id = ?) AND app_id = ?";
+        String QUERY = "SELECT au.user_id, au.primary_or_recipe_user_id, au.is_linked_or_is_a_primary_user, au.recipe_id, aaru.tenant_id, aaru.time_joined FROM " + getConfig(start).getAppIdToUserIdTable() + " as au " +
+                "LEFT JOIN " + getConfig(start).getUsersTable() + " as aaru ON au.app_id = aaru.app_id AND au.user_id = aaru.user_id" +
+                " WHERE au.primary_or_recipe_user_id IN (SELECT primary_or_recipe_user_id FROM " +
+                getConfig(start).getAppIdToUserIdTable() + " WHERE (user_id IN ("
+                + Utils.generateCommaSeperatedQuestionMarks(userIds.size()) +
+                ") OR au.primary_or_recipe_user_id IN (" +
+                Utils.generateCommaSeperatedQuestionMarks(userIds.size()) +
+                ")) AND app_id = ?) AND au.app_id = ?";
 
         List<AllAuthRecipeUsersResultHolder> allAuthUsersResult = execute(start, QUERY, pst -> {
              // IN user_id
@@ -1217,7 +1255,10 @@ if (userIds.size() == 0) {
         for (AllAuthRecipeUsersResultHolder authRecipeUsersResultHolder : allAuthUsersResult) {
             String recipeUserId = authRecipeUsersResultHolder.userId;
             LoginMethod loginMethod = recipeUserIdToLoginMethodMap.get(recipeUserId);
-            assert (loginMethod != null);
+            if (loginMethod == null) {
+                // loginMethod will be null for primaryUserId for which the user has been deleted during unlink
+                continue;
+            }
             String primaryUserId = authRecipeUsersResultHolder.primaryOrRecipeUserId;
                         AuthRecipeUserInfo curr = userIdToAuthRecipeUserInfo.get(primaryUserId);
             if (curr == null) {
@@ -1245,13 +1286,14 @@ if (userIds.size() == 0) {
         // which is linked to a primary user ID in which case it won't be in the primary_or_recipe_user_id column,
         // or the input may have a primary user ID whose recipe user ID was removed, so it won't be in the user_id
         // column
-        String QUERY = "SELECT * FROM " + getConfig(start).getUsersTable() +
-                " WHERE primary_or_recipe_user_id IN (SELECT primary_or_recipe_user_id FROM " +
-                getConfig(start).getUsersTable() + " WHERE (user_id IN ("
+        String QUERY = "SELECT au.user_id, au.primary_or_recipe_user_id, au.is_linked_or_is_a_primary_user, au.recipe_id, aaru.tenant_id, aaru.time_joined FROM " + getConfig(start).getAppIdToUserIdTable() + " as au" +
+                " LEFT JOIN " + getConfig(start).getUsersTable() + " as aaru ON au.app_id = aaru.app_id AND au.user_id = aaru.user_id" +
+                " WHERE au.primary_or_recipe_user_id IN (SELECT primary_or_recipe_user_id FROM " +
+                getConfig(start).getAppIdToUserIdTable() + " WHERE (user_id IN ("
                 + Utils.generateCommaSeperatedQuestionMarks(userIds.size()) +
-                ") OR primary_or_recipe_user_id IN (" +
+                ") OR au.primary_or_recipe_user_id IN (" +
                 Utils.generateCommaSeperatedQuestionMarks(userIds.size()) +
-                ")) AND app_id = ?) AND app_id = ?";
+                ")) AND app_id = ?) AND au.app_id = ?";
 
         List<AllAuthRecipeUsersResultHolder> allAuthUsersResult = execute(sqlCon, QUERY, pst -> {
             // IN user_id
@@ -1303,7 +1345,10 @@ if (userIds.size() == 0) {
         for (AllAuthRecipeUsersResultHolder authRecipeUsersResultHolder : allAuthUsersResult) {
             String recipeUserId = authRecipeUsersResultHolder.userId;
             LoginMethod loginMethod = recipeUserIdToLoginMethodMap.get(recipeUserId);
-            assert (loginMethod != null);
+            if (loginMethod == null) {
+                // loginMethod will be null for primaryUserId for which the user has been deleted during unlink
+                continue;
+            }
             String primaryUserId = authRecipeUsersResultHolder.primaryOrRecipeUserId;
             AuthRecipeUserInfo curr = userIdToAuthRecipeUserInfo.get(primaryUserId);
             if (curr == null) {
@@ -1497,6 +1542,29 @@ if (userIds.size() == 0) {
         });
     }
 
+    public static AccountLinkingInfo getAccountLinkingInfo_Transaction(Start start, Connection sqlCon, AppIdentifier appIdentifier, String userId)
+            throws SQLException, StorageQueryException {
+        GeneralQueries.AccountLinkingInfo accountLinkingInfo = new GeneralQueries.AccountLinkingInfo(userId, false);
+        {
+            String QUERY = "SELECT primary_or_recipe_user_id, is_linked_or_is_a_primary_user FROM "
+                    + Config.getConfig(start).getAppIdToUserIdTable() + " WHERE app_id = ? AND user_id = ?";
+
+            accountLinkingInfo = execute(sqlCon, QUERY, pst -> {
+                pst.setString(1, appIdentifier.getAppId());
+                pst.setString(2, userId);
+            }, result -> {
+                if (result.next()) {
+                    String primaryUserId1 = result.getString("primary_or_recipe_user_id");
+                    boolean isLinked1 = result.getBoolean("is_linked_or_is_a_primary_user");
+                    return new AccountLinkingInfo(primaryUserId1, isLinked1);
+
+                }
+                return null;
+            });
+        }
+        return accountLinkingInfo;
+    }
+
     private static class AllAuthRecipeUsersResultHolder {
         String userId;
         String tenantId;
@@ -1529,6 +1597,16 @@ if (userIds.size() == 0) {
         @Override
         public KeyValueInfo map(ResultSet result) throws Exception {
             return new KeyValueInfo(result.getString("value"), result.getLong("created_at_time"));
+        }
+    }
+
+    public static class AccountLinkingInfo {
+        public String primaryUserId;
+        public boolean isLinked;
+
+        public AccountLinkingInfo(String primaryUserId, boolean isLinked) {
+            this.primaryUserId = primaryUserId;
+            this.isLinked = isLinked;
         }
     }
 }
