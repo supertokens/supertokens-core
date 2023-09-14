@@ -206,6 +206,10 @@ Mihály Lengyel</b></sub></a></td>
 <td align="center"><a href="https://github.com/LukasKnuth"><img src="https://avatars.githubusercontent.com/u/692211?v=4" width="100px;" alt=""/><br /><sub><b>Lukas Knuth</b></sub></a></td>
 <td align="center"><a href="https://github.com/melvynhills"><img src="https://avatars.githubusercontent.com/u/417315?v=4" width="100px;" alt=""/><br /><sub><b>
 Melvyn Hills</b></sub></a></td>
+  <tr>
+<td align="center"><a href="https://github.com/mattanimation"><img src="https://avatars.githubusercontent.com/u/1426997?v=4" width="100px;" alt=""/><br /><sub><b>Matt Murray</b></sub></a></td>
+Melvyn Hills</b></sub></a></td>
+
   </tr>
 </table>
 
