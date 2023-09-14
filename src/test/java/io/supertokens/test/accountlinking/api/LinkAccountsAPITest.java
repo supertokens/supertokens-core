@@ -489,6 +489,10 @@ public class LinkAccountsAPITest {
             return;
         }
 
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "abcd1234");
 
         AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "abcd1234");

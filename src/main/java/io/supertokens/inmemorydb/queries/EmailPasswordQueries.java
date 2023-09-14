@@ -80,6 +80,7 @@ public class EmailPasswordQueries {
                 + "app_id VARCHAR(64) DEFAULT 'public',"
                 + "user_id CHAR(36) NOT NULL,"
                 + "token VARCHAR(128) NOT NULL UNIQUE,"
+                + "email VARCHAR(256)," // nullable cause of backwards compatibility.
                 + "token_expiry BIGINT UNSIGNED NOT NULL,"
                 + "PRIMARY KEY (app_id, user_id, token),"
                 + "FOREIGN KEY (app_id, user_id) REFERENCES " + Config.getConfig(start).getAppIdToUserIdTable()
@@ -181,8 +182,9 @@ public class EmailPasswordQueries {
                 appIdentifier.getAppId() + "~" + userId + Config.getConfig(start).getPasswordResetTokensTable());
 
 
-        String QUERY = "SELECT user_id, token, token_expiry FROM " + getConfig(start).getPasswordResetTokensTable()
-                + " WHERE app_id = ? AND user_id = ?";
+        String QUERY =
+                "SELECT user_id, token, token_expiry, email FROM " + getConfig(start).getPasswordResetTokensTable()
+                        + " WHERE app_id = ? AND user_id = ?";
 
         return execute(con, QUERY, pst -> {
             pst.setString(1, appIdentifier.getAppId());
@@ -526,7 +528,7 @@ public class EmailPasswordQueries {
         { // emailpassword_user_to_tenant
             String QUERY = "INSERT INTO " + getConfig(start).getEmailPasswordUserToTenantTable()
                     + "(app_id, tenant_id, user_id, email)"
-                    + " VALUES(?, ?, ?, ?) " + " ON CONFLICT DO NOTHING";
+                    + " VALUES(?, ?, ?, ?) " + " ON CONFLICT (app_id, tenant_id, user_id) DO NOTHING";
 
             int numRows = update(sqlCon, QUERY, pst -> {
                 pst.setString(1, tenantIdentifier.getAppId());

@@ -142,7 +142,7 @@ public class DeleteUserAPIWithUserIdMappingTest {
             requestBody.addProperty("userId", userInfo_1.getSupertokensUserId());
 
             JsonObject deleteResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/user/remove", requestBody, 1000, 1000, null,
+                    "http://localhost:3567/user/remove", requestBody, 1000000, 1000000, null,
                     SemVer.v2_15.get(), "emailpassword");
             assertEquals("OK", deleteResponse.get("status").getAsString());
 

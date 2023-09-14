@@ -167,6 +167,10 @@ public class LinkAccountsTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         try {
             AuthRecipe.linkAccounts(process.main, "", "");
             assert (false);

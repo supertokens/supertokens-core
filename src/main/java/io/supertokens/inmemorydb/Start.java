@@ -49,10 +49,7 @@ import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
 import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
 import io.supertokens.pluginInterface.jwt.exceptions.DuplicateKeyIdException;
 import io.supertokens.pluginInterface.jwt.sqlstorage.JWTRecipeSQLStorage;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
-import io.supertokens.pluginInterface.multitenancy.MultitenancyStorage;
-import io.supertokens.pluginInterface.multitenancy.TenantConfig;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateClientTypeException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateTenantException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateThirdPartyIdException;
@@ -80,6 +77,7 @@ import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
 import io.supertokens.pluginInterface.useridmapping.exception.UnknownSuperTokensUserIdException;
 import io.supertokens.pluginInterface.useridmapping.exception.UserIdMappingAlreadyExistsException;
+import io.supertokens.pluginInterface.useridmapping.sqlStorage.UserIdMappingSQLStorage;
 import io.supertokens.pluginInterface.usermetadata.UserMetadataStorage;
 import io.supertokens.pluginInterface.usermetadata.sqlStorage.UserMetadataSQLStorage;
 import io.supertokens.pluginInterface.userroles.UserRolesStorage;
@@ -103,7 +101,8 @@ import java.util.Set;
 public class Start
         implements SessionSQLStorage, EmailPasswordSQLStorage, EmailVerificationSQLStorage, ThirdPartySQLStorage,
         JWTRecipeSQLStorage, PasswordlessSQLStorage, UserMetadataSQLStorage, UserRolesSQLStorage, UserIdMappingStorage,
-        MultitenancyStorage, MultitenancySQLStorage, TOTPSQLStorage, ActiveUsersStorage, DashboardSQLStorage, AuthRecipeSQLStorage {
+        UserIdMappingSQLStorage, MultitenancyStorage, MultitenancySQLStorage, TOTPSQLStorage, ActiveUsersStorage,
+        DashboardSQLStorage, AuthRecipeSQLStorage {
 
     private static final Object appenderLock = new Object();
     private static final String APP_ID_KEY_NAME = "app_id";
@@ -1184,6 +1183,16 @@ public class Start
     }
 
     @Override
+    public boolean doesUserIdExist_Transaction(TransactionConnection con, AppIdentifier appIdentifier, String userId) throws StorageQueryException {
+        try {
+            Connection sqlCon = (Connection) con.getConnection();
+            return GeneralQueries.doesUserIdExist_Transaction(this, sqlCon, appIdentifier, userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
     public void updateLastActive(AppIdentifier appIdentifier, String userId) throws StorageQueryException {
         try {
             ActiveUsersQueries.updateUserLastActive(this, appIdentifier, userId);
@@ -1850,7 +1859,7 @@ public class Start
             throws StorageQueryException, UnknownRoleException, DuplicateUserRoleMappingException,
             TenantOrAppNotFoundException {
         try {
-            UserRoleQueries.addRoleToUser(this, tenantIdentifier, userId, role);
+            UserRolesQueries.addRoleToUser(this, tenantIdentifier, userId, role);
         } catch (SQLException e) {
             if (e instanceof SQLiteException) {
                 SQLiteConfig config = Config.getConfig(this);
@@ -1884,7 +1893,7 @@ public class Start
     public String[] getRolesForUser(TenantIdentifier tenantIdentifier, String userId) throws
             StorageQueryException {
         try {
-            return UserRoleQueries.getRolesForUser(this, tenantIdentifier, userId);
+            return UserRolesQueries.getRolesForUser(this, tenantIdentifier, userId);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -1893,7 +1902,7 @@ public class Start
     private String[] getRolesForUser(AppIdentifier appIdentifier, String userId) throws
             StorageQueryException {
         try {
-            return UserRoleQueries.getRolesForUser(this, appIdentifier, userId);
+            return UserRolesQueries.getRolesForUser(this, appIdentifier, userId);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -1903,7 +1912,7 @@ public class Start
     public String[] getUsersForRole(TenantIdentifier tenantIdentifier, String role) throws
             StorageQueryException {
         try {
-            return UserRoleQueries.getUsersForRole(this, tenantIdentifier, role);
+            return UserRolesQueries.getUsersForRole(this, tenantIdentifier, role);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -1913,7 +1922,7 @@ public class Start
     public String[] getPermissionsForRole(AppIdentifier appIdentifier, String role) throws
             StorageQueryException {
         try {
-            return UserRoleQueries.getPermissionsForRole(this, appIdentifier, role);
+            return UserRolesQueries.getPermissionsForRole(this, appIdentifier, role);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -1923,7 +1932,7 @@ public class Start
     public String[] getRolesThatHavePermission(AppIdentifier appIdentifier, String permission)
             throws StorageQueryException {
         try {
-            return UserRoleQueries.getRolesThatHavePermission(this, appIdentifier, permission);
+            return UserRolesQueries.getRolesThatHavePermission(this, appIdentifier, permission);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -1932,7 +1941,7 @@ public class Start
     @Override
     public boolean deleteRole(AppIdentifier appIdentifier, String role) throws StorageQueryException {
         try {
-            return UserRoleQueries.deleteRole(this, appIdentifier, role);
+            return UserRolesQueries.deleteRole(this, appIdentifier, role);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -1941,7 +1950,7 @@ public class Start
     @Override
     public String[] getRoles(AppIdentifier appIdentifier) throws StorageQueryException {
         try {
-            return UserRoleQueries.getRoles(this, appIdentifier);
+            return UserRolesQueries.getRoles(this, appIdentifier);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -1950,7 +1959,7 @@ public class Start
     @Override
     public boolean doesRoleExist(AppIdentifier appIdentifier, String role) throws StorageQueryException {
         try {
-            return UserRoleQueries.doesRoleExist(this, appIdentifier, role);
+            return UserRolesQueries.doesRoleExist(this, appIdentifier, role);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -1960,7 +1969,7 @@ public class Start
     public int deleteAllRolesForUser(TenantIdentifier tenantIdentifier, String userId) throws
             StorageQueryException {
         try {
-            return UserRoleQueries.deleteAllRolesForUser(this, tenantIdentifier, userId);
+            return UserRolesQueries.deleteAllRolesForUser(this, tenantIdentifier, userId);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -1972,7 +1981,7 @@ public class Start
             throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
-            return UserRoleQueries.deleteRoleForUser_Transaction(this, sqlCon, tenantIdentifier, userId,
+            return UserRolesQueries.deleteRoleForUser_Transaction(this, sqlCon, tenantIdentifier, userId,
                     role);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
@@ -1985,7 +1994,7 @@ public class Start
             throws StorageQueryException, TenantOrAppNotFoundException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
-            return UserRoleQueries.createNewRoleOrDoNothingIfExists_Transaction(
+            return UserRolesQueries.createNewRoleOrDoNothingIfExists_Transaction(
                     this, sqlCon, appIdentifier, role);
         } catch (SQLException e) {
             if (e instanceof SQLiteException) {
@@ -2011,7 +2020,7 @@ public class Start
             throws StorageQueryException, UnknownRoleException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
-            UserRoleQueries.addPermissionToRoleOrDoNothingIfExists_Transaction(this, sqlCon, appIdentifier,
+            UserRolesQueries.addPermissionToRoleOrDoNothingIfExists_Transaction(this, sqlCon, appIdentifier,
                     role, permission);
         } catch (SQLException e) {
             if (e instanceof SQLiteException) {
@@ -2035,7 +2044,7 @@ public class Start
             throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
-            return UserRoleQueries.deletePermissionForRole_Transaction(this, sqlCon, appIdentifier, role,
+            return UserRolesQueries.deletePermissionForRole_Transaction(this, sqlCon, appIdentifier, role,
                     permission);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
@@ -2048,7 +2057,7 @@ public class Start
             throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
-            return UserRoleQueries.deleteAllPermissionsForRole_Transaction(this, sqlCon, appIdentifier,
+            return UserRolesQueries.deleteAllPermissionsForRole_Transaction(this, sqlCon, appIdentifier,
                     role);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
@@ -2060,7 +2069,7 @@ public class Start
             throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
-            return UserRoleQueries.doesRoleExist_transaction(this, sqlCon, appIdentifier, role);
+            return UserRolesQueries.doesRoleExist_transaction(this, sqlCon, appIdentifier, role);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -2071,7 +2080,7 @@ public class Start
             throws StorageQueryException {
         try {
             Connection sqlCon = (Connection) con.getConnection();
-            UserRoleQueries.deleteAllRolesForUser_Transaction(sqlCon, this, appIdentifier, userId);
+            UserRolesQueries.deleteAllRolesForUser_Transaction(sqlCon, this, appIdentifier, userId);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -2906,4 +2915,36 @@ public class Start
             throw new StorageQueryException(e);
         }
     }
+
+
+    @Override
+    public UserIdMapping getUserIdMapping_Transaction(TransactionConnection con, AppIdentifier appIdentifier, String userId, boolean isSuperTokensUserId)
+            throws StorageQueryException {
+        try {
+            Connection sqlCon = (Connection) con.getConnection();
+            if (isSuperTokensUserId) {
+                return UserIdMappingQueries.getuseraIdMappingWithSuperTokensUserId_Transaction(this, sqlCon, appIdentifier,
+                        userId);
+            }
+
+            return UserIdMappingQueries.getUserIdMappingWithExternalUserId_Transaction(this, sqlCon, appIdentifier, userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public UserIdMapping[] getUserIdMapping_Transaction(TransactionConnection con, AppIdentifier appIdentifier, String userId)
+            throws StorageQueryException {
+        try {
+            Connection sqlCon = (Connection) con.getConnection();
+            return UserIdMappingQueries.getUserIdMappingWithEitherSuperTokensUserIdOrExternalUserId_Transaction(this,
+                    sqlCon,
+                    appIdentifier,
+                    userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
 }

@@ -25,15 +25,18 @@ import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.emailverification.EmailVerificationStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.session.SessionStorage;
+import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
 import io.supertokens.pluginInterface.totp.TOTPStorage;
 import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
 import io.supertokens.pluginInterface.useridmapping.exception.UnknownSuperTokensUserIdException;
 import io.supertokens.pluginInterface.useridmapping.exception.UserIdMappingAlreadyExistsException;
+import io.supertokens.pluginInterface.useridmapping.sqlStorage.UserIdMappingSQLStorage;
 import io.supertokens.pluginInterface.usermetadata.UserMetadataStorage;
 import io.supertokens.pluginInterface.userroles.UserRolesStorage;
 import io.supertokens.storageLayer.StorageLayer;
@@ -124,17 +127,38 @@ public class UserIdMapping {
             AppIdentifierWithStorage appIdentifierWithStorage, String userId,
             UserIdType userIdType)
             throws StorageQueryException {
-        UserIdMappingStorage storage = appIdentifierWithStorage.getUserIdMappingStorage();
+        UserIdMappingSQLStorage storage = (UserIdMappingSQLStorage) appIdentifierWithStorage.getUserIdMappingStorage();
+
+        try {
+            return storage.startTransaction(con -> {
+                return getUserIdMapping(con, appIdentifierWithStorage, userId, userIdType);
+            });
+        } catch (StorageTransactionLogicException e) {
+            if (e.actualException instanceof StorageQueryException) {
+                throw (StorageQueryException) e.actualException;
+            } else {
+                throw new IllegalStateException(e.actualException);
+            }
+        }
+    }
+
+    public static io.supertokens.pluginInterface.useridmapping.UserIdMapping getUserIdMapping(
+            TransactionConnection con,
+            AppIdentifierWithStorage appIdentifierWithStorage, String userId,
+            UserIdType userIdType)
+            throws StorageQueryException {
+        UserIdMappingSQLStorage storage = (UserIdMappingSQLStorage) appIdentifierWithStorage.getUserIdMappingStorage();
 
         if (userIdType == UserIdType.SUPERTOKENS) {
-            return storage.getUserIdMapping(appIdentifierWithStorage, userId, true);
-        }
-        if (userIdType == UserIdType.EXTERNAL) {
-            return storage.getUserIdMapping(appIdentifierWithStorage, userId, false);
+            return storage.getUserIdMapping_Transaction(con, appIdentifierWithStorage, userId, true);
         }
 
-        io.supertokens.pluginInterface.useridmapping.UserIdMapping[] userIdMappings = storage.getUserIdMapping(
-                appIdentifierWithStorage, userId);
+        if (userIdType == UserIdType.EXTERNAL) {
+            return storage.getUserIdMapping_Transaction(con, appIdentifierWithStorage, userId, false);
+        }
+
+        io.supertokens.pluginInterface.useridmapping.UserIdMapping[] userIdMappings = storage.getUserIdMapping_Transaction(
+                con, appIdentifierWithStorage, userId);
 
         if (userIdMappings.length == 0) {
             return null;
