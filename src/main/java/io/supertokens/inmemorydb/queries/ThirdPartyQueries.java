@@ -24,6 +24,7 @@ import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.RowMapper;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
+import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
@@ -92,11 +93,12 @@ public class ThirdPartyQueries {
             try {
                 { // app_id_to_user_id
                     String QUERY = "INSERT INTO " + getConfig(start).getAppIdToUserIdTable()
-                            + "(app_id, user_id, recipe_id)" + " VALUES(?, ?, ?)";
+                            + "(app_id, user_id, primary_or_recipe_user_id, recipe_id)" + " VALUES(?, ?, ?, ?)";
                     update(sqlCon, QUERY, pst -> {
                         pst.setString(1, tenantIdentifier.getAppId());
                         pst.setString(2, id);
-                        pst.setString(3, THIRD_PARTY.toString());
+                        pst.setString(3, id);
+                        pst.setString(4, THIRD_PARTY.toString());
                     });
                 }
 
@@ -372,7 +374,7 @@ public class ThirdPartyQueries {
             throws StorageQueryException, SQLException {
         String QUERY = "SELECT DISTINCT all_users.primary_or_recipe_user_id AS user_id "
                 + "FROM " + getConfig(start).getThirdPartyUsersTable() + " AS tp" +
-                " JOIN " + getConfig(start).getUsersTable() + " AS all_users" +
+                " JOIN " + getConfig(start).getAppIdToUserIdTable() + " AS all_users" +
                 " ON tp.app_id = all_users.app_id AND tp.user_id = all_users.user_id" +
                 " WHERE tp.app_id = ? AND tp.email = ?";
 
@@ -448,22 +450,29 @@ public class ThirdPartyQueries {
 
     public static boolean addUserIdToTenant_Transaction(Start start, Connection sqlCon,
                                                         TenantIdentifier tenantIdentifier, String userId)
-            throws SQLException, StorageQueryException {
+            throws SQLException, StorageQueryException, UnknownUserIdException {
         UserInfoPartial userInfo = ThirdPartyQueries.getUserInfoUsingUserId_Transaction(start, sqlCon,
                 tenantIdentifier.toAppIdentifier(), userId);
 
+        if (userInfo == null) {
+            throw new UnknownUserIdException();
+        }
+
+        GeneralQueries.AccountLinkingInfo accountLinkingInfo = GeneralQueries.getAccountLinkingInfo_Transaction(start, sqlCon, tenantIdentifier.toAppIdentifier(), userId);
+
         { // all_auth_recipe_users
             String QUERY = "INSERT INTO " + getConfig(start).getUsersTable()
-                    + "(app_id, tenant_id, user_id, primary_or_recipe_user_id, recipe_id, time_joined, primary_or_recipe_user_time_joined)"
-                    + " VALUES(?, ?, ?, ?, ?, ?, ?)" + " ON CONFLICT DO NOTHING";
+                    + "(app_id, tenant_id, user_id, primary_or_recipe_user_id, is_linked_or_is_a_primary_user, recipe_id, time_joined, primary_or_recipe_user_time_joined)"
+                    + " VALUES(?, ?, ?, ?, ?, ?, ?, ?)" + " ON CONFLICT DO NOTHING";
             update(sqlCon, QUERY, pst -> {
                 pst.setString(1, tenantIdentifier.getAppId());
                 pst.setString(2, tenantIdentifier.getTenantId());
                 pst.setString(3, userInfo.id);
-                pst.setString(4, userInfo.id);
-                pst.setString(5, THIRD_PARTY.toString());
-                pst.setLong(6, userInfo.timeJoined);
+                pst.setString(4, accountLinkingInfo.primaryUserId);
+                pst.setBoolean(5, accountLinkingInfo.isLinked);
+                pst.setString(6, THIRD_PARTY.toString());
                 pst.setLong(7, userInfo.timeJoined);
+                pst.setLong(8, userInfo.timeJoined);
             });
         }
 
