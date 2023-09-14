@@ -2815,10 +2815,15 @@ public class Start
 
     @Override
     public AuthRecipeUserInfo[] listPrimaryUsersByThirdPartyInfo(AppIdentifier appIdentifier,
-                                                                             String thirdPartyId,
-                                                                             String thirdPartyUserId)
+                                                                 String thirdPartyId,
+                                                                 String thirdPartyUserId)
             throws StorageQueryException {
-        return null; // TODO
+        try {
+            return GeneralQueries.listPrimaryUsersByThirdPartyInfo(this, appIdentifier,
+                    thirdPartyId, thirdPartyUserId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
@@ -2829,7 +2834,7 @@ public class Start
             throws StorageQueryException {
         try {
             Connection sqlCon = (Connection) con.getConnection();
-            return GeneralQueries.getPrimaryUsersByThirdPartyInfo_Transaction(this, sqlCon, appIdentifier,
+            return GeneralQueries.listPrimaryUsersByThirdPartyInfo_Transaction(this, sqlCon, appIdentifier,
                     thirdPartyId, thirdPartyUserId);
         } catch (SQLException e) {
             throw new StorageQueryException(e);

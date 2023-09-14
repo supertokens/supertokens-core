@@ -151,7 +151,8 @@ public class EmailPasswordQueries {
     public static PasswordResetTokenInfo[] getAllPasswordResetTokenInfoForUser(Start start, AppIdentifier appIdentifier,
                                                                                String userId)
             throws StorageQueryException, SQLException {
-        String QUERY = "SELECT user_id, token, token_expiry FROM " + getConfig(start).getPasswordResetTokensTable()
+        String QUERY =
+                 "SELECT user_id, token, token_expiry, email FROM " + getConfig(start).getPasswordResetTokensTable()
                 + " WHERE app_id = ? AND user_id = ?";
 
         return execute(start, QUERY, pst -> {
@@ -201,7 +202,8 @@ public class EmailPasswordQueries {
     public static PasswordResetTokenInfo getPasswordResetTokenInfo(Start start, AppIdentifier appIdentifier,
                                                                    String token)
             throws SQLException, StorageQueryException {
-        String QUERY = "SELECT user_id, token, token_expiry FROM " + getConfig(start).getPasswordResetTokensTable()
+        String QUERY =
+                 "SELECT user_id, token, token_expiry, email FROM " + getConfig(start).getPasswordResetTokensTable()
                 + " WHERE app_id = ? AND token = ?";
         return execute(start, QUERY, pst -> {
             pst.setString(1, appIdentifier.getAppId());
@@ -308,7 +310,8 @@ public class EmailPasswordQueries {
         });
     }
 
-    public static void deleteUser_Transaction(Connection sqlCon, Start start, AppIdentifier appIdentifier, String userId, boolean deleteUserIdMappingToo)
+    public static void deleteUser_Transaction(Connection sqlCon, Start start, AppIdentifier appIdentifier,
+                                               String userId, boolean deleteUserIdMappingToo)
             throws StorageQueryException, SQLException {
         if (deleteUserIdMappingToo) {
             String QUERY = "DELETE FROM " + getConfig(start).getAppIdToUserIdTable()
@@ -348,10 +351,10 @@ public class EmailPasswordQueries {
         }
     }
 
-    public static UserInfoPartial getUserInfoUsingId(Start start, Connection sqlCon, AppIdentifier appIdentifier,
+    private static UserInfoPartial getUserInfoUsingId_Transaction(Start start, Connection sqlCon, AppIdentifier appIdentifier,
                                                      String id) throws SQLException, StorageQueryException {
-        // we don't need a LOCK here because this is already part of a transaction, and locked on app_id_to_user_id
-        // table
+        // we don't need a FOR UPDATE here because this is already part of a transaction, and locked on
+         // app_id_to_user_id table
         String QUERY = "SELECT user_id, email, password_hash, time_joined FROM "
                 + getConfig(start).getEmailPasswordUsersTable() + " WHERE app_id = ? AND user_id = ?";
 
@@ -366,14 +369,47 @@ public class EmailPasswordQueries {
         });
     }
 
-    public static List<LoginMethod> getUsersInfoUsingIdList(Start start, Connection con, Set<String> ids,
+    public static List<LoginMethod> getUsersInfoUsingIdList(Start start, Set<String> ids,
                                                             AppIdentifier appIdentifier)
             throws SQLException, StorageQueryException {
         if (ids.size() > 0) {
             // No need to filter based on tenantId because the id list is already filtered for a tenant
             String QUERY = "SELECT user_id, email,  password_hash, time_joined "
-                    + "FROM " + getConfig(start).getEmailPasswordUsersTable() + " WHERE user_id IN (" +
-                    Utils.generateCommaSeperatedQuestionMarks(ids.size()) + ") AND app_id = ?";
+                    + "FROM " + getConfig(start).getEmailPasswordUsersTable()
+                     + " WHERE user_id IN (" + Utils.generateCommaSeperatedQuestionMarks(ids.size()) +
+                     " ) AND app_id = ?";
+
+            List<UserInfoPartial> userInfos = execute(start, QUERY, pst -> {
+                int index = 1;
+                for (String id : ids) {
+                    pst.setString(index, id);
+                    index++;
+                }
+                pst.setString(index, appIdentifier.getAppId());
+            }, result -> {
+                List<UserInfoPartial> finalResult = new ArrayList<>();
+                while (result.next()) {
+                    finalResult.add(UserInfoRowMapper.getInstance().mapOrThrow(result));
+                }
+                return finalResult;
+            });
+            fillUserInfoWithTenantIds(start, appIdentifier, userInfos);
+            fillUserInfoWithVerified(start, appIdentifier, userInfos);
+            return userInfos.stream().map(UserInfoPartial::toLoginMethod)
+                    .collect(Collectors.toList());
+        }
+        return Collections.emptyList();
+    }
+
+    public static List<LoginMethod> getUsersInfoUsingIdList_Transaction(Start start, Connection con, Set<String> ids,
+                                                                        AppIdentifier appIdentifier)
+            throws SQLException, StorageQueryException {
+        if (ids.size() > 0) {
+            // No need to filter based on tenantId because the id list is already filtered for a tenant
+            String QUERY = "SELECT user_id, email,  password_hash, time_joined "
+                    + "FROM " + getConfig(start).getEmailPasswordUsersTable()
+                    + " WHERE user_id IN (" + Utils.generateCommaSeperatedQuestionMarks(ids.size()) +
+                    " ) AND app_id = ?";
 
             List<UserInfoPartial> userInfos = execute(con, QUERY, pst -> {
                 int index = 1;
@@ -396,14 +432,10 @@ public class EmailPasswordQueries {
         }
         return Collections.emptyList();
     }
-
-    public static String lockEmail_Transaction(Start start, Connection con, AppIdentifier appIdentifier,
-                                               String email) throws SQLException, StorageQueryException {
-        // normally the query below will use a for update, but sqlite doesn't support it.
-        ((ConnectionWithLocks) con).lock(
-                appIdentifier.getAppId() + "~" + email +
-                        Config.getConfig(start).getEmailPasswordUsersTable());
-
+    public static String lockEmail_Transaction(Start start, Connection con,
+                                                AppIdentifier appIdentifier,
+                                               String email)
+             throws StorageQueryException, SQLException {
         String QUERY = "SELECT user_id FROM " + getConfig(start).getEmailPasswordUsersTable() +
                 " WHERE app_id = ? AND email = ?";
         return execute(con, QUERY, pst -> {
@@ -417,7 +449,7 @@ public class EmailPasswordQueries {
         });
     }
 
-    public static String getPrimaryUserIdUsingEmail(Start start, Connection con, TenantIdentifier tenantIdentifier,
+    public static String getPrimaryUserIdUsingEmail(Start start, TenantIdentifier tenantIdentifier,
                                                     String email)
             throws StorageQueryException, SQLException {
         String QUERY = "SELECT DISTINCT all_users.primary_or_recipe_user_id AS user_id "
@@ -426,7 +458,7 @@ public class EmailPasswordQueries {
                 " ON ep.app_id = all_users.app_id AND ep.user_id = all_users.user_id" +
                 " WHERE ep.app_id = ? AND ep.tenant_id = ? AND ep.email = ?";
 
-        return execute(con, QUERY, pst -> {
+        return execute(start, QUERY, pst -> {
             pst.setString(1, tenantIdentifier.getAppId());
             pst.setString(2, tenantIdentifier.getTenantId());
             pst.setString(3, email);
@@ -438,7 +470,7 @@ public class EmailPasswordQueries {
         });
     }
 
-    public static List<String> getPrimaryUserIdsUsingEmail(Start start, Connection con, AppIdentifier appIdentifier,
+    public static List<String> getPrimaryUserIdsUsingEmail_Transaction(Start start, Connection con, AppIdentifier appIdentifier,
                                                            String email)
             throws StorageQueryException, SQLException {
         String QUERY = "SELECT DISTINCT all_users.primary_or_recipe_user_id AS user_id "
@@ -462,7 +494,7 @@ public class EmailPasswordQueries {
     public static boolean addUserIdToTenant_Transaction(Start start, Connection sqlCon,
                                                         TenantIdentifier tenantIdentifier, String userId)
             throws SQLException, StorageQueryException {
-        UserInfoPartial userInfo = EmailPasswordQueries.getUserInfoUsingId(start, sqlCon,
+        UserInfoPartial userInfo = EmailPasswordQueries.getUserInfoUsingId_Transaction(start, sqlCon,
                 tenantIdentifier.toAppIdentifier(), userId);
 
         { // all_auth_recipe_users
@@ -543,6 +575,28 @@ public class EmailPasswordQueries {
         return userInfos;
     }
 
+     private static List<UserInfoPartial> fillUserInfoWithVerified(Start start,
+                                                                   AppIdentifier appIdentifier,
+                                                                   List<UserInfoPartial> userInfos)
+             throws SQLException, StorageQueryException {
+         List<EmailVerificationQueries.UserIdAndEmail> userIdsAndEmails = new ArrayList<>();
+         for (UserInfoPartial userInfo : userInfos) {
+             userIdsAndEmails.add(new EmailVerificationQueries.UserIdAndEmail(userInfo.id, userInfo.email));
+         }
+         List<String> userIdsThatAreVerified = EmailVerificationQueries.isEmailVerified(start,
+                 appIdentifier,
+                 userIdsAndEmails);
+         Set<String> verifiedUserIdsSet = new HashSet<>(userIdsThatAreVerified);
+         for (UserInfoPartial userInfo : userInfos) {
+             if (verifiedUserIdsSet.contains(userInfo.id)) {
+                 userInfo.verified = true;
+             } else {
+                 userInfo.verified = false;
+             }
+         }
+         return userInfos;
+     }
+
     private static UserInfoPartial fillUserInfoWithTenantIds_transaction(Start start, Connection sqlCon,
                                                                          AppIdentifier appIdentifier,
                                                                          UserInfoPartial userInfo)
@@ -567,6 +621,26 @@ public class EmailPasswordQueries {
         for (UserInfoPartial userInfo : userInfos) {
             userInfo.tenantIds = tenantIdsForUserIds.get(userInfo.id).toArray(new String[0]);
         }
+
+        return userInfos;
+    }
+
+    private static List<UserInfoPartial> fillUserInfoWithTenantIds(Start start,
+                                                                   AppIdentifier appIdentifier,
+                                                                   List<UserInfoPartial> userInfos)
+            throws SQLException, StorageQueryException {
+        String[] userIds = new String[userInfos.size()];
+        for (int i = 0; i < userInfos.size(); i++) {
+            userIds[i] = userInfos.get(i).id;
+        }
+
+        Map<String, List<String>> tenantIdsForUserIds = GeneralQueries.getTenantIdsForUserIds(start,
+                appIdentifier,
+                userIds);
+        for (UserInfoPartial userInfo : userInfos) {
+            userInfo.tenantIds = tenantIdsForUserIds.get(userInfo.id).toArray(new String[0]);
+        }
+
         return userInfos;
     }
 
