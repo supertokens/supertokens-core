@@ -1468,6 +1468,35 @@ if (userIds.size() == 0) {
         return result.toArray(new String[0]);
     }
 
+    public static int getUsersCountWithMoreThanOneLoginMethod(Start start, AppIdentifier appIdentifier)
+            throws SQLException, StorageQueryException {
+        String QUERY = "SELECT COUNT (1) as c FROM ("
+                + "  SELECT COUNT(user_id) as num_login_methods "
+                + "  FROM " + getConfig(start).getUsersTable()
+                + "  WHERE app_id = ? "
+                + "  GROUP BY (app_id, primary_or_recipe_user_id) "
+                + ") as nloginmethods WHERE num_login_methods > 1";
+
+        return execute(start, QUERY, pst -> {
+            pst.setString(1, appIdentifier.getAppId());
+        }, result -> {
+            return result.next() ? result.getInt("c") : 0;
+        });
+    }
+
+    public static boolean checkIfUsesAccountLinking(Start start, AppIdentifier appIdentifier)
+            throws SQLException, StorageQueryException {
+        String QUERY = "SELECT 1 FROM "
+                + getConfig(start).getUsersTable()
+                + " WHERE app_id = ? AND is_linked_or_is_a_primary_user = true LIMIT 1";
+
+        return execute(start, QUERY, pst -> {
+            pst.setString(1, appIdentifier.getAppId());
+        }, result -> {
+            return result.next();
+        });
+    }
+
     private static class AllAuthRecipeUsersResultHolder {
         String userId;
         String tenantId;
