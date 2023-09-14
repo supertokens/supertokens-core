@@ -2882,19 +2882,28 @@ public class Start
 
     @Override
     public boolean checkIfUsesAccountLinking(AppIdentifier appIdentifier) throws StorageQueryException {
-        // TODO
-        return false;
+        try {
+            return GeneralQueries.checkIfUsesAccountLinking(this, appIdentifier);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
     public int countUsersThatHaveMoreThanOneLoginMethodAndActiveSince(AppIdentifier appIdentifier, long sinceTime) throws StorageQueryException {
-        // TODO
-        return 0;
+        try {
+            return ActiveUsersQueries.countUsersActiveSinceAndHasMoreThanOneLoginMethod(this, appIdentifier, sinceTime);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
     public int getUsersCountWithMoreThanOneLoginMethod(AppIdentifier appIdentifier) throws StorageQueryException {
-        // TODO
-        return 0;
+        try {
+            return GeneralQueries.getUsersCountWithMoreThanOneLoginMethod(this, appIdentifier);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 }
