@@ -278,6 +278,51 @@ public class EmailVerificationQueries {
         });
     }
 
+    public static List<String> isEmailVerified(Start start, AppIdentifier appIdentifier,
+                                               List<UserIdAndEmail> userIdAndEmail)
+            throws SQLException, StorageQueryException {
+        if (userIdAndEmail.isEmpty()) {
+            return new ArrayList<>();
+        }
+        List<String> emails = new ArrayList<>();
+        List<String> userIds = new ArrayList<>();
+        Map<String, String> userIdToEmailMap = new HashMap<>();
+        for (UserIdAndEmail ue : userIdAndEmail) {
+            emails.add(ue.email);
+            userIds.add(ue.userId);
+        }
+        for (UserIdAndEmail ue : userIdAndEmail) {
+            if (userIdToEmailMap.containsKey(ue.userId)) {
+                throw new RuntimeException("Found a bug!");
+            }
+            userIdToEmailMap.put(ue.userId, ue.email);
+        }
+        String QUERY = "SELECT * FROM " + getConfig(start).getEmailVerificationTable()
+                + " WHERE app_id = ? AND user_id IN (" + Utils.generateCommaSeperatedQuestionMarks(userIds.size()) +
+                ") AND email IN (" + Utils.generateCommaSeperatedQuestionMarks(emails.size()) + ")";
+
+        return execute(start, QUERY, pst -> {
+            pst.setString(1, appIdentifier.getAppId());
+            int index = 2;
+            for (String userId : userIds) {
+                pst.setString(index++, userId);
+            }
+            for (String email : emails) {
+                pst.setString(index++, email);
+            }
+        }, result -> {
+            List<String> res = new ArrayList<>();
+            while (result.next()) {
+                String userId = result.getString("user_id");
+                String email = result.getString("email");
+                if (Objects.equals(userIdToEmailMap.get(userId), email)) {
+                    res.add(userId);
+                }
+            }
+            return res;
+        });
+    }
+
     public static void deleteUserInfo_Transaction(Connection sqlCon, Start start, AppIdentifier appIdentifier, String userId)
             throws StorageQueryException, SQLException {
         {
