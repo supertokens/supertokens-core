@@ -151,6 +151,26 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
             licenseKey = this.getLicenseKeyFromDb();
             this.isLicenseKeyPresent = true;
         } catch (NoLicenseKeyFoundException ex) {
+            try {
+                // Need to check if multitenancy is enabled on the base app and then report paid usage stats
+                EE_FEATURES[] features = FeatureFlag.getInstance(main, new AppIdentifier(null, null))
+                        .getEnabledFeatures();
+                for (EE_FEATURES feature : features) {
+                    if (feature.equals(EE_FEATURES.MULTI_TENANCY)) {
+                        licenseKey = this.getRootLicenseKeyFromDb();
+                        verifyLicenseKey(licenseKey); // also sends paid user stats for the app
+                        try {
+                            // small delay between license checks so that we have a delay for each license key check calls
+                            Thread.sleep(5);
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                        break;
+                    }
+                }
+            } catch (NoLicenseKeyFoundException ex2) {
+                // follow through below
+            }
             this.isLicenseKeyPresent = false;
             this.setEnabledEEFeaturesInDb(new EE_FEATURES[]{});
             return;
@@ -488,5 +508,19 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         }
         Logging.debug(main, appIdentifier.getAsPublicTenantIdentifier(), "Fetched license key from db: " + info.value);
         return info.value;
+    }
+
+    private String getRootLicenseKeyFromDb()
+            throws TenantOrAppNotFoundException, StorageQueryException, NoLicenseKeyFoundException {
+        Logging.debug(main, TenantIdentifier.BASE_TENANT, "Attempting to fetch license key from db");
+        KeyValueInfo info = StorageLayer.getStorage(TenantIdentifier.BASE_TENANT, main)
+                .getKeyValue(TenantIdentifier.BASE_TENANT, LICENSE_KEY_IN_DB);
+        if (info == null || info.value.equals(LICENSE_KEY_IN_DB_NOT_PRESENT_VALUE)) {
+            Logging.debug(main, appIdentifier.getAsPublicTenantIdentifier(), "No license key found in db");
+            throw new NoLicenseKeyFoundException();
+        }
+        Logging.debug(main, TenantIdentifier.BASE_TENANT, "Fetched license key from db: " + info.value);
+        return info.value;
+
     }
 }
