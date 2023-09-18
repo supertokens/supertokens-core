@@ -232,6 +232,10 @@ public class EmailVerificationTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         AuthRecipeUserInfo user1 = createEmailPasswordUser(process.getProcess(), "test@example.com", "password");
         Thread.sleep(50);
         AuthRecipeUserInfo user2 = createThirdPartyUser(process.getProcess(), "google", "google-user", "test@example.com");

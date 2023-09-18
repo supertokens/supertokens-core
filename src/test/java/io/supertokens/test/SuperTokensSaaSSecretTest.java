@@ -186,6 +186,10 @@ public class SuperTokensSaaSSecretTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         String userId = "userId";
         JsonObject userDataInJWT = new JsonObject();
         userDataInJWT.addProperty("key", "value");
@@ -271,6 +275,10 @@ public class SuperTokensSaaSSecretTest {
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         String userId = "userId";
         JsonObject userDataInJWT = new JsonObject();
