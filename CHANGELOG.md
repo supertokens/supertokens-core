@@ -12,7 +12,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Support for CDI version 4.0
 - Adds Account Linking feature
 
-### Session recipe changes:
+### Session recipe changes
 
 - New access token version: v5, which contains a required prop: `rsub`. This contains the recipe user ID that belongs to the login method that the user used to login. The `sub` claim in the access token payload is now the primary user ID.
 - APIs that return `SessionInformation` (like GET `/recipe/session`) contains userId, recipeUserId in the response.
