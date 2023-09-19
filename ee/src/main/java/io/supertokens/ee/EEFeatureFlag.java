@@ -59,6 +59,8 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
     public static final String FEATURE_FLAG_KEY_IN_DB = "FEATURE_FLAG";
     public static final String LICENSE_KEY_IN_DB = "LICENSE_KEY";
 
+    private static List<JsonObject> licenseCheckRequests = new ArrayList<>();
+
     private static final String[] ENTERPRISE_THIRD_PARTY_IDS = new String[] {
             "google-workspaces",
             "okta",
@@ -151,6 +153,12 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
             licenseKey = this.getLicenseKeyFromDb();
             this.isLicenseKeyPresent = true;
         } catch (NoLicenseKeyFoundException ex) {
+            try {
+                licenseKey = this.getRootLicenseKeyFromDb();
+                verifyLicenseKey(licenseKey); // also sends paid user stats for the app
+            } catch (NoLicenseKeyFoundException | InvalidLicenseKeyException ex2) {
+                // follow through below
+            }
             this.isLicenseKeyPresent = false;
             this.setEnabledEEFeaturesInDb(new EE_FEATURES[]{});
             return;
@@ -394,6 +402,9 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
             json.addProperty("licenseKey", licenseKey);
             json.addProperty("superTokensVersion", Version.getVersion(main).getCoreVersion());
             json.add("paidFeatureUsageStats", this.getPaidFeatureStats());
+            if (Main.isTesting) {
+                licenseCheckRequests.add(json);
+            }
             ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL, null);
             JsonObject licenseCheckResponse = HttpRequest.sendJsonPOSTRequest(this.main, REQUEST_ID,
                     "https://api.supertokens.io/0/st/license/check",
@@ -476,17 +487,40 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
                         new KeyValueInfo(LICENSE_KEY_IN_DB_NOT_PRESENT_VALUE));
     }
 
+    private String getLicenseKeyInDb(TenantIdentifier tenantIdentifier)
+            throws TenantOrAppNotFoundException, StorageQueryException, NoLicenseKeyFoundException {
+        Logging.debug(main, tenantIdentifier, "Attempting to fetch license key from db");
+        KeyValueInfo info = StorageLayer.getStorage(tenantIdentifier, main)
+                .getKeyValue(tenantIdentifier, LICENSE_KEY_IN_DB);
+        if (info == null || info.value.equals(LICENSE_KEY_IN_DB_NOT_PRESENT_VALUE)) {
+            Logging.debug(main, tenantIdentifier, "No license key found in db");
+            throw new NoLicenseKeyFoundException();
+        }
+        Logging.debug(main, tenantIdentifier, "Fetched license key from db: " + info.value);
+        return info.value;
+    }
+
     @Override
     public String getLicenseKeyFromDb()
             throws NoLicenseKeyFoundException, StorageQueryException, TenantOrAppNotFoundException {
-        Logging.debug(main, appIdentifier.getAsPublicTenantIdentifier(), "Attempting to fetch license key from db");
-        KeyValueInfo info = StorageLayer.getStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main)
-                .getKeyValue(this.appIdentifier.getAsPublicTenantIdentifier(), LICENSE_KEY_IN_DB);
-        if (info == null || info.value.equals(LICENSE_KEY_IN_DB_NOT_PRESENT_VALUE)) {
-            Logging.debug(main, appIdentifier.getAsPublicTenantIdentifier(), "No license key found in db");
-            throw new NoLicenseKeyFoundException();
-        }
-        Logging.debug(main, appIdentifier.getAsPublicTenantIdentifier(), "Fetched license key from db: " + info.value);
-        return info.value;
+        return getLicenseKeyInDb(appIdentifier.getAsPublicTenantIdentifier());
     }
+
+    private String getRootLicenseKeyFromDb()
+            throws TenantOrAppNotFoundException, StorageQueryException, NoLicenseKeyFoundException {
+        return getLicenseKeyInDb(TenantIdentifier.BASE_TENANT);
+    }
+
+    @TestOnly
+    public static List<JsonObject> getLicenseCheckRequests() {
+        assert (Main.isTesting);
+        return licenseCheckRequests;
+    }
+
+    @TestOnly
+    public static void resetLisenseCheckRequests() {
+        licenseCheckRequests = new ArrayList<>();
+    }
+
+
 }

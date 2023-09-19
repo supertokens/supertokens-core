@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+## [6.0.13] - 2023-09-15
+
+- Fixes paid stats reporting for multitenancy
+
 ## [6.0.12] - 2023-09-04
 
 - Fixes randomly occurring `serialization error for concurrent update` in `verifySession` API
