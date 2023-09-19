@@ -46,6 +46,11 @@ public class TestMultitenancyStats {
         CronTaskTest.getInstance(process.main).setIntervalInSeconds(EELicenseCheck.RESOURCE_KEY, 1);
         Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.isInMemDb(process.main)) {
+            // cause we keep all features enabled in memdb anyway
+            return;
+        }
+
         {
             // Add the license
             JsonObject requestBody = new JsonObject();
