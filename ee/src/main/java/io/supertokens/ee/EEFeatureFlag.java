@@ -59,7 +59,7 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
     public static final String FEATURE_FLAG_KEY_IN_DB = "FEATURE_FLAG";
     public static final String LICENSE_KEY_IN_DB = "LICENSE_KEY";
 
-    private static final List<JsonObject> licenseCheckRequests = new ArrayList<>();
+    private static List<JsonObject> licenseCheckRequests = new ArrayList<>();
 
     private static final String[] ENTERPRISE_THIRD_PARTY_IDS = new String[] {
             "google-workspaces",
@@ -156,7 +156,7 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
             try {
                 licenseKey = this.getRootLicenseKeyFromDb();
                 verifyLicenseKey(licenseKey); // also sends paid user stats for the app
-            } catch (NoLicenseKeyFoundException ex2) {
+            } catch (NoLicenseKeyFoundException | InvalidLicenseKeyException ex2) {
                 // follow through below
             }
             this.isLicenseKeyPresent = false;
@@ -516,4 +516,11 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         assert (Main.isTesting);
         return licenseCheckRequests;
     }
+
+    @TestOnly
+    public static void resetLisenseCheckRequests() {
+        licenseCheckRequests = new ArrayList<>();
+    }
+
+
 }
