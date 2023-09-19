@@ -32,6 +32,7 @@ import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.*;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.exceptions.PhoneNumberChangeNotAllowedException;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
@@ -174,6 +175,10 @@ public class MultitenantTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         createTenants(process.getProcess());
 
         t1 = new TenantIdentifier(null, "a1", null);
@@ -214,6 +219,10 @@ public class MultitenantTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         createTenants(process.getProcess());
 
         t1 = new TenantIdentifier(null, "a1", null);
@@ -249,6 +258,10 @@ public class MultitenantTest {
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         createTenants(process.getProcess());
 
@@ -289,6 +302,10 @@ public class MultitenantTest {
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         createTenants(process.getProcess());
 
@@ -739,6 +756,10 @@ public class MultitenantTest {
                             EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
             process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
 
             createTenants(process.getProcess());
 

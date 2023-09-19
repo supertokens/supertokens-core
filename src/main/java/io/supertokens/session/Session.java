@@ -136,10 +136,13 @@ public class Session {
             sessionHandle += "_" + tenantIdentifierWithStorage.getTenantId();
         }
 
-        String primaryUserId = tenantIdentifierWithStorage.getAuthRecipeStorage()
-                .getPrimaryUserIdStrForUserId(tenantIdentifierWithStorage.toAppIdentifier(), recipeUserId);
-        if (primaryUserId == null) {
-            primaryUserId = recipeUserId;
+        String primaryUserId = recipeUserId;
+        if (tenantIdentifierWithStorage.getStorage().getType().equals(STORAGE_TYPE.SQL)) {
+            tenantIdentifierWithStorage.getAuthRecipeStorage()
+                    .getPrimaryUserIdStrForUserId(tenantIdentifierWithStorage.toAppIdentifier(), recipeUserId);
+            if (primaryUserId == null) {
+                primaryUserId = recipeUserId;
+            }
         }
 
         String antiCsrfToken = enableAntiCsrf ? UUID.randomUUID().toString() : null;
@@ -845,11 +848,13 @@ public class Session {
         Set<String> userIds = new HashSet<>();
         userIds.add(userId);
         if (fetchSessionsForAllLinkedAccounts) {
-            AuthRecipeUserInfo primaryUser = appIdentifierWithStorage.getAuthRecipeStorage()
-                    .getPrimaryUserById(appIdentifierWithStorage, userId);
-            if (primaryUser != null) {
-                for (LoginMethod lM : primaryUser.loginMethods) {
-                    userIds.add(lM.getSupertokensUserId());
+            if (appIdentifierWithStorage.getStorage().getType().equals(STORAGE_TYPE.SQL)) {
+                AuthRecipeUserInfo primaryUser = appIdentifierWithStorage.getAuthRecipeStorage()
+                        .getPrimaryUserById(appIdentifierWithStorage, userId);
+                if (primaryUser != null) {
+                    for (LoginMethod lM : primaryUser.loginMethods) {
+                        userIds.add(lM.getSupertokensUserId());
+                    }
                 }
             }
         }
