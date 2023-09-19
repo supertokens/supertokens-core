@@ -19,7 +19,7 @@ compileTestJava { options.encoding = "UTF-8" }
 //    }
 //}
 
-version = "6.0.13"
+version = "7.0.0"
 
 
 repositories {
