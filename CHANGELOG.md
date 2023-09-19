@@ -13,10 +13,23 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Adds Account Linking feature
 
 ### Session recipe changes:
+
 - New access token version: v5, which contains a required prop: `rsub`. This contains the recipe user ID that belongs to the login method that the user used to login. The `sub` claim in the access token payload is now the primary user ID.
 - APIs that return `SessionInformation` (like GET `/recipe/session`) contains userId, recipeUserId in the response.
 - Apis that create / modify / refresh a session return the `recipeUserId` in the `session` object in the response.
 - Token theft detected response returns userId and recipeUserId
+
+### Db Schema changes
+
+- Adds columns `primary_or_recipe_user_id`, `is_linked_or_is_a_primary_user` and `primary_or_recipe_user_time_joined` to `all_auth_recipe_users` table
+- Adds columns `primary_or_recipe_user_id` and `is_linked_or_is_a_primary_user` to `app_id_to_user_id` table
+- Removes index `all_auth_recipe_users_pagination_index` and addes `all_auth_recipe_users_pagination_index1`, 
+  `all_auth_recipe_users_pagination_index2`, `all_auth_recipe_users_pagination_index3` and 
+  `all_auth_recipe_users_pagination_index4` indexes instead on `all_auth_recipe_users` table
+- Adds `all_auth_recipe_users_recipe_id_index` on `all_auth_recipe_users` table
+- Adds `all_auth_recipe_users_primary_user_id_index` on `all_auth_recipe_users` table
+- Adds `email` column to `emailpassword_pswd_reset_tokens` table
+- Changes `user_id` foreign key constraint on `emailpassword_pswd_reset_tokens` to `app_id_to_user_id` table
 
 ### Migration steps for SQL
 
