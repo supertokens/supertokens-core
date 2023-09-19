@@ -10,6 +10,7 @@ import io.supertokens.ee.cronjobs.EELicenseCheck;
 import io.supertokens.ee.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.webserver.WebserverAPI;
@@ -45,6 +46,10 @@ public class TestMultitenancyStats {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         CronTaskTest.getInstance(process.main).setIntervalInSeconds(EELicenseCheck.RESOURCE_KEY, 1);
         Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         if (StorageLayer.isInMemDb(process.main)) {
             // cause we keep all features enabled in memdb anyway
