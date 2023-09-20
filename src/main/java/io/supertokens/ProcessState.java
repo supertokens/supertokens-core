@@ -113,6 +113,7 @@ public class ProcessState extends ResourceDistributor.SingletonResource {
 
         public EventAndException(PROCESS_STATE state, Exception e, JsonObject data) {
             this.state = state;
+            this.exception = e;
             this.data = data;
         }
     }
