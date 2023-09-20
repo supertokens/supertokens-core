@@ -561,13 +561,10 @@ public class GeneralQueries {
         // We query both tables cause there is a case where a primary user ID exists, but its associated
         // recipe user ID has been deleted AND there are other recipe user IDs linked to this primary user ID already.
         String QUERY = "SELECT 1 FROM " + getConfig(start).getAppIdToUserIdTable()
-                + " WHERE app_id = ? AND user_id = ? UNION SELECT 1 FROM " + getConfig(start).getUsersTable() +
-                " WHERE app_id = ? AND primary_or_recipe_user_id = ?";
+                + " WHERE app_id = ? AND user_id = ?";
         return execute(start, QUERY, pst -> {
             pst.setString(1, appIdentifier.getAppId());
             pst.setString(2, userId);
-            pst.setString(3, appIdentifier.getAppId());
-            pst.setString(4, userId);
         }, ResultSet::next);
     }
 
@@ -1573,13 +1570,10 @@ public class GeneralQueries {
         // We query both tables cause there is a case where a primary user ID exists, but its associated
         // recipe user ID has been deleted AND there are other recipe user IDs linked to this primary user ID already.
         String QUERY = "SELECT 1 FROM " + getConfig(start).getAppIdToUserIdTable()
-                + " WHERE app_id = ? AND user_id = ? UNION SELECT 1 FROM " + getConfig(start).getUsersTable() +
-                " WHERE app_id = ? AND primary_or_recipe_user_id = ?";
+                + " WHERE app_id = ? AND user_id = ?";
         return execute(sqlCon, QUERY, pst -> {
             pst.setString(1, appIdentifier.getAppId());
             pst.setString(2, userId);
-            pst.setString(3, appIdentifier.getAppId());
-            pst.setString(4, userId);
         }, ResultSet::next);
     }
 
