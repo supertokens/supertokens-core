@@ -408,4 +408,112 @@ public class GetUserByAccountInfoTest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    @Test
+    public void testForEmptyResults() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        AuthRecipeUserInfo user1 = createEmailPasswordUser(process.getProcess(), "test1@example.com", "password1");
+        Thread.sleep(50);
+        AuthRecipeUserInfo user2 = createThirdPartyUser(process.getProcess(), "google", "userid1", "test2@example.com");
+        Thread.sleep(50);
+        Passwordless.CreateCodeResponse code = Passwordless.createCode(process.getProcess(), null, "+919876543210",
+                null, null);
+        AuthRecipeUserInfo user3 = Passwordless.consumeCode(process.getProcess(), code.deviceId, code.deviceIdHash, code.userInputCode, null).user;
+
+
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId()).user;
+        AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), primaryUser.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.getProcess(), user3.getSupertokensUserId(), primaryUser.getSupertokensUserId());
+
+        TenantIdentifierWithStorage tenantIdentifierWithStorage = TenantIdentifier.BASE_TENANT.withStorage(
+                StorageLayer.getBaseStorage(process.getProcess()));
+        {
+            AuthRecipeUserInfo[] users = AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false,
+                    "test5@example.com", null, null, null);
+            assertEquals(0, users.length);
+        }
+        {
+            AuthRecipeUserInfo[] users = AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false,
+                    null, null, "google", "userid5");
+            assertEquals(0, users.length);
+        }
+        {
+            AuthRecipeUserInfo[] users = AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false,
+                    null, "+9876", null, null);
+            assertEquals(0, users.length);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testGetUserByAccountInfoOrdersUserBasedOnTimeJoined() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create users
+        AuthRecipeUserInfo user1 = createEmailPasswordUser(process.getProcess(), "test1@example.com", "password1");
+        Thread.sleep(50);
+        AuthRecipeUserInfo user2 = createThirdPartyUser(process.getProcess(), "google", "userid1", "test1@example.com");
+        Thread.sleep(50);
+        Passwordless.CreateCodeResponse code = Passwordless.createCode(process.getProcess(), null, "+919876543210",
+                null, null);
+        AuthRecipeUserInfo user3 = Passwordless.consumeCode(process.getProcess(), code.deviceId, code.deviceIdHash, code.userInputCode, null).user;
+        Thread.sleep(50);
+        AuthRecipeUserInfo user4 = createEmailPasswordUser(process.getProcess(), "test2@example.com", "password1");
+        Thread.sleep(50);
+        AuthRecipeUserInfo user5 = createPasswordlessUserWithEmail(process.getProcess(), "test1@example.com");
+
+        // Link accounts
+        AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.getProcess(), user3.getSupertokensUserId(), user1.getSupertokensUserId());
+
+        AuthRecipe.createPrimaryUser(process.getProcess(), user4.getSupertokensUserId());
+
+        TenantIdentifierWithStorage tenantIdentifierWithStorage = TenantIdentifier.BASE_TENANT.withStorage(
+                StorageLayer.getBaseStorage(process.getProcess()));
+
+        {
+            AuthRecipeUserInfo[] users = AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, true, "test1@example.com", null,
+                    null, null);
+
+            assertEquals(3, users.length);
+            assertTrue(users[0].timeJoined < users[1].timeJoined);
+            assertTrue(users[1].timeJoined < users[2].timeJoined);
+
+        }
+        {
+            AuthRecipeUserInfo[] users = AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false, "test1@example.com", null,
+                    null, null);
+
+            assertEquals(3, users.length);
+            assertTrue(users[0].timeJoined < users[1].timeJoined);
+            assertTrue(users[1].timeJoined < users[2].timeJoined);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
+    }
 }

@@ -745,6 +745,76 @@ public class MultitenantTest {
                             }
                         }
                 }),
+
+                new TestCase(new TestCaseStep[]{
+                        new CreateEmailPasswordUser(t1, "test1@example.com"),
+                        new CreatePlessUserWithEmail(t1, "test2@example.com"),
+                        new MakePrimaryUser(t1, 0),
+                        new UpdatePlessUserEmail(t1, 1, "test1@example.com"),
+                }),
+                new TestCase(new TestCaseStep[]{
+                        new CreatePlessUserWithEmail(t1, "test1@example.com"),
+                        new CreateEmailPasswordUser(t1, "test2@example.com"),
+                        new MakePrimaryUser(t1, 0),
+                        new UpdateEmailPasswordUserEmail(t1, 1, "test1@example.com"),
+                }),
+
+                new TestCase(new TestCaseStep[]{
+                        new CreateEmailPasswordUser(t1, "test1@example.com"),
+                        new CreatePlessUserWithEmail(t1, "test2@example.com"),
+                        new MakePrimaryUser(t1, 1),
+                        new UpdatePlessUserEmail(t1, 1, "test1@example.com"),
+                }),
+                new TestCase(new TestCaseStep[]{
+                        new CreatePlessUserWithEmail(t1, "test1@example.com"),
+                        new CreateEmailPasswordUser(t1, "test2@example.com"),
+                        new MakePrimaryUser(t1, 1),
+                        new UpdateEmailPasswordUserEmail(t1, 1, "test1@example.com"),
+                }),
+
+                new TestCase(new TestCaseStep[]{
+                        new CreateEmailPasswordUser(t1, "test1@example.com"),
+                        new CreatePlessUserWithEmail(t1, "test2@example.com"),
+                        new MakePrimaryUser(t1, 0),
+                        new MakePrimaryUser(t1, 1),
+                        new UpdatePlessUserEmail(t1, 1, "test1@example.com").expect(new EmailChangeNotAllowedException()),
+                }),
+                new TestCase(new TestCaseStep[]{
+                        new CreatePlessUserWithEmail(t1, "test1@example.com"),
+                        new CreateEmailPasswordUser(t1, "test2@example.com"),
+                        new MakePrimaryUser(t1, 0),
+                        new MakePrimaryUser(t1, 1),
+                        new UpdateEmailPasswordUserEmail(t1, 1, "test1@example.com").expect(new EmailChangeNotAllowedException()),
+                }),
+
+                new TestCase(new TestCaseStep[]{
+                        new CreateEmailPasswordUser(t1, "test1@example.com"),
+                        new CreateThirdPartyUser(t1, "google", "googleid", "test2@example.com"),
+                        new MakePrimaryUser(t1, 0),
+                        new CreateThirdPartyUser(t1, "google", "googleid", "test2@example.com"), // allowed
+                }),
+                new TestCase(new TestCaseStep[]{
+                        new CreateEmailPasswordUser(t1, "test1@example.com"),
+                        new CreateThirdPartyUser(t1, "google", "googleid", "test2@example.com"),
+                        new MakePrimaryUser(t1, 1),
+                        new CreateThirdPartyUser(t1, "google", "googleid", "test2@example.com"), // allowed
+                }),
+                new TestCase(new TestCaseStep[]{
+                        new CreateEmailPasswordUser(t1, "test1@example.com"),
+                        new CreateThirdPartyUser(t1, "google", "googleid", "test2@example.com"),
+                        new MakePrimaryUser(t1, 0),
+                        new MakePrimaryUser(t1, 1),
+                        new CreateThirdPartyUser(t1, "google", "googleid", "test1@example.com").expect(new EmailChangeNotAllowedException()),
+                }),
+                new TestCase(new TestCaseStep[]{
+                        new CreateEmailPasswordUser(t1, "test1@example.com"),
+                        new CreateEmailPasswordUser(t2, "test3@example.com"),
+                        new MakePrimaryUser(t1, 0),
+                        new LinkAccounts(t1, 0, 1),
+                        new CreateThirdPartyUser(t2, "google", "googleid", "test2@example.com"),
+                        new MakePrimaryUser(t2, 2),
+                        new CreateThirdPartyUser(t2, "google", "googleid", "test1@example.com").expect(new EmailChangeNotAllowedException()),
+                }),
         };
 
         int i = 0;
