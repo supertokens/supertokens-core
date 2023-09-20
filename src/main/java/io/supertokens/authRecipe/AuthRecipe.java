@@ -609,7 +609,15 @@ public class AuthRecipe {
         }
 
         if (doUnionOfAccountInfo) {
-            return result.toArray(new AuthRecipeUserInfo[0]);
+            AuthRecipeUserInfo[] finalResult = result.toArray(new AuthRecipeUserInfo[0]);
+            return Arrays.stream(finalResult).sorted((o1, o2) -> {
+                if (o1.timeJoined < o2.timeJoined) {
+                    return -1;
+                } else if (o1.timeJoined > o2.timeJoined) {
+                    return 1;
+                }
+                return 0;
+            }).toArray(AuthRecipeUserInfo[]::new);
         } else {
             List<AuthRecipeUserInfo> finalList = new ArrayList<>();
             for (AuthRecipeUserInfo user : result) {
@@ -632,6 +640,14 @@ public class AuthRecipe {
                     finalList.add(user);
                 }
             }
+            finalList.sort((o1, o2) -> {
+                if (o1.timeJoined < o2.timeJoined) {
+                    return -1;
+                } else if (o1.timeJoined > o2.timeJoined) {
+                    return 1;
+                }
+                return 0;
+            });
             return finalList.toArray(new AuthRecipeUserInfo[0]);
         }
 

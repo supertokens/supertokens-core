@@ -921,6 +921,8 @@ public class PasswordlessQueries {
                 pst.setLong(7, userInfo.timeJoined);
                 pst.setLong(8, userInfo.timeJoined);
             });
+
+            GeneralQueries.updateTimeJoinedForPrimaryUser_Transaction(start, sqlCon, tenantIdentifier.toAppIdentifier(), accountLinkingInfo.primaryUserId);
         }
 
         { // passwordless_user_to_tenant

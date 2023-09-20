@@ -138,7 +138,7 @@ public class Session {
 
         String primaryUserId = recipeUserId;
         if (tenantIdentifierWithStorage.getStorage().getType().equals(STORAGE_TYPE.SQL)) {
-            tenantIdentifierWithStorage.getAuthRecipeStorage()
+            primaryUserId = tenantIdentifierWithStorage.getAuthRecipeStorage()
                     .getPrimaryUserIdStrForUserId(tenantIdentifierWithStorage.toAppIdentifier(), recipeUserId);
             if (primaryUserId == null) {
                 primaryUserId = recipeUserId;
