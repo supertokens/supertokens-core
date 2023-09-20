@@ -46,7 +46,9 @@ import io.supertokens.webserver.WebserverAPI;
 import org.junit.*;
 import org.junit.rules.TestRule;
 
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import static org.junit.Assert.*;
@@ -743,5 +745,79 @@ public class FeatureFlagTest {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    private final String OPAQUE_KEY_WITH_DASHBOARD_FEATURE =
+            "EBy9Z4IRJ7BYyLP8AXxjq997o3RPaDekAE4CMGxduglUaEH9hugXzIduxvHIjpkFccVCZaHJIacMi8NJJg4I" +
+                    "=ruc3bZbT43QOLJbGu01cgACmVu2VOjQzFbT3lXiAKOR";
+
+    private final String OPAQUE_KEY_WITH_ACCOUNT_LINKING_FEATURE = "N2uEOdEzd1XZZ5VBSTGYaM7Ia4s8wAqRWFAxLqTYrB6GQ=" +
+            "vssOLo3c=PkFgcExkaXs=IA-d9UWccoNKsyUgNhOhcKtM1bjC5OLrYRpTAgN-2EbKYsQGGQRQHuUN4EO1V";
+
+    @Test
+    public void testPaidStatsContainsAllEnabledFeatures() throws Exception {
+        String[] args = {"../"};
+
+        EE_FEATURES[] allFeatures = EE_FEATURES.values();
+
+        List<EE_FEATURES> featuresToIgnore = List.of(EE_FEATURES.TEST);
+
+        String[] licenses = new String[]{
+                OPAQUE_KEY_WITH_MULTITENANCY_FEATURE,
+                OPAQUE_KEY_WITH_TOTP_FEATURE,
+                OPAQUE_KEY_WITH_DASHBOARD_FEATURE,
+                OPAQUE_KEY_WITH_ACCOUNT_LINKING_FEATURE
+        };
+
+        Set<EE_FEATURES> requiredFeatures = new HashSet<>();
+        requiredFeatures.addAll(Arrays.asList(allFeatures));
+        requiredFeatures.removeAll(featuresToIgnore);
+
+        Set<EE_FEATURES> foundFeatures = new HashSet<>();
+
+        for (String license : licenses) {
+            Utils.reset();
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            process.startProcess();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
+            if (StorageLayer.isInMemDb(process.getProcess())) {
+                return;
+            }
+
+            // While adding license
+            TestMultitenancyAPIHelper.addLicense(license, process.getProcess());
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL));
+            ProcessState.getInstance(process.getProcess()).clear();
+
+            process.kill(false);
+
+            // Restart core and check if the call was made during init
+            process = TestingProcessManager.start(args);
+            process.startProcess();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+            ProcessState.EventAndException event = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL);
+            assertNotNull(event);
+            assertNotNull(event.data);
+
+            JsonObject paidStatsObj = event.data.get("paidFeatureUsageStats").getAsJsonObject();
+            for (EE_FEATURES feature : allFeatures) {
+                if (featuresToIgnore.contains(feature)) {
+                    continue;
+                }
+                if (paidStatsObj.has(feature.toString())) {
+                    foundFeatures.add(feature);
+                }
+            }
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+
+        assertEquals(requiredFeatures, foundFeatures);
     }
 }
