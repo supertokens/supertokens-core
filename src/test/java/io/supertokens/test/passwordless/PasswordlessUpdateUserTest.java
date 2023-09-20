@@ -20,11 +20,11 @@ import io.supertokens.ProcessState;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.exceptions.UserWithoutContactInfoException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.passwordless.PasswordlessStorage;
-import io.supertokens.pluginInterface.passwordless.UserInfo;
 import io.supertokens.pluginInterface.passwordless.exception.DuplicatePhoneNumberException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -78,15 +78,17 @@ public class PasswordlessUpdateUserTest {
         createUserWith(process, EMAIL, null);
         createUserWith(process, alternate_email, null);
 
-        UserInfo user = storage.getUserByEmail(new TenantIdentifier(null, null, null), EMAIL);
-        assertNotNull(user);
+        AuthRecipeUserInfo[] user = storage.listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), EMAIL);
+        assert (user.length == 1);
 
-        UserInfo user_two = storage.getUserByEmail(new TenantIdentifier(null, null, null), alternate_email);
-        assertNotNull(user_two);
+        AuthRecipeUserInfo[] user_two = storage.listPrimaryUsersByEmail(new TenantIdentifier(null, null, null),
+                alternate_email);
+        assert (user_two.length == 1);
 
         Exception ex = null;
         try {
-            Passwordless.updateUser(process.getProcess(), user.id, new Passwordless.FieldUpdate(alternate_email), null);
+            Passwordless.updateUser(process.getProcess(), user[0].getSupertokensUserId(), new Passwordless.FieldUpdate(alternate_email),
+                    null);
         } catch (Exception e) {
             ex = e;
         }
@@ -94,7 +96,9 @@ public class PasswordlessUpdateUserTest {
         assertNotNull(ex);
         assert (ex instanceof DuplicateEmailException);
 
-        assertEquals(EMAIL, storage.getUserByEmail(new TenantIdentifier(null, null, null), EMAIL).email);
+        assertEquals(EMAIL,
+                storage.listPrimaryUsersByEmail(new TenantIdentifier(null, null, null),
+                        EMAIL)[0].loginMethods[0].email);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -122,14 +126,16 @@ public class PasswordlessUpdateUserTest {
         createUserWith(process, null, PHONE_NUMBER);
         createUserWith(process, null, alternate_phoneNumber);
 
-        UserInfo user = storage.getUserByPhoneNumber(new TenantIdentifier(null, null, null), PHONE_NUMBER);
-        assertNotNull(user);
-        UserInfo user_two = storage.getUserByPhoneNumber(new TenantIdentifier(null, null, null), alternate_phoneNumber);
-        assertNotNull(user_two);
+        AuthRecipeUserInfo[] user = storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null),
+                PHONE_NUMBER);
+        assert (user.length == 1);
+        AuthRecipeUserInfo[] user_two = storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null),
+                alternate_phoneNumber);
+        assert (user_two.length == 1);
 
         Exception ex = null;
         try {
-            Passwordless.updateUser(process.getProcess(), user.id, null,
+            Passwordless.updateUser(process.getProcess(), user[0].getSupertokensUserId(), null,
                     new Passwordless.FieldUpdate(alternate_phoneNumber));
         } catch (Exception e) {
             ex = e;
@@ -139,7 +145,8 @@ public class PasswordlessUpdateUserTest {
         assert (ex instanceof DuplicatePhoneNumberException);
 
         assertEquals(PHONE_NUMBER,
-                storage.getUserByPhoneNumber(new TenantIdentifier(null, null, null), PHONE_NUMBER).phoneNumber);
+                storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null),
+                        PHONE_NUMBER)[0].loginMethods[0].phoneNumber);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -167,12 +174,13 @@ public class PasswordlessUpdateUserTest {
 
         createUserWith(process, EMAIL, null);
 
-        UserInfo user = storage.getUserByEmail(new TenantIdentifier(null, null, null), EMAIL);
-        assertNotNull(user);
+        AuthRecipeUserInfo[] user = storage.listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), EMAIL);
+        assert (user.length == 1);
 
-        Passwordless.updateUser(process.getProcess(), user.id, new Passwordless.FieldUpdate(alternate_email), null);
+        Passwordless.updateUser(process.getProcess(), user[0].getSupertokensUserId(), new Passwordless.FieldUpdate(alternate_email), null);
 
-        assertEquals(alternate_email, storage.getUserById(new AppIdentifier(null, null), user.id).email);
+        assertEquals(alternate_email,
+                storage.getPrimaryUserById(new AppIdentifier(null, null), user[0].getSupertokensUserId()).loginMethods[0].email);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -200,13 +208,15 @@ public class PasswordlessUpdateUserTest {
 
         createUserWith(process, null, PHONE_NUMBER);
 
-        UserInfo user = storage.getUserByPhoneNumber(new TenantIdentifier(null, null, null), PHONE_NUMBER);
-        assertNotNull(user);
+        AuthRecipeUserInfo[] user = storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null),
+                PHONE_NUMBER);
+        assert (user.length == 1);
 
-        Passwordless.updateUser(process.getProcess(), user.id, null,
+        Passwordless.updateUser(process.getProcess(), user[0].getSupertokensUserId(), null,
                 new Passwordless.FieldUpdate(alternate_phoneNumber));
 
-        assertEquals(alternate_phoneNumber, storage.getUserById(new AppIdentifier(null, null), user.id).phoneNumber);
+        assertEquals(alternate_phoneNumber,
+                storage.getPrimaryUserById(new AppIdentifier(null, null), user[0].getSupertokensUserId()).loginMethods[0].phoneNumber);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -233,14 +243,15 @@ public class PasswordlessUpdateUserTest {
 
         createUserWith(process, EMAIL, null);
 
-        UserInfo user = storage.getUserByEmail(new TenantIdentifier(null, null, null), EMAIL);
-        assertNotNull(user);
+        AuthRecipeUserInfo[] user = storage.listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), EMAIL);
+        assert (user.length == 1);
 
-        Passwordless.updateUser(process.getProcess(), user.id, new Passwordless.FieldUpdate(null),
+        Passwordless.updateUser(process.getProcess(), user[0].getSupertokensUserId(), new Passwordless.FieldUpdate(null),
                 new Passwordless.FieldUpdate(PHONE_NUMBER));
 
-        assertEquals(PHONE_NUMBER, storage.getUserById(new AppIdentifier(null, null), user.id).phoneNumber);
-        assertNull(storage.getUserById(new AppIdentifier(null, null), user.id).email);
+        assertEquals(PHONE_NUMBER,
+                storage.getPrimaryUserById(new AppIdentifier(null, null), user[0].getSupertokensUserId()).loginMethods[0].phoneNumber);
+        assertNull(storage.getPrimaryUserById(new AppIdentifier(null, null), user[0].getSupertokensUserId()).loginMethods[0].email);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -267,14 +278,16 @@ public class PasswordlessUpdateUserTest {
 
         createUserWith(process, null, PHONE_NUMBER);
 
-        UserInfo user = storage.getUserByPhoneNumber(new TenantIdentifier(null, null, null), PHONE_NUMBER);
-        assertNotNull(user);
+        AuthRecipeUserInfo[] user = storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null),
+                PHONE_NUMBER);
+        assert (user.length == 1);
 
-        Passwordless.updateUser(process.getProcess(), user.id, new Passwordless.FieldUpdate(EMAIL),
+        Passwordless.updateUser(process.getProcess(), user[0].getSupertokensUserId(), new Passwordless.FieldUpdate(EMAIL),
                 new Passwordless.FieldUpdate(null));
 
-        assertEquals(EMAIL, storage.getUserById(new AppIdentifier(null, null), user.id).email);
-        assertNull(storage.getUserById(new AppIdentifier(null, null), user.id).phoneNumber);
+        assertEquals(EMAIL,
+                storage.getPrimaryUserById(new AppIdentifier(null, null), user[0].getSupertokensUserId()).loginMethods[0].email);
+        assertNull(storage.getPrimaryUserById(new AppIdentifier(null, null), user[0].getSupertokensUserId()).loginMethods[0].phoneNumber);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -301,12 +314,13 @@ public class PasswordlessUpdateUserTest {
 
         createUserWith(process, null, PHONE_NUMBER);
 
-        UserInfo user = storage.getUserByPhoneNumber(new TenantIdentifier(null, null, null), PHONE_NUMBER);
-        assertNotNull(user);
+        AuthRecipeUserInfo[] user = storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null),
+                PHONE_NUMBER);
+        assert (user.length == 1);
         Exception ex = null;
 
         try {
-            Passwordless.updateUser(process.getProcess(), user.id, new Passwordless.FieldUpdate(null),
+            Passwordless.updateUser(process.getProcess(), user[0].getSupertokensUserId(), new Passwordless.FieldUpdate(null),
                     new Passwordless.FieldUpdate(null));
         } catch (Exception e) {
             ex = e;
@@ -340,13 +354,13 @@ public class PasswordlessUpdateUserTest {
 
         createUserWith(process, EMAIL, null);
 
-        UserInfo user = storage.getUserByEmail(new TenantIdentifier(null, null, null), EMAIL);
-        assertNotNull(user);
+        AuthRecipeUserInfo[] user = storage.listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), EMAIL);
+        assert (user.length == 1);
 
         Exception ex = null;
 
         try {
-            Passwordless.updateUser(process.getProcess(), user.id, new Passwordless.FieldUpdate(null), null);
+            Passwordless.updateUser(process.getProcess(), user[0].getSupertokensUserId(), new Passwordless.FieldUpdate(null), null);
         } catch (Exception e) {
             ex = e;
         }
@@ -379,13 +393,14 @@ public class PasswordlessUpdateUserTest {
 
         createUserWith(process, null, PHONE_NUMBER);
 
-        UserInfo user = storage.getUserByPhoneNumber(new TenantIdentifier(null, null, null), PHONE_NUMBER);
-        assertNotNull(user);
+        AuthRecipeUserInfo[] user = storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null),
+                PHONE_NUMBER);
+        assert (user.length == 1);
 
         Exception ex = null;
 
         try {
-            Passwordless.updateUser(process.getProcess(), user.id, null, new Passwordless.FieldUpdate(null));
+            Passwordless.updateUser(process.getProcess(), user[0].getSupertokensUserId(), null, new Passwordless.FieldUpdate(null));
         } catch (Exception e) {
             ex = e;
         }
@@ -419,14 +434,17 @@ public class PasswordlessUpdateUserTest {
 
         createUserWith(process, null, PHONE_NUMBER);
 
-        UserInfo user = storage.getUserByPhoneNumber(new TenantIdentifier(null, null, null), PHONE_NUMBER);
-        assertNotNull(user);
+        AuthRecipeUserInfo[] user = storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null),
+                PHONE_NUMBER);
+        assert (user.length == 1);
 
-        Passwordless.updateUser(process.getProcess(), user.id, new Passwordless.FieldUpdate(EMAIL),
+        Passwordless.updateUser(process.getProcess(), user[0].getSupertokensUserId(), new Passwordless.FieldUpdate(EMAIL),
                 new Passwordless.FieldUpdate(alternate_phoneNumber));
 
-        assertEquals(EMAIL, storage.getUserById(new AppIdentifier(null, null), user.id).email);
-        assertEquals(alternate_phoneNumber, storage.getUserById(new AppIdentifier(null, null), user.id).phoneNumber);
+        assertEquals(EMAIL,
+                storage.getPrimaryUserById(new AppIdentifier(null, null), user[0].getSupertokensUserId()).loginMethods[0].email);
+        assertEquals(alternate_phoneNumber,
+                storage.getPrimaryUserById(new AppIdentifier(null, null), user[0].getSupertokensUserId()).loginMethods[0].phoneNumber);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

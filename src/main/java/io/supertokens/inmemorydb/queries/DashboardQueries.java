@@ -37,9 +37,9 @@ import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
 
 public class DashboardQueries {
     public static String getQueryToCreateDashboardUsersTable(Start start) {
-        String tableName = Config.getConfig(start).getDashboardUsersTable();
+        String dashboardUsersTable = Config.getConfig(start).getDashboardUsersTable();
         // @formatter:off
-        return "CREATE TABLE IF NOT EXISTS " + tableName + " ("
+        return "CREATE TABLE IF NOT EXISTS " + dashboardUsersTable + " ("
                 + "app_id VARCHAR(64) DEFAULT 'public',"
                 + "user_id CHAR(36) NOT NULL,"
                 + "email VARCHAR(256) NOT NULL,"
@@ -287,5 +287,4 @@ public class DashboardQueries {
             return temp.toArray(DashboardSessionInfo[]::new);
         }
     }
-
 }

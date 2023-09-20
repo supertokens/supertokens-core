@@ -34,7 +34,7 @@ highlighting the necessary changes)
     - To know which one it is, run find the latest released tag (`git tag`) in the format `vX.Y.Z`, and then find the
       latest branch (`git branch --all`) whose `X.Y` is greater than the latest released tag.
     - If no such branch exists, then create one from the latest released branch.
-
+- [ ] If added a foreign key constraint on `app_id_to_user_id` table, make sure to delete from this table when deleting the user as well if `deleteUserIdMappingToo` is false.
 ## Remaining TODOs for this PR
 
 - [ ] Item1

@@ -33,6 +33,7 @@ public class SemVer implements Comparable<SemVer> {
     public static final SemVer v2_20 = new SemVer("2.20");
     public static final SemVer v2_21 = new SemVer("2.21");
     public static final SemVer v3_0 = new SemVer("3.0");
+    public static final SemVer v4_0 = new SemVer("4.0");
 
     final private String version;
 
@@ -41,11 +42,11 @@ public class SemVer implements Comparable<SemVer> {
     }
 
     public SemVer(String version) {
-        if(version == null) {
+        if (version == null) {
             throw new IllegalArgumentException("Version can not be null");
         }
 
-        if(!version.matches("[0-9]+(\\.[0-9]+)*")) {
+        if (!version.matches("[0-9]+(\\.[0-9]+)*")) {
             throw new IllegalArgumentException("Invalid version format");
         }
 
@@ -68,7 +69,8 @@ public class SemVer implements Comparable<SemVer> {
         return this.compareTo(max) < 0;
     }
 
-    @Override public int compareTo(SemVer that) {
+    @Override
+    public int compareTo(SemVer that) {
         if (that == null) {
             return 1;
         }
@@ -82,11 +84,11 @@ public class SemVer implements Comparable<SemVer> {
             int thisPart = i < thisParts.length ? Integer.parseInt(thisParts[i]) : 0;
             int thatPart = i < thatParts.length ? Integer.parseInt(thatParts[i]) : 0;
 
-            if(thisPart < thatPart) {
+            if (thisPart < thatPart) {
                 return -1;
             }
 
-            if(thisPart > thatPart) {
+            if (thisPart > thatPart) {
                 return 1;
             }
         }
@@ -94,16 +96,17 @@ public class SemVer implements Comparable<SemVer> {
         return 0;
     }
 
-    @Override public boolean equals(Object that) {
-        if(this == that) {
+    @Override
+    public boolean equals(Object that) {
+        if (this == that) {
             return true;
         }
 
-        if(that == null) {
+        if (that == null) {
             return false;
         }
 
-        if(!(that instanceof SemVer)) {
+        if (!(that instanceof SemVer)) {
             return false;
         }
 

@@ -95,7 +95,8 @@ public class VerifySessionAPI extends WebserverAPI {
 
             if (!super.getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_21)) {
                 result.addProperty("jwtSigningPublicKey",
-                        new Utils.PubPriKey(SigningKeys.getInstance(appIdentifier, main).getLatestIssuedDynamicKey().value).publicKey);
+                        new Utils.PubPriKey(SigningKeys.getInstance(appIdentifier, main)
+                                .getLatestIssuedDynamicKey().value).publicKey);
                 result.addProperty("jwtSigningPublicKeyExpiryTime",
                         SigningKeys.getInstance(appIdentifier, main).getDynamicSigningKeyExpiryTime());
 
@@ -106,9 +107,13 @@ public class VerifySessionAPI extends WebserverAPI {
             if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
                 result.get("session").getAsJsonObject().remove("tenantId");
             }
+            if (getVersionFromRequest(req).lesserThan(SemVer.v4_0)) {
+                result.get("session").getAsJsonObject().remove("recipeUserId");
+            }
 
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException | UnsupportedJWTSigningAlgorithmException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException |
+                 UnsupportedJWTSigningAlgorithmException e) {
             throw new ServletException(e);
         } catch (AccessTokenPayloadError e) {
             throw new ServletException(new BadRequestException(e.getMessage()));
@@ -136,7 +141,8 @@ public class VerifySessionAPI extends WebserverAPI {
 
                 reply.addProperty("message", e.getMessage());
                 super.sendJsonResponse(200, reply, resp);
-            } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException | UnsupportedJWTSigningAlgorithmException e2) {
+            } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException |
+                     UnsupportedJWTSigningAlgorithmException e2) {
                 throw new ServletException(e2);
             }
         }

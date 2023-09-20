@@ -216,7 +216,7 @@ public class MultitenancyQueries {
 
                     {
                         String QUERY = "INSERT INTO " + Config.getConfig(start).getTenantsTable()
-                                + "(app_id, tenant_id, created_at_time)" + " VALUES(?, ?, ?) ON CONFLICT DO NOTHING";
+                                + "(app_id, tenant_id, created_at_time)" + " VALUES(?, ?, ?)";
 
                         update(sqlCon, QUERY, pst -> {
                             pst.setString(1, tenantIdentifier.getAppId());

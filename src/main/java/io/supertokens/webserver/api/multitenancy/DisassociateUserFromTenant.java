@@ -26,6 +26,7 @@ import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdExce
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.useridmapping.UserIdType;
+import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -49,7 +50,13 @@ public class DisassociateUserFromTenant extends WebserverAPI {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-        String userId = InputParser.parseStringOrThrowError(input, "userId", false);
+        String userId;
+
+        if (getVersionFromRequest(req).lesserThan(SemVer.v4_0)) {
+            userId = InputParser.parseStringOrThrowError(input, "userId", false);
+        } else {
+            userId = InputParser.parseStringOrThrowError(input, "recipeUserId", false);
+        }
         // normalize userId
         userId = userId.trim();
 

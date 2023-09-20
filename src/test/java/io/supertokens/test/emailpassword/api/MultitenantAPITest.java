@@ -718,22 +718,4 @@ public class MultitenantAPITest {
             assertEquals(404, e.statusCode);
         }
     }
-
-    @Test
-    public void testGetUserByIdForUserThatBelongsToNoTenant() throws Exception {
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            return;
-        }
-
-        createTenants(false);
-
-        {
-            JsonObject user = TestMultitenancyAPIHelper.epSignUp(t1, "test@example.com", "password", process.getProcess());
-            TestMultitenancyAPIHelper.disassociateUserFromTenant(t1, user.get("id").getAsString(), process.getProcess());
-            JsonObject userInfoFromId = TestMultitenancyAPIHelper.getEpUserById(t1, user.get("id").getAsString(),
-                    process.getProcess());
-
-            assertEquals(0, userInfoFromId.get("tenantIds").getAsJsonArray().size());
-        }
-    }
 }

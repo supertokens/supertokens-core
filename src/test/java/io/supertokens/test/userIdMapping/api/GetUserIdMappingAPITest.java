@@ -20,7 +20,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -196,8 +196,8 @@ public class GetUserIdMappingAPITest {
         }
 
         // create a user and map their userId to an external userId
-        UserInfo user = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        String superTokensUserId = user.id;
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        String superTokensUserId = user.getSupertokensUserId();
         String externalUserId = "externalUserId";
         String externalUserIdInfo = "externalUserIdInfo";
 
@@ -290,8 +290,8 @@ public class GetUserIdMappingAPITest {
         }
 
         // create a user and map their userId to an external userId
-        UserInfo user = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        String superTokensUserId = user.id;
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        String superTokensUserId = user.getSupertokensUserId();
         String externalUserId = "externalUserId";
         String externalUserIdInfo = "externalUserIdInfo";
 
@@ -345,8 +345,8 @@ public class GetUserIdMappingAPITest {
         }
 
         // create a user and map their userId to an external userId
-        UserInfo user = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        String superTokensUserId = user.id;
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        String superTokensUserId = user.getSupertokensUserId();
         String externalUserId = "externalUserId";
 
         UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, null, false);

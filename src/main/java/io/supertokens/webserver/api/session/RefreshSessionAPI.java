@@ -109,24 +109,31 @@ public class RefreshSessionAPI extends WebserverAPI {
             if (version.lesserThan(SemVer.v3_0)) {
                 result.get("session").getAsJsonObject().remove("tenantId");
             }
+            if (version.lesserThan(SemVer.v4_0)) {
+                result.get("session").getAsJsonObject().remove("recipeUserId");
+            }
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException | UnsupportedJWTSigningAlgorithmException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException |
+                 UnsupportedJWTSigningAlgorithmException e) {
             throw new ServletException(e);
         } catch (AccessTokenPayloadError | UnauthorisedException e) {
-            Logging.debug(main, appIdentifierWithStorage.getAsPublicTenantIdentifier(), Utils.exceptionStacktraceToString(e));
+            Logging.debug(main, appIdentifierWithStorage.getAsPublicTenantIdentifier(),
+                    Utils.exceptionStacktraceToString(e));
             JsonObject reply = new JsonObject();
             reply.addProperty("status", "UNAUTHORISED");
             reply.addProperty("message", e.getMessage());
             super.sendJsonResponse(200, reply, resp);
         } catch (TokenTheftDetectedException e) {
-            Logging.debug(main, appIdentifierWithStorage.getAsPublicTenantIdentifier(), Utils.exceptionStacktraceToString(e));
+            Logging.debug(main, appIdentifierWithStorage.getAsPublicTenantIdentifier(),
+                    Utils.exceptionStacktraceToString(e));
             JsonObject reply = new JsonObject();
             reply.addProperty("status", "TOKEN_THEFT_DETECTED");
 
             JsonObject session = new JsonObject();
             session.addProperty("handle", e.sessionHandle);
-            session.addProperty("userId", e.userId);
+            session.addProperty("userId", e.primaryUserId);
+            session.addProperty("recipeUserId", e.recipeUserId);
             reply.add("session", session);
 
             super.sendJsonResponse(200, reply, resp);

@@ -1,5 +1,5 @@
 /*
- *    Copyright (c) 2021, VRAI Labs and/or its affiliates. All rights reserved.
+ *    Copyright (c) 2023, VRAI Labs and/or its affiliates. All rights reserved.
  *
  *    This software is licensed under the Apache License, Version 2.0 (the
  *    "License") as published by the Apache Software Foundation.
@@ -14,19 +14,13 @@
  *    under the License.
  */
 
-package io.supertokens.emailpassword;
+package io.supertokens.authRecipe.exception;
 
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+public class AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException extends Exception {
+    public final String primaryUserId;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-
-public class UserPaginationContainer {
-    public final UserInfo[] users;
-    public final String nextPaginationToken;
-
-    public UserPaginationContainer(@Nonnull UserInfo[] users, @Nullable String nextPaginationToken) {
-        this.users = users;
-        this.nextPaginationToken = nextPaginationToken;
+    public AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(String primaryUserId, String description) {
+        super(description);
+        this.primaryUserId = primaryUserId;
     }
 }

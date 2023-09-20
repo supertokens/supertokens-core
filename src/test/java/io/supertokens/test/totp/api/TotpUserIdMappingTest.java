@@ -4,9 +4,8 @@ import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.featureflag.EE_FEATURES;
-import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.FeatureFlagTestContent;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.totp.TOTPDevice;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
@@ -14,7 +13,6 @@ import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.totp.TOTPRecipeTest;
-import io.supertokens.test.totp.TotpLicenseTest;
 import io.supertokens.useridmapping.UserIdMapping;
 
 import static org.junit.Assert.assertNotNull;
@@ -54,8 +52,8 @@ public class TotpUserIdMappingTest {
 
         JsonObject body = new JsonObject();
 
-        UserInfo user = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        String superTokensUserId = user.id;
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        String superTokensUserId = user.getSupertokensUserId();
         String externalUserId = "external-user-id";
 
         // Create user id mapping first:

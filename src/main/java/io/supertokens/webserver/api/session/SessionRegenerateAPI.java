@@ -86,6 +86,9 @@ public class SessionRegenerateAPI extends WebserverAPI {
             if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
                 result.get("session").getAsJsonObject().remove("tenantId");
             }
+            if (getVersionFromRequest(req).lesserThan(SemVer.v4_0)) {
+                result.get("session").getAsJsonObject().remove("recipeUserId");
+            }
 
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);

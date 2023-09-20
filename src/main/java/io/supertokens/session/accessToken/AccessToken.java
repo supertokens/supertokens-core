@@ -209,7 +209,7 @@ public class AccessToken {
             NoSuchAlgorithmException, InvalidKeySpecException, SignatureException,
             UnsupportedJWTSigningAlgorithmException, AccessTokenPayloadError {
         try {
-            return createNewAccessToken(new TenantIdentifier(null, null, null), main, sessionHandle, userId,
+            return createNewAccessToken(new TenantIdentifier(null, null, null), main, sessionHandle, userId, userId,
                     refreshTokenHash1,
                     parentRefreshTokenHash1,
                     userData, antiCsrfToken, expiryTime, version, useStaticKey);
@@ -220,7 +220,8 @@ public class AccessToken {
 
     public static TokenInfo createNewAccessToken(TenantIdentifier tenantIdentifier, @Nonnull Main main,
                                                  @Nonnull String sessionHandle,
-                                                 @Nonnull String userId, @Nonnull String refreshTokenHash1,
+                                                 @Nonnull String recipeUserId, @Nonnull String primaryUserId,
+                                                 @Nonnull String refreshTokenHash1,
                                                  @Nullable String parentRefreshTokenHash1,
                                                  @Nonnull JsonObject userData, @Nullable String antiCsrfToken,
                                                  @Nullable Long expiryTime, VERSION version, boolean useStaticKey)
@@ -237,7 +238,8 @@ public class AccessToken {
         } else {
             expires = now + Config.getConfig(tenantIdentifier, main).getAccessTokenValidity();
         }
-        AccessTokenInfo accessToken = new AccessTokenInfo(sessionHandle, userId, refreshTokenHash1, expires,
+        AccessTokenInfo accessToken = new AccessTokenInfo(sessionHandle, recipeUserId, primaryUserId, refreshTokenHash1,
+                expires,
                 parentRefreshTokenHash1, userData, antiCsrfToken, now, version, tenantIdentifier);
 
         JWTSigningKeyInfo keyToUse;
@@ -296,7 +298,8 @@ public class AccessToken {
         AccessTokenInfo accessToken;
 
         long expiryTime = now + Config.getConfig(tenantIdentifier, main).getAccessTokenValidity();
-        accessToken = new AccessTokenInfo(sessionHandle, userId, refreshTokenHash1, expiryTime, parentRefreshTokenHash1,
+        accessToken = new AccessTokenInfo(sessionHandle, userId, userId, refreshTokenHash1, expiryTime,
+                parentRefreshTokenHash1,
                 userData, antiCsrfToken, now, VERSION.V1, tenantIdentifier);
 
         String token = JWT.createAndSignLegacyAccessToken(accessToken.toJSON(), signingKey.privateKey,
@@ -310,6 +313,9 @@ public class AccessToken {
     }
 
     public static VERSION getAccessTokenVersionForCDI(SemVer version) {
+        if (version.greaterThanOrEqualTo(SemVer.v4_0)) {
+            return AccessToken.VERSION.V5;
+        }
         if (version.greaterThanOrEqualTo(SemVer.v3_0)) {
             return AccessToken.VERSION.V4;
         }
@@ -354,11 +360,24 @@ public class AccessToken {
                 "antiCsrfToken",
                 "tId"
         };
+        static String[] requiredAndProtectedPropsV5 = {
+                "sub",
+                "exp",
+                "iat",
+                "sessionHandle",
+                "refreshTokenHash1",
+                "parentRefreshTokenHash1",
+                "antiCsrfToken",
+                "tId",
+                "rsub"
+        };
 
         @Nonnull
         public final String sessionHandle;
         @Nonnull
-        public final String userId;
+        public final String recipeUserId;
+        @Nonnull
+        public final String primaryUserId;
         @Nonnull
         public final String refreshTokenHash1;
         @Nullable
@@ -376,12 +395,14 @@ public class AccessToken {
         @Nonnull
         public TenantIdentifier tenantIdentifier;
 
-        AccessTokenInfo(@Nonnull String sessionHandle, @Nonnull String userId, @Nonnull String refreshTokenHash1,
+        AccessTokenInfo(@Nonnull String sessionHandle, @Nonnull String recipeUserId, @Nonnull String primaryUserId,
+                        @Nonnull String refreshTokenHash1,
                         long expiryTime, @Nullable String parentRefreshTokenHash1, @Nonnull JsonObject userData,
                         @Nullable String antiCsrfToken, long timeCreated, @Nonnull VERSION version,
                         TenantIdentifier tenantIdentifier) {
             this.sessionHandle = sessionHandle;
-            this.userId = userId;
+            this.recipeUserId = recipeUserId;
+            this.primaryUserId = primaryUserId;
             this.refreshTokenHash1 = refreshTokenHash1;
             if (version == VERSION.V2 || version == VERSION.V1) {
                 this.expiryTime = expiryTime;
@@ -431,9 +452,17 @@ public class AccessToken {
                             appIdentifier.getAppId(), payload.get("tId").getAsString());
                 }
 
+                String primaryUserId = payload.get("sub").getAsString();
+                String recipeUserId = payload.get("sub").getAsString();
+                if (version != VERSION.V3 && version != VERSION.V4) {
+                    // this means >= v5
+                    recipeUserId = payload.get("rsub").getAsString();
+                }
+
                 return new AccessTokenInfo(
                         payload.get("sessionHandle").getAsString(),
-                        payload.get("sub").getAsString(),
+                        recipeUserId,
+                        primaryUserId,
                         payload.get("refreshTokenHash1").getAsString(),
                         payload.get("exp").getAsLong() * 1000,
                         parentRefreshTokenHash == null || parentRefreshTokenHash.isJsonNull() ? null :
@@ -447,6 +476,7 @@ public class AccessToken {
                 checkRequiredPropsExist(payload, version);
                 return new AccessTokenInfo(
                         payload.get("sessionHandle").getAsString(),
+                        payload.get("userId").getAsString(),
                         payload.get("userId").getAsString(),
                         payload.get("refreshTokenHash1").getAsString(),
                         payload.get("expiryTime").getAsLong(),
@@ -465,15 +495,19 @@ public class AccessToken {
         JsonObject toJSON() throws AccessTokenPayloadError {
             JsonObject res = new JsonObject();
             if (this.version != VERSION.V1 && this.version != VERSION.V2) {
-                res.addProperty("sub", this.userId);
+                res.addProperty("sub", this.primaryUserId);
                 res.addProperty("exp", this.expiryTime / 1000);
                 res.addProperty("iat", this.timeCreated / 1000);
 
                 if (this.version != VERSION.V3) {
                     res.addProperty("tId", this.tenantIdentifier.getTenantId());
                 }
+                if (this.version != VERSION.V3 && this.version != VERSION.V4) {
+                    // this means >= v5
+                    res.addProperty("rsub", this.recipeUserId);
+                }
             } else {
-                res.addProperty("userId", this.userId);
+                res.addProperty("userId", this.primaryUserId);
                 res.addProperty("expiryTime", this.expiryTime);
                 res.addProperty("timeCreated", this.timeCreated);
             }
@@ -513,6 +547,7 @@ public class AccessToken {
                 case V1, V2 -> requiredAndProtectedPropsV2;
                 case V3 -> requiredAndProtectedPropsV3;
                 case V4 -> requiredAndProtectedPropsV4;
+                case V5 -> requiredAndProtectedPropsV5;
                 default -> throw new IllegalArgumentException("Unknown version: " + version);
             };
         }
@@ -533,7 +568,7 @@ public class AccessToken {
     }
 
     public static VERSION getLatestVersion() {
-        return VERSION.V4;
+        return VERSION.V5;
     }
 
     public static String getVersionStringFromAccessTokenVersion(VERSION version) {
@@ -541,6 +576,6 @@ public class AccessToken {
     }
 
     public enum VERSION {
-        V1, V2, V3, V4
+        V1, V2, V3, V4, V5
     }
 }

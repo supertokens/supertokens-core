@@ -24,7 +24,6 @@ import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.useridmapping.UserIdMapping;
@@ -40,6 +39,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 
+@Deprecated
 public class ResetPasswordAPI extends WebserverAPI {
     private static final long serialVersionUID = -7529428297450682549L;
 
@@ -94,8 +94,10 @@ public class ResetPasswordAPI extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
 
-            if (!(super.getVersionFromRequest(req).equals(SemVer.v2_7) || super.getVersionFromRequest(req).equals(SemVer.v2_8)
-                    || super.getVersionFromRequest(req).equals(SemVer.v2_9) || super.getVersionFromRequest(req).equals(SemVer.v2_10)
+            if (!(super.getVersionFromRequest(req).equals(SemVer.v2_7) ||
+                    super.getVersionFromRequest(req).equals(SemVer.v2_8)
+                    || super.getVersionFromRequest(req).equals(SemVer.v2_9) ||
+                    super.getVersionFromRequest(req).equals(SemVer.v2_10)
                     || super.getVersionFromRequest(req).equals(SemVer.v2_11))) {
                 // >= 2.12
                 result.addProperty("userId", userId);
@@ -109,7 +111,8 @@ public class ResetPasswordAPI extends WebserverAPI {
             result.addProperty("status", "RESET_PASSWORD_INVALID_TOKEN_ERROR");
             super.sendJsonResponse(200, result, resp);
 
-        } catch (StorageQueryException | NoSuchAlgorithmException | StorageTransactionLogicException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | NoSuchAlgorithmException | StorageTransactionLogicException |
+                 TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
 

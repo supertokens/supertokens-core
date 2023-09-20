@@ -19,7 +19,6 @@ package io.supertokens.inmemorydb.queries;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.inmemorydb.ConnectionWithLocks;
-import io.supertokens.inmemorydb.QueryExecutorTemplate;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.KeyValueInfo;
@@ -36,7 +35,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static io.supertokens.inmemorydb.PreparedStatementValueSetter.NO_OP_SETTER;
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
 import static io.supertokens.inmemorydb.config.Config.getConfig;
@@ -105,20 +103,45 @@ public class SessionQueries {
                                                          String sessionHandle)
             throws SQLException, StorageQueryException {
 
-        ((ConnectionWithLocks) con).lock(tenantIdentifier.getAppId() + "~" + tenantIdentifier.getTenantId() + "~" + sessionHandle + Config.getConfig(start).getSessionInfoTable());
-
-        String QUERY = "SELECT session_handle, user_id, refresh_token_hash_2, session_data, expires_at, "
-                + "created_at_time, jwt_user_payload, use_static_key FROM " + getConfig(start).getSessionInfoTable()
-                + " WHERE app_id = ? AND tenant_id = ? AND session_handle = ?";
-        return execute(con, QUERY, pst -> {
+        ((ConnectionWithLocks) con).lock(
+                tenantIdentifier.getAppId() + "~" + tenantIdentifier.getTenantId() + "~" + sessionHandle +
+                        Config.getConfig(start).getSessionInfoTable());
+        // we do this as two separate queries and not one query with left join cause psql does not
+        // support left join with for update if the right table returns null.
+        String QUERY =
+                "SELECT session_handle, user_id, refresh_token_hash_2, session_data, " +
+                        "expires_at, created_at_time, jwt_user_payload, use_static_key FROM " +
+                        getConfig(start).getSessionInfoTable()
+                        + " WHERE app_id = ? AND tenant_id = ? AND session_handle = ?";
+        SessionInfo sessionInfo = execute(con, QUERY, pst -> {
             pst.setString(1, tenantIdentifier.getAppId());
             pst.setString(2, tenantIdentifier.getTenantId());
             pst.setString(3, sessionHandle);
         }, result -> {
             if (result.next()) {
-                return SessionInfoRowMapper.getInstance().mapOrThrow(result);
+                return SessionInfoRowMapper.getInstance().mapOrThrow(result, false);
             }
             return null;
+        });
+
+        if (sessionInfo == null) {
+            return null;
+        }
+
+        QUERY = "SELECT primary_or_recipe_user_id FROM " + getConfig(start).getUsersTable()
+                + " WHERE app_id = ? AND user_id = ?";
+
+        return execute(con, QUERY, pst -> {
+            pst.setString(1, tenantIdentifier.getAppId());
+            pst.setString(2, sessionInfo.recipeUserId);
+        }, result -> {
+            if (result.next()) {
+                String primaryUserId = result.getString("primary_or_recipe_user_id");
+                if (primaryUserId != null) {
+                    sessionInfo.userId = primaryUserId;
+                }
+            }
+            return sessionInfo;
         });
     }
 
@@ -186,6 +209,18 @@ public class SessionQueries {
                 + " WHERE app_id = ? AND user_id = ?";
 
         update(start, QUERY.toString(), pst -> {
+            pst.setString(1, appIdentifier.getAppId());
+            pst.setString(2, userId);
+        });
+    }
+
+    public static void deleteSessionsOfUser_Transaction(Connection sqlCon, Start start, AppIdentifier appIdentifier,
+                                                        String userId)
+            throws SQLException, StorageQueryException {
+        String QUERY = "DELETE FROM " + getConfig(start).getSessionInfoTable()
+                + " WHERE app_id = ? AND user_id = ?";
+
+        update(sqlCon, QUERY.toString(), pst -> {
             pst.setString(1, appIdentifier.getAppId());
             pst.setString(2, userId);
         });
@@ -294,16 +329,24 @@ public class SessionQueries {
 
     public static SessionInfo getSession(Start start, TenantIdentifier tenantIdentifier, String sessionHandle)
             throws SQLException, StorageQueryException {
-        String QUERY = "SELECT session_handle, user_id, refresh_token_hash_2, session_data, expires_at, "
-                + "created_at_time, jwt_user_payload, use_static_key FROM " + getConfig(start).getSessionInfoTable()
-                + " WHERE app_id = ? AND tenant_id = ? AND session_handle = ?";
+        String QUERY =
+                "SELECT sess.session_handle, sess.user_id, sess.refresh_token_hash_2, sess.session_data, sess" +
+                        ".expires_at, "
+                        +
+                        "sess.created_at_time, sess.jwt_user_payload, sess.use_static_key, users" +
+                        ".primary_or_recipe_user_id FROM " +
+                        getConfig(start).getSessionInfoTable()
+                        + " AS sess LEFT JOIN " + getConfig(start).getUsersTable() +
+                        " as users ON sess.app_id = users.app_id AND sess.user_id = users.user_id WHERE sess.app_id =" +
+                        " ? AND " +
+                        "sess.tenant_id = ? AND sess.session_handle = ?";
         return execute(start, QUERY, pst -> {
             pst.setString(1, tenantIdentifier.getAppId());
             pst.setString(2, tenantIdentifier.getTenantId());
             pst.setString(3, sessionHandle);
         }, result -> {
             if (result.next()) {
-                return SessionInfoRowMapper.getInstance().mapOrThrow(result);
+                return SessionInfoRowMapper.getInstance().mapOrThrow(result, true);
             }
             return null;
         });
@@ -326,7 +369,8 @@ public class SessionQueries {
     public static KeyValueInfo[] getAccessTokenSigningKeys_Transaction(Start start, Connection con,
                                                                        AppIdentifier appIdentifier)
             throws SQLException, StorageQueryException {
-        ((ConnectionWithLocks) con).lock(appIdentifier.getAppId() + Config.getConfig(start).getAccessTokenSigningKeysTable());
+        ((ConnectionWithLocks) con).lock(
+                appIdentifier.getAppId() + Config.getConfig(start).getAccessTokenSigningKeysTable());
 
         String QUERY = "SELECT * FROM " + getConfig(start).getAccessTokenSigningKeysTable()
                 + " WHERE app_id = ?";
@@ -357,7 +401,7 @@ public class SessionQueries {
         });
     }
 
-    static class SessionInfoRowMapper implements RowMapper<SessionInfo, ResultSet> {
+    static class SessionInfoRowMapper {
         public static final SessionInfoRowMapper INSTANCE = new SessionInfoRowMapper();
 
         private SessionInfoRowMapper() {
@@ -367,14 +411,23 @@ public class SessionQueries {
             return INSTANCE;
         }
 
-        @Override
-        public SessionInfo map(ResultSet result) throws Exception {
+        public SessionInfo mapOrThrow(ResultSet result, boolean hasPrimaryOrRecipeUserId) throws StorageQueryException {
             JsonParser jp = new JsonParser();
-            return new SessionInfo(result.getString("session_handle"), result.getString("user_id"),
-                    result.getString("refresh_token_hash_2"),
-                    jp.parse(result.getString("session_data")).getAsJsonObject(), result.getLong("expires_at"),
-                    jp.parse(result.getString("jwt_user_payload")).getAsJsonObject(),
-                    result.getLong("created_at_time"), result.getBoolean("use_static_key"));
+            // if result.getString("primary_or_recipe_user_id") is null, it will be handled by SessionInfo
+            // constructor
+            try {
+                return new SessionInfo(result.getString("session_handle"),
+                        hasPrimaryOrRecipeUserId ? result.getString("primary_or_recipe_user_id") :
+                                result.getString("user_id"),
+                        result.getString("user_id"),
+                        result.getString("refresh_token_hash_2"),
+                        jp.parse(result.getString("session_data")).getAsJsonObject(),
+                        result.getLong("expires_at"),
+                        jp.parse(result.getString("jwt_user_payload")).getAsJsonObject(),
+                        result.getLong("created_at_time"), result.getBoolean("use_static_key"));
+            } catch (Exception e) {
+                throw new StorageQueryException(e);
+            }
         }
     }
 

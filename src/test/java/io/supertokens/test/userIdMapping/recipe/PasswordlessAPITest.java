@@ -16,14 +16,12 @@
 
 package io.supertokens.test.userIdMapping.recipe;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.passwordless.UserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -57,7 +55,7 @@ public class PasswordlessAPITest {
 
     @Test
     public void testCreatingAPasswordlessUserMapTheirUserIdAndRetrieveUserId() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -76,7 +74,7 @@ public class PasswordlessAPITest {
                     createCodeResponse.deviceId, createCodeResponse.deviceIdHash, createCodeResponse.userInputCode,
                     null);
             assertTrue(consumeCodeResponse.createdNewUser);
-            superTokensUserId = consumeCodeResponse.user.id;
+            superTokensUserId = consumeCodeResponse.user.getSupertokensUserId();
 
             // create mapping
             UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalId, null, false);
@@ -123,7 +121,7 @@ public class PasswordlessAPITest {
 
     @Test
     public void testCreatingAPasswordlessUserAndRetrieveInfo() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -143,7 +141,7 @@ public class PasswordlessAPITest {
                     createCodeResponse.deviceId, createCodeResponse.deviceIdHash, createCodeResponse.userInputCode,
                     null);
             assertTrue(consumeCodeResponse.createdNewUser);
-            superTokensUserId = consumeCodeResponse.user.id;
+            superTokensUserId = consumeCodeResponse.user.getSupertokensUserId();
 
             // create mapping
             UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalId, null, false);
@@ -201,7 +199,7 @@ public class PasswordlessAPITest {
 
     @Test
     public void testCreatingPasswordlessUserWithPhoneNumberAndRetrieveInfo() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -221,7 +219,7 @@ public class PasswordlessAPITest {
                     createCodeResponse.deviceId, createCodeResponse.deviceIdHash, createCodeResponse.userInputCode,
                     null);
             assertTrue(consumeCodeResponse.createdNewUser);
-            superTokensUserId = consumeCodeResponse.user.id;
+            superTokensUserId = consumeCodeResponse.user.getSupertokensUserId();
 
             // create mapping
             UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalId, null, false);
@@ -252,7 +250,7 @@ public class PasswordlessAPITest {
 
     @Test
     public void testUpdatingPasswordlessUserWithTheirExternalId() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -269,7 +267,7 @@ public class PasswordlessAPITest {
                 null);
         Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(process.main, response.deviceId,
                 response.deviceIdHash, response.userInputCode, null);
-        superTokensUserId = consumeCodeResponse.user.id;
+        superTokensUserId = consumeCodeResponse.user.getSupertokensUserId();
 
         // map their userId
         UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalId, null, false);
@@ -287,9 +285,9 @@ public class PasswordlessAPITest {
             assertEquals(updateUserResponse.get("status").getAsString(), "OK");
 
             // check that user got updated
-            UserInfo userInfo = Passwordless.getUserByEmail(process.main, newEmail);
+            AuthRecipeUserInfo userInfo = Passwordless.getUserByEmail(process.main, newEmail);
             assertNotNull(userInfo);
-            assertEquals(userInfo.id, superTokensUserId);
+            assertEquals(userInfo.getSupertokensUserId(), superTokensUserId);
         }
 
         process.kill();

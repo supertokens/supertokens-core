@@ -272,6 +272,49 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         return stats;
     }
 
+    private JsonObject getAccountLinkingStats() throws StorageQueryException {
+        JsonObject result = new JsonObject();
+        Storage[] storages = StorageLayer.getStoragesForApp(main, this.appIdentifier);
+        boolean usesAccountLinking = false;
+
+        for (Storage storage : storages) {
+            if (((AuthRecipeStorage)storage).checkIfUsesAccountLinking(this.appIdentifier)) {
+                usesAccountLinking = true;
+                break;
+            }
+        }
+
+        result.addProperty("usesAccountLinking", usesAccountLinking);
+        if (!usesAccountLinking) {
+            result.addProperty("totalUserCountWithMoreThanOneLoginMethod", 0);
+            JsonArray mauArray = new JsonArray();
+            for (int i = 0; i < 30; i++) {
+                mauArray.add(new JsonPrimitive(0));
+            }
+            result.add("mauWithMoreThanOneLoginMethod", mauArray);
+            return result;
+        }
+
+        int totalUserCountWithMoreThanOneLoginMethod = 0;
+        int[] maus = new int[30];
+
+        long now = System.currentTimeMillis();
+        long today = now - (now % (24 * 60 * 60 * 1000L));
+
+        for (Storage storage : storages) {
+            totalUserCountWithMoreThanOneLoginMethod += ((AuthRecipeStorage)storage).getUsersCountWithMoreThanOneLoginMethod(this.appIdentifier);
+
+            for (int i = 0; i < 30; i++) {
+                long timestamp = today - (i * 24 * 60 * 60 * 1000L);
+                maus[i] += ((ActiveUsersStorage)storage).countUsersThatHaveMoreThanOneLoginMethodAndActiveSince(appIdentifier, timestamp);
+            }
+        }
+
+        result.addProperty("totalUserCountWithMoreThanOneLoginMethod", totalUserCountWithMoreThanOneLoginMethod);
+        result.add("mauWithMoreThanOneLoginMethod", new Gson().toJsonTree(maus));
+        return result;
+    }
+
     private JsonArray getMAUs() throws StorageQueryException, TenantOrAppNotFoundException {
         JsonArray mauArr = new JsonArray();
         for (int i = 0; i < 30; i++) {
@@ -318,6 +361,10 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
 
             if (feature == EE_FEATURES.MULTI_TENANCY) {
                 usageStats.add(EE_FEATURES.MULTI_TENANCY.toString(), getMultiTenancyStats());
+            }
+
+            if (feature == EE_FEATURES.ACCOUNT_LINKING) {
+                usageStats.add(EE_FEATURES.ACCOUNT_LINKING.toString(), getAccountLinkingStats());
             }
         }
 

@@ -1,5 +1,6 @@
 package io.supertokens.inmemorydb.queries;
 
+import java.sql.Connection;
 import java.sql.SQLException;
 
 import io.supertokens.inmemorydb.config.Config;
@@ -22,7 +23,8 @@ public class ActiveUsersQueries {
                 + " );";
     }
 
-    public static int countUsersActiveSince(Start start, AppIdentifier appIdentifier, long sinceTime) throws SQLException, StorageQueryException {
+    public static int countUsersActiveSince(Start start, AppIdentifier appIdentifier, long sinceTime)
+            throws SQLException, StorageQueryException {
         String QUERY = "SELECT COUNT(*) as total FROM " + Config.getConfig(start).getUserLastActiveTable()
                 + " WHERE app_id = ? AND last_active_time >= ?";
 
@@ -37,7 +39,30 @@ public class ActiveUsersQueries {
         });
     }
 
-    public static int countUsersEnabledTotp(Start start, AppIdentifier appIdentifier) throws SQLException, StorageQueryException {
+    public static int countUsersActiveSinceAndHasMoreThanOneLoginMethod(Start start, AppIdentifier appIdentifier, long sinceTime)
+            throws SQLException, StorageQueryException {
+        String QUERY = "SELECT count(1) as c FROM ("
+                + "  SELECT count(user_id) as num_login_methods, app_id, primary_or_recipe_user_id"
+                + "  FROM " + Config.getConfig(start).getUsersTable()
+                + "  WHERE primary_or_recipe_user_id IN ("
+                + "    SELECT user_id FROM " + Config.getConfig(start).getUserLastActiveTable()
+                + "    WHERE app_id = ? AND last_active_time >= ?"
+                + "  )"
+                + "  GROUP BY app_id, primary_or_recipe_user_id"
+                + ") uc WHERE num_login_methods > 1";
+        return execute(start, QUERY, pst -> {
+            pst.setString(1, appIdentifier.getAppId());
+            pst.setLong(2, sinceTime);
+        }, result -> {
+            if (result.next()) {
+                return result.getInt("c");
+            }
+            return 0;
+        });
+    }
+
+    public static int countUsersEnabledTotp(Start start, AppIdentifier appIdentifier)
+            throws SQLException, StorageQueryException {
         String QUERY = "SELECT COUNT(*) as total FROM " + Config.getConfig(start).getTotpUsersTable()
                 + " WHERE app_id = ?";
 
@@ -51,8 +76,10 @@ public class ActiveUsersQueries {
         });
     }
 
-    public static int countUsersEnabledTotpAndActiveSince(Start start, AppIdentifier appIdentifier, long sinceTime) throws SQLException, StorageQueryException {
-        String QUERY = "SELECT COUNT(*) as total FROM " + Config.getConfig(start).getTotpUsersTable() + " AS totp_users "
+    public static int countUsersEnabledTotpAndActiveSince(Start start, AppIdentifier appIdentifier, long sinceTime)
+            throws SQLException, StorageQueryException {
+        String QUERY =
+                "SELECT COUNT(*) as total FROM " + Config.getConfig(start).getTotpUsersTable() + " AS totp_users "
                 + "INNER JOIN " + Config.getConfig(start).getUserLastActiveTable() + " AS user_last_active "
                 + "ON totp_users.user_id = user_last_active.user_id "
                 + "WHERE user_last_active.app_id = ? AND user_last_active.last_active_time >= ?";
@@ -68,9 +95,12 @@ public class ActiveUsersQueries {
         });
     }
 
-    public static int updateUserLastActive(Start start, AppIdentifier appIdentifier, String userId) throws SQLException, StorageQueryException {
+    public static int updateUserLastActive(Start start, AppIdentifier appIdentifier, String userId)
+            throws SQLException, StorageQueryException {
         String QUERY = "INSERT INTO " + Config.getConfig(start).getUserLastActiveTable()
-                + "(app_id, user_id, last_active_time) VALUES(?, ?, ?) ON CONFLICT(app_id, user_id) DO UPDATE SET last_active_time = ?";
+                +
+                "(app_id, user_id, last_active_time) VALUES(?, ?, ?) ON CONFLICT(app_id, user_id) DO UPDATE SET " +
+                "last_active_time = ?";
 
         long now = System.currentTimeMillis();
         return update(start, QUERY, pst -> {
@@ -101,12 +131,13 @@ public class ActiveUsersQueries {
         }
     }
 
-    public static void deleteUserActive(Start start, AppIdentifier appIdentifier, String userId)
+    public static void deleteUserActive_Transaction(Connection con, Start start, AppIdentifier appIdentifier,
+                                                    String userId)
             throws StorageQueryException, SQLException {
         String QUERY = "DELETE FROM " + Config.getConfig(start).getUserLastActiveTable()
                 + " WHERE app_id = ? AND user_id = ?";
 
-        update(start, QUERY, pst -> {
+        update(con, QUERY, pst -> {
             pst.setString(1, appIdentifier.getAppId());
             pst.setString(2, userId);
         });

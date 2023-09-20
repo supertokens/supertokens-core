@@ -32,7 +32,9 @@ import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.featureflag.exceptions.NoLicenseKeyFoundException;
 import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.multitenancy.MultitenancyHelper;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -509,6 +511,7 @@ public class FeatureFlagTest {
                 null, 1000, 1000, null, WebserverAPI.getLatestCDIVersion().get(), "");
         Assert.assertEquals("OK", response.get("status").getAsString());
 
+        assertFalse(response.get("usageStats").getAsJsonObject().has("account_linking"));
         JsonArray multitenancyStats = response.get("usageStats").getAsJsonObject().get("multi_tenancy")
                 .getAsJsonObject().get("tenants").getAsJsonArray();
         assertEquals(6, multitenancyStats.size());

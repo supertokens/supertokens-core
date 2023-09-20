@@ -28,15 +28,21 @@ public class SessionInfo {
     public final String userId;
 
     @Nonnull
+    public final String recipeUserId;
+
+    @Nonnull
     public final JsonObject userDataInJWT;
 
     @Nonnull
     public final String tenantId;
 
-    public SessionInfo(@Nonnull String handle, @Nonnull String userId, @Nonnull JsonObject userDataInJWT, @Nonnull String tenantId) {
+    public SessionInfo(@Nonnull String handle, @Nonnull String userId, @Nonnull String recipeUserId,
+                       @Nonnull JsonObject userDataInJWT,
+                       @Nonnull String tenantId) {
         this.handle = handle;
         this.userId = userId;
         this.userDataInJWT = userDataInJWT;
         this.tenantId = tenantId;
+        this.recipeUserId = recipeUserId;
     }
 }

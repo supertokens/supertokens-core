@@ -31,15 +31,11 @@ import static org.junit.Assert.assertNotNull;
 import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.authRecipe.UserPaginationContainer;
-import io.supertokens.authRecipe.UserPaginationContainer.UsersContainer;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.passwordless.Passwordless;
-import io.supertokens.passwordless.Passwordless.ConsumeCodeResponse;
 import io.supertokens.passwordless.Passwordless.CreateCodeResponse;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.dashboard.DashboardSearchTags;
-import io.supertokens.pluginInterface.passwordless.UserInfo;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -71,11 +67,11 @@ public class GetUsersWithSearchTagsTest {
 
         // create emailpassword user
         ArrayList<String> userIds = new ArrayList<>();
-        userIds.add(EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123").id);
-        userIds.add(EmailPassword.signUp(process.getProcess(), "test2@example.com", "testPass123").id);
+        userIds.add(EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123").getSupertokensUserId());
+        userIds.add(EmailPassword.signUp(process.getProcess(), "test2@example.com", "testPass123").getSupertokensUserId());
 
         // create thirdparty user
-        userIds.add(ThirdParty.signInUp(process.getProcess(), "testTPID", "test", "test2@example.com").user.id);
+        userIds.add(ThirdParty.signInUp(process.getProcess(), "testTPID", "test", "test2@example.com").user.getSupertokensUserId());
 
         // create passwordless user
         CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), "test@example.com",
@@ -83,7 +79,7 @@ public class GetUsersWithSearchTagsTest {
                 null, null);
         userIds.add(Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId,
                 createCodeResponse.deviceIdHash,
-                createCodeResponse.userInputCode, null).user.id);
+                createCodeResponse.userInputCode, null).user.getSupertokensUserId());
 
         // partial search with input emails as "test"
         {
@@ -95,7 +91,7 @@ public class GetUsersWithSearchTagsTest {
             UserPaginationContainer info = AuthRecipe.getUsers(process.getProcess(), 10, "ASC", null, null, tags);
             assertEquals(userIds.size(), info.users.length);
             for (int i = 0; i < info.users.length; i++) {
-                assertTrue(userIds.contains(info.users[i].user.id));
+                assertTrue(userIds.contains(info.users[i].getSupertokensUserId()));
             }
         }
 
@@ -109,8 +105,8 @@ public class GetUsersWithSearchTagsTest {
             DashboardSearchTags tags = new DashboardSearchTags(arrayList, null, arrayList);
             UserPaginationContainer info = AuthRecipe.getUsers(process.getProcess(), 10, "ASC", null, null, tags);
             assertEquals(1, info.users.length);
-            assertEquals(userIds.get(2), info.users[0].user.id);
-            assertEquals("thirdparty", info.users[0].recipeId);
+            assertEquals(userIds.get(2), info.users[0].getSupertokensUserId());
+            assertEquals("thirdparty", info.users[0].loginMethods[0].recipeId.toString());
 
         }
 
@@ -124,8 +120,8 @@ public class GetUsersWithSearchTagsTest {
             DashboardSearchTags tags = new DashboardSearchTags(null, arrayList, null);
             UserPaginationContainer info = AuthRecipe.getUsers(process.getProcess(), 10, "ASC", null, null, tags);
             assertEquals(1, info.users.length);
-            assertEquals(userIds.get(3), info.users[0].user.id);
-            assertEquals("passwordless", info.users[0].recipeId);
+            assertEquals(userIds.get(3), info.users[0].getSupertokensUserId());
+            assertEquals("passwordless", info.users[0].loginMethods[0].recipeId.toString());
         }
 
         process.kill();
@@ -144,11 +140,11 @@ public class GetUsersWithSearchTagsTest {
 
         // create emailpassword user
         ArrayList<String> userIds = new ArrayList<>();
-        userIds.add(EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123").id);
-        userIds.add(EmailPassword.signUp(process.getProcess(), "test2@example.com", "testPass123").id);
+        userIds.add(EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123").getSupertokensUserId());
+        userIds.add(EmailPassword.signUp(process.getProcess(), "test2@example.com", "testPass123").getSupertokensUserId());
 
         // create thirdparty user
-        userIds.add(ThirdParty.signInUp(process.getProcess(), "testTPID", "test", "test2@example.com").user.id);
+        userIds.add(ThirdParty.signInUp(process.getProcess(), "testTPID", "test", "test2@example.com").user.getSupertokensUserId());
 
         // create passwordless user
         CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), "test@example.com",
@@ -156,7 +152,7 @@ public class GetUsersWithSearchTagsTest {
                 null, null);
         userIds.add(Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId,
                 createCodeResponse.deviceIdHash,
-                createCodeResponse.userInputCode, null).user.id);
+                createCodeResponse.userInputCode, null).user.getSupertokensUserId());
 
         // test retrieving a user with a phoneNumber and provider
         {
@@ -187,12 +183,12 @@ public class GetUsersWithSearchTagsTest {
 
         // create emailpassword user
         ArrayList<String> userIds = new ArrayList<>();
-        userIds.add(EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123").id);
-        userIds.add(EmailPassword.signUp(process.getProcess(), "abc@example.com", "testPass123").id);
-        userIds.add(EmailPassword.signUp(process.getProcess(), "user@abc.com", "testPass123").id);
+        userIds.add(EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123").getSupertokensUserId());
+        userIds.add(EmailPassword.signUp(process.getProcess(), "abc@example.com", "testPass123").getSupertokensUserId());
+        userIds.add(EmailPassword.signUp(process.getProcess(), "user@abc.com", "testPass123").getSupertokensUserId());
 
         // create thirdparty user
-        userIds.add(ThirdParty.signInUp(process.getProcess(), "testTPID", "test", "test2@example.com").user.id);
+        userIds.add(ThirdParty.signInUp(process.getProcess(), "testTPID", "test", "test2@example.com").user.getSupertokensUserId());
 
         // create passwordless user
         CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), "test@example.com",
@@ -200,7 +196,7 @@ public class GetUsersWithSearchTagsTest {
                 null, null);
         userIds.add(Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId,
                 createCodeResponse.deviceIdHash,
-                createCodeResponse.userInputCode, null).user.id);
+                createCodeResponse.userInputCode, null).user.getSupertokensUserId());
 
         // regex for emails: email* and *@email*
         {
@@ -214,9 +210,9 @@ public class GetUsersWithSearchTagsTest {
                 DashboardSearchTags tags = new DashboardSearchTags(emailList, null, null);
                 UserPaginationContainer info = AuthRecipe.getUsers(process.getProcess(), 10, "ASC", null, null, tags);
                 assertEquals(3, info.users.length);
-                assertEquals(userIds.get(0), info.users[0].user.id);
-                assertEquals(userIds.get(3), info.users[1].user.id);
-                assertEquals(userIds.get(4), info.users[2].user.id);
+                assertEquals(userIds.get(0), info.users[0].getSupertokensUserId());
+                assertEquals(userIds.get(3), info.users[1].getSupertokensUserId());
+                assertEquals(userIds.get(4), info.users[2].getSupertokensUserId());
             }
 
             // retrieve emails for users whose email starts with abc or have domain abc
@@ -229,8 +225,8 @@ public class GetUsersWithSearchTagsTest {
                 DashboardSearchTags tags = new DashboardSearchTags(emailList, null, null);
                 UserPaginationContainer info = AuthRecipe.getUsers(process.getProcess(), 10, "ASC", null, null, tags);
                 assertEquals(2, info.users.length);
-                assertEquals(userIds.get(1), info.users[0].user.id);
-                assertEquals(userIds.get(2), info.users[1].user.id);
+                assertEquals(userIds.get(1), info.users[0].getSupertokensUserId());
+                assertEquals(userIds.get(2), info.users[1].getSupertokensUserId());
 
             }
 
@@ -244,7 +240,7 @@ public class GetUsersWithSearchTagsTest {
                     UserPaginationContainer info = AuthRecipe.getUsers(process.getProcess(), 10, "ASC", null, null,
                             tags);
                     assertEquals(1, info.users.length);
-                    assertEquals(userIds.get(4), info.users[0].user.id);
+                    assertEquals(userIds.get(4), info.users[0].getSupertokensUserId());
                 }
 
             }
@@ -268,7 +264,7 @@ public class GetUsersWithSearchTagsTest {
         ArrayList<String> userIds = new ArrayList<>();
 
         for (int i = 0; i < 1005; i++) {
-            userIds.add(EmailPassword.signUp(process.getProcess(), "test" + i + "@example.com", "testPass123").id);
+            userIds.add(EmailPassword.signUp(process.getProcess(), "test" + i + "@example.com", "testPass123").getSupertokensUserId());
             Thread.sleep(10);
         }
         
@@ -280,7 +276,7 @@ public class GetUsersWithSearchTagsTest {
         UserPaginationContainer info = AuthRecipe.getUsers(process.getProcess(), 10, "ASC", null, null, tags);
         assertEquals(1000, info.users.length);
         for (int i = 0; i < info.users.length; i++) {
-            assertTrue(userIds.contains(info.users[i].user.id));
+            assertTrue(userIds.contains(info.users[i].getSupertokensUserId()));
 
         }
         

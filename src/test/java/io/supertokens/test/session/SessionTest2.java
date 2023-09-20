@@ -21,10 +21,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.exceptions.TokenTheftDetectedException;
-import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.exceptions.UnauthorisedException;
-import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.session.Session;
@@ -38,16 +35,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
-
-import javax.crypto.BadPaddingException;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
-import java.io.IOException;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SignatureException;
-import java.security.spec.InvalidKeySpecException;
 
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.*;
@@ -82,7 +69,8 @@ public class SessionTest2 {
         JsonObject userDataInDatabase = new JsonObject();
         userDataInDatabase.addProperty("key", "value");
 
-        SessionInformationHolder sessionInfo = Session.createNewSession(main, userId, userDataInJWT, userDataInDatabase);
+        SessionInformationHolder sessionInfo = Session.createNewSession(main, userId, userDataInJWT,
+                userDataInDatabase);
         assert sessionInfo.refreshToken != null;
         assert sessionInfo.accessToken != null;
 
@@ -97,10 +85,11 @@ public class SessionTest2 {
         assertNotEquals(sessionObj.accessToken.token, newRefreshedSession.accessToken.token);
 
         try {
-            Session.refreshSession(main, sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false, AccessToken.getLatestVersion());
+            Session.refreshSession(main, sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false,
+                    AccessToken.getLatestVersion());
         } catch (TokenTheftDetectedException e) {
             assertEquals(e.sessionHandle, sessionInfo.session.handle);
-            assertEquals(e.userId, sessionInfo.session.userId);
+            assertEquals(e.recipeUserId, sessionInfo.session.userId);
         }
 
         process.kill();
@@ -123,7 +112,8 @@ public class SessionTest2 {
         JsonObject userDataInDatabase = new JsonObject();
         userDataInDatabase.addProperty("key", "value");
 
-        SessionInformationHolder sessionInfo = Session.createNewSession(main, userId, userDataInJWT, userDataInDatabase);
+        SessionInformationHolder sessionInfo = Session.createNewSession(main, userId, userDataInJWT,
+                userDataInDatabase);
         assert sessionInfo.refreshToken != null;
         assert sessionInfo.accessToken != null;
 
@@ -133,15 +123,17 @@ public class SessionTest2 {
         assert newRefreshedSession1.accessToken != null;
 
         SessionInformationHolder newRefreshedSession2 = Session.refreshSession(main,
-                newRefreshedSession1.refreshToken.token, newRefreshedSession1.antiCsrfToken, false, AccessToken.getLatestVersion());
+                newRefreshedSession1.refreshToken.token, newRefreshedSession1.antiCsrfToken, false,
+                AccessToken.getLatestVersion());
         assert newRefreshedSession2.refreshToken != null;
         assert newRefreshedSession2.accessToken != null;
 
         try {
-            Session.refreshSession(main, sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false, AccessToken.getLatestVersion());
+            Session.refreshSession(main, sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false,
+                    AccessToken.getLatestVersion());
         } catch (TokenTheftDetectedException e) {
             assertEquals(e.sessionHandle, sessionInfo.session.handle);
-            assertEquals(e.userId, sessionInfo.session.userId);
+            assertEquals(e.recipeUserId, sessionInfo.session.userId);
         }
 
         process.kill();
@@ -174,7 +166,8 @@ public class SessionTest2 {
         JsonArray arr = new JsonArray();
         userDataInDatabase2.add("key3", arr);
 
-        Session.updateSession(process.getProcess(), sessionInfo.session.handle, userDataInDatabase2, null, AccessToken.getLatestVersion());
+        Session.updateSession(process.getProcess(), sessionInfo.session.handle, userDataInDatabase2, null,
+                AccessToken.getLatestVersion());
 
         JsonObject sessionDataAfterUpdate = Session.getSessionData(process.getProcess(), sessionInfo.session.handle);
         assertEquals(userDataInDatabase2.toString(), sessionDataAfterUpdate.toString());

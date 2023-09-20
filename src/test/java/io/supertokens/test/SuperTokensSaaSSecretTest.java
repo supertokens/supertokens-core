@@ -186,6 +186,10 @@ public class SuperTokensSaaSSecretTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         String userId = "userId";
         JsonObject userDataInJWT = new JsonObject();
         userDataInJWT.addProperty("key", "value");
@@ -209,7 +213,7 @@ public class SuperTokensSaaSSecretTest {
 
         JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session", request, 1000, 1000, null,
-                Utils.getCdiVersionStringLatestForTests(),
+                SemVer.v3_0.get(),
                 apiKey, "");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
@@ -272,6 +276,10 @@ public class SuperTokensSaaSSecretTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         String userId = "userId";
         JsonObject userDataInJWT = new JsonObject();
         userDataInJWT.addProperty("key", "value");
@@ -296,7 +304,7 @@ public class SuperTokensSaaSSecretTest {
         {
             JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/session", request, 1000, 1000, null,
-                    Utils.getCdiVersionStringLatestForTests(),
+                    SemVer.v3_0.get(),
                     apiKey, "");
             assertEquals(sessionInfo.get("status").getAsString(), "OK");
             checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
@@ -305,7 +313,7 @@ public class SuperTokensSaaSSecretTest {
         {
             JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/session", request, 1000, 1000, null,
-                    Utils.getCdiVersionStringLatestForTests(),
+                    SemVer.v3_0.get(),
                     saasSecret, "");
             assertEquals(sessionInfo.get("status").getAsString(), "OK");
             checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
