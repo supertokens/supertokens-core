@@ -523,6 +523,8 @@ public class EmailPasswordQueries {
                 pst.setLong(7, userInfo.timeJoined);
                 pst.setLong(8, userInfo.timeJoined);
             });
+
+            GeneralQueries.updateTimeJoinedForPrimaryUser_Transaction(start, sqlCon, tenantIdentifier.toAppIdentifier(), finalAccountLinkingInfo.primaryUserId);
         }
 
         { // emailpassword_user_to_tenant
