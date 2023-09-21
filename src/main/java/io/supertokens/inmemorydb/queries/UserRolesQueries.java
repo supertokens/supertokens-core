@@ -113,14 +113,29 @@ public class UserRolesQueries {
         });
     }
 
-    public static boolean deleteRole(Start start, AppIdentifier appIdentifier, String role)
-            throws SQLException, StorageQueryException {
-        String QUERY = "DELETE FROM " + getConfig(start).getRolesTable()
-                + " WHERE app_id = ? AND role = ? ;";
-        return update(start, QUERY, pst -> {
-                pst.setString(1, appIdentifier.getAppId());
-                pst.setString(2, role);
-            }) == 1;
+    public static boolean deleteRole(Start start, AppIdentifier appIdentifier, String role) throws SQLException, StorageQueryException {
+        
+        try {
+            return start.startTransaction(con -> {
+                // Row lock must be taken to delete the role, otherwise the table may be locked for delete
+                Connection sqlCon = (Connection) con.getConnection();
+                ((ConnectionWithLocks) sqlCon).lock(appIdentifier.getAppId() + "~" + role + Config.getConfig(start).getRolesTable());
+
+                String QUERY = "DELETE FROM " + getConfig(start).getRolesTable()
+                        + " WHERE app_id = ? AND role = ? ;";
+
+                try {
+                    return update(sqlCon, QUERY, pst -> {
+                        pst.setString(1, appIdentifier.getAppId());
+                        pst.setString(2, role);
+                    }) == 1;
+                } catch (SQLException e) {
+                    throw new StorageTransactionLogicException(e);
+                }
+            });
+        } catch (StorageTransactionLogicException e) {
+            throw new StorageQueryException(e.actualException);
+        }
     }
 
     public static boolean doesRoleExist(Start start, AppIdentifier appIdentifier, String role)
