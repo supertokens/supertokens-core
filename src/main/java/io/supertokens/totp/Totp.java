@@ -386,7 +386,7 @@ public class Totp {
 
     @TestOnly
     public static void verifyCode(Main main, String userId, String code)
-            throws InvalidTotpException, LimitReachedException,
+            throws InvalidTotpException, UnknownUserIdTotpException, LimitReachedException,
             StorageQueryException, StorageTransactionLogicException, FeatureNotEnabledException {
         try {
             verifyCode(new TenantIdentifierWithStorage(null, null, null, StorageLayer.getStorage(main)), main,
@@ -397,7 +397,7 @@ public class Totp {
     }
 
     public static void verifyCode(TenantIdentifierWithStorage tenantIdentifierWithStorage, Main main, String userId, String code)
-            throws InvalidTotpException, LimitReachedException,
+            throws InvalidTotpException, UnknownUserIdTotpException, LimitReachedException,
             StorageQueryException, StorageTransactionLogicException, FeatureNotEnabledException,
             TenantOrAppNotFoundException {
 
@@ -413,7 +413,7 @@ public class Totp {
         TOTPDevice[] devices = totpStorage.getDevices(tenantIdentifierWithStorage.toAppIdentifier(), userId);
         if (devices.length == 0) {
             // No devices found. So we can't verify the code anyway.
-            throw new InvalidTotpException();
+            throw new UnknownUserIdTotpException();
         }
 
         // Filter out unverified devices:

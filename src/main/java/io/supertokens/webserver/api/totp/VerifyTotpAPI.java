@@ -13,6 +13,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.totp.exception.UnknownUserIdTotpException;
 import io.supertokens.totp.Totp;
 import io.supertokens.totp.exceptions.InvalidTotpException;
 import io.supertokens.totp.exceptions.LimitReachedException;
@@ -76,6 +77,9 @@ public class VerifyTotpAPI extends WebserverAPI {
             super.sendJsonResponse(200, result, resp);
         } catch (InvalidTotpException e) {
             result.addProperty("status", "INVALID_TOTP_ERROR");
+            super.sendJsonResponse(200, result, resp);
+        } catch (UnknownUserIdTotpException e) {
+            result.addProperty("status", "UNKNOWN_USER_ID_ERROR");
             super.sendJsonResponse(200, result, resp);
         } catch (LimitReachedException e) {
             result.addProperty("status", "LIMIT_REACHED_ERROR");
