@@ -25,7 +25,7 @@ import io.supertokens.emailpassword.PasswordHashing;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -88,9 +88,9 @@ public class PasswordHashingTest {
                 CoreConfig.PASSWORD_HASHING_ALG.FIREBASE_SCRYPT);
 
         // try signing in
-        UserInfo user = EmailPassword.signIn(process.main, email, password);
-        assertEquals(user.email, email);
-        assertEquals(user.passwordHash, combinedPasswordHash);
+        AuthRecipeUserInfo user = EmailPassword.signIn(process.main, email, password);
+        assertEquals(user.loginMethods[0].email, email);
+        assertEquals(user.loginMethods[0].passwordHash, combinedPasswordHash);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -522,14 +522,14 @@ public class PasswordHashingTest {
             return;
         }
 
-        UserInfo user = EmailPassword.signUp(process.getProcess(), "t@example.com", "somePass");
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "t@example.com", "somePass");
 
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_HASH_BCRYPT));
         ProcessState.getInstance(process.getProcess()).clear();
 
         Config.getConfig(process.getProcess()).setPasswordHashingAlg(CoreConfig.PASSWORD_HASHING_ALG.ARGON2);
 
-        String token = EmailPassword.generatePasswordResetToken(process.getProcess(), user.id);
+        String token = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.getSupertokensUserId());
         EmailPassword.resetPassword(process.getProcess(), token, "somePass2");
 
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_HASH_ARGON));
@@ -553,14 +553,14 @@ public class PasswordHashingTest {
             return;
         }
 
-        UserInfo user = EmailPassword.signUp(process.getProcess(), "t@example.com", "somePass");
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "t@example.com", "somePass");
 
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_HASH_ARGON));
         ProcessState.getInstance(process.getProcess()).clear();
 
         Config.getConfig(process.getProcess()).setPasswordHashingAlg(CoreConfig.PASSWORD_HASHING_ALG.BCRYPT);
 
-        String token = EmailPassword.generatePasswordResetToken(process.getProcess(), user.id);
+        String token = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(process.getProcess(), user.getSupertokensUserId());
         EmailPassword.resetPassword(process.getProcess(), token, "somePass2");
 
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_HASH_BCRYPT));
@@ -583,14 +583,14 @@ public class PasswordHashingTest {
             return;
         }
 
-        UserInfo user = EmailPassword.signUp(process.getProcess(), "t@example.com", "somePass");
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "t@example.com", "somePass");
 
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_HASH_BCRYPT));
         ProcessState.getInstance(process.getProcess()).clear();
 
         Config.getConfig(process.getProcess()).setPasswordHashingAlg(CoreConfig.PASSWORD_HASHING_ALG.ARGON2);
 
-        EmailPassword.updateUsersEmailOrPassword(process.getProcess(), user.id, null, "somePass2");
+        EmailPassword.updateUsersEmailOrPassword(process.getProcess(), user.getSupertokensUserId(), null, "somePass2");
 
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_HASH_ARGON));
 
@@ -613,14 +613,14 @@ public class PasswordHashingTest {
             return;
         }
 
-        UserInfo user = EmailPassword.signUp(process.getProcess(), "t@example.com", "somePass");
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "t@example.com", "somePass");
 
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_HASH_ARGON));
         ProcessState.getInstance(process.getProcess()).clear();
 
         Config.getConfig(process.getProcess()).setPasswordHashingAlg(CoreConfig.PASSWORD_HASHING_ALG.BCRYPT);
 
-        EmailPassword.updateUsersEmailOrPassword(process.getProcess(), user.id, null, "somePass2");
+        EmailPassword.updateUsersEmailOrPassword(process.getProcess(), user.getSupertokensUserId(), null, "somePass2");
 
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_HASH_BCRYPT));
 
@@ -721,8 +721,8 @@ public class PasswordHashingTest {
                         EmailPassword.importUserWithPasswordHash(process.main, uniqueEmail, combinedPasswordHash,
                                 CoreConfig.PASSWORD_HASHING_ALG.FIREBASE_SCRYPT);
                         // try signing in
-                        UserInfo user = EmailPassword.signIn(process.main, uniqueEmail, password);
-                        assertEquals(user.passwordHash, combinedPasswordHash);
+                        AuthRecipeUserInfo user = EmailPassword.signIn(process.main, uniqueEmail, password);
+                        assertEquals(user.loginMethods[0].passwordHash, combinedPasswordHash);
                         assertNotNull(process
                                 .checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_FIREBASE_SCRYPT));
                         int queueSize = PasswordHashing.getInstance(process.getProcess())
@@ -803,8 +803,8 @@ public class PasswordHashingTest {
                         EmailPassword.importUserWithPasswordHash(process.main, uniqueEmail, combinedPasswordHash,
                                 CoreConfig.PASSWORD_HASHING_ALG.FIREBASE_SCRYPT);
                         // try signing in
-                        UserInfo user = EmailPassword.signIn(process.main, uniqueEmail, password);
-                        assertEquals(user.passwordHash, combinedPasswordHash);
+                        AuthRecipeUserInfo user = EmailPassword.signIn(process.main, uniqueEmail, password);
+                        assertEquals(user.loginMethods[0].passwordHash, combinedPasswordHash);
                         assertNotNull(process
                                 .checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_FIREBASE_SCRYPT));
                         int queueSize = PasswordHashing.getInstance(process.getProcess())

@@ -201,9 +201,8 @@ public class Main {
                 }
             }
         }
-        FeatureFlag.initForBaseTenant(this, CLIOptions.get(this).getInstallationPath() + "ee/");
-
         MultitenancyHelper.init(this);
+        FeatureFlag.initForBaseTenant(this, CLIOptions.get(this).getInstallationPath() + "ee/");
 
         try {
             // load all configs for each of the tenants.

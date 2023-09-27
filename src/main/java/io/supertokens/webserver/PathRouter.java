@@ -81,7 +81,9 @@ public class PathRouter extends WebserverAPI {
             if (!apiPath.startsWith("/")) {
                 apiPath = "/" + apiPath;
             }
-            if (requestPath.matches("^(/appid-[a-z0-9-]*)?(/[a-z0-9-]+)?" + apiPath + "/?$")) {
+
+            String tenantIdStopWords = String.join("|", Utils.INVALID_WORDS_FOR_TENANTID);
+            if (requestPath.matches("^(/appid-[a-z0-9-]*)?(/(?!" + tenantIdStopWords + ")[a-z0-9-]+)?" + apiPath + "/?$")) {
                 return api;
             }
         }

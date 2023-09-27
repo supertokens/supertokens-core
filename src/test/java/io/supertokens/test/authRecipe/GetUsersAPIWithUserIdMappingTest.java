@@ -21,7 +21,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
 import io.supertokens.storageLayer.StorageLayer;
@@ -70,8 +70,8 @@ public class GetUsersAPIWithUserIdMappingTest {
 
         for (int i = 1; i <= 10; i++) {
             // create User
-            UserInfo userInfo = EmailPassword.signUp(process.main, "test" + i + "@example.com", "testPass123");
-            String superTokensUserId = userInfo.id;
+            AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test" + i + "@example.com", "testPass123");
+            String superTokensUserId = userInfo.getSupertokensUserId();
             String externalUserId = "externalId" + i;
             externalUserIdList.add(externalUserId);
 
@@ -110,8 +110,8 @@ public class GetUsersAPIWithUserIdMappingTest {
 
         for (int i = 1; i <= 20; i++) {
             // create User
-            UserInfo userInfo = EmailPassword.signUp(process.main, "test" + i + "@example.com", "testPass123");
-            String superTokensUserId = userInfo.id;
+            AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test" + i + "@example.com", "testPass123");
+            String superTokensUserId = userInfo.getSupertokensUserId();
             String externalUserId = "externalId" + i;
             externalUserIdList.add(externalUserId);
 

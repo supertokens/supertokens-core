@@ -1,6 +1,8 @@
 package io.supertokens;
 
+import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
@@ -36,5 +38,19 @@ public class ActiveUsers {
             throws StorageQueryException, TenantOrAppNotFoundException {
         return countUsersActiveSince(new AppIdentifierWithStorage(null, null, StorageLayer.getStorage(main)), main,
                 time);
+    }
+
+    public static void removeActiveUser(AppIdentifierWithStorage appIdentifierWithStorage, String userId)
+            throws StorageQueryException {
+        try {
+            ((AuthRecipeSQLStorage) appIdentifierWithStorage.getActiveUsersStorage()).startTransaction(con -> {
+                appIdentifierWithStorage.getActiveUsersStorage().deleteUserActive_Transaction(con, appIdentifierWithStorage, userId);
+                ((AuthRecipeSQLStorage) appIdentifierWithStorage.getActiveUsersStorage()).commitTransaction(con);
+                return null;
+            });
+
+        } catch (StorageTransactionLogicException e) {
+            throw new StorageQueryException(e.actualException);
+        }
     }
 }

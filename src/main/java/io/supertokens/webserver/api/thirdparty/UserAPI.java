@@ -16,16 +16,14 @@
 
 package io.supertokens.webserver.api.thirdparty;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
-import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
-import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.thirdparty.UserInfo;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
@@ -51,6 +49,7 @@ public class UserAPI extends WebserverAPI {
         return "/recipe/user";
     }
 
+    @Deprecated
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         // API is tenant specific for get by thirdPartyUserId
@@ -72,7 +71,7 @@ public class UserAPI extends WebserverAPI {
         }
 
         try {
-            UserInfo user = null;
+            AuthRecipeUserInfo user = null;
             if (userId != null) {
                 // Query by userId
                 try {
@@ -83,9 +82,10 @@ public class UserAPI extends WebserverAPI {
                         userId = appIdentifierWithStorageAndUserIdMapping.userIdMapping.superTokensUserId;
                     }
 
-                    user = ThirdParty.getUser(appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage, userId);
-                    if (user != null && appIdentifierWithStorageAndUserIdMapping.userIdMapping != null) {
-                        user.id = appIdentifierWithStorageAndUserIdMapping.userIdMapping.externalUserId;
+                    user = ThirdParty.getUser(appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage,
+                            userId);
+                    if (user != null) {
+                        UserIdMapping.populateExternalUserIdForUsers(appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage, new AuthRecipeUserInfo[]{user});
                     }
                 } catch (UnknownUserIdException e) {
                     // let the user be null
@@ -94,11 +94,7 @@ public class UserAPI extends WebserverAPI {
                 user = ThirdParty.getUser(this.getTenantIdentifierWithStorageFromRequest(req), thirdPartyId,
                         thirdPartyUserId);
                 if (user != null) {
-                    io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                            .getUserIdMapping(this.getAppIdentifierWithStorage(req), user.id, UserIdType.SUPERTOKENS);
-                    if (userIdMapping != null) {
-                        user.id = userIdMapping.externalUserId;
-                    }
+                    UserIdMapping.populateExternalUserIdForUsers(getTenantIdentifierWithStorageFromRequest(req), new AuthRecipeUserInfo[]{user});
                 }
             }
 
@@ -110,7 +106,9 @@ public class UserAPI extends WebserverAPI {
             } else {
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
-                JsonObject userJson = new JsonParser().parse(new Gson().toJson(user)).getAsJsonObject();
+                JsonObject userJson =
+                        getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0) ? user.toJson() :
+                                user.toJsonWithoutAccountLinking();
 
                 if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
                     userJson.remove("tenantIds");

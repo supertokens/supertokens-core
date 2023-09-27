@@ -19,7 +19,7 @@ package io.supertokens.test.passwordless;
 import io.supertokens.ProcessState;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.passwordless.UserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -59,7 +59,7 @@ public class PasswordlessGetUserTest {
      */
     @Test
     public void getUserByIdWithEmail() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -70,9 +70,9 @@ public class PasswordlessGetUserTest {
 
         Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, EMAIL, null);
 
-        UserInfo user = Passwordless.getUserById(process.getProcess(), consumeCodeResponse.user.id);
+        AuthRecipeUserInfo user = Passwordless.getUserById(process.getProcess(), consumeCodeResponse.user.getSupertokensUserId());
         assertNotNull(user);
-        assertEquals(user.email, EMAIL);
+        assertEquals(user.loginMethods[0].email, EMAIL);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -86,7 +86,7 @@ public class PasswordlessGetUserTest {
      */
     @Test
     public void getUserByIdWithPhoneNumber() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -97,9 +97,9 @@ public class PasswordlessGetUserTest {
 
         Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, null, PHONE_NUMBER);
 
-        UserInfo user = Passwordless.getUserById(process.getProcess(), consumeCodeResponse.user.id);
+        AuthRecipeUserInfo user = Passwordless.getUserById(process.getProcess(), consumeCodeResponse.user.getSupertokensUserId());
         assertNotNull(user);
-        assertEquals(user.phoneNumber, PHONE_NUMBER);
+        assertEquals(user.loginMethods[0].phoneNumber, PHONE_NUMBER);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -113,7 +113,7 @@ public class PasswordlessGetUserTest {
      */
     @Test
     public void getUserByIdWithEmailAndPhoneNumber() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -124,10 +124,10 @@ public class PasswordlessGetUserTest {
 
         Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, EMAIL, PHONE_NUMBER);
 
-        UserInfo user = Passwordless.getUserById(process.getProcess(), consumeCodeResponse.user.id);
+        AuthRecipeUserInfo user = Passwordless.getUserById(process.getProcess(), consumeCodeResponse.user.getSupertokensUserId());
         assertNotNull(user);
-        assertEquals(user.email, EMAIL);
-        assertEquals(user.phoneNumber, PHONE_NUMBER);
+        assertEquals(user.loginMethods[0].email, EMAIL);
+        assertEquals(user.loginMethods[0].phoneNumber, PHONE_NUMBER);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -141,7 +141,7 @@ public class PasswordlessGetUserTest {
      */
     @Test
     public void getUserByInvalidId() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -152,7 +152,7 @@ public class PasswordlessGetUserTest {
 
         Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, EMAIL, null);
 
-        UserInfo user = Passwordless.getUserById(process.getProcess(), consumeCodeResponse.user.id + "1");
+        AuthRecipeUserInfo user = Passwordless.getUserById(process.getProcess(), consumeCodeResponse.user.getSupertokensUserId() + "1");
         assertNull(user);
 
         process.kill();
@@ -167,7 +167,7 @@ public class PasswordlessGetUserTest {
      */
     @Test
     public void getUserByEmail() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -178,9 +178,9 @@ public class PasswordlessGetUserTest {
 
         createUserWith(process, EMAIL, null);
 
-        UserInfo user = Passwordless.getUserByEmail(process.getProcess(), EMAIL);
+        AuthRecipeUserInfo user = Passwordless.getUserByEmail(process.getProcess(), EMAIL);
         assertNotNull(user);
-        assertEquals(user.email, EMAIL);
+        assertEquals(user.loginMethods[0].email, EMAIL);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -194,7 +194,7 @@ public class PasswordlessGetUserTest {
      */
     @Test
     public void getUserByInvalidEmail() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -205,7 +205,7 @@ public class PasswordlessGetUserTest {
 
         createUserWith(process, EMAIL, null);
 
-        UserInfo user = Passwordless.getUserByEmail(process.getProcess(), EMAIL + "a");
+        AuthRecipeUserInfo user = Passwordless.getUserByEmail(process.getProcess(), EMAIL + "a");
         assertNull(user);
 
         process.kill();
@@ -220,7 +220,7 @@ public class PasswordlessGetUserTest {
      */
     @Test
     public void getUserByPhoneNumber() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -231,9 +231,9 @@ public class PasswordlessGetUserTest {
 
         createUserWith(process, null, PHONE_NUMBER);
 
-        UserInfo user = Passwordless.getUserByPhoneNumber(process.getProcess(), PHONE_NUMBER);
+        AuthRecipeUserInfo user = Passwordless.getUserByPhoneNumber(process.getProcess(), PHONE_NUMBER);
         assertNotNull(user);
-        assertEquals(user.phoneNumber, PHONE_NUMBER);
+        assertEquals(user.loginMethods[0].phoneNumber, PHONE_NUMBER);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -246,7 +246,7 @@ public class PasswordlessGetUserTest {
      */
     @Test
     public void getUserByInvalidPhoneNumber() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -257,7 +257,7 @@ public class PasswordlessGetUserTest {
 
         createUserWith(process, null, PHONE_NUMBER);
 
-        UserInfo user = Passwordless.getUserByPhoneNumber(process.getProcess(), PHONE_NUMBER + "1");
+        AuthRecipeUserInfo user = Passwordless.getUserByPhoneNumber(process.getProcess(), PHONE_NUMBER + "1");
         assertNull(user);
 
         process.kill();

@@ -20,7 +20,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -269,8 +269,8 @@ public class UpdateExternalUserIdInfoTest {
 
         // create userId mapping with externalUserIdInfo
         String externalUserIdInfo = "externalUserIdInfo";
-        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        UserIdMapping userIdMapping = new io.supertokens.pluginInterface.useridmapping.UserIdMapping(userInfo.id,
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        UserIdMapping userIdMapping = new io.supertokens.pluginInterface.useridmapping.UserIdMapping(userInfo.getSupertokensUserId(),
                 "externalUserIdInfo", externalUserIdInfo);
 
         Utils.createUserIdMappingAndCheckThatItExists(process.main, userIdMapping);
@@ -340,8 +340,8 @@ public class UpdateExternalUserIdInfoTest {
 
         // create userId mapping with externalUserIdInfo
         String externalUserIdInfo = "externalUserIdInfo";
-        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        UserIdMapping userIdMapping = new io.supertokens.pluginInterface.useridmapping.UserIdMapping(userInfo.id,
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        UserIdMapping userIdMapping = new io.supertokens.pluginInterface.useridmapping.UserIdMapping(userInfo.getSupertokensUserId(),
                 "externalUserIdInfo", externalUserIdInfo);
 
         Utils.createUserIdMappingAndCheckThatItExists(process.main, userIdMapping);
@@ -411,8 +411,8 @@ public class UpdateExternalUserIdInfoTest {
 
         // create userId mapping with externalUserIdInfo
         String externalUserIdInfo = "externalUserIdInfo";
-        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        UserIdMapping userIdMapping = new io.supertokens.pluginInterface.useridmapping.UserIdMapping(userInfo.id,
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        UserIdMapping userIdMapping = new io.supertokens.pluginInterface.useridmapping.UserIdMapping(userInfo.getSupertokensUserId(),
                 "externalUserIdInfo", externalUserIdInfo);
 
         Utils.createUserIdMappingAndCheckThatItExists(process.main, userIdMapping);

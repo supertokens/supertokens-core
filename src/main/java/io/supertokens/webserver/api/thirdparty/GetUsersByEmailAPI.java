@@ -16,14 +16,16 @@
 
 package io.supertokens.webserver.api.thirdparty;
 
-import com.google.gson.*;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.RECIPE_ID;
-import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.thirdparty.UserInfo;
 import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
@@ -37,6 +39,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
+@Deprecated
 public class GetUsersByEmailAPI extends WebserverAPI {
     private static final long serialVersionUID = -4413719941975228004L;
 
@@ -53,27 +56,22 @@ public class GetUsersByEmailAPI extends WebserverAPI {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         // this API is tenant specific
         try {
-            TenantIdentifierWithStorage tenantIdentifierWithStorage = this.getTenantIdentifierWithStorageFromRequest(req);
+            TenantIdentifierWithStorage tenantIdentifierWithStorage = this.getTenantIdentifierWithStorageFromRequest(
+                    req);
             AppIdentifierWithStorage appIdentifierWithStorage = this.getAppIdentifierWithStorage(req);
 
             String email = InputParser.getQueryParamOrThrowError(req, "email", false);
             email = Utils.normaliseEmail(email);
-            UserInfo[] users = ThirdParty.getUsersByEmail(tenantIdentifierWithStorage, email);
-
-            // return the externalUserId if a mapping exists for a user
-            for (int i = 0; i < users.length; i++) {
-                // we intentionally do not use the function that accepts an array of user IDs to get the mapping cause
-                // this is simpler to use, and cause there shouldn't be that many userIds per email anyway
-                io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                        .getUserIdMapping(appIdentifierWithStorage, users[i].id, UserIdType.SUPERTOKENS);
-                if (userIdMapping != null) {
-                    users[i].id = userIdMapping.externalUserId;
-                }
-            }
+            AuthRecipeUserInfo[] users = ThirdParty.getUsersByEmail(tenantIdentifierWithStorage, email);
+            UserIdMapping.populateExternalUserIdForUsers(tenantIdentifierWithStorage, users);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
-            JsonArray usersJson = new JsonParser().parse(new Gson().toJson(users)).getAsJsonArray();
+            JsonArray usersJson = new JsonArray();
+            for (AuthRecipeUserInfo userInfo : users) {
+                usersJson.add(getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0) ? userInfo.toJson() :
+                        userInfo.toJsonWithoutAccountLinking());
+            }
 
             if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
                 for (JsonElement user : usersJson) {

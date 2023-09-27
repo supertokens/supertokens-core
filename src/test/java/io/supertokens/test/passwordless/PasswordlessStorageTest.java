@@ -18,6 +18,7 @@ package io.supertokens.test.passwordless;
 
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateUserIdException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
@@ -26,7 +27,6 @@ import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicExceptio
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
-import io.supertokens.pluginInterface.passwordless.UserInfo;
 import io.supertokens.pluginInterface.passwordless.exception.*;
 import io.supertokens.pluginInterface.passwordless.sqlStorage.PasswordlessSQLStorage;
 import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
@@ -257,7 +257,7 @@ public class PasswordlessStorageTest {
         storage.createUser(new TenantIdentifier(null, null, null), userId, email, null, timeJoined);
         storage.createUser(new TenantIdentifier(null, null, null),
                 userId2, null, phoneNumber, timeJoined);
-        assertNotNull(storage.getUserById(new AppIdentifier(null, null), userId));
+        assertNotNull(storage.getPrimaryUserById(new AppIdentifier(null, null), userId));
 
         {
             Exception error = null;
@@ -270,7 +270,7 @@ public class PasswordlessStorageTest {
 
             assertNotNull(error);
             assert (error instanceof DuplicateUserIdException);
-            assertNull(storage.getUserByEmail(new TenantIdentifier(null, null, null), email2));
+            assertEquals(0, storage.listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), email2).length);
         }
 
         {
@@ -284,7 +284,8 @@ public class PasswordlessStorageTest {
 
             assertNotNull(error);
             assert (error instanceof DuplicateUserIdException);
-            assertNull(storage.getUserByPhoneNumber(new TenantIdentifier(null, null, null), phoneNumber2));
+            assert (storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null),
+                    phoneNumber2).length == 0);
         }
 
         {
@@ -298,7 +299,7 @@ public class PasswordlessStorageTest {
 
             assertNotNull(error);
             assert (error instanceof DuplicateEmailException);
-            assertNull(storage.getUserById(new AppIdentifier(null, null), userId3));
+            assertNull(storage.getPrimaryUserById(new AppIdentifier(null, null), userId3));
         }
 
         {
@@ -312,7 +313,7 @@ public class PasswordlessStorageTest {
 
             assertNotNull(error);
             assert (error instanceof DuplicatePhoneNumberException);
-            assertNull(storage.getUserById(new AppIdentifier(null, null), userId3));
+            assertNull(storage.getPrimaryUserById(new AppIdentifier(null, null), userId3));
         }
 
         {
@@ -326,7 +327,7 @@ public class PasswordlessStorageTest {
 
             assertNotNull(error);
             assert (error instanceof IllegalArgumentException);
-            assertNull(storage.getUserById(new AppIdentifier(null, null), userId3));
+            assertNull(storage.getPrimaryUserById(new AppIdentifier(null, null), userId3));
         }
 
         process.kill();
@@ -370,7 +371,7 @@ public class PasswordlessStorageTest {
         storage.createUser(new TenantIdentifier(null, null, null),
                 userIdPhone2, null, phoneNumber2, timeJoined);
 
-        assertNotNull(storage.getUserById(new AppIdentifier(null, null), userIdEmail1));
+        assertNotNull(storage.getPrimaryUserById(new AppIdentifier(null, null), userIdEmail1));
 
         {
             Exception error = null;
@@ -391,7 +392,7 @@ public class PasswordlessStorageTest {
 
             assertNotNull(error);
             assert (error instanceof UnknownUserIdException);
-            assertNull(storage.getUserById(new AppIdentifier(null, null), userIdNotExists));
+            assertNull(storage.getPrimaryUserById(new AppIdentifier(null, null), userIdNotExists));
         }
 
         {
@@ -413,7 +414,7 @@ public class PasswordlessStorageTest {
 
             assertNotNull(error);
             assert (error instanceof UnknownUserIdException);
-            assertNull(storage.getUserById(new AppIdentifier(null, null), userIdNotExists));
+            assertNull(storage.getPrimaryUserById(new AppIdentifier(null, null), userIdNotExists));
         }
 
         {
@@ -435,7 +436,8 @@ public class PasswordlessStorageTest {
 
             assertNotNull(error);
             assert (error instanceof DuplicateEmailException);
-            assertEquals(email, storage.getUserById(new AppIdentifier(null, null), userIdEmail1).email);
+            assertEquals(email,
+                    storage.getPrimaryUserById(new AppIdentifier(null, null), userIdEmail1).loginMethods[0].email);
         }
 
         {
@@ -456,7 +458,8 @@ public class PasswordlessStorageTest {
 
             assertNotNull(error);
             assert (error instanceof DuplicateEmailException);
-            assertEquals(email, storage.getUserById(new AppIdentifier(null, null), userIdEmail1).email);
+            assertEquals(email,
+                    storage.getPrimaryUserById(new AppIdentifier(null, null), userIdEmail1).loginMethods[0].email);
         }
 
         {
@@ -478,7 +481,9 @@ public class PasswordlessStorageTest {
 
             assertNotNull(error);
             assert (error instanceof DuplicatePhoneNumberException);
-            assertEquals(phoneNumber, storage.getUserById(new AppIdentifier(null, null), userIdPhone1).phoneNumber);
+            assertEquals(phoneNumber,
+                    storage.getPrimaryUserById(new AppIdentifier(null, null),
+                            userIdPhone1).loginMethods[0].phoneNumber);
         }
 
         {
@@ -500,9 +505,9 @@ public class PasswordlessStorageTest {
 
             assertNotNull(error);
             assert (error instanceof DuplicatePhoneNumberException);
-            UserInfo userInDb = storage.getUserById(new AppIdentifier(null, null), userIdEmail1);
-            assertEquals(email, userInDb.email);
-            assertNull(userInDb.phoneNumber);
+            AuthRecipeUserInfo userInDb = storage.getPrimaryUserById(new AppIdentifier(null, null), userIdEmail1);
+            assertEquals(email, userInDb.loginMethods[0].email);
+            assertNull(userInDb.loginMethods[0].phoneNumber);
         }
 
         {
@@ -523,9 +528,9 @@ public class PasswordlessStorageTest {
 
             assertNotNull(error);
             assert (error instanceof DuplicateEmailException);
-            UserInfo userInDb = storage.getUserById(new AppIdentifier(null, null), userIdPhone1);
-            assertNull(userInDb.email);
-            assertEquals(phoneNumber, userInDb.phoneNumber);
+            AuthRecipeUserInfo userInDb = storage.getPrimaryUserById(new AppIdentifier(null, null), userIdPhone1);
+            assertNull(userInDb.loginMethods[0].email);
+            assertEquals(phoneNumber, userInDb.loginMethods[0].phoneNumber);
         }
 
         process.kill();
@@ -557,7 +562,7 @@ public class PasswordlessStorageTest {
 
         storage.createUser(new TenantIdentifier(null, null, null), userId, email, null, timeJoined);
 
-        assertNotNull(storage.getUserById(new AppIdentifier(null, null), userId));
+        assertNotNull(storage.getPrimaryUserById(new AppIdentifier(null, null), userId));
 
         storage.startTransaction(con -> {
             try {
@@ -887,16 +892,17 @@ public class PasswordlessStorageTest {
 
     private void checkUser(PasswordlessSQLStorage storage, String userId, String email, String phoneNumber)
             throws StorageQueryException {
-        UserInfo userById = storage.getUserById(new AppIdentifier(null, null), userId);
-        assertEquals(email, userById.email);
-        assertEquals(phoneNumber, userById.phoneNumber);
+        AuthRecipeUserInfo userById = storage.getPrimaryUserById(new AppIdentifier(null, null), userId);
+        assertEquals(email, userById.loginMethods[0].email);
+        assertEquals(phoneNumber, userById.loginMethods[0].phoneNumber);
         if (email != null) {
-            UserInfo user = storage.getUserByEmail(new TenantIdentifier(null, null, null), email);
-            assert (user.equals(userById));
+            AuthRecipeUserInfo[] user = storage.listPrimaryUsersByEmail(new TenantIdentifier(null, null, null), email);
+            assert (user.length == 1 && user[0].equals(userById));
         }
         if (phoneNumber != null) {
-            UserInfo user = storage.getUserByPhoneNumber(new TenantIdentifier(null, null, null), phoneNumber);
-            assert (user.equals(userById));
+            AuthRecipeUserInfo[] user = storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null),
+                    phoneNumber);
+            assert (user[0].equals(userById));
         }
     }
 

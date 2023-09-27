@@ -16,6 +16,7 @@
 
 package io.supertokens;
 
+import com.google.gson.JsonObject;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 
@@ -51,8 +52,12 @@ public class ProcessState extends ResourceDistributor.SingletonResource {
     }
 
     public synchronized void addState(PROCESS_STATE processState, Exception e) {
+        addState(processState, e, null);
+    }
+
+    public synchronized void addState(PROCESS_STATE processState, Exception e, JsonObject data) {
         if (Main.isTesting) {
-            history.add(new EventAndException(processState, e));
+            history.add(new EventAndException(processState, e, data));
         }
     }
 
@@ -97,11 +102,19 @@ public class ProcessState extends ResourceDistributor.SingletonResource {
 
     public static class EventAndException {
         public Exception exception;
+        public JsonObject data;
         PROCESS_STATE state;
 
         public EventAndException(PROCESS_STATE state, Exception e) {
             this.state = state;
             this.exception = e;
+            this.data = null;
+        }
+
+        public EventAndException(PROCESS_STATE state, Exception e, JsonObject data) {
+            this.state = state;
+            this.exception = e;
+            this.data = data;
         }
     }
 

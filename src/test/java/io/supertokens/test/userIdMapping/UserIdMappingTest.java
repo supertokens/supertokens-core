@@ -24,7 +24,7 @@ import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.pluginInterface.ActiveUsersStorage;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.nonAuthRecipe.NonAuthRecipeStorage;
@@ -103,17 +103,17 @@ public class UserIdMappingTest {
         }
 
         // create a user
-        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPassword");
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPassword");
 
         String externalUserId = "external-test";
 
-        UserIdMapping.createUserIdMapping(process.main, userInfo.id, externalUserId, null, false);
+        UserIdMapping.createUserIdMapping(process.main, userInfo.getSupertokensUserId(), externalUserId, null, false);
 
         {
             // duplicate exception with both supertokensUserId and externalUserId
             Exception error = null;
             try {
-                UserIdMapping.createUserIdMapping(process.main, userInfo.id, externalUserId, null, false);
+                UserIdMapping.createUserIdMapping(process.main, userInfo.getSupertokensUserId(), externalUserId, null, false);
             } catch (Exception e) {
                 error = e;
             }
@@ -130,7 +130,7 @@ public class UserIdMappingTest {
             // duplicate exception with superTokensUserId
             Exception error = null;
             try {
-                UserIdMapping.createUserIdMapping(process.main, userInfo.id, "newExternalId", null, false);
+                UserIdMapping.createUserIdMapping(process.main, userInfo.getSupertokensUserId(), "newExternalId", null, false);
             } catch (Exception e) {
                 error = e;
             }
@@ -147,10 +147,10 @@ public class UserIdMappingTest {
         {
             // duplicate exception with externalUserId
 
-            UserInfo newUser = EmailPassword.signUp(process.main, "test2@example.com", "testPass123");
+            AuthRecipeUserInfo newUser = EmailPassword.signUp(process.main, "test2@example.com", "testPass123");
             Exception error = null;
             try {
-                UserIdMapping.createUserIdMapping(process.main, newUser.id, externalUserId, null, false);
+                UserIdMapping.createUserIdMapping(process.main, newUser.getSupertokensUserId(), externalUserId, null, false);
             } catch (Exception e) {
                 error = e;
             }
@@ -181,19 +181,19 @@ public class UserIdMappingTest {
         UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
 
         // create a user
-        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPassword");
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPassword");
 
         String externalUserId = "external-test";
         String externalUserIdInfo = "external-info";
 
         // create a userId mapping
-        UserIdMapping.createUserIdMapping(process.getProcess(), userInfo.id, externalUserId, externalUserIdInfo, false);
+        UserIdMapping.createUserIdMapping(process.getProcess(), userInfo.getSupertokensUserId(), externalUserId, externalUserIdInfo, false);
 
         // check that the mapping exists
         io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = storage.getUserIdMapping(
-                new AppIdentifier(null, null), userInfo.id,
+                new AppIdentifier(null, null), userInfo.getSupertokensUserId(),
                 true);
-        assertEquals(userInfo.id, userIdMapping.superTokensUserId);
+        assertEquals(userInfo.getSupertokensUserId(), userIdMapping.superTokensUserId);
         assertEquals(externalUserId, userIdMapping.externalUserId);
         assertEquals(externalUserIdInfo, userIdMapping.externalUserIdInfo);
 
@@ -235,8 +235,8 @@ public class UserIdMappingTest {
         }
 
         // create a User and then a UserId mapping
-        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        String superTokensUserId = userInfo.id;
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        String superTokensUserId = userInfo.getSupertokensUserId();
         String externalUserId = "externalId";
         String externalUserIdInfo = "externalIdInfo";
 
@@ -292,9 +292,9 @@ public class UserIdMappingTest {
         }
 
         // create a new mapping where the superTokensUserId of Mapping1 = externalUserId of Mapping2
-        UserInfo userInfo2 = EmailPassword.signUp(process.main, "test2@example.com", "testPass123");
-        String newSuperTokensUserId = userInfo2.id;
-        String newExternalUserId = userInfo.id;
+        AuthRecipeUserInfo userInfo2 = EmailPassword.signUp(process.main, "test2@example.com", "testPass123");
+        String newSuperTokensUserId = userInfo2.getSupertokensUserId();
+        String newExternalUserId = userInfo.getSupertokensUserId();
         String newExternalUserIdInfo = "newExternalUserIdInfo";
 
         UserIdMapping.createUserIdMapping(process.main, newSuperTokensUserId, newExternalUserId, newExternalUserIdInfo,
@@ -369,8 +369,8 @@ public class UserIdMappingTest {
         }
 
         // create mapping and check that it exists
-        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        String superTokensUserId = userInfo.id;
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        String superTokensUserId = userInfo.getSupertokensUserId();
         String externalUserId = "externalId";
         String externalUserIdInfo = "externalIdInfo";
 
@@ -475,10 +475,10 @@ public class UserIdMappingTest {
 
         // Create UserId mapping 1
 
-        UserInfo userInfo_1 = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        AuthRecipeUserInfo userInfo_1 = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
         io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping_1 =
                 new io.supertokens.pluginInterface.useridmapping.UserIdMapping(
-                        userInfo_1.id, "externalUserId", "externalUserIdInfo");
+                        userInfo_1.getSupertokensUserId(), "externalUserId", "externalUserIdInfo");
 
         // create the mapping and check that it exists
         {
@@ -491,10 +491,10 @@ public class UserIdMappingTest {
 
         // Create UserId mapping 2
 
-        UserInfo userInfo_2 = EmailPassword.signUp(process.main, "test2@example.com", "testPass123");
+        AuthRecipeUserInfo userInfo_2 = EmailPassword.signUp(process.main, "test2@example.com", "testPass123");
         io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping_2 =
                 new io.supertokens.pluginInterface.useridmapping.UserIdMapping(
-                        userInfo_2.id, userIdMapping_1.superTokensUserId, "externalUserIdInfo2");
+                        userInfo_2.getSupertokensUserId(), userIdMapping_1.superTokensUserId, "externalUserIdInfo2");
 
         // create the mapping and check that it exists
         {
@@ -570,9 +570,9 @@ public class UserIdMappingTest {
         }
 
         // create User
-        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
 
-        String superTokensUserId = userInfo.id;
+        String superTokensUserId = userInfo.getSupertokensUserId();
         String externalUserId = "externalId";
 
         // create a userId mapping
@@ -665,9 +665,9 @@ public class UserIdMappingTest {
         // create two UserMappings where superTokensUserId in Mapping 1 = externalUserId in Mapping 2
 
         // Create mapping 1
-        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
 
-        String superTokensUserId = userInfo.id;
+        String superTokensUserId = userInfo.getSupertokensUserId();
         String externalUserId = "externalId";
         String externalUserIdInfo = "externalUserIdInfo";
 
@@ -684,9 +684,9 @@ public class UserIdMappingTest {
         }
 
         // Create mapping 2
-        UserInfo userInfo2 = EmailPassword.signUp(process.main, "test2@example.com", "testPass123");
-        String superTokensUserId2 = userInfo2.id;
-        String externalUserId2 = userInfo.id;
+        AuthRecipeUserInfo userInfo2 = EmailPassword.signUp(process.main, "test2@example.com", "testPass123");
+        String superTokensUserId2 = userInfo2.getSupertokensUserId();
+        String externalUserId2 = userInfo.getSupertokensUserId();
         String externalUserIdInfo2 = "newExternalUserIdInfo";
 
         UserIdMapping.createUserIdMapping(process.main, superTokensUserId2, externalUserId2, externalUserIdInfo2, true);
@@ -750,8 +750,8 @@ public class UserIdMappingTest {
 
         // create a userIdMapping with externalUserIdInfo as null and update it to null
         {
-            UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-            String superTokensUserId = userInfo.id;
+            AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+            String superTokensUserId = userInfo.getSupertokensUserId();
             String externalUserId = "externalUserId";
 
             // create mapping
@@ -763,8 +763,8 @@ public class UserIdMappingTest {
         }
 
         {
-            UserInfo userInfo = EmailPassword.signUp(process.main, "test2@example.com", "testPass123");
-            String superTokensUserId = userInfo.id;
+            AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test2@example.com", "testPass123");
+            String superTokensUserId = userInfo.getSupertokensUserId();
             String externalUserId = "newExternalUserIdInfo";
             String externalUserIdInfo = "externalUserIdInfo";
 
@@ -808,8 +808,8 @@ public class UserIdMappingTest {
         }
 
         for (String className : classNames) {
-            UserInfo user = EmailPassword.signUp(process.main, "test@example.com", "password");
-            String userId = user.id;
+            AuthRecipeUserInfo user = EmailPassword.signUp(process.main, "test@example.com", "password");
+            String userId = user.getSupertokensUserId();
 
             // create entry in nonAuth table
             StorageLayer.getStorage(process.main).addInfoToNonAuthRecipesBasedOnUserId(TenantIdentifier.BASE_TENANT, className, userId);
@@ -887,10 +887,10 @@ public class UserIdMappingTest {
         String externalId = "externalId";
         for (String className : classNames) {
             // Create a User
-            UserInfo user = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+            AuthRecipeUserInfo user = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
 
             // create a mapping with the user
-            UserIdMapping.createUserIdMapping(process.main, user.id, externalId, null, false);
+            UserIdMapping.createUserIdMapping(process.main, user.getSupertokensUserId(), externalId, null, false);
 
             // create entry in nonAuth table with externalId
             StorageLayer.getStorage(process.main).addInfoToNonAuthRecipesBasedOnUserId(TenantIdentifier.BASE_TENANT, className, externalId);
@@ -898,7 +898,7 @@ public class UserIdMappingTest {
             // try to delete UserIdMapping
             String errorMessage = null;
             try {
-                UserIdMapping.deleteUserIdMapping(process.main, user.id, UserIdType.SUPERTOKENS, false);
+                UserIdMapping.deleteUserIdMapping(process.main, user.getSupertokensUserId(), UserIdType.SUPERTOKENS, false);
             } catch (ServletException e) {
                 errorMessage = e.getRootCause().getMessage();
             }
@@ -907,7 +907,7 @@ public class UserIdMappingTest {
                 assertTrue(errorMessage.contains("UserId is already in use"));
             }
             // delete user data
-            AuthRecipe.deleteUser(process.main, user.id);
+            AuthRecipe.deleteUser(process.main, user.getSupertokensUserId());
         }
 
         process.kill();
@@ -927,9 +927,9 @@ public class UserIdMappingTest {
         }
 
         // create an EmailPassword User
-        UserInfo user_1 = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        AuthRecipeUserInfo user_1 = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
         // create a mapping for the EmailPassword User
-        UserIdMapping.createUserIdMapping(process.main, user_1.id, "externalId", null, false);
+        UserIdMapping.createUserIdMapping(process.main, user_1.getSupertokensUserId(), "externalId", null, false);
 
         // create some metadata for the user
         JsonObject data = new JsonObject();
@@ -937,12 +937,12 @@ public class UserIdMappingTest {
         UserMetadata.updateUserMetadata(process.main, "externalId", data);
 
         // Create another User
-        UserInfo user_2 = EmailPassword.signUp(process.main, "test123@example.com", "testPass123");
+        AuthRecipeUserInfo user_2 = EmailPassword.signUp(process.main, "test123@example.com", "testPass123");
 
         // try and map user_2 to user_1s superTokensUserId
         String errorMessage = null;
         try {
-            UserIdMapping.createUserIdMapping(process.main, user_2.id, user_1.id, null, false);
+            UserIdMapping.createUserIdMapping(process.main, user_2.getSupertokensUserId(), user_1.getSupertokensUserId(), null, false);
         } catch (ServletException e) {
             errorMessage = e.getRootCause().getMessage();
         }
@@ -964,18 +964,18 @@ public class UserIdMappingTest {
         }
 
         // create user 1
-        UserInfo user_1 = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        AuthRecipeUserInfo user_1 = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
 
         // create user 2
-        UserInfo user_2 = EmailPassword.signUp(process.main, "test123@example.com", "testPass123");
+        AuthRecipeUserInfo user_2 = EmailPassword.signUp(process.main, "test123@example.com", "testPass123");
 
         // create a mapping between User_1 and User_2 with force
-        UserIdMapping.createUserIdMapping(process.main, user_1.id, user_2.id, null, true);
+        UserIdMapping.createUserIdMapping(process.main, user_1.getSupertokensUserId(), user_2.getSupertokensUserId(), null, true);
 
         // try and create a mapping between User_2 and User_1 without force
         String errorMessage = null;
         try {
-            UserIdMapping.createUserIdMapping(process.main, user_2.id, user_1.id, null, false);
+            UserIdMapping.createUserIdMapping(process.main, user_2.getSupertokensUserId(), user_1.getSupertokensUserId(), null, false);
         } catch (ServletException e) {
             errorMessage = e.getRootCause().getMessage();
         }
@@ -1002,28 +1002,28 @@ public class UserIdMappingTest {
         }
 
         // create User_1 and User_2
-        UserInfo user_1 = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        UserInfo user_2 = EmailPassword.signUp(process.main, "test123@exmaple.com", "testPass123");
+        AuthRecipeUserInfo user_1 = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        AuthRecipeUserInfo user_2 = EmailPassword.signUp(process.main, "test123@exmaple.com", "testPass123");
 
         // create a mapping between User_2 and User_1 with force
-        UserIdMapping.createUserIdMapping(process.main, user_2.id, user_1.id, null, true);
+        UserIdMapping.createUserIdMapping(process.main, user_2.getSupertokensUserId(), user_1.getSupertokensUserId(), null, true);
 
         // check that mapping exists
         {
             io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping = UserIdMapping
-                    .getUserIdMapping(process.main, user_2.id, UserIdType.SUPERTOKENS);
+                    .getUserIdMapping(process.main, user_2.getSupertokensUserId(), UserIdType.SUPERTOKENS);
             assertNotNull(mapping);
-            assertEquals(mapping.superTokensUserId, user_2.id);
-            assertEquals(mapping.externalUserId, user_1.id);
+            assertEquals(mapping.superTokensUserId, user_2.getSupertokensUserId());
+            assertEquals(mapping.externalUserId, user_1.getSupertokensUserId());
         }
 
         // delete mapping with User_1s Id and UserIdType set to ANY, it should delete the mapping
-        assertTrue(UserIdMapping.deleteUserIdMapping(process.main, user_1.id, UserIdType.ANY, false));
+        assertTrue(UserIdMapping.deleteUserIdMapping(process.main, user_1.getSupertokensUserId(), UserIdType.ANY, false));
 
         // check that mapping is deleted
         {
             io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping = UserIdMapping
-                    .getUserIdMapping(process.main, user_2.id, UserIdType.SUPERTOKENS);
+                    .getUserIdMapping(process.main, user_2.getSupertokensUserId(), UserIdType.SUPERTOKENS);
             assertNull(mapping);
         }
 
@@ -1046,28 +1046,28 @@ public class UserIdMappingTest {
         }
 
         // create User_1 and User_2
-        UserInfo user_1 = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        UserInfo user_2 = EmailPassword.signUp(process.main, "test123@exmaple.com", "testPass123");
+        AuthRecipeUserInfo user_1 = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        AuthRecipeUserInfo user_2 = EmailPassword.signUp(process.main, "test123@exmaple.com", "testPass123");
 
         // create a mapping between User_2 and User_1 with force
-        UserIdMapping.createUserIdMapping(process.main, user_2.id, user_1.id, null, true);
+        UserIdMapping.createUserIdMapping(process.main, user_2.getSupertokensUserId(), user_1.getSupertokensUserId(), null, true);
 
         // check that mapping exists
         {
             io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping = UserIdMapping
-                    .getUserIdMapping(process.main, user_2.id, UserIdType.SUPERTOKENS);
+                    .getUserIdMapping(process.main, user_2.getSupertokensUserId(), UserIdType.SUPERTOKENS);
             assertNotNull(mapping);
-            assertEquals(mapping.superTokensUserId, user_2.id);
-            assertEquals(mapping.externalUserId, user_1.id);
+            assertEquals(mapping.superTokensUserId, user_2.getSupertokensUserId());
+            assertEquals(mapping.externalUserId, user_1.getSupertokensUserId());
         }
 
         // delete mapping with User_1s Id and UserIdType set to ANY, it should delete the mapping
-        assertTrue(UserIdMapping.deleteUserIdMapping(process.main, user_1.id, UserIdType.SUPERTOKENS, false));
+        assertTrue(UserIdMapping.deleteUserIdMapping(process.main, user_1.getSupertokensUserId(), UserIdType.SUPERTOKENS, false));
 
         // check that mapping is deleted
         {
             io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping = UserIdMapping
-                    .getUserIdMapping(process.main, user_2.id, UserIdType.SUPERTOKENS);
+                    .getUserIdMapping(process.main, user_2.getSupertokensUserId(), UserIdType.SUPERTOKENS);
             assertNull(mapping);
         }
 

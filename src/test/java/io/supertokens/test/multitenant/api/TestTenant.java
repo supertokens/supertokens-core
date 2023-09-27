@@ -322,4 +322,28 @@ public class TestTenant {
             }
         }
     }
+
+    @Test
+    public void testDefaultRecipesEnabledWhileCreatingTenant() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        JsonObject config = new JsonObject();
+        StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
+
+        JsonObject response = TestMultitenancyAPIHelper.createTenant(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "t1", null, null, null,
+                config);
+
+        assertTrue(response.get("createdNew").getAsBoolean());
+
+        JsonObject tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, null, "t1"),
+                process.getProcess());
+        assertFalse(tenant.get("emailPassword").getAsJsonObject().get("enabled").getAsBoolean());
+        assertFalse(tenant.get("thirdParty").getAsJsonObject().get("enabled").getAsBoolean());
+        assertFalse(tenant.get("passwordless").getAsJsonObject().get("enabled").getAsBoolean());
+    }
 }

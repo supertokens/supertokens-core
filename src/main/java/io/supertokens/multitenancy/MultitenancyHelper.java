@@ -29,7 +29,6 @@ import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
@@ -76,8 +75,13 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
                         new TenantConfig(
                                 new TenantIdentifier(null, null, null),
                                 new EmailPasswordConfig(true), new ThirdPartyConfig(true, null),
-                                new PasswordlessConfig(true), new JsonObject()), false);
-            } catch (CannotModifyBaseConfigException | BadPermissionException | FeatureNotEnabledException | InvalidConfigException | InvalidProviderConfigException | TenantOrAppNotFoundException e) {
+                                new PasswordlessConfig(true), new JsonObject()), false, false, false);
+                // Not force reloading all resources here (the last boolean in the function above)
+                // because the ucl for the FeatureFlag is not yet loaded and results in an empty
+                // instance of eeFeatureFlag. This is applicable only when the core is starting on
+                // an empty database as no tenants are loaded from the db yet.
+            } catch (CannotModifyBaseConfigException | BadPermissionException | FeatureNotEnabledException |
+                     InvalidConfigException | InvalidProviderConfigException | TenantOrAppNotFoundException e) {
                 throw new IllegalStateException(e);
             }
         }
@@ -98,21 +102,25 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
         return StorageLayer.getMultitenancyStorage(main).getAllTenants();
     }
 
-    public List<TenantIdentifier> refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(boolean reloadAllResources) {
+    public List<TenantIdentifier> refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(
+            boolean reloadAllResources) {
         try {
             return main.getResourceDistributor().withResourceDistributorLock(() -> {
                 try {
                     TenantConfig[] tenantsFromDb = getAllTenantsFromDb();
 
-                    Map<ResourceDistributor.KeyClass, JsonObject> normalizedTenantsFromDb = Config.getNormalisedConfigsForAllTenants(
+                    Map<ResourceDistributor.KeyClass, JsonObject> normalizedTenantsFromDb =
+                            Config.getNormalisedConfigsForAllTenants(
                             tenantsFromDb, Config.getBaseConfigAsJsonObject(main));
 
-                    Map<ResourceDistributor.KeyClass, JsonObject> normalizedTenantsFromMemory = Config.getNormalisedConfigsForAllTenants(
+                    Map<ResourceDistributor.KeyClass, JsonObject> normalizedTenantsFromMemory =
+                            Config.getNormalisedConfigsForAllTenants(
                             this.tenantConfigs, Config.getBaseConfigAsJsonObject(main));
 
                     List<TenantIdentifier> tenantsThatChanged = new ArrayList<>();
 
-                    for (Map.Entry<ResourceDistributor.KeyClass, JsonObject> entry : normalizedTenantsFromMemory.entrySet()) {
+                    for (Map.Entry<ResourceDistributor.KeyClass, JsonObject> entry :
+                            normalizedTenantsFromMemory.entrySet()) {
                         JsonObject tenantConfigFromMemory = entry.getValue();
                         JsonObject tenantConfigFromDb = normalizedTenantsFromDb.get(entry.getKey());
 
@@ -128,7 +136,8 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
                         return tenantsThatChanged;
                     }
 
-                    ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.TENANTS_CHANGED_DURING_REFRESH_FROM_DB, null);
+                    ProcessState.getInstance(main)
+                            .addState(ProcessState.PROCESS_STATE.TENANTS_CHANGED_DURING_REFRESH_FROM_DB, null);
 
                     // this order is important. For example, storageLayer depends on config, and cronjobs depends on
                     // storageLayer
@@ -191,7 +200,8 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
         FeatureFlag.loadForAllTenants(main, apps, tenantsThatChanged);
     }
 
-    public void loadSigningKeys(List<TenantIdentifier> tenantsThatChanged) throws UnsupportedJWTSigningAlgorithmException {
+    public void loadSigningKeys(List<TenantIdentifier> tenantsThatChanged)
+            throws UnsupportedJWTSigningAlgorithmException {
         List<AppIdentifier> apps = new ArrayList<>();
         Set<AppIdentifier> appsSet = new HashSet<>();
         for (TenantConfig t : tenantConfigs) {

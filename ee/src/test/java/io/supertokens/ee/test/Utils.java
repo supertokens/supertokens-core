@@ -1,6 +1,7 @@
 package io.supertokens.ee.test;
 
 import io.supertokens.Main;
+import io.supertokens.ee.EEFeatureFlag;
 import io.supertokens.pluginInterface.PluginInterfaceTesting;
 import io.supertokens.storageLayer.StorageLayer;
 import org.apache.tomcat.util.http.fileupload.FileUtils;
@@ -51,6 +52,7 @@ public abstract class Utils extends Mockito {
         Main.isTesting = true;
         PluginInterfaceTesting.isTesting = true;
         Main.makeConsolePrintSilent = true;
+        EEFeatureFlag.resetLisenseCheckRequests();
         String installDir = "../../";
         try {
 

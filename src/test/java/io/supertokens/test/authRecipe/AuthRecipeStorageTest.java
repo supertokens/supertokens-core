@@ -20,7 +20,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -64,8 +64,8 @@ public class AuthRecipeStorageTest {
         assertFalse(storage.doesUserIdExist(new TenantIdentifier(null, null, null), "unknownUser"));
 
         // create a user and check that the userId exists
-        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        assertTrue(storage.doesUserIdExist(new TenantIdentifier(null, null, null), userInfo.id));
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        assertTrue(storage.doesUserIdExist(new TenantIdentifier(null, null, null), userInfo.getSupertokensUserId()));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

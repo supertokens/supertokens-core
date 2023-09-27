@@ -44,6 +44,12 @@ import java.util.regex.PatternSyntaxException;
 public class CoreConfig {
 
     @IgnoreForAnnotationCheck
+    public static final String[] PROTECTED_CONFIGS = new String[]{
+            "ip_allow_regex",
+            "ip_deny_regex",
+    };
+
+    @IgnoreForAnnotationCheck
     @JsonProperty
     private int core_config_version = -1;
 
@@ -127,15 +133,15 @@ public class CoreConfig {
     @JsonProperty
     private String password_hashing_alg = "BCRYPT";
 
-    @NotConflictingInApp
+    @ConfigYamlOnly
     @JsonProperty
     private int argon2_iterations = 1;
 
-    @NotConflictingInApp
+    @ConfigYamlOnly
     @JsonProperty
     private int argon2_memory_kb = 87795; // 85 mb
 
-    @NotConflictingInApp
+    @ConfigYamlOnly
     @JsonProperty
     private int argon2_parallelism = 2;
 
@@ -147,7 +153,7 @@ public class CoreConfig {
     @JsonProperty
     private int firebase_password_hashing_pool_size = 1;
 
-    @NotConflictingInApp
+    @ConfigYamlOnly
     @JsonProperty
     private int bcrypt_log_rounds = 11;
 
@@ -189,7 +195,7 @@ public class CoreConfig {
 
     @NotConflictingInApp
     @JsonProperty
-    private String supertokens_default_cdi_version = null;
+    private String supertokens_max_cdi_version = null;
 
     @IgnoreForAnnotationCheck
     private Set<LOG_LEVEL> allowedLogLevels = null;
@@ -558,15 +564,15 @@ public class CoreConfig {
             }
         }
 
-        if (supertokens_default_cdi_version != null) {
+        if (supertokens_max_cdi_version != null) {
             try {
-                SemVer version = new SemVer(supertokens_default_cdi_version);
+                SemVer version = new SemVer(supertokens_max_cdi_version);
 
                 if (!WebserverAPI.supportedVersions.contains(version)) {
-                    throw new InvalidConfigException("supertokens_default_cdi_version is not a supported version");
+                    throw new InvalidConfigException("supertokens_max_cdi_version is not a supported version");
                 }
             } catch (IllegalArgumentException e) {
-                throw new InvalidConfigException("supertokens_default_cdi_version is not a valid semantic version");
+                throw new InvalidConfigException("supertokens_max_cdi_version is not a valid semantic version");
             }
         }
 
@@ -716,8 +722,7 @@ public class CoreConfig {
         }
     }
 
-    public String getDefaultCDIVersion() {
-        return this.supertokens_default_cdi_version;
+    public String getMaxCDIVersion() {
+        return this.supertokens_max_cdi_version;
     }
 }
-

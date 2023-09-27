@@ -192,6 +192,18 @@ public abstract class Utils extends Mockito {
                 "emailpassword");
     }
 
+    public static JsonObject signUpRequest_3_0(TestingProcessManager.TestingProcess process, String email,
+                                               String password) throws IOException, HttpResponseException {
+
+        JsonObject signUpRequestBody = new JsonObject();
+        signUpRequestBody.addProperty("email", email);
+        signUpRequestBody.addProperty("password", password);
+
+        return HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/signup", signUpRequestBody, 1000, 1000, null, SemVer.v3_0.get(),
+                "emailpassword");
+    }
+
     public static JsonObject signInUpRequest_2_7(TestingProcessManager.TestingProcess process, String email,
                                                  boolean isVerified, String thirdPartyId, String thirdPartyUserId)
             throws IOException, HttpResponseException {

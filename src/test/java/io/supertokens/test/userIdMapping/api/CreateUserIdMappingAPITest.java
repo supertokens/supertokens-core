@@ -21,7 +21,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
@@ -32,9 +32,6 @@ import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.usermetadata.UserMetadata;
 import io.supertokens.utils.SemVer;
-import io.supertokens.userroles.UserRoles;
-import io.supertokens.utils.SemVer;
-import io.supertokens.webserver.WebserverAPI;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -227,13 +224,13 @@ public class CreateUserIdMappingAPITest {
         }
 
         // create a User and add some non auth recipe info
-        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
 
         // add some metadata to the user
         JsonObject userMetadata = new JsonObject();
         userMetadata.addProperty("test", "testExample");
-        UserMetadata.updateUserMetadata(process.main, userInfo.id, userMetadata);
-        String superTokensUserId = userInfo.id;
+        UserMetadata.updateUserMetadata(process.main, userInfo.getSupertokensUserId(), userMetadata);
+        String superTokensUserId = userInfo.getSupertokensUserId();
         String externalUserId = "externalId";
 
         // try and create mapping without force
@@ -284,8 +281,8 @@ public class CreateUserIdMappingAPITest {
         UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
 
         // create a User
-        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        String superTokensUserId = userInfo.id;
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        String superTokensUserId = userInfo.getSupertokensUserId();
         String externalUserId = "userId";
         String externalUserIdInfo = "externUserIdInfo";
 
@@ -356,10 +353,10 @@ public class CreateUserIdMappingAPITest {
             return;
         }
 
-        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
         String externalUserId = "externalUserId";
         JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("superTokensUserId", userInfo.id);
+        requestBody.addProperty("superTokensUserId", userInfo.getSupertokensUserId());
         requestBody.addProperty("externalUserId", externalUserId);
         requestBody.add("externalUserIdInfo", null);
 
@@ -369,11 +366,11 @@ public class CreateUserIdMappingAPITest {
 
         UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
 
-        UserIdMapping userIdMapping = storage.getUserIdMapping(new AppIdentifier(null, null), userInfo.id,
+        UserIdMapping userIdMapping = storage.getUserIdMapping(new AppIdentifier(null, null), userInfo.getSupertokensUserId(),
                 true);
 
         assertNotNull(userIdMapping);
-        assertEquals(userInfo.id, userIdMapping.superTokensUserId);
+        assertEquals(userInfo.getSupertokensUserId(), userIdMapping.superTokensUserId);
         assertEquals(externalUserId, userIdMapping.externalUserId);
         assertNull(userIdMapping.externalUserIdInfo);
 
@@ -393,9 +390,9 @@ public class CreateUserIdMappingAPITest {
             return;
         }
 
-        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
 
-        String superTokensUserId = userInfo.id;
+        String superTokensUserId = userInfo.getSupertokensUserId();
         String externalUserId = "externalUserId";
 
         // create UserId mapping
@@ -439,11 +436,11 @@ public class CreateUserIdMappingAPITest {
 
         {
             // create a duplicate mapping with externalUserId
-            UserInfo newUserInfo = EmailPassword.signUp(process.main, "test2@example.com", "testPass123");
+            AuthRecipeUserInfo newUserInfo = EmailPassword.signUp(process.main, "test2@example.com", "testPass123");
 
             JsonObject requestBody = new JsonObject();
 
-            requestBody.addProperty("superTokensUserId", newUserInfo.id);
+            requestBody.addProperty("superTokensUserId", newUserInfo.getSupertokensUserId());
             requestBody.addProperty("externalUserId", externalUserId);
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",

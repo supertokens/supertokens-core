@@ -44,7 +44,6 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
-import java.util.Arrays;
 
 public class SessionRegenerateAPI extends WebserverAPI {
 
@@ -84,15 +83,23 @@ public class SessionRegenerateAPI extends WebserverAPI {
 
             JsonObject result = sessionInfo.toJsonObject();
 
+            if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
+                result.get("session").getAsJsonObject().remove("tenantId");
+            }
+            if (getVersionFromRequest(req).lesserThan(SemVer.v4_0)) {
+                result.get("session").getAsJsonObject().remove("recipeUserId");
+            }
+
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
 
-        } catch (StorageQueryException | StorageTransactionLogicException | NoSuchAlgorithmException | TryRefreshTokenException
-                | InvalidKeyException | SignatureException | InvalidKeySpecException | JWT.JWTException |
-                UnsupportedJWTSigningAlgorithmException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | NoSuchAlgorithmException
+                 | InvalidKeyException | SignatureException | InvalidKeySpecException | JWT.JWTException |
+                 UnsupportedJWTSigningAlgorithmException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
-        } catch (UnauthorisedException e) {
-            Logging.debug(main, appIdentifierWithStorage.getAsPublicTenantIdentifier(), Utils.exceptionStacktraceToString(e));
+        } catch (UnauthorisedException | TryRefreshTokenException e) {
+            Logging.debug(main, appIdentifierWithStorage.getAsPublicTenantIdentifier(),
+                    Utils.exceptionStacktraceToString(e));
             JsonObject reply = new JsonObject();
             reply.addProperty("status", "UNAUTHORISED");
             reply.addProperty("message", e.getMessage());

@@ -20,7 +20,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
@@ -96,19 +96,19 @@ public class UserIdMappingStorageTest {
         UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
 
         // create a user
-        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPassword");
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPassword");
 
         String externalUserId = "external-test";
         String externalUserIdInfo = "external-info";
 
         // create a userId mapping
-        storage.createUserIdMapping(new AppIdentifier(null, null), userInfo.id, externalUserId,
+        storage.createUserIdMapping(new AppIdentifier(null, null), userInfo.getSupertokensUserId(), externalUserId,
                 externalUserIdInfo);
 
         // check that the mapping exists
-        UserIdMapping userIdMapping = storage.getUserIdMapping(new AppIdentifier(null, null), userInfo.id,
+        UserIdMapping userIdMapping = storage.getUserIdMapping(new AppIdentifier(null, null), userInfo.getSupertokensUserId(),
                 true);
-        assertEquals(userInfo.id, userIdMapping.superTokensUserId);
+        assertEquals(userInfo.getSupertokensUserId(), userIdMapping.superTokensUserId);
         assertEquals(externalUserId, userIdMapping.externalUserId);
         assertEquals(externalUserIdInfo, userIdMapping.externalUserIdInfo);
 
@@ -129,16 +129,16 @@ public class UserIdMappingStorageTest {
         UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
 
         // create a user
-        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPassword");
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPassword");
         String externalUserId = "external-test";
 
-        storage.createUserIdMapping(new AppIdentifier(null, null), userInfo.id, externalUserId, null);
+        storage.createUserIdMapping(new AppIdentifier(null, null), userInfo.getSupertokensUserId(), externalUserId, null);
 
         {
             // duplicate exception with both supertokensUserId and externalUserId
             Exception error = null;
             try {
-                storage.createUserIdMapping(new AppIdentifier(null, null), userInfo.id, externalUserId, null);
+                storage.createUserIdMapping(new AppIdentifier(null, null), userInfo.getSupertokensUserId(), externalUserId, null);
             } catch (Exception e) {
                 error = e;
             }
@@ -155,7 +155,7 @@ public class UserIdMappingStorageTest {
             // duplicate exception with superTokensUserId
             Exception error = null;
             try {
-                storage.createUserIdMapping(new AppIdentifier(null, null), userInfo.id, "newExternalId", null);
+                storage.createUserIdMapping(new AppIdentifier(null, null), userInfo.getSupertokensUserId(), "newExternalId", null);
             } catch (Exception e) {
                 error = e;
             }
@@ -172,10 +172,10 @@ public class UserIdMappingStorageTest {
         {
             // duplicate exception with externalUserId
 
-            UserInfo newUser = EmailPassword.signUp(process.main, "test2@example.com", "testPass123");
+            AuthRecipeUserInfo newUser = EmailPassword.signUp(process.main, "test2@example.com", "testPass123");
             Exception error = null;
             try {
-                storage.createUserIdMapping(new AppIdentifier(null, null), newUser.id, externalUserId, null);
+                storage.createUserIdMapping(new AppIdentifier(null, null), newUser.getSupertokensUserId(), externalUserId, null);
             } catch (Exception e) {
                 error = e;
             }
@@ -206,11 +206,11 @@ public class UserIdMappingStorageTest {
         UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
 
         // create a User
-        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
         String externalUserId = "externalUserId";
 
         // create a userId mapping
-        storage.createUserIdMapping(new AppIdentifier(null, null), userInfo.id, externalUserId, null);
+        storage.createUserIdMapping(new AppIdentifier(null, null), userInfo.getSupertokensUserId(), externalUserId, null);
 
         // create a new mapping with unknown superTokensUserId and existing externalUserId
         Exception error = null;
@@ -279,22 +279,22 @@ public class UserIdMappingStorageTest {
         UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
 
         // create a user
-        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
 
         String externalUserId = "externalUserId";
         String externalUserIdInfo = "externalUserIdInfo";
 
         // create the mapping
-        storage.createUserIdMapping(new AppIdentifier(null, null), userInfo.id, externalUserId,
+        storage.createUserIdMapping(new AppIdentifier(null, null), userInfo.getSupertokensUserId(), externalUserId,
                 externalUserIdInfo);
 
         // check that the mapping exists with supertokensUserId
         {
-            UserIdMapping userIdMapping = storage.getUserIdMapping(new AppIdentifier(null, null), userInfo.id,
+            UserIdMapping userIdMapping = storage.getUserIdMapping(new AppIdentifier(null, null), userInfo.getSupertokensUserId(),
                     true);
 
             assertNotNull(userIdMapping);
-            assertEquals(userInfo.id, userIdMapping.superTokensUserId);
+            assertEquals(userInfo.getSupertokensUserId(), userIdMapping.superTokensUserId);
             assertEquals(externalUserId, userIdMapping.externalUserId);
             assertEquals(externalUserIdInfo, userIdMapping.externalUserIdInfo);
         }
@@ -305,7 +305,7 @@ public class UserIdMappingStorageTest {
                     externalUserId, false);
 
             assertNotNull(userIdMapping);
-            assertEquals(userInfo.id, userIdMapping.superTokensUserId);
+            assertEquals(userInfo.getSupertokensUserId(), userIdMapping.superTokensUserId);
             assertEquals(externalUserId, userIdMapping.externalUserId);
             assertEquals(externalUserIdInfo, userIdMapping.externalUserIdInfo);
         }
@@ -313,9 +313,9 @@ public class UserIdMappingStorageTest {
         // check that the mapping exists with either
         {
             UserIdMapping[] userIdMappings = storage.getUserIdMapping(new AppIdentifier(null, null),
-                    userInfo.id);
+                    userInfo.getSupertokensUserId());
             assertEquals(1, userIdMappings.length);
-            assertEquals(userInfo.id, userIdMappings[0].superTokensUserId);
+            assertEquals(userInfo.getSupertokensUserId(), userIdMappings[0].superTokensUserId);
             assertEquals(externalUserId, userIdMappings[0].externalUserId);
             assertEquals(externalUserIdInfo, userIdMappings[0].externalUserIdInfo);
         }
@@ -323,7 +323,7 @@ public class UserIdMappingStorageTest {
             UserIdMapping[] userIdMappings = storage.getUserIdMapping(new AppIdentifier(null, null),
                     externalUserId);
             assertEquals(1, userIdMappings.length);
-            assertEquals(userInfo.id, userIdMappings[0].superTokensUserId);
+            assertEquals(userInfo.getSupertokensUserId(), userIdMappings[0].superTokensUserId);
             assertEquals(externalUserId, userIdMappings[0].externalUserId);
             assertEquals(externalUserIdInfo, userIdMappings[0].externalUserIdInfo);
 
@@ -333,10 +333,10 @@ public class UserIdMappingStorageTest {
         // superTokensUserId
 
         {
-            UserInfo newUserInfo = EmailPassword.signUp(process.main, "test2@example.com", "testPass123");
-            String externalUserId2 = userInfo.id;
+            AuthRecipeUserInfo newUserInfo = EmailPassword.signUp(process.main, "test2@example.com", "testPass123");
+            String externalUserId2 = userInfo.getSupertokensUserId();
 
-            storage.createUserIdMapping(new AppIdentifier(null, null), newUserInfo.id, externalUserId2, null);
+            storage.createUserIdMapping(new AppIdentifier(null, null), newUserInfo.getSupertokensUserId(), externalUserId2, null);
 
             UserIdMapping[] userIdMappings = storage.getUserIdMapping(new AppIdentifier(null, null),
                     externalUserId2);
@@ -346,13 +346,13 @@ public class UserIdMappingStorageTest {
             boolean checkThatUser2MappingIsReturned = false;
 
             for (UserIdMapping userIdMapping : userIdMappings) {
-                if (userIdMapping.superTokensUserId.equals(userInfo.id)) {
-                    assertEquals(userInfo.id, userIdMapping.superTokensUserId);
+                if (userIdMapping.superTokensUserId.equals(userInfo.getSupertokensUserId())) {
+                    assertEquals(userInfo.getSupertokensUserId(), userIdMapping.superTokensUserId);
                     assertEquals(externalUserId, userIdMapping.externalUserId);
                     assertEquals(externalUserIdInfo, userIdMapping.externalUserIdInfo);
                     checkThatUser1MappingIsReturned = true;
                 } else {
-                    assertEquals(newUserInfo.id, userIdMapping.superTokensUserId);
+                    assertEquals(newUserInfo.getSupertokensUserId(), userIdMapping.superTokensUserId);
                     assertEquals(externalUserId2, userIdMapping.externalUserId);
                     assertNull(userIdMapping.externalUserIdInfo);
                     checkThatUser2MappingIsReturned = true;
@@ -398,8 +398,8 @@ public class UserIdMappingStorageTest {
         UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
 
         // create a user
-        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        String superTokensUserId = userInfo.id;
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        String superTokensUserId = userInfo.getSupertokensUserId();
         String externalUserId = "externalUserId";
         {
             // create a new userId mapping
@@ -492,9 +492,9 @@ public class UserIdMappingStorageTest {
         UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
 
         // create User
-        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
 
-        String superTokensUserId = userInfo.id;
+        String superTokensUserId = userInfo.getSupertokensUserId();
         String externalUserId = "externalId";
         String externalUserIdInfo = "externalUserIdInfo";
 
@@ -573,9 +573,9 @@ public class UserIdMappingStorageTest {
 
         // create users equal to the User Pagination limit
         for (int i = 1; i <= AuthRecipe.USER_PAGINATION_LIMIT; i++) {
-            UserInfo userInfo = EmailPassword.signUp(process.main, "test" + i + "@example.com", "testPass123");
-            superTokensUserIdList.add(userInfo.id);
-            String superTokensUserId = userInfo.id;
+            AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test" + i + "@example.com", "testPass123");
+            superTokensUserIdList.add(userInfo.getSupertokensUserId());
+            String superTokensUserId = userInfo.getSupertokensUserId();
             String externalUserId = "externalId" + i;
             externalUserIdList.add(externalUserId);
 
@@ -627,8 +627,8 @@ public class UserIdMappingStorageTest {
         ArrayList<String> superTokensUserIdList = new ArrayList<>();
 
         for (int i = 1; i <= 10; i++) {
-            UserInfo userInfo = EmailPassword.signUp(process.main, "test" + i + "@example.com", "testPass123");
-            superTokensUserIdList.add(userInfo.id);
+            AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test" + i + "@example.com", "testPass123");
+            superTokensUserIdList.add(userInfo.getSupertokensUserId());
         }
 
         HashMap<String, String> userIdMapping = storage.getUserIdMappingForSuperTokensIds(superTokensUserIdList);
@@ -654,16 +654,16 @@ public class UserIdMappingStorageTest {
 
         // create users equal to the User Pagination limit
         for (int i = 1; i <= 10; i++) {
-            UserInfo userInfo = EmailPassword.signUp(process.main, "test" + i + "@example.com", "testPass123");
-            superTokensUserIdList.add(userInfo.id);
+            AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test" + i + "@example.com", "testPass123");
+            superTokensUserIdList.add(userInfo.getSupertokensUserId());
 
             if (i <= 5) {
-                userIdList.add(userInfo.id);
+                userIdList.add(userInfo.getSupertokensUserId());
             } else {
                 // create userIdMapping for the last 5 users
                 String externalUserId = "externalId" + i;
                 userIdList.add(externalUserId);
-                storage.createUserIdMapping(new AppIdentifier(null, null), userInfo.id, externalUserId, null);
+                storage.createUserIdMapping(new AppIdentifier(null, null), userInfo.getSupertokensUserId(), externalUserId, null);
             }
         }
 
