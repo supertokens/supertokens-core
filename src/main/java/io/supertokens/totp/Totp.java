@@ -428,7 +428,7 @@ public class Totp {
         } catch (UnknownUserIdTotpException e) {
             // User must have deleted the device in parallel
             // since they cannot un-verify a device (no API exists)
-            throw new InvalidTotpException();
+            throw e;
         }
     }
 
