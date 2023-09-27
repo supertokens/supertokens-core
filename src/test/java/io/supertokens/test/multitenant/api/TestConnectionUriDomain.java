@@ -442,7 +442,7 @@ public class TestConnectionUriDomain {
             return;
         }
 
-        String[] valueForCreate = new String[]{"http://localhost_com", "localhost:", "abc.example.1com", "domain.com:abcd"};
+        String[] valueForCreate = new String[]{"http://localhost_com", "localhost:", "domain.com:abcd"};
         for (int i = 0; i < valueForCreate.length; i++) {
             try {
                 JsonObject config = new JsonObject();
@@ -458,5 +458,33 @@ public class TestConnectionUriDomain {
                 assertTrue(e.getMessage().contains("connectionUriDomain is invalid"));
             }
         }
+    }
+
+    @Test
+    public void testDefaultRecipesEnabledWhileCreatingCUD() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
+        JsonObject config = new JsonObject();
+        StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
+
+        JsonObject response = TestMultitenancyAPIHelper.createConnectionUriDomain(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "localhost:3567", null, null, null,
+                config);
+
+        assertTrue(response.get("createdNew").getAsBoolean());
+
+        JsonObject tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier("localhost", null, null),
+                process.getProcess());
+        assertTrue(tenant.get("emailPassword").getAsJsonObject().get("enabled").getAsBoolean());
+        assertTrue(tenant.get("thirdParty").getAsJsonObject().get("enabled").getAsBoolean());
+        assertTrue(tenant.get("passwordless").getAsJsonObject().get("enabled").getAsBoolean());
     }
 }

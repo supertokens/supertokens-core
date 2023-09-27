@@ -17,6 +17,7 @@
 package io.supertokens.test;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.featureflag.EE_FEATURES;
@@ -28,6 +29,7 @@ import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.Webserver;
 import io.supertokens.webserver.WebserverAPI;
@@ -147,7 +149,7 @@ public class CDIVersionTest {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
-        Utils.setValueInConfig("supertokens_default_cdi_version", "2.21");
+        Utils.setValueInConfig("supertokens_max_cdi_version", "2.21");
         process.startProcess();
 
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -189,7 +191,7 @@ public class CDIVersionTest {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
-        Utils.setValueInConfig("supertokens_default_cdi_version", "2.21");
+        Utils.setValueInConfig("supertokens_max_cdi_version", "2.21");
         process.startProcess();
 
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -231,7 +233,7 @@ public class CDIVersionTest {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
-        Utils.setValueInConfig("supertokens_default_cdi_version", "2.21");
+        Utils.setValueInConfig("supertokens_max_cdi_version", "2.21");
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
         process.startProcess();
@@ -266,7 +268,7 @@ public class CDIVersionTest {
         });
 
         JsonObject config = new JsonObject();
-        config.addProperty("supertokens_default_cdi_version", "3.0");
+        config.addProperty("supertokens_max_cdi_version", "3.0");
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 new TenantIdentifier(null, "a1", null),
                 new EmailPasswordConfig(true),
@@ -340,7 +342,7 @@ public class CDIVersionTest {
             String[] args = {"../"};
 
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
-            Utils.setValueInConfig("supertokens_default_cdi_version", "2.9");
+            Utils.setValueInConfig("supertokens_max_cdi_version", "2.9");
             process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -358,7 +360,7 @@ public class CDIVersionTest {
 
             {
                 JsonObject oldResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/jwt/jwks", null, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
+                        "http://localhost:3567/recipe/jwt/jwks", null, 1000, 1000, null, SemVer.v2_9.get(),
                         "jwt");
 
                 JsonArray oldKeys = oldResponse.getAsJsonArray("keys");
@@ -375,13 +377,13 @@ public class CDIVersionTest {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
-        Utils.setValueInConfig("supertokens_default_cdi_version", "2.x");
+        Utils.setValueInConfig("supertokens_max_cdi_version", "2.x");
         process.startProcess();
 
         ProcessState.EventAndException state = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
         assertNotNull(state);
 
-        assertEquals("supertokens_default_cdi_version is not a valid semantic version", state.exception.getCause().getMessage());
+        assertEquals("supertokens_max_cdi_version is not a valid semantic version", state.exception.getCause().getMessage());
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
@@ -391,14 +393,77 @@ public class CDIVersionTest {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
-        Utils.setValueInConfig("supertokens_default_cdi_version", "2.1");
+        Utils.setValueInConfig("supertokens_max_cdi_version", "2.1");
         process.startProcess();
 
         ProcessState.EventAndException state = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
         assertNotNull(state);
 
-        assertEquals("supertokens_default_cdi_version is not a supported version", state.exception.getCause().getMessage());
+        assertEquals("supertokens_max_cdi_version is not a supported version", state.exception.getCause().getMessage());
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    @Test
+    public void testThatGreatedThanMaxCDIVersionIsNotAllowed() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        Utils.setValueInConfig("supertokens_max_cdi_version", "\"2.20\"");
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        // These requests should pass
+        HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/jwt/jwks", null, 1000, 1000, null, "2.20",
+                "jwt");
+        HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/jwt/jwks", null, 1000, 1000, null, "2.19",
+                "jwt");
+
+        try {
+            JsonObject oldResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/jwt/jwks", null, 1000, 1000, null, "2.21",
+                    "jwt");
+            fail();
+        } catch (HttpResponseException e) {
+            assert(e.getMessage().contains("cdi-version 2.21 not supported"));
+        }
+
+        try {
+            JsonObject oldResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/jwt/jwks", null, 1000, 1000, null, "3.0",
+                    "jwt");
+            fail();
+        } catch (HttpResponseException e) {
+            assert(e.getMessage().contains("cdi-version 3.0 not supported"));
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testAPIVersionsWhenMaxCDIVersionIsSet() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        Utils.setValueInConfig("supertokens_max_cdi_version", "\"2.20\"");
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        JsonObject versionResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/apiversion", null, 1000, 1000, null, "2.18",
+                null);
+        JsonArray versions = versionResponse.getAsJsonArray("versions");
+
+        for (JsonElement version : versions) {
+            SemVer ver = new SemVer(version.getAsString());
+            assertTrue(ver.lesserThan(SemVer.v2_20) || ver.equals(SemVer.v2_20));
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
 }

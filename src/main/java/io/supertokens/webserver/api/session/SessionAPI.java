@@ -29,10 +29,11 @@ import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.session.SessionInfo;
-import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.session.Session;
 import io.supertokens.session.accessToken.AccessToken;
 import io.supertokens.session.info.SessionInformationHolder;
@@ -106,8 +107,8 @@ public class SessionAPI extends WebserverAPI {
                 try {
                     io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping =
                             io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                            this.getAppIdentifierWithStorage(req),
-                            sessionInfo.session.userId, UserIdType.ANY);
+                                    this.getAppIdentifierWithStorage(req),
+                                    sessionInfo.session.userId, UserIdType.ANY);
                     if (userIdMapping != null) {
                         ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main,
                                 userIdMapping.superTokensUserId);
@@ -121,6 +122,13 @@ public class SessionAPI extends WebserverAPI {
 
             JsonObject result = sessionInfo.toJsonObject();
 
+            if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
+                result.get("session").getAsJsonObject().remove("tenantId");
+            }
+            if (version.lesserThan(SemVer.v4_0)) {
+                result.get("session").getAsJsonObject().remove("recipeUserId");
+            }
+
             result.addProperty("status", "OK");
 
             if (super.getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_21)) {
@@ -133,20 +141,26 @@ public class SessionAPI extends WebserverAPI {
             super.sendJsonResponse(200, result, resp);
         } catch (AccessTokenPayloadError e) {
             throw new ServletException(new BadRequestException(e.getMessage()));
-        } catch (NoSuchAlgorithmException | StorageQueryException | InvalidKeyException | InvalidKeySpecException | StorageTransactionLogicException | SignatureException | IllegalBlockSizeException | BadPaddingException | InvalidAlgorithmParameterException | NoSuchPaddingException | TenantOrAppNotFoundException | UnsupportedJWTSigningAlgorithmException e) {
+        } catch (NoSuchAlgorithmException | StorageQueryException | InvalidKeyException | InvalidKeySpecException |
+                 StorageTransactionLogicException | SignatureException | IllegalBlockSizeException |
+                 BadPaddingException | InvalidAlgorithmParameterException | NoSuchPaddingException |
+                 TenantOrAppNotFoundException | UnsupportedJWTSigningAlgorithmException e) {
             throw new ServletException(e);
         }
     }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        // API is tenant specific
+        // API is app specific but tenant id is derived from the session handle
         String sessionHandle = InputParser.getQueryParamOrThrowError(req, "sessionHandle", false);
         assert sessionHandle != null;
 
         TenantIdentifierWithStorage tenantIdentifierWithStorage = null;
         try {
-            tenantIdentifierWithStorage = this.getTenantIdentifierWithStorageFromRequest(req);
+            AppIdentifierWithStorage appIdentifier = getAppIdentifierWithStorage(req);
+            TenantIdentifier tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
+                    appIdentifier.getAppId(), Session.getTenantIdFromSessionHandle(sessionHandle));
+            tenantIdentifierWithStorage = tenantIdentifier.withStorage(StorageLayer.getStorage(tenantIdentifier, main));
         } catch (TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
@@ -159,6 +173,13 @@ public class SessionAPI extends WebserverAPI {
             result.add("userDataInDatabase", Utils.toJsonTreeWithNulls(sessionInfo.userDataInDatabase));
 
             result.addProperty("status", "OK");
+
+            if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v3_0)) {
+                result.addProperty("tenantId", tenantIdentifierWithStorage.getTenantId());
+            }
+            if (getVersionFromRequest(req).lesserThan(SemVer.v4_0)) {
+                result.remove("recipeUserId");
+            }
 
             super.sendJsonResponse(200, result, resp);
 

@@ -16,14 +16,14 @@
 
 package io.supertokens.webserver.api.emailpassword;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -31,7 +31,6 @@ import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicExceptio
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.SemVer;
@@ -57,6 +56,7 @@ public class UserAPI extends WebserverAPI {
         return "/recipe/user";
     }
 
+    @Deprecated
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         // API is tenant specific for get by Email and app specific for get by UserId
@@ -75,7 +75,7 @@ public class UserAPI extends WebserverAPI {
 
         try {
             // API is app specific for get by UserId
-            UserInfo user = null;
+            AuthRecipeUserInfo user = null;
 
             try {
                 if (userId != null) {
@@ -89,27 +89,22 @@ public class UserAPI extends WebserverAPI {
 
                     user = EmailPassword.getUserUsingId(
                             appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage, userId);
-
-                    // if the userIdMapping exists set the userId in the response to the externalUserId
-                    if (user != null && appIdentifierWithStorageAndUserIdMapping.userIdMapping != null) {
-                        user.id = appIdentifierWithStorageAndUserIdMapping.userIdMapping.externalUserId;
-                    }
+                            if (user != null) {
+                                UserIdMapping.populateExternalUserIdForUsers(appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage, new AuthRecipeUserInfo[]{user});
+                            }
 
                 } else {
                     // API is tenant specific for get by Email
                     // Query by email
                     String normalisedEmail = Utils.normaliseEmail(email);
-                    TenantIdentifierWithStorage tenantIdentifierWithStorage = this.getTenantIdentifierWithStorageFromRequest(req);
+                    TenantIdentifierWithStorage tenantIdentifierWithStorage =
+                            this.getTenantIdentifierWithStorageFromRequest(
+                                    req);
                     user = EmailPassword.getUserUsingEmail(tenantIdentifierWithStorage, normalisedEmail);
 
                     // if a userIdMapping exists, set the userId in the response to the externalUserId
                     if (user != null) {
-                        io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping =
-                                UserIdMapping.getUserIdMapping(
-                                        getAppIdentifierWithStorage(req), user.id, UserIdType.SUPERTOKENS);
-                        if (userIdMapping != null) {
-                            user.id = userIdMapping.externalUserId;
-                        }
+                        UserIdMapping.populateExternalUserIdForUsers(tenantIdentifierWithStorage, new AuthRecipeUserInfo[]{user});
                     }
                 }
             } catch (UnknownUserIdException e) {
@@ -124,7 +119,9 @@ public class UserAPI extends WebserverAPI {
             } else {
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
-                JsonObject userJson = new JsonParser().parse(new Gson().toJson(user)).getAsJsonObject();
+                JsonObject userJson =
+                        getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0) ? user.toJson() :
+                                user.toJsonWithoutAccountLinking();
 
                 if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
                     userJson.remove("tenantIds");
@@ -144,7 +141,13 @@ public class UserAPI extends WebserverAPI {
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         // API is app specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-        String userId = InputParser.parseStringOrThrowError(input, "userId", false);
+        String userId;
+
+        if (getVersionFromRequest(req).lesserThan(SemVer.v4_0)) {
+            userId = InputParser.parseStringOrThrowError(input, "userId", false);
+        } else {
+            userId = InputParser.parseStringOrThrowError(input, "recipeUserId", false);
+        }
         String email = InputParser.parseStringOrThrowError(input, "email", true);
         String password = InputParser.parseStringOrThrowError(input, "password", true);
 
@@ -191,6 +194,12 @@ public class UserAPI extends WebserverAPI {
             Logging.debug(main, appIdentifier.getAsPublicTenantIdentifier(), Utils.exceptionStacktraceToString(e));
             JsonObject result = new JsonObject();
             result.addProperty("status", "EMAIL_ALREADY_EXISTS_ERROR");
+            super.sendJsonResponse(200, result, resp);
+        } catch (EmailChangeNotAllowedException e) {
+            Logging.debug(main, appIdentifier.getAsPublicTenantIdentifier(), Utils.exceptionStacktraceToString(e));
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "EMAIL_CHANGE_NOT_ALLOWED_ERROR");
+            result.addProperty("reason", "New email is associated with another primary user ID");
             super.sendJsonResponse(200, result, resp);
         }
     }

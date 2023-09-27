@@ -48,7 +48,8 @@ public class UserMetadataQueries {
         // @formatter:on
     }
 
-    public static int deleteUserMetadata(Start start, AppIdentifier appIdentifier, String userId) throws SQLException, StorageQueryException {
+    public static int deleteUserMetadata(Start start, AppIdentifier appIdentifier, String userId)
+            throws SQLException, StorageQueryException {
         String QUERY = "DELETE FROM " + getConfig(start).getUserMetadataTable()
                 + " WHERE app_id = ? AND user_id = ?";
 
@@ -58,7 +59,20 @@ public class UserMetadataQueries {
         });
     }
 
-    public static int setUserMetadata_Transaction(Start start, Connection con, AppIdentifier appIdentifier, String userId, JsonObject metadata)
+    public static int deleteUserMetadata_Transaction(Connection sqlCon, Start start, AppIdentifier appIdentifier,
+                                                     String userId)
+            throws SQLException, StorageQueryException {
+        String QUERY = "DELETE FROM " + getConfig(start).getUserMetadataTable()
+                + " WHERE app_id = ? AND user_id = ?";
+
+        return update(sqlCon, QUERY.toString(), pst -> {
+            pst.setString(1, appIdentifier.getAppId());
+            pst.setString(2, userId);
+        });
+    }
+
+    public static int setUserMetadata_Transaction(Start start, Connection con, AppIdentifier appIdentifier,
+                                                  String userId, JsonObject metadata)
             throws SQLException, StorageQueryException {
 
         String QUERY = "INSERT INTO " + getConfig(start).getUserMetadataTable()
@@ -91,7 +105,8 @@ public class UserMetadataQueries {
         });
     }
 
-    public static JsonObject getUserMetadata(Start start, AppIdentifier appIdentifier, String userId) throws SQLException, StorageQueryException {
+    public static JsonObject getUserMetadata(Start start, AppIdentifier appIdentifier, String userId)
+            throws SQLException, StorageQueryException {
         String QUERY = "SELECT user_metadata FROM " + getConfig(start).getUserMetadataTable()
                 + " WHERE app_id = ? AND user_id = ?";
         return execute(start, QUERY, pst -> {

@@ -20,10 +20,9 @@ import io.supertokens.ProcessState;
 import io.supertokens.config.CoreConfig.PASSWORD_HASHING_ALG;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.ParsedFirebaseSCryptResponse;
-import io.supertokens.emailpassword.PasswordHashingUtils;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -51,7 +50,7 @@ public class UserMigrationTest {
 
     @Test
     public void testSigningInUsersWithDifferentHashingConfigValues() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         Utils.setValueInConfig("firebase_password_hashing_signer_key",
                 "gRhC3eDeQOdyEn4bMd9c6kxguWVmcIVq/SKa0JDPFeM6TcEevkaW56sIWfx88OHbJKnCXdWscZx0l2WbCJ1wbg==");
@@ -72,16 +71,17 @@ public class UserMigrationTest {
             String email = "test@example.com";
             String password = "testPass123";
             String salt = "/cj0jC1br5o4+w==";
-            String passwordHash = "9Y8ICWcqbzmI42DxV1jpyEjbrJPG8EQ6nI6oC32JYz+/dd7aEjI/R7jG9P5kYh8v9gyqFKaXMDzMg7eLCypbOA==";
+            String passwordHash = "9Y8ICWcqbzmI42DxV1jpyEjbrJPG8EQ6nI6oC32JYz+/dd7aEjI" +
+                    "/R7jG9P5kYh8v9gyqFKaXMDzMg7eLCypbOA==";
             String combinedPasswordHash = "$" + ParsedFirebaseSCryptResponse.FIREBASE_SCRYPT_PREFIX + "$" + passwordHash
                     + "$" + salt + "$m=" + firebaseMemCost + "$r=" + firebaseRounds + "$s=" + firebaseSaltSeparator;
             EmailPassword.importUserWithPasswordHash(process.getProcess(), email, combinedPasswordHash,
                     PASSWORD_HASHING_ALG.FIREBASE_SCRYPT);
 
             // try signing in and check that it works
-            UserInfo userInfo = EmailPassword.signIn(process.getProcess(), email, password);
-            assertEquals(userInfo.email, email);
-            assertEquals(userInfo.passwordHash, combinedPasswordHash);
+            AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.getProcess(), email, password);
+            assertEquals(userInfo.loginMethods[0].email, email);
+            assertEquals(userInfo.loginMethods[0].passwordHash, combinedPasswordHash);
         }
 
         // user 2 has a password hash that was generated with mem cost as 15
@@ -93,7 +93,8 @@ public class UserMigrationTest {
             String email = "test2@example.com";
             String password = "testPass123";
             String salt = "/cj0jC1br5o4+w==";
-            String passwordHash = "LalFtzCxLIl14+ol6e/3cjHoa2B73ULiMN+Mjm+nJJEfQqtsXPpDX1VU4s9XyiuwGrQ5RN69PWL5DrHuNUH+RA==";
+            String passwordHash = "LalFtzCxLIl14+ol6e/3cjHoa2B73ULiMN+Mjm" +
+                    "+nJJEfQqtsXPpDX1VU4s9XyiuwGrQ5RN69PWL5DrHuNUH+RA==";
             String combinedPasswordHash = "$" + ParsedFirebaseSCryptResponse.FIREBASE_SCRYPT_PREFIX + "$" + passwordHash
                     + "$" + salt + "$m=" + firebaseMemCost + "$r=" + firebaseRounds + "$s=" + firebaseSaltSeparator;
 
@@ -101,9 +102,9 @@ public class UserMigrationTest {
                     PASSWORD_HASHING_ALG.FIREBASE_SCRYPT);
 
             // try signing in and check that it works
-            UserInfo userInfo = EmailPassword.signIn(process.getProcess(), email, password);
-            assertEquals(userInfo.email, email);
-            assertEquals(userInfo.passwordHash, combinedPasswordHash);
+            AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.getProcess(), email, password);
+            assertEquals(userInfo.loginMethods[0].email, email);
+            assertEquals(userInfo.loginMethods[0].passwordHash, combinedPasswordHash);
         }
 
         process.kill();
@@ -112,7 +113,7 @@ public class UserMigrationTest {
 
     @Test
     public void testBasicUserMigration() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -133,11 +134,11 @@ public class UserMigrationTest {
             // check that the user was created
             assertFalse(importUserResponse.didUserAlreadyExist);
             // try and sign in with plainTextPassword
-            UserInfo userInfo = EmailPassword.signIn(process.main, email, plainTextPassword);
+            AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.main, email, plainTextPassword);
 
-            assertEquals(userInfo.id, importUserResponse.user.id);
-            assertEquals(userInfo.passwordHash, passwordHash);
-            assertEquals(userInfo.email, email);
+            assertEquals(userInfo.getSupertokensUserId(), importUserResponse.user.getSupertokensUserId());
+            assertEquals(userInfo.loginMethods[0].passwordHash, passwordHash);
+            assertEquals(userInfo.loginMethods[0].email, email);
         }
 
         // with argon2
@@ -152,11 +153,11 @@ public class UserMigrationTest {
             // check that the user was created
             assertFalse(importUserResponse.didUserAlreadyExist);
             // try and sign in with plainTextPassword
-            UserInfo userInfo = EmailPassword.signIn(process.main, email, plainTextPassword);
+            AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.main, email, plainTextPassword);
 
-            assertEquals(userInfo.id, importUserResponse.user.id);
-            assertEquals(userInfo.passwordHash, passwordHash);
-            assertEquals(userInfo.email, email);
+            assertEquals(userInfo.getSupertokensUserId(), importUserResponse.user.getSupertokensUserId());
+            assertEquals(userInfo.loginMethods[0].passwordHash, passwordHash);
+            assertEquals(userInfo.loginMethods[0].email, email);
         }
 
         process.kill();
@@ -165,7 +166,7 @@ public class UserMigrationTest {
 
     @Test
     public void testUpdatingAUsersPasswordHash() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -177,7 +178,7 @@ public class UserMigrationTest {
         String email = "test@example.com";
         String originalPassword = "testPass123";
 
-        UserInfo signUpUserInfo = EmailPassword.signUp(process.main, email, originalPassword);
+        AuthRecipeUserInfo signUpUserInfo = EmailPassword.signUp(process.main, email, originalPassword);
 
         // update passwordHash with new passwordHash
         String newPassword = "newTestPass123";
@@ -198,11 +199,11 @@ public class UserMigrationTest {
         assertNotNull(error);
 
         // sign in with the newPassword and check that it works
-        UserInfo userInfo = EmailPassword.signIn(process.main, email, newPassword);
-        assertEquals(userInfo.email, signUpUserInfo.email);
-        assertEquals(userInfo.id, signUpUserInfo.id);
+        AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.main, email, newPassword);
+        assertEquals(userInfo.loginMethods[0].email, signUpUserInfo.loginMethods[0].email);
+        assertEquals(userInfo.getSupertokensUserId(), signUpUserInfo.getSupertokensUserId());
         assertEquals(userInfo.timeJoined, signUpUserInfo.timeJoined);
-        assertEquals(userInfo.passwordHash, newPasswordHash);
+        assertEquals(userInfo.loginMethods[0].passwordHash, newPasswordHash);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -211,7 +212,7 @@ public class UserMigrationTest {
     // test bcrypt with different salt rounds
     @Test
     public void testAddingBcryptHashesWithDifferentSaltRounds() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -231,9 +232,9 @@ public class UserMigrationTest {
         assertFalse(response.didUserAlreadyExist);
 
         // test that sign in works
-        UserInfo userInfo = EmailPassword.signIn(process.main, email, password);
-        assertEquals(userInfo.email, email);
-        assertEquals(userInfo.passwordHash, passwordHash);
+        AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.main, email, password);
+        assertEquals(userInfo.loginMethods[0].email, email);
+        assertEquals(userInfo.loginMethods[0].passwordHash, passwordHash);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -241,7 +242,7 @@ public class UserMigrationTest {
 
     @Test
     public void testUsingArgon2HashesWithDifferentConfigValues() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -261,9 +262,9 @@ public class UserMigrationTest {
         assertFalse(response.didUserAlreadyExist);
 
         // test that sign in works
-        UserInfo userInfo = EmailPassword.signIn(process.main, email, password);
-        assertEquals(userInfo.email, email);
-        assertEquals(userInfo.passwordHash, passwordHash);
+        AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.main, email, password);
+        assertEquals(userInfo.loginMethods[0].email, email);
+        assertEquals(userInfo.loginMethods[0].passwordHash, passwordHash);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -271,7 +272,7 @@ public class UserMigrationTest {
 
     @Test
     public void testAddingArgon2WithDifferentVersions() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -291,9 +292,9 @@ public class UserMigrationTest {
             assertFalse(response.didUserAlreadyExist);
 
             // test that sign in works
-            UserInfo userInfo = EmailPassword.signIn(process.main, email, password);
-            assertEquals(userInfo.email, email);
-            assertEquals(userInfo.passwordHash, passwordHash);
+            AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.main, email, password);
+            assertEquals(userInfo.loginMethods[0].email, email);
+            assertEquals(userInfo.loginMethods[0].passwordHash, passwordHash);
         }
 
         // $argon2d
@@ -307,9 +308,9 @@ public class UserMigrationTest {
             assertFalse(response.didUserAlreadyExist);
 
             // test that sign in works
-            UserInfo userInfo = EmailPassword.signIn(process.main, email, password);
-            assertEquals(userInfo.email, email);
-            assertEquals(userInfo.passwordHash, passwordHash);
+            AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.main, email, password);
+            assertEquals(userInfo.loginMethods[0].email, email);
+            assertEquals(userInfo.loginMethods[0].passwordHash, passwordHash);
         }
 
         process.kill();
@@ -318,7 +319,7 @@ public class UserMigrationTest {
 
     @Test
     public void testAddingBcryptHashesWithDifferentVersions() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -339,9 +340,9 @@ public class UserMigrationTest {
             assertFalse(response.didUserAlreadyExist);
 
             // test that sign in works
-            UserInfo userInfo = EmailPassword.signIn(process.main, email, password);
-            assertEquals(userInfo.email, email);
-            assertEquals(userInfo.passwordHash, passwordHash);
+            AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.main, email, password);
+            assertEquals(userInfo.loginMethods[0].email, email);
+            assertEquals(userInfo.loginMethods[0].passwordHash, passwordHash);
         }
 
         // using $2b$
@@ -355,9 +356,9 @@ public class UserMigrationTest {
             assertFalse(response.didUserAlreadyExist);
 
             // test that sign in works
-            UserInfo userInfo = EmailPassword.signIn(process.main, email, password);
-            assertEquals(userInfo.email, email);
-            assertEquals(userInfo.passwordHash, passwordHash);
+            AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.main, email, password);
+            assertEquals(userInfo.loginMethods[0].email, email);
+            assertEquals(userInfo.loginMethods[0].passwordHash, passwordHash);
         }
 
         // using $2x$
@@ -371,9 +372,9 @@ public class UserMigrationTest {
             assertFalse(response.didUserAlreadyExist);
 
             // test that sign in works
-            UserInfo userInfo = EmailPassword.signIn(process.main, email, password);
-            assertEquals(userInfo.email, email);
-            assertEquals(userInfo.passwordHash, passwordHash);
+            AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.main, email, password);
+            assertEquals(userInfo.loginMethods[0].email, email);
+            assertEquals(userInfo.loginMethods[0].passwordHash, passwordHash);
         }
 
         // using $2y$
@@ -387,9 +388,9 @@ public class UserMigrationTest {
             assertFalse(response.didUserAlreadyExist);
 
             // test that sign in works
-            UserInfo userInfo = EmailPassword.signIn(process.main, email, password);
-            assertEquals(userInfo.email, email);
-            assertEquals(userInfo.passwordHash, passwordHash);
+            AuthRecipeUserInfo userInfo = EmailPassword.signIn(process.main, email, password);
+            assertEquals(userInfo.loginMethods[0].email, email);
+            assertEquals(userInfo.loginMethods[0].passwordHash, passwordHash);
         }
 
         process.kill();

@@ -23,6 +23,7 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -50,7 +51,7 @@ public class GeneratePasswordResetTokenAPITest2_7 {
     // Check for bad input (missing fields)
     @Test
     public void testBadInput() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -106,7 +107,7 @@ public class GeneratePasswordResetTokenAPITest2_7 {
     // Check good input works
     @Test
     public void testGoodInput() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -139,7 +140,7 @@ public class GeneratePasswordResetTokenAPITest2_7 {
     // Failure condition: passing a valid userId will cause the test to fail
     @Test
     public void testForAllTypesOfOutput() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -150,6 +151,33 @@ public class GeneratePasswordResetTokenAPITest2_7 {
 
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("userId", "randomUserId");
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/user/password/reset/token", requestBody, 1000, 1000, null,
+                SemVer.v2_7.get(), "emailpassword");
+
+        assertEquals(response.get("status").getAsString(), "UNKNOWN_USER_ID_ERROR");
+        assertEquals(response.entrySet().size(), 1);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testUnknownUserWithUserIdFromNonEp() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        ThirdParty.SignInUpResponse res = ThirdParty.signInUp(process.main, "google", "ug", "t@example.com");
+
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("userId", res.user.getSupertokensUserId());
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user/password/reset/token", requestBody, 1000, 1000, null,

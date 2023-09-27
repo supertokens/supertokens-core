@@ -38,7 +38,7 @@ import static junit.framework.TestCase.*;
 import static junit.framework.TestCase.assertNull;
 import static org.junit.Assert.assertNotNull;
 
-public class VerifySessionAPITest2_22 {
+public class VerifySessionAPITest3_0 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
@@ -83,14 +83,14 @@ public class VerifySessionAPITest2_22 {
         request.addProperty("checkDatabase", false);
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session/verify", request, 1000, 1000, null,
-                Utils.getCdiVersionStringLatestForTests(), "session");
+                SemVer.v3_0.get(), "session");
 
         assertEquals(response.get("status").getAsString(), "OK");
 
         assertNotNull(response.get("session").getAsJsonObject().get("handle").getAsString());
         assertEquals(response.get("session").getAsJsonObject().get("userId").getAsString(), userId);
         assertEquals(response.get("session").getAsJsonObject().get("userDataInJWT").getAsJsonObject(), userDataInJWT);
-        assertEquals(response.get("session").getAsJsonObject().entrySet().size(), 3);
+        assertEquals(response.get("session").getAsJsonObject().entrySet().size(), 4);
 
         assertEquals(response.entrySet().size(), 2);
 
@@ -211,7 +211,7 @@ public class VerifySessionAPITest2_22 {
         assertEquals(response.get("session").getAsJsonObject().get("userId").getAsString(), userId);
         assertEquals(response.get("session").getAsJsonObject().get("userDataInJWT").getAsJsonObject().toString(),
                 userDataInJWT.toString());
-        assertEquals(response.get("session").getAsJsonObject().entrySet().size(), 3);
+        assertEquals(response.get("session").getAsJsonObject().entrySet().size(), 4);
 
         assertTrue(response.get("accessToken").getAsJsonObject().has("token"));
         assertTrue(response.get("accessToken").getAsJsonObject().has("expiry"));

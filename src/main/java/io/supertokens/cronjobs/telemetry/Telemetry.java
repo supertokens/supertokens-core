@@ -24,7 +24,9 @@ import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.httpRequest.HttpRequest;
 import io.supertokens.httpRequest.HttpRequestMocking;
+import io.supertokens.pluginInterface.ActiveUsersStorage;
 import io.supertokens.pluginInterface.KeyValueInfo;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
@@ -88,13 +90,22 @@ public class Telemetry extends CronTask {
         json.addProperty("telemetryId", telemetryId.value);
         json.addProperty("superTokensVersion", coreVersion);
 
+        if (StorageLayer.getBaseStorage(main).getType() == STORAGE_TYPE.SQL) {
+            ActiveUsersStorage activeUsersStorage = (ActiveUsersStorage) StorageLayer.getStorage(app.getAsPublicTenantIdentifier(), main);
+            json.addProperty("mau", activeUsersStorage.countUsersActiveSince(app, System.currentTimeMillis() - 30 * 24 * 3600 * 1000L));
+        } else {
+            json.addProperty("mau", -1);
+        }
+        json.addProperty("appId", app.getAppId());
+        json.addProperty("connectionUriDomain", app.getConnectionUriDomain());
+
         String url = "https://api.supertokens.io/0/st/telemetry";
 
         // we call the API only if we are not testing the core, of if the request can be mocked (in case a test
         // wants
         // to use this)
         if (!Main.isTesting || HttpRequestMocking.getInstance(main).getMockURL(REQUEST_ID, url) != null) {
-            HttpRequest.sendJsonPOSTRequest(main, REQUEST_ID, url, json, 10000, 10000, 0);
+            HttpRequest.sendJsonPOSTRequest(main, REQUEST_ID, url, json, 10000, 10000, 4);
             ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.SENT_TELEMETRY, null);
         }
     }

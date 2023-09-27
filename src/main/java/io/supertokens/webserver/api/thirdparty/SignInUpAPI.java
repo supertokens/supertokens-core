@@ -16,13 +16,14 @@
 
 package io.supertokens.webserver.api.thirdparty;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
+import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.thirdparty.ThirdParty;
@@ -37,6 +38,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
+import java.util.Objects;
 
 public class SignInUpAPI extends WebserverAPI {
 
@@ -77,19 +79,30 @@ public class SignInUpAPI extends WebserverAPI {
                         this.getTenantIdentifierWithStorageFromRequest(req), super.main,
                         thirdPartyId,
                         thirdPartyUserId, email, isEmailVerified);
+                UserIdMapping.populateExternalUserIdForUsers(this.getTenantIdentifierWithStorageFromRequest(req), new AuthRecipeUserInfo[]{response.user});
 
-                ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main, response.user.id);
+                ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main, response.user.getSupertokensUserId());
 
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
                 result.addProperty("createdNewUser", response.createdNewUser);
-                JsonObject userJson = new JsonParser().parse(new Gson().toJson(response.user)).getAsJsonObject();
+                JsonObject userJson = response.user.toJsonWithoutAccountLinking();
 
                 if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
                     userJson.remove("tenantIds");
                 }
 
                 result.add("user", userJson);
+                if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0)) {
+                    for (LoginMethod loginMethod : response.user.loginMethods) {
+                        if (loginMethod.recipeId.equals(RECIPE_ID.THIRD_PARTY)
+                                && Objects.equals(loginMethod.thirdParty.id, thirdPartyId)
+                                && Objects.equals(loginMethod.thirdParty.userId, thirdPartyUserId)) {
+                            result.addProperty("recipeUserId", loginMethod.getSupertokensOrExternalUserId());
+                            break;
+                        }
+                    }
+                }
                 super.sendJsonResponse(200, result, resp);
 
             } catch (StorageQueryException | TenantOrAppNotFoundException e) {
@@ -101,6 +114,13 @@ public class SignInUpAPI extends WebserverAPI {
             String thirdPartyUserId = InputParser.parseStringOrThrowError(input, "thirdPartyUserId", false);
             JsonObject emailObject = InputParser.parseJsonObjectOrThrowError(input, "email", false);
             String email = InputParser.parseStringOrThrowError(emailObject, "id", false);
+
+            // setting email verified behaviour is to be done only for CDI 4.0 onwards. version 3.0 and earlier
+            // do not have this field
+            Boolean isEmailVerified = false;
+            if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0)) {
+                isEmailVerified = InputParser.parseBooleanOrThrowError(emailObject, "isVerified", false);
+            }
 
             assert thirdPartyId != null;
             assert thirdPartyUserId != null;
@@ -116,32 +136,42 @@ public class SignInUpAPI extends WebserverAPI {
             try {
                 ThirdParty.SignInUpResponse response = ThirdParty.signInUp(
                         this.getTenantIdentifierWithStorageFromRequest(req), super.main, thirdPartyId, thirdPartyUserId,
-                        email);
+                        email, isEmailVerified);
+                UserIdMapping.populateExternalUserIdForUsers(this.getTenantIdentifierWithStorageFromRequest(req), new AuthRecipeUserInfo[]{response.user});
 
-                ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main, response.user.id);
-
-                //
-                io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                        .getUserIdMapping(this.getAppIdentifierWithStorage(req), response.user.id,
-                                UserIdType.SUPERTOKENS);
-                if (userIdMapping != null) {
-                    response.user.id = userIdMapping.externalUserId;
-                }
+                ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main, response.user.getSupertokensUserId());
 
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
                 result.addProperty("createdNewUser", response.createdNewUser);
-                JsonObject userJson = new JsonParser().parse(new Gson().toJson(response.user)).getAsJsonObject();
+                JsonObject userJson =
+                        getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0) ? response.user.toJson() :
+                                response.user.toJsonWithoutAccountLinking();
 
                 if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
                     userJson.remove("tenantIds");
                 }
 
                 result.add("user", userJson);
+                if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0)) {
+                    for (LoginMethod loginMethod : response.user.loginMethods) {
+                        if (loginMethod.recipeId.equals(RECIPE_ID.THIRD_PARTY)
+                                && Objects.equals(loginMethod.thirdParty.id, thirdPartyId)
+                                && Objects.equals(loginMethod.thirdParty.userId, thirdPartyUserId)) {
+                            result.addProperty("recipeUserId", loginMethod.getSupertokensOrExternalUserId());
+                            break;
+                        }
+                    }
+                }
                 super.sendJsonResponse(200, result, resp);
 
             } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
                 throw new ServletException(e);
+            } catch (EmailChangeNotAllowedException e) {
+                JsonObject result = new JsonObject();
+                result.addProperty("status", "EMAIL_CHANGE_NOT_ALLOWED_ERROR");
+                result.addProperty("reason", "Email already associated with another primary user.");
+                super.sendJsonResponse(200, result, resp);
             }
         }
 

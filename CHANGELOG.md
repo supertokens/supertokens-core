@@ -7,14 +7,268 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+## [7.0.0] - 2023-09-19
+
+- Support for CDI version 4.0
+- Adds Account Linking feature
+
+### Session recipe changes
+
+- New access token version: v5, which contains a required prop: `rsub`. This contains the recipe user ID that belongs to the login method that the user used to login. The `sub` claim in the access token payload is now the primary user ID.
+- APIs that return `SessionInformation` (like GET `/recipe/session`) contains userId, recipeUserId in the response.
+- Apis that create / modify / refresh a session return the `recipeUserId` in the `session` object in the response.
+- Token theft detected response returns userId and recipeUserId
+
+### Db Schema changes
+
+- Adds columns `primary_or_recipe_user_id`, `is_linked_or_is_a_primary_user` and `primary_or_recipe_user_time_joined` to `all_auth_recipe_users` table
+- Adds columns `primary_or_recipe_user_id` and `is_linked_or_is_a_primary_user` to `app_id_to_user_id` table
+- Removes index `all_auth_recipe_users_pagination_index` and addes `all_auth_recipe_users_pagination_index1`, 
+  `all_auth_recipe_users_pagination_index2`, `all_auth_recipe_users_pagination_index3` and 
+  `all_auth_recipe_users_pagination_index4` indexes instead on `all_auth_recipe_users` table
+- Adds `all_auth_recipe_users_recipe_id_index` on `all_auth_recipe_users` table
+- Adds `all_auth_recipe_users_primary_user_id_index` on `all_auth_recipe_users` table
+- Adds `email` column to `emailpassword_pswd_reset_tokens` table
+- Changes `user_id` foreign key constraint on `emailpassword_pswd_reset_tokens` to `app_id_to_user_id` table
+
+### Migration steps for SQL
+
+1. Ensure that the core is already upgraded to version 6.0.13 (CDI version 3.0)
+2. Stop the core instance(s)
+3. Run the migration script
+
+    <details>
+
+    <summary>If using PostgreSQL</summary>
+
+    ```sql
+    ALTER TABLE all_auth_recipe_users
+      ADD COLUMN primary_or_recipe_user_id CHAR(36) NOT NULL DEFAULT ('0');
+
+    ALTER TABLE all_auth_recipe_users
+      ADD COLUMN is_linked_or_is_a_primary_user BOOLEAN NOT NULL DEFAULT FALSE;
+
+    ALTER TABLE all_auth_recipe_users
+      ADD COLUMN primary_or_recipe_user_time_joined BIGINT NOT NULL DEFAULT 0;
+
+    UPDATE all_auth_recipe_users
+      SET primary_or_recipe_user_id = user_id
+      WHERE primary_or_recipe_user_id = '0';
+
+    UPDATE all_auth_recipe_users
+      SET primary_or_recipe_user_time_joined = time_joined
+      WHERE primary_or_recipe_user_time_joined = 0;
+
+    ALTER TABLE all_auth_recipe_users
+      ADD CONSTRAINT all_auth_recipe_users_primary_or_recipe_user_id_fkey
+        FOREIGN KEY (app_id, primary_or_recipe_user_id)
+        REFERENCES app_id_to_user_id (app_id, user_id) ON DELETE CASCADE;
+
+    ALTER TABLE all_auth_recipe_users
+      ALTER primary_or_recipe_user_id DROP DEFAULT;
+
+    ALTER TABLE app_id_to_user_id
+      ADD COLUMN primary_or_recipe_user_id CHAR(36) NOT NULL DEFAULT ('0');
+
+    ALTER TABLE app_id_to_user_id
+      ADD COLUMN is_linked_or_is_a_primary_user BOOLEAN NOT NULL DEFAULT FALSE;
+
+    UPDATE app_id_to_user_id
+      SET primary_or_recipe_user_id = user_id
+      WHERE primary_or_recipe_user_id = '0';
+
+    ALTER TABLE app_id_to_user_id
+      ADD CONSTRAINT app_id_to_user_id_primary_or_recipe_user_id_fkey
+        FOREIGN KEY (app_id, primary_or_recipe_user_id)
+        REFERENCES app_id_to_user_id (app_id, user_id) ON DELETE CASCADE;
+
+    ALTER TABLE app_id_to_user_id
+        ALTER primary_or_recipe_user_id DROP DEFAULT;
+
+    DROP INDEX all_auth_recipe_users_pagination_index;
+
+    CREATE INDEX all_auth_recipe_users_pagination_index1 ON all_auth_recipe_users (
+      app_id, tenant_id, primary_or_recipe_user_time_joined DESC, primary_or_recipe_user_id DESC);
+
+    CREATE INDEX all_auth_recipe_users_pagination_index2 ON all_auth_recipe_users (
+      app_id, tenant_id, primary_or_recipe_user_time_joined ASC, primary_or_recipe_user_id DESC);
+
+    CREATE INDEX all_auth_recipe_users_pagination_index3 ON all_auth_recipe_users (
+      recipe_id, app_id, tenant_id, primary_or_recipe_user_time_joined DESC, primary_or_recipe_user_id DESC);
+
+    CREATE INDEX all_auth_recipe_users_pagination_index4 ON all_auth_recipe_users (
+      recipe_id, app_id, tenant_id, primary_or_recipe_user_time_joined ASC, primary_or_recipe_user_id DESC);
+
+    CREATE INDEX all_auth_recipe_users_primary_user_id_index ON all_auth_recipe_users (primary_or_recipe_user_id, app_id);
+
+    CREATE INDEX all_auth_recipe_users_recipe_id_index ON all_auth_recipe_users (app_id, recipe_id, tenant_id);
+
+    ALTER TABLE emailpassword_pswd_reset_tokens DROP CONSTRAINT IF EXISTS emailpassword_pswd_reset_tokens_user_id_fkey;
+
+    ALTER TABLE emailpassword_pswd_reset_tokens ADD CONSTRAINT emailpassword_pswd_reset_tokens_user_id_fkey FOREIGN KEY (app_id, user_id) REFERENCES app_id_to_user_id (app_id, user_id) ON DELETE CASCADE;
+
+    ALTER TABLE emailpassword_pswd_reset_tokens ADD COLUMN email VARCHAR(256);
+    ```
+    </details>
+
+    <details>
+
+    <summary>If using MySQL</summary>
+
+    ```sql
+    ALTER TABLE all_auth_recipe_users
+      ADD primary_or_recipe_user_id CHAR(36) NOT NULL DEFAULT ('0');
+
+    ALTER TABLE all_auth_recipe_users
+      ADD is_linked_or_is_a_primary_user BOOLEAN NOT NULL DEFAULT FALSE;
+
+    ALTER TABLE all_auth_recipe_users
+      ADD primary_or_recipe_user_time_joined BIGINT UNSIGNED NOT NULL DEFAULT 0;
+
+    UPDATE all_auth_recipe_users
+      SET primary_or_recipe_user_id = user_id
+      WHERE primary_or_recipe_user_id = '0';
+
+    UPDATE all_auth_recipe_users
+      SET primary_or_recipe_user_time_joined = time_joined
+      WHERE primary_or_recipe_user_time_joined = 0;
+
+    ALTER TABLE all_auth_recipe_users
+      ADD FOREIGN KEY (app_id, primary_or_recipe_user_id)
+      REFERENCES app_id_to_user_id (app_id, user_id) ON DELETE CASCADE;
+
+    ALTER TABLE all_auth_recipe_users
+      ALTER primary_or_recipe_user_id DROP DEFAULT;
+
+    ALTER TABLE app_id_to_user_id
+      ADD primary_or_recipe_user_id CHAR(36) NOT NULL DEFAULT ('0');
+
+    ALTER TABLE app_id_to_user_id
+      ADD is_linked_or_is_a_primary_user BOOLEAN NOT NULL DEFAULT FALSE;
+
+    UPDATE app_id_to_user_id
+      SET primary_or_recipe_user_id = user_id
+      WHERE primary_or_recipe_user_id = '0';
+
+    ALTER TABLE app_id_to_user_id
+      ADD FOREIGN KEY (app_id, primary_or_recipe_user_id)
+      REFERENCES app_id_to_user_id (app_id, user_id) ON DELETE CASCADE;
+
+    ALTER TABLE app_id_to_user_id
+      ALTER primary_or_recipe_user_id DROP DEFAULT;
+
+    DROP INDEX all_auth_recipe_users_pagination_index ON all_auth_recipe_users;
+
+    CREATE INDEX all_auth_recipe_users_pagination_index1 ON all_auth_recipe_users (
+      app_id, tenant_id, primary_or_recipe_user_time_joined DESC, primary_or_recipe_user_id DESC);
+
+    CREATE INDEX all_auth_recipe_users_pagination_index2 ON all_auth_recipe_users (
+      app_id, tenant_id, primary_or_recipe_user_time_joined ASC, primary_or_recipe_user_id DESC);
+
+    CREATE INDEX all_auth_recipe_users_pagination_index3 ON all_auth_recipe_users (
+      recipe_id, app_id, tenant_id, primary_or_recipe_user_time_joined DESC, primary_or_recipe_user_id DESC);
+
+    CREATE INDEX all_auth_recipe_users_pagination_index4 ON all_auth_recipe_users (
+      recipe_id, app_id, tenant_id, primary_or_recipe_user_time_joined ASC, primary_or_recipe_user_id DESC);
+
+    CREATE INDEX all_auth_recipe_users_primary_user_id_index ON all_auth_recipe_users (primary_or_recipe_user_id, app_id);
+
+    CREATE INDEX all_auth_recipe_users_recipe_id_index ON all_auth_recipe_users (app_id, recipe_id, tenant_id);
+
+    ALTER TABLE emailpassword_pswd_reset_tokens 
+      DROP FOREIGN KEY emailpassword_pswd_reset_tokens_ibfk_1;
+
+    ALTER TABLE emailpassword_pswd_reset_tokens
+      ADD FOREIGN KEY (app_id, user_id) REFERENCES app_id_to_user_id (app_id, user_id) ON DELETE CASCADE;
+
+    ALTER TABLE emailpassword_pswd_reset_tokens ADD email VARCHAR(256);
+    ```
+
+    </details>
+
+4. Start the new instance(s) of the core (version 7.0.0)
+
+## [6.0.13] - 2023-09-15
+
+- Fixes paid stats reporting for multitenancy
+
+## [6.0.12] - 2023-09-04
+
+- Fixes randomly occurring `serialization error for concurrent update` in `verifySession` API
+- Fixes `MISSING_EE_FOLDER_ERROR` error when the core starts up with an empty database
+
+## [6.0.11] - 2023-08-16
+
+- Fixed feature flag cron job
+
+## [6.0.10] - 2023-08-16
+
+- Fixed an encoding/decoding issue for certain access token payloads
+
+## [6.0.9] - 2023-08-14
+
+- Now using decimal notation to add numbers into the access token payload (instead of scientific notation) 
+
+## [6.0.8] - 2023-08-01
+
+- Fixes CUD validation starting with number.
+
+## [6.0.7] - 2023-07-28
+
+- Fixes session removing for user with useridmapping when disassociating from tenant.
+- Fixes issue with access token migration from version v1 and v2
+
+## [6.0.6] - 2023-07-24
+
+- Adds all ee features enabled for in memory database.
+
+## [6.0.5] - 2023-07-20
+
+- Fixes logging issue in API call where it used to print out the root CUD tenant info when querying with a tenant
+  that does not exist.
+
+## [6.0.4] - 2023-07-13
+
+- Fixes tenant prefix in stack trace log
+- `supertokens_default_cdi_version` config renamed to `supertokens_max_cdi_version`
+- Fixes `/apiversion` GET to return versions until `supertokens_max_cdi_version` if set
+- Fixes `/recipe/multitenancy/tenant` GET to return `TENANT_NOT_FOUND_ERROR` with 200 status when tenant was not found
+
+## [6.0.3] - 2023-07-11
+
+- Fixes duplicate users in users search queries when user is associated to multiple tenants
+- Fixes wrong tenant id in logging for `APIKeyUnauthorisedException`
+
+## [6.0.2] - 2023-07-04
+
+- Fixes some of the session APIs to return `tenantId`
+- argon and bcrypt related configs are now configurable only from config.yaml
+- `ip_allow_regex` and `ip_deny_regex` are now protected properties for SaaS
+- `hello` is disallowed as a tenantId
+- creation of apps enables all recipes by default but not during creation of tenant
+
+## [6.0.1]
+
+- Fixes `Invalid API key` issue on hello API
+- Fixes `CreateOrUpdateThirdPartyConfigAPI` as per CDI 3.0
+- Fixes `sessionHandle` to include tenant information and the related APIs are now app specific
+- Updated GET `/appid-<appId>/<tenantId>/recipe/session/user`
+    - Adds `fetchAcrossAllTenants` with default `true` - controls fetching of sessions across all tenants or only a
+      particular tenant
+- Updated POST `/appid-<appId>/<tenantId>/recipe/session/remove`
+    - Adds `revokeAcrossAllTenants` with default `true` - controls revoking of sessions across all tenants or only a
+      particular tenant
+- Updated telemetry to send `connectionUriDomain`, `appId` and `mau` information
+- Updated feature flag stats to report `usersCount` per tenant
+
 ## [6.0.0] - 2023-06-02
 
 ### Adds
 
 - Support for multitenancy.
 - New config `supertokens_saas_secret` added to support multitenancy in SaaS mode.
-- New config `supertokens_default_cdi_version` is added to specify the version of CDI core must assume when the
-  version is not specified in the request. If this config is not specified, the core will assume the latest version.
+- New config `supertokens_default_cdi_version` is added to specify the version of CDI core must assume when the version
+  is not specified in the request. If this config is not specified, the core will assume the latest version.
 
 ### Fixes
 
@@ -24,22 +278,22 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Modifies the `/recipe/dashboard/session/verify` API to include the user's email in the response
 - Support for multitenancy
-  - New APIs to manage apps and tenants
-    - `/recipe/multitenancy/connectionuridomain` PUT
-    - `/recipe/multitenancy/connectionuridomain/remove` POST
-    - `/recipe/multitenancy/connectionuridomain/list` GET
-    - `/recipe/multitenancy/app` PUT
-    - `/recipe/multitenancy/app/remove` POST
-    - `/recipe/multitenancy/app/list` GET
-    - `/appid-<appid>/recipe/multitenancy/tenant` PUT
-    - `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant` GET
-    - `/appid-<appid>/recipe/multitenancy/tenant/remove` POST
-    - `/appid-<appid>/recipe/multitenancy/tenant/list` GET
-    - `/appid-<appid>/recipe/multitenancy/config/thirdparty` PUT
-    - `/appid-<appid>/recipe/multitenancy/config/thirdparty/remove` POST
-    - `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant/user` POST
-    - `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant/user/remove` POST
-  - API paths can be prefixed with `/appid-<appid>/<tenantid>` to perform app or tenant specific operations.
+    - New APIs to manage apps and tenants
+        - `/recipe/multitenancy/connectionuridomain` PUT
+        - `/recipe/multitenancy/connectionuridomain/remove` POST
+        - `/recipe/multitenancy/connectionuridomain/list` GET
+        - `/recipe/multitenancy/app` PUT
+        - `/recipe/multitenancy/app/remove` POST
+        - `/recipe/multitenancy/app/list` GET
+        - `/appid-<appid>/recipe/multitenancy/tenant` PUT
+        - `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant` GET
+        - `/appid-<appid>/recipe/multitenancy/tenant/remove` POST
+        - `/appid-<appid>/recipe/multitenancy/tenant/list` GET
+        - `/appid-<appid>/recipe/multitenancy/config/thirdparty` PUT
+        - `/appid-<appid>/recipe/multitenancy/config/thirdparty/remove` POST
+        - `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant/user` POST
+        - `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant/user/remove` POST
+    - API paths can be prefixed with `/appid-<appid>/<tenantid>` to perform app or tenant specific operations.
 
 ### Migration steps for SQL
 
@@ -48,10 +302,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 3. Run the migration script
 
     <details>
-    
+
     <summary>If using PostgreSQL</summary>
-    
-    #### Run the following SQL script
+
+   #### Run the following SQL script
 
     ```sql
     -- General Tables
@@ -911,15 +1165,15 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     CREATE INDEX IF NOT EXISTS user_last_active_app_id_index ON user_last_active (app_id);
 
     ```
-    
+
     </details>
-    
+
     <details>
-    
+
     <summary>If using MySQL</summary>
-    
-    #### Run the following SQL script
-    
+
+   #### Run the following SQL script
+
     ```sql
     -- helper stored procedures
 
@@ -1648,28 +1902,28 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Using an internal `SemVer` class to handle version numbers. This will make handling CDI version ranges easier.
 - Support for CDI version `2.21`
-  - Removed POST `/recipe/handshake`
-  - Added `useDynamicSigningKey` into `createNewSession` (POST `/recipe/session`), replacing 
-    `access_token_signing_key_dynamic` used in CDI<=2.18
-  - Added `useStaticSigningKey` into `createSignedJWT` (POST `/recipe/jwt`)
-  - Added `checkDatabase` into `verifySession` (POST `/recipe/session/verify`), replacing 
-    `access_token_blacklisting` used in CDI<=2.18
-  - Removed `idRefreshToken`, `jwtSigningPublicKey`, `jwtSigningPublicKeyExpiryTime` and `jwtSigningPublicKeyList` 
-    from responses
-  - Deprecated GET `/recipe/jwt/jwks`
-  - Added GET `/.well-known/jwks.json`: a standard jwks
+    - Removed POST `/recipe/handshake`
+    - Added `useDynamicSigningKey` into `createNewSession` (POST `/recipe/session`), replacing
+      `access_token_signing_key_dynamic` used in CDI<=2.18
+    - Added `useStaticSigningKey` into `createSignedJWT` (POST `/recipe/jwt`)
+    - Added `checkDatabase` into `verifySession` (POST `/recipe/session/verify`), replacing
+      `access_token_blacklisting` used in CDI<=2.18
+    - Removed `idRefreshToken`, `jwtSigningPublicKey`, `jwtSigningPublicKeyExpiryTime` and `jwtSigningPublicKeyList`
+      from responses
+    - Deprecated GET `/recipe/jwt/jwks`
+    - Added GET `/.well-known/jwks.json`: a standard jwks
 - Added new access token version
-  - Uses standard prop names (i.e.: `sub` instead of `userId`)
-  - Contains the id of the signing key in the header (as `kid`)
-  - Stores the user payload merged into the root level, instead of the `userData` prop
-- Session handling function now throw if the user payload contains protected props (`sub`, `iat`, `exp`, 
+    - Uses standard prop names (i.e.: `sub` instead of `userId`)
+    - Contains the id of the signing key in the header (as `kid`)
+    - Stores the user payload merged into the root level, instead of the `userData` prop
+- Session handling function now throw if the user payload contains protected props (`sub`, `iat`, `exp`,
   `sessionHandle`, `refreshTokenHash1`, `parentRefreshTokenHash1`, `antiCsrfToken`)
-  - A related exception type was added as `AccessTokenPayloadError`
+    - A related exception type was added as `AccessTokenPayloadError`
 - Refactored the handling of signing keys
-- `createNewSession` now takes a `useStaticKey` parameter instead of depending on the 
+- `createNewSession` now takes a `useStaticKey` parameter instead of depending on the
   `access_token_signing_key_dynamic` config value
 - `createJWTToken` now supports signing by a dynamic key
-- `getSession` now takes a `checkDatabase` parameter instead of using the `access_token_blacklisting` config value 
+- `getSession` now takes a `checkDatabase` parameter instead of using the `access_token_blacklisting` config value
 - Updated plugin interface version to 2.21
 
 ### Configuration Changes
@@ -1686,11 +1940,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 #### Migration steps for SQL
 
 - If using `access_token_signing_key_dynamic` false:
-  - ```sql
+    ```sql
     ALTER TABLE session_info ADD COLUMN use_static_key BOOLEAN NOT NULL DEFAULT(true);
     ALTER TABLE session_info ALTER COLUMN use_static_key DROP DEFAULT;
     ```
-  - ```sql
+    ```sql
     INSERT INTO jwt_signing_keys(key_id, key_string, algorithm, created_at)
       select CONCAT('s-', created_at_time) as key_id, value as key_string, 'RS256' as algorithm, created_at_time as created_at
       from session_access_token_signing_keys;
@@ -1704,7 +1958,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 #### Migration steps for MongoDB
 
 - If using `access_token_signing_key_dynamic` false:
-  - ```
+    ```
     db.session_info.update({},
       {
         "$set": {
@@ -1712,7 +1966,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
         }
       });
     ```
-  - ```
+    ```
     db.key_value.aggregate([
       {
         "$match": {
@@ -1738,7 +1992,6 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
           "key_string": "$keys.value",
           "algorithm": "RS256",
           "created_at": "$keys.created_at_time",
-          
         }
       },
       {
@@ -1753,11 +2006,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
           
         }
       }
-    ]);
+  ]);
     ```
 
 - If using `access_token_signing_key_dynamic` true or not set:
-  - ```
+    ```
     db.session_info.update({},
       {
         "$set": {
@@ -1771,8 +2024,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Add Optional Search Tags to Pagination API to enable dashboard search
 
 ### New APIs:
-  - `GET /user/search/tags` retrieves the available search tags 
 
+- `GET /user/search/tags` retrieves the available search tags
 
 ## [4.5.0] - 2023-03-27
 

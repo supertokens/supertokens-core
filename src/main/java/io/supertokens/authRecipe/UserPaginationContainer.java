@@ -22,24 +22,11 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class UserPaginationContainer {
-    public final UsersContainer[] users;
+    public final AuthRecipeUserInfo[] users;
     public final String nextPaginationToken;
 
     public UserPaginationContainer(@Nonnull AuthRecipeUserInfo[] users, @Nullable String nextPaginationToken) {
-        this.users = new UsersContainer[users.length];
-        for (int i = 0; i < users.length; i++) {
-            this.users[i] = new UsersContainer(users[i]);
-        }
+        this.users = users;
         this.nextPaginationToken = nextPaginationToken;
-    }
-
-    public static class UsersContainer {
-        public final AuthRecipeUserInfo user;
-        public final String recipeId;
-
-        public UsersContainer(AuthRecipeUserInfo user) {
-            this.user = user;
-            this.recipeId = user.getRecipeId().toString();
-        }
     }
 }

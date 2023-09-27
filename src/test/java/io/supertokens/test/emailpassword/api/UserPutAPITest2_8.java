@@ -20,7 +20,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -75,12 +75,12 @@ public class UserPutAPITest2_8 {
                 return;
             }
 
-            UserInfo user = EmailPassword.signUp(process.getProcess(), "someemail@gmail.com", "somePass");
-            UserInfo user2 = EmailPassword.signUp(process.getProcess(), "someemail2@gmail.com", "somePass");
+            AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "someemail@gmail.com", "somePass");
+            AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "someemail2@gmail.com", "somePass");
 
             JsonObject body = new JsonObject();
-            body.addProperty("userId", user.id);
-            body.addProperty("email", user2.email);
+            body.addProperty("userId", user.getSupertokensUserId());
+            body.addProperty("email", user2.loginMethods[0].email);
 
             JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user", body, 1000, 1000, null, SemVer.v2_8.get(),
@@ -98,10 +98,10 @@ public class UserPutAPITest2_8 {
                 return;
             }
 
-            UserInfo user = EmailPassword.signUp(process.getProcess(), "someemail@gmail.com", "somePass");
+            AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "someemail@gmail.com", "somePass");
 
             JsonObject body = new JsonObject();
-            body.addProperty("userId", user.id);
+            body.addProperty("userId", user.getSupertokensUserId());
             body.addProperty("email", "someemail+TEST@gmail.com");
 
             JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
@@ -144,10 +144,10 @@ public class UserPutAPITest2_8 {
                 return;
             }
 
-            UserInfo user = EmailPassword.signUp(process.getProcess(), "someemail@gmail.com", "somePass");
+            AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "someemail@gmail.com", "somePass");
 
             JsonObject body = new JsonObject();
-            body.addProperty("userId", user.id);
+            body.addProperty("userId", user.getSupertokensUserId());
             body.addProperty("email", "someOtherEmail@gmail.com");
 
             JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
@@ -168,10 +168,10 @@ public class UserPutAPITest2_8 {
                 return;
             }
 
-            UserInfo user = EmailPassword.signUp(process.getProcess(), "someemail@gmail.com", "somePass");
+            AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "someemail@gmail.com", "somePass");
 
             JsonObject body = new JsonObject();
-            body.addProperty("userId", user.id);
+            body.addProperty("userId", user.getSupertokensUserId());
             body.addProperty("password", "somePass123");
 
             JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",

@@ -44,6 +44,11 @@ public class NotFoundOrHelloAPI extends WebserverAPI {
     }
 
     @Override
+    protected boolean checkAPIKey(HttpServletRequest req) {
+        return false;
+    }
+
+    @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         handleRequest(req, resp);
     }

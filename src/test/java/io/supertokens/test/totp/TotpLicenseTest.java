@@ -88,6 +88,9 @@ public class TotpLicenseTest {
         if (result == null) {
             return;
         }
+        if (StorageLayer.isInMemDb(result.process.getProcess())) {
+            return;
+        }
         Main main = result.process.getProcess();
 
         // Create device

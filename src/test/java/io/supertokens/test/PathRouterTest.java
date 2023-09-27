@@ -195,12 +195,6 @@ public class PathRouterTest extends Mockito {
         }
         {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/Hello/t1/t1", new HashMap<>(), 1000, 1000, null,
-                    Utils.getCdiVersionStringLatestForTests(), "");
-            assertEquals(",hello", response);
-        }
-        {
-            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/public/t1/t1", new HashMap<>(), 1000, 1000, null,
                     Utils.getCdiVersionStringLatestForTests(), "");
             assertEquals(",public", response);
@@ -369,12 +363,6 @@ public class PathRouterTest extends Mockito {
                     "http://localhost:3567/t1/t1/t1?a=b&c=d", new HashMap<>(), 1000, 1000, null,
                     Utils.getCdiVersionStringLatestForTests(), "");
             assertEquals(",t1", response);
-        }
-        {
-            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/Hello/t1/t1?a=b&c=d", new HashMap<>(), 1000, 1000, null,
-                    Utils.getCdiVersionStringLatestForTests(), "");
-            assertEquals(",hello", response);
         }
         {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -547,12 +535,6 @@ public class PathRouterTest extends Mockito {
                     "http://localhost:3567/base_path/t1/t1/t1", new HashMap<>(), 1000, 1000, null,
                     Utils.getCdiVersionStringLatestForTests(), "");
             assertEquals(",t1", response);
-        }
-        {
-            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/base_path/Hello/t1/t1", new HashMap<>(), 1000, 1000, null,
-                    Utils.getCdiVersionStringLatestForTests(), "");
-            assertEquals(",hello", response);
         }
         {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -739,12 +721,6 @@ public class PathRouterTest extends Mockito {
         }
         {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/base/path/Hello/t1/t1", new HashMap<>(), 1000, 1000, null,
-                    Utils.getCdiVersionStringLatestForTests(), "");
-            assertEquals(",hello", response);
-        }
-        {
-            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/base/path/public/t1/t1", new HashMap<>(), 1000, 1000, null,
                     Utils.getCdiVersionStringLatestForTests(), "");
             assertEquals(",public", response);
@@ -925,12 +901,6 @@ public class PathRouterTest extends Mockito {
                     "http://localhost:3567/t1/t1/t1/t1", new HashMap<>(), 1000, 1000, null,
                     Utils.getCdiVersionStringLatestForTests(), "");
             assertEquals(",t1", response);
-        }
-        {
-            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/t1/Hello/t1/t1", new HashMap<>(), 1000, 1000, null,
-                    Utils.getCdiVersionStringLatestForTests(), "");
-            assertEquals(",hello", response);
         }
         {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -1851,12 +1821,6 @@ public class PathRouterTest extends Mockito {
         }
         {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/Hello/t1/t1", new HashMap<>(), 1000, 1000, null,
-                    Utils.getCdiVersionStringLatestForTests(), "");
-            assertEquals(",public,hello", response);
-        }
-        {
-            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/public/t1/t1", new HashMap<>(), 1000, 1000, null,
                     Utils.getCdiVersionStringLatestForTests(), "");
             assertEquals(",public,public", response);
@@ -2137,12 +2101,6 @@ public class PathRouterTest extends Mockito {
                     "http://localhost:3567/base_path/t1/t1/t1", new HashMap<>(), 1000, 1000, null,
                     Utils.getCdiVersionStringLatestForTests(), "");
             assertEquals(",public,t1", response);
-        }
-        {
-            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/base_path/Hello/t1/t1", new HashMap<>(), 1000, 1000, null,
-                    Utils.getCdiVersionStringLatestForTests(), "");
-            assertEquals(",public,hello", response);
         }
         {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -2431,12 +2389,6 @@ public class PathRouterTest extends Mockito {
         }
         {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/appid-path/Hello/t1/t1", new HashMap<>(), 1000, 1000, null,
-                    Utils.getCdiVersionStringLatestForTests(), "");
-            assertEquals(",public,hello", response);
-        }
-        {
-            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/appid-path/public/t1/t1", new HashMap<>(), 1000, 1000, null,
                     Utils.getCdiVersionStringLatestForTests(), "");
             assertEquals(",public,public", response);
@@ -2564,6 +2516,14 @@ public class PathRouterTest extends Mockito {
         );
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
+                new TenantConfig(new TenantIdentifier("localhost", "app1", null), new EmailPasswordConfig(false),
+                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new PasswordlessConfig(false),
+                        tenantConfig),
+                false
+        );
+        Multitenancy.addNewOrUpdateAppOrTenant(
+                process.getProcess(),
                 new TenantConfig(new TenantIdentifier("localhost", "app1", "t1"), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
@@ -2578,15 +2538,6 @@ public class PathRouterTest extends Mockito {
                         tenant2Config),
                 false
         );
-        Multitenancy.addNewOrUpdateAppOrTenant(
-                process.getProcess(),
-                new TenantConfig(new TenantIdentifier("127.0.0.1", "app1", "t1"), new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
-                        new PasswordlessConfig(false),
-                        tenant2Config),
-                false
-        );
-
         Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
 
             @Override
@@ -2628,6 +2579,24 @@ public class PathRouterTest extends Mockito {
                                 "app1, public)");
             }
         }
+
+        Multitenancy.addNewOrUpdateAppOrTenant(
+                process.getProcess(),
+                new TenantConfig(new TenantIdentifier("127.0.0.1", "app1", null), new EmailPasswordConfig(false),
+                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new PasswordlessConfig(false),
+                        tenant2Config),
+                false
+        );
+        Multitenancy.addNewOrUpdateAppOrTenant(
+                process.getProcess(),
+                new TenantConfig(new TenantIdentifier("127.0.0.1", "app1", "t1"), new EmailPasswordConfig(false),
+                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new PasswordlessConfig(false),
+                        tenant2Config),
+                false
+        );
+
         {
             String response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/appid-app1/t1/test", new JsonObject(), 1000, 1000, null,
@@ -2687,10 +2656,26 @@ public class PathRouterTest extends Mockito {
         );
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
+                new TenantConfig(new TenantIdentifier("localhost", "app1", null), new EmailPasswordConfig(false),
+                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new PasswordlessConfig(false),
+                        tenantConfig),
+                false
+        );
+        Multitenancy.addNewOrUpdateAppOrTenant(
+                process.getProcess(),
                 new TenantConfig(new TenantIdentifier("localhost", "app1", "t1"), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
                         tenantConfig),
+                false
+        );
+        Multitenancy.addNewOrUpdateAppOrTenant(
+                process.getProcess(),
+                new TenantConfig(new TenantIdentifier(null, "app2", null), new EmailPasswordConfig(false),
+                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new PasswordlessConfig(false),
+                        new JsonObject()),
                 false
         );
         Multitenancy.addNewOrUpdateAppOrTenant(
