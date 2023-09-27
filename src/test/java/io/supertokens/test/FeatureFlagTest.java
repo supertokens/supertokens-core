@@ -26,6 +26,7 @@ import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.cronjobs.Cronjobs;
 import io.supertokens.cronjobs.syncCoreConfigWithDb.SyncCoreConfigWithDb;
 import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;

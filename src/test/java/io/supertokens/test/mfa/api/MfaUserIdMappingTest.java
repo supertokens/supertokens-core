@@ -19,7 +19,7 @@ package io.supertokens.test.mfa.api;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.test.mfa.MfaTestBase;
 import io.supertokens.useridmapping.UserIdMapping;
 import org.junit.Test;
@@ -33,8 +33,8 @@ public class MfaUserIdMappingTest extends MfaTestBase {
         Main main = result.process.getProcess();
 
         JsonObject body = new JsonObject();
-        UserInfo user = EmailPassword.signUp(main, "test@example.com", "testPass123");
-        String superTokensUserId = user.id;
+        AuthRecipeUserInfo user = EmailPassword.signUp(main, "test@example.com", "testPass123");
+        String superTokensUserId = user.getSupertokensUserId();
         String externalUserId = "external-user-id";
 
         // Create user id mapping first:

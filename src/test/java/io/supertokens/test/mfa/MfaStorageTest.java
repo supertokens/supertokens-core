@@ -162,7 +162,7 @@ public class MfaStorageTest extends MfaTestBase {
                 result.process.main,
                 "user@example.com",
                 "password"
-        ).id;
+        ).getSupertokensUserId();
 
         // Iterate over all both tenants and enable the same set of factors for the same user ID
         for (TenantIdentifierWithStorage tid : new TenantIdentifierWithStorage[]{publicTenant, privateTenant}) {
@@ -177,7 +177,7 @@ public class MfaStorageTest extends MfaTestBase {
         assert mfaStorage.listFactors(privateTenant, userId).length == 0;
         assert mfaStorage.listFactors(publicTenant, userId).length == 2;
 
-         String userEmail = EmailPassword.signIn(privateTenant, result.process.main, "user@example.com", "password").email;
+         String userEmail = EmailPassword.signIn(privateTenant, result.process.main, "user@example.com", "password").loginMethods[0].email;
          assert userEmail.equals("user@example.com"); // Use should still exist in the private tenant since we have only disabled MFA related info
 
         // Deleting from non existent user should return false:

@@ -99,7 +99,7 @@ public class TotpLicenseTest {
         });
         // Verify code
         assertThrows(FeatureNotEnabledException.class, () -> {
-            Totp.verifyCode(main, "user", "device1", true);
+            Totp.verifyCode(main, "user", "device1");
         });
 
         // Try to create device via API:
@@ -133,7 +133,6 @@ public class TotpLicenseTest {
         JsonObject body2 = new JsonObject();
         body2.addProperty("userId", "user-id");
         body2.addProperty("totp", "123456");
-        body2.addProperty("allowUnverifiedDevices", true);
 
 
         HttpResponseException e2 = assertThrows(
@@ -169,9 +168,12 @@ public class TotpLicenseTest {
 
         // Create device
         TOTPDevice device = Totp.registerDevice(main, "user", "device1", 1, 30);
+        // Verify device
+        String code = generateTotpCode(main, device, 0);
+        Totp.verifyDevice(main, device.userId, device.deviceName, code);
         // Verify code
-        String code = generateTotpCode(main, device);
-        Totp.verifyCode(main, "user", code, true);
+        String nextCode = generateTotpCode(main, device, 1);
+        Totp.verifyCode(main, "user", nextCode);
     }
 
 

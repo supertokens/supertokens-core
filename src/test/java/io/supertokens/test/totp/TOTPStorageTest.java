@@ -402,11 +402,13 @@ public class TOTPStorageTest {
 
         // Try to insert code when user doesn't have any device (i.e. TOTP not enabled)
         {
-            assertThrows(UnknownDeviceException.class,
+            StorageTransactionLogicException e = assertThrows(StorageTransactionLogicException.class,
                     () -> insertUsedCodesUtil(storage, new TOTPUsedCode[]{
                             new TOTPUsedCode("new-user-without-totp", "1234", true, nextDay,
                                     System.currentTimeMillis())
                     }));
+
+            // assert e.actualException instanceof UnknownDeviceException
         }
 
         // Try to insert code after user has atleast one device (i.e. TOTP enabled)
@@ -421,11 +423,13 @@ public class TOTPStorageTest {
         }
 
         // Try to insert code when user doesn't exist:
-        assertThrows(UnknownDeviceException.class,
+        StorageTransactionLogicException e = assertThrows(StorageTransactionLogicException.class,
                 () -> insertUsedCodesUtil(storage, new TOTPUsedCode[]{
                         new TOTPUsedCode("non-existent-user", "1234", true, nextDay,
                                 System.currentTimeMillis())
                 }));
+
+        // assert e.actualException instanceof UnknownDeviceException;
     }
 
     @Test

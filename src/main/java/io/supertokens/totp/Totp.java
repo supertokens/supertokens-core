@@ -94,33 +94,31 @@ public class Totp {
         }
     }
 
-    private static TOTPDevice registerDeviceRecursive(AppIdentifierWithStorage appIdentifierWithStorage, TOTPDevice device, int counter) throws StorageQueryException, DeviceAlreadyExistsException, TenantOrAppNotFoundException, StorageTransactionLogicException {
+    private static TOTPDevice registerDeviceRecursive(AppIdentifierWithStorage appIdentifierWithStorage, TOTPDevice device, int deviceNameCounter) throws StorageQueryException, DeviceAlreadyExistsException, TenantOrAppNotFoundException, StorageTransactionLogicException {
         TOTPSQLStorage totpStorage = appIdentifierWithStorage.getTOTPStorage();
+        TOTPDevice newDevice = new TOTPDevice(device.userId, "TOTP Device " + deviceNameCounter, device.secretKey, device.period, device.skew, false);
         try {
-            TOTPDevice d = new TOTPDevice(device.userId, "TOTP Device " + (counter + 1), device.secretKey, device.period, device.skew, false);
-            totpStorage.createDevice(appIdentifierWithStorage, d);
-            return d;
+            totpStorage.createDevice(appIdentifierWithStorage, newDevice);
+            return newDevice;
         } catch (DeviceAlreadyExistsException e) {
             TOTPDevice[] devices = totpStorage.getDevices(appIdentifierWithStorage, device.userId);
             // iterate through all devices to find device with same name
-            TOTPDevice existingDevice = Arrays.stream(devices).filter(d -> d.deviceName.equals(device.deviceName))
+            TOTPDevice existingDevice = Arrays.stream(devices).filter(d -> d.deviceName.equals(newDevice.deviceName))
                     .findFirst().orElse(null);
 
             if (existingDevice != null) {
                 if (existingDevice.verified) {
                     // device with same name exists and is verified
-                    // TODO: Should this recursion have a limit? 
-                    return registerDeviceRecursive(appIdentifierWithStorage, device, ++counter);
+                    return registerDeviceRecursive(appIdentifierWithStorage, device, deviceNameCounter + 1);
                 } else {
                     // device with same name exists but is not verified
                     // delete the device and retry
                     totpStorage.startTransaction(con -> {
-                        totpStorage.deleteDevice_Transaction(con, appIdentifierWithStorage, device.userId, device.deviceName);
+                        totpStorage.deleteDevice_Transaction(con, appIdentifierWithStorage, newDevice.userId, newDevice.deviceName);
                         totpStorage.commitTransaction(con);
                         return null;
                     });
-                    // TODO: Should this recursion have a limit? 
-                    return registerDeviceRecursive(appIdentifierWithStorage, device, counter);
+                    return registerDeviceRecursive(appIdentifierWithStorage, device, deviceNameCounter);
                 }
             }
             throw e;
@@ -150,9 +148,8 @@ public class Totp {
         // Find number of existing devices to set device name
         TOTPDevice[] devices = totpStorage.getDevices(appIdentifierWithStorage, userId);
         int verifiedDevicesCount = Arrays.stream(devices).filter(d -> d.verified).toArray().length;
-        // device.deviceName = "TOTP Device " + (verifiedDevicesCount + 1);
 
-        return registerDeviceRecursive(appIdentifierWithStorage, device, verifiedDevicesCount);
+        return registerDeviceRecursive(appIdentifierWithStorage, device, verifiedDevicesCount + 1);
     }
 
     private static void checkAndStoreCode(TenantIdentifierWithStorage tenantIdentifierWithStorage, Main main,
@@ -211,8 +208,7 @@ public class Totp {
                                 .count();
                         int rateLimitResetTimeInMs = Config.getConfig(tenantIdentifierWithStorage, main)
                                 .getTotpRateLimitCooldownTimeSec() *
-                                1000; // (Default
-                        // 15 mins)
+                                1000; // (Default 15 mins)
 
                         // Check if the user has been rate limited:
                         if (invalidOutOfN == N) {
@@ -389,20 +385,18 @@ public class Totp {
     }
 
     @TestOnly
-    public static void verifyCode(Main main, String userId,
-            String code, boolean allowUnverifiedDevices)
+    public static void verifyCode(Main main, String userId, String code)
             throws InvalidTotpException, LimitReachedException,
             StorageQueryException, StorageTransactionLogicException, FeatureNotEnabledException {
         try {
             verifyCode(new TenantIdentifierWithStorage(null, null, null, StorageLayer.getStorage(main)), main,
-                    userId, code, allowUnverifiedDevices);
+                    userId, code);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
     }
 
-    public static void verifyCode(TenantIdentifierWithStorage tenantIdentifierWithStorage, Main main, String userId,
-            String code, boolean allowUnverifiedDevices)
+    public static void verifyCode(TenantIdentifierWithStorage tenantIdentifierWithStorage, Main main, String userId, String code)
             throws InvalidTotpException, LimitReachedException,
             StorageQueryException, StorageTransactionLogicException, FeatureNotEnabledException,
             TenantOrAppNotFoundException {
@@ -423,9 +417,7 @@ public class Totp {
         }
 
         // Filter out unverified devices:
-        if (!allowUnverifiedDevices) {
-            devices = Arrays.stream(devices).filter(device -> device.verified).toArray(TOTPDevice[]::new);
-        }
+        devices = Arrays.stream(devices).filter(device -> device.verified).toArray(TOTPDevice[]::new);
 
         // At this point, even if some of the devices are suddenly deleted/renamed by
         // another API call. We will still check the code against the updated set of

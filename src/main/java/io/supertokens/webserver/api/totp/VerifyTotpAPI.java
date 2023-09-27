@@ -70,7 +70,7 @@ public class VerifyTotpAPI extends WebserverAPI {
                 tenantIdentifierWithStorage = getTenantIdentifierWithStorageFromRequest(req);
             }
 
-            Totp.verifyCode(tenantIdentifierWithStorage, main, userId, totp, false);
+            Totp.verifyCode(tenantIdentifierWithStorage, main, userId, totp);
 
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);

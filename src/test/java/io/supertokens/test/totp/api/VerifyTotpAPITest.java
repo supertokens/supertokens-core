@@ -23,6 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
+import static io.supertokens.test.totp.TOTPRecipeTest.generateTotpCode;
 import static org.junit.Assert.*;
 
 public class VerifyTotpAPITest {
@@ -93,7 +94,7 @@ public class VerifyTotpAPITest {
         JsonObject createDeviceReq = new JsonObject();
         createDeviceReq.addProperty("userId", "user-id");
         createDeviceReq.addProperty("deviceName", "deviceName");
-        createDeviceReq.addProperty("period", 30);
+        createDeviceReq.addProperty("period", 2);
         createDeviceReq.addProperty("skew", 0);
 
         JsonObject createDeviceRes = HttpRequestForTesting.sendJsonPOSTRequest(
@@ -109,10 +110,26 @@ public class VerifyTotpAPITest {
         assertEquals(createDeviceRes.get("status").getAsString(), "OK");
         String secretKey = createDeviceRes.get("secret").getAsString();
 
-        TOTPDevice device = new TOTPDevice("user-id", "deviceName", secretKey, 30, 0, false);
+        TOTPDevice device = new TOTPDevice("user-id", "deviceName", secretKey, 2, 0, false);
+
+        JsonObject verifyDeviceReq = new JsonObject();
+        verifyDeviceReq.addProperty("userId", device.userId);
+        verifyDeviceReq.addProperty("deviceName", device.deviceName);
+        verifyDeviceReq.addProperty("totp", generateTotpCode(process.getProcess(), device));
+
+        JsonObject verifyDeviceRes = HttpRequestForTesting.sendJsonPOSTRequest(
+                process.getProcess(),
+                "",
+                "http://localhost:3567/recipe/totp/device/verify",
+                verifyDeviceReq,
+                1000,
+                1000,
+                null,
+                Utils.getCdiVersionStringLatestForTests(),
+                "totp");
+        assertEquals(verifyDeviceRes.get("status").getAsString(), "OK");
 
         // Start the actual tests for update device API:
-
         JsonObject body = new JsonObject();
 
         // Missing userId/deviceName/skew/period
@@ -177,7 +194,7 @@ public class VerifyTotpAPITest {
             Thread.sleep(1000);
 
             // should pass now on valid code
-            String validTotp = TOTPRecipeTest.generateTotpCode(process.getProcess(), device);
+            String validTotp = generateTotpCode(process.getProcess(), device);
             body.addProperty("totp", validTotp);
             JsonObject res = HttpRequestForTesting.sendJsonPOSTRequest(
                     process.getProcess(),
@@ -206,7 +223,7 @@ public class VerifyTotpAPITest {
             assert res2.get("status").getAsString().equals("INVALID_TOTP_ERROR");
 
             // Try with a new valid code during rate limiting:
-            body.addProperty("totp", TOTPRecipeTest.generateTotpCode(process.getProcess(), device));
+            body.addProperty("totp", generateTotpCode(process.getProcess(), device));
             res = HttpRequestForTesting.sendJsonPOSTRequest(
                     process.getProcess(),
                     "",
