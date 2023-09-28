@@ -14,6 +14,7 @@ import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.test.totp.TOTPRecipeTest;
 import io.supertokens.test.totp.TotpLicenseTest;
+import io.supertokens.totp.Totp;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -141,6 +142,7 @@ public class CreateTotpDeviceAPITest {
             assert res.get("deviceName").getAsString().equals("d1");
 
             // try again with same device name:
+            // This should replace the previous device
             JsonObject res2 = HttpRequestForTesting.sendJsonPOSTRequest(
                     process.getProcess(),
                     "",
@@ -151,8 +153,30 @@ public class CreateTotpDeviceAPITest {
                     null,
                     Utils.getCdiVersionStringLatestForTests(),
                     "totp");
+            assert res2.get("status").getAsString().equals("OK");
+            assert res.get("deviceName").getAsString().equals("d1");
+
+            // verify d1
+            {
+                TOTPDevice device = Totp.getDevices(process.getProcess(), "user-id" )[0];
+                String validTotp = TOTPRecipeTest.generateTotpCode(process.getProcess(), device);
+                Totp.verifyDevice(process.getProcess(), "user-id", "d1", validTotp);
+            }
+
+            // try again with same device name:
+            res2 = HttpRequestForTesting.sendJsonPOSTRequest(
+                    process.getProcess(),
+                    "",
+                    "http://localhost:3567/recipe/totp/device",
+                    body,
+                    1000,
+                    1000,
+                    null,
+                    Utils.getCdiVersionStringLatestForTests(),
+                    "totp");
             assert res2.get("status").getAsString().equals("DEVICE_ALREADY_EXISTS_ERROR");
-            
+            assert res.get("deviceName").getAsString().equals("d1");
+
             // try without passing deviceName:
             body.remove("deviceName");
             JsonObject res3 = HttpRequestForTesting.sendJsonPOSTRequest(

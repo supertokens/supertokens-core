@@ -32,6 +32,7 @@ import io.supertokens.pluginInterface.totp.TOTPStorage;
 import io.supertokens.pluginInterface.totp.TOTPUsedCode;
 import io.supertokens.pluginInterface.totp.exception.DeviceAlreadyExistsException;
 import io.supertokens.pluginInterface.totp.exception.UnknownDeviceException;
+import io.supertokens.pluginInterface.totp.exception.UnknownTotpUserIdException;
 import io.supertokens.pluginInterface.totp.sqlStorage.TOTPSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -146,6 +147,10 @@ public class TOTPRecipeTest {
         TOTPDevice device = Totp.registerDevice(main, "user", "device1", 1, 30);
         assert !Objects.equals(device.secretKey, "");
 
+        // Verify device
+        String validTotp = TOTPRecipeTest.generateTotpCode(main, device);
+        Totp.verifyDevice(main, "user", "device1", validTotp);
+
         // Create same device again (should fail)
         assertThrows(DeviceAlreadyExistsException.class,
                 () -> Totp.registerDevice(main, "user", "device1", 1, 30));
@@ -167,7 +172,7 @@ public class TOTPRecipeTest {
         Totp.verifyDevice(main, "user", device.deviceName, generateTotpCode(main, device, -1));
 
         // Try login with non-existent user:
-        assertThrows(InvalidTotpException.class,
+        assertThrows(UnknownTotpUserIdException.class,
                 () -> Totp.verifyCode(main, "non-existent-user", "any-code"));
 
         // {Code: [INVALID, VALID]} * {Devices: [verified, unverfied]}
@@ -555,4 +560,15 @@ public class TOTPRecipeTest {
         assert DeleteExpiredTotpTokens.getInstance(main).getIntervalTimeSeconds() == 60 * 60;
     }
 
+    @Test
+    public void testRegisterDeviceWithSameNameAsAnUnverifiedDevice() throws Exception {
+        TestSetupResult result = defaultInit();
+        if (result == null) {
+            return;
+        }
+        Main main = result.process.getProcess();
+
+        Totp.registerDevice(main, "user", "device1", 1, 30);
+        Totp.registerDevice(main, "user", "device1", 1, 30);
+    }
 }

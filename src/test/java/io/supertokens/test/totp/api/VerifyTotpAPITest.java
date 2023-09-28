@@ -191,7 +191,7 @@ public class VerifyTotpAPITest {
             assert res3.get("retryAfterMs") != null;
 
             // wait for cooldown to end (1s)
-            Thread.sleep(1000);
+            Thread.sleep(1200);
 
             // should pass now on valid code
             String validTotp = generateTotpCode(process.getProcess(), device);
@@ -248,7 +248,7 @@ public class VerifyTotpAPITest {
                     null,
                     Utils.getCdiVersionStringLatestForTests(),
                     "totp");
-            assert res5.get("status").getAsString().equals("INVALID_TOTP_ERROR");
+            assert res5.get("status").getAsString().equals("UNKNOWN_USER_ID_ERROR");
         }
 
         process.kill();
