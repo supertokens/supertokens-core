@@ -71,7 +71,7 @@ import io.supertokens.pluginInterface.totp.TOTPStorage;
 import io.supertokens.pluginInterface.totp.TOTPUsedCode;
 import io.supertokens.pluginInterface.totp.exception.DeviceAlreadyExistsException;
 import io.supertokens.pluginInterface.totp.exception.UnknownDeviceException;
-import io.supertokens.pluginInterface.totp.exception.UnknownUserIdTotpException;
+import io.supertokens.pluginInterface.totp.exception.UnknownTotpUserIdException;
 import io.supertokens.pluginInterface.totp.exception.UsedCodeAlreadyExistsException;
 import io.supertokens.pluginInterface.totp.sqlStorage.TOTPSQLStorage;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
@@ -2601,27 +2601,38 @@ public class Start
     // TOTP recipe:
     @Override
     public void createDevice(AppIdentifier appIdentifier, TOTPDevice device)
-            throws StorageQueryException, DeviceAlreadyExistsException, TenantOrAppNotFoundException {
+            throws DeviceAlreadyExistsException, TenantOrAppNotFoundException, StorageQueryException {
         try {
-            TOTPQueries.createDevice(this, appIdentifier, device);
-        } catch (StorageTransactionLogicException e) {
-            if (e.actualException instanceof SQLiteException) {
-                String errMsg = e.actualException.getMessage();
-
-                if (isPrimaryKeyError(errMsg, Config.getConfig(this).getTotpUserDevicesTable(),
-                        new String[]{"app_id", "user_id", "device_name"})) {
-                    throw new DeviceAlreadyExistsException();
-                } else if (isForeignKeyConstraintError(
-                        errMsg,
-                        Config.getConfig(this).getAppsTable(),
-                        new String[]{"app_id"},
-                        new Object[]{appIdentifier.getAppId()})) {
-                    throw new TenantOrAppNotFoundException(appIdentifier);
+            startTransaction(con -> {
+                try {
+                    createDevice_Transaction(con, new AppIdentifier(null, null), device);
+                } catch (DeviceAlreadyExistsException | TenantOrAppNotFoundException e) {
+                    throw new StorageTransactionLogicException(e);
                 }
+                return null;
+            });
+        } catch (StorageTransactionLogicException e) {
+            if (e.actualException instanceof DeviceAlreadyExistsException) {
+                throw (DeviceAlreadyExistsException) e.actualException;
+            } else if (e.actualException instanceof TenantOrAppNotFoundException) {
+                throw (TenantOrAppNotFoundException) e.actualException;
+            } else if (e.actualException instanceof StorageQueryException) {
+                throw (StorageQueryException) e.actualException;
             }
-
-            throw new StorageQueryException(e.actualException);
         }
+    }
+
+    @Override
+    public TOTPDevice createDevice_Transaction(TransactionConnection con, AppIdentifier appIdentifier, TOTPDevice device)
+            throws DeviceAlreadyExistsException, TenantOrAppNotFoundException, StorageQueryException {
+        // TODO
+        return null;
+    }
+
+    @Override
+    public TOTPDevice getDeviceByName_Transaction(TransactionConnection con, AppIdentifier appIdentifier, String userId, String deviceName) throws StorageQueryException {
+        // TODO
+        return null;
     }
 
     @Override
@@ -2717,7 +2728,7 @@ public class Start
     @Override
     public void insertUsedCode_Transaction(TransactionConnection con, TenantIdentifier tenantIdentifier,
                                            TOTPUsedCode usedCodeObj)
-            throws StorageQueryException, UnknownUserIdTotpException, UsedCodeAlreadyExistsException,
+            throws StorageQueryException, UnknownTotpUserIdException, UsedCodeAlreadyExistsException,
             TenantOrAppNotFoundException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
@@ -2732,7 +2743,7 @@ public class Start
                     Config.getConfig(this).getTotpUsersTable(),
                     new String[]{"app_id", "user_id"},
                     new Object[]{tenantIdentifier.getAppId(), usedCodeObj.userId})) {
-                throw new UnknownUserIdTotpException();
+                throw new UnknownTotpUserIdException();
 
             } else if (isForeignKeyConstraintError(
                     e.getMessage(),
