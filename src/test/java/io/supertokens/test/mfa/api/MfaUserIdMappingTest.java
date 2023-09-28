@@ -19,7 +19,6 @@ package io.supertokens.test.mfa.api;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
-
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.test.mfa.MfaTestBase;
 import io.supertokens.useridmapping.UserIdMapping;

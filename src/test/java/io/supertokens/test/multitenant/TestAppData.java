@@ -154,8 +154,10 @@ public class TestAppData {
 
         TOTPDevice totpDevice = Totp.registerDevice(appWithStorage.toAppIdentifierWithStorage(), process.getProcess(),
                 epUser.getSupertokensUserId(), "test", 1, 3);
+        Totp.verifyDevice(appWithStorage, process.getProcess(), epUser.getSupertokensUserId(), totpDevice.deviceName,
+                generateTotpCode(process.getProcess(), totpDevice, -1));
         Totp.verifyCode(appWithStorage, process.getProcess(), epUser.getSupertokensUserId(),
-                generateTotpCode(process.getProcess(), totpDevice, 0), true);
+                generateTotpCode(process.getProcess(), totpDevice, 0));
 
         ActiveUsers.updateLastActive(appWithStorage.toAppIdentifierWithStorage(), process.getProcess(), epUser.getSupertokensUserId());
 

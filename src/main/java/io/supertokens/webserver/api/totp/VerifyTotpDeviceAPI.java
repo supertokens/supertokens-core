@@ -12,9 +12,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.totp.exception.TotpNotEnabledException;
 import io.supertokens.pluginInterface.totp.exception.UnknownDeviceException;
-import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.totp.Totp;
 import io.supertokens.totp.exceptions.InvalidTotpException;
 import io.supertokens.totp.exceptions.LimitReachedException;
@@ -79,9 +77,6 @@ public class VerifyTotpDeviceAPI extends WebserverAPI {
 
             result.addProperty("status", "OK");
             result.addProperty("wasAlreadyVerified", !isNewlyVerified);
-            super.sendJsonResponse(200, result, resp);
-        } catch (TotpNotEnabledException e) {
-            result.addProperty("status", "TOTP_NOT_ENABLED_ERROR");
             super.sendJsonResponse(200, result, resp);
         } catch (UnknownDeviceException e) {
             result.addProperty("status", "UNKNOWN_DEVICE_ERROR");

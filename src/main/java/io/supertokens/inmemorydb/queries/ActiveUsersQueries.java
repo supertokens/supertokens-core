@@ -96,7 +96,7 @@ public class ActiveUsersQueries {
     }
 
     public static int countUsersEnabledMfa(Start start, AppIdentifier appIdentifier) throws SQLException, StorageQueryException {
-        String QUERY = "SELECT COUNT(*) as total FROM (SELECT DISTINCT user_id FROM " + Config.getConfig(start).getMfaUserFactorsTable() + "WHERE app_id = ?) AS app_mfa_users";
+        String QUERY = "SELECT COUNT(*) as total FROM (SELECT DISTINCT user_id FROM " + Config.getConfig(start).getMfaUserFactorsTable() + " WHERE app_id = ?) AS app_mfa_users";
 
         return execute(start, QUERY, pst -> {
             pst.setString(1, appIdentifier.getAppId());
@@ -127,7 +127,8 @@ public class ActiveUsersQueries {
         });
     }
 
-    public static int updateUserLastActive(Start start, AppIdentifier appIdentifier, String userId) throws SQLException, StorageQueryException {
+    public static int updateUserLastActive(Start start, AppIdentifier appIdentifier, String userId)
+            throws SQLException, StorageQueryException {
         String QUERY = "INSERT INTO " + Config.getConfig(start).getUserLastActiveTable()
                 +
                 "(app_id, user_id, last_active_time) VALUES(?, ?, ?) ON CONFLICT(app_id, user_id) DO UPDATE SET " +

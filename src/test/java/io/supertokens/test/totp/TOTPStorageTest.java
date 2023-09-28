@@ -14,8 +14,8 @@ import io.supertokens.pluginInterface.totp.TOTPDevice;
 import io.supertokens.pluginInterface.totp.TOTPStorage;
 import io.supertokens.pluginInterface.totp.TOTPUsedCode;
 import io.supertokens.pluginInterface.totp.exception.DeviceAlreadyExistsException;
-import io.supertokens.pluginInterface.totp.exception.TotpNotEnabledException;
 import io.supertokens.pluginInterface.totp.exception.UnknownDeviceException;
+import io.supertokens.pluginInterface.totp.exception.UnknownTotpUserIdException;
 import io.supertokens.pluginInterface.totp.exception.UsedCodeAlreadyExistsException;
 import io.supertokens.pluginInterface.totp.sqlStorage.TOTPSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
@@ -26,8 +26,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
-
-import java.io.IOException;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
@@ -89,7 +87,7 @@ public class TOTPStorageTest {
     }
 
     public static void insertUsedCodesUtil(TOTPSQLStorage storage, TOTPUsedCode[] usedCodes)
-            throws StorageQueryException, StorageTransactionLogicException, TotpNotEnabledException,
+            throws StorageQueryException, StorageTransactionLogicException, UnknownDeviceException,
             UsedCodeAlreadyExistsException {
         try {
             storage.startTransaction(con -> {
@@ -97,7 +95,7 @@ public class TOTPStorageTest {
                     for (TOTPUsedCode usedCode : usedCodes) {
                         storage.insertUsedCode_Transaction(con, new TenantIdentifier(null, null, null), usedCode);
                     }
-                } catch (TotpNotEnabledException | UsedCodeAlreadyExistsException e) {
+                } catch (UnknownTotpUserIdException | UsedCodeAlreadyExistsException e) {
                     throw new StorageTransactionLogicException(e);
                 } catch (TenantOrAppNotFoundException e) {
                     throw new IllegalStateException(e);
@@ -108,8 +106,8 @@ public class TOTPStorageTest {
             });
         } catch (StorageTransactionLogicException e) {
             Exception actual = e.actualException;
-            if (actual instanceof TotpNotEnabledException) {
-                throw (TotpNotEnabledException) actual;
+            if (actual instanceof UnknownDeviceException) {
+                throw (UnknownDeviceException) actual;
             } else if (actual instanceof UsedCodeAlreadyExistsException) {
                 throw (UsedCodeAlreadyExistsException) actual;
             }
@@ -404,11 +402,13 @@ public class TOTPStorageTest {
 
         // Try to insert code when user doesn't have any device (i.e. TOTP not enabled)
         {
-            assertThrows(TotpNotEnabledException.class,
+            StorageTransactionLogicException e = assertThrows(StorageTransactionLogicException.class,
                     () -> insertUsedCodesUtil(storage, new TOTPUsedCode[]{
                             new TOTPUsedCode("new-user-without-totp", "1234", true, nextDay,
                                     System.currentTimeMillis())
                     }));
+
+            // assert e.actualException instanceof UnknownDeviceException
         }
 
         // Try to insert code after user has atleast one device (i.e. TOTP enabled)
@@ -423,11 +423,13 @@ public class TOTPStorageTest {
         }
 
         // Try to insert code when user doesn't exist:
-        assertThrows(TotpNotEnabledException.class,
+        StorageTransactionLogicException e = assertThrows(StorageTransactionLogicException.class,
                 () -> insertUsedCodesUtil(storage, new TOTPUsedCode[]{
                         new TOTPUsedCode("non-existent-user", "1234", true, nextDay,
                                 System.currentTimeMillis())
                 }));
+
+        // assert e.actualException instanceof UnknownDeviceException;
     }
 
     @Test

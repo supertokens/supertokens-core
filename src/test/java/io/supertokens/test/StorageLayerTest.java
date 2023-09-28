@@ -11,7 +11,9 @@ import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.totp.TOTPDevice;
 import io.supertokens.pluginInterface.totp.TOTPUsedCode;
-import io.supertokens.pluginInterface.totp.exception.TotpNotEnabledException;
+import io.supertokens.pluginInterface.totp.exception.DeviceAlreadyExistsException;
+import io.supertokens.pluginInterface.totp.exception.UnknownDeviceException;
+import io.supertokens.pluginInterface.totp.exception.UnknownTotpUserIdException;
 import io.supertokens.pluginInterface.totp.exception.UsedCodeAlreadyExistsException;
 import io.supertokens.pluginInterface.totp.sqlStorage.TOTPSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
@@ -47,7 +49,7 @@ public class StorageLayerTest {
                     storage.insertUsedCode_Transaction(con, new TenantIdentifier(null, null, null), usedCode);
                     storage.commitTransaction(con);
                     return null;
-                } catch (TotpNotEnabledException | UsedCodeAlreadyExistsException e) {
+                } catch (UnknownTotpUserIdException | UsedCodeAlreadyExistsException e) {
                     throw new StorageTransactionLogicException(e);
                 } catch (TenantOrAppNotFoundException e) {
                     throw new IllegalStateException(e);
@@ -55,7 +57,7 @@ public class StorageLayerTest {
             });
         } catch (StorageTransactionLogicException e) {
             Exception actual = e.actualException;
-            if (actual instanceof TotpNotEnabledException || actual instanceof UsedCodeAlreadyExistsException) {
+            if (actual instanceof UnknownDeviceException || actual instanceof UsedCodeAlreadyExistsException) {
                 throw actual;
             } else {
                 throw e;
@@ -84,7 +86,7 @@ public class StorageLayerTest {
 
         TOTPDevice d1 = new TOTPDevice("user", "d1", "secret", 30, 1, false);
         storage.createDevice(new AppIdentifier(null, null), d1);
-
+            
         // Try code with length > 8
         try {
             TOTPUsedCode code = new TOTPUsedCode("user", "123456789", true, nextDay, now);

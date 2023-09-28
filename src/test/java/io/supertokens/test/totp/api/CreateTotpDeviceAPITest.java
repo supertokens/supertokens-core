@@ -6,12 +6,15 @@ import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.totp.TOTPDevice;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
+import io.supertokens.test.totp.TOTPRecipeTest;
 import io.supertokens.test.totp.TotpLicenseTest;
+import io.supertokens.totp.Totp;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -88,16 +91,14 @@ public class CreateTotpDeviceAPITest {
 
         JsonObject body = new JsonObject();
 
-        // Missing userId/deviceName/skew/period
+        // Missing userId/skew/period
         {
             Exception e = createDeviceRequest(process, body);
             checkFieldMissingErrorResponse(e, "userId");
+            
+            body.addProperty("deviceName", "");
 
             body.addProperty("userId", "");
-            e = createDeviceRequest(process, body);
-            checkFieldMissingErrorResponse(e, "deviceName");
-
-            body.addProperty("deviceName", "");
             e = createDeviceRequest(process, body);
             checkFieldMissingErrorResponse(e, "skew");
 
@@ -138,8 +139,10 @@ public class CreateTotpDeviceAPITest {
                     Utils.getCdiVersionStringLatestForTests(),
                     "totp");
             assert res.get("status").getAsString().equals("OK");
+            assert res.get("deviceName").getAsString().equals("d1");
 
-            // try again with same device:
+            // try again with same device name:
+            // This should replace the previous device
             JsonObject res2 = HttpRequestForTesting.sendJsonPOSTRequest(
                     process.getProcess(),
                     "",
@@ -150,7 +153,102 @@ public class CreateTotpDeviceAPITest {
                     null,
                     Utils.getCdiVersionStringLatestForTests(),
                     "totp");
+            assert res2.get("status").getAsString().equals("OK");
+            assert res.get("deviceName").getAsString().equals("d1");
+
+            // verify d1
+            {
+                TOTPDevice device = Totp.getDevices(process.getProcess(), "user-id" )[0];
+                String validTotp = TOTPRecipeTest.generateTotpCode(process.getProcess(), device);
+                Totp.verifyDevice(process.getProcess(), "user-id", "d1", validTotp);
+            }
+
+            // try again with same device name:
+            res2 = HttpRequestForTesting.sendJsonPOSTRequest(
+                    process.getProcess(),
+                    "",
+                    "http://localhost:3567/recipe/totp/device",
+                    body,
+                    1000,
+                    1000,
+                    null,
+                    Utils.getCdiVersionStringLatestForTests(),
+                    "totp");
             assert res2.get("status").getAsString().equals("DEVICE_ALREADY_EXISTS_ERROR");
+            assert res.get("deviceName").getAsString().equals("d1");
+
+            // try without passing deviceName:
+            body.remove("deviceName");
+            JsonObject res3 = HttpRequestForTesting.sendJsonPOSTRequest(
+                    process.getProcess(),
+                    "",
+                    "http://localhost:3567/recipe/totp/device",
+                    body,
+                    1000,
+                    1000,
+                    null,
+                    Utils.getCdiVersionStringLatestForTests(),
+                    "totp");
+            assert res3.get("status").getAsString().equals("OK");
+            assert res3.get("deviceName").getAsString().equals("TOTP Device 1");
+            String attempt1Secret = res3.get("secret").getAsString();
+
+            // try again without passing deviceName:
+            // should re-create the device since "TOTP Device 1" wasn't verified
+            JsonObject res4 = HttpRequestForTesting.sendJsonPOSTRequest(
+                    process.getProcess(),
+                    "",
+                    "http://localhost:3567/recipe/totp/device",
+                    body,
+                    1000,
+                    1000,
+                    null,
+                    Utils.getCdiVersionStringLatestForTests(),
+                    "totp");
+            assert res4.get("status").getAsString().equals("OK");
+            assert res3.get("deviceName").getAsString().equals("TOTP Device 1");
+            String attempt2Secret = res4.get("secret").getAsString();
+            assert !attempt1Secret.equals(attempt2Secret);
+
+            // verify the device:
+            TOTPDevice device = new TOTPDevice(
+                    "user-id",
+                    "TOTP Device 1",
+                    attempt2Secret,
+                    30,
+                    0,
+                    false
+                    );
+            JsonObject verifyDeviceBody = new JsonObject();
+            verifyDeviceBody.addProperty("userId", device.userId);
+            verifyDeviceBody.addProperty("deviceName", device.deviceName);
+            verifyDeviceBody.addProperty("totp", TOTPRecipeTest.generateTotpCode(process.getProcess(), device));
+            JsonObject res5 = HttpRequestForTesting.sendJsonPOSTRequest(
+                    process.getProcess(),
+                    "",
+                    "http://localhost:3567/recipe/totp/device/verify",
+                    verifyDeviceBody,
+                    1000,
+                    1000,
+                    null,
+                    Utils.getCdiVersionStringLatestForTests(),
+                    "totp");
+            assert res5.get("status").getAsString().equals("OK");
+
+            // now try to create a device:
+            // "TOTP Device 1" has been verified, it won't replace it
+            JsonObject res6 = HttpRequestForTesting.sendJsonPOSTRequest(
+                    process.getProcess(),
+                    "",
+                    "http://localhost:3567/recipe/totp/device",
+                    body,
+                    1000,
+                    1000,
+                    null,
+                    Utils.getCdiVersionStringLatestForTests(),
+                    "totp");
+            assert res6.get("status").getAsString().equals("OK");
+            assert res6.get("deviceName").getAsString().equals("TOTP Device 2");
         }
 
         process.kill();

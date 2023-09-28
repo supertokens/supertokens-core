@@ -4,7 +4,6 @@ import java.io.IOException;
 
 import com.google.gson.JsonObject;
 
-import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
 import io.supertokens.TenantIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
@@ -12,11 +11,9 @@ import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.totp.exception.TotpNotEnabledException;
-import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
+import io.supertokens.pluginInterface.totp.exception.UnknownTotpUserIdException;
 import io.supertokens.totp.Totp;
 import io.supertokens.totp.exceptions.InvalidTotpException;
 import io.supertokens.totp.exceptions.LimitReachedException;
@@ -46,7 +43,6 @@ public class VerifyTotpAPI extends WebserverAPI {
 
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
         String totp = InputParser.parseStringOrThrowError(input, "totp", false);
-        Boolean allowUnverifiedDevices = InputParser.parseBooleanOrThrowError(input, "allowUnverifiedDevices", false);
 
         if (userId.isEmpty()) {
             throw new ServletException(new BadRequestException("userId cannot be empty"));
@@ -54,7 +50,6 @@ public class VerifyTotpAPI extends WebserverAPI {
         if (totp.length() != 6) {
             throw new ServletException(new BadRequestException("totp must be 6 characters long"));
         }
-        // Already checked that allowUnverifiedDevices is not null.
 
         JsonObject result = new JsonObject();
 
@@ -76,15 +71,15 @@ public class VerifyTotpAPI extends WebserverAPI {
                 tenantIdentifierWithStorage = getTenantIdentifierWithStorageFromRequest(req);
             }
 
-            Totp.verifyCode(tenantIdentifierWithStorage, main, userId, totp, allowUnverifiedDevices);
+            Totp.verifyCode(tenantIdentifierWithStorage, main, userId, totp);
 
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
-        } catch (TotpNotEnabledException e) {
-            result.addProperty("status", "TOTP_NOT_ENABLED_ERROR");
-            super.sendJsonResponse(200, result, resp);
         } catch (InvalidTotpException e) {
             result.addProperty("status", "INVALID_TOTP_ERROR");
+            super.sendJsonResponse(200, result, resp);
+        } catch (UnknownTotpUserIdException e) {
+            result.addProperty("status", "UNKNOWN_USER_ID_ERROR");
             super.sendJsonResponse(200, result, resp);
         } catch (LimitReachedException e) {
             result.addProperty("status", "LIMIT_REACHED_ERROR");

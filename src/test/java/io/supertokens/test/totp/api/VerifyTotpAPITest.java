@@ -23,6 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
+import static io.supertokens.test.totp.TOTPRecipeTest.generateTotpCode;
 import static org.junit.Assert.*;
 
 public class VerifyTotpAPITest {
@@ -40,7 +41,7 @@ public class VerifyTotpAPITest {
         Utils.reset();
     }
 
-    private Exception updateDeviceRequest(TestingProcessManager.TestingProcess process, JsonObject body) {
+    private Exception verifyTotpCodeRequest(TestingProcessManager.TestingProcess process, JsonObject body) {
         return assertThrows(
                 io.supertokens.test.httpRequest.HttpResponseException.class,
                 () -> HttpRequestForTesting.sendJsonPOSTRequest(
@@ -93,7 +94,7 @@ public class VerifyTotpAPITest {
         JsonObject createDeviceReq = new JsonObject();
         createDeviceReq.addProperty("userId", "user-id");
         createDeviceReq.addProperty("deviceName", "deviceName");
-        createDeviceReq.addProperty("period", 30);
+        createDeviceReq.addProperty("period", 2);
         createDeviceReq.addProperty("skew", 0);
 
         JsonObject createDeviceRes = HttpRequestForTesting.sendJsonPOSTRequest(
@@ -109,44 +110,56 @@ public class VerifyTotpAPITest {
         assertEquals(createDeviceRes.get("status").getAsString(), "OK");
         String secretKey = createDeviceRes.get("secret").getAsString();
 
-        TOTPDevice device = new TOTPDevice("user-id", "deviceName", secretKey, 30, 0, false);
+        TOTPDevice device = new TOTPDevice("user-id", "deviceName", secretKey, 2, 0, false);
+
+        JsonObject verifyDeviceReq = new JsonObject();
+        verifyDeviceReq.addProperty("userId", device.userId);
+        verifyDeviceReq.addProperty("deviceName", device.deviceName);
+        verifyDeviceReq.addProperty("totp", generateTotpCode(process.getProcess(), device));
+
+        JsonObject verifyDeviceRes = HttpRequestForTesting.sendJsonPOSTRequest(
+                process.getProcess(),
+                "",
+                "http://localhost:3567/recipe/totp/device/verify",
+                verifyDeviceReq,
+                1000,
+                1000,
+                null,
+                Utils.getCdiVersionStringLatestForTests(),
+                "totp");
+        assertEquals(verifyDeviceRes.get("status").getAsString(), "OK");
 
         // Start the actual tests for update device API:
-
         JsonObject body = new JsonObject();
 
         // Missing userId/deviceName/skew/period
         {
-            Exception e = updateDeviceRequest(process, body);
+            Exception e = verifyTotpCodeRequest(process, body);
             checkFieldMissingErrorResponse(e, "userId");
 
             body.addProperty("userId", "");
-            e = updateDeviceRequest(process, body);
+            e = verifyTotpCodeRequest(process, body);
             checkFieldMissingErrorResponse(e, "totp");
-
-            body.addProperty("totp", "");
-            e = updateDeviceRequest(process, body);
-            checkFieldMissingErrorResponse(e, "allowUnverifiedDevices");
         }
 
         // Invalid userId/deviceName/skew/period
         {
-            body.addProperty("allowUnverifiedDevices", true);
-            Exception e = updateDeviceRequest(process, body);
+            body.addProperty("totp", "");
+            Exception e = verifyTotpCodeRequest(process, body);
             checkResponseErrorContains(e, "userId cannot be empty"); // Note that this is not a field missing error
 
             body.addProperty("userId", device.userId);
-            e = updateDeviceRequest(process, body);
+            e = verifyTotpCodeRequest(process, body);
             checkResponseErrorContains(e, "totp must be 6 characters long");
 
             // test totp of length 5:
             body.addProperty("totp", "12345");
-            e = updateDeviceRequest(process, body);
+            e = verifyTotpCodeRequest(process, body);
             checkResponseErrorContains(e, "totp must be 6 characters long");
 
             // test totp of length 8:
             body.addProperty("totp", "12345678");
-            e = updateDeviceRequest(process, body);
+            e = verifyTotpCodeRequest(process, body);
             checkResponseErrorContains(e, "totp must be 6 characters long");
 
             // but let's pass invalid code first
@@ -178,10 +191,10 @@ public class VerifyTotpAPITest {
             assert res3.get("retryAfterMs") != null;
 
             // wait for cooldown to end (1s)
-            Thread.sleep(1000);
+            Thread.sleep(1200);
 
             // should pass now on valid code
-            String validTotp = TOTPRecipeTest.generateTotpCode(process.getProcess(), device);
+            String validTotp = generateTotpCode(process.getProcess(), device);
             body.addProperty("totp", validTotp);
             JsonObject res = HttpRequestForTesting.sendJsonPOSTRequest(
                     process.getProcess(),
@@ -210,7 +223,7 @@ public class VerifyTotpAPITest {
             assert res2.get("status").getAsString().equals("INVALID_TOTP_ERROR");
 
             // Try with a new valid code during rate limiting:
-            body.addProperty("totp", TOTPRecipeTest.generateTotpCode(process.getProcess(), device));
+            body.addProperty("totp", generateTotpCode(process.getProcess(), device));
             res = HttpRequestForTesting.sendJsonPOSTRequest(
                     process.getProcess(),
                     "",
@@ -235,7 +248,7 @@ public class VerifyTotpAPITest {
                     null,
                     Utils.getCdiVersionStringLatestForTests(),
                     "totp");
-            assert res5.get("status").getAsString().equals("TOTP_NOT_ENABLED_ERROR");
+            assert res5.get("status").getAsString().equals("UNKNOWN_USER_ID_ERROR");
         }
 
         process.kill();

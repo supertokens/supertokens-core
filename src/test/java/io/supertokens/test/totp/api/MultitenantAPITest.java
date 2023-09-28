@@ -37,6 +37,7 @@ import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.test.totp.TOTPRecipeTest;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
+import io.supertokens.totp.Totp;
 import io.supertokens.utils.SemVer;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -249,9 +250,12 @@ public class MultitenantAPITest {
         int userCount = 1;
         for (TenantIdentifier tenant1 : tenants) {
             createDevice(tenant1, "user" + userCount);
+            TOTPDevice device = Totp.getDevices(t1.withStorage(StorageLayer.getStorage(tenant1, process.getProcess())).toAppIdentifierWithStorage(), "user" + userCount)[0];
+            String validTotp = TOTPRecipeTest.generateTotpCode(process.getProcess(), device);
+            verifyDevice(tenant1, "user" + userCount, validTotp);
 
             for (TenantIdentifier tenant2 : tenants) {
-                createDeviceAlreadyExists(tenant2, "user1");
+                createDeviceAlreadyExists(tenant2, "user" + userCount);
             }
 
             userCount++;
