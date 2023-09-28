@@ -425,13 +425,11 @@ public class Totp {
         // another API call. We will still check the code against the updated set of
         // devices and store it in the used codes table. This behaviour is okay so we
         // can ignore it.
-        try {
-            checkAndStoreCode(tenantIdentifierWithStorage, main, userId, devices, code);
-        } catch (UnknownTotpUserIdException e) {
-            // User must have deleted the device in parallel
-            // since they cannot un-verify a device (no API exists)
-            throw e;
-        }
+
+        // UnknownTotpUserIdException will be thrown when
+        // the User has deleted the device in parallel
+        // since they cannot un-verify a device (no API exists)
+        checkAndStoreCode(tenantIdentifierWithStorage, main, userId, devices, code);
     }
 
     @TestOnly
