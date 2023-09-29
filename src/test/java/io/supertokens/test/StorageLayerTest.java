@@ -57,7 +57,8 @@ public class StorageLayerTest {
             });
         } catch (StorageTransactionLogicException e) {
             Exception actual = e.actualException;
-            if (actual instanceof UnknownDeviceException || actual instanceof UsedCodeAlreadyExistsException) {
+            if (actual instanceof UnknownDeviceException || actual instanceof UsedCodeAlreadyExistsException ||
+                    actual instanceof UnknownTotpUserIdException) {
                 throw actual;
             } else {
                 throw e;
@@ -86,7 +87,7 @@ public class StorageLayerTest {
 
         TOTPDevice d1 = new TOTPDevice("user", "d1", "secret", 30, 1, false);
         storage.createDevice(new AppIdentifier(null, null), d1);
-            
+
         // Try code with length > 8
         try {
             TOTPUsedCode code = new TOTPUsedCode("user", "123456789", true, nextDay, now);
@@ -103,5 +104,4 @@ public class StorageLayerTest {
         TOTPUsedCode code = new TOTPUsedCode("user", "12345678", true, nextDay, now);
         insertUsedCodeUtil(storage, code);
     }
-
 }

@@ -26,6 +26,7 @@ import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
+import io.supertokens.mfa.Mfa;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
@@ -95,7 +96,7 @@ public class TestAppData {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES,
-                        new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY, EE_FEATURES.TOTP});
+                        new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY, EE_FEATURES.TOTP, EE_FEATURES.MFA});
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -165,6 +166,9 @@ public class TestAppData {
 
         UserIdMapping.createUserIdMapping(process.getProcess(), appWithStorage.toAppIdentifierWithStorage(),
                 plUser.user.getSupertokensUserId(), "externalid", null, false);
+
+        Mfa.enableFactor(appWithStorage, process.getProcess(),
+                epUser.getSupertokensUserId(), "emailpassword");
 
         String[] tablesThatHaveData = appWithStorage.getStorage()
                 .getAllTablesInTheDatabaseThatHasDataForAppId(app.getAppId());
