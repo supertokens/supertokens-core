@@ -72,6 +72,23 @@ public class MfaQueries {
         });
     }
 
+    public static String[] listFactors(Start start, AppIdentifier appIdentifier, String userId)
+            throws StorageQueryException, SQLException {
+        String QUERY = "SELECT factor_id FROM " + Config.getConfig(start).getMfaUserFactorsTable() + " WHERE app_id = ? AND user_id = ?";
+
+        return execute(start, QUERY, pst -> {
+            pst.setString(1, appIdentifier.getAppId());
+            pst.setString(2, userId);
+        }, result -> {
+            List<String> factors = new ArrayList<>();
+            while (result.next()) {
+                factors.add(result.getString("factor_id"));
+            }
+
+            return factors.toArray(String[]::new);
+        });
+    }
+
     public static int disableFactor(Start start, TenantIdentifier tenantIdentifier, String userId, String factorId)
             throws StorageQueryException, SQLException {
         String QUERY = "DELETE FROM " + Config.getConfig(start).getMfaUserFactorsTable() + " WHERE app_id = ? AND tenant_id = ? AND user_id = ? AND factor_id = ?";

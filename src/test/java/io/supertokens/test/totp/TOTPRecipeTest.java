@@ -362,7 +362,7 @@ public class TOTPRecipeTest {
         int attemptsRequired = triggerAndCheckRateLimit(main, device);
         assert attemptsRequired == 5;
         // Wait for 1 second so that all the codes expire:
-        Thread.sleep(1500);
+        Thread.sleep(1100);
         // Manually run cronjob to delete all the codes after their
         // expiry time + rate limiting period is over:
         DeleteExpiredTotpTokens.getInstance(main).run();

@@ -617,6 +617,13 @@ public class Start
             }
         } else if (className.equals(JWTRecipeStorage.class.getName())) {
             return false;
+        } else if (className.equals(MfaStorage.class.getName())) {
+            try {
+                MultitenancyQueries.getAllTenants(this);
+                return MfaQueries.listFactors(this, appIdentifier, userId).length > 0;
+            } catch (SQLException e) {
+                throw new StorageQueryException(e);
+            }
         } else {
             throw new IllegalStateException("ClassName: " + className + " is not part of NonAuthRecipeStorage");
         }
@@ -690,12 +697,13 @@ public class Start
         } else if (className.equals(TOTPStorage.class.getName())) {
             try {
                 TOTPDevice device = new TOTPDevice(userId, "testDevice", "secret", 0, 30, false);
-                TOTPQueries.createDevice(this, tenantIdentifier.toAppIdentifier(), device);
                 this.startTransaction(con -> {
                     try {
                         long now = System.currentTimeMillis();
+                        Connection sqlCon = (Connection) con.getConnection();
+                        TOTPQueries.createDevice_Transaction(this, sqlCon, tenantIdentifier.toAppIdentifier(), device);
                         TOTPQueries.insertUsedCode_Transaction(this,
-                                (Connection) con.getConnection(), tenantIdentifier,
+                                sqlCon, tenantIdentifier,
                                 new TOTPUsedCode(userId, "123456", true, 1000 + now, now));
                     } catch (SQLException e) {
                         throw new StorageTransactionLogicException(e);
@@ -711,6 +719,12 @@ public class Start
         } else if (className.equals(ActiveUsersStorage.class.getName())) {
             try {
                 ActiveUsersQueries.updateUserLastActive(this, tenantIdentifier.toAppIdentifier(), userId);
+            } catch (SQLException e) {
+                throw new StorageQueryException(e);
+            }
+        } else if (className.equals(MfaStorage.class.getName())) {
+            try {
+                MfaQueries.enableFactor(this, tenantIdentifier, userId, "emailpassword");
             } catch (SQLException e) {
                 throw new StorageQueryException(e);
             }
@@ -2625,14 +2639,33 @@ public class Start
     @Override
     public TOTPDevice createDevice_Transaction(TransactionConnection con, AppIdentifier appIdentifier, TOTPDevice device)
             throws DeviceAlreadyExistsException, TenantOrAppNotFoundException, StorageQueryException {
-        // TODO
-        return null;
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            TOTPQueries.createDevice_Transaction(this, sqlCon, appIdentifier, device);
+            return device;
+        } catch (SQLException e) {
+            if (isPrimaryKeyError(e.getMessage(), Config.getConfig(this).getTotpUserDevicesTable(),
+                    new String[]{"app_id", "user_id", "device_name"})) {
+                throw new DeviceAlreadyExistsException();
+            } else if (isForeignKeyConstraintError(
+                    e.getMessage(),
+                    Config.getConfig(this).getAppsTable(),
+                    new String[]{"app_id"},
+                    new Object[]{appIdentifier.getAppId()})) {
+                throw new TenantOrAppNotFoundException(appIdentifier);
+            }
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
     public TOTPDevice getDeviceByName_Transaction(TransactionConnection con, AppIdentifier appIdentifier, String userId, String deviceName) throws StorageQueryException {
-        // TODO
-        return null;
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            return TOTPQueries.getDeviceByName_Transaction(this, sqlCon, appIdentifier, userId, deviceName);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override

@@ -98,22 +98,31 @@ public class TOTPQueries {
         });
     }
 
-    public static void createDevice(Start start, AppIdentifier appIdentifier, TOTPDevice device)
-            throws StorageQueryException, StorageTransactionLogicException {
-        start.startTransaction(con -> {
-            Connection sqlCon = (Connection) con.getConnection();
+    public static void createDevice_Transaction(Start start, Connection sqlCon, AppIdentifier appIdentifier, TOTPDevice device)
+            throws StorageQueryException, SQLException {
+        insertUser_Transaction(start, sqlCon, appIdentifier, device.userId);
+        insertDevice_Transaction(start, sqlCon, appIdentifier, device);
+    }
 
-            try {
-                insertUser_Transaction(start, sqlCon, appIdentifier, device.userId);
-                insertDevice_Transaction(start, sqlCon, appIdentifier, device);
-                sqlCon.commit();
-            } catch (SQLException e) {
-                throw new StorageTransactionLogicException(e);
+    public static TOTPDevice getDeviceByName_Transaction(Start start, Connection sqlCon, AppIdentifier appIdentifier, String userId, String deviceName)
+            throws SQLException, StorageQueryException {
+
+        ((ConnectionWithLocks) sqlCon).lock(
+                appIdentifier.getAppId() + "~" + userId + "~" + deviceName + Config.getConfig(start).getTotpUserDevicesTable());
+
+        String QUERY = "SELECT * FROM " + Config.getConfig(start).getTotpUserDevicesTable()
+                + " WHERE app_id = ? AND user_id = ? AND device_name = ?;";
+
+        return execute(sqlCon, QUERY, pst -> {
+            pst.setString(1, appIdentifier.getAppId());
+            pst.setString(2, userId);
+            pst.setString(3, deviceName);
+        }, result -> {
+            if (result.next()) {
+                return TOTPDeviceRowMapper.getInstance().map(result);
             }
-
             return null;
         });
-        return;
     }
 
     public static int markDeviceAsVerified(Start start, AppIdentifier appIdentifier, String userId, String deviceName)
