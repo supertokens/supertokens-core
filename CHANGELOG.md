@@ -7,6 +7,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+- Remove padding from link codes and pre-auth session ids in passwordless, but keep support for old format that included padding (`=` signs)
+
 ## [7.0.0] - 2023-09-19
 
 - Support for CDI version 4.0
