@@ -118,9 +118,12 @@ public class PasswordlessConsumeCodeTest {
                 null, null);
         assertNotNull(createCodeResponse);
 
+        assert(!createCodeResponse.deviceIdHash.contains("="));
+        assert(!createCodeResponse.linkCode.contains("="));
+
         long consumeStart = System.currentTimeMillis();
         Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(process.getProcess(), null,
-                createCodeResponse.deviceIdHash.replace("=", ""), null, createCodeResponse.linkCode.replace("=", ""));
+                createCodeResponse.deviceIdHash, null, createCodeResponse.linkCode);
         
         assertNotNull(consumeCodeResponse);
         checkUserWithConsumeResponse(storage, consumeCodeResponse, EMAIL, null, consumeStart);
