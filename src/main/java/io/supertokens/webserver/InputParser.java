@@ -137,7 +137,11 @@ public class InputParser {
             if (!stringified.contains("\"")) {
                 throw new Exception();
             }
-            return ((JsonObject) element).get(fieldName).getAsString();
+            String s = element.get(fieldName).getAsString().trim();
+            if (s.contains("@")) {
+                s = s.toLowerCase();
+            }
+            return s;
         } catch (Exception e) {
             throw new ServletException(
                     new WebserverAPI.BadRequestException("Field name '" + fieldName + "' is invalid in JSON input"));
