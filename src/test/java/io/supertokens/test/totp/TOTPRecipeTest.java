@@ -190,6 +190,8 @@ public class TOTPRecipeTest {
                 InvalidTotpException.class,
                 () -> Totp.verifyCode(main, "user", generateTotpCode(main, unverifiedDevice)));
 
+        Thread.sleep(1000 - System.currentTimeMillis() % 1000 + 10);
+
         // Valid code & verified device (Success)
         String validCode = generateTotpCode(main, device);
         Totp.verifyCode(main, "user", validCode);
@@ -200,7 +202,7 @@ public class TOTPRecipeTest {
                 () -> Totp.verifyCode(main, "user", validCode));
 
         // Sleep for 1s so that code changes.
-        Thread.sleep(1000);
+        Thread.sleep(1000 - System.currentTimeMillis() % 1000 + 10);
 
         // Use a new valid code:
         String newValidCode = generateTotpCode(main, device);
@@ -277,6 +279,10 @@ public class TOTPRecipeTest {
      */
     public int triggerAndCheckRateLimit(Main main, TOTPDevice device) throws Exception {
         int N = Config.getConfig(main).getTotpMaxAttempts();
+
+        // Sleep until we finish the current second so that TOTP verification won't change in the time limit
+        Thread.sleep(1000 - System.currentTimeMillis() % 1000 + 10);
+        Thread.sleep(1000); // sleep another second so that the rate limit state is kind of reset
 
         // First N attempts should fail with invalid code:
         // This is to trigger rate limiting
@@ -447,6 +453,9 @@ public class TOTPRecipeTest {
         // Delete one of the devices
         {
             assertThrows(InvalidTotpException.class, () -> Totp.verifyCode(main, "user", "ic0"));
+
+            Thread.sleep(1000 - System.currentTimeMillis() % 1000 + 10);
+
             Totp.verifyCode(main, "user", generateTotpCode(main, device1));
             Totp.verifyCode(main, "user", generateTotpCode(main, device2));
 

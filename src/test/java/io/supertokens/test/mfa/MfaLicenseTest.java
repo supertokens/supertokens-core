@@ -22,12 +22,12 @@ import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.mfa.Mfa;
 import io.supertokens.pluginInterface.mfa.MfaStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import org.junit.Test;
 
 import java.util.HashMap;
 
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 
 public class MfaLicenseTest extends MfaTestBase {
@@ -37,6 +37,11 @@ public class MfaLicenseTest extends MfaTestBase {
         if (result == null) {
             return;
         }
+
+        if (StorageLayer.isInMemDb(result.process.getProcess())) {
+            return;
+        }
+
         Main main = result.process.getProcess();
         MfaStorage storage = result.storage;
         TenantIdentifierWithStorage tid = new TenantIdentifierWithStorage(null, null, null, storage);

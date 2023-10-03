@@ -21,7 +21,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.mfa.MfaStorage;
+import io.supertokens.pluginInterface.mfa.sqlStorage.MfaSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -53,10 +53,10 @@ public class MfaTestBase {
 
 
     public class TestSetupResult {
-        public MfaStorage storage;
+        public MfaSQLStorage storage;
         public TestingProcessManager.TestingProcess process;
 
-        public TestSetupResult(MfaStorage storage, TestingProcessManager.TestingProcess process) {
+        public TestSetupResult(MfaSQLStorage storage, TestingProcessManager.TestingProcess process) {
             this.storage = storage;
             this.process = process;
         }
@@ -72,7 +72,8 @@ public class MfaTestBase {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return null;
         }
-        MfaStorage storage = (MfaStorage) StorageLayer.getStorage(process.getProcess());
+
+        MfaSQLStorage storage = (MfaSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         if (enableMfaFeature) {
             FeatureFlagTestContent.getInstance(process.main)

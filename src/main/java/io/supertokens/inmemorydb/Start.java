@@ -50,6 +50,7 @@ import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
 import io.supertokens.pluginInterface.jwt.exceptions.DuplicateKeyIdException;
 import io.supertokens.pluginInterface.jwt.sqlstorage.JWTRecipeSQLStorage;
 import io.supertokens.pluginInterface.mfa.MfaStorage;
+import io.supertokens.pluginInterface.mfa.sqlStorage.MfaSQLStorage;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateClientTypeException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateTenantException;
@@ -103,7 +104,7 @@ public class Start
         implements SessionSQLStorage, EmailPasswordSQLStorage, EmailVerificationSQLStorage, ThirdPartySQLStorage,
         JWTRecipeSQLStorage, PasswordlessSQLStorage, UserMetadataSQLStorage, UserRolesSQLStorage, UserIdMappingStorage,
         UserIdMappingSQLStorage, MultitenancyStorage, MultitenancySQLStorage, TOTPSQLStorage, ActiveUsersStorage,
-        DashboardSQLStorage, AuthRecipeSQLStorage, MfaStorage {
+        ActiveUsersSQLStorage, DashboardSQLStorage, AuthRecipeSQLStorage, MfaStorage, MfaSQLStorage {
 
     private static final Object appenderLock = new Object();
     private static final String APP_ID_KEY_NAME = "app_id";
@@ -2853,10 +2854,10 @@ public class Start
     }
 
     @Override
-    public boolean deleteMfaInfoForUser(AppIdentifier appIdentifier, String userId)
+    public boolean deleteMfaInfoForUser_Transaction(TransactionConnection con, AppIdentifier appIdentifier, String userId)
             throws StorageQueryException {
         try {
-            int deletedCount = MfaQueries.deleteUser(this, appIdentifier, userId);
+            int deletedCount = MfaQueries.deleteUser_Transaction(this, (Connection) con.getConnection(), appIdentifier, userId);
             if (deletedCount == 0) {
                 return false;
             }

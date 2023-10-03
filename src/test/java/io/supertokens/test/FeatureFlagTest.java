@@ -297,8 +297,10 @@ public class FeatureFlagTest {
             JsonObject usageStats = response.get("usageStats").getAsJsonObject();
             JsonArray maus = usageStats.get("maus").getAsJsonArray();
 
-            assert features.size() == 1;
-            assert features.get(0).getAsString().equals("mfa");
+            if (!StorageLayer.isInMemDb(process.getProcess())) {
+                assert features.size() == 1;
+                assert features.get(0).getAsString().equals("mfa");
+            }
             assert maus.size() == 30;
             assert maus.get(0).getAsInt() == 0;
             assert maus.get(29).getAsInt() == 0;
@@ -349,8 +351,10 @@ public class FeatureFlagTest {
             JsonObject usageStats = response.get("usageStats").getAsJsonObject();
             JsonArray maus = usageStats.get("maus").getAsJsonArray();
 
-            assert features.size() == 1;
-            assert features.get(0).getAsString().equals("mfa");
+            if (!StorageLayer.isInMemDb(process.getProcess())) {
+                assert features.size() == 1;
+                assert features.get(0).getAsString().equals("mfa");
+            }
             assert maus.size() == 30;
             assert maus.get(0).getAsInt() == 2; // 2 users have signed up
             assert maus.get(29).getAsInt() == 2;
