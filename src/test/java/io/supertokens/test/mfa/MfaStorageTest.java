@@ -22,7 +22,9 @@ import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.mfa.MfaStorage;
+import io.supertokens.pluginInterface.mfa.sqlStorage.MfaSQLStorage;
 import io.supertokens.pluginInterface.multitenancy.*;
+import io.supertokens.pluginInterface.sqlStorage.SQLStorage;
 import org.junit.Test;
 
 import static org.junit.Assert.assertNotNull;
@@ -110,7 +112,7 @@ public class MfaStorageTest extends MfaTestBase {
         if (result == null) {
             return;
         }
-        MfaStorage storage = result.storage;
+        MfaSQLStorage storage = result.storage;
         TenantIdentifier tid = new TenantIdentifier(null, null, null);
 
         assert storage.enableFactor(tid, "user1", "f1") == true;
@@ -119,8 +121,11 @@ public class MfaStorageTest extends MfaTestBase {
         assert storage.enableFactor(tid, "user2", "f1") == true;
         assert storage.enableFactor(tid, "user2", "f3") == true;
 
-        assert storage.deleteMfaInfoForUser(tid.toAppIdentifier(), "non-existent-user") == false;
-        assert storage.deleteMfaInfoForUser(tid.toAppIdentifier(), "user2") == true;
+        ((SQLStorage) storage).startTransaction(con -> {
+            assert storage.deleteMfaInfoForUser_Transaction(con, tid.toAppIdentifier(), "non-existent-user") == false;
+            assert storage.deleteMfaInfoForUser_Transaction(con, tid.toAppIdentifier(), "user2") == true;
+            return null;
+        });
 
         String[] factors = storage.listFactors(tid, "user2");
         assert factors.length == 0;

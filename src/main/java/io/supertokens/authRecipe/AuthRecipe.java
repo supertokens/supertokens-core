@@ -935,7 +935,7 @@ public class AuthRecipe {
         appIdentifierWithStorage.getActiveUsersStorage()
                 .deleteUserActive_Transaction(con, appIdentifierWithStorage, userId);
         appIdentifierWithStorage.getMfaStorage()
-                .deleteMfaInfoForUser(appIdentifierWithStorage, userId);
+                .deleteMfaInfoForUser_Transaction(con, appIdentifierWithStorage, userId);
     }
 
     private static void deleteAuthRecipeUser(TransactionConnection con,
