@@ -316,7 +316,7 @@ public class Passwordless {
             linkCodeHash = parsedDeviceId.getLinkCode(linkCodeSalt, userInputCode).getHash();
         }
 
-        if (!deviceIdHash.encode().equals(deviceIdHashFromUser)) {
+        if (!deviceIdHash.encode().equals(deviceIdHashFromUser.replaceAll("=", ""))) {
             throw new DeviceIdHashMismatchException();
         }
 
