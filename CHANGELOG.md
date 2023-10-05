@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.0.2] = 2023-10-05
+
+- Fixes `500` error for passwordless login in certain cases - https://github.com/supertokens/supertokens-core/issues/828
+
 ## [7.0.1] - 2023-10-04
 
 - Remove padding from link codes and pre-auth session ids in passwordless, but keep support for old format that included padding (`=` signs)
