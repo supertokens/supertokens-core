@@ -104,4 +104,21 @@ public class InputParserTest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    @Test
+    public void testParseStringOrThrowError() {
+        JsonObject json = new JsonObject();
+        json.add("untrimed mixedcase email", "userName@DoMaIn.com       ");
+        json.add("email", "username@domain.com");
+        json.add("untrimed mixedcase text", "   TexT    ")
+        json.add("mixedcase text", "TeXt");
+        json.add("null", null);
+
+        assertEquals(InputParser.parseStringOrThrowError(json, "untrimed mixedcase email", false), "username@domain.com");
+        assertEquals(InputParser.parseStringOrThrowError(json, "email", false), "username@domain.com");
+        assertEquals(InputParser.parseStringOrThrowError(json, "untrimed mixedcase text", false), "TexT");
+        assertEquals(InputParser.parseStringOrThrowError(json, "mixedcase text", false), "TeXt");
+        assertNull(InputParser.parseStringOrThrowError(json, "null", true));
+        assertNull(InputParser.parseStringOrThrowError(json, "undefined", true));
+    }
 }

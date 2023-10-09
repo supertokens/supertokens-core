@@ -138,7 +138,8 @@ public class InputParser {
                 throw new Exception();
             }
             String s = element.get(fieldName).getAsString().trim();
-            if (s.contains("@")) {
+
+            if (s.matches("^(?=.{1,64}@)[A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)*@[^-][A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)*(\\.[A-Za-z]{2,})$")) {
                 s = s.toLowerCase();
             }
             return s;
