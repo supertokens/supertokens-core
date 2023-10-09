@@ -106,7 +106,7 @@ public class InputParserTest {
     }
 
     @Test
-    public void testParseStringOrThrowError() {
+    public void testParseStringOrThrowError() throws Exception {
         JsonObject json = new JsonObject();
         json.add("untrimed mixedcase email", "userName@DoMaIn.com       ");
         json.add("email", "username@domain.com");
