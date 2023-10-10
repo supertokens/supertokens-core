@@ -148,7 +148,7 @@ public class InputParserTest {
         assertEquals(InputParser.getQueryParamOrThrowError(request, "email", false), "username@domain.com");
         assertEquals(InputParser.getQueryParamOrThrowError(request, "untrimed mixedcase text", false), "TexT");
         assertEquals(InputParser.getQueryParamOrThrowError(request, "mixedcase text", false), "TeXt");
-        assertThrows(ServletException.class, () -> InputParser.getQueryParamOrThrowError(request, "undefined", true));
+        assertThrows(ServletException.class, () -> InputParser.getQueryParamOrThrowError(request, "undefined", false));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
