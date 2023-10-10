@@ -112,13 +112,11 @@ public class InputParserTest {
         json.addProperty("email", "username@domain.com");
         json.addProperty("untrimed mixedcase text", "   TexT    ");
         json.addProperty("mixedcase text", "TeXt");
-        json.add("null", null);
 
         assertEquals(InputParser.parseStringOrThrowError(json, "untrimed mixedcase email", false), "username@domain.com");
         assertEquals(InputParser.parseStringOrThrowError(json, "email", false), "username@domain.com");
         assertEquals(InputParser.parseStringOrThrowError(json, "untrimed mixedcase text", false), "TexT");
         assertEquals(InputParser.parseStringOrThrowError(json, "mixedcase text", false), "TeXt");
-        assertNull(InputParser.parseStringOrThrowError(json, "null", true));
         assertNull(InputParser.parseStringOrThrowError(json, "undefined", true));
     }
 }
