@@ -108,10 +108,10 @@ public class InputParserTest {
     @Test
     public void testParseStringOrThrowError() throws Exception {
         JsonObject json = new JsonObject();
-        json.add("untrimed mixedcase email", "userName@DoMaIn.com       ");
-        json.add("email", "username@domain.com");
-        json.add("untrimed mixedcase text", "   TexT    ")
-        json.add("mixedcase text", "TeXt");
+        json.addProperty("untrimed mixedcase email", "userName@DoMaIn.com       ");
+        json.addProperty("email", "username@domain.com");
+        json.addProperty("untrimed mixedcase text", "   TexT    ");
+        json.addProperty("mixedcase text", "TeXt");
         json.add("null", null);
 
         assertEquals(InputParser.parseStringOrThrowError(json, "untrimed mixedcase email", false), "username@domain.com");
