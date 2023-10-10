@@ -29,7 +29,6 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import jakarta.servlet.ServletException;
-import org.mockito.Mockito;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -110,6 +109,11 @@ public class InputParserTest {
 
     @Test
     public void testParseStringOrThrowError() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
         JsonObject json = new JsonObject();
         json.addProperty("untrimed mixedcase email", "userName@DoMaIn.com       ");
         json.addProperty("email", "username@domain.com");
@@ -121,10 +125,18 @@ public class InputParserTest {
         assertEquals(InputParser.parseStringOrThrowError(json, "untrimed mixedcase text", false), "TexT");
         assertEquals(InputParser.parseStringOrThrowError(json, "mixedcase text", false), "TeXt");
         assertNull(InputParser.parseStringOrThrowError(json, "undefined", true));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     @Test
-    public void testGetQueryParamOrThrowError() throws ServletException {
+    public void testGetQueryParamOrThrowError() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
         HttpServletRequest request = mock(HttpServletRequest.class);
 
         when(request.getParameter("untrimed mixedcase email")).thenReturn("userName@DoMaIn.com       ");
@@ -137,5 +149,8 @@ public class InputParserTest {
         assertEquals(InputParser.getQueryParamOrThrowError(request, "untrimed mixedcase text", false), "TexT");
         assertEquals(InputParser.getQueryParamOrThrowError(request, "mixedcase text", false), "TeXt");
         assertThrows(ServletException.class, () -> InputParser.getQueryParamOrThrowError(request, "undefined", true));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 }
