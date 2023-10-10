@@ -21,6 +21,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.webserver.InputParser;
+import jakarta.servlet.http.HttpServletRequest;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -28,8 +29,10 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import jakarta.servlet.ServletException;
+import org.mockito.Mockito;
 
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 public class InputParserTest {
     @Rule
@@ -118,5 +121,21 @@ public class InputParserTest {
         assertEquals(InputParser.parseStringOrThrowError(json, "untrimed mixedcase text", false), "TexT");
         assertEquals(InputParser.parseStringOrThrowError(json, "mixedcase text", false), "TeXt");
         assertNull(InputParser.parseStringOrThrowError(json, "undefined", true));
+    }
+
+    @Test
+    public void testGetQueryParamOrThrowError() throws ServletException {
+        HttpServletRequest request = mock(HttpServletRequest.class);
+
+        when(request.getParameter("untrimed mixedcase email")).thenReturn("userName@DoMaIn.com       ");
+        when(request.getParameter("email")).thenReturn("username@domain.com");
+        when(request.getParameter("untrimed mixedcase text")).thenReturn("   TexT    ");
+        when(request.getParameter("mixedcase text")).thenReturn("TeXt");
+
+        assertEquals(InputParser.getQueryParamOrThrowError(request, "untrimed mixedcase email", false), "username@domain.com");
+        assertEquals(InputParser.getQueryParamOrThrowError(request, "email", false), "username@domain.com");
+        assertEquals(InputParser.getQueryParamOrThrowError(request, "untrimed mixedcase text", false), "TexT");
+        assertEquals(InputParser.getQueryParamOrThrowError(request, "mixedcase text", false), "TeXt");
+        assertThrows(ServletException.class, () -> InputParser.getQueryParamOrThrowError(request, "undefined", true));
     }
 }
