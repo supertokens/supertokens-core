@@ -316,7 +316,7 @@ public class Passwordless {
             linkCodeHash = parsedDeviceId.getLinkCode(linkCodeSalt, userInputCode).getHash();
         }
 
-        if (!deviceIdHash.encode().equals(deviceIdHashFromUser)) {
+        if (!deviceIdHash.encode().equals(deviceIdHashFromUser.replaceAll("=", ""))) {
             throw new DeviceIdHashMismatchException();
         }
 
@@ -399,7 +399,7 @@ public class Passwordless {
                     consumedDevice.email);
             for (AuthRecipeUserInfo currUser : users) {
                 for (LoginMethod currLM : currUser.loginMethods) {
-                    if (currLM.recipeId == RECIPE_ID.PASSWORDLESS && currLM.email.equals(consumedDevice.email) && currLM.tenantIds.contains(tenantIdentifierWithStorage.getTenantId())) {
+                    if (currLM.recipeId == RECIPE_ID.PASSWORDLESS && currLM.email != null && currLM.email.equals(consumedDevice.email) && currLM.tenantIds.contains(tenantIdentifierWithStorage.getTenantId())) {
                         user = currUser;
                         loginMethod = currLM;
                         break;
@@ -412,7 +412,7 @@ public class Passwordless {
             for (AuthRecipeUserInfo currUser : users) {
                 for (LoginMethod currLM : currUser.loginMethods) {
                     if (currLM.recipeId == RECIPE_ID.PASSWORDLESS &&
-                            currLM.phoneNumber.equals(consumedDevice.phoneNumber) && currLM.tenantIds.contains(tenantIdentifierWithStorage.getTenantId())) {
+                            currLM.phoneNumber != null && currLM.phoneNumber.equals(consumedDevice.phoneNumber) && currLM.tenantIds.contains(tenantIdentifierWithStorage.getTenantId())) {
                         user = currUser;
                         loginMethod = currLM;
                         break;

@@ -9,6 +9,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - normalized input in few methods of InputParser - https://github.com/supertokens/supertokens-core/issues/594
 
+## [7.0.2] = 2023-10-05
+
+- Fixes `500` error for passwordless login in certain cases - https://github.com/supertokens/supertokens-core/issues/828
+
+## [7.0.1] - 2023-10-04
+
+- Remove padding from link codes and pre-auth session ids in passwordless, but keep support for old format that included padding (`=` signs)
+
 ## [7.0.0] - 2023-09-19
 
 - Support for CDI version 4.0

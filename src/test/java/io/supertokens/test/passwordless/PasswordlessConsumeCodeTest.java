@@ -97,6 +97,81 @@ public class PasswordlessConsumeCodeTest {
     }
 
     /**
+     * success without existing user - link code with equal signs removed
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testConsumeLinkCodeWithoutEqualSigns() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
+
+        Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), EMAIL, null,
+                null, null);
+        assertNotNull(createCodeResponse);
+
+        assert(!createCodeResponse.deviceIdHash.contains("="));
+        assert(!createCodeResponse.linkCode.contains("="));
+
+        long consumeStart = System.currentTimeMillis();
+        Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(process.getProcess(), null,
+                createCodeResponse.deviceIdHash, null, createCodeResponse.linkCode);
+        
+        assertNotNull(consumeCodeResponse);
+        checkUserWithConsumeResponse(storage, consumeCodeResponse, EMAIL, null, consumeStart);
+
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
+        assertEquals(0, devices.length);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    /**
+     * success without existing user - link code with equal signs (padding)
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testConsumeLinkCodeWithEqualSigns() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
+
+        Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), EMAIL, null,
+                null, null);
+        assertNotNull(createCodeResponse);
+
+        long consumeStart = System.currentTimeMillis();
+        Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(process.getProcess(), null,
+                createCodeResponse.deviceIdHash + "=", null, createCodeResponse.linkCode + "=");
+        
+        assertNotNull(consumeCodeResponse);
+        checkUserWithConsumeResponse(storage, consumeCodeResponse, EMAIL, null, consumeStart);
+
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
+        assertEquals(0, devices.length);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    /**
      * Success without existing user - input code
      *
      * @throws Exception

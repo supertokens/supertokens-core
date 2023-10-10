@@ -21,7 +21,6 @@ compileTestJava { options.encoding = "UTF-8" }
 
 version = "7.0.3"
 
-
 repositories {
     mavenCentral()
 }
