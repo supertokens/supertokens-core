@@ -29,6 +29,8 @@ import java.io.IOException;
 import java.util.Arrays;
 
 public class InputParser {
+    private static final String EMAIL_REGEX = "^(([^<>()\\[\\]\\\\.,;:\\s@\"]+(\\.[^<>()\\[\\]\\\\.,;:\\s@\"]+)*)|(\".+\"))@((\\[[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\])|(([a-zA-Z\\-0-9]+\\.)+[a-zA-Z]{2,}))$";
+
     public static JsonObject parseJsonObjectOrThrowError(HttpServletRequest request)
             throws ServletException, IOException {
         StringBuilder sb = new StringBuilder();
@@ -52,23 +54,34 @@ public class InputParser {
             throw new ServletException(
                     new WebserverAPI.BadRequestException("Field name '" + fieldName + "' is missing in GET request"));
         }
+
+        value = value.trim();
+        if (value.matches(EMAIL_REGEX)) {
+            value = value.toLowerCase();
+        }
         return value;
     }
 
     public static String[] getCommaSeparatedStringArrayQueryParamOrThrowError(HttpServletRequest request,
             String fieldName, boolean nullable) throws ServletException {
-        String[] value = null;
+        String[] values = null;
         // expect val1,val2,val3 and so on...
         String queryParamValue = getQueryParamOrThrowError(request, fieldName, nullable);
         if (queryParamValue != null) {
-            value = Arrays.stream(queryParamValue.trim().split(",")).map(String::trim).filter(s -> !s.equals(""))
+            values = Arrays.stream(queryParamValue.trim().split(",")).map(String::trim).filter(s -> !s.equals(""))
                     .toArray(String[]::new);
         }
-        if (!nullable && value == null) {
+        if (!nullable && values == null) {
             throw new ServletException(
                     new WebserverAPI.BadRequestException("Field name '" + fieldName + "' is missing in GET request"));
         }
-        return value;
+
+        return Arrays.stream(values).map(value -> {
+            if (value.matches(EMAIL_REGEX)) {
+                return value.toLowerCase();
+            }
+            return value;
+        }).toArray(String[]::new);
     }
 
     public static Integer getIntQueryParamOrThrowError(HttpServletRequest request, String fieldName, boolean nullable)
@@ -137,9 +150,9 @@ public class InputParser {
             if (!stringified.contains("\"")) {
                 throw new Exception();
             }
-            String s = element.get(fieldName).getAsString().trim();
 
-            if (s.matches("^(?=.{1,64}@)[A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)*@[^-][A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)*(\\.[A-Za-z]{2,})$")) {
+            String s = element.get(fieldName).getAsString().trim();
+            if (s.matches(EMAIL_REGEX)) {
                 s = s.toLowerCase();
             }
             return s;
