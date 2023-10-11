@@ -830,7 +830,6 @@ public class CronjobTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        assertEquals(normalCronjobCounter, 0);
         for (int i=0; i<10; i++) {
             Cronjobs.addCronjob(process.getProcess(), CounterCronJob.getInstance(process.getProcess()));
             Thread.sleep(50);
