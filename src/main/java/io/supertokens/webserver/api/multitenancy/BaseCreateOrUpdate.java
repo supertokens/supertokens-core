@@ -45,8 +45,9 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
 
     protected void handle(HttpServletRequest req, TenantIdentifier sourceTenantIdentifier,
                           TenantIdentifier targetTenantIdentifier, Boolean emailPasswordEnabled,
-                          Boolean thirdPartyEnabled, Boolean passwordlessEnabled, JsonObject coreConfig,
-                          HttpServletResponse resp)
+                          Boolean thirdPartyEnabled, Boolean passwordlessEnabled, Boolean totpEnabled,
+                          String[] firstFactors, String[] defaultMFARequirements,
+                          JsonObject coreConfig, HttpServletResponse resp)
             throws ServletException, IOException {
 
         TenantConfig tenantConfig = Multitenancy.getTenantInfo(main,
@@ -63,6 +64,8 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
+                        new TotpConfig(false),
+                        new MfaConfig(null, null),
                         new JsonObject()
                 );
             } else {
@@ -72,6 +75,8 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                         new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(false),
+                        new TotpConfig(false),
+                        new MfaConfig(null, null),
                         new JsonObject()
                 );
             }
@@ -84,6 +89,8 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                     new EmailPasswordConfig(emailPasswordEnabled),
                     tenantConfig.thirdPartyConfig,
                     tenantConfig.passwordlessConfig,
+                    tenantConfig.totpConfig,
+                    tenantConfig.mfaConfig,
                     tenantConfig.coreConfig
             );
         }
@@ -94,6 +101,8 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                     tenantConfig.emailPasswordConfig,
                     new ThirdPartyConfig(thirdPartyEnabled, tenantConfig.thirdPartyConfig.providers),
                     tenantConfig.passwordlessConfig,
+                    tenantConfig.totpConfig,
+                    tenantConfig.mfaConfig,
                     tenantConfig.coreConfig
             );
         }
@@ -104,6 +113,44 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                     tenantConfig.emailPasswordConfig,
                     tenantConfig.thirdPartyConfig,
                     new PasswordlessConfig(passwordlessEnabled),
+                    tenantConfig.totpConfig,
+                    tenantConfig.mfaConfig,
+                    tenantConfig.coreConfig
+            );
+        }
+
+        if (totpEnabled != null) {
+            tenantConfig = new TenantConfig(
+                    tenantConfig.tenantIdentifier,
+                    tenantConfig.emailPasswordConfig,
+                    tenantConfig.thirdPartyConfig,
+                    tenantConfig.passwordlessConfig,
+                    new TotpConfig(totpEnabled),
+                    tenantConfig.mfaConfig,
+                    tenantConfig.coreConfig
+            );
+        }
+
+        if (firstFactors != null) {
+            tenantConfig = new TenantConfig(
+                    tenantConfig.tenantIdentifier,
+                    tenantConfig.emailPasswordConfig,
+                    tenantConfig.thirdPartyConfig,
+                    tenantConfig.passwordlessConfig,
+                    tenantConfig.totpConfig,
+                    new MfaConfig(firstFactors, tenantConfig.mfaConfig.defaultMFARequirements),
+                    tenantConfig.coreConfig
+            );
+        }
+
+        if (defaultMFARequirements != null) {
+            tenantConfig = new TenantConfig(
+                    tenantConfig.tenantIdentifier,
+                    tenantConfig.emailPasswordConfig,
+                    tenantConfig.thirdPartyConfig,
+                    tenantConfig.passwordlessConfig,
+                    tenantConfig.totpConfig,
+                    new MfaConfig(tenantConfig.mfaConfig.firstFactors, defaultMFARequirements),
                     tenantConfig.coreConfig
             );
         }
@@ -115,6 +162,8 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                     tenantConfig.emailPasswordConfig,
                     tenantConfig.thirdPartyConfig,
                     tenantConfig.passwordlessConfig,
+                    tenantConfig.totpConfig,
+                    tenantConfig.mfaConfig,
                     coreConfig
             );
         }

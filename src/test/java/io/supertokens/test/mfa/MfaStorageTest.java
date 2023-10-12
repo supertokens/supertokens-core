@@ -153,7 +153,7 @@ public class MfaStorageTest extends MfaTestBase {
         TenantIdentifierWithStorage publicTenant = new TenantIdentifierWithStorage(null, null, null, result.storage);
         TenantIdentifierWithStorage privateTenant = new TenantIdentifierWithStorage(null, null, "t1", result.storage);
 
-        TenantConfig privateTenantConfig = new TenantConfig(privateTenant, new EmailPasswordConfig(true), new ThirdPartyConfig(true, null), new PasswordlessConfig(true), new JsonObject());
+        TenantConfig privateTenantConfig = new TenantConfig(privateTenant, new EmailPasswordConfig(true), new ThirdPartyConfig(true, null), new PasswordlessConfig(true), new TotpConfig(false), new MfaConfig(null, null), new JsonObject());
 
         Multitenancy.addNewOrUpdateAppOrTenant(
                 result.process.main,

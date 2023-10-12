@@ -48,6 +48,18 @@ public class GenerateTenantConfig {
         return ConfigGenerator.generate(ThirdPartyConfig.class);
     }
 
+    public static ConfigGenerator.GeneratedValueAndExpectation generate_totpConfig()
+            throws ClassNotFoundException, InvocationTargetException, NoSuchMethodException, IllegalAccessException,
+            InstantiationException {
+        return ConfigGenerator.generate(TotpConfig.class);
+    }
+
+    public static ConfigGenerator.GeneratedValueAndExpectation generate_mfaConfig()
+            throws ClassNotFoundException, InvocationTargetException, NoSuchMethodException, IllegalAccessException,
+            InstantiationException {
+        return ConfigGenerator.generate(MfaConfig.class);
+    }
+
     public static ConfigGenerator.GeneratedValueAndExpectation generate_coreConfig() {
         // TODO:
         return new ConfigGenerator.GeneratedValueAndExpectation(new JsonObject(),  new ConfigGenerator.Expectation("ok", new JsonObject()));

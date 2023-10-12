@@ -52,6 +52,10 @@ public class CreateOrUpdateConnectionUriDomainAPI extends BaseCreateOrUpdate {
         Boolean emailPasswordEnabled = InputParser.parseBooleanOrThrowError(input, "emailPasswordEnabled", true);
         Boolean thirdPartyEnabled = InputParser.parseBooleanOrThrowError(input, "thirdPartyEnabled", true);
         Boolean passwordlessEnabled = InputParser.parseBooleanOrThrowError(input, "passwordlessEnabled", true);
+        Boolean totpEnabled = InputParser.parseBooleanOrThrowError(input, "totpEnabled", true);
+        String[] firstFactors = InputParser.parseStringArrayOrThrowError(input, "firstFactors", true);
+        String[] defaultMFARequirements = InputParser.parseStringArrayOrThrowError(input,
+                "defaultMFARequirements", true);
         JsonObject coreConfig = InputParser.parseJsonObjectOrThrowError(input, "coreConfig", true);
 
         TenantIdentifier sourceTenantIdentifier;
@@ -64,7 +68,9 @@ public class CreateOrUpdateConnectionUriDomainAPI extends BaseCreateOrUpdate {
         super.handle(
                 req, sourceTenantIdentifier,
                 new TenantIdentifier(connectionUriDomain, null, null),
-                emailPasswordEnabled, thirdPartyEnabled, passwordlessEnabled, coreConfig, resp);
+                emailPasswordEnabled, thirdPartyEnabled, passwordlessEnabled,
+                totpEnabled, firstFactors, defaultMFARequirements,
+                coreConfig, resp);
 
     }
 }

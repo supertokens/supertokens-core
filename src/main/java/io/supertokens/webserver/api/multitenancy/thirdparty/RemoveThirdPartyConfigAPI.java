@@ -82,6 +82,8 @@ public class RemoveThirdPartyConfigAPI extends WebserverAPI {
                     new ThirdPartyConfig(
                             config.thirdPartyConfig.enabled, newProviders.toArray(new ThirdPartyConfig.Provider[0])),
                     config.passwordlessConfig,
+                    config.totpConfig,
+                    config.mfaConfig,
                     config.coreConfig);
 
             Multitenancy.addNewOrUpdateAppOrTenant(main, updatedConfig, shouldProtectProtectedConfig(req), false, true);

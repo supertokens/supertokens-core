@@ -113,6 +113,7 @@ public class TestAppData {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
+                new TotpConfig(false), new MfaConfig(null, null),
                 new JsonObject()
         ), false);
 

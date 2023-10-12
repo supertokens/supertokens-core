@@ -157,6 +157,7 @@ public class ConfigTest {
                 new TenantConfig(new TenantIdentifier("abc", null, null), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
+                        new TotpConfig(false), new MfaConfig(null, null),
                         tenantConfig)}, new ArrayList<>());
 
         Assert.assertEquals(Config.getConfig(process.getProcess()).getRefreshTokenValidity(),
@@ -209,6 +210,7 @@ public class ConfigTest {
                     new TenantConfig(new TenantIdentifier("abc", null, null), new EmailPasswordConfig(false),
                             new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                             new PasswordlessConfig(false),
+                            new TotpConfig(false), new MfaConfig(null, null),
                             tenantConfig)}, new ArrayList<>());
             fail();
         } catch (InvalidConfigException e) {
@@ -245,6 +247,7 @@ public class ConfigTest {
                     new TenantConfig(new TenantIdentifier(null, null, "abc"), new EmailPasswordConfig(false),
                             new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                             new PasswordlessConfig(false),
+                            new TotpConfig(false), new MfaConfig(null, null),
                             tenantConfig)}, new ArrayList<>());
             fail();
         } catch (InvalidConfigException e) {
@@ -295,6 +298,7 @@ public class ConfigTest {
                     new TenantConfig(new TenantIdentifier("abc", null, null), new EmailPasswordConfig(false),
                             new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                             new PasswordlessConfig(false),
+                            new TotpConfig(false), new MfaConfig(null, null),
                             tenantConfig)}, new ArrayList<>());
 
         }
@@ -344,6 +348,7 @@ public class ConfigTest {
             tenants[0] = new TenantConfig(new TenantIdentifier("c1", null, null), new EmailPasswordConfig(false),
                     new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                     new PasswordlessConfig(false),
+                    new TotpConfig(false), new MfaConfig(null, null),
                     tenantConfig);
         }
 
@@ -355,6 +360,7 @@ public class ConfigTest {
             tenants[1] = new TenantConfig(new TenantIdentifier("c1", null, "t1"), new EmailPasswordConfig(false),
                     new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                     new PasswordlessConfig(false),
+                    new TotpConfig(false), new MfaConfig(null, null),
                     tenantConfig);
         }
 
@@ -364,6 +370,7 @@ public class ConfigTest {
             tenants[2] = new TenantConfig(new TenantIdentifier(null, null, "t2"), new EmailPasswordConfig(false),
                     new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                     new PasswordlessConfig(false),
+                    new TotpConfig(false), new MfaConfig(null, null),
                     tenantConfig);
         }
 
@@ -373,6 +380,7 @@ public class ConfigTest {
             tenants[3] = new TenantConfig(new TenantIdentifier(null, null, "t1"), new EmailPasswordConfig(false),
                     new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                     new PasswordlessConfig(false),
+                    new TotpConfig(false), new MfaConfig(null, null),
                     tenantConfig);
         }
 
@@ -439,6 +447,7 @@ public class ConfigTest {
             tenants[0] = new TenantConfig(new TenantIdentifier("c1", null, null), new EmailPasswordConfig(false),
                     new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                     new PasswordlessConfig(false),
+                    new TotpConfig(false), new MfaConfig(null, null),
                     tenantConfig);
         }
 
@@ -450,6 +459,7 @@ public class ConfigTest {
             tenants[1] = new TenantConfig(new TenantIdentifier("c2", null, null), new EmailPasswordConfig(false),
                     new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                     new PasswordlessConfig(false),
+                    new TotpConfig(false), new MfaConfig(null, null),
                     tenantConfig);
         }
 
@@ -490,6 +500,7 @@ public class ConfigTest {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
+                        new TotpConfig(false), new MfaConfig(null, null),
                         new JsonObject()
                 )
         );
@@ -502,6 +513,7 @@ public class ConfigTest {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
+                        new TotpConfig(false), new MfaConfig(null, null),
                         new JsonObject()
                 )
         );
@@ -514,6 +526,7 @@ public class ConfigTest {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
+                        new TotpConfig(false), new MfaConfig(null, null),
                         new JsonObject()
                 )
         );
@@ -526,6 +539,7 @@ public class ConfigTest {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
+                        new TotpConfig(false), new MfaConfig(null, null),
                         new JsonObject()
                 )
         );
@@ -538,6 +552,7 @@ public class ConfigTest {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
+                        new TotpConfig(false), new MfaConfig(null, null),
                         new JsonObject()
                 )
         );
@@ -550,6 +565,7 @@ public class ConfigTest {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
+                        new TotpConfig(false), new MfaConfig(null, null),
                         new JsonObject()
                 )
         );
@@ -567,6 +583,7 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
+                            new TotpConfig(false), new MfaConfig(null, null),
                             config
                     )
             );
@@ -579,6 +596,7 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
+                            new TotpConfig(false), new MfaConfig(null, null),
                             config
                     )
             );
@@ -591,6 +609,7 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
+                            new TotpConfig(false), new MfaConfig(null, null),
                             config
                     )
             );
@@ -603,6 +622,7 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
+                            new TotpConfig(false), new MfaConfig(null, null),
                             config
                     )
             );
@@ -615,6 +635,7 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
+                            new TotpConfig(false), new MfaConfig(null, null),
                             config
                     )
             );
@@ -627,6 +648,7 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
+                            new TotpConfig(false), new MfaConfig(null, null),
                             config
                     )
             );
@@ -639,6 +661,7 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
+                            new TotpConfig(false), new MfaConfig(null, null),
                             config
                     )
             );
@@ -685,6 +708,7 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
+                            new TotpConfig(false), new MfaConfig(null, null),
                             config
                     )
             );
@@ -702,6 +726,7 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
+                            new TotpConfig(false), new MfaConfig(null, null),
                             config
                     )
             );
@@ -714,6 +739,7 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
+                            new TotpConfig(false), new MfaConfig(null, null),
                             config
                     )
             );
@@ -731,6 +757,7 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
+                            new TotpConfig(false), new MfaConfig(null, null),
                             config
                     )
             );
@@ -743,6 +770,7 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
+                            new TotpConfig(false), new MfaConfig(null, null),
                             config
                     )
             );
@@ -760,6 +788,7 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
+                            new TotpConfig(false), new MfaConfig(null, null),
                             config
                     )
             );
@@ -777,6 +806,7 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
+                            new TotpConfig(false), new MfaConfig(null, null),
                             config
                     )
             );
@@ -794,6 +824,7 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
+                            new TotpConfig(false), new MfaConfig(null, null),
                             config
                     )
             );
@@ -811,6 +842,7 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
+                            new TotpConfig(false), new MfaConfig(null, null),
                             config
                     )
             );
@@ -828,6 +860,7 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
+                            new TotpConfig(false), new MfaConfig(null, null),
                             config
                     )
             );
@@ -845,6 +878,7 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
+                            new TotpConfig(false), new MfaConfig(null, null),
                             config
                     )
             );
@@ -862,6 +896,7 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
+                            new TotpConfig(false), new MfaConfig(null, null),
                             config
                     )
             );
@@ -879,6 +914,7 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
+                            new TotpConfig(false), new MfaConfig(null, null),
                             config
                     )
             );
@@ -896,6 +932,7 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
+                            new TotpConfig(false), new MfaConfig(null, null),
                             config
                     )
             );
@@ -936,6 +973,7 @@ public class ConfigTest {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(false),
+                        new TotpConfig(false), new MfaConfig(null, null),
                         new JsonObject()
                 )
         );
@@ -974,6 +1012,7 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(false),
+                            new TotpConfig(false), new MfaConfig(null, null),
                             coreConfig
                     )
             );
@@ -992,6 +1031,7 @@ public class ConfigTest {
                                 new EmailPasswordConfig(true),
                                 new ThirdPartyConfig(true, null),
                                 new PasswordlessConfig(false),
+                                new TotpConfig(false), new MfaConfig(null, null),
                                 coreConfig
                         )
                 );
@@ -1010,6 +1050,7 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(false),
+                            new TotpConfig(false), new MfaConfig(null, null),
                             new JsonObject()
                     )
             );
@@ -1025,6 +1066,7 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(false),
+                            new TotpConfig(false), new MfaConfig(null, null),
                             coreConfig
                     )
             );
@@ -1042,6 +1084,7 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(false),
+                            new TotpConfig(false), new MfaConfig(null, null),
                             coreConfig
                     )
             );
@@ -1118,6 +1161,7 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
+                            new TotpConfig(false), new MfaConfig(null, null),
                             coreConfigJson
                     ), false);
 
@@ -1138,6 +1182,7 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
+                            new TotpConfig(false), new MfaConfig(null, null),
                             coreConfigJson
                     ), false);
 
@@ -1176,6 +1221,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
+                    new TotpConfig(false), new MfaConfig(null, null),
                     coreConfigJson
             ), false);
 
@@ -1194,6 +1240,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
+                    new TotpConfig(false), new MfaConfig(null, null),
                     coreConfigJson
             ), false);
 
@@ -1236,6 +1283,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
+                    new TotpConfig(false), new MfaConfig(null, null),
                     coreConfigJson
             ), false);
 
@@ -1254,6 +1302,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
+                    new TotpConfig(false), new MfaConfig(null, null),
                     coreConfigJson
             ), false);
 
@@ -1272,6 +1321,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
+                    new TotpConfig(false), new MfaConfig(null, null),
                     coreConfigJson
             ), false);
 
@@ -1305,6 +1355,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
+                    new TotpConfig(false), new MfaConfig(null, null),
                     coreConfig
             ), false);
             fail();
@@ -1338,6 +1389,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
+                    new TotpConfig(false), new MfaConfig(null, null),
                     coreConfig
             ), false);
         }
@@ -1353,6 +1405,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
+                    new TotpConfig(false), new MfaConfig(null, null),
                     coreConfig
             ), false);
 
@@ -1373,6 +1426,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
+                    new TotpConfig(false), new MfaConfig(null, null),
                     coreConfig
             ), false);
 
@@ -1408,6 +1462,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
+                    new TotpConfig(false), new MfaConfig(null, null),
                     coreConfig
             ), false);
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
@@ -1415,6 +1470,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
+                    new TotpConfig(false), new MfaConfig(null, null),
                     coreConfig
             ), false);
         }
@@ -1430,12 +1486,14 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
+                    new TotpConfig(false), new MfaConfig(null, null),
                     coreConfig
             ), false);Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 t1,
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
+                new TotpConfig(false), new MfaConfig(null, null),
                 coreConfig
             ), false);
 
@@ -1456,6 +1514,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
+                    new TotpConfig(false), new MfaConfig(null, null),
                     coreConfig
             ), false);
 
@@ -1490,6 +1549,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
+                    new TotpConfig(false), new MfaConfig(null, null),
                     coreConfig
             ), false);
         }
@@ -1504,6 +1564,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
+                    new TotpConfig(false), new MfaConfig(null, null),
                     coreConfig
             ), false);
 
@@ -1523,6 +1584,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
+                    new TotpConfig(false), new MfaConfig(null, null),
                     coreConfig
             ), false);
 
@@ -1543,6 +1605,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
+                    new TotpConfig(false), new MfaConfig(null, null),
                     coreConfig
             ), false);
 
@@ -1577,6 +1640,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
+                    new TotpConfig(false), new MfaConfig(null, null),
                     coreConfig
             ), false);
         }
@@ -1592,6 +1656,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
+                    new TotpConfig(false), new MfaConfig(null, null),
                     coreConfig
             ), false);
 
@@ -1611,6 +1676,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
+                    new TotpConfig(false), new MfaConfig(null, null),
                     coreConfig
             ), false);
 
@@ -1645,6 +1711,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
+                    new TotpConfig(false), new MfaConfig(null, null),
                     coreConfig
             ), false);
         }
@@ -1663,6 +1730,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
+                    new TotpConfig(false), new MfaConfig(null, null),
                     coreConfig
             ), false);
 
@@ -1692,6 +1760,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
+                    new TotpConfig(false), new MfaConfig(null, null),
                     coreConfig
             ), false);
 
@@ -1734,6 +1803,7 @@ public class ConfigTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
+                new TotpConfig(false), new MfaConfig(null, null),
                 config
         ), false);
 
@@ -1753,6 +1823,7 @@ public class ConfigTest {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(true),
+                        new TotpConfig(false), new MfaConfig(null, null),
                         config1
                 ),
                 new TenantConfig(
@@ -1760,6 +1831,7 @@ public class ConfigTest {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(true),
+                        new TotpConfig(false), new MfaConfig(null, null),
                         config2
                 ),
                 new TenantConfig(
@@ -1767,6 +1839,7 @@ public class ConfigTest {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
+                        new TotpConfig(false), new MfaConfig(null, null),
                         config3
                 ),
                 new TenantConfig(
@@ -1774,6 +1847,7 @@ public class ConfigTest {
                         new EmailPasswordConfig(false),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
+                        new TotpConfig(false), new MfaConfig(null, null),
                         config4
                 ),
         };
@@ -1820,6 +1894,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
+                    new TotpConfig(false), new MfaConfig(null, null),
                     mistypedConfig
             ), false);
             fail();
@@ -1873,6 +1948,7 @@ public class ConfigTest {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
+                        new TotpConfig(false), new MfaConfig(null, null),
                         config
                 ), false);
                 fail();
@@ -1962,6 +2038,7 @@ public class ConfigTest {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
+                        new TotpConfig(false), new MfaConfig(null, null),
                         config
                 ), false);
                 fail();
@@ -2025,6 +2102,7 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
+                    new TotpConfig(false), new MfaConfig(null, null),
                     config
             ), false);
 
@@ -2046,6 +2124,7 @@ public class ConfigTest {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
+                        new TotpConfig(false), new MfaConfig(null, null),
                         config2
                 ), false);
                 fail();

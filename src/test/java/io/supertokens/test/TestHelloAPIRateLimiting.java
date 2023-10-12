@@ -78,6 +78,7 @@ public class TestHelloAPIRateLimiting {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(false, null),
                             new PasswordlessConfig(false),
+                            new TotpConfig(false), new MfaConfig(null, null),
                             config
                     )
             );
@@ -98,6 +99,7 @@ public class TestHelloAPIRateLimiting {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(false, null),
                             new PasswordlessConfig(false),
+                            new TotpConfig(false), new MfaConfig(null, null),
                             config
                     )
             );
@@ -118,6 +120,7 @@ public class TestHelloAPIRateLimiting {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(false, null),
                             new PasswordlessConfig(false),
+                            new TotpConfig(false), new MfaConfig(null, null),
                             config
                     )
             );
