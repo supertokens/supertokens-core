@@ -248,6 +248,7 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         }
 
         mfaStats.add("maus", mfaMauArr);
+        mfaStats.add("totp", getTOTPStats());
 
         int mfaTotalUsers = 0;
         for (Storage storage : storages) {
@@ -385,10 +386,6 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         for (EE_FEATURES feature : features) {
             if (feature == EE_FEATURES.DASHBOARD_LOGIN) {
                 usageStats.add(EE_FEATURES.DASHBOARD_LOGIN.toString(), getDashboardLoginStats());
-            }
-
-            if (feature == EE_FEATURES.TOTP) {
-                usageStats.add(EE_FEATURES.TOTP.toString(), getTOTPStats());
             }
 
             if (feature == EE_FEATURES.MFA) {

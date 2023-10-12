@@ -26,6 +26,7 @@ import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.ActiveUsersStorage;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.mfa.MfaStorage;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.nonAuthRecipe.NonAuthRecipeStorage;
 import io.supertokens.storageLayer.StorageLayer;
@@ -66,7 +67,7 @@ public class AppTenantUserTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
-                        EE_FEATURES.MULTI_TENANCY, EE_FEATURES.TOTP});
+                        EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA});
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -76,7 +77,8 @@ public class AppTenantUserTest {
 
         // this list contains the package names for recipes which dont use UserIdMapping
         ArrayList<String> classesToSkip = new ArrayList<>(
-                List.of("io.supertokens.pluginInterface.jwt.JWTRecipeStorage", ActiveUsersStorage.class.getName()));
+                List.of("io.supertokens.pluginInterface.jwt.JWTRecipeStorage", ActiveUsersStorage.class.getName(),
+                        MfaStorage.class.getName()));
 
         Reflections reflections = new Reflections("io.supertokens.pluginInterface");
         Set<Class<? extends NonAuthRecipeStorage>> classes = reflections.getSubTypesOf(NonAuthRecipeStorage.class);
@@ -175,7 +177,7 @@ public class AppTenantUserTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
-                        EE_FEATURES.MULTI_TENANCY, EE_FEATURES.TOTP});
+                        EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA});
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -185,7 +187,7 @@ public class AppTenantUserTest {
 
         // this list contains the package names for recipes which dont use UserIdMapping
         ArrayList<String> classesToSkip = new ArrayList<>(
-                List.of("io.supertokens.pluginInterface.jwt.JWTRecipeStorage", ActiveUsersStorage.class.getName()));
+                List.of("io.supertokens.pluginInterface.jwt.JWTRecipeStorage", ActiveUsersStorage.class.getName(), MfaStorage.class.getName()));
 
         Reflections reflections = new Reflections("io.supertokens.pluginInterface");
         Set<Class<? extends NonAuthRecipeStorage>> classes = reflections.getSubTypesOf(NonAuthRecipeStorage.class);
@@ -264,7 +266,7 @@ public class AppTenantUserTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
-                        EE_FEATURES.MULTI_TENANCY, EE_FEATURES.TOTP});
+                        EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA});
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 

@@ -96,7 +96,7 @@ public class TestAppData {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES,
-                        new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY, EE_FEATURES.TOTP, EE_FEATURES.MFA});
+                        new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA});
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -167,9 +167,6 @@ public class TestAppData {
 
         UserIdMapping.createUserIdMapping(process.getProcess(), appWithStorage.toAppIdentifierWithStorage(),
                 plUser.user.getSupertokensUserId(), "externalid", null, false);
-
-        Mfa.enableFactor(appWithStorage, process.getProcess(),
-                epUser.getSupertokensUserId(), "emailpassword");
 
         String[] tablesThatHaveData = appWithStorage.getStorage()
                 .getAllTablesInTheDatabaseThatHasDataForAppId(app.getAppId());
