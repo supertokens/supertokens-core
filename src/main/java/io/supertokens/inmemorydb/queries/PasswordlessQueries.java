@@ -1093,7 +1093,7 @@ public class PasswordlessQueries {
 
         @Override
         public PasswordlessDevice map(ResultSet result) throws Exception {
-            return new PasswordlessDevice(result.getString("device_id_hash"), result.getString("email"),
+            return new PasswordlessDevice(result.getString("device_id_hash").trim(), result.getString("email"),
                     result.getString("phone_number"), result.getString("link_code_salt"),
                     result.getInt("failed_attempts"));
         }
@@ -1111,7 +1111,7 @@ public class PasswordlessQueries {
 
         @Override
         public PasswordlessCode map(ResultSet result) throws Exception {
-            return new PasswordlessCode(result.getString("code_id"), result.getString("device_id_hash"),
+            return new PasswordlessCode(result.getString("code_id"), result.getString("device_id_hash").trim(),
                     result.getString("link_code_hash"), result.getLong("created_at"));
         }
     }

@@ -18,11 +18,9 @@ Supertokens architecture is optimized to add secure authentication for your user
 2. Backend SDK: Provides APIs for sign-up, sign-in, signout, session refreshing, etc. Your Frontend will talk to these APIs
 3. SuperTokens Core: The HTTP service for the core auth logic and database operations. This service is used by the Backend SDK
 
-## Supports multiple auth strategies
+## Get Started Now
 
-![auth recipes](.github/auth_strategies.png)
-
-Guides to setup different recipes
+SuperTokens has the following features:
 
 * [Passwordless](https://supertokens.com/docs/passwordless/introduction)
 * [Social Login](https://supertokens.com/docs/thirdparty/introduction)
@@ -31,6 +29,10 @@ Guides to setup different recipes
 * [Passwordless + Social Login](https://supertokens.com/docs/thirdpartypasswordless/introduction)
 * [Email Password + Social Login](https://supertokens.com/docs/thirdpartyemailpassword/introduction)
 * [Session Management](https://supertokens.com/docs/session/introduction)
+* [Multi-Factor Authentication](https://supertokens.com/docs/mfa/introduction)
+* [Multi Tenancy / Organization Support (Enterprise SSO)](https://supertokens.com/docs/multitenancy/introduction)
+* [User Roles](https://supertokens.com/docs/userroles/introduction)
+* [Microservice Authentication](https://supertokens.com/docs/microservice_auth/introduction)
 
 ## Learn more
 - [🚀 What is SuperTokens?](https://github.com/supertokens/supertokens-core#-what-is-supertokens)
@@ -39,6 +41,7 @@ Guides to setup different recipes
     - [Documentation](https://github.com/supertokens/supertokens-core#documentation)
 - [🏗️ Architecture](https://github.com/supertokens/supertokens-core#%EF%B8%8F-architecture)
 - [☕ Why Java?](https://github.com/supertokens/supertokens-core#-why-java)
+- [⌨️ User Management Dashboard](https://github.com/supertokens/supertokens-core#-user-management-dashboard) 
 - [🔥 SuperTokens vs Others](https://github.com/supertokens/supertokens-core#-supertokens-vs-others)
 - [🛠️ Building from source](https://github.com/supertokens/supertokens-core#%EF%B8%8F-building-from-source)
 - [👥 Community](https://github.com/supertokens/supertokens-core#-community)
@@ -94,6 +97,23 @@ Please find an [architecture diagram here](https://supertokens.io/docs/community
    - We have carefully chosen our dependencies. For eg: we use an embedded tomcat server instead of a higher-level web framework.
    - We also plan on using [GraalVM](https://www.graalvm.org/) in the future and this can reduce memory usage by 95%! 
 - ✅ If you require any modifications to the auth APIs, those would need to be done on the backend SDK level (for example Node, Golang, Python..). So you’d rarely need to directly modify/work  with the Java code in this repo.
+
+## ⌨️ User Management Dashboard
+
+Oversee your users with the [SuperTokens User Management Dashboard](https://supertokens.com/docs/userdashboard/about)
+
+
+### List users
+
+List all the users who have signed up to your application.
+
+![List SuperTokens users](.github/list-user.png)
+
+### Manage users
+
+Manage users by modifying or deleting their sessions, metadata, roles and account info. 
+
+![Manage users](.github/user-info.png)
 
 ## 🔥 SuperTokens vs others
 Please find a detailed comparison chart [on our website](https://supertokens.io/pricing#comparison-chart)
