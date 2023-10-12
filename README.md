@@ -18,11 +18,11 @@ Supertokens architecture is optimized to add secure authentication for your user
 2. Backend SDK: Provides APIs for sign-up, sign-in, signout, session refreshing, etc. Your Frontend will talk to these APIs
 3. SuperTokens Core: The HTTP service for the core auth logic and database operations. This service is used by the Backend SDK
 
-## Supports multiple auth strategies
+## Get Started Now
 
 ![auth recipes](.github/auth_strategies.png)
 
-Guides to setup different recipes
+SuperTokens supports the following authentication strategies.
 
 * [Passwordless](https://supertokens.com/docs/passwordless/introduction)
 * [Social Login](https://supertokens.com/docs/thirdparty/introduction)
