@@ -37,9 +37,6 @@ import io.supertokens.webserver.api.emailverification.UnverifyEmailAPI;
 import io.supertokens.webserver.api.emailverification.VerifyEmailAPI;
 import io.supertokens.webserver.api.jwt.JWKSAPI;
 import io.supertokens.webserver.api.jwt.JWTSigningAPI;
-import io.supertokens.webserver.api.mfa.DisableFactorAPI;
-import io.supertokens.webserver.api.mfa.EnableFactorAPI;
-import io.supertokens.webserver.api.mfa.ListFactorsAPI;
 import io.supertokens.webserver.api.multitenancy.*;
 import io.supertokens.webserver.api.multitenancy.thirdparty.CreateOrUpdateThirdPartyConfigAPI;
 import io.supertokens.webserver.api.multitenancy.thirdparty.RemoveThirdPartyConfigAPI;
@@ -231,10 +228,6 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new GetDashboardUsersAPI(main));
         addAPI(new GetDashboardSessionsForUserAPI(main));
         addAPI(new SearchTagsAPI(main));
-
-        addAPI(new ListFactorsAPI(main));
-        addAPI(new EnableFactorAPI(main));
-        addAPI(new DisableFactorAPI(main));
 
         addAPI(new CreateOrUpdateConnectionUriDomainAPI(main));
         addAPI(new RemoveConnectionUriDomainAPI(main));

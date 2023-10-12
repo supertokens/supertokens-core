@@ -33,6 +33,7 @@ import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
+import io.supertokens.pluginInterface.mfa.MfaStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -197,8 +198,10 @@ public class TestTenantUserAssociation {
             }
 
             if (name.equals(UserMetadataStorage.class.getName())
-                    || name.equals(JWTRecipeStorage.class.getName()) ||
-                    name.equals(ActiveUsersStorage.class.getName())) {
+                    || name.equals(JWTRecipeStorage.class.getName())
+                    || name.equals(ActiveUsersStorage.class.getName())
+                    || name.equals(MfaStorage.class.getName())
+            ) {
                 // user metadata is app specific and does not have any tenant specific data
                 // JWT storage does not have any user specific data
                 // Active users storage does not have tenant specific data
