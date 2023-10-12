@@ -43,6 +43,7 @@ import org.junit.rules.TestRule;
 import org.reflections.Reflections;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
 
@@ -305,6 +306,49 @@ public class CronjobTest {
         @Override
         protected void doTaskPerStorage(Storage storage) throws Exception {
             storages.add(storage);
+        }
+    }
+
+    static class CounterCronJob extends CronTask {
+        private static final String RESOURCE_ID = "io.supertokens.test.CronjobTest.CounterCronJob";
+        private static AtomicInteger count = new AtomicInteger();
+
+        private CounterCronJob(Main main, List<List<TenantIdentifier>> tenantsInfo) {
+            super("CounterCronJob", main, tenantsInfo, false);
+        }
+
+        public static CounterCronJob getInstance(Main main) {
+            try {
+                return (CounterCronJob) main.getResourceDistributor()
+                        .getResource(new TenantIdentifier(null, null, null), RESOURCE_ID);
+            } catch (TenantOrAppNotFoundException e) {
+                List<TenantIdentifier> tenants = new ArrayList<>();
+                tenants.add(new TenantIdentifier(null, null, null));
+                List<List<TenantIdentifier>> finalList = new ArrayList<>();
+                finalList.add(tenants);
+                return (CounterCronJob) main.getResourceDistributor()
+                        .setResource(new TenantIdentifier(null, null, null), RESOURCE_ID,
+                                new CounterCronJob(main, finalList));
+            }
+        }
+
+        @Override
+        public int getIntervalTimeSeconds() {
+            return 1;
+        }
+
+        @Override
+        public int getInitialWaitTimeSeconds() {
+            return 0;
+        }
+
+        @Override
+        protected void doTaskPerStorage(Storage storage) throws Exception {
+            count.incrementAndGet();
+        }
+
+        public int getCount() {
+            return count.get();
         }
     }
 
@@ -775,6 +819,25 @@ public class CronjobTest {
             }
         }
         assertTrue(found);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testThatReAddingSameCronTaskDoesNotScheduleMoreExecutors() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        for (int i=0; i<10; i++) {
+            Cronjobs.addCronjob(process.getProcess(), CounterCronJob.getInstance(process.getProcess()));
+            Thread.sleep(50);
+        }
+
+        Thread.sleep(5000);
+        assertTrue(CounterCronJob.getInstance(process.getProcess()).getCount() > 3 && CounterCronJob.getInstance(process.getProcess()).getCount() < 8);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
