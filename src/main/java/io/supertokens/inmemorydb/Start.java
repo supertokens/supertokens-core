@@ -619,12 +619,7 @@ public class Start
         } else if (className.equals(JWTRecipeStorage.class.getName())) {
             return false;
         } else if (className.equals(MfaStorage.class.getName())) {
-            try {
-                MultitenancyQueries.getAllTenants(this);
-                return MfaQueries.listFactors(this, appIdentifier, userId).length > 0;
-            } catch (SQLException e) {
-                throw new StorageQueryException(e);
-            }
+            return false; /* nothing here */
         } else {
             throw new IllegalStateException("ClassName: " + className + " is not part of NonAuthRecipeStorage");
         }
@@ -724,11 +719,7 @@ public class Start
                 throw new StorageQueryException(e);
             }
         } else if (className.equals(MfaStorage.class.getName())) {
-            try {
-                MfaQueries.enableFactor(this, tenantIdentifier, userId, "emailpassword");
-            } catch (SQLException e) {
-                throw new StorageQueryException(e);
-            }
+            /* nothing here */
         } else {
             throw new IllegalStateException("ClassName: " + className + " is not part of NonAuthRecipeStorage");
         }
