@@ -31,6 +31,9 @@ SuperTokens supports the following authentication strategies.
 * [Passwordless + Social Login](https://supertokens.com/docs/thirdpartypasswordless/introduction)
 * [Email Password + Social Login](https://supertokens.com/docs/thirdpartyemailpassword/introduction)
 * [Session Management](https://supertokens.com/docs/session/introduction)
+* [Multi-Factor Authentication](https://supertokens.com/docs/mfa/introduction)
+* [Multi Tenancy](https://supertokens.com/docs/multitenancy/introduction)
+* [User Roles](https://supertokens.com/docs/userroles/introduction)
 
 ## Learn more
 - [🚀 What is SuperTokens?](https://github.com/supertokens/supertokens-core#-what-is-supertokens)
