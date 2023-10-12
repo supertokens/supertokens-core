@@ -30,7 +30,7 @@ SuperTokens has the following features:
 * [Email Password + Social Login](https://supertokens.com/docs/thirdpartyemailpassword/introduction)
 * [Session Management](https://supertokens.com/docs/session/introduction)
 * [Multi-Factor Authentication](https://supertokens.com/docs/mfa/introduction)
-* [Multi Tenancy / Organization Support (Enterprise SSO) ](https://supertokens.com/docs/multitenancy/introduction)
+* [Multi Tenancy / Organization Support (Enterprise SSO)](https://supertokens.com/docs/multitenancy/introduction)
 * [User Roles](https://supertokens.com/docs/userroles/introduction)
 * [Microservice Authentication](https://supertokens.com/docs/microservice_auth/introduction)
 
