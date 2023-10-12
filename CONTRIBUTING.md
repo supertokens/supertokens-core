@@ -59,9 +59,11 @@ We're happy to help!:raised_hands:
 
 1. Fork the [supertokens-core](https://github.com/supertokens/supertokens-core) repository (**Skip this step if you are
    NOT modifying supertokens-core**)
-2. `git clone https://github.com/supertokens/supertokens-root.git`
-3. `cd supertokens-root`
-4. Open the `modules.txt` file in an editor (**Skip this step if you are NOT modifying supertokens-core**):
+2. Fork the [plugin-interface](https://github.com/supertokens/supertokens-plugin-interface) repository (**Skip this step if you are
+   NOT modifying supertokens-core**)
+3. `git clone https://github.com/supertokens/supertokens-root.git`
+4. `cd supertokens-root`
+5. Open the `modules.txt` file in an editor (**Skip this step if you are NOT modifying supertokens-core**):
     - The `modules.txt` file contains the core, plugin-interface, the type of plugin and their branches(versions)
     - By default the `master` branch is used but you can change the branch depending on which version you want to modify
     - The `sqlite-plugin` is used as the default plugin as it is an in-memory database and requires no setup
@@ -78,7 +80,7 @@ We're happy to help!:raised_hands:
       sqlite-plugin,master
       ```
 
-5. Run loadModules to clone the required repositories  
+6. Run loadModules to clone the required repositories  
    `./loadModules`
 
 ## Modifying code
