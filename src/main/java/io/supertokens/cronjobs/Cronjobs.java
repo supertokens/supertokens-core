@@ -91,9 +91,9 @@ public class Cronjobs extends ResourceDistributor.SingletonResource {
         }
         Cronjobs instance = getInstance(main);
         synchronized (instance.lock) {
-            instance.executor.scheduleWithFixedDelay(task, task.getInitialWaitTimeSeconds(),
-                    task.getIntervalTimeSeconds(), TimeUnit.SECONDS);
             if (!instance.tasks.contains(task)) {
+                instance.executor.scheduleWithFixedDelay(task, task.getInitialWaitTimeSeconds(),
+                        task.getIntervalTimeSeconds(), TimeUnit.SECONDS);
                 instance.tasks.add(task);
             }
         }
