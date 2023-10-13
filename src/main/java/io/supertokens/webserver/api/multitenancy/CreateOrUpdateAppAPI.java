@@ -21,6 +21,7 @@ import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.Utils;
 import io.supertokens.webserver.api.multitenancy.BaseCreateOrUpdate;
@@ -54,11 +55,17 @@ public class CreateOrUpdateAppAPI extends BaseCreateOrUpdate {
         Boolean emailPasswordEnabled = InputParser.parseBooleanOrThrowError(input, "emailPasswordEnabled", true);
         Boolean thirdPartyEnabled = InputParser.parseBooleanOrThrowError(input, "thirdPartyEnabled", true);
         Boolean passwordlessEnabled = InputParser.parseBooleanOrThrowError(input, "passwordlessEnabled", true);
-        Boolean totpEnabled = InputParser.parseBooleanOrThrowError(input, "totpEnabled", true);
-        String[] firstFactors = InputParser.parseStringArrayOrThrowError(input, "firstFactors", true);
-        String[] defaultMFARequirements = InputParser.parseStringArrayOrThrowError(input,
-                "defaultMFARequirements", true);
         JsonObject coreConfig = InputParser.parseJsonObjectOrThrowError(input, "coreConfig", true);
+
+        Boolean totpEnabled = null;
+        String[] firstFactors = new String[0];
+        String[] defaultMFARequirements = new String[0];
+
+        if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_1)) {
+            totpEnabled = InputParser.parseBooleanOrThrowError(input, "totpEnabled", true);
+            firstFactors = InputParser.parseStringArrayOrThrowError(input, "firstFactors", true);
+            defaultMFARequirements = InputParser.parseStringArrayOrThrowError(input, "defaultMFARequirements", true);
+        }
 
         TenantIdentifier sourceTenantIdentifier;
         try {
