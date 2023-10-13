@@ -26,6 +26,3 @@ workflows:
       - test:
           context:
             - slack-notification
-          filters:
-            branches:
-              ignore: /.*/
