@@ -84,6 +84,18 @@ do
         currPinnedDb=$(echo "$pinnedDBArray" | jq ".[$i]")
         currPinnedDb=$(echo "$currPinnedDb" | tr -d '"')
 
+        echo ""
+        echo ""
+        echo ""
+        echo ""
+        echo ""
+        echo "===== testing $currPinnedDb with plugin-interface $currVersion ====="
+        echo ""
+        echo ""
+        echo ""
+        echo ""
+        echo ""
+
         i=$((i+1))
 
         if [[ $currPinnedDb == "sqlite" ]]
@@ -148,11 +160,36 @@ do
 
         if [[ $? -ne 0 ]]
         then
+            echo ""
+            echo ""
+            echo ""
+            echo ""
+            echo ""
+            echo "===== testing $currPinnedDb with plugin-interface $currVersion FAILED ====="
+            echo ""
+            echo ""
+            echo ""
+            echo ""
+            echo ""
+
             cat logs/*
             cd ../project/
             echo "test failed... exiting!"
             exit 1
         fi
+
+        echo ""
+        echo ""
+        echo ""
+        echo ""
+        echo ""
+        echo "===== testing $currPinnedDb with plugin-interface $currVersion SUCCEEDED ====="
+        echo ""
+        echo ""
+        echo ""
+        echo ""
+        echo ""
+
         cd ../
         rm -rf supertokens-root
 
