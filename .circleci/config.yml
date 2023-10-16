@@ -28,3 +28,8 @@ workflows:
       - test:
           context:
             - slack-notification
+          filters:
+            tags:
+              only: /dev-v[0-9]+(\.[0-9]+)*/
+            branches:
+              ignore: /.*/
