@@ -18,6 +18,10 @@ Supertokens architecture is optimized to add secure authentication for your user
 2. Backend SDK: Provides APIs for sign-up, sign-in, signout, session refreshing, etc. Your Frontend will talk to these APIs
 3. SuperTokens Core: The HTTP service for the core auth logic and database operations. This service is used by the Backend SDK
 
+## Features
+
+[![Click here to get started](.github/click-here-to-get-started.png)](https://supertokens.com/docs/guides)
+
 **SuperTokens has the following features:**
 
 * Passwordless Login
@@ -32,7 +36,6 @@ Supertokens architecture is optimized to add secure authentication for your user
 * User Roles
 * Microservice Authentication
 
-[![Get Started](.github/get-started-button.png)](https://supertokens.com/docs/guides)
 
 ## Learn more
 - [🚀 What is SuperTokens?](https://github.com/supertokens/supertokens-core#-what-is-supertokens)
