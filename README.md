@@ -18,21 +18,21 @@ Supertokens architecture is optimized to add secure authentication for your user
 2. Backend SDK: Provides APIs for sign-up, sign-in, signout, session refreshing, etc. Your Frontend will talk to these APIs
 3. SuperTokens Core: The HTTP service for the core auth logic and database operations. This service is used by the Backend SDK
 
-## Get Started Now
+**SuperTokens has the following features:**
 
-SuperTokens has the following features:
+* Passwordless Login
+* Social Login
+* Email Password Login
+* Phone Password Login
+* Passwordless + Social Login
+* Email Password + Social Login
+* Session Management
+* Multi-Factor Authentication
+* Multi Tenancy / Organization Support (Enterprise SSO)
+* User Roles
+* Microservice Authentication
 
-* [Passwordless](https://supertokens.com/docs/passwordless/introduction)
-* [Social Login](https://supertokens.com/docs/thirdparty/introduction)
-* [Email Password Login](https://supertokens.com/docs/emailpassword/introduction)
-* [Phone Password Login](https://supertokens.com/docs/phonepassword/introduction)
-* [Passwordless + Social Login](https://supertokens.com/docs/thirdpartypasswordless/introduction)
-* [Email Password + Social Login](https://supertokens.com/docs/thirdpartyemailpassword/introduction)
-* [Session Management](https://supertokens.com/docs/session/introduction)
-* [Multi-Factor Authentication](https://supertokens.com/docs/mfa/introduction)
-* [Multi Tenancy / Organization Support (Enterprise SSO)](https://supertokens.com/docs/multitenancy/introduction)
-* [User Roles](https://supertokens.com/docs/userroles/introduction)
-* [Microservice Authentication](https://supertokens.com/docs/microservice_auth/introduction)
+[![Get Started](.github/get-started-button.png)](https://supertokens.com/docs/guides)
 
 ## Learn more
 - [🚀 What is SuperTokens?](https://github.com/supertokens/supertokens-core#-what-is-supertokens)
