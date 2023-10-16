@@ -20,10 +20,10 @@ jobs:
       - run: echo "host all  all    0.0.0.0/0  md5" >> /etc/postgresql/9.5/main/pg_hba.conf
       - run: echo "listen_addresses='*'" >> /etc/postgresql/9.5/main/postgresql.conf
       - run: sed -i 's/^#*\s*max_connections\s*=.*/max_connections = 10000/' /etc/postgresql/9.5/main/postgresql.conf
-      - run: (cd .circleci/ && ./doTests.sh << pipeline.parameters.plugin >>)
+      - run: (cd .circleci/ && ./doTests.sh << parameters.plugin >>)
       - slack/status:
-          success_message: ':tada: A $CIRCLE_JOB job for << pipeline.parameters.plugin >> plugin has succeeded!'
-          failure_message: ':red_circle: A $CIRCLE_JOB job for << pipeline.parameters.plugin >> plugin has failed!'
+          success_message: ':tada: A $CIRCLE_JOB job for << parameters.plugin >> plugin has succeeded!'
+          failure_message: ':red_circle: A $CIRCLE_JOB job for << parameters.plugin >> plugin has failed!'
 
 workflows:
   version: 2
