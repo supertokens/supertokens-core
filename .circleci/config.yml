@@ -9,6 +9,7 @@ jobs:
         environment:
           MONGO_INITDB_ROOT_USERNAME: root
           MONGO_INITDB_ROOT_PASSWORD: root
+    parallelism: 4
     resource_class: large
     steps:
       - checkout
@@ -27,8 +28,3 @@ workflows:
       - test:
           context:
             - slack-notification
-          filters:
-            tags:
-              only: /dev-v[0-9]+(\.[0-9]+)*/
-            branches:
-              ignore: /.*/
