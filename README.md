@@ -22,14 +22,10 @@ Supertokens architecture is optimized to add secure authentication for your user
 
 [![Click here to get started](.github/click-here-to-get-started.png)](https://supertokens.com/docs/guides)
 
-**SuperTokens has the following features:**
-
 * Passwordless Login
 * Social Login
 * Email Password Login
 * Phone Password Login
-* Passwordless + Social Login
-* Email Password + Social Login
 * Session Management
 * Multi-Factor Authentication
 * Multi Tenancy / Organization Support (Enterprise SSO)
