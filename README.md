@@ -18,21 +18,20 @@ Supertokens architecture is optimized to add secure authentication for your user
 2. Backend SDK: Provides APIs for sign-up, sign-in, signout, session refreshing, etc. Your Frontend will talk to these APIs
 3. SuperTokens Core: The HTTP service for the core auth logic and database operations. This service is used by the Backend SDK
 
-## Get Started Now
+## Features
 
-SuperTokens has the following features:
+[![Click here to get started](.github/click-here-to-get-started.png)](https://supertokens.com/docs/guides)
 
-* [Passwordless](https://supertokens.com/docs/passwordless/introduction)
-* [Social Login](https://supertokens.com/docs/thirdparty/introduction)
-* [Email Password Login](https://supertokens.com/docs/emailpassword/introduction)
-* [Phone Password Login](https://supertokens.com/docs/phonepassword/introduction)
-* [Passwordless + Social Login](https://supertokens.com/docs/thirdpartypasswordless/introduction)
-* [Email Password + Social Login](https://supertokens.com/docs/thirdpartyemailpassword/introduction)
-* [Session Management](https://supertokens.com/docs/session/introduction)
-* [Multi-Factor Authentication](https://supertokens.com/docs/mfa/introduction)
-* [Multi Tenancy / Organization Support (Enterprise SSO)](https://supertokens.com/docs/multitenancy/introduction)
-* [User Roles](https://supertokens.com/docs/userroles/introduction)
-* [Microservice Authentication](https://supertokens.com/docs/microservice_auth/introduction)
+* Passwordless Login
+* Social Login
+* Email Password Login
+* Phone Password Login
+* Session Management
+* Multi-Factor Authentication
+* Multi Tenancy / Organization Support (Enterprise SSO)
+* User Roles
+* Microservice Authentication
+
 
 ## Learn more
 - [🚀 What is SuperTokens?](https://github.com/supertokens/supertokens-core#-what-is-supertokens)
@@ -72,7 +71,7 @@ We want to change that - we believe the only way is to provide a solution that h
   
 We also believe in the principle of least vendor lock-in. Your having full control of your user's data means that you can switch away from SuperTokens without forcing your existing users to logout, reset their passwords, or in the worst case, sign up again. 
 
-### Features - [Click here](https://thirdpartyemailpassword.demo.supertokens.io/) to see the demo app.
+### [Click here](https://thirdpartyemailpassword.demo.supertokens.io/) to see the demo app.
 - Please visit [our website](https://supertokens.io/pricing) to see the list of features.
 - We want to make features as decoupled as possible. This means you can use SuperTokens for just login, or just session management, or both. In fact, we also offer session management integrations with other login providers like Auth0.
 

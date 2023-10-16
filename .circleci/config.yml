@@ -9,6 +9,7 @@ jobs:
         environment:
           MONGO_INITDB_ROOT_USERNAME: root
           MONGO_INITDB_ROOT_PASSWORD: root
+    parallelism: 4
     resource_class: large
     parameters:
       plugin:
