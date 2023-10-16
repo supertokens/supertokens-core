@@ -33,15 +33,35 @@ workflows:
           plugin: sqlite
           context:
             - slack-notification
+          filters:
+            tags:
+              only: /dev-v[0-9]+(\.[0-9]+)*/
+            branches:
+              ignore: /.*/
       - test:
           plugin: mongodb
           context:
             - slack-notification
+          filters:
+            tags:
+              only: /dev-v[0-9]+(\.[0-9]+)*/
+            branches:
+              ignore: /.*/
       - test:
           plugin: postgresql
           context:
             - slack-notification
+          filters:
+            tags:
+              only: /dev-v[0-9]+(\.[0-9]+)*/
+            branches:
+              ignore: /.*/
       - test:
           plugin: mysql
           context:
             - slack-notification
+          filters:
+            tags:
+              only: /dev-v[0-9]+(\.[0-9]+)*/
+            branches:
+              ignore: /.*/
