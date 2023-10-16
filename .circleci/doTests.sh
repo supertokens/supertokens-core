@@ -7,6 +7,8 @@ function cleanup {
 trap cleanup EXIT
 cleanup
 
+pluginToTest=$1
+
 pinnedDBJson=$(curl -s -X GET \
   'https://api.supertokens.io/0/plugin/pinned?planType=FREE' \
   -H 'api-version: 0')
@@ -86,7 +88,7 @@ do
 
         i=$((i+1))
 
-        if (( i % CIRCLE_NODE_TOTAL == CIRCLE_NODE_INDEX ))
+        if [[ $currPinnedDb == $pluginToTest ]]
         then
 
           echo ""
