@@ -9,7 +9,6 @@ jobs:
         environment:
           MONGO_INITDB_ROOT_USERNAME: root
           MONGO_INITDB_ROOT_PASSWORD: root
-    parallelism: 4
     resource_class: large
     parameters:
       plugin:
@@ -32,6 +31,7 @@ workflows:
     jobs:
       - test:
           plugin: sqlite
+          name: test-sqlite
           context:
             - slack-notification
           filters:
@@ -41,6 +41,7 @@ workflows:
               ignore: /.*/
       - test:
           plugin: mongodb
+          name: test-mongodb
           context:
             - slack-notification
           filters:
@@ -50,6 +51,7 @@ workflows:
               ignore: /.*/
       - test:
           plugin: postgresql
+          name: test-postgresql
           context:
             - slack-notification
           filters:
@@ -59,6 +61,7 @@ workflows:
               ignore: /.*/
       - test:
           plugin: mysql
+          name: test-mysql
           context:
             - slack-notification
           filters:
