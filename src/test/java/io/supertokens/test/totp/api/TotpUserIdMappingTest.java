@@ -48,7 +48,7 @@ public class TotpUserIdMappingTest {
             return;
         }
 
-        FeatureFlagTestContent.getInstance(process.main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[] { EE_FEATURES.TOTP });
+        FeatureFlagTestContent.getInstance(process.main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[] { EE_FEATURES.MFA });
 
         JsonObject body = new JsonObject();
 

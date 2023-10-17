@@ -3,12 +3,10 @@ package io.supertokens.totp;
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator;
 import io.supertokens.Main;
 import io.supertokens.config.Config;
-import io.supertokens.featureflag.EE_FEATURES;
-import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
+import io.supertokens.mfa.Mfa;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -70,17 +68,6 @@ public class Totp {
         return false;
     }
 
-    private static boolean isTotpEnabled(AppIdentifier appIdentifier, Main main)
-            throws StorageQueryException, TenantOrAppNotFoundException {
-        EE_FEATURES[] features = FeatureFlag.getInstance(main, appIdentifier).getEnabledFeatures();
-        for (EE_FEATURES f : features) {
-            if (f == EE_FEATURES.TOTP) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     @TestOnly
     public static TOTPDevice registerDevice(Main main, String userId,
             String deviceName, int skew, int period)
@@ -126,11 +113,7 @@ public class Totp {
             throws StorageQueryException, DeviceAlreadyExistsException, NoSuchAlgorithmException,
             FeatureNotEnabledException, TenantOrAppNotFoundException, StorageTransactionLogicException {
 
-        if (!isTotpEnabled(appIdentifierWithStorage, main)) {
-            throw new FeatureNotEnabledException(
-                    "TOTP feature is not enabled. Please subscribe to a SuperTokens core license key to enable this " +
-                            "feature.");
-        }
+        Mfa.checkForMFAFeature(appIdentifierWithStorage, main);
 
         String secret = generateSecret();
         TOTPDevice device = new TOTPDevice(userId, deviceName, secret, period, skew, false);
@@ -403,11 +386,7 @@ public class Totp {
             StorageQueryException, StorageTransactionLogicException, FeatureNotEnabledException,
             TenantOrAppNotFoundException {
 
-        if (!isTotpEnabled(tenantIdentifierWithStorage.toAppIdentifierWithStorage(), main)) {
-            throw new FeatureNotEnabledException(
-                    "TOTP feature is not enabled. Please subscribe to a SuperTokens core license key to enable this " +
-                            "feature.");
-        }
+        Mfa.checkForMFAFeature(tenantIdentifierWithStorage.toAppIdentifierWithStorage(), main);
 
         TOTPSQLStorage totpStorage = tenantIdentifierWithStorage.getTOTPStorage();
 

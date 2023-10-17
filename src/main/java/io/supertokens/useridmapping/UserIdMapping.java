@@ -27,7 +27,6 @@ import io.supertokens.pluginInterface.emailverification.EmailVerificationStorage
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
-import io.supertokens.pluginInterface.mfa.MfaStorage;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -341,14 +340,6 @@ public class UserIdMapping {
                     userId)) {
                 throw new ServletException(
                         new WebserverAPI.BadRequestException("UserId is already in use in EmailVerification recipe"));
-            }
-        }
-        {
-            if (storage.isUserIdBeingUsedInNonAuthRecipe(appIdentifierWithStorage,
-                    MfaStorage.class.getName(),
-                    userId)) {
-                throw new ServletException(
-                        new WebserverAPI.BadRequestException("UserId is already in use in MFA recipe"));
             }
         }
         {

@@ -98,7 +98,7 @@ public class TOTPRecipeTest {
         TOTPStorage storage = (TOTPStorage) StorageLayer.getStorage(process.getProcess());
 
         FeatureFlagTestContent.getInstance(process.main)
-                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.TOTP});
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MFA});
 
         return new TestSetupResult(storage, process);
     }
@@ -325,7 +325,7 @@ public class TOTPRecipeTest {
         }
 
         FeatureFlagTestContent.getInstance(process.main)
-                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.TOTP});
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MFA});
 
         Main main = process.getProcess();
 

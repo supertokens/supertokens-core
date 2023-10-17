@@ -66,7 +66,7 @@ public class AppTenantUserTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
-                        EE_FEATURES.MULTI_TENANCY, EE_FEATURES.TOTP});
+                        EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA});
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -171,7 +171,7 @@ public class AppTenantUserTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
-                        EE_FEATURES.MULTI_TENANCY, EE_FEATURES.TOTP});
+                        EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA});
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -258,7 +258,7 @@ public class AppTenantUserTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
-                        EE_FEATURES.MULTI_TENANCY, EE_FEATURES.TOTP});
+                        EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA});
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 

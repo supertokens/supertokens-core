@@ -934,8 +934,6 @@ public class AuthRecipe {
                 .deleteAllRolesForUser_Transaction(con, appIdentifierWithStorage, userId);
         appIdentifierWithStorage.getActiveUsersStorage()
                 .deleteUserActive_Transaction(con, appIdentifierWithStorage, userId);
-        appIdentifierWithStorage.getMfaStorage()
-                .deleteMfaInfoForUser_Transaction(con, appIdentifierWithStorage, userId);
     }
 
     private static void deleteAuthRecipeUser(TransactionConnection con,
@@ -976,8 +974,6 @@ public class AuthRecipe {
                 .removeUser(tenantIdentifierWithStorage, userId);
         finalDidExist = finalDidExist || didExist;
 
-        didExist = tenantIdentifierWithStorage.getMfaStorage()
-                .deleteMfaInfoForUser(tenantIdentifierWithStorage, userId);
         finalDidExist = finalDidExist || didExist;
 
         return finalDidExist;
