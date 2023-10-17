@@ -7,8 +7,6 @@ function cleanup {
 trap cleanup EXIT
 cleanup
 
-exit 0
-
 pluginToTest=$1
 
 pinnedDBJson=$(curl -s -X GET \
