@@ -21,9 +21,15 @@ jobs:
       - run: echo "listen_addresses='*'" >> /etc/postgresql/9.5/main/postgresql.conf
       - run: sed -i 's/^#*\s*max_connections\s*=.*/max_connections = 10000/' /etc/postgresql/9.5/main/postgresql.conf
       - run: (cd .circleci/ && ./doTests.sh << parameters.plugin >>)
-      - slack/status:
-          success_message: ':tada: A $CIRCLE_JOB job for << parameters.plugin >> plugin has succeeded!'
-          failure_message: ':red_circle: A $CIRCLE_JOB job for << parameters.plugin >> plugin has failed!'
+      - slack/status
+
+    mark-passed:
+      docker:
+        - image: rishabhpoddar/supertokens_core_testing
+      steps:
+        - checkout
+        - run: (cd .circleci && ./markPassed.sh)
+        - slack/status
 
 workflows:
   version: 2
@@ -69,3 +75,16 @@ workflows:
               only: /dev-v[0-9]+(\.[0-9]+)*/
             branches:
               ignore: /.*/
+      - mark-passed:
+          context:
+            - slack-notification
+          filters:
+            tags:
+              only: /dev-v[0-9]+(\.[0-9]+)*/
+            branches:
+              ignore: /.*/
+          requires:
+            - test-sqlite
+            - test-mongodb
+            - test-postgresql
+            - test-mysql
