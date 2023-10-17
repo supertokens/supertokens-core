@@ -1,5 +1,16 @@
 coreVersion=$(cat ../build.gradle | grep -e "version =" -e "version=")
 
+while IFS='"' read -ra ADDR; do
+    counter=0
+    for i in "${ADDR[@]}"; do
+        if [ $counter == 1 ]
+        then
+            coreVersion=$i
+        fi
+        counter=$(($counter+1))
+    done
+done <<< "$coreVersion"
+
 echo "calling /core PATCH to make testing passed"
 responseStatus=$(curl -s -o /dev/null -w "%{http_code}" -X PATCH \
     https://api.supertokens.io/0/core \
