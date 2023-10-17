@@ -19,6 +19,7 @@ package io.supertokens.webserver.api.multitenancy;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
+import io.supertokens.pluginInterface.mfa.MfaFirstFactors;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.utils.SemVer;
@@ -58,13 +59,20 @@ public class CreateOrUpdateAppAPI extends BaseCreateOrUpdate {
         JsonObject coreConfig = InputParser.parseJsonObjectOrThrowError(input, "coreConfig", true);
 
         Boolean totpEnabled = null;
-        String[] firstFactors = new String[0];
-        String[] defaultMFARequirements = new String[0];
+        MfaFirstFactors firstFactors = new MfaFirstFactors(null, null);
+        String[] defaultRequiredFactors = null;
 
         if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_1)) {
             totpEnabled = InputParser.parseBooleanOrThrowError(input, "totpEnabled", true);
-            firstFactors = InputParser.parseStringArrayOrThrowError(input, "firstFactors", true);
-            defaultMFARequirements = InputParser.parseStringArrayOrThrowError(input, "defaultMFARequirements", true);
+            defaultRequiredFactors = InputParser.parseStringArrayOrThrowError(input, "defaultRequiredFactors", true);
+
+            try {
+                if (input.has("firstFactors")) {
+                    firstFactors = MfaFirstFactors.fromJson(input.get("firstFactors"));
+                }
+            } catch (IllegalArgumentException e) {
+                throw new ServletException(new BadRequestException(e.getMessage()));
+            }
         }
 
         TenantIdentifier sourceTenantIdentifier;
@@ -78,7 +86,7 @@ public class CreateOrUpdateAppAPI extends BaseCreateOrUpdate {
                 req, sourceTenantIdentifier,
                 new TenantIdentifier(sourceTenantIdentifier.getConnectionUriDomain(), appId, null),
                 emailPasswordEnabled, thirdPartyEnabled, passwordlessEnabled,
-                totpEnabled, firstFactors, defaultMFARequirements,
+                totpEnabled, firstFactors, defaultRequiredFactors,
                 coreConfig, resp);
 
     }

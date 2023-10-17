@@ -26,6 +26,7 @@ import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.mfa.MfaFirstFactors;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
@@ -46,7 +47,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
     protected void handle(HttpServletRequest req, TenantIdentifier sourceTenantIdentifier,
                           TenantIdentifier targetTenantIdentifier, Boolean emailPasswordEnabled,
                           Boolean thirdPartyEnabled, Boolean passwordlessEnabled, Boolean totpEnabled,
-                          String[] firstFactors, String[] defaultMFARequirements,
+                          MfaFirstFactors firstFactors, String[] defaultRequiredFactors,
                           JsonObject coreConfig, HttpServletResponse resp)
             throws ServletException, IOException {
 
@@ -138,19 +139,19 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                     tenantConfig.thirdPartyConfig,
                     tenantConfig.passwordlessConfig,
                     tenantConfig.totpConfig,
-                    new MfaConfig(firstFactors, tenantConfig.mfaConfig.defaultMFARequirements),
+                    new MfaConfig(firstFactors, tenantConfig.mfaConfig.defaultRequiredFactors),
                     tenantConfig.coreConfig
             );
         }
 
-        if (defaultMFARequirements != null) {
+        if (defaultRequiredFactors != null) {
             tenantConfig = new TenantConfig(
                     tenantConfig.tenantIdentifier,
                     tenantConfig.emailPasswordConfig,
                     tenantConfig.thirdPartyConfig,
                     tenantConfig.passwordlessConfig,
                     tenantConfig.totpConfig,
-                    new MfaConfig(tenantConfig.mfaConfig.firstFactors, defaultMFARequirements),
+                    new MfaConfig(tenantConfig.mfaConfig.firstFactors, defaultRequiredFactors),
                     tenantConfig.coreConfig
             );
         }

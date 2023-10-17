@@ -16,13 +16,24 @@
 
 package io.supertokens.test.multitenant.generator;
 
+import io.supertokens.pluginInterface.mfa.MfaFirstFactors;
+
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 
 public class GenerateMfaConfig {
     private static final String[] FACTORS = new String[]{
-            "password", "otp-email", "otp-phone", "link-email", "link-phone", "totp", "thirdparty"
+            "emailpassword",
+            "thirdparty",
+            "otp-email",
+            "otp-phone",
+            "link-email",
+            "link-phone"
+    };
+
+    private static final String[] OTHER_FACTORS = new String[]{
+            "totp", "biometric", "custom"
     };
 
     private static String[] selectRandomElements(String[] inputArray) {
@@ -55,13 +66,14 @@ public class GenerateMfaConfig {
 
     public static ConfigGenerator.GeneratedValueAndExpectation generate_firstFactors() {
         String[] factors = selectRandomElements(FACTORS);
+        String[] customFactors = selectRandomElements(OTHER_FACTORS);
 
         return new ConfigGenerator.GeneratedValueAndExpectation(
-                factors,
+                new MfaFirstFactors(factors, customFactors),
                 new ConfigGenerator.Expectation("ok", factors));
     }
 
-    public static ConfigGenerator.GeneratedValueAndExpectation generate_defaultMFARequirements() {
+    public static ConfigGenerator.GeneratedValueAndExpectation generate_defaultRequiredFactors() {
         String[] factors = selectRandomElements(FACTORS);
 
         return new ConfigGenerator.GeneratedValueAndExpectation(

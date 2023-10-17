@@ -21,6 +21,7 @@ import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.inmemorydb.queries.utils.JsonUtils;
 import io.supertokens.pluginInterface.RowMapper;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.mfa.MfaFirstFactors;
 import io.supertokens.pluginInterface.multitenancy.*;
 
 import java.sql.Connection;
@@ -54,7 +55,7 @@ public class TenantConfigSQLHelper {
                         new ThirdPartyConfig(result.getBoolean("third_party_enabled"), this.providers),
                         new PasswordlessConfig(result.getBoolean("passwordless_enabled")),
                         new TotpConfig(false), // TODO
-                        new MfaConfig(new String[0], new String[0]), // TODO
+                        new MfaConfig(new MfaFirstFactors(null, null), new String[0]), // TODO
                         JsonUtils.stringToJsonObject(result.getString("core_config"))
                 );
             } catch (Exception e) {
