@@ -23,13 +23,13 @@ jobs:
       - run: (cd .circleci/ && ./doTests.sh << parameters.plugin >>)
       - slack/status
 
-    mark-passed:
-      docker:
-        - image: rishabhpoddar/supertokens_core_testing
-      steps:
-        - checkout
-        - run: (cd .circleci && ./markPassed.sh)
-        - slack/status
+  mark-passed:
+    docker:
+      - image: rishabhpoddar/supertokens_core_testing
+    steps:
+      - checkout
+      - run: (cd .circleci && ./markPassed.sh)
+      - slack/status
 
 workflows:
   version: 2
