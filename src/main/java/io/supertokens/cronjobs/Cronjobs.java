@@ -96,9 +96,6 @@ public class Cronjobs extends ResourceDistributor.SingletonResource {
                 instance.executor.scheduleWithFixedDelay(task, task.getInitialWaitTimeSeconds(),
                         task.getIntervalTimeSeconds(), TimeUnit.SECONDS);
                 instance.tasks.add(task);
-
-                // this is to ensure tenantInfos are in sync for the new cron job as well
-                MultitenancyHelper.getInstance(main).refreshCronjobs();
             }
         }
     }
