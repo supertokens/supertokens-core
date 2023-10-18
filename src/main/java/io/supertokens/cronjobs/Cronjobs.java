@@ -18,6 +18,7 @@ package io.supertokens.cronjobs;
 
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
+import io.supertokens.multitenancy.MultitenancyHelper;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import org.jetbrains.annotations.TestOnly;
@@ -102,5 +103,14 @@ public class Cronjobs extends ResourceDistributor.SingletonResource {
     @TestOnly
     public List<CronTask> getTasks() {
         return this.tasks;
+    }
+
+    @TestOnly
+    public List<List<List<TenantIdentifier>>> getTenantInfos() {
+        List<List<List<TenantIdentifier>>> tenantsInfos = new ArrayList<>();
+        for (CronTask task : this.tasks) {
+            tenantsInfos.add(task.getTenantsInfo());
+        }
+        return tenantsInfos;
     }
 }
