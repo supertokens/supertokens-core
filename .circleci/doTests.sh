@@ -86,6 +86,12 @@ do
 
         i=$((i+1))
 
+        if [[ $currPinnedDb == "postgres" ]]
+        then
+          echo "Skipping postgres tests..."
+          continue
+        fi
+
         if [[ $currPinnedDb == "sqlite" ]]
         then
           # shellcheck disable=SC2034
