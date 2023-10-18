@@ -864,6 +864,95 @@ public class CronjobTest {
     }
 
     @Test
+    public void testThatCronJobsHaveTenantsInfoAfterRestart() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        JsonObject coreConfig = new JsonObject();
+        StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                .modifyConfigToAddANewUserPoolForTesting(coreConfig, 1);
+
+        // create CUD and apps
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                new TenantIdentifier("127.0.0.1", null, null),
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                coreConfig
+        ), false, false, true);
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                new TenantIdentifier("127.0.0.1", "a1", null),
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                coreConfig
+        ), false, false, true);
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                new TenantIdentifier("127.0.0.1", "a2", null),
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                coreConfig
+        ), false, false, true);
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                new TenantIdentifier("127.0.0.1", "a3", null),
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                coreConfig
+        ), false, false, true);
+
+        {
+            List<List<List<TenantIdentifier>>> tenantsInfos = Cronjobs.getInstance(process.getProcess()).getTenantInfos();
+            assertEquals(10, tenantsInfos.size());
+            int count = 0;
+            for (List<List<TenantIdentifier>> tenantsInfo : tenantsInfos) {
+                if (tenantsInfo != null) {
+                    assertEquals(2, tenantsInfo.size());
+                    assertEquals(1, tenantsInfo.get(0).size());
+                    assertEquals(4, tenantsInfo.get(1).size());
+                    count++;
+                }
+            }
+            assertEquals(9, count);
+        }
+
+        process.kill(false);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
+
+        process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        // we expect the state of the tenantsInfo to be same after core restart
+        {
+            List<List<List<TenantIdentifier>>> tenantsInfos = Cronjobs.getInstance(process.getProcess()).getTenantInfos();
+            assertEquals(10, tenantsInfos.size());
+            int count = 0;
+            for (List<List<TenantIdentifier>> tenantsInfo : tenantsInfos) {
+                if (tenantsInfo != null) {
+                    assertEquals(2, tenantsInfo.size());
+                    assertEquals(1, tenantsInfo.get(0).size());
+                    assertEquals(4, tenantsInfo.get(1).size());
+                    count++;
+                }
+            }
+            assertEquals(9, count);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
     public void testThatThereAreTasksOfAllCronTaskClassesAndHaveCorrectIntervals() throws Exception {
         String[] args = {"../"};
 

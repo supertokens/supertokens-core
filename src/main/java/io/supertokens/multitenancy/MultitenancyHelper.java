@@ -217,7 +217,7 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
         SigningKeys.loadForAllTenants(main, apps, tenantsThatChanged);
     }
 
-    private void refreshCronjobs() {
+    public void refreshCronjobs() {
         List<List<TenantIdentifier>> list = StorageLayer.getTenantsWithUniqueUserPoolId(main);
         Cronjobs.getInstance(main).setTenantsInfo(list);
     }
