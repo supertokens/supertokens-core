@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+## [6.0.15] - 2023-10-18
+
+- Fixes issue with cron tasks that run per app and tenant
+
 ## [6.0.14] - 2023-10-12
 
 - Fixes issue with duplicate cron task

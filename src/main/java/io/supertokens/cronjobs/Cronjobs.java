@@ -103,4 +103,13 @@ public class Cronjobs extends ResourceDistributor.SingletonResource {
     public List<CronTask> getTasks() {
         return this.tasks;
     }
+
+    @TestOnly
+    public List<List<List<TenantIdentifier>>> getTenantInfos() {
+        List<List<List<TenantIdentifier>>> tenantsInfos = new ArrayList<>();
+        for (CronTask task : this.tasks) {
+            tenantsInfos.add(task.getTenantsInfo());
+        }
+        return tenantsInfos;
+    }
 }
