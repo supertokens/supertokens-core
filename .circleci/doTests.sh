@@ -86,9 +86,9 @@ do
 
         i=$((i+1))
 
-        if [[ $currPinnedDb == "postgres" ]]
+        if [[ $currPinnedDb == "postgresql" ]]
         then
-          echo "Skipping postgres tests..."
+          echo "Skipping postgresql tests..."
           continue
         fi
 
