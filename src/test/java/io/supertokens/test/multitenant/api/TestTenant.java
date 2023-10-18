@@ -16,17 +16,18 @@
 
 package io.supertokens.test.multitenant.api;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
+import com.google.gson.*;
 import io.supertokens.ProcessState;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
+import io.supertokens.mfa.Mfa;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.mfa.MfaFirstFactors;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
@@ -35,6 +36,7 @@ import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
+import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.Webserver;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -345,5 +347,232 @@ public class TestTenant {
         assertFalse(tenant.get("emailPassword").getAsJsonObject().get("enabled").getAsBoolean());
         assertFalse(tenant.get("thirdParty").getAsJsonObject().get("enabled").getAsBoolean());
         assertFalse(tenant.get("passwordless").getAsJsonObject().get("enabled").getAsBoolean());
+    }
+
+    @Test
+    public void testTotpEnabledBoolean() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        JsonObject config = new JsonObject();
+        StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
+
+        JsonObject response = TestMultitenancyAPIHelper.createTenant(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "t1", null, null, null,
+                config);
+
+        assertTrue(response.get("createdNew").getAsBoolean());
+
+        JsonObject tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, null, "t1"),
+                process.getProcess(), SemVer.v4_1);
+        assertFalse(tenant.get("totp").getAsJsonObject().get("enabled").getAsBoolean());
+
+        response = TestMultitenancyAPIHelper.createTenant(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "t1", null, null, null,
+                true, null, null,
+                config, SemVer.v4_1);
+        assertFalse(response.get("createdNew").getAsBoolean());
+
+        tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, null, "t1"),
+                process.getProcess(), SemVer.v4_1);
+        assertTrue(tenant.get("totp").getAsJsonObject().get("enabled").getAsBoolean());
+
+        response = TestMultitenancyAPIHelper.createTenant(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "t1", null, null, null,
+                null, null, null,
+                config, SemVer.v4_1);
+        assertFalse(response.get("createdNew").getAsBoolean());
+
+        tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, null, "t1"),
+                process.getProcess(), SemVer.v4_1);
+        assertTrue(tenant.get("totp").getAsJsonObject().get("enabled").getAsBoolean());
+
+        response = TestMultitenancyAPIHelper.createTenant(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "t1", null, null, null,
+                false, null, null,
+                config, SemVer.v4_1);
+        assertFalse(response.get("createdNew").getAsBoolean());
+
+        tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, null, "t1"),
+                process.getProcess(), SemVer.v4_1);
+        assertFalse(tenant.get("totp").getAsJsonObject().get("enabled").getAsBoolean());
+
+        response = TestMultitenancyAPIHelper.createTenant(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "t1", null, null, null,
+                null, null, null,
+                config, SemVer.v4_1);
+        assertFalse(response.get("createdNew").getAsBoolean());
+
+        tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, null, "t1"),
+                process.getProcess(), SemVer.v4_1);
+        assertFalse(tenant.get("totp").getAsJsonObject().get("enabled").getAsBoolean());
+    }
+
+    @Test
+    public void testFirstFactorsArray() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        JsonObject config = new JsonObject();
+        StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
+
+        JsonObject response = TestMultitenancyAPIHelper.createTenant(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "t1", null, null, null,
+                config);
+
+        assertTrue(response.get("createdNew").getAsBoolean());
+
+        JsonObject tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, null, "t1"),
+                process.getProcess(), SemVer.v4_1);
+        assertTrue(tenant.get("mfa").getAsJsonObject().get("firstFactors").isJsonArray());
+        assertEquals(0, tenant.get("mfa").getAsJsonObject().get("firstFactors").getAsJsonArray().size());
+
+        // builtin firstFactor
+        MfaFirstFactors firstFactors = new MfaFirstFactors(new String[]{"otp-phone"}, null);
+        response = TestMultitenancyAPIHelper.createTenant(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "t1", null, null, null,
+                null, firstFactors, null,
+                config, SemVer.v4_1);
+        assertFalse(response.get("createdNew").getAsBoolean());
+
+        tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, null, "t1"),
+                process.getProcess(), SemVer.v4_1);
+        assertTrue(tenant.get("mfa").getAsJsonObject().get("firstFactors").isJsonArray());
+        assertEquals(1, tenant.get("mfa").getAsJsonObject().get("firstFactors").getAsJsonArray().size());
+        assertEquals(firstFactors, MfaFirstFactors.fromJson(tenant.get("mfa").getAsJsonObject().get("firstFactors").getAsJsonArray()));
+
+        response = TestMultitenancyAPIHelper.createTenant(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "t1", null, null, null,
+                null, null, null,
+                config, SemVer.v4_1);
+        assertFalse(response.get("createdNew").getAsBoolean());
+
+        tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, null, "t1"),
+                process.getProcess(), SemVer.v4_1);
+        assertTrue(tenant.get("mfa").getAsJsonObject().get("firstFactors").isJsonArray());
+        assertEquals(1, tenant.get("mfa").getAsJsonObject().get("firstFactors").getAsJsonArray().size());
+        assertEquals(firstFactors, MfaFirstFactors.fromJson(tenant.get("mfa").getAsJsonObject().get("firstFactors").getAsJsonArray()));
+
+        // custom factors
+        firstFactors = new MfaFirstFactors(null, new String[]{"biometric"});
+        response = TestMultitenancyAPIHelper.createTenant(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "t1", null, null, null,
+                null, firstFactors, null,
+                config, SemVer.v4_1);
+        assertFalse(response.get("createdNew").getAsBoolean());
+
+        tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, null, "t1"),
+                process.getProcess(), SemVer.v4_1);
+        assertTrue(tenant.get("mfa").getAsJsonObject().get("firstFactors").isJsonArray());
+        assertEquals(1, tenant.get("mfa").getAsJsonObject().get("firstFactors").getAsJsonArray().size());
+        assertEquals(firstFactors, MfaFirstFactors.fromJson(tenant.get("mfa").getAsJsonObject().get("firstFactors").getAsJsonArray()));
+
+        // test both
+        firstFactors = new MfaFirstFactors(new String[]{"otp-phone", "emailpassword"}, new String[]{"biometric", "custom"});
+        response = TestMultitenancyAPIHelper.createTenant(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "t1", null, null, null,
+                null, firstFactors, null,
+                config, SemVer.v4_1);
+        assertFalse(response.get("createdNew").getAsBoolean());
+
+        tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, null, "t1"),
+                process.getProcess(), SemVer.v4_1);
+        assertTrue(tenant.get("mfa").getAsJsonObject().get("firstFactors").isJsonArray());
+        assertEquals(4, tenant.get("mfa").getAsJsonObject().get("firstFactors").getAsJsonArray().size());
+        assertEquals(firstFactors, MfaFirstFactors.fromJson(tenant.get("mfa").getAsJsonObject().get("firstFactors").getAsJsonArray()));
+    }
+
+    @Test
+    public void testInvalidValuesForFirstFactor() throws Exception {
+        try {
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("tenantId", "t1");
+            requestBody.addProperty("firstFactors", "hello"); // invalid type
+
+            JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                    HttpRequestForTesting.getMultitenantUrl(TenantIdentifier.BASE_TENANT, "/recipe/multitenancy/tenant"),
+                    requestBody, 1000, 2500, null,
+                    SemVer.v4_1.get(), "multitenancy");
+            fail();
+        } catch (HttpResponseException e) {
+            assertEquals(400, e.statusCode);
+            assertTrue(e.getMessage().contains("Input must be a json array"));
+        }
+
+        try {
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("tenantId", "t1");
+            JsonArray array = new JsonArray();
+            array.add(new JsonPrimitive(100));
+            requestBody.add("firstFactors", array); // invalid type
+
+            JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                    HttpRequestForTesting.getMultitenantUrl(TenantIdentifier.BASE_TENANT, "/recipe/multitenancy/tenant"),
+                    requestBody, 1000, 2500, null,
+                    SemVer.v4_1.get(), "multitenancy");
+            fail();
+        } catch (HttpResponseException e) {
+            assertEquals(400, e.statusCode);
+            assertTrue(e.getMessage().contains("100 is not a built-in factor"));
+        }
+
+        try {
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("tenantId", "t1");
+            JsonArray array = new JsonArray();
+            array.add(new JsonPrimitive("custom"));
+            requestBody.add("firstFactors", array); // invalid built-in type
+
+            JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                    HttpRequestForTesting.getMultitenantUrl(TenantIdentifier.BASE_TENANT, "/recipe/multitenancy/tenant"),
+                    requestBody, 1000, 2500, null,
+                    SemVer.v4_1.get(), "multitenancy");
+            fail();
+        } catch (HttpResponseException e) {
+            assertEquals(400, e.statusCode);
+            assertTrue(e.getMessage().contains("custom is not a built-in factor"));
+        }
+
+        try {
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("tenantId", "t1");
+            JsonArray array = new JsonArray();
+            JsonObject factor = new JsonObject();
+            factor.addProperty("type", "custom");
+            factor.addProperty("id", "otp-phone");
+            array.add(factor);
+            requestBody.add("firstFactors", array); // built in value in custom
+
+            JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                    HttpRequestForTesting.getMultitenantUrl(TenantIdentifier.BASE_TENANT, "/recipe/multitenancy/tenant"),
+                    requestBody, 1000, 2500, null,
+                    SemVer.v4_1.get(), "multitenancy");
+            fail();
+        } catch (HttpResponseException e) {
+            assertEquals(400, e.statusCode);
+            assertTrue(e.getMessage().contains("Factor otp-phone cannot be used as a custom factor"));
+        }
     }
 }

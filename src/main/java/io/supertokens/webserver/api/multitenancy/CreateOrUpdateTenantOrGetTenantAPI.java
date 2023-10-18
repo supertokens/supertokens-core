@@ -60,7 +60,7 @@ public class CreateOrUpdateTenantOrGetTenantAPI extends BaseCreateOrUpdate {
         JsonObject coreConfig = InputParser.parseJsonObjectOrThrowError(input, "coreConfig", true);
 
         Boolean totpEnabled = null;
-        MfaFirstFactors firstFactors = new MfaFirstFactors(null, null);
+        MfaFirstFactors firstFactors = null;
         String[] defaultRequiredFactors = null;
 
         if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_1)) {
@@ -72,7 +72,7 @@ public class CreateOrUpdateTenantOrGetTenantAPI extends BaseCreateOrUpdate {
                     firstFactors = MfaFirstFactors.fromJson(input.get("firstFactors"));
                 }
             } catch (IllegalArgumentException e) {
-                throw new ServletException(new BadRequestException(e.getMessage()));
+                throw new ServletException(new BadRequestException("firstFactors: " + e.getMessage()));
             }
         }
 

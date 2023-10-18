@@ -19,6 +19,7 @@ package io.supertokens.test.multitenant.api;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.pluginInterface.mfa.MfaFirstFactors;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
@@ -141,6 +142,15 @@ public class TestMultitenancyAPIHelper {
     public static JsonObject createTenant(Main main, TenantIdentifier sourceTenant, String tenantId, Boolean emailPasswordEnabled,
                                           Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
                                           JsonObject coreConfig) throws HttpResponseException, IOException {
+        return createTenant(main, sourceTenant, tenantId, emailPasswordEnabled, thirdPartyEnabled, passwordlessEnabled,
+                null, null, null, coreConfig, SemVer.v3_0);
+    }
+
+    public static JsonObject createTenant(Main main, TenantIdentifier sourceTenant, String tenantId, Boolean emailPasswordEnabled,
+                                          Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
+                                          Boolean totpEnabled,
+                                          MfaFirstFactors firstFactors, String[] defaultRequiredFactors,
+                                          JsonObject coreConfig, SemVer version) throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("tenantId", tenantId);
         if (emailPasswordEnabled != null) {
@@ -152,12 +162,22 @@ public class TestMultitenancyAPIHelper {
         if (passwordlessEnabled != null) {
             requestBody.addProperty("passwordlessEnabled", passwordlessEnabled);
         }
+        if (totpEnabled != null) {
+            requestBody.addProperty("totpEnabled", totpEnabled);
+        }
+        if (firstFactors != null) {
+            requestBody.add("firstFactors", firstFactors.toJson());
+        }
+        if (defaultRequiredFactors != null) {
+            requestBody.add("defaultRequiredFactors", new Gson().toJsonTree(defaultRequiredFactors));
+        }
+
         requestBody.add("coreConfig", coreConfig);
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/tenant"),
                 requestBody, 1000, 2500, null,
-                SemVer.v3_0.get(), "multitenancy");
+                version.get(), "multitenancy");
 
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
         return response;
@@ -190,11 +210,16 @@ public class TestMultitenancyAPIHelper {
 
     public static JsonObject getTenant(TenantIdentifier tenantIdentifier, Main main)
             throws HttpResponseException, IOException {
+        return getTenant(tenantIdentifier, main, SemVer.v3_0);
+    }
+
+    public static JsonObject getTenant(TenantIdentifier tenantIdentifier, Main main, SemVer version)
+            throws HttpResponseException, IOException {
 
         JsonObject response = HttpRequestForTesting.sendGETRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/multitenancy/tenant"),
                 null, 1000, 1000, null,
-                SemVer.v3_0.get(), "multitenancy");
+                version.get(), "multitenancy");
 
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
         return response;
