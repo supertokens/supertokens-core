@@ -101,7 +101,7 @@ public class RandomConfigTest {
 
                 TenantConfig persistedTenantConfig = Multitenancy.getTenantInfo(process.getProcess(),
                         tenantConfig.tenantIdentifier);
-                assertEquals(tenantConfig, persistedTenantConfig);
+                assertTrue(tenantConfig.deepEquals(persistedTenantConfig));
 
             } catch (InvalidProviderConfigException | InvalidConfigException e) {
                 assertFalse(isOk);
