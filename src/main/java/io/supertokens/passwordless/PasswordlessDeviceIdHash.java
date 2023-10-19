@@ -8,7 +8,7 @@ public class PasswordlessDeviceIdHash {
     public PasswordlessDeviceIdHash(byte[] bytes) {
         // We never do anything further with the bytes, so we can just encode, store and reuse it.
         // If we choose to do storage based on bytes this can change.
-        this.encodedValue = Base64.getUrlEncoder().encodeToString(bytes);
+        this.encodedValue = Base64.getUrlEncoder().encodeToString(bytes).replaceAll("=", "");
     }
 
     public PasswordlessDeviceIdHash(String encodedValue) {

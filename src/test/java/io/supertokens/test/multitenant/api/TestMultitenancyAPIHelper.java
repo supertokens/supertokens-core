@@ -17,6 +17,7 @@
 package io.supertokens.test.multitenant.api;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
@@ -234,9 +235,8 @@ public class TestMultitenancyAPIHelper {
 
     public static JsonObject addOrUpdateThirdPartyProviderConfig(TenantIdentifier tenantIdentifier, ThirdPartyConfig.Provider provider, boolean skipValidation, Main main)
             throws HttpResponseException, IOException {
-        Gson gson = new Gson();
         JsonObject requestBody = new JsonObject();
-        JsonObject tpConfig = gson.toJsonTree(provider).getAsJsonObject();
+        JsonObject tpConfig = provider.toJson();
         requestBody.add("config", tpConfig);
         requestBody.addProperty("skipValidation", skipValidation);
 
