@@ -18,19 +18,20 @@ Supertokens architecture is optimized to add secure authentication for your user
 2. Backend SDK: Provides APIs for sign-up, sign-in, signout, session refreshing, etc. Your Frontend will talk to these APIs
 3. SuperTokens Core: The HTTP service for the core auth logic and database operations. This service is used by the Backend SDK
 
-## Supports multiple auth strategies
+## Features
 
-![auth recipes](.github/auth_strategies.png)
+[![Click here to get started](.github/click-here-to-get-started.png)](https://supertokens.com/docs/guides)
 
-Guides to setup different recipes
+* Passwordless Login
+* Social Login
+* Email Password Login
+* Phone Password Login
+* Session Management
+* Multi-Factor Authentication
+* Multi Tenancy / Organization Support (Enterprise SSO)
+* User Roles
+* Microservice Authentication
 
-* [Passwordless](https://supertokens.com/docs/passwordless/introduction)
-* [Social Login](https://supertokens.com/docs/thirdparty/introduction)
-* [Email Password Login](https://supertokens.com/docs/emailpassword/introduction)
-* [Phone Password Login](https://supertokens.com/docs/phonepassword/introduction)
-* [Passwordless + Social Login](https://supertokens.com/docs/thirdpartypasswordless/introduction)
-* [Email Password + Social Login](https://supertokens.com/docs/thirdpartyemailpassword/introduction)
-* [Session Management](https://supertokens.com/docs/session/introduction)
 
 ## Learn more
 - [🚀 What is SuperTokens?](https://github.com/supertokens/supertokens-core#-what-is-supertokens)
@@ -39,6 +40,7 @@ Guides to setup different recipes
     - [Documentation](https://github.com/supertokens/supertokens-core#documentation)
 - [🏗️ Architecture](https://github.com/supertokens/supertokens-core#%EF%B8%8F-architecture)
 - [☕ Why Java?](https://github.com/supertokens/supertokens-core#-why-java)
+- [⌨️ User Management Dashboard](https://github.com/supertokens/supertokens-core#-user-management-dashboard) 
 - [🔥 SuperTokens vs Others](https://github.com/supertokens/supertokens-core#-supertokens-vs-others)
 - [🛠️ Building from source](https://github.com/supertokens/supertokens-core#%EF%B8%8F-building-from-source)
 - [👥 Community](https://github.com/supertokens/supertokens-core#-community)
@@ -69,7 +71,7 @@ We want to change that - we believe the only way is to provide a solution that h
   
 We also believe in the principle of least vendor lock-in. Your having full control of your user's data means that you can switch away from SuperTokens without forcing your existing users to logout, reset their passwords, or in the worst case, sign up again. 
 
-### Features - [Click here](https://thirdpartyemailpassword.demo.supertokens.io/) to see the demo app.
+### [Click here](https://thirdpartyemailpassword.demo.supertokens.io/) to see the demo app.
 - Please visit [our website](https://supertokens.io/pricing) to see the list of features.
 - We want to make features as decoupled as possible. This means you can use SuperTokens for just login, or just session management, or both. In fact, we also offer session management integrations with other login providers like Auth0.
 
@@ -94,6 +96,23 @@ Please find an [architecture diagram here](https://supertokens.io/docs/community
    - We have carefully chosen our dependencies. For eg: we use an embedded tomcat server instead of a higher-level web framework.
    - We also plan on using [GraalVM](https://www.graalvm.org/) in the future and this can reduce memory usage by 95%! 
 - ✅ If you require any modifications to the auth APIs, those would need to be done on the backend SDK level (for example Node, Golang, Python..). So you’d rarely need to directly modify/work  with the Java code in this repo.
+
+## ⌨️ User Management Dashboard
+
+Oversee your users with the [SuperTokens User Management Dashboard](https://supertokens.com/docs/userdashboard/about)
+
+
+### List users
+
+List all the users who have signed up to your application.
+
+![List SuperTokens users](.github/list-user.png)
+
+### Manage users
+
+Manage users by modifying or deleting their sessions, metadata, roles and account info. 
+
+![Manage users](.github/user-info.png)
 
 ## 🔥 SuperTokens vs others
 Please find a detailed comparison chart [on our website](https://supertokens.io/pricing#comparison-chart)

@@ -23,7 +23,7 @@ public class PasswordlessLinkCode {
     }
 
     public String encode() {
-        return Base64.getUrlEncoder().encodeToString(bytes);
+        return Base64.getUrlEncoder().encodeToString(bytes).replaceAll("=", "");
     }
 
     public PasswordlessLinkCodeHash getHash() throws NoSuchAlgorithmException {

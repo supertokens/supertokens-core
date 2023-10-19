@@ -254,6 +254,9 @@ public class Main {
         // starts DeleteExpiredAccessTokenSigningKeys cronjob if the access token signing keys can change
         Cronjobs.addCronjob(this, DeleteExpiredAccessTokenSigningKeys.init(this, uniqueUserPoolIdsTenants));
 
+        // this is to ensure tenantInfos are in sync for the new cron job as well
+        MultitenancyHelper.getInstance(this).refreshCronjobs();
+
         // creates password hashing pool
         PasswordHashing.init(this);
 

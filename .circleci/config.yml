@@ -10,10 +10,25 @@ jobs:
           MONGO_INITDB_ROOT_USERNAME: root
           MONGO_INITDB_ROOT_PASSWORD: root
     resource_class: large
+    parameters:
+      plugin:
+        type: string
     steps:
       - checkout
       - run: echo $'\n[mysqld]\ncharacter_set_server=utf8mb4\nmax_connections=10000' >> /etc/mysql/mysql.cnf
-      - run: (cd .circleci/ && ./doTests.sh)
+      - run: apt-get -y -q install postgresql-9.5 postgresql-client-9.5 postgresql-contrib-9.5 sudo
+      - run: echo "host all  all    0.0.0.0/0  md5" >> /etc/postgresql/9.5/main/pg_hba.conf
+      - run: echo "listen_addresses='*'" >> /etc/postgresql/9.5/main/postgresql.conf
+      - run: sed -i 's/^#*\s*max_connections\s*=.*/max_connections = 10000/' /etc/postgresql/9.5/main/postgresql.conf
+      - run: (cd .circleci/ && ./doTests.sh << parameters.plugin >>)
+      - slack/status
+
+  mark-passed:
+    docker:
+      - image: rishabhpoddar/supertokens_core_testing
+    steps:
+      - checkout
+      - run: (cd .circleci && ./markPassed.sh)
       - slack/status
 
 workflows:
@@ -21,6 +36,8 @@ workflows:
   tagged-build:
     jobs:
       - test:
+          plugin: sqlite
+          name: test-sqlite
           context:
             - slack-notification
           filters:
@@ -28,3 +45,46 @@ workflows:
               only: /dev-v[0-9]+(\.[0-9]+)*/
             branches:
               ignore: /.*/
+      - test:
+          plugin: mongodb
+          name: test-mongodb
+          context:
+            - slack-notification
+          filters:
+            tags:
+              only: /dev-v[0-9]+(\.[0-9]+)*/
+            branches:
+              ignore: /.*/
+      - test:
+          plugin: postgresql
+          name: test-postgresql
+          context:
+            - slack-notification
+          filters:
+            tags:
+              only: /dev-v[0-9]+(\.[0-9]+)*/
+            branches:
+              ignore: /.*/
+      - test:
+          plugin: mysql
+          name: test-mysql
+          context:
+            - slack-notification
+          filters:
+            tags:
+              only: /dev-v[0-9]+(\.[0-9]+)*/
+            branches:
+              ignore: /.*/
+      - mark-passed:
+          context:
+            - slack-notification
+          filters:
+            tags:
+              only: /dev-v[0-9]+(\.[0-9]+)*/
+            branches:
+              ignore: /.*/
+          requires:
+            - test-sqlite
+            - test-mongodb
+            - test-postgresql
+            - test-mysql

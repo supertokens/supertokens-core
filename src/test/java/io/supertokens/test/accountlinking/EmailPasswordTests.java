@@ -21,6 +21,7 @@ import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
+import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
@@ -82,5 +83,71 @@ public class EmailPasswordTests {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testPasswordlessUserWithSameEmail() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        AuthRecipeUserInfo user1 = EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
+        Passwordless.CreateCodeResponse code = Passwordless.createCode(process.getProcess(), null, "+919876543210",
+                null, null);
+        AuthRecipeUserInfo user2 = Passwordless.consumeCode(process.getProcess(), code.deviceId, code.deviceIdHash, code.userInputCode, null).user;
+
+        AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), user1.getSupertokensUserId());
+
+        Passwordless.CreateCodeResponse code1 = Passwordless.createCode(process.getProcess(), "test@example.com", null,
+                null, null);
+        AuthRecipeUserInfo user3 = Passwordless.consumeCode(process.getProcess(), code1.deviceId, code1.deviceIdHash, code1.userInputCode, null).user;
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testPasswordlessUsersLinked() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        Passwordless.CreateCodeResponse code1 = Passwordless.createCode(process.getProcess(), "test@example.com", null,
+                null, null);
+        AuthRecipeUserInfo user1 = Passwordless.consumeCode(process.getProcess(), code1.deviceId, code1.deviceIdHash, code1.userInputCode, null).user;
+
+        Thread.sleep(50);
+
+        Passwordless.CreateCodeResponse code2 = Passwordless.createCode(process.getProcess(), null, "+919876543210",
+                null, null);
+        AuthRecipeUserInfo user2 = Passwordless.consumeCode(process.getProcess(), code2.deviceId, code2.deviceIdHash, code2.userInputCode, null).user;
+
+        AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), user1.getSupertokensUserId());
+
+        Passwordless.CreateCodeResponse code3 = Passwordless.createCode(process.getProcess(), null, "+919876543210",
+                null, null);
+        AuthRecipeUserInfo user3 = Passwordless.consumeCode(process.getProcess(), code3.deviceId, code3.deviceIdHash, code3.userInputCode, null).user;
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
     }
 }
