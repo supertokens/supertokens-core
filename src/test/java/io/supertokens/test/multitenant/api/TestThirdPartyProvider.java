@@ -17,6 +17,7 @@
 package io.supertokens.test.multitenant.api;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.featureflag.EE_FEATURES;
@@ -40,6 +41,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -104,6 +107,44 @@ public class TestThirdPartyProvider {
         response = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, null, null), process.getProcess());
         JsonObject resultProvider = response.get("thirdParty").getAsJsonObject().get("providers").getAsJsonArray().get(0).getAsJsonObject();
         assertEquals(new Gson().toJsonTree(provider), resultProvider);
+    }
+
+    @Test
+    public void testAddThirdPartyConfigWithNullValues() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        JsonObject objWithNulls = new JsonObject();
+        objWithNulls.addProperty("key1", "value");
+        objWithNulls.add("key2", null);
+
+        ThirdPartyConfig.Provider provider = new ThirdPartyConfig.Provider(
+                "google",
+                "Google",
+                null,
+                null,
+                objWithNulls,
+                null,
+                objWithNulls,
+                null,
+                objWithNulls,
+                objWithNulls,
+                null,
+                null,
+                null,
+                null
+        );
+        JsonObject response = TestMultitenancyAPIHelper.addOrUpdateThirdPartyProviderConfig(
+                new TenantIdentifier(null, null, null),
+                provider,
+                process.getProcess()
+        );
+        assertTrue(response.get("createdNew").getAsBoolean());
+
+        response = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, null, null), process.getProcess());
+        JsonObject resultProvider = response.get("thirdParty").getAsJsonObject().get("providers").getAsJsonArray().get(0).getAsJsonObject();
+        assertEquals(provider.toJson(), resultProvider);
     }
 
     @Test
