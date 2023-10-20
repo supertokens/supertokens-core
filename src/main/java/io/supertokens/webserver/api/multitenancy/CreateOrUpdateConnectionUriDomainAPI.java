@@ -18,7 +18,6 @@ package io.supertokens.webserver.api.multitenancy;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
-import io.supertokens.pluginInterface.mfa.MfaFirstFactors;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.utils.SemVer;
@@ -57,20 +56,13 @@ public class CreateOrUpdateConnectionUriDomainAPI extends BaseCreateOrUpdate {
         JsonObject coreConfig = InputParser.parseJsonObjectOrThrowError(input, "coreConfig", true);
 
         Boolean totpEnabled = null;
-        MfaFirstFactors firstFactors = new MfaFirstFactors(null, null);
-        String[] defaultRequiredFactors = null;
+        String[] firstFactors = null;
+        String[] defaultRequiredFactorIds = null;
 
         if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_1)) {
             totpEnabled = InputParser.parseBooleanOrThrowError(input, "totpEnabled", true);
-            defaultRequiredFactors = InputParser.parseStringArrayOrThrowError(input, "defaultRequiredFactors", true);
-
-            try {
-                if (input.has("firstFactors")) {
-                    firstFactors = MfaFirstFactors.fromJson(input.get("firstFactors"));
-                }
-            } catch (IllegalArgumentException e) {
-                throw new ServletException(new BadRequestException(e.getMessage()));
-            }
+            firstFactors = InputParser.parseStringArrayOrThrowError(input, "firstFactors", true);
+            defaultRequiredFactorIds = InputParser.parseStringArrayOrThrowError(input, "defaultRequiredFactorIds", true);
         }
 
         TenantIdentifier sourceTenantIdentifier;
@@ -84,7 +76,7 @@ public class CreateOrUpdateConnectionUriDomainAPI extends BaseCreateOrUpdate {
                 req, sourceTenantIdentifier,
                 new TenantIdentifier(connectionUriDomain, null, null),
                 emailPasswordEnabled, thirdPartyEnabled, passwordlessEnabled,
-                totpEnabled, firstFactors, defaultRequiredFactors,
+                totpEnabled, firstFactors, defaultRequiredFactorIds,
                 coreConfig, resp);
 
     }

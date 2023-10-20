@@ -19,7 +19,6 @@ package io.supertokens.test.multitenant.api;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
-import io.supertokens.pluginInterface.mfa.MfaFirstFactors;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
@@ -149,7 +148,7 @@ public class TestMultitenancyAPIHelper {
     public static JsonObject createTenant(Main main, TenantIdentifier sourceTenant, String tenantId, Boolean emailPasswordEnabled,
                                           Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
                                           Boolean totpEnabled,
-                                          MfaFirstFactors firstFactors, String[] defaultRequiredFactors,
+                                          String[] firstFactors, String[] defaultRequiredFactorIds,
                                           JsonObject coreConfig, SemVer version) throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("tenantId", tenantId);
@@ -166,10 +165,10 @@ public class TestMultitenancyAPIHelper {
             requestBody.addProperty("totpEnabled", totpEnabled);
         }
         if (firstFactors != null) {
-            requestBody.add("firstFactors", firstFactors.toJson());
+            requestBody.add("firstFactors", new Gson().toJsonTree(firstFactors));
         }
-        if (defaultRequiredFactors != null) {
-            requestBody.add("defaultRequiredFactors", new Gson().toJsonTree(defaultRequiredFactors));
+        if (defaultRequiredFactorIds != null) {
+            requestBody.add("defaultRequiredFactorIds", new Gson().toJsonTree(defaultRequiredFactorIds));
         }
 
         requestBody.add("coreConfig", coreConfig);

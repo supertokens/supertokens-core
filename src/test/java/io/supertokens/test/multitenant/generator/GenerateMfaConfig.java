@@ -16,8 +16,6 @@
 
 package io.supertokens.test.multitenant.generator;
 
-import io.supertokens.pluginInterface.mfa.MfaFirstFactors;
-
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
@@ -29,11 +27,10 @@ public class GenerateMfaConfig {
             "otp-email",
             "otp-phone",
             "link-email",
-            "link-phone"
-    };
-
-    private static final String[] OTHER_FACTORS = new String[]{
-            "totp", "biometric", "custom"
+            "link-phone",
+            "totp",
+            "biometric",
+            "custom"
     };
 
     private static String[] selectRandomElements(String[] inputArray) {
@@ -65,17 +62,26 @@ public class GenerateMfaConfig {
     }
 
     public static ConfigGenerator.GeneratedValueAndExpectation generate_firstFactors() {
-        String[] factors = selectRandomElements(FACTORS);
-        String[] customFactors = selectRandomElements(OTHER_FACTORS);
+        if (new Random().nextFloat() < 0.15) {
+            return new ConfigGenerator.GeneratedValueAndExpectation(
+                    null,
+                    new ConfigGenerator.Expectation("ok", null));
+        }
 
+        String[] factors = selectRandomElements(FACTORS);
         return new ConfigGenerator.GeneratedValueAndExpectation(
-                new MfaFirstFactors(factors, customFactors),
+                factors,
                 new ConfigGenerator.Expectation("ok", factors));
     }
 
-    public static ConfigGenerator.GeneratedValueAndExpectation generate_defaultRequiredFactors() {
-        String[] factors = selectRandomElements(FACTORS);
+    public static ConfigGenerator.GeneratedValueAndExpectation generate_defaultRequiredFactorIds() {
+        if (new Random().nextFloat() < 0.15) {
+            return new ConfigGenerator.GeneratedValueAndExpectation(
+                    null,
+                    new ConfigGenerator.Expectation("ok", null));
+        }
 
+        String[] factors = selectRandomElements(FACTORS);
         return new ConfigGenerator.GeneratedValueAndExpectation(
                 factors,
                 new ConfigGenerator.Expectation("ok", factors));
