@@ -25,6 +25,7 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
+import org.jetbrains.annotations.TestOnly;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -185,6 +186,11 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
                 this.tenantsInfo = tenantsInfo;
             }
         }
+    }
+
+    @TestOnly
+    public List<List<TenantIdentifier>> getTenantsInfo() {
+        return this.tenantsInfo;
     }
 
     // the list belongs to tenants that are a part of the same user pool ID

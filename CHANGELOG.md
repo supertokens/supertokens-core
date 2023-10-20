@@ -5,7 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [unreleased]
+## [7.0.8] - 2023-10-19
+
+- Tests thirdParty serialization fix
+
+## [7.0.7] - 2023-10-19
+
+- Fixes test that verifies tenant config persistence
+
+## [7.0.6] - 2023-10-18
+
+- Fixes issue with cron tasks that run per app and tenant
+
+## [7.0.5] - 2023-10-13
+
+- Adds postgres testing to the CICD
+
+## [7.0.4] - 2023-10-12
+
+- Fixes user info from primary user id query
+- Fixes `deviceIdHash` issue
+
+## [7.0.3] - 2023-10-11
+
+- Fixes issue with duplicate cron task
+
+## [7.0.2] = 2023-10-05
+
+- Fixes `500` error for passwordless login in certain cases - https://github.com/supertokens/supertokens-core/issues/828
+
+## [7.0.1] - 2023-10-04
+
+- Remove padding from link codes and pre-auth session ids in passwordless, but keep support for old format that included padding (`=` signs)
 
 ## [7.0.0] - 2023-09-19
 
