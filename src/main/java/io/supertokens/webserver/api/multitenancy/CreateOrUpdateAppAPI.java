@@ -57,12 +57,20 @@ public class CreateOrUpdateAppAPI extends BaseCreateOrUpdate {
 
         Boolean totpEnabled = null;
         String[] firstFactors = null;
+        boolean hasFirstFactors = false;
         String[] defaultRequiredFactorIds = null;
+        boolean hasDefaultRequiredFactorIds = false;
 
         if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_1)) {
             totpEnabled = InputParser.parseBooleanOrThrowError(input, "totpEnabled", true);
-            firstFactors = InputParser.parseStringArrayOrThrowError(input, "firstFactors", true);
-            defaultRequiredFactorIds = InputParser.parseStringArrayOrThrowError(input, "defaultRequiredFactorIds", true);
+            hasFirstFactors = input.has("firstFactors");
+            if (hasFirstFactors && !input.get("firstFactors").isJsonNull()) {
+                firstFactors = InputParser.parseStringArrayOrThrowError(input, "firstFactors", true);
+            }
+            hasDefaultRequiredFactorIds = input.has("defaultRequiredFactorIds");
+            if (hasDefaultRequiredFactorIds && !input.get("defaultRequiredFactorIds").isJsonNull()) {
+                defaultRequiredFactorIds = InputParser.parseStringArrayOrThrowError(input, "defaultRequiredFactorIds", true);
+            }
         }
 
         TenantIdentifier sourceTenantIdentifier;
@@ -76,7 +84,7 @@ public class CreateOrUpdateAppAPI extends BaseCreateOrUpdate {
                 req, sourceTenantIdentifier,
                 new TenantIdentifier(sourceTenantIdentifier.getConnectionUriDomain(), appId, null),
                 emailPasswordEnabled, thirdPartyEnabled, passwordlessEnabled,
-                totpEnabled, firstFactors, defaultRequiredFactorIds,
+                totpEnabled, hasFirstFactors, firstFactors, hasDefaultRequiredFactorIds, defaultRequiredFactorIds,
                 coreConfig, resp);
 
     }

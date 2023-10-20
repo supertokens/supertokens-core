@@ -16,6 +16,7 @@
 
 package io.supertokens.test.multitenant.api;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
@@ -35,6 +36,7 @@ import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
+import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.Webserver;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -486,5 +488,267 @@ public class TestConnectionUriDomain {
         assertTrue(tenant.get("emailPassword").getAsJsonObject().get("enabled").getAsBoolean());
         assertTrue(tenant.get("thirdParty").getAsJsonObject().get("enabled").getAsBoolean());
         assertTrue(tenant.get("passwordless").getAsJsonObject().get("enabled").getAsBoolean());
+    }
+
+    @Test
+    public void testTotpEnabledBoolean() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        JsonObject config = new JsonObject();
+        StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
+
+        JsonObject response = TestMultitenancyAPIHelper.createConnectionUriDomain(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "127.0.0.1", null, null, null,
+                config);
+
+        assertTrue(response.get("createdNew").getAsBoolean());
+
+        JsonObject tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier("127.0.0.1", null, null),
+                process.getProcess(), SemVer.v4_1);
+        assertFalse(tenant.get("totp").getAsJsonObject().get("enabled").getAsBoolean());
+
+        response = TestMultitenancyAPIHelper.createConnectionUriDomain(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "127.0.0.1", null, null, null,
+                true, false, null, false, null,
+                config, SemVer.v4_1);
+        assertFalse(response.get("createdNew").getAsBoolean());
+
+        tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier("127.0.0.1", null, null),
+                process.getProcess(), SemVer.v4_1);
+        assertTrue(tenant.get("totp").getAsJsonObject().get("enabled").getAsBoolean());
+
+        response = TestMultitenancyAPIHelper.createConnectionUriDomain(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "127.0.0.1", null, null, null,
+                null, false, null, false, null,
+                config, SemVer.v4_1);
+        assertFalse(response.get("createdNew").getAsBoolean());
+
+        tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier("127.0.0.1", null, null),
+                process.getProcess(), SemVer.v4_1);
+        assertTrue(tenant.get("totp").getAsJsonObject().get("enabled").getAsBoolean());
+
+        response = TestMultitenancyAPIHelper.createConnectionUriDomain(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "127.0.0.1", null, null, null,
+                false, false, null, false, null,
+                config, SemVer.v4_1);
+        assertFalse(response.get("createdNew").getAsBoolean());
+
+        tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier("127.0.0.1", null, null),
+                process.getProcess(), SemVer.v4_1);
+        assertFalse(tenant.get("totp").getAsJsonObject().get("enabled").getAsBoolean());
+
+        response = TestMultitenancyAPIHelper.createConnectionUriDomain(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "127.0.0.1", null, null, null,
+                null, false, null, false, null,
+                config, SemVer.v4_1);
+        assertFalse(response.get("createdNew").getAsBoolean());
+
+        tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier("127.0.0.1", null, null),
+                process.getProcess(), SemVer.v4_1);
+        assertFalse(tenant.get("totp").getAsJsonObject().get("enabled").getAsBoolean());
+    }
+
+    @Test
+    public void testFirstFactorsArray() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        JsonObject config = new JsonObject();
+        StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
+
+        JsonObject response = TestMultitenancyAPIHelper.createConnectionUriDomain(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "127.0.0.1", null, null, null,
+                config);
+
+        assertTrue(response.get("createdNew").getAsBoolean());
+
+        JsonObject tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier("127.0.0.1", null, null),
+                process.getProcess(), SemVer.v4_1);
+        assertTrue(tenant.get("mfa").getAsJsonObject().get("firstFactors").isJsonNull());
+
+        // builtin firstFactor
+        String[] firstFactors = new String[]{"otp-phone"};
+        response = TestMultitenancyAPIHelper.createConnectionUriDomain(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "127.0.0.1", null, null, null,
+                null, true, new String[]{"otp-phone"}, false, null,
+                config, SemVer.v4_1);
+        assertFalse(response.get("createdNew").getAsBoolean());
+
+        tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier("127.0.0.1", null, null),
+                process.getProcess(), SemVer.v4_1);
+        assertTrue(tenant.get("mfa").getAsJsonObject().get("firstFactors").isJsonArray());
+        assertEquals(1, tenant.get("mfa").getAsJsonObject().get("firstFactors").getAsJsonArray().size());
+        assertEquals(firstFactors, new Gson().fromJson(tenant.get("mfa").getAsJsonObject().get("firstFactors").getAsJsonArray(), String[].class));
+
+        response = TestMultitenancyAPIHelper.createConnectionUriDomain(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "127.0.0.1", null, null, null,
+                null, false, null, false, null,
+                config, SemVer.v4_1);
+        assertFalse(response.get("createdNew").getAsBoolean());
+
+        tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier("127.0.0.1", null, null),
+                process.getProcess(), SemVer.v4_1);
+        assertTrue(tenant.get("mfa").getAsJsonObject().get("firstFactors").isJsonArray());
+        assertEquals(1, tenant.get("mfa").getAsJsonObject().get("firstFactors").getAsJsonArray().size());
+        assertEquals(firstFactors, new Gson().fromJson(tenant.get("mfa").getAsJsonObject().get("firstFactors").getAsJsonArray(), String[].class));
+
+        // custom factors
+        firstFactors = new String[]{"biometric"};
+        response = TestMultitenancyAPIHelper.createConnectionUriDomain(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "127.0.0.1", null, null, null,
+                null, true, firstFactors, false, null,
+                config, SemVer.v4_1);
+        assertFalse(response.get("createdNew").getAsBoolean());
+
+        tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier("127.0.0.1", null, null),
+                process.getProcess(), SemVer.v4_1);
+        assertTrue(tenant.get("mfa").getAsJsonObject().get("firstFactors").isJsonArray());
+        assertEquals(1, tenant.get("mfa").getAsJsonObject().get("firstFactors").getAsJsonArray().size());
+        assertEquals(firstFactors, new Gson().fromJson(tenant.get("mfa").getAsJsonObject().get("firstFactors").getAsJsonArray(), String[].class));
+
+        // test both
+        firstFactors = new String[]{"otp-phone", "emailpassword", "biometric", "custom"};
+        response = TestMultitenancyAPIHelper.createConnectionUriDomain(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "127.0.0.1", null, null, null,
+                null, true, firstFactors, false, null,
+                config, SemVer.v4_1);
+        assertFalse(response.get("createdNew").getAsBoolean());
+
+        tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier("127.0.0.1", null, null),
+                process.getProcess(), SemVer.v4_1);
+        assertTrue(tenant.get("mfa").getAsJsonObject().get("firstFactors").isJsonArray());
+        assertEquals(4, tenant.get("mfa").getAsJsonObject().get("firstFactors").getAsJsonArray().size());
+        assertEquals(firstFactors, new Gson().fromJson(tenant.get("mfa").getAsJsonObject().get("firstFactors").getAsJsonArray(), String[].class));
+
+        response = TestMultitenancyAPIHelper.createConnectionUriDomain(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "127.0.0.1", null, null, null,
+                null, true, null, false, null,
+                config, SemVer.v4_1);
+        assertFalse(response.get("createdNew").getAsBoolean());
+
+        tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier("127.0.0.1", null, null),
+                process.getProcess(), SemVer.v4_1);
+        assertTrue(tenant.get("mfa").getAsJsonObject().get("firstFactors").isJsonNull());
+    }
+
+    @Test
+    public void testDefaultRequiredFactorIdsArray() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        JsonObject config = new JsonObject();
+        StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
+
+        JsonObject response = TestMultitenancyAPIHelper.createConnectionUriDomain(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "127.0.0.1", null, null, null,
+                config);
+
+        assertTrue(response.get("createdNew").getAsBoolean());
+
+        JsonObject tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier("127.0.0.1", null, null),
+                process.getProcess(), SemVer.v4_1);
+        assertTrue(tenant.get("mfa").getAsJsonObject().get("defaultRequiredFactorIds").isJsonNull());
+
+        // builtin firstFactor
+        String[] defaultRequiredFactorIds = new String[]{"otp-phone"};
+        response = TestMultitenancyAPIHelper.createConnectionUriDomain(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "127.0.0.1", null, null, null,
+                null, false, null, true, new String[]{"otp-phone"},
+                config, SemVer.v4_1);
+        assertFalse(response.get("createdNew").getAsBoolean());
+
+        tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier("127.0.0.1", null, null),
+                process.getProcess(), SemVer.v4_1);
+        assertTrue(tenant.get("mfa").getAsJsonObject().get("defaultRequiredFactorIds").isJsonArray());
+        assertEquals(1, tenant.get("mfa").getAsJsonObject().get("defaultRequiredFactorIds").getAsJsonArray().size());
+        assertEquals(defaultRequiredFactorIds, new Gson().fromJson(tenant.get("mfa").getAsJsonObject().get("defaultRequiredFactorIds").getAsJsonArray(), String[].class));
+
+        response = TestMultitenancyAPIHelper.createConnectionUriDomain(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "127.0.0.1", null, null, null,
+                null, false, null, false, null,
+                config, SemVer.v4_1);
+        assertFalse(response.get("createdNew").getAsBoolean());
+
+        tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier("127.0.0.1", null, null),
+                process.getProcess(), SemVer.v4_1);
+        assertTrue(tenant.get("mfa").getAsJsonObject().get("defaultRequiredFactorIds").isJsonArray());
+        assertEquals(1, tenant.get("mfa").getAsJsonObject().get("defaultRequiredFactorIds").getAsJsonArray().size());
+        assertEquals(defaultRequiredFactorIds, new Gson().fromJson(tenant.get("mfa").getAsJsonObject().get("defaultRequiredFactorIds").getAsJsonArray(), String[].class));
+
+        // custom factors
+        defaultRequiredFactorIds = new String[]{"biometric"};
+        response = TestMultitenancyAPIHelper.createConnectionUriDomain(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "127.0.0.1", null, null, null,
+                null, false, null, true, defaultRequiredFactorIds,
+                config, SemVer.v4_1);
+        assertFalse(response.get("createdNew").getAsBoolean());
+
+        tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier("127.0.0.1", null, null),
+                process.getProcess(), SemVer.v4_1);
+        assertTrue(tenant.get("mfa").getAsJsonObject().get("defaultRequiredFactorIds").isJsonArray());
+        assertEquals(1, tenant.get("mfa").getAsJsonObject().get("defaultRequiredFactorIds").getAsJsonArray().size());
+        assertEquals(defaultRequiredFactorIds, new Gson().fromJson(tenant.get("mfa").getAsJsonObject().get("defaultRequiredFactorIds").getAsJsonArray(), String[].class));
+
+        // test both
+        defaultRequiredFactorIds = new String[]{"otp-phone", "emailpassword", "biometric", "custom"};
+        response = TestMultitenancyAPIHelper.createConnectionUriDomain(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "127.0.0.1", null, null, null,
+                null, false, null, true, defaultRequiredFactorIds,
+                config, SemVer.v4_1);
+        assertFalse(response.get("createdNew").getAsBoolean());
+
+        tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier("127.0.0.1", null, null),
+                process.getProcess(), SemVer.v4_1);
+        assertTrue(tenant.get("mfa").getAsJsonObject().get("defaultRequiredFactorIds").isJsonArray());
+        assertEquals(4, tenant.get("mfa").getAsJsonObject().get("defaultRequiredFactorIds").getAsJsonArray().size());
+        assertEquals(defaultRequiredFactorIds, new Gson().fromJson(tenant.get("mfa").getAsJsonObject().get("defaultRequiredFactorIds").getAsJsonArray(), String[].class));
+
+        response = TestMultitenancyAPIHelper.createConnectionUriDomain(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "127.0.0.1", null, null, null,
+                null, false, null, true, null,
+                config, SemVer.v4_1);
+        assertFalse(response.get("createdNew").getAsBoolean());
+
+        tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier("127.0.0.1", null, null),
+                process.getProcess(), SemVer.v4_1);
+        assertTrue(tenant.get("mfa").getAsJsonObject().get("defaultRequiredFactorIds").isJsonNull());
     }
 }

@@ -46,7 +46,8 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
     protected void handle(HttpServletRequest req, TenantIdentifier sourceTenantIdentifier,
                           TenantIdentifier targetTenantIdentifier, Boolean emailPasswordEnabled,
                           Boolean thirdPartyEnabled, Boolean passwordlessEnabled, Boolean totpEnabled,
-                          String[] firstFactors, String[] defaultRequiredFactorIds,
+                          boolean hasFirstFactors, String[] firstFactors,
+                          boolean hasDefaultRequiredFactorIds, String[] defaultRequiredFactorIds,
                           JsonObject coreConfig, HttpServletResponse resp)
             throws ServletException, IOException {
 
@@ -131,7 +132,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
             );
         }
 
-        if (firstFactors != null) {
+        if (hasFirstFactors) {
             tenantConfig = new TenantConfig(
                     tenantConfig.tenantIdentifier,
                     tenantConfig.emailPasswordConfig,
@@ -143,7 +144,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
             );
         }
 
-        if (defaultRequiredFactorIds != null) {
+        if (hasDefaultRequiredFactorIds) {
             tenantConfig = new TenantConfig(
                     tenantConfig.tenantIdentifier,
                     tenantConfig.emailPasswordConfig,
