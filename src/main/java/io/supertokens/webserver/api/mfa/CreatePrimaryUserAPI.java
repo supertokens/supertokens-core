@@ -14,7 +14,7 @@
  *    under the License.
  */
 
-package io.supertokens.webserver.api.accountlinking;
+package io.supertokens.webserver.api.mfa;
 
 import com.google.gson.JsonObject;
 import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
@@ -41,12 +41,12 @@ import java.io.IOException;
 public class CreatePrimaryUserAPI extends WebserverAPI {
 
     public CreatePrimaryUserAPI(Main main) {
-        super(main, RECIPE_ID.ACCOUNT_LINKING.toString());
+        super(main, RECIPE_ID.MFA.toString());
     }
 
     @Override
     public String getPath() {
-        return "/recipe/accountlinking/user/primary";
+        return "/recipe/mfa/user/primary";
     }
 
     @Override
@@ -67,7 +67,7 @@ public class CreatePrimaryUserAPI extends WebserverAPI {
             appIdentifierWithStorage = mappingAndStorage.appIdentifierWithStorage;
 
             AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(main, appIdentifierWithStorage,
-                    userId, false);
+                    userId, true);
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             response.addProperty("wasAlreadyAPrimaryUser", result.wasAlreadyAPrimaryUser);

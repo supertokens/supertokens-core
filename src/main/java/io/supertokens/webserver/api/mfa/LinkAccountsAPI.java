@@ -14,10 +14,9 @@
  *    under the License.
  */
 
-package io.supertokens.webserver.api.accountlinking;
+package io.supertokens.webserver.api.mfa;
 
 import com.google.gson.JsonObject;
-import io.supertokens.ActiveUsers;
 import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
 import io.supertokens.authRecipe.AuthRecipe;
@@ -27,7 +26,6 @@ import io.supertokens.authRecipe.exception.RecipeUserIdAlreadyLinkedWithAnotherP
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
-import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
@@ -41,18 +39,16 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 public class LinkAccountsAPI extends WebserverAPI {
 
     public LinkAccountsAPI(Main main) {
-        super(main, RECIPE_ID.ACCOUNT_LINKING.toString());
+        super(main, RECIPE_ID.MFA.toString());
     }
 
     @Override
     public String getPath() {
-        return "/recipe/accountlinking/user/link";
+        return "/recipe/mfa/user/link";
     }
 
     @Override
@@ -99,7 +95,7 @@ public class LinkAccountsAPI extends WebserverAPI {
 
             AuthRecipe.LinkAccountsResult linkAccountsResult = AuthRecipe.linkAccounts(main,
                     primaryUserIdAppIdentifierWithStorage,
-                    recipeUserId, primaryUserId, false);
+                    recipeUserId, primaryUserId, true);
 
             UserIdMapping.populateExternalUserIdForUsers(primaryUserIdAppIdentifierWithStorage, new AuthRecipeUserInfo[]{linkAccountsResult.user});
             JsonObject response = new JsonObject();
