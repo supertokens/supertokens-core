@@ -65,7 +65,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        new TotpConfig(false),
+                        new TotpConfig(true),
                         new MfaConfig(null, null),
                         new JsonObject()
                 );
