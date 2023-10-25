@@ -19,7 +19,6 @@ package io.supertokens.test.multitenant;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.ProcessState;
-import io.supertokens.config.Config;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
@@ -37,7 +36,6 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
-import io.supertokens.test.multitenant.api.TestMultitenancyAPIHelper;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
 import io.supertokens.webserver.Webserver;
 import io.supertokens.webserver.WebserverAPI;
@@ -145,13 +143,13 @@ public class RequestConnectionUriDomainTest {
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(new TenantIdentifier("localhost", null, null), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        new TotpConfig(false), new MfaConfig(null, null),
-                        tenantConfig), false);
+                        new TotpConfig(false),
+                null, null, tenantConfig), false);
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(new TenantIdentifier("127.0.0.1", null, null), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        new TotpConfig(false), new MfaConfig(null, null),
-                        tenant2Config), false);
+                        new TotpConfig(false),
+                null, null, tenant2Config), false);
 
         Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
 
@@ -251,8 +249,8 @@ public class RequestConnectionUriDomainTest {
                 new TenantConfig(new TenantIdentifier("localhost", null, null), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        new TotpConfig(false), new MfaConfig(null, null),
-                        tenantConfig),
+                        new TotpConfig(false),
+                        null, null, tenantConfig),
                 false
         );
         Multitenancy.addNewOrUpdateAppOrTenant(
@@ -260,8 +258,8 @@ public class RequestConnectionUriDomainTest {
                 new TenantConfig(new TenantIdentifier("localhost", null, "t1"), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        new TotpConfig(false), new MfaConfig(null, null),
-                        tenantConfig),
+                        new TotpConfig(false),
+                        null, null, tenantConfig),
                 false
         );
         Multitenancy.addNewOrUpdateAppOrTenant(
@@ -269,8 +267,8 @@ public class RequestConnectionUriDomainTest {
                 new TenantConfig(new TenantIdentifier("127.0.0.1", null, null), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        new TotpConfig(false), new MfaConfig(null, null),
-                        tenant2Config),
+                        new TotpConfig(false),
+                        null, null, tenant2Config),
                 false
         );
         Multitenancy.addNewOrUpdateAppOrTenant(
@@ -278,8 +276,8 @@ public class RequestConnectionUriDomainTest {
                 new TenantConfig(new TenantIdentifier("127.0.0.1", null, "t1"), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        new TotpConfig(false), new MfaConfig(null, null),
-                        tenant2Config),
+                        new TotpConfig(false),
+                        null, null, tenant2Config),
                 false
         );
 

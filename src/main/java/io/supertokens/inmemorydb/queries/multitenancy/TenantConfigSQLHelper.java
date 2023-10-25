@@ -54,8 +54,8 @@ public class TenantConfigSQLHelper {
                         new ThirdPartyConfig(result.getBoolean("third_party_enabled"), this.providers),
                         new PasswordlessConfig(result.getBoolean("passwordless_enabled")),
                         new TotpConfig(false), // TODO
-                        new MfaConfig(new String[0], new String[0]), // TODO
-                        JsonUtils.stringToJsonObject(result.getString("core_config"))
+                        null, null, JsonUtils.stringToJsonObject(result.getString("core_config"))
+                        // TODO
                 );
             } catch (Exception e) {
                 throw new StorageQueryException(e);
