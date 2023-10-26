@@ -31,6 +31,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 public class CreateOrUpdateTenantOrGetTenantAPI extends BaseCreateOrUpdate {
 
@@ -74,6 +77,9 @@ public class CreateOrUpdateTenantOrGetTenantAPI extends BaseCreateOrUpdate {
                 for (int i = 0; i < firstFactors.length; i++) {
                     firstFactors[i] = InputParser.parseStringFromElementOrThrowError(firstFactorsArr.get(i), "firstFactors", false);
                 }
+                if (firstFactors.length != new HashSet<>(Arrays.asList(firstFactors)).size()) {
+                    throw new ServletException(new BadRequestException("firstFactors input should not contain duplicate values"));
+                }
             }
             hasDefaultRequiredFactorIds = input.has("defaultRequiredFactorIds");
             if (hasDefaultRequiredFactorIds && !input.get("defaultRequiredFactorIds").isJsonNull()) {
@@ -81,6 +87,9 @@ public class CreateOrUpdateTenantOrGetTenantAPI extends BaseCreateOrUpdate {
                 defaultRequiredFactorIds = new String[defaultRequiredFactorIdsArr.size()];
                 for (int i = 0; i < defaultRequiredFactorIds.length; i++) {
                     defaultRequiredFactorIds[i] = InputParser.parseStringFromElementOrThrowError(defaultRequiredFactorIdsArr.get(i), "defaultRequiredFactorIds", false);
+                }
+                if (defaultRequiredFactorIds.length != new HashSet<>(Arrays.asList(defaultRequiredFactorIds)).size()) {
+                    throw new ServletException(new BadRequestException("defaultRequiredFactorIds input should not contain duplicate values"));
                 }
             }
         }

@@ -772,4 +772,42 @@ public class TestApp {
         assertNull(tenant.get("defaultRequiredFactorIds"));
     }
 
+    @Test
+    public void testDuplicateValuesInFirstFactorsAndDefaultRequiredFactorIds() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        JsonObject config = new JsonObject();
+        StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
+
+        String[] factors = new String[]{"duplicate", "emailpassword", "duplicate", "custom"};
+        try {
+            TestMultitenancyAPIHelper.createApp(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    "a1", null, null, null,
+                    null, true, factors, false, null,
+                    config, SemVer.v4_1);
+            fail();
+        } catch (HttpResponseException e) {
+            assertEquals(400, e.statusCode);
+            assertEquals("Http error. Status Code: 400. Message: firstFactors input should not contain duplicate values", e.getMessage());
+        }
+
+        try {
+            TestMultitenancyAPIHelper.createApp(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    "a1", null, null, null,
+                    null, false, null, true, factors,
+                    config, SemVer.v4_1);
+            fail();
+        } catch (HttpResponseException e) {
+            assertEquals(400, e.statusCode);
+            assertEquals("Http error. Status Code: 400. Message: defaultRequiredFactorIds input should not contain duplicate values", e.getMessage());
+        }
+
+    }
+
 }
