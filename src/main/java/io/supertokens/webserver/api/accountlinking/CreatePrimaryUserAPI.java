@@ -44,14 +44,16 @@ public class CreatePrimaryUserAPI extends WebserverAPI {
         super(main, RECIPE_ID.ACCOUNT_LINKING.toString());
     }
 
+    public CreatePrimaryUserAPI(Main main, String recipeId) {
+        super(main, recipeId);
+    }
+
     @Override
     public String getPath() {
         return "/recipe/accountlinking/user/primary";
     }
 
-    @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        // API is app specific
+    public void handle(HttpServletRequest req, HttpServletResponse resp, boolean forMfa)  throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String inputRecipeUserId = InputParser.parseStringOrThrowError(input, "recipeUserId", false);
 
@@ -67,7 +69,7 @@ public class CreatePrimaryUserAPI extends WebserverAPI {
             appIdentifierWithStorage = mappingAndStorage.appIdentifierWithStorage;
 
             AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(main, appIdentifierWithStorage,
-                    userId, false);
+                    userId, forMfa);
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             response.addProperty("wasAlreadyAPrimaryUser", result.wasAlreadyAPrimaryUser);
@@ -117,5 +119,11 @@ public class CreatePrimaryUserAPI extends WebserverAPI {
                 throw new ServletException(ex);
             }
         }
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is app specific
+        handle(req, resp, false);
     }
 }

@@ -331,6 +331,21 @@ public class AuthRecipe {
         }
     }
 
+    @TestOnly
+    public static LinkAccountsResult linkAccounts(Main main, String recipeUserId, String primaryUserId, boolean forMfa)
+            throws StorageQueryException, AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
+            UnknownUserIdException,
+            FeatureNotEnabledException, InputUserIdIsNotAPrimaryUserException,
+            RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException {
+        AppIdentifierWithStorage appId = new AppIdentifierWithStorage(null, null,
+                StorageLayer.getStorage(main));
+        try {
+            return linkAccounts(main, appId, recipeUserId, primaryUserId, forMfa);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public static LinkAccountsResult linkAccounts(Main main, AppIdentifierWithStorage appIdentifierWithStorage,
                                                   String _recipeUserId, String _primaryUserId)
             throws StorageQueryException,
@@ -545,6 +560,22 @@ public class AuthRecipe {
                 StorageLayer.getStorage(main));
         try {
             return createPrimaryUser(main, appId, recipeUserId, false);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @TestOnly
+    public static CreatePrimaryUserResult createPrimaryUser(Main main,
+                                                            String recipeUserId,
+                                                            boolean forMfa)
+            throws StorageQueryException, AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
+            RecipeUserIdAlreadyLinkedWithPrimaryUserIdException, UnknownUserIdException,
+            FeatureNotEnabledException {
+        AppIdentifierWithStorage appId = new AppIdentifierWithStorage(null, null,
+                StorageLayer.getStorage(main));
+        try {
+            return createPrimaryUser(main, appId, recipeUserId, forMfa);
         } catch (TenantOrAppNotFoundException e) {
             throw new RuntimeException(e);
         }

@@ -16,29 +16,15 @@
 
 package io.supertokens.webserver.api.mfa;
 
-import com.google.gson.JsonObject;
-import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
-import io.supertokens.authRecipe.AuthRecipe;
-import io.supertokens.authRecipe.exception.AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException;
-import io.supertokens.authRecipe.exception.RecipeUserIdAlreadyLinkedWithPrimaryUserIdException;
-import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.pluginInterface.RECIPE_ID;
-import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
-import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
-import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.useridmapping.UserIdMapping;
-import io.supertokens.useridmapping.UserIdType;
-import io.supertokens.webserver.InputParser;
-import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
-public class CreatePrimaryUserAPI extends WebserverAPI {
+public class CreatePrimaryUserAPI extends io.supertokens.webserver.api.accountlinking.CreatePrimaryUserAPI {
 
     public CreatePrimaryUserAPI(Main main) {
         super(main, RECIPE_ID.MFA.toString());
@@ -52,70 +38,6 @@ public class CreatePrimaryUserAPI extends WebserverAPI {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         // API is app specific
-        JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-        String inputRecipeUserId = InputParser.parseStringOrThrowError(input, "recipeUserId", false);
-
-        AppIdentifierWithStorage appIdentifierWithStorage = null;
-        try {
-            String userId = inputRecipeUserId;
-            AppIdentifierWithStorageAndUserIdMapping mappingAndStorage =
-                    getAppIdentifierWithStorageAndUserIdMappingFromRequest(
-                            req, inputRecipeUserId, UserIdType.ANY);
-            if (mappingAndStorage.userIdMapping != null) {
-                userId = mappingAndStorage.userIdMapping.superTokensUserId;
-            }
-            appIdentifierWithStorage = mappingAndStorage.appIdentifierWithStorage;
-
-            AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(main, appIdentifierWithStorage,
-                    userId, true);
-            JsonObject response = new JsonObject();
-            response.addProperty("status", "OK");
-            response.addProperty("wasAlreadyAPrimaryUser", result.wasAlreadyAPrimaryUser);
-            if (mappingAndStorage.userIdMapping != null) {
-                result.user.setExternalUserId(mappingAndStorage.userIdMapping.externalUserId);
-            } else {
-                result.user.setExternalUserId(null);
-            }
-            response.add("user", result.user.toJson());
-            super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | TenantOrAppNotFoundException | FeatureNotEnabledException e) {
-            throw new ServletException(e);
-        } catch (UnknownUserIdException e) {
-            throw new ServletException(new BadRequestException("Unknown user ID provided"));
-        } catch (AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException e) {
-            try {
-                JsonObject response = new JsonObject();
-                response.addProperty("status", "ACCOUNT_INFO_ALREADY_ASSOCIATED_WITH_ANOTHER_PRIMARY_USER_ID_ERROR");
-                io.supertokens.pluginInterface.useridmapping.UserIdMapping result = UserIdMapping.getUserIdMapping(
-                        appIdentifierWithStorage, e.primaryUserId,
-                        UserIdType.SUPERTOKENS);
-                if (result != null) {
-                    response.addProperty("primaryUserId", result.externalUserId);
-                } else {
-                    response.addProperty("primaryUserId", e.primaryUserId);
-                }
-                response.addProperty("description", e.getMessage());
-                super.sendJsonResponse(200, response, resp);
-            } catch (StorageQueryException ex) {
-                throw new ServletException(ex);
-            }
-        } catch (RecipeUserIdAlreadyLinkedWithPrimaryUserIdException e) {
-            try {
-                JsonObject response = new JsonObject();
-                response.addProperty("status", "RECIPE_USER_ID_ALREADY_LINKED_WITH_PRIMARY_USER_ID_ERROR");
-                io.supertokens.pluginInterface.useridmapping.UserIdMapping result = UserIdMapping.getUserIdMapping(
-                        appIdentifierWithStorage, e.primaryUserId,
-                        UserIdType.SUPERTOKENS);
-                if (result != null) {
-                    response.addProperty("primaryUserId", result.externalUserId);
-                } else {
-                    response.addProperty("primaryUserId", e.primaryUserId);
-                }
-                response.addProperty("description", e.getMessage());
-                super.sendJsonResponse(200, response, resp);
-            } catch (StorageQueryException ex) {
-                throw new ServletException(ex);
-            }
-        }
+        handle(req, resp, true);
     }
 }
