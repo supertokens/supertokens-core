@@ -144,25 +144,6 @@ public class InputParser {
         }
     }
 
-    public static String[] parseStringArrayOrThrowError(JsonObject element, String fieldName, boolean nullable)
-            throws ServletException {
-        try {
-            if (nullable && element.get(fieldName) == null) {
-                return null;
-            }
-            JsonArray strings = element.get(fieldName).getAsJsonArray();
-            String[] result = new String[strings.size()];
-            for (int i = 0; i < strings.size(); i++) {
-                result[i] = strings.get(i).getAsString();
-            }
-
-            return result;
-        } catch (Exception e) {
-            throw new ServletException(
-                    new WebserverAPI.BadRequestException("Field name '" + fieldName + "' is invalid in JSON input"));
-        }
-    }
-
     public static String parseStringFromElementOrThrowError(JsonElement element, String parentFieldName,
             boolean nullable) throws ServletException {
         try {

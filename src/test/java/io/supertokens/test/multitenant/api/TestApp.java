@@ -51,6 +51,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.rmi.ServerException;
+import java.util.Set;
 
 import static org.junit.Assert.*;
 
@@ -528,7 +529,7 @@ public class TestApp {
 
         JsonObject tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, "a1", null),
                 process.getProcess(), SemVer.v4_1);
-        assertFalse(tenant.get("totp").getAsJsonObject().get("enabled").getAsBoolean());
+        assertTrue(tenant.get("totp").getAsJsonObject().get("enabled").getAsBoolean());
 
         response = TestMultitenancyAPIHelper.createApp(
                 process.getProcess(),
@@ -598,7 +599,7 @@ public class TestApp {
 
         JsonObject tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, "a1", null),
                 process.getProcess(), SemVer.v4_1);
-        assertTrue(tenant.get("mfa").getAsJsonObject().get("firstFactors").isJsonNull());
+        assertNull(tenant.get("firstFactors"));
 
         // builtin firstFactor
         String[] firstFactors = new String[]{"otp-phone"};
@@ -612,9 +613,9 @@ public class TestApp {
 
         tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, "a1", null),
                 process.getProcess(), SemVer.v4_1);
-        assertTrue(tenant.get("mfa").getAsJsonObject().get("firstFactors").isJsonArray());
-        assertEquals(1, tenant.get("mfa").getAsJsonObject().get("firstFactors").getAsJsonArray().size());
-        assertEquals(firstFactors, new Gson().fromJson(tenant.get("mfa").getAsJsonObject().get("firstFactors").getAsJsonArray(), String[].class));
+        assertTrue(tenant.get("firstFactors").isJsonArray());
+        assertEquals(1, tenant.get("firstFactors").getAsJsonArray().size());
+        assertEquals(firstFactors, new Gson().fromJson(tenant.get("firstFactors").getAsJsonArray(), String[].class));
 
         response = TestMultitenancyAPIHelper.createApp(
                 process.getProcess(),
@@ -626,9 +627,9 @@ public class TestApp {
 
         tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, "a1", null),
                 process.getProcess(), SemVer.v4_1);
-        assertTrue(tenant.get("mfa").getAsJsonObject().get("firstFactors").isJsonArray());
-        assertEquals(1, tenant.get("mfa").getAsJsonObject().get("firstFactors").getAsJsonArray().size());
-        assertEquals(firstFactors, new Gson().fromJson(tenant.get("mfa").getAsJsonObject().get("firstFactors").getAsJsonArray(), String[].class));
+        assertTrue(tenant.get("firstFactors").isJsonArray());
+        assertEquals(1, tenant.get("firstFactors").getAsJsonArray().size());
+        assertEquals(firstFactors, new Gson().fromJson(tenant.get("firstFactors").getAsJsonArray(), String[].class));
 
         // custom factors
         firstFactors = new String[]{"biometric"};
@@ -642,9 +643,9 @@ public class TestApp {
 
         tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, "a1", null),
                 process.getProcess(), SemVer.v4_1);
-        assertTrue(tenant.get("mfa").getAsJsonObject().get("firstFactors").isJsonArray());
-        assertEquals(1, tenant.get("mfa").getAsJsonObject().get("firstFactors").getAsJsonArray().size());
-        assertEquals(firstFactors, new Gson().fromJson(tenant.get("mfa").getAsJsonObject().get("firstFactors").getAsJsonArray(), String[].class));
+        assertTrue(tenant.get("firstFactors").isJsonArray());
+        assertEquals(1, tenant.get("firstFactors").getAsJsonArray().size());
+        assertEquals(firstFactors, new Gson().fromJson(tenant.get("firstFactors").getAsJsonArray(), String[].class));
 
         // test both
         firstFactors = new String[]{"otp-phone", "emailpassword", "biometric", "custom"};
@@ -658,9 +659,9 @@ public class TestApp {
 
         tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, "a1", null),
                 process.getProcess(), SemVer.v4_1);
-        assertTrue(tenant.get("mfa").getAsJsonObject().get("firstFactors").isJsonArray());
-        assertEquals(4, tenant.get("mfa").getAsJsonObject().get("firstFactors").getAsJsonArray().size());
-        assertEquals(firstFactors, new Gson().fromJson(tenant.get("mfa").getAsJsonObject().get("firstFactors").getAsJsonArray(), String[].class));
+        assertTrue(tenant.get("firstFactors").isJsonArray());
+        assertEquals(4, tenant.get("firstFactors").getAsJsonArray().size());
+        assertEquals(Set.of(firstFactors), Set.of(new Gson().fromJson(tenant.get("firstFactors").getAsJsonArray(), String[].class)));
 
         response = TestMultitenancyAPIHelper.createApp(
                 process.getProcess(),
@@ -672,7 +673,7 @@ public class TestApp {
 
         tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, "a1", null),
                 process.getProcess(), SemVer.v4_1);
-        assertTrue(tenant.get("mfa").getAsJsonObject().get("firstFactors").isJsonNull());
+        assertNull(tenant.get("firstFactors"));
     }
 
     @Test
@@ -694,7 +695,7 @@ public class TestApp {
 
         JsonObject tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, "a1", null),
                 process.getProcess(), SemVer.v4_1);
-        assertTrue(tenant.get("mfa").getAsJsonObject().get("defaultRequiredFactorIds").isJsonNull());
+        assertNull(tenant.get("defaultRequiredFactorIds"));
 
         // builtin firstFactor
         String[] defaultRequiredFactorIds = new String[]{"otp-phone"};
@@ -708,9 +709,9 @@ public class TestApp {
 
         tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, "a1", null),
                 process.getProcess(), SemVer.v4_1);
-        assertTrue(tenant.get("mfa").getAsJsonObject().get("defaultRequiredFactorIds").isJsonArray());
-        assertEquals(1, tenant.get("mfa").getAsJsonObject().get("defaultRequiredFactorIds").getAsJsonArray().size());
-        assertEquals(defaultRequiredFactorIds, new Gson().fromJson(tenant.get("mfa").getAsJsonObject().get("defaultRequiredFactorIds").getAsJsonArray(), String[].class));
+        assertTrue(tenant.get("defaultRequiredFactorIds").isJsonArray());
+        assertEquals(1, tenant.get("defaultRequiredFactorIds").getAsJsonArray().size());
+        assertEquals(defaultRequiredFactorIds, new Gson().fromJson(tenant.get("defaultRequiredFactorIds").getAsJsonArray(), String[].class));
 
         response = TestMultitenancyAPIHelper.createApp(
                 process.getProcess(),
@@ -722,9 +723,9 @@ public class TestApp {
 
         tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, "a1", null),
                 process.getProcess(), SemVer.v4_1);
-        assertTrue(tenant.get("mfa").getAsJsonObject().get("defaultRequiredFactorIds").isJsonArray());
-        assertEquals(1, tenant.get("mfa").getAsJsonObject().get("defaultRequiredFactorIds").getAsJsonArray().size());
-        assertEquals(defaultRequiredFactorIds, new Gson().fromJson(tenant.get("mfa").getAsJsonObject().get("defaultRequiredFactorIds").getAsJsonArray(), String[].class));
+        assertTrue(tenant.get("defaultRequiredFactorIds").isJsonArray());
+        assertEquals(1, tenant.get("defaultRequiredFactorIds").getAsJsonArray().size());
+        assertEquals(defaultRequiredFactorIds, new Gson().fromJson(tenant.get("defaultRequiredFactorIds").getAsJsonArray(), String[].class));
 
         // custom factors
         defaultRequiredFactorIds = new String[]{"biometric"};
@@ -738,9 +739,9 @@ public class TestApp {
 
         tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, "a1", null),
                 process.getProcess(), SemVer.v4_1);
-        assertTrue(tenant.get("mfa").getAsJsonObject().get("defaultRequiredFactorIds").isJsonArray());
-        assertEquals(1, tenant.get("mfa").getAsJsonObject().get("defaultRequiredFactorIds").getAsJsonArray().size());
-        assertEquals(defaultRequiredFactorIds, new Gson().fromJson(tenant.get("mfa").getAsJsonObject().get("defaultRequiredFactorIds").getAsJsonArray(), String[].class));
+        assertTrue(tenant.get("defaultRequiredFactorIds").isJsonArray());
+        assertEquals(1, tenant.get("defaultRequiredFactorIds").getAsJsonArray().size());
+        assertEquals(defaultRequiredFactorIds, new Gson().fromJson(tenant.get("defaultRequiredFactorIds").getAsJsonArray(), String[].class));
 
         // test both
         defaultRequiredFactorIds = new String[]{"otp-phone", "emailpassword", "biometric", "custom"};
@@ -754,9 +755,9 @@ public class TestApp {
 
         tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, "a1", null),
                 process.getProcess(), SemVer.v4_1);
-        assertTrue(tenant.get("mfa").getAsJsonObject().get("defaultRequiredFactorIds").isJsonArray());
-        assertEquals(4, tenant.get("mfa").getAsJsonObject().get("defaultRequiredFactorIds").getAsJsonArray().size());
-        assertEquals(defaultRequiredFactorIds, new Gson().fromJson(tenant.get("mfa").getAsJsonObject().get("defaultRequiredFactorIds").getAsJsonArray(), String[].class));
+        assertTrue(tenant.get("defaultRequiredFactorIds").isJsonArray());
+        assertEquals(4, tenant.get("defaultRequiredFactorIds").getAsJsonArray().size());
+        assertEquals(Set.of(defaultRequiredFactorIds), Set.of(new Gson().fromJson(tenant.get("defaultRequiredFactorIds").getAsJsonArray(), String[].class)));
 
         response = TestMultitenancyAPIHelper.createApp(
                 process.getProcess(),
@@ -768,7 +769,7 @@ public class TestApp {
 
         tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, "a1", null),
                 process.getProcess(), SemVer.v4_1);
-        assertTrue(tenant.get("mfa").getAsJsonObject().get("defaultRequiredFactorIds").isJsonNull());
+        assertNull(tenant.get("defaultRequiredFactorIds"));
     }
 
 }

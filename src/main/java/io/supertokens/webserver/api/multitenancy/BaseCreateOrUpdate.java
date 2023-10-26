@@ -65,9 +65,8 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        new TotpConfig(false),
-                        new MfaConfig(null, null),
-                        new JsonObject()
+                        new TotpConfig(true),
+                        null, null, new JsonObject()
                 );
             } else {
                 // We disable all recipes by default while creating tenant
@@ -77,8 +76,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(false),
                         new TotpConfig(false),
-                        new MfaConfig(null, null),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 );
             }
             createdNew = true;
@@ -91,8 +89,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                     tenantConfig.thirdPartyConfig,
                     tenantConfig.passwordlessConfig,
                     tenantConfig.totpConfig,
-                    tenantConfig.mfaConfig,
-                    tenantConfig.coreConfig
+                    tenantConfig.firstFactors, tenantConfig.defaultRequiredFactorIds, tenantConfig.coreConfig
             );
         }
 
@@ -103,8 +100,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                     new ThirdPartyConfig(thirdPartyEnabled, tenantConfig.thirdPartyConfig.providers),
                     tenantConfig.passwordlessConfig,
                     tenantConfig.totpConfig,
-                    tenantConfig.mfaConfig,
-                    tenantConfig.coreConfig
+                    tenantConfig.firstFactors, tenantConfig.defaultRequiredFactorIds, tenantConfig.coreConfig
             );
         }
 
@@ -115,8 +111,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                     tenantConfig.thirdPartyConfig,
                     new PasswordlessConfig(passwordlessEnabled),
                     tenantConfig.totpConfig,
-                    tenantConfig.mfaConfig,
-                    tenantConfig.coreConfig
+                    tenantConfig.firstFactors, tenantConfig.defaultRequiredFactorIds, tenantConfig.coreConfig
             );
         }
 
@@ -127,8 +122,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                     tenantConfig.thirdPartyConfig,
                     tenantConfig.passwordlessConfig,
                     new TotpConfig(totpEnabled),
-                    tenantConfig.mfaConfig,
-                    tenantConfig.coreConfig
+                    tenantConfig.firstFactors, tenantConfig.defaultRequiredFactorIds, tenantConfig.coreConfig
             );
         }
 
@@ -139,8 +133,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                     tenantConfig.thirdPartyConfig,
                     tenantConfig.passwordlessConfig,
                     tenantConfig.totpConfig,
-                    new MfaConfig(firstFactors, tenantConfig.mfaConfig.defaultRequiredFactorIds),
-                    tenantConfig.coreConfig
+                    firstFactors, tenantConfig.defaultRequiredFactorIds, tenantConfig.coreConfig
             );
         }
 
@@ -151,8 +144,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                     tenantConfig.thirdPartyConfig,
                     tenantConfig.passwordlessConfig,
                     tenantConfig.totpConfig,
-                    new MfaConfig(tenantConfig.mfaConfig.firstFactors, defaultRequiredFactorIds),
-                    tenantConfig.coreConfig
+                    tenantConfig.firstFactors, defaultRequiredFactorIds, tenantConfig.coreConfig
             );
         }
 
@@ -164,8 +156,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                     tenantConfig.thirdPartyConfig,
                     tenantConfig.passwordlessConfig,
                     tenantConfig.totpConfig,
-                    tenantConfig.mfaConfig,
-                    coreConfig
+                    tenantConfig.firstFactors, tenantConfig.defaultRequiredFactorIds, coreConfig
             );
         }
 

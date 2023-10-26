@@ -19,8 +19,6 @@ package io.supertokens.test.multitenant;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
-import io.supertokens.cliOptions.CLIOptions;
-import io.supertokens.config.Config;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.multitenancy.Multitenancy;
@@ -82,45 +80,45 @@ public class LogTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new TotpConfig(false), new MfaConfig(null, null),
-                new JsonObject()), false);
+                new TotpConfig(false),
+                null, null, new JsonObject()), false);
 
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 new TenantIdentifier(null, "a1", "t1"),
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new TotpConfig(false), new MfaConfig(null, null),
-                new JsonObject()), false);
+                new TotpConfig(false),
+                null, null, new JsonObject()), false);
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 new TenantIdentifier(null, "a1", "t2"),
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new TotpConfig(false), new MfaConfig(null, null),
-                new JsonObject()), false);
+                new TotpConfig(false),
+                null, null, new JsonObject()), false);
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 new TenantIdentifier(null, "a2", null),
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new TotpConfig(false), new MfaConfig(null, null),
-                new JsonObject()), false);
+                new TotpConfig(false),
+                null, null, new JsonObject()), false);
 
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 new TenantIdentifier(null, "a2", "t1"),
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new TotpConfig(false), new MfaConfig(null, null),
-                new JsonObject()), false);
+                new TotpConfig(false),
+                null, null, new JsonObject()), false);
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 new TenantIdentifier(null, "a2", "t2"),
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new TotpConfig(false), new MfaConfig(null, null),
-                new JsonObject()), false);
+                new TotpConfig(false),
+                null, null, new JsonObject()), false);
 
         assertEquals(7, Multitenancy.getAllTenants(process.getProcess()).length);
 

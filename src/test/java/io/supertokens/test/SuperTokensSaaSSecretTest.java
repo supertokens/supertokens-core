@@ -358,8 +358,8 @@ public class SuperTokensSaaSSecretTest {
                 new TenantConfig(new TenantIdentifier(null, null, "t1"), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        new TotpConfig(false), new MfaConfig(null, null),
-                        new JsonObject()));
+                        new TotpConfig(false),
+                        null, null, new JsonObject()));
 
         TenantConfig[] tenantConfigs = Multitenancy.getAllTenants(process.main);
 
@@ -401,8 +401,8 @@ public class SuperTokensSaaSSecretTest {
                     new TenantConfig(new TenantIdentifier(null, null, "t1"), new EmailPasswordConfig(false),
                             new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                             new PasswordlessConfig(false),
-                            new TotpConfig(false), new MfaConfig(null, null),
-                            j));
+                            new TotpConfig(false),
+                            null, null, j));
             fail();
         } catch (InvalidConfigException e) {
             assertEquals(e.getMessage(), "supertokens_saas_secret can only be set via the core's base config setting");
@@ -465,8 +465,8 @@ public class SuperTokensSaaSSecretTest {
                 Multitenancy.addNewOrUpdateAppOrTenant(process.main, new TenantConfig(new TenantIdentifier(null, null, "t1"), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        new TotpConfig(false), new MfaConfig(null, null),
-                        j), true);
+                        new TotpConfig(false),
+                        null, null, j), true);
                 fail();
             } catch (BadPermissionException e) {
                 assertEquals(e.getMessage(), "Not allowed to modify protected configs.");
@@ -552,8 +552,8 @@ public class SuperTokensSaaSSecretTest {
                     new TenantConfig(new TenantIdentifier(null, null, "t" + i), new EmailPasswordConfig(false),
                             new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                             new PasswordlessConfig(false),
-                            new TotpConfig(false), new MfaConfig(null, null),
-                            j));
+                            new TotpConfig(false),
+                            null, null, j));
 
             {
                 JsonObject response = HttpRequestForTesting.sendJsonRequest(process.getProcess(), "",
@@ -632,8 +632,8 @@ public class SuperTokensSaaSSecretTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[0]),
                 new PasswordlessConfig(true),
-                new TotpConfig(false), new MfaConfig(null, null),
-                coreConfig
+                new TotpConfig(false),
+                null, null, coreConfig
         ), false);
 
         { // clear the logs

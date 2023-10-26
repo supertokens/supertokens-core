@@ -26,7 +26,6 @@ import io.supertokens.httpRequest.HttpRequest;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.multitenancy.*;
-import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
@@ -43,7 +42,6 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import java.io.IOException;
-import java.rmi.ServerException;
 import java.util.HashMap;
 
 import static junit.framework.TestCase.assertEquals;
@@ -274,16 +272,16 @@ public class CDIVersionTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new TotpConfig(false), new MfaConfig(null, null),
-                config
+                new TotpConfig(false),
+                null, null, config
         ), false);
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 new TenantIdentifier(null, "a1", "t1"),
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new TotpConfig(false), new MfaConfig(null, null),
-                new JsonObject()
+                new TotpConfig(false),
+                null, null, new JsonObject()
         ), false);
 
         String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",

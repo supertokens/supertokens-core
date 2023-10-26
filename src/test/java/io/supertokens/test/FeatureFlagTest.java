@@ -291,7 +291,7 @@ public class FeatureFlagTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            new TotpConfig(false), new MfaConfig(null, null),
+                            new TotpConfig(false),null, null,
                             new JsonObject()
                     )
             );
@@ -353,7 +353,7 @@ public class FeatureFlagTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            new TotpConfig(false), new MfaConfig(null, null),
+                            new TotpConfig(false),null, null,
                             coreConfig
                     )
             );
@@ -381,7 +381,7 @@ public class FeatureFlagTest {
                                                 null, null, null, null, null, null, null)
                                 }),
                                 new PasswordlessConfig(true),
-                                new TotpConfig(false), new MfaConfig(null, null),
+                                new TotpConfig(false),null, null,
                                 coreConfig
                         )
                 );
@@ -454,7 +454,7 @@ public class FeatureFlagTest {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        new TotpConfig(false), new MfaConfig(null, null),
+                        new TotpConfig(false),null, null,
                         new JsonObject()
                 )
         );
@@ -473,7 +473,7 @@ public class FeatureFlagTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            new TotpConfig(false), new MfaConfig(null, null),
+                            new TotpConfig(false),null, null,
                             coreConfig
                     )
             );
@@ -501,7 +501,7 @@ public class FeatureFlagTest {
                                                 null, null, null, null, null, null, null)
                                 }),
                                 new PasswordlessConfig(true),
-                                new TotpConfig(false), new MfaConfig(null, null),
+                                new TotpConfig(false),null, null,
                                 coreConfig
                         )
                 );
@@ -583,7 +583,7 @@ public class FeatureFlagTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            new TotpConfig(false), new MfaConfig(null, null),
+                            new TotpConfig(false),null, null,
                             coreConfig
                     )
             );
@@ -603,7 +603,7 @@ public class FeatureFlagTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            new TotpConfig(false), new MfaConfig(null, null),
+                            new TotpConfig(false),null, null,
                             coreConfig
                     )
             );
@@ -631,7 +631,7 @@ public class FeatureFlagTest {
                                                 null, null, null, null, null, null, null)
                                 }),
                                 new PasswordlessConfig(true),
-                                new TotpConfig(false), new MfaConfig(null, null),
+                                new TotpConfig(false),null, null,
                                 coreConfig
                         )
                 );
@@ -704,7 +704,7 @@ public class FeatureFlagTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            new TotpConfig(false), new MfaConfig(null, null),
+                            new TotpConfig(false),null, null,
                             new JsonObject()
                     )
             );

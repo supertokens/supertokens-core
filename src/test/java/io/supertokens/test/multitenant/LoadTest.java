@@ -75,8 +75,8 @@ public class LoadTest {
                     new EmailPasswordConfig(false),
                     new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                     new PasswordlessConfig(false),
-                    new TotpConfig(false), new MfaConfig(null, null),
-                    config);
+                    new TotpConfig(false),
+                    null, null, config);
             try {
                 Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantIdentifier(null, null, null),
                         tenants[insideLoop]);

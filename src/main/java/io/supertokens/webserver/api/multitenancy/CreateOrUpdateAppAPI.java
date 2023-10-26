@@ -16,6 +16,7 @@
 
 package io.supertokens.webserver.api.multitenancy;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
@@ -65,11 +66,19 @@ public class CreateOrUpdateAppAPI extends BaseCreateOrUpdate {
             totpEnabled = InputParser.parseBooleanOrThrowError(input, "totpEnabled", true);
             hasFirstFactors = input.has("firstFactors");
             if (hasFirstFactors && !input.get("firstFactors").isJsonNull()) {
-                firstFactors = InputParser.parseStringArrayOrThrowError(input, "firstFactors", true);
+                JsonArray firstFactorsArr = InputParser.parseArrayOrThrowError(input, "firstFactors", true);
+                firstFactors = new String[firstFactorsArr.size()];
+                for (int i = 0; i < firstFactors.length; i++) {
+                    firstFactors[i] = InputParser.parseStringFromElementOrThrowError(firstFactorsArr.get(i), "firstFactors", false);
+                }
             }
             hasDefaultRequiredFactorIds = input.has("defaultRequiredFactorIds");
             if (hasDefaultRequiredFactorIds && !input.get("defaultRequiredFactorIds").isJsonNull()) {
-                defaultRequiredFactorIds = InputParser.parseStringArrayOrThrowError(input, "defaultRequiredFactorIds", true);
+                JsonArray defaultRequiredFactorIdsArr = InputParser.parseArrayOrThrowError(input, "defaultRequiredFactorIds", true);
+                defaultRequiredFactorIds = new String[defaultRequiredFactorIdsArr.size()];
+                for (int i = 0; i < defaultRequiredFactorIds.length; i++) {
+                    defaultRequiredFactorIds[i] = InputParser.parseStringFromElementOrThrowError(defaultRequiredFactorIdsArr.get(i), "defaultRequiredFactorIds", false);
+                }
             }
         }
 

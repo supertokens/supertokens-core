@@ -105,8 +105,8 @@ public class AppTenantUserTest {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        new TotpConfig(false), new MfaConfig(null, null),
-                        new JsonObject()
+                        new TotpConfig(false),
+                        null, null, new JsonObject()
                 ), false);
 
                 Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
@@ -114,8 +114,8 @@ public class AppTenantUserTest {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        new TotpConfig(false), new MfaConfig(null, null),
-                        new JsonObject()
+                        new TotpConfig(false),
+                        null, null, new JsonObject()
                 ), false);
 
                 TenantIdentifierWithStorage tWithStorage = t.withStorage(
@@ -147,8 +147,8 @@ public class AppTenantUserTest {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        new TotpConfig(false), new MfaConfig(null, null),
-                        new JsonObject()
+                        new TotpConfig(false),
+                        null, null, new JsonObject()
                 ), false);
 
                 Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
@@ -156,8 +156,8 @@ public class AppTenantUserTest {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        new TotpConfig(false), new MfaConfig(null, null),
-                        new JsonObject()
+                        new TotpConfig(false),
+                        null, null, new JsonObject()
                 ), false);
 
                 UserIdMapping.assertThatUserIdIsNotBeingUsedInNonAuthRecipes(tWithStorage.toAppIdentifierWithStorage(),
@@ -206,8 +206,8 @@ public class AppTenantUserTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new TotpConfig(false), new MfaConfig(null, null),
-                new JsonObject()
+                new TotpConfig(false),
+                null, null, new JsonObject()
         ), false);
 
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
@@ -215,8 +215,8 @@ public class AppTenantUserTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new TotpConfig(false), new MfaConfig(null, null),
-                new JsonObject()
+                new TotpConfig(false),
+                null, null, new JsonObject()
         ), false);
 
         TenantIdentifierWithStorage appWithStorage = app.withStorage(
@@ -281,8 +281,8 @@ public class AppTenantUserTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new TotpConfig(false), new MfaConfig(null, null),
-                new JsonObject()
+                new TotpConfig(false),
+                null, null, new JsonObject()
         ), false);
 
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
@@ -290,8 +290,8 @@ public class AppTenantUserTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new TotpConfig(false), new MfaConfig(null, null),
-                new JsonObject()
+                new TotpConfig(false),
+                null, null, new JsonObject()
         ), false);
 
         TenantIdentifierWithStorage appWithStorage = app.withStorage(
