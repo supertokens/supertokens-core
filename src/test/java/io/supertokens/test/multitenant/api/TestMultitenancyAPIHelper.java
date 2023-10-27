@@ -354,12 +354,33 @@ public class TestMultitenancyAPIHelper {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("email", email);
         requestBody.addProperty("password", password);
+        JsonObject signUpResponse = epSignUpAndGetResponse(tenantIdentifier, email, password, main, SemVer.v3_0);
+        assertEquals("OK", signUpResponse.getAsJsonPrimitive("status").getAsString());
+        return signUpResponse.getAsJsonObject("user");
+    }
+
+    public static JsonObject epSignUpAndGetResponse(TenantIdentifier tenantIdentifier, String email, String password, Main main, SemVer version)
+            throws HttpResponseException, IOException {
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("email", email);
+        requestBody.addProperty("password", password);
         JsonObject signUpResponse = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/signup"),
                 requestBody, 1000, 1000, null,
-                SemVer.v3_0.get(), "emailpassword");
-        assertEquals("OK", signUpResponse.getAsJsonPrimitive("status").getAsString());
-        return signUpResponse.getAsJsonObject("user");
+                version.get(), "emailpassword");
+        return signUpResponse;
+    }
+
+    public static JsonObject epSignInAndGetResponse(TenantIdentifier tenantIdentifier, String email, String password, Main main, SemVer version)
+            throws HttpResponseException, IOException {
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("email", email);
+        requestBody.addProperty("password", password);
+        JsonObject signUpResponse = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/signin"),
+                requestBody, 1000, 1000, null,
+                version.get(), "emailpassword");
+        return signUpResponse;
     }
 
     public static JsonObject tpSignInUp(TenantIdentifier tenantIdentifier, String thirdPartyId, String thirdPartyUserId, String email, Main main)
@@ -372,14 +393,29 @@ public class TestMultitenancyAPIHelper {
         signUpRequestBody.addProperty("thirdPartyUserId", thirdPartyUserId);
         signUpRequestBody.add("email", emailObject);
 
-        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
-                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/signinup"), signUpRequestBody,
-                1000, 1000, null,
-                SemVer.v3_0.get(), "thirdparty");
+        JsonObject response = tpSignInUpAndGetResponse(tenantIdentifier, thirdPartyId, thirdPartyUserId, email, main, SemVer.v3_0);
         assertEquals("OK", response.get("status").getAsString());
         assertEquals(3, response.entrySet().size());
 
         return response.get("user").getAsJsonObject();
+    }
+
+    public static JsonObject tpSignInUpAndGetResponse(TenantIdentifier tenantIdentifier, String thirdPartyId, String thirdPartyUserId, String email, Main main, SemVer version)
+            throws HttpResponseException, IOException {
+        JsonObject emailObject = new JsonObject();
+        emailObject.addProperty("id", email);
+        emailObject.addProperty("isVerified", false);
+
+        JsonObject signUpRequestBody = new JsonObject();
+        signUpRequestBody.addProperty("thirdPartyId", thirdPartyId);
+        signUpRequestBody.addProperty("thirdPartyUserId", thirdPartyUserId);
+        signUpRequestBody.add("email", emailObject);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/signinup"), signUpRequestBody,
+                1000, 1000, null,
+                version.get(), "thirdparty");
+        return response;
     }
 
     private static String generateRandomString(int length) {

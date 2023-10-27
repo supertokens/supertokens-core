@@ -105,13 +105,6 @@ public class SignInUpAPI extends WebserverAPI {
                     }
                 }
 
-                if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_1)) {
-                    Multitenancy.CheckFirstFactorResult checkFirstFactorResult = Multitenancy.checkFirstFactor(super.main,
-                            this.getTenantIdentifierWithStorageFromRequest(req), "thirdparty");
-                    result.addProperty("tenantHasFirstFactors", checkFirstFactorResult.tenantHasFirstFactors);
-                    result.addProperty("isValidFirstFactor", checkFirstFactorResult.isValidFirstFactor);
-                }
-
                 super.sendJsonResponse(200, result, resp);
 
             } catch (StorageQueryException | TenantOrAppNotFoundException e) {
@@ -172,6 +165,14 @@ public class SignInUpAPI extends WebserverAPI {
                         }
                     }
                 }
+
+                if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_1)) {
+                    Multitenancy.CheckFirstFactorResult checkFirstFactorResult = Multitenancy.checkFirstFactor(super.main,
+                            this.getTenantIdentifierWithStorageFromRequest(req), "thirdparty");
+                    result.addProperty("tenantHasFirstFactors", checkFirstFactorResult.tenantHasFirstFactors);
+                    result.addProperty("isValidFirstFactor", checkFirstFactorResult.isValidFirstFactor);
+                }
+
                 super.sendJsonResponse(200, result, resp);
 
             } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
