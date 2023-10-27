@@ -21,6 +21,7 @@ import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
+import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
@@ -29,8 +30,6 @@ import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
-import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
@@ -96,6 +95,14 @@ public class SignInAPI extends WebserverAPI {
                         result.addProperty("recipeUserId", loginMethod.getSupertokensOrExternalUserId());
                         break;
                     }
+                }
+            }
+
+            if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_1)) {
+                Boolean isValidFirstFactorForTenant = Multitenancy.isValidFirstFactorForTenant(super.main,
+                        tenantIdentifierWithStorage, "emailpassword");
+                if (isValidFirstFactorForTenant != null) {
+                    result.addProperty("isValidFirstFactorForTenant", isValidFirstFactorForTenant);
                 }
             }
 

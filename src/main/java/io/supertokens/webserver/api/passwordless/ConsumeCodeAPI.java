@@ -19,6 +19,7 @@ package io.supertokens.webserver.api.passwordless;
 import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
+import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.Passwordless.ConsumeCodeResponse;
@@ -29,8 +30,6 @@ import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
-import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -113,6 +112,26 @@ public class ConsumeCodeAPI extends WebserverAPI {
                         result.addProperty("recipeUserId", loginMethod.getSupertokensOrExternalUserId());
                         break;
                     }
+                }
+            }
+
+            String factorId;
+            if (linkCode != null) {
+                factorId = "link-";
+            } else {
+                factorId = "otp-";
+            }
+            if (consumeCodeResponse.email != null) {
+                factorId += "email";
+            } else {
+                factorId += "phone";
+            }
+
+            if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_1)) {
+                Boolean isValidFirstFactorForTenant = Multitenancy.isValidFirstFactorForTenant(super.main,
+                        this.getTenantIdentifierWithStorageFromRequest(req), factorId);
+                if (isValidFirstFactorForTenant != null) {
+                    result.addProperty("isValidFirstFactorForTenant", isValidFirstFactorForTenant);
                 }
             }
 

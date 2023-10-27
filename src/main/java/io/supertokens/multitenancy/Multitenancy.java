@@ -601,4 +601,14 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         MultitenancyHelper.getInstance(main).refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(true);
         return MultitenancyHelper.getInstance(main).getAllTenants();
     }
+
+    public static Boolean isValidFirstFactorForTenant(Main main, TenantIdentifier tenantIdentifier, String factorId) {
+        TenantConfig tenantConfig = getTenantInfo(main, tenantIdentifier);
+
+        if (tenantConfig.firstFactors == null) {
+            return null;
+        }
+
+        return List.of(tenantConfig.firstFactors).contains(factorId);
+    }
 }
