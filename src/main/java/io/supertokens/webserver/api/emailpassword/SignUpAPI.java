@@ -100,10 +100,8 @@ public class SignUpAPI extends WebserverAPI {
             }
 
             if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_1)) {
-                Multitenancy.CheckFirstFactorResult checkFirstFactorResult = Multitenancy.checkFirstFactor(super.main,
-                        tenant, "emailpassword");
-                result.addProperty("tenantHasFirstFactors", checkFirstFactorResult.tenantHasFirstFactors);
-                result.addProperty("isValidFirstFactor", checkFirstFactorResult.isValidFirstFactor);
+                result.addProperty("isValidFirstFactorForTenant", Multitenancy.isValidFirstFactorForTenant(super.main,
+                        tenant, "emailpassword"));
             }
             super.sendJsonResponse(200, result, resp);
         } catch (DuplicateEmailException e) {

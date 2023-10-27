@@ -90,8 +90,7 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     config, SemVer.v4_1);
 
             JsonObject response = TestMultitenancyAPIHelper.epSignUpAndGetResponse(t1, "test1@example.com", "password", process.getProcess(), SemVer.v4_1);
-            assertTrue(response.has("tenantHasFirstFactors"));
-            assertFalse(response.get("tenantHasFirstFactors").getAsBoolean());
+            assertFalse(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
 
         { // first factors configured to empty array
@@ -103,9 +102,7 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     config, SemVer.v4_1);
 
             JsonObject response = TestMultitenancyAPIHelper.epSignUpAndGetResponse(t1, "test2@example.com", "password", process.getProcess(), SemVer.v4_1);
-            assertTrue(response.has("tenantHasFirstFactors"));
-            assertTrue(response.get("tenantHasFirstFactors").getAsBoolean());
-            assertFalse(response.get("isValidFirstFactor").getAsBoolean());
+            assertFalse(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
 
         { // first factors configured, does not contain emailpassword
@@ -117,9 +114,7 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     config, SemVer.v4_1);
 
             JsonObject response = TestMultitenancyAPIHelper.epSignUpAndGetResponse(t1, "test3@example.com", "password", process.getProcess(), SemVer.v4_1);
-            assertTrue(response.has("tenantHasFirstFactors"));
-            assertTrue(response.get("tenantHasFirstFactors").getAsBoolean());
-            assertFalse(response.get("isValidFirstFactor").getAsBoolean());
+            assertFalse(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
 
         { // first factors configured, contains emailpassword
@@ -131,9 +126,7 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     config, SemVer.v4_1);
 
             JsonObject response = TestMultitenancyAPIHelper.epSignUpAndGetResponse(t1, "test4@example.com", "password", process.getProcess(), SemVer.v4_1);
-            assertTrue(response.has("tenantHasFirstFactors"));
-            assertTrue(response.get("tenantHasFirstFactors").getAsBoolean());
-            assertTrue(response.get("isValidFirstFactor").getAsBoolean());
+            assertTrue(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
     }
 
@@ -167,8 +160,7 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     config, SemVer.v4_1);
 
             JsonObject response = TestMultitenancyAPIHelper.epSignInAndGetResponse(t1, "test@example.com", "password", process.getProcess(), SemVer.v4_1);
-            assertTrue(response.has("tenantHasFirstFactors"));
-            assertFalse(response.get("tenantHasFirstFactors").getAsBoolean());
+            assertFalse(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
 
         { // first factors configured to empty array
@@ -180,9 +172,7 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     config, SemVer.v4_1);
 
             JsonObject response = TestMultitenancyAPIHelper.epSignInAndGetResponse(t1, "test@example.com", "password", process.getProcess(), SemVer.v4_1);
-            assertTrue(response.has("tenantHasFirstFactors"));
-            assertTrue(response.get("tenantHasFirstFactors").getAsBoolean());
-            assertFalse(response.get("isValidFirstFactor").getAsBoolean());
+            assertFalse(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
 
         { // first factors configured, does not contain emailpassword
@@ -194,9 +184,7 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     config, SemVer.v4_1);
 
             JsonObject response = TestMultitenancyAPIHelper.epSignInAndGetResponse(t1, "test@example.com", "password", process.getProcess(), SemVer.v4_1);
-            assertTrue(response.has("tenantHasFirstFactors"));
-            assertTrue(response.get("tenantHasFirstFactors").getAsBoolean());
-            assertFalse(response.get("isValidFirstFactor").getAsBoolean());
+            assertFalse(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
 
         { // first factors configured, contains emailpassword
@@ -208,9 +196,7 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     config, SemVer.v4_1);
 
             JsonObject response = TestMultitenancyAPIHelper.epSignInAndGetResponse(t1, "test@example.com", "password", process.getProcess(), SemVer.v4_1);
-            assertTrue(response.has("tenantHasFirstFactors"));
-            assertTrue(response.get("tenantHasFirstFactors").getAsBoolean());
-            assertTrue(response.get("isValidFirstFactor").getAsBoolean());
+            assertTrue(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
     }
 
@@ -233,8 +219,7 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     config, SemVer.v4_1);
 
             JsonObject response = TestMultitenancyAPIHelper.tpSignInUpAndGetResponse(t1, "google", "gid1", "test1@example.com", process.getProcess(), SemVer.v4_1);
-            assertTrue(response.has("tenantHasFirstFactors"));
-            assertFalse(response.get("tenantHasFirstFactors").getAsBoolean());
+            assertFalse(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
 
         { // first factors configured to empty array
@@ -246,9 +231,7 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     config, SemVer.v4_1);
 
             JsonObject response = TestMultitenancyAPIHelper.tpSignInUpAndGetResponse(t1, "google", "gid1", "test1@example.com", process.getProcess(), SemVer.v4_1);
-            assertTrue(response.has("tenantHasFirstFactors"));
-            assertTrue(response.get("tenantHasFirstFactors").getAsBoolean());
-            assertFalse(response.get("isValidFirstFactor").getAsBoolean());
+            assertFalse(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
 
         { // first factors configured, does not contain thirdparty
@@ -260,9 +243,7 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     config, SemVer.v4_1);
 
             JsonObject response = TestMultitenancyAPIHelper.tpSignInUpAndGetResponse(t1, "google", "gid1", "test1@example.com", process.getProcess(), SemVer.v4_1);
-            assertTrue(response.has("tenantHasFirstFactors"));
-            assertTrue(response.get("tenantHasFirstFactors").getAsBoolean());
-            assertFalse(response.get("isValidFirstFactor").getAsBoolean());
+            assertFalse(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
 
         { // first factors configured, contains thirdparty
@@ -274,9 +255,7 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     config, SemVer.v4_1);
 
             JsonObject response = TestMultitenancyAPIHelper.tpSignInUpAndGetResponse(t1, "google", "gid1", "test1@example.com", process.getProcess(), SemVer.v4_1);
-            assertTrue(response.has("tenantHasFirstFactors"));
-            assertTrue(response.get("tenantHasFirstFactors").getAsBoolean());
-            assertTrue(response.get("isValidFirstFactor").getAsBoolean());
+            assertTrue(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
     }
 
@@ -299,8 +278,7 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     config, SemVer.v4_1);
 
             JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithEmailOTP(t1, "test1@example.com", process.getProcess(), SemVer.v4_1);
-            assertTrue(response.has("tenantHasFirstFactors"));
-            assertFalse(response.get("tenantHasFirstFactors").getAsBoolean());
+            assertFalse(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
 
         { // first factors configured to empty array
@@ -312,9 +290,7 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     config, SemVer.v4_1);
 
             JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithEmailOTP(t1, "test2@example.com", process.getProcess(), SemVer.v4_1);
-            assertTrue(response.has("tenantHasFirstFactors"));
-            assertTrue(response.get("tenantHasFirstFactors").getAsBoolean());
-            assertFalse(response.get("isValidFirstFactor").getAsBoolean());
+            assertFalse(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
 
         { // first factors configured, does not contain otp-email
@@ -326,9 +302,7 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     config, SemVer.v4_1);
 
             JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithEmailOTP(t1, "test3@example.com", process.getProcess(), SemVer.v4_1);
-            assertTrue(response.has("tenantHasFirstFactors"));
-            assertTrue(response.get("tenantHasFirstFactors").getAsBoolean());
-            assertFalse(response.get("isValidFirstFactor").getAsBoolean());
+            assertFalse(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
 
         { // first factors configured, contains otp-email
@@ -340,9 +314,7 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     config, SemVer.v4_1);
 
             JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithEmailOTP(t1, "test4@example.com", process.getProcess(), SemVer.v4_1);
-            assertTrue(response.has("tenantHasFirstFactors"));
-            assertTrue(response.get("tenantHasFirstFactors").getAsBoolean());
-            assertTrue(response.get("isValidFirstFactor").getAsBoolean());
+            assertTrue(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
     }
 
@@ -365,8 +337,7 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     config, SemVer.v4_1);
 
             JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithPhoneOTP(t1, "+919876543210", process.getProcess(), SemVer.v4_1);
-            assertTrue(response.has("tenantHasFirstFactors"));
-            assertFalse(response.get("tenantHasFirstFactors").getAsBoolean());
+            assertFalse(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
 
         { // first factors configured to empty array
@@ -378,9 +349,7 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     config, SemVer.v4_1);
 
             JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithPhoneOTP(t1, "+919876543210", process.getProcess(), SemVer.v4_1);
-            assertTrue(response.has("tenantHasFirstFactors"));
-            assertTrue(response.get("tenantHasFirstFactors").getAsBoolean());
-            assertFalse(response.get("isValidFirstFactor").getAsBoolean());
+            assertFalse(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
 
         { // first factors configured, does not contain otp-phone
@@ -392,9 +361,7 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     config, SemVer.v4_1);
 
             JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithPhoneOTP(t1, "+919876543210", process.getProcess(), SemVer.v4_1);
-            assertTrue(response.has("tenantHasFirstFactors"));
-            assertTrue(response.get("tenantHasFirstFactors").getAsBoolean());
-            assertFalse(response.get("isValidFirstFactor").getAsBoolean());
+            assertFalse(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
 
         { // first factors configured, contains otp-phone
@@ -406,9 +373,7 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     config, SemVer.v4_1);
 
             JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithPhoneOTP(t1, "+919876543210", process.getProcess(), SemVer.v4_1);
-            assertTrue(response.has("tenantHasFirstFactors"));
-            assertTrue(response.get("tenantHasFirstFactors").getAsBoolean());
-            assertTrue(response.get("isValidFirstFactor").getAsBoolean());
+            assertTrue(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
     }
 
@@ -431,8 +396,7 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     config, SemVer.v4_1);
 
             JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithEmailLink(t1, "test1@example.com", process.getProcess(), SemVer.v4_1);
-            assertTrue(response.has("tenantHasFirstFactors"));
-            assertFalse(response.get("tenantHasFirstFactors").getAsBoolean());
+            assertFalse(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
 
         { // first factors configured to empty array
@@ -444,9 +408,7 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     config, SemVer.v4_1);
 
             JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithEmailLink(t1, "test2@example.com", process.getProcess(), SemVer.v4_1);
-            assertTrue(response.has("tenantHasFirstFactors"));
-            assertTrue(response.get("tenantHasFirstFactors").getAsBoolean());
-            assertFalse(response.get("isValidFirstFactor").getAsBoolean());
+            assertFalse(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
 
         { // first factors configured, does not contain link-email
@@ -458,9 +420,7 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     config, SemVer.v4_1);
 
             JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithEmailLink(t1, "test3@example.com", process.getProcess(), SemVer.v4_1);
-            assertTrue(response.has("tenantHasFirstFactors"));
-            assertTrue(response.get("tenantHasFirstFactors").getAsBoolean());
-            assertFalse(response.get("isValidFirstFactor").getAsBoolean());
+            assertFalse(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
 
         { // first factors configured, contains link-email
@@ -472,9 +432,7 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     config, SemVer.v4_1);
 
             JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithEmailLink(t1, "test4@example.com", process.getProcess(), SemVer.v4_1);
-            assertTrue(response.has("tenantHasFirstFactors"));
-            assertTrue(response.get("tenantHasFirstFactors").getAsBoolean());
-            assertTrue(response.get("isValidFirstFactor").getAsBoolean());
+            assertTrue(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
     }
 
@@ -497,8 +455,7 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     config, SemVer.v4_1);
 
             JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithPhoneLink(t1, "+919876543210", process.getProcess(), SemVer.v4_1);
-            assertTrue(response.has("tenantHasFirstFactors"));
-            assertFalse(response.get("tenantHasFirstFactors").getAsBoolean());
+            assertFalse(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
 
         { // first factors configured to empty array
@@ -510,9 +467,7 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     config, SemVer.v4_1);
 
             JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithPhoneLink(t1, "+919876543210", process.getProcess(), SemVer.v4_1);
-            assertTrue(response.has("tenantHasFirstFactors"));
-            assertTrue(response.get("tenantHasFirstFactors").getAsBoolean());
-            assertFalse(response.get("isValidFirstFactor").getAsBoolean());
+            assertFalse(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
 
         { // first factors configured, does not contain link-phone
@@ -524,9 +479,7 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     config, SemVer.v4_1);
 
             JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithPhoneLink(t1, "+919876543210", process.getProcess(), SemVer.v4_1);
-            assertTrue(response.has("tenantHasFirstFactors"));
-            assertTrue(response.get("tenantHasFirstFactors").getAsBoolean());
-            assertFalse(response.get("isValidFirstFactor").getAsBoolean());
+            assertFalse(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
 
         { // first factors configured, contains link-phone
@@ -538,9 +491,7 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     config, SemVer.v4_1);
 
             JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithPhoneLink(t1, "+919876543210", process.getProcess(), SemVer.v4_1);
-            assertTrue(response.has("tenantHasFirstFactors"));
-            assertTrue(response.get("tenantHasFirstFactors").getAsBoolean());
-            assertTrue(response.get("isValidFirstFactor").getAsBoolean());
+            assertTrue(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
     }
 }

@@ -30,8 +30,6 @@ import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
-import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -130,10 +128,8 @@ public class ConsumeCodeAPI extends WebserverAPI {
             }
 
             if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_1)) {
-                Multitenancy.CheckFirstFactorResult checkFirstFactorResult = Multitenancy.checkFirstFactor(super.main,
-                        this.getTenantIdentifierWithStorageFromRequest(req), factorId);
-                result.addProperty("tenantHasFirstFactors", checkFirstFactorResult.tenantHasFirstFactors);
-                result.addProperty("isValidFirstFactor", checkFirstFactorResult.isValidFirstFactor);
+                result.addProperty("isValidFirstFactorForTenant", Multitenancy.isValidFirstFactorForTenant(super.main,
+                        this.getTenantIdentifierWithStorageFromRequest(req), factorId));
             }
 
             super.sendJsonResponse(200, result, resp);

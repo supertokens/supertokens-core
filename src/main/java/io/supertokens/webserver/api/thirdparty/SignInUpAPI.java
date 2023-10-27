@@ -29,7 +29,6 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.useridmapping.UserIdMapping;
-import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
@@ -167,10 +166,8 @@ public class SignInUpAPI extends WebserverAPI {
                 }
 
                 if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_1)) {
-                    Multitenancy.CheckFirstFactorResult checkFirstFactorResult = Multitenancy.checkFirstFactor(super.main,
-                            this.getTenantIdentifierWithStorageFromRequest(req), "thirdparty");
-                    result.addProperty("tenantHasFirstFactors", checkFirstFactorResult.tenantHasFirstFactors);
-                    result.addProperty("isValidFirstFactor", checkFirstFactorResult.isValidFirstFactor);
+                    result.addProperty("isValidFirstFactorForTenant", Multitenancy.isValidFirstFactorForTenant(super.main,
+                            this.getTenantIdentifierWithStorageFromRequest(req), "thirdparty"));
                 }
 
                 super.sendJsonResponse(200, result, resp);

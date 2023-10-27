@@ -602,23 +602,13 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         return MultitenancyHelper.getInstance(main).getAllTenants();
     }
 
-    public static class CheckFirstFactorResult {
-        public final boolean tenantHasFirstFactors;
-        public final boolean isValidFirstFactor;
-
-        public CheckFirstFactorResult(boolean tenantHasFirstFactors, boolean isValidFirstFactor) {
-            this.tenantHasFirstFactors = tenantHasFirstFactors;
-            this.isValidFirstFactor = isValidFirstFactor;
-        }
-    }
-
-    public static CheckFirstFactorResult checkFirstFactor(Main main, TenantIdentifier tenantIdentifier, String factorId) {
+    public static boolean isValidFirstFactorForTenant(Main main, TenantIdentifier tenantIdentifier, String factorId) {
         TenantConfig tenantConfig = getTenantInfo(main, tenantIdentifier);
 
         if (tenantConfig.firstFactors == null) {
-            return new CheckFirstFactorResult(false, false);
+            return false;
         }
 
-        return new CheckFirstFactorResult(true, List.of(tenantConfig.firstFactors).contains(factorId));
+        return List.of(tenantConfig.firstFactors).contains(factorId);
     }
 }
