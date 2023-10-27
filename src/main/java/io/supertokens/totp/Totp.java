@@ -81,8 +81,12 @@ public class Totp {
         }
     }
 
-    private static TOTPDevice createDevice(AppIdentifierWithStorage appIdentifierWithStorage, TOTPDevice device)
-            throws DeviceAlreadyExistsException, StorageQueryException {
+    public static TOTPDevice createDevice(Main main, AppIdentifierWithStorage appIdentifierWithStorage, TOTPDevice device)
+            throws DeviceAlreadyExistsException, StorageQueryException, FeatureNotEnabledException,
+            TenantOrAppNotFoundException {
+
+        Mfa.checkForMFAFeature(appIdentifierWithStorage, main);
+
         TOTPSQLStorage totpStorage = appIdentifierWithStorage.getTOTPStorage();
         try {
             return totpStorage.startTransaction(con -> {
@@ -113,14 +117,12 @@ public class Totp {
             throws StorageQueryException, DeviceAlreadyExistsException, NoSuchAlgorithmException,
             FeatureNotEnabledException, TenantOrAppNotFoundException, StorageTransactionLogicException {
 
-        Mfa.checkForMFAFeature(appIdentifierWithStorage, main);
-
         String secret = generateSecret();
         TOTPDevice device = new TOTPDevice(userId, deviceName, secret, period, skew, false);
         TOTPSQLStorage totpStorage = appIdentifierWithStorage.getTOTPStorage();
 
         if (deviceName != null) {
-            return createDevice(appIdentifierWithStorage, device);
+            return createDevice(main, appIdentifierWithStorage, device);
         }
 
         // Find number of existing devices to set device name
@@ -129,7 +131,7 @@ public class Totp {
 
         while (true) {
             try {
-                return createDevice(appIdentifierWithStorage, new TOTPDevice(
+                return createDevice(main, appIdentifierWithStorage, new TOTPDevice(
                         device.userId,
                         "TOTP Device " + verifiedDevicesCount,
                         device.secretKey,
