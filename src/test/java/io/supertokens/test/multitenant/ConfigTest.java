@@ -157,7 +157,8 @@ public class ConfigTest {
                 new TenantConfig(new TenantIdentifier("abc", null, null), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        tenantConfig)}, new ArrayList<>());
+                        new TotpConfig(false),
+                        null, null, tenantConfig)}, new ArrayList<>());
 
         Assert.assertEquals(Config.getConfig(process.getProcess()).getRefreshTokenValidity(),
                 (long) 144001 * 60 * 1000);
@@ -209,7 +210,8 @@ public class ConfigTest {
                     new TenantConfig(new TenantIdentifier("abc", null, null), new EmailPasswordConfig(false),
                             new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                             new PasswordlessConfig(false),
-                            tenantConfig)}, new ArrayList<>());
+                            new TotpConfig(false),
+                            null, null, tenantConfig)}, new ArrayList<>());
             fail();
         } catch (InvalidConfigException e) {
             assert (e.getMessage()
@@ -245,7 +247,8 @@ public class ConfigTest {
                     new TenantConfig(new TenantIdentifier(null, null, "abc"), new EmailPasswordConfig(false),
                             new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                             new PasswordlessConfig(false),
-                            tenantConfig)}, new ArrayList<>());
+                            new TotpConfig(false),
+                            null, null, tenantConfig)}, new ArrayList<>());
             fail();
         } catch (InvalidConfigException e) {
             assert (e.getMessage()
@@ -295,7 +298,8 @@ public class ConfigTest {
                     new TenantConfig(new TenantIdentifier("abc", null, null), new EmailPasswordConfig(false),
                             new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                             new PasswordlessConfig(false),
-                            tenantConfig)}, new ArrayList<>());
+                            new TotpConfig(false),
+                            null, null, tenantConfig)}, new ArrayList<>());
 
         }
 
@@ -344,7 +348,8 @@ public class ConfigTest {
             tenants[0] = new TenantConfig(new TenantIdentifier("c1", null, null), new EmailPasswordConfig(false),
                     new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                     new PasswordlessConfig(false),
-                    tenantConfig);
+                    new TotpConfig(false),
+                    null, null, tenantConfig);
         }
 
         {
@@ -355,7 +360,8 @@ public class ConfigTest {
             tenants[1] = new TenantConfig(new TenantIdentifier("c1", null, "t1"), new EmailPasswordConfig(false),
                     new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                     new PasswordlessConfig(false),
-                    tenantConfig);
+                    new TotpConfig(false),
+                    null, null, tenantConfig);
         }
 
         {
@@ -364,7 +370,8 @@ public class ConfigTest {
             tenants[2] = new TenantConfig(new TenantIdentifier(null, null, "t2"), new EmailPasswordConfig(false),
                     new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                     new PasswordlessConfig(false),
-                    tenantConfig);
+                    new TotpConfig(false),
+                    null, null, tenantConfig);
         }
 
         {
@@ -373,7 +380,8 @@ public class ConfigTest {
             tenants[3] = new TenantConfig(new TenantIdentifier(null, null, "t1"), new EmailPasswordConfig(false),
                     new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                     new PasswordlessConfig(false),
-                    tenantConfig);
+                    new TotpConfig(false),
+                    null, null, tenantConfig);
         }
 
         Config.loadAllTenantConfig(process.getProcess(), tenants, new ArrayList<>());
@@ -439,7 +447,8 @@ public class ConfigTest {
             tenants[0] = new TenantConfig(new TenantIdentifier("c1", null, null), new EmailPasswordConfig(false),
                     new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                     new PasswordlessConfig(false),
-                    tenantConfig);
+                    new TotpConfig(false),
+                    null, null, tenantConfig);
         }
 
         {
@@ -450,7 +459,8 @@ public class ConfigTest {
             tenants[1] = new TenantConfig(new TenantIdentifier("c2", null, null), new EmailPasswordConfig(false),
                     new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                     new PasswordlessConfig(false),
-                    tenantConfig);
+                    new TotpConfig(false),
+                    null, null, tenantConfig);
         }
 
         try {
@@ -490,7 +500,8 @@ public class ConfigTest {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        new JsonObject()
+                        new TotpConfig(false),
+                        null, null, new JsonObject()
                 )
         );
 
@@ -502,7 +513,8 @@ public class ConfigTest {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        new JsonObject()
+                        new TotpConfig(false),
+                        null, null, new JsonObject()
                 )
         );
 
@@ -514,7 +526,8 @@ public class ConfigTest {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        new JsonObject()
+                        new TotpConfig(false),
+                        null, null, new JsonObject()
                 )
         );
 
@@ -526,7 +539,8 @@ public class ConfigTest {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        new JsonObject()
+                        new TotpConfig(false),
+                        null, null, new JsonObject()
                 )
         );
 
@@ -538,7 +552,8 @@ public class ConfigTest {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        new JsonObject()
+                        new TotpConfig(false),
+                        null, null, new JsonObject()
                 )
         );
 
@@ -550,7 +565,8 @@ public class ConfigTest {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        new JsonObject()
+                        new TotpConfig(false),
+                        null, null, new JsonObject()
                 )
         );
 
@@ -567,7 +583,8 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            config
+                            new TotpConfig(false),
+                            null, null, config
                     )
             );
 
@@ -579,7 +596,8 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            config
+                            new TotpConfig(false),
+                            null, null, config
                     )
             );
 
@@ -591,7 +609,8 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            config
+                            new TotpConfig(false),
+                            null, null, config
                     )
             );
 
@@ -603,7 +622,8 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            config
+                            new TotpConfig(false),
+                            null, null, config
                     )
             );
 
@@ -615,7 +635,8 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            config
+                            new TotpConfig(false),
+                            null, null, config
                     )
             );
 
@@ -627,7 +648,8 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            config
+                            new TotpConfig(false),
+                            null, null, config
                     )
             );
 
@@ -639,7 +661,8 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            config
+                            new TotpConfig(false),
+                            null, null, config
                     )
             );
         }
@@ -685,7 +708,8 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            config
+                            new TotpConfig(false),
+                            null, null, config
                     )
             );
             fail();
@@ -702,7 +726,8 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            config
+                            new TotpConfig(false),
+                            null, null, config
                     )
             );
 
@@ -714,7 +739,8 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            config
+                            new TotpConfig(false),
+                            null, null, config
                     )
             );
             fail();
@@ -731,7 +757,8 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            config
+                            new TotpConfig(false),
+                            null, null, config
                     )
             );
 
@@ -743,7 +770,8 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            config
+                            new TotpConfig(false),
+                            null, null, config
                     )
             );
             fail();
@@ -760,7 +788,8 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            config
+                            new TotpConfig(false),
+                            null, null, config
                     )
             );
             fail();
@@ -777,7 +806,8 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            config
+                            new TotpConfig(false),
+                            null, null, config
                     )
             );
             fail();
@@ -794,7 +824,8 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            config
+                            new TotpConfig(false),
+                            null, null, config
                     )
             );
             fail();
@@ -811,7 +842,8 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            config
+                            new TotpConfig(false),
+                            null, null, config
                     )
             );
             fail();
@@ -828,7 +860,8 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            config
+                            new TotpConfig(false),
+                            null, null, config
                     )
             );
             fail();
@@ -845,7 +878,8 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            config
+                            new TotpConfig(false),
+                            null, null, config
                     )
             );
             fail();
@@ -862,7 +896,8 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            config
+                            new TotpConfig(false),
+                            null, null, config
                     )
             );
             fail();
@@ -879,7 +914,8 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            config
+                            new TotpConfig(false),
+                            null, null, config
                     )
             );
             fail();
@@ -896,7 +932,8 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            config
+                            new TotpConfig(false),
+                            null, null, config
                     )
             );
             fail();
@@ -936,7 +973,8 @@ public class ConfigTest {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(false),
-                        new JsonObject()
+                        new TotpConfig(false),
+                        null, null, new JsonObject()
                 )
         );
 
@@ -974,7 +1012,8 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(false),
-                            coreConfig
+                            new TotpConfig(false),
+                            null, null, coreConfig
                     )
             );
         }
@@ -992,7 +1031,8 @@ public class ConfigTest {
                                 new EmailPasswordConfig(true),
                                 new ThirdPartyConfig(true, null),
                                 new PasswordlessConfig(false),
-                                coreConfig
+                                new TotpConfig(false),
+                                null, null, coreConfig
                         )
                 );
                 fail();
@@ -1010,7 +1050,8 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(false),
-                            new JsonObject()
+                            new TotpConfig(false),
+                            null, null, new JsonObject()
                     )
             );
 
@@ -1025,7 +1066,8 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(false),
-                            coreConfig
+                            new TotpConfig(false),
+                            null, null, coreConfig
                     )
             );
         }
@@ -1042,7 +1084,8 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(false),
-                            coreConfig
+                            new TotpConfig(false),
+                            null, null, coreConfig
                     )
             );
         }
@@ -1118,7 +1161,8 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            coreConfigJson
+                            new TotpConfig(false),
+                            null, null, coreConfigJson
                     ), false);
 
                     CoreConfig coreConfig = Config.getConfig(tenantIdentifier, process.getProcess());
@@ -1138,7 +1182,8 @@ public class ConfigTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            coreConfigJson
+                            new TotpConfig(false),
+                            null, null, coreConfigJson
                     ), false);
 
                     CoreConfig coreConfig2 = Config.getConfig(tenantIdentifier, process.getProcess());
@@ -1176,7 +1221,8 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfigJson
+                    new TotpConfig(false),
+                    null, null, coreConfigJson
             ), false);
 
             CoreConfig coreConfig = Config.getConfig(tenantIdentifier, process.getProcess());
@@ -1194,7 +1240,8 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfigJson
+                    new TotpConfig(false),
+                    null, null, coreConfigJson
             ), false);
 
             CoreConfig coreConfig = Config.getConfig(tenantIdentifier, process.getProcess());
@@ -1236,7 +1283,8 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfigJson
+                    new TotpConfig(false),
+                    null, null, coreConfigJson
             ), false);
 
             CoreConfig coreConfig = Config.getConfig(tenantIdentifier, process.getProcess());
@@ -1254,7 +1302,8 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfigJson
+                    new TotpConfig(false),
+                    null, null, coreConfigJson
             ), false);
 
             CoreConfig coreConfig = Config.getConfig(tenantIdentifier, process.getProcess());
@@ -1272,7 +1321,8 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfigJson
+                    new TotpConfig(false),
+                    null, null, coreConfigJson
             ), false);
 
             CoreConfig coreConfig = Config.getConfig(tenantIdentifier, process.getProcess());
@@ -1305,7 +1355,8 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfig
+                    new TotpConfig(false),
+                    null, null, coreConfig
             ), false);
             fail();
         } catch (InvalidConfigException e) {
@@ -1338,7 +1389,8 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfig
+                    new TotpConfig(false),
+                    null, null, coreConfig
             ), false);
         }
 
@@ -1353,7 +1405,8 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfig
+                    new TotpConfig(false),
+                    null, null, coreConfig
             ), false);
 
             assertNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.TENANTS_CHANGED_DURING_REFRESH_FROM_DB));
@@ -1373,7 +1426,8 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfig
+                    new TotpConfig(false),
+                    null, null, coreConfig
             ), false);
 
             Config configAfter = Config.getInstance(t1, process.getProcess());
@@ -1408,14 +1462,16 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfig
+                    new TotpConfig(false),
+                    null, null, coreConfig
             ), false);
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     t1,
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfig
+                    new TotpConfig(false),
+                    null, null, coreConfig
             ), false);
         }
 
@@ -1430,14 +1486,16 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfig
+                    new TotpConfig(false),
+                    null, null, coreConfig
             ), false);Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 t1,
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                coreConfig
-            ), false);
+                new TotpConfig(false),
+                null, null, coreConfig
+        ), false);
 
             assertNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.TENANTS_CHANGED_DURING_REFRESH_FROM_DB));
 
@@ -1456,7 +1514,8 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfig
+                    new TotpConfig(false),
+                    null, null, coreConfig
             ), false);
 
             Config configAfter = Config.getInstance(t1, process.getProcess());
@@ -1490,7 +1549,8 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfig
+                    new TotpConfig(false),
+                    null, null, coreConfig
             ), false);
         }
 
@@ -1504,7 +1564,8 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfig
+                    new TotpConfig(false),
+                    null, null, coreConfig
             ), false);
 
             assertNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.TENANTS_CHANGED_DURING_REFRESH_FROM_DB));
@@ -1523,7 +1584,8 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfig
+                    new TotpConfig(false),
+                    null, null, coreConfig
             ), false);
 
             Storage storageLayerAfter = StorageLayer.getStorage(t1, process.getProcess());
@@ -1543,7 +1605,8 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfig
+                    new TotpConfig(false),
+                    null, null, coreConfig
             ), false);
 
             Storage storageLayerAfter = StorageLayer.getStorage(t1, process.getProcess());
@@ -1577,7 +1640,8 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfig
+                    new TotpConfig(false),
+                    null, null, coreConfig
             ), false);
         }
 
@@ -1592,7 +1656,8 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfig
+                    new TotpConfig(false),
+                    null, null, coreConfig
             ), false);
 
             assertNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.TENANTS_CHANGED_DURING_REFRESH_FROM_DB));
@@ -1611,7 +1676,8 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfig
+                    new TotpConfig(false),
+                    null, null, coreConfig
             ), false);
 
             FeatureFlag featureFlagAfter = FeatureFlag.getInstance(process.getProcess(), t1);
@@ -1645,7 +1711,8 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfig
+                    new TotpConfig(false),
+                    null, null, coreConfig
             ), false);
         }
 
@@ -1663,7 +1730,8 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfig
+                    new TotpConfig(false),
+                    null, null, coreConfig
             ), false);
 
             assertNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.TENANTS_CHANGED_DURING_REFRESH_FROM_DB));
@@ -1692,7 +1760,8 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    coreConfig
+                    new TotpConfig(false),
+                    null, null, coreConfig
             ), false);
 
             AccessTokenSigningKey accessTokenSigningKeyAfter = AccessTokenSigningKey.getInstance(t1, process.getProcess());
@@ -1734,7 +1803,8 @@ public class ConfigTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                config
+                new TotpConfig(false),
+                null, null, config
         ), false);
 
         // Now load a new set of configs
@@ -1753,28 +1823,32 @@ public class ConfigTest {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(true),
-                        config1
+                        new TotpConfig(false),
+                        null, null, config1
                 ),
                 new TenantConfig(
                         new TenantIdentifier(null, "a2", null),
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(true),
-                        config2
+                        new TotpConfig(false),
+                        null, null, config2
                 ),
                 new TenantConfig(
                         new TenantIdentifier(null, "a2", "t1"),
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        config3
+                        new TotpConfig(false),
+                        null, null, config3
                 ),
                 new TenantConfig(
                         new TenantIdentifier(null, "a1", null),
                         new EmailPasswordConfig(false),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        config4
+                        new TotpConfig(false),
+                        null, null, config4
                 ),
         };
         Config.loadAllTenantConfig(process.getProcess(), tenantConfigs);
@@ -1820,7 +1894,8 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    mistypedConfig
+                    new TotpConfig(false),
+                    null, null, mistypedConfig
             ), false);
             fail();
         } catch (InvalidConfigException e) {
@@ -1873,7 +1948,8 @@ public class ConfigTest {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        config
+                        new TotpConfig(false),
+                        null, null, config
                 ), false);
                 fail();
             } catch (InvalidConfigException e) {
@@ -1962,7 +2038,8 @@ public class ConfigTest {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        config
+                        new TotpConfig(false),
+                        null, null, config
                 ), false);
                 fail();
             } catch (InvalidConfigException e) {
@@ -2025,7 +2102,8 @@ public class ConfigTest {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    config
+                    new TotpConfig(false),
+                    null, null, config
             ), false);
 
             JsonObject config2 = new JsonObject();
@@ -2046,7 +2124,8 @@ public class ConfigTest {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        config2
+                        new TotpConfig(false),
+                        null, null, config2
                 ), false);
                 fail();
             } catch (InvalidConfigException e) {

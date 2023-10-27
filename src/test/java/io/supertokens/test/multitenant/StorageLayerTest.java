@@ -183,7 +183,8 @@ public class StorageLayerTest {
                         )
                 }),
                 new PasswordlessConfig(true),
-                new JsonObject()
+                new TotpConfig(false),
+                null, null, new JsonObject()
         ));
 
         TenantConfig[] tenantConfigs = mtStorage.getAllTenants();
@@ -288,7 +289,8 @@ public class StorageLayerTest {
                         )
                 }),
                 new PasswordlessConfig(true),
-                new JsonObject()
+                new TotpConfig(false),
+                null, null, new JsonObject()
         ));
 
         TenantConfig[] tenantConfigs = mtStorage.getAllTenants();
@@ -391,7 +393,8 @@ public class StorageLayerTest {
                         )
                 }),
                 new PasswordlessConfig(true),
-                new JsonObject()
+                new TotpConfig(false),
+                null, null, new JsonObject()
         ));
 
         TenantConfig[] tenantConfigs = mtStorage.getAllTenants();
@@ -485,7 +488,8 @@ public class StorageLayerTest {
                         )
                 }),
                 new PasswordlessConfig(true),
-                new JsonObject()
+                new TotpConfig(false),
+                null, null, new JsonObject()
         ));
 
         TenantConfig[] tenantConfigs = mtStorage.getAllTenants();
@@ -552,7 +556,8 @@ public class StorageLayerTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new JsonObject()
+                new TotpConfig(false),
+                null, null, new JsonObject()
         ));
 
         TenantConfig[] tenantConfigs = mtStorage.getAllTenants();
@@ -636,7 +641,8 @@ public class StorageLayerTest {
                         )
                 }),
                 new PasswordlessConfig(true),
-                new JsonObject()
+                new TotpConfig(false),
+                null, null, new JsonObject()
         ));
 
         TenantConfig[] tenantConfigs = mtStorage.getAllTenants();
@@ -752,7 +758,8 @@ public class StorageLayerTest {
                         )
                 }),
                 new PasswordlessConfig(true),
-                new JsonObject()
+                new TotpConfig(false),
+                null, null, new JsonObject()
         ));
 
         try {
@@ -790,7 +797,8 @@ public class StorageLayerTest {
                             )
                     }),
                     new PasswordlessConfig(true),
-                    new JsonObject()
+                    new TotpConfig(false),
+                    null, null, new JsonObject()
             ));
             fail();
         } catch (DuplicateTenantException e) {
@@ -900,11 +908,12 @@ public class StorageLayerTest {
                             )
                     }),
                     new PasswordlessConfig(true),
-                    new JsonObject()
+                    new TotpConfig(false),
+                    null, null, new JsonObject()
             ));
             fail();
         } catch (TenantOrAppNotFoundException e) {
-            // pass
+            // pass0-89uuuuuui8j=
         }
 
         process.kill();
@@ -1003,7 +1012,8 @@ public class StorageLayerTest {
                             )
                     }),
                     new PasswordlessConfig(true),
-                    new JsonObject()
+                    new TotpConfig(false),
+                    null, null, new JsonObject()
             ));
             fail();
         } catch (DuplicateThirdPartyIdException e) {
@@ -1079,7 +1089,8 @@ public class StorageLayerTest {
                             )
                     }),
                     new PasswordlessConfig(true),
-                    new JsonObject()
+                    new TotpConfig(false),
+                    null, null, new JsonObject()
             ));
         } catch (DuplicateTenantException e) {
             fail();
@@ -1148,7 +1159,8 @@ public class StorageLayerTest {
                             )
                     }),
                     new PasswordlessConfig(true),
-                    new JsonObject()
+                    new TotpConfig(false),
+                    null, null, new JsonObject()
             ));
             fail();
         } catch (DuplicateTenantException e) {
@@ -1224,7 +1236,8 @@ public class StorageLayerTest {
                             )
                     }),
                     new PasswordlessConfig(true),
-                    new JsonObject()
+                    new TotpConfig(false),
+                    null, null, new JsonObject()
             ));
         } catch (DuplicateTenantException e) {
             fail();
@@ -1273,7 +1286,8 @@ public class StorageLayerTest {
                             )
                     }),
                     new PasswordlessConfig(true),
-                    new JsonObject()
+                    new TotpConfig(false),
+                    null, null, new JsonObject()
             ));
             fail();
         } catch (DuplicateTenantException e) {
@@ -1385,7 +1399,8 @@ public class StorageLayerTest {
                             )
                     }),
                     new PasswordlessConfig(true),
-                    new JsonObject()
+                    new TotpConfig(false),
+                    null, null, new JsonObject()
             ));
             fail();
         } catch (DuplicateClientTypeException e) {
@@ -1489,7 +1504,8 @@ public class StorageLayerTest {
                             )
                     }),
                     new PasswordlessConfig(true),
-                    new JsonObject()
+                    new TotpConfig(false),
+                    null, null, new JsonObject()
             ));
             fail();
         } catch (DuplicateThirdPartyIdException e) {
@@ -1601,7 +1617,8 @@ public class StorageLayerTest {
                             )
                     }),
                     new PasswordlessConfig(true),
-                    new JsonObject()
+                    new TotpConfig(false),
+                    null, null, new JsonObject()
             ));
             fail();
         } catch (DuplicateClientTypeException e) {
@@ -1690,7 +1707,8 @@ public class StorageLayerTest {
                                         )
                                 }),
                                 new PasswordlessConfig(true),
-                                new JsonObject()
+                                new TotpConfig(false),
+                                null, null, new JsonObject()
                         ));
                         break;
                     } catch (Exception e) {
@@ -1774,28 +1792,32 @@ public class StorageLayerTest {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        config1
+                        new TotpConfig(false),
+                        null, null, config1
                 ),
                 new TenantConfig(
                         new TenantIdentifier(null, null, "t2"),
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        config1
+                        new TotpConfig(false),
+                        null, null, config1
                 ),
                 new TenantConfig(
                         new TenantIdentifier(null, "a1", null),
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        config2
+                        new TotpConfig(false),
+                        null, null, config2
                 ),
                 new TenantConfig(
                         new TenantIdentifier(null, "a1", "t1"),
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        config2
+                        new TotpConfig(false),
+                        null, null, config2
                 )
         });
 
@@ -1852,7 +1874,8 @@ public class StorageLayerTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                config
+                new TotpConfig(false),
+                null, null, config
         ), false);
 
         Storage storage = StorageLayer.getStorage(new TenantIdentifier(null, null, "t1"), process.getProcess());
@@ -1898,14 +1921,16 @@ public class StorageLayerTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                config
+                new TotpConfig(false),
+                null, null, config
         ), false);
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 new TenantIdentifier(null, null, "t2"),
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                config
+                new TotpConfig(false),
+                null, null, config
         ), false);
 
         Storage storage = StorageLayer.getStorage(new TenantIdentifier(null, null, "t1"), process.getProcess());
@@ -1956,14 +1981,16 @@ public class StorageLayerTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                config
+                new TotpConfig(false),
+                null, null, config
         ), false);
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 new TenantIdentifier(null, null, "t2"),
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                config
+                new TotpConfig(false),
+                null, null, config
         ), false);
 
 
@@ -2036,7 +2063,8 @@ public class StorageLayerTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new JsonObject()
+                new TotpConfig(false),
+                null, null, new JsonObject()
         ), false);
 
         Storage storage = StorageLayer.getBaseStorage(process.getProcess());
@@ -2051,7 +2079,8 @@ public class StorageLayerTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                config
+                new TotpConfig(false),
+                null, null, config
         ), false);
 
         storage = StorageLayer.getBaseStorage(process.getProcess());

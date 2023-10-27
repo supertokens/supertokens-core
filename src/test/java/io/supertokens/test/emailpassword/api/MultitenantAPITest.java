@@ -117,6 +117,7 @@ public class MultitenantAPITest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(false, null),
                             new PasswordlessConfig(false),
+                            new TotpConfig(false), null, null,
                             config
                     )
             );
@@ -141,6 +142,7 @@ public class MultitenantAPITest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(false, null),
                             new PasswordlessConfig(false),
+                            new TotpConfig(false), null, null,
                             config
                     )
             );
@@ -165,6 +167,7 @@ public class MultitenantAPITest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(false, null),
                             new PasswordlessConfig(false),
+                            new TotpConfig(false), null, null,
                             config
                     )
             );

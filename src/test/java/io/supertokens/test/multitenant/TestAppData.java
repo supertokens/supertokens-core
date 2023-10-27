@@ -26,7 +26,6 @@ import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
-import io.supertokens.mfa.Mfa;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
@@ -104,7 +103,7 @@ public class TestAppData {
             return;
         }
 
-        String[] tablesToIgnore = new String[]{"tenant_thirdparty_provider_clients", "tenant_thirdparty_providers"};
+        String[] tablesToIgnore = new String[]{"tenant_thirdparty_provider_clients", "tenant_thirdparty_providers", "tenant_first_factors", "tenant_default_required_factor_ids"};
 
         TenantIdentifier app = new TenantIdentifier(null, "a1", null);
 
@@ -113,7 +112,8 @@ public class TestAppData {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new JsonObject()
+                new TotpConfig(false),
+                null, null, new JsonObject()
         ), false);
 
         TenantIdentifierWithStorage appWithStorage = app.withStorage(

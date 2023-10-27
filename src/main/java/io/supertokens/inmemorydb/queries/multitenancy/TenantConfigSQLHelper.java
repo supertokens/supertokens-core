@@ -53,7 +53,9 @@ public class TenantConfigSQLHelper {
                         new EmailPasswordConfig(result.getBoolean("email_password_enabled")),
                         new ThirdPartyConfig(result.getBoolean("third_party_enabled"), this.providers),
                         new PasswordlessConfig(result.getBoolean("passwordless_enabled")),
-                        JsonUtils.stringToJsonObject(result.getString("core_config"))
+                        new TotpConfig(false), // TODO
+                        null, null, JsonUtils.stringToJsonObject(result.getString("core_config"))
+                        // TODO
                 );
             } catch (Exception e) {
                 throw new StorageQueryException(e);

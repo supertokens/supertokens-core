@@ -20,8 +20,51 @@ import com.google.gson.JsonObject;
 import io.supertokens.pluginInterface.multitenancy.*;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.HashSet;
+import java.util.Random;
+import java.util.Set;
 
 public class GenerateTenantConfig {
+    private static final String[] FACTORS = new String[]{
+            "emailpassword",
+            "thirdparty",
+            "otp-email",
+            "otp-phone",
+            "link-email",
+            "link-phone",
+            "totp",
+            "biometric",
+            "custom"
+    };
+
+    private static String[] selectRandomElements(String[] inputArray) {
+        Random random = new Random();
+        int numElementsToSelect = random.nextInt(4);  // Randomly select 0 to 3 elements
+
+        // Ensure numElementsToSelect is within the bounds of the array
+        numElementsToSelect = Math.min(numElementsToSelect, inputArray.length);
+
+        // Create a set to store unique indices
+        Set<Integer> selectedIndices = new HashSet<>();
+
+        // Generate random indices and select the corresponding elements
+        while (selectedIndices.size() < numElementsToSelect) {
+            int randomIndex = random.nextInt(inputArray.length);
+            selectedIndices.add(randomIndex);
+        }
+
+        // Create an array to hold the randomly selected elements
+        String[] selectedElements = new String[numElementsToSelect];
+
+        // Fill the array with the selected elements
+        int i = 0;
+        for (int index : selectedIndices) {
+            selectedElements[i++] = inputArray[index];
+        }
+
+        return selectedElements;
+    }
+
     public static ConfigGenerator.GeneratedValueAndExpectation generate_tenantIdentifier() {
         // TODO: generate different appid and tenantid
         return new ConfigGenerator.GeneratedValueAndExpectation(
@@ -46,6 +89,39 @@ public class GenerateTenantConfig {
             throws ClassNotFoundException, InvocationTargetException, NoSuchMethodException, IllegalAccessException,
             InstantiationException {
         return ConfigGenerator.generate(ThirdPartyConfig.class);
+    }
+
+    public static ConfigGenerator.GeneratedValueAndExpectation generate_totpConfig()
+            throws ClassNotFoundException, InvocationTargetException, NoSuchMethodException, IllegalAccessException,
+            InstantiationException {
+        return ConfigGenerator.generate(TotpConfig.class);
+    }
+
+
+    public static ConfigGenerator.GeneratedValueAndExpectation generate_firstFactors() {
+        if (new Random().nextFloat() < 0.15) {
+            return new ConfigGenerator.GeneratedValueAndExpectation(
+                    null,
+                    new ConfigGenerator.Expectation("ok", null));
+        }
+
+        String[] factors = selectRandomElements(FACTORS);
+        return new ConfigGenerator.GeneratedValueAndExpectation(
+                factors,
+                new ConfigGenerator.Expectation("ok", factors));
+    }
+
+    public static ConfigGenerator.GeneratedValueAndExpectation generate_defaultRequiredFactorIds() {
+        if (new Random().nextFloat() < 0.15) {
+            return new ConfigGenerator.GeneratedValueAndExpectation(
+                    null,
+                    new ConfigGenerator.Expectation("ok", null));
+        }
+
+        String[] factors = selectRandomElements(FACTORS);
+        return new ConfigGenerator.GeneratedValueAndExpectation(
+                factors,
+                new ConfigGenerator.Expectation("ok", factors));
     }
 
     public static ConfigGenerator.GeneratedValueAndExpectation generate_coreConfig() {
