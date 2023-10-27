@@ -432,6 +432,11 @@ public class TestMultitenancyAPIHelper {
 
     private static JsonObject createCodeWithEmail(TenantIdentifier tenantIdentifier, String email, Main main)
             throws HttpResponseException, IOException {
+        return createCodeWithEmail(tenantIdentifier, email, main, SemVer.v3_0);
+    }
+
+    private static JsonObject createCodeWithEmail(TenantIdentifier tenantIdentifier, String email, Main main, SemVer version)
+            throws HttpResponseException, IOException {
         String exampleCode = generateRandomString(6);
         JsonObject createCodeRequestBody = new JsonObject();
         createCodeRequestBody.addProperty("email", email);
@@ -440,7 +445,7 @@ public class TestMultitenancyAPIHelper {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/signinup/code"),
                 createCodeRequestBody, 1000, 1000, null,
-                SemVer.v3_0.get(), "passwordless");
+                version.get(), "passwordless");
 
         assertEquals("OK", response.get("status").getAsString());
         assertEquals(8, response.entrySet().size());
@@ -449,19 +454,48 @@ public class TestMultitenancyAPIHelper {
     }
 
     private static JsonObject consumeCode(TenantIdentifier tenantIdentifier, String deviceId, String preAuthSessionId,
-                                          String userInputCode, Main main)
+                                          String userInputCode, Main main) throws HttpResponseException, IOException {
+        return consumeCode(tenantIdentifier, deviceId, preAuthSessionId, userInputCode, main, SemVer.v3_0);
+    }
+
+    private static JsonObject consumeCode(TenantIdentifier tenantIdentifier, String deviceId, String preAuthSessionId,
+                                          String userInputCode, Main main, SemVer version)
             throws HttpResponseException, IOException {
         JsonObject consumeCodeRequestBody = new JsonObject();
         consumeCodeRequestBody.addProperty("deviceId", deviceId);
         consumeCodeRequestBody.addProperty("preAuthSessionId", preAuthSessionId);
         consumeCodeRequestBody.addProperty("userInputCode", userInputCode);
 
-        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
-                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/signinup/code/consume"),
-                consumeCodeRequestBody, 1000, 1000, null,
-                SemVer.v3_0.get(), "passwordless");
+        JsonObject response = consumeCodeAndGetResponse(tenantIdentifier, deviceId, preAuthSessionId, userInputCode, main, version);
         assertEquals("OK", response.get("status").getAsString());
         return response.get("user").getAsJsonObject();
+    }
+
+    private static JsonObject consumeCodeAndGetResponse(TenantIdentifier tenantIdentifier, String deviceId, String preAuthSessionId,
+                                          String userInputCode, Main main, SemVer version)
+            throws HttpResponseException, IOException {
+        JsonObject consumeCodeRequestBody = new JsonObject();
+        consumeCodeRequestBody.addProperty("deviceId", deviceId);
+        consumeCodeRequestBody.addProperty("preAuthSessionId", preAuthSessionId);
+        consumeCodeRequestBody.addProperty("userInputCode", userInputCode);
+
+        return HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/signinup/code/consume"),
+                consumeCodeRequestBody, 1000, 1000, null,
+                version.get(), "passwordless");
+    }
+
+    private static JsonObject consumeCodeAndGetResponse(TenantIdentifier tenantIdentifier, String preAuthSessionId,
+                                                        String linkCode, Main main, SemVer version)
+            throws HttpResponseException, IOException {
+        JsonObject consumeCodeRequestBody = new JsonObject();
+        consumeCodeRequestBody.addProperty("preAuthSessionId", preAuthSessionId);
+        consumeCodeRequestBody.addProperty("linkCode", linkCode);
+
+        return HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/signinup/code/consume"),
+                consumeCodeRequestBody, 1000, 1000, null,
+                version.get(), "passwordless");
     }
 
     public static JsonObject plSignInUpEmail(TenantIdentifier tenantIdentifier, String email, Main main)
@@ -470,7 +504,24 @@ public class TestMultitenancyAPIHelper {
         return consumeCode(tenantIdentifier, code.get("deviceId").getAsString(), code.get("preAuthSessionId").getAsString(), code.get("userInputCode").getAsString(), main);
     }
 
+    public static JsonObject plSignInUpWithEmailOTP(TenantIdentifier tenantIdentifier, String email, Main main, SemVer version)
+            throws HttpResponseException, IOException {
+        JsonObject code = createCodeWithEmail(tenantIdentifier, email, main, version);
+        return consumeCodeAndGetResponse(tenantIdentifier, code.get("deviceId").getAsString(), code.get("preAuthSessionId").getAsString(), code.get("userInputCode").getAsString(), main, version);
+    }
+
+    public static JsonObject plSignInUpWithEmailLink(TenantIdentifier tenantIdentifier, String email, Main main, SemVer version)
+            throws HttpResponseException, IOException {
+        JsonObject code = createCodeWithEmail(tenantIdentifier, email, main, version);
+        return consumeCodeAndGetResponse(tenantIdentifier, code.get("preAuthSessionId").getAsString(), code.get("linkCode").getAsString(), main, version);
+    }
+
     private static JsonObject createCodeWithNumber(TenantIdentifier tenantIdentifier, String phoneNumber, Main main)
+            throws HttpResponseException, IOException {
+        return createCodeWithNumber(tenantIdentifier, phoneNumber, main, SemVer.v3_0);
+    }
+
+    private static JsonObject createCodeWithNumber(TenantIdentifier tenantIdentifier, String phoneNumber, Main main, SemVer version)
             throws HttpResponseException, IOException {
         JsonObject createCodeRequestBody = new JsonObject();
         createCodeRequestBody.addProperty("phoneNumber", phoneNumber);
@@ -478,7 +529,7 @@ public class TestMultitenancyAPIHelper {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/signinup/code"),
                 createCodeRequestBody, 1000, 1000, null,
-                SemVer.v3_0.get(), "passwordless");
+                version.get(), "passwordless");
 
         assertEquals("OK", response.get("status").getAsString());
         assertEquals(8, response.entrySet().size());
@@ -490,6 +541,18 @@ public class TestMultitenancyAPIHelper {
             throws HttpResponseException, IOException {
         JsonObject code = createCodeWithNumber(tenantIdentifier, phoneNumber, main);
         return consumeCode(tenantIdentifier, code.get("deviceId").getAsString(), code.get("preAuthSessionId").getAsString(), code.get("userInputCode").getAsString(), main);
+    }
+
+    public static JsonObject plSignInUpWithPhoneOTP(TenantIdentifier tenantIdentifier, String phoneNumber, Main main, SemVer version)
+            throws HttpResponseException, IOException {
+        JsonObject code = createCodeWithNumber(tenantIdentifier, phoneNumber, main, version);
+        return consumeCodeAndGetResponse(tenantIdentifier, code.get("deviceId").getAsString(), code.get("preAuthSessionId").getAsString(), code.get("userInputCode").getAsString(), main, version);
+    }
+
+    public static JsonObject plSignInUpWithPhoneLink(TenantIdentifier tenantIdentifier, String phoneNumber, Main main, SemVer version)
+            throws HttpResponseException, IOException {
+        JsonObject code = createCodeWithNumber(tenantIdentifier, phoneNumber, main, version);
+        return consumeCodeAndGetResponse(tenantIdentifier, code.get("preAuthSessionId").getAsString(), code.get("linkCode").getAsString(), main, version);
     }
 
     public static void addLicense(String licenseKey, Main main) throws HttpResponseException, IOException {

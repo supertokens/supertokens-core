@@ -18,7 +18,6 @@ package io.supertokens.test.multitenant.api;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
-import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
@@ -283,21 +282,265 @@ public class TestFirstFactorResponseInSignInUpAPIs {
 
     @Test
     public void testPasswordlessEmailOTP() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
+        JsonObject config = new JsonObject();
+        StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
+        TenantIdentifier t1 = new TenantIdentifier(null, null, "t1");
+
+        { // first factors not configured
+            TestMultitenancyAPIHelper.createTenant(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    "t1", true, true, true,
+                    null, true, null, false, null,
+                    config, SemVer.v4_1);
+
+            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithEmailOTP(t1, "test1@example.com", process.getProcess(), SemVer.v4_1);
+            assertTrue(response.has("tenantHasFirstFactors"));
+            assertFalse(response.get("tenantHasFirstFactors").getAsBoolean());
+        }
+
+        { // first factors configured to empty array
+            TestMultitenancyAPIHelper.createTenant(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    "t1", true, true, true,
+                    null, true, new String[]{}, false, null,
+                    config, SemVer.v4_1);
+
+            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithEmailOTP(t1, "test2@example.com", process.getProcess(), SemVer.v4_1);
+            assertTrue(response.has("tenantHasFirstFactors"));
+            assertTrue(response.get("tenantHasFirstFactors").getAsBoolean());
+            assertFalse(response.get("isValidFirstFactor").getAsBoolean());
+        }
+
+        { // first factors configured, does not contain otp-email
+            TestMultitenancyAPIHelper.createTenant(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    "t1", true, true, true,
+                    null, true, new String[]{"thirdparty"}, false, null,
+                    config, SemVer.v4_1);
+
+            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithEmailOTP(t1, "test3@example.com", process.getProcess(), SemVer.v4_1);
+            assertTrue(response.has("tenantHasFirstFactors"));
+            assertTrue(response.get("tenantHasFirstFactors").getAsBoolean());
+            assertFalse(response.get("isValidFirstFactor").getAsBoolean());
+        }
+
+        { // first factors configured, contains otp-email
+            TestMultitenancyAPIHelper.createTenant(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    "t1", true, true, true,
+                    null, true, new String[]{"otp-email"}, false, null,
+                    config, SemVer.v4_1);
+
+            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithEmailOTP(t1, "test4@example.com", process.getProcess(), SemVer.v4_1);
+            assertTrue(response.has("tenantHasFirstFactors"));
+            assertTrue(response.get("tenantHasFirstFactors").getAsBoolean());
+            assertTrue(response.get("isValidFirstFactor").getAsBoolean());
+        }
     }
 
     @Test
     public void testPasswordlessPhoneOTP() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
+        JsonObject config = new JsonObject();
+        StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
+        TenantIdentifier t1 = new TenantIdentifier(null, null, "t1");
+
+        { // first factors not configured
+            TestMultitenancyAPIHelper.createTenant(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    "t1", true, true, true,
+                    null, true, null, false, null,
+                    config, SemVer.v4_1);
+
+            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithPhoneOTP(t1, "+919876543210", process.getProcess(), SemVer.v4_1);
+            assertTrue(response.has("tenantHasFirstFactors"));
+            assertFalse(response.get("tenantHasFirstFactors").getAsBoolean());
+        }
+
+        { // first factors configured to empty array
+            TestMultitenancyAPIHelper.createTenant(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    "t1", true, true, true,
+                    null, true, new String[]{}, false, null,
+                    config, SemVer.v4_1);
+
+            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithPhoneOTP(t1, "+919876543210", process.getProcess(), SemVer.v4_1);
+            assertTrue(response.has("tenantHasFirstFactors"));
+            assertTrue(response.get("tenantHasFirstFactors").getAsBoolean());
+            assertFalse(response.get("isValidFirstFactor").getAsBoolean());
+        }
+
+        { // first factors configured, does not contain otp-phone
+            TestMultitenancyAPIHelper.createTenant(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    "t1", true, true, true,
+                    null, true, new String[]{"thirdparty"}, false, null,
+                    config, SemVer.v4_1);
+
+            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithPhoneOTP(t1, "+919876543210", process.getProcess(), SemVer.v4_1);
+            assertTrue(response.has("tenantHasFirstFactors"));
+            assertTrue(response.get("tenantHasFirstFactors").getAsBoolean());
+            assertFalse(response.get("isValidFirstFactor").getAsBoolean());
+        }
+
+        { // first factors configured, contains otp-phone
+            TestMultitenancyAPIHelper.createTenant(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    "t1", true, true, true,
+                    null, true, new String[]{"otp-phone"}, false, null,
+                    config, SemVer.v4_1);
+
+            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithPhoneOTP(t1, "+919876543210", process.getProcess(), SemVer.v4_1);
+            assertTrue(response.has("tenantHasFirstFactors"));
+            assertTrue(response.get("tenantHasFirstFactors").getAsBoolean());
+            assertTrue(response.get("isValidFirstFactor").getAsBoolean());
+        }
     }
 
     @Test
     public void testPasswordlessEmailLink() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
+        JsonObject config = new JsonObject();
+        StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
+        TenantIdentifier t1 = new TenantIdentifier(null, null, "t1");
+
+        { // first factors not configured
+            TestMultitenancyAPIHelper.createTenant(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    "t1", true, true, true,
+                    null, true, null, false, null,
+                    config, SemVer.v4_1);
+
+            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithEmailLink(t1, "test1@example.com", process.getProcess(), SemVer.v4_1);
+            assertTrue(response.has("tenantHasFirstFactors"));
+            assertFalse(response.get("tenantHasFirstFactors").getAsBoolean());
+        }
+
+        { // first factors configured to empty array
+            TestMultitenancyAPIHelper.createTenant(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    "t1", true, true, true,
+                    null, true, new String[]{}, false, null,
+                    config, SemVer.v4_1);
+
+            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithEmailLink(t1, "test2@example.com", process.getProcess(), SemVer.v4_1);
+            assertTrue(response.has("tenantHasFirstFactors"));
+            assertTrue(response.get("tenantHasFirstFactors").getAsBoolean());
+            assertFalse(response.get("isValidFirstFactor").getAsBoolean());
+        }
+
+        { // first factors configured, does not contain link-email
+            TestMultitenancyAPIHelper.createTenant(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    "t1", true, true, true,
+                    null, true, new String[]{"thirdparty"}, false, null,
+                    config, SemVer.v4_1);
+
+            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithEmailLink(t1, "test3@example.com", process.getProcess(), SemVer.v4_1);
+            assertTrue(response.has("tenantHasFirstFactors"));
+            assertTrue(response.get("tenantHasFirstFactors").getAsBoolean());
+            assertFalse(response.get("isValidFirstFactor").getAsBoolean());
+        }
+
+        { // first factors configured, contains link-email
+            TestMultitenancyAPIHelper.createTenant(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    "t1", true, true, true,
+                    null, true, new String[]{"link-email"}, false, null,
+                    config, SemVer.v4_1);
+
+            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithEmailLink(t1, "test4@example.com", process.getProcess(), SemVer.v4_1);
+            assertTrue(response.has("tenantHasFirstFactors"));
+            assertTrue(response.get("tenantHasFirstFactors").getAsBoolean());
+            assertTrue(response.get("isValidFirstFactor").getAsBoolean());
+        }
     }
 
     @Test
     public void testPasswordlessPhoneLink() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
+        JsonObject config = new JsonObject();
+        StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
+        TenantIdentifier t1 = new TenantIdentifier(null, null, "t1");
+
+        { // first factors not configured
+            TestMultitenancyAPIHelper.createTenant(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    "t1", true, true, true,
+                    null, true, null, false, null,
+                    config, SemVer.v4_1);
+
+            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithPhoneLink(t1, "+919876543210", process.getProcess(), SemVer.v4_1);
+            assertTrue(response.has("tenantHasFirstFactors"));
+            assertFalse(response.get("tenantHasFirstFactors").getAsBoolean());
+        }
+
+        { // first factors configured to empty array
+            TestMultitenancyAPIHelper.createTenant(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    "t1", true, true, true,
+                    null, true, new String[]{}, false, null,
+                    config, SemVer.v4_1);
+
+            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithPhoneLink(t1, "+919876543210", process.getProcess(), SemVer.v4_1);
+            assertTrue(response.has("tenantHasFirstFactors"));
+            assertTrue(response.get("tenantHasFirstFactors").getAsBoolean());
+            assertFalse(response.get("isValidFirstFactor").getAsBoolean());
+        }
+
+        { // first factors configured, does not contain link-phone
+            TestMultitenancyAPIHelper.createTenant(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    "t1", true, true, true,
+                    null, true, new String[]{"thirdparty"}, false, null,
+                    config, SemVer.v4_1);
+
+            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithPhoneLink(t1, "+919876543210", process.getProcess(), SemVer.v4_1);
+            assertTrue(response.has("tenantHasFirstFactors"));
+            assertTrue(response.get("tenantHasFirstFactors").getAsBoolean());
+            assertFalse(response.get("isValidFirstFactor").getAsBoolean());
+        }
+
+        { // first factors configured, contains link-phone
+            TestMultitenancyAPIHelper.createTenant(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    "t1", true, true, true,
+                    null, true, new String[]{"link-phone"}, false, null,
+                    config, SemVer.v4_1);
+
+            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithPhoneLink(t1, "+919876543210", process.getProcess(), SemVer.v4_1);
+            assertTrue(response.has("tenantHasFirstFactors"));
+            assertTrue(response.get("tenantHasFirstFactors").getAsBoolean());
+            assertTrue(response.get("isValidFirstFactor").getAsBoolean());
+        }
     }
 }
