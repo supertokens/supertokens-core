@@ -99,8 +99,11 @@ public class SignInAPI extends WebserverAPI {
             }
 
             if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_1)) {
-                result.addProperty("isValidFirstFactorForTenant", Multitenancy.isValidFirstFactorForTenant(super.main,
-                        tenantIdentifierWithStorage, "emailpassword"));
+                Boolean isValidFirstFactorForTenant = Multitenancy.isValidFirstFactorForTenant(super.main,
+                        tenantIdentifierWithStorage, "emailpassword");
+                if (isValidFirstFactorForTenant != null) {
+                    result.addProperty("isValidFirstFactorForTenant", isValidFirstFactorForTenant);
+                }
             }
 
             super.sendJsonResponse(200, result, resp);

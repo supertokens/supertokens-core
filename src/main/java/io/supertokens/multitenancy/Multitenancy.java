@@ -602,11 +602,11 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         return MultitenancyHelper.getInstance(main).getAllTenants();
     }
 
-    public static boolean isValidFirstFactorForTenant(Main main, TenantIdentifier tenantIdentifier, String factorId) {
+    public static Boolean isValidFirstFactorForTenant(Main main, TenantIdentifier tenantIdentifier, String factorId) {
         TenantConfig tenantConfig = getTenantInfo(main, tenantIdentifier);
 
         if (tenantConfig.firstFactors == null) {
-            return false;
+            return null;
         }
 
         return List.of(tenantConfig.firstFactors).contains(factorId);

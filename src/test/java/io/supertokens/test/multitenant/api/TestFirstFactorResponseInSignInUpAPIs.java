@@ -90,7 +90,7 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     config, SemVer.v4_1);
 
             JsonObject response = TestMultitenancyAPIHelper.epSignUpAndGetResponse(t1, "test1@example.com", "password", process.getProcess(), SemVer.v4_1);
-            assertFalse(response.get("isValidFirstFactorForTenant").getAsBoolean());
+            assertFalse(response.has("isValidFirstFactorForTenant"));
         }
 
         { // first factors configured to empty array
@@ -160,7 +160,7 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     config, SemVer.v4_1);
 
             JsonObject response = TestMultitenancyAPIHelper.epSignInAndGetResponse(t1, "test@example.com", "password", process.getProcess(), SemVer.v4_1);
-            assertFalse(response.get("isValidFirstFactorForTenant").getAsBoolean());
+            assertFalse(response.has("isValidFirstFactorForTenant"));
         }
 
         { // first factors configured to empty array
@@ -219,7 +219,7 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     config, SemVer.v4_1);
 
             JsonObject response = TestMultitenancyAPIHelper.tpSignInUpAndGetResponse(t1, "google", "gid1", "test1@example.com", process.getProcess(), SemVer.v4_1);
-            assertFalse(response.get("isValidFirstFactorForTenant").getAsBoolean());
+            assertFalse(response.has("isValidFirstFactorForTenant"));
         }
 
         { // first factors configured to empty array
@@ -278,7 +278,7 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     config, SemVer.v4_1);
 
             JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithEmailOTP(t1, "test1@example.com", process.getProcess(), SemVer.v4_1);
-            assertFalse(response.get("isValidFirstFactorForTenant").getAsBoolean());
+            assertFalse(response.has("isValidFirstFactorForTenant"));
         }
 
         { // first factors configured to empty array
@@ -337,7 +337,7 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     config, SemVer.v4_1);
 
             JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithPhoneOTP(t1, "+919876543210", process.getProcess(), SemVer.v4_1);
-            assertFalse(response.get("isValidFirstFactorForTenant").getAsBoolean());
+            assertFalse(response.has("isValidFirstFactorForTenant"));
         }
 
         { // first factors configured to empty array
@@ -396,7 +396,7 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     config, SemVer.v4_1);
 
             JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithEmailLink(t1, "test1@example.com", process.getProcess(), SemVer.v4_1);
-            assertFalse(response.get("isValidFirstFactorForTenant").getAsBoolean());
+            assertFalse(response.has("isValidFirstFactorForTenant"));
         }
 
         { // first factors configured to empty array
@@ -455,7 +455,7 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     config, SemVer.v4_1);
 
             JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithPhoneLink(t1, "+919876543210", process.getProcess(), SemVer.v4_1);
-            assertFalse(response.get("isValidFirstFactorForTenant").getAsBoolean());
+            assertFalse(response.has("isValidFirstFactorForTenant"));
         }
 
         { // first factors configured to empty array

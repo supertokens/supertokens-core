@@ -128,8 +128,11 @@ public class ConsumeCodeAPI extends WebserverAPI {
             }
 
             if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_1)) {
-                result.addProperty("isValidFirstFactorForTenant", Multitenancy.isValidFirstFactorForTenant(super.main,
-                        this.getTenantIdentifierWithStorageFromRequest(req), factorId));
+                Boolean isValidFirstFactorForTenant = Multitenancy.isValidFirstFactorForTenant(super.main,
+                        this.getTenantIdentifierWithStorageFromRequest(req), factorId);
+                if (isValidFirstFactorForTenant != null) {
+                    result.addProperty("isValidFirstFactorForTenant", isValidFirstFactorForTenant);
+                }
             }
 
             super.sendJsonResponse(200, result, resp);
