@@ -50,14 +50,16 @@ public class LinkAccountsAPI extends WebserverAPI {
         super(main, RECIPE_ID.ACCOUNT_LINKING.toString());
     }
 
+    public LinkAccountsAPI(Main main, String recipeId) {
+        super(main, recipeId);
+    }
+
     @Override
     public String getPath() {
         return "/recipe/accountlinking/user/link";
     }
 
-    @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        // API is app specific
+    public void handle(HttpServletRequest req, HttpServletResponse resp, boolean forMfa) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String inputRecipeUserId = InputParser.parseStringOrThrowError(input, "recipeUserId", false);
         String inputPrimaryUserId = InputParser.parseStringOrThrowError(input, "primaryUserId", false);
@@ -99,7 +101,7 @@ public class LinkAccountsAPI extends WebserverAPI {
 
             AuthRecipe.LinkAccountsResult linkAccountsResult = AuthRecipe.linkAccounts(main,
                     primaryUserIdAppIdentifierWithStorage,
-                    recipeUserId, primaryUserId);
+                    recipeUserId, primaryUserId, forMfa);
 
             UserIdMapping.populateExternalUserIdForUsers(primaryUserIdAppIdentifierWithStorage, new AuthRecipeUserInfo[]{linkAccountsResult.user});
             JsonObject response = new JsonObject();
@@ -145,5 +147,11 @@ public class LinkAccountsAPI extends WebserverAPI {
             response.addProperty("status", "INPUT_USER_IS_NOT_A_PRIMARY_USER");
             super.sendJsonResponse(200, response, resp);
         }
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is app specific
+        handle(req, resp, false);
     }
 }
