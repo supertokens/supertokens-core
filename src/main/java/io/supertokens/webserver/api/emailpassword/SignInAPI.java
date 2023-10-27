@@ -21,6 +21,7 @@ import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
+import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
@@ -97,6 +98,13 @@ public class SignInAPI extends WebserverAPI {
                         break;
                     }
                 }
+            }
+
+            if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_1)) {
+                Multitenancy.CheckFirstFactorResult checkFirstFactorResult = Multitenancy.checkFirstFactor(super.main,
+                        tenantIdentifierWithStorage, "emailpassword");
+                result.addProperty("tenantHasFirstFactors", checkFirstFactorResult.tenantHasFirstFactors);
+                result.addProperty("isValidFirstFactor", checkFirstFactorResult.isValidFirstFactor);
             }
 
             super.sendJsonResponse(200, result, resp);

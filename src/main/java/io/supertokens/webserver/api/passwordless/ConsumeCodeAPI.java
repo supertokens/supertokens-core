@@ -19,6 +19,7 @@ package io.supertokens.webserver.api.passwordless;
 import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
+import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.Passwordless.ConsumeCodeResponse;
@@ -114,6 +115,25 @@ public class ConsumeCodeAPI extends WebserverAPI {
                         break;
                     }
                 }
+            }
+
+            String factorId;
+            if (linkCode != null) {
+                factorId = "link-";
+            } else {
+                factorId = "otp-";
+            }
+            if (consumeCodeResponse.email != null) {
+                factorId += "email";
+            } else {
+                factorId += "phone";
+            }
+
+            if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_1)) {
+                Multitenancy.CheckFirstFactorResult checkFirstFactorResult = Multitenancy.checkFirstFactor(super.main,
+                        this.getTenantIdentifierWithStorageFromRequest(req), factorId);
+                result.addProperty("tenantHasFirstFactors", checkFirstFactorResult.tenantHasFirstFactors);
+                result.addProperty("isValidFirstFactor", checkFirstFactorResult.isValidFirstFactor);
             }
 
             super.sendJsonResponse(200, result, resp);
