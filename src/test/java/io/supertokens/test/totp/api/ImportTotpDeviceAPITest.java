@@ -166,7 +166,7 @@ public class ImportTotpDeviceAPITest {
         }
 
         // Verify totp on the imported device
-        TOTPDevice device = new TOTPDevice("user-id", "d1", secret, 30, 0, false);
+        TOTPDevice device = new TOTPDevice("user-id", "d1", secret, 30, 0, false, System.currentTimeMillis());
 
         JsonObject verifyDeviceReq = new JsonObject();
         verifyDeviceReq.addProperty("userId", device.userId);

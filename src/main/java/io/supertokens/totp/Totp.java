@@ -118,7 +118,7 @@ public class Totp {
             FeatureNotEnabledException, TenantOrAppNotFoundException, StorageTransactionLogicException {
 
         String secret = generateSecret();
-        TOTPDevice device = new TOTPDevice(userId, deviceName, secret, period, skew, false);
+        TOTPDevice device = new TOTPDevice(userId, deviceName, secret, period, skew, false, System.currentTimeMillis());
         TOTPSQLStorage totpStorage = appIdentifierWithStorage.getTOTPStorage();
 
         if (deviceName != null) {
@@ -137,7 +137,8 @@ public class Totp {
                         device.secretKey,
                         device.period,
                         device.skew,
-                        device.verified
+                        device.verified,
+                        device.createdAt
                 ));
             } catch (DeviceAlreadyExistsException e){
             }

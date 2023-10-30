@@ -217,8 +217,9 @@ public class CreateTotpDeviceAPITest {
                     attempt2Secret,
                     30,
                     0,
-                    false
-                    );
+                    false,
+                    System.currentTimeMillis()
+            );
             JsonObject verifyDeviceBody = new JsonObject();
             verifyDeviceBody.addProperty("userId", device.userId);
             verifyDeviceBody.addProperty("deviceName", device.deviceName);

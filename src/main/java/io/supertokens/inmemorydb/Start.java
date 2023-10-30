@@ -688,7 +688,7 @@ public class Start
             }
         } else if (className.equals(TOTPStorage.class.getName())) {
             try {
-                TOTPDevice device = new TOTPDevice(userId, "testDevice", "secret", 0, 30, false);
+                TOTPDevice device = new TOTPDevice(userId, "testDevice", "secret", 0, 30, false, System.currentTimeMillis());
                 this.startTransaction(con -> {
                     try {
                         long now = System.currentTimeMillis();

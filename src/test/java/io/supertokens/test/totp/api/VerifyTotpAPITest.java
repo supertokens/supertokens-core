@@ -110,7 +110,7 @@ public class VerifyTotpAPITest {
         assertEquals(createDeviceRes.get("status").getAsString(), "OK");
         String secretKey = createDeviceRes.get("secret").getAsString();
 
-        TOTPDevice device = new TOTPDevice("user-id", "deviceName", secretKey, 2, 0, false);
+        TOTPDevice device = new TOTPDevice("user-id", "deviceName", secretKey, 2, 0, false, System.currentTimeMillis());
 
         JsonObject verifyDeviceReq = new JsonObject();
         verifyDeviceReq.addProperty("userId", device.userId);
