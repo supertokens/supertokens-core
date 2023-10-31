@@ -123,9 +123,9 @@ public class TOTPStorageTest {
         }
         TOTPSQLStorage storage = result.storage;
 
-        TOTPDevice device1 = new TOTPDevice("user", "d1", "secret", 30, 1, false);
-        TOTPDevice device2 = new TOTPDevice("user", "d2", "secret", 30, 1, true);
-        TOTPDevice device2Duplicate = new TOTPDevice("user", "d2", "new-secret", 30, 1, false);
+        TOTPDevice device1 = new TOTPDevice("user", "d1", "secret", 30, 1, false, System.currentTimeMillis());
+        TOTPDevice device2 = new TOTPDevice("user", "d2", "secret", 30, 1, true, System.currentTimeMillis());
+        TOTPDevice device2Duplicate = new TOTPDevice("user", "d2", "new-secret", 30, 1, false, System.currentTimeMillis());
 
         storage.createDevice(new AppIdentifier(null, null), device1);
 
@@ -155,7 +155,7 @@ public class TOTPStorageTest {
         }
         TOTPSQLStorage storage = result.storage;
 
-        TOTPDevice device = new TOTPDevice("user", "device", "secretKey", 30, 1, false);
+        TOTPDevice device = new TOTPDevice("user", "device", "secretKey", 30, 1, false, System.currentTimeMillis());
         storage.createDevice(new AppIdentifier(null, null), device);
 
         TOTPDevice[] storedDevices = storage.getDevices(new AppIdentifier(null, null), "user");
@@ -195,8 +195,8 @@ public class TOTPStorageTest {
         });
         assert devicesCount == 0;
 
-        TOTPDevice device1 = new TOTPDevice("user", "device1", "sk1", 30, 1, false);
-        TOTPDevice device2 = new TOTPDevice("user", "device2", "sk2", 30, 1, false);
+        TOTPDevice device1 = new TOTPDevice("user", "device1", "sk1", 30, 1, false, System.currentTimeMillis());
+        TOTPDevice device2 = new TOTPDevice("user", "device2", "sk2", 30, 1, false, System.currentTimeMillis());
 
         storage.createDevice(new AppIdentifier(null, null), device1);
         storage.createDevice(new AppIdentifier(null, null), device2);
@@ -225,8 +225,8 @@ public class TOTPStorageTest {
             return null;
         });
 
-        TOTPDevice device1 = new TOTPDevice("user", "device1", "sk1", 30, 1, false);
-        TOTPDevice device2 = new TOTPDevice("user", "device2", "sk2", 30, 1, false);
+        TOTPDevice device1 = new TOTPDevice("user", "device1", "sk1", 30, 1, false, System.currentTimeMillis());
+        TOTPDevice device2 = new TOTPDevice("user", "device2", "sk2", 30, 1, false, System.currentTimeMillis());
 
         storage.createDevice(new AppIdentifier(null, null), device1);
         storage.createDevice(new AppIdentifier(null, null), device2);
@@ -266,8 +266,8 @@ public class TOTPStorageTest {
         }
         TOTPSQLStorage storage = result.storage;
 
-        TOTPDevice device1 = new TOTPDevice("user", "device1", "sk1", 30, 1, false);
-        TOTPDevice device2 = new TOTPDevice("user", "device2", "sk2", 30, 1, false);
+        TOTPDevice device1 = new TOTPDevice("user", "device1", "sk1", 30, 1, false, System.currentTimeMillis());
+        TOTPDevice device2 = new TOTPDevice("user", "device2", "sk2", 30, 1, false, System.currentTimeMillis());
 
         storage.createDevice(new AppIdentifier(null, null), device1);
         storage.createDevice(new AppIdentifier(null, null), device2);
@@ -314,7 +314,7 @@ public class TOTPStorageTest {
         }
         TOTPSQLStorage storage = result.storage;
 
-        TOTPDevice device = new TOTPDevice("user", "device", "secretKey", 30, 1, false);
+        TOTPDevice device = new TOTPDevice("user", "device", "secretKey", 30, 1, false, System.currentTimeMillis());
         storage.createDevice(new AppIdentifier(null, null), device);
 
         TOTPDevice[] storedDevices = storage.getDevices(new AppIdentifier(null, null), "user");
@@ -335,7 +335,7 @@ public class TOTPStorageTest {
 
         // Try to create a new device and rename it to the same name as an existing
         // device:
-        TOTPDevice newDevice = new TOTPDevice("user", "new-device", "secretKey", 30, 1, false);
+        TOTPDevice newDevice = new TOTPDevice("user", "new-device", "secretKey", 30, 1, false, System.currentTimeMillis());
         storage.createDevice(new AppIdentifier(null, null), newDevice);
 
         assertThrows(DeviceAlreadyExistsException.class,
@@ -354,8 +354,8 @@ public class TOTPStorageTest {
         }
         TOTPSQLStorage storage = result.storage;
 
-        TOTPDevice device1 = new TOTPDevice("user", "d1", "secretKey", 30, 1, false);
-        TOTPDevice device2 = new TOTPDevice("user", "d2", "secretKey", 30, 1, false);
+        TOTPDevice device1 = new TOTPDevice("user", "d1", "secretKey", 30, 1, false, System.currentTimeMillis());
+        TOTPDevice device2 = new TOTPDevice("user", "d2", "secretKey", 30, 1, false, System.currentTimeMillis());
 
         storage.createDevice(new AppIdentifier(null, null), device1);
         storage.createDevice(new AppIdentifier(null, null), device2);
@@ -382,7 +382,7 @@ public class TOTPStorageTest {
 
         // Insert a long lasting valid code and check that it's returned when queried:
         {
-            TOTPDevice device = new TOTPDevice("user", "device", "secretKey", 30, 1, false);
+            TOTPDevice device = new TOTPDevice("user", "device", "secretKey", 30, 1, false, System.currentTimeMillis());
             TOTPUsedCode code = new TOTPUsedCode("user", "1234", true, nextDay, now);
 
             storage.createDevice(new AppIdentifier(null, null), device);
@@ -413,7 +413,7 @@ public class TOTPStorageTest {
 
         // Try to insert code after user has atleast one device (i.e. TOTP enabled)
         {
-            TOTPDevice newDevice = new TOTPDevice("user", "new-device", "secretKey", 30, 1, false);
+            TOTPDevice newDevice = new TOTPDevice("user", "new-device", "secretKey", 30, 1, false, System.currentTimeMillis());
             storage.createDevice(new AppIdentifier(null, null), newDevice);
             insertUsedCodesUtil(
                     storage,
@@ -447,7 +447,7 @@ public class TOTPStorageTest {
         long nextDay = now + 1000 * 60 * 60 * 24; // 1 day from now
         long prevDay = now - 1000 * 60 * 60 * 24; // 1 day ago
 
-        TOTPDevice device = new TOTPDevice("user", "device", "secretKey", 30, 1, false);
+        TOTPDevice device = new TOTPDevice("user", "device", "secretKey", 30, 1, false, System.currentTimeMillis());
         TOTPUsedCode validCode1 = new TOTPUsedCode("user", "valid1", true, nextDay, now + 1);
         TOTPUsedCode invalidCode = new TOTPUsedCode("user", "invalid", false, nextDay, now + 2);
         TOTPUsedCode expiredCode = new TOTPUsedCode("user", "expired", true, prevDay, now + 3);
@@ -493,7 +493,7 @@ public class TOTPStorageTest {
         long nextDay = System.currentTimeMillis() + 1000 * 60 * 60 * 24; // 1 day from now
         long hundredMs = System.currentTimeMillis() + 100; // 100ms from now
 
-        TOTPDevice device = new TOTPDevice("user", "device", "secretKey", 30, 1, false);
+        TOTPDevice device = new TOTPDevice("user", "device", "secretKey", 30, 1, false, System.currentTimeMillis());
         TOTPUsedCode validCodeToLive = new TOTPUsedCode("user", "valid", true, nextDay, now);
         TOTPUsedCode invalidCodeToLive = new TOTPUsedCode("user", "invalid", false, nextDay, now + 1);
         TOTPUsedCode validCodeToExpire = new TOTPUsedCode("user", "valid", true, hundredMs, now + 2);

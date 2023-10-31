@@ -85,7 +85,7 @@ public class StorageLayerTest {
 
         Start start = (Start) StorageLayer.getStorage(process.getProcess());
 
-        TOTPDevice d1 = new TOTPDevice("user", "d1", "secret", 30, 1, false);
+        TOTPDevice d1 = new TOTPDevice("user", "d1", "secret", 30, 1, false, System.currentTimeMillis());
         storage.createDevice(new AppIdentifier(null, null), d1);
 
         // Try code with length > 8

@@ -106,7 +106,7 @@ public class VerifyTotpDeviceAPITest {
         assertEquals(createDeviceRes.get("status").getAsString(), "OK");
         String secretKey = createDeviceRes.get("secret").getAsString();
 
-        TOTPDevice device = new TOTPDevice("user-id", "deviceName", secretKey, 30, 0, false);
+        TOTPDevice device = new TOTPDevice("user-id", "deviceName", secretKey, 30, 0, false, System.currentTimeMillis());
 
         // Start the actual tests for update device API:
 

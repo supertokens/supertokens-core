@@ -299,7 +299,8 @@ public class TOTPQueries {
                     result.getString("secret_key"),
                     result.getInt("period"),
                     result.getInt("skew"),
-                    result.getBoolean("verified"));
+                    result.getBoolean("verified"),
+                    result.getLong("created_at"));
         }
     }
 

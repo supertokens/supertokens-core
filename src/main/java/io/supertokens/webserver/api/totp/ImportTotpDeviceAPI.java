@@ -89,7 +89,7 @@ public class ImportTotpDeviceAPI extends WebserverAPI {
                 appIdentifierWithStorage = getAppIdentifierWithStorage(req);
             }
 
-            Totp.createDevice(super.main, appIdentifierWithStorage, new TOTPDevice(userId, deviceName, secretKey, period, skew, true));
+            Totp.createDevice(super.main, appIdentifierWithStorage, new TOTPDevice(userId, deviceName, secretKey, period, skew, true, System.currentTimeMillis()));
 
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);

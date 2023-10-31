@@ -276,7 +276,7 @@ public class MultitenantAPITest {
         for (TenantIdentifier tenant1 : tenants) {
             JsonObject deviceResponse = createDevice(tenant1, "user" + userCount);
             String secretKey = deviceResponse.get("secret").getAsString();
-            TOTPDevice device = new TOTPDevice("user" + userCount, "d1", secretKey, 2, 1, true);
+            TOTPDevice device = new TOTPDevice("user" + userCount, "d1", secretKey, 2, 1, true, System.currentTimeMillis());
             String validTotp = TOTPRecipeTest.generateTotpCode(process.getProcess(), device);
             verifyDevice(tenant1, "user" + userCount, validTotp);
 
