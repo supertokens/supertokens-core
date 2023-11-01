@@ -81,7 +81,7 @@ public class SignUpAPI extends WebserverAPI {
             TenantIdentifierWithStorage tenant = this.getTenantIdentifierWithStorageFromRequest(req);
             AuthRecipeUserInfo user = EmailPassword.signUp(tenant, super.main, normalisedEmail, password);
 
-            ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main, user.getSupertokensUserId());
+            ActiveUsers.updateLastActive(this.getPublicTenantStorage(req), main, user.getSupertokensUserId());
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
