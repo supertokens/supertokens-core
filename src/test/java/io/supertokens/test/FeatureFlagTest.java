@@ -156,6 +156,9 @@ public class FeatureFlagTest {
         Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    private final String OPAQUE_KEY_WITH_MFA_MULTITENANCY_FEATURE = "wtdfQK80jaEYmM1cqlW=lELizFWJlaHOggzvF59jOAwX7NFx" +
+            "dxH1fw0=RTy=BZixibzF5rn85SNKwfFfLcMm6Li3l1DYOVVD3H8XymCcekti217BxXb-Q6y5r-SKwMOG";
+
     @Test
     public void testThatCallingGetFeatureFlagAPIReturnsMfaStats() throws Exception {
         String[] args = {"../"};
@@ -167,7 +170,7 @@ public class FeatureFlagTest {
             return;
         }
 
-        FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(OPAQUE_KEY_WITH_MFA_FEATURE);
+        FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(OPAQUE_KEY_WITH_MFA_MULTITENANCY_FEATURE);
 
         // Get the stats without any users/activity
         {
@@ -183,7 +186,7 @@ public class FeatureFlagTest {
             if (StorageLayer.isInMemDb(process.main)) {
                 assert features.size() == EE_FEATURES.values().length;
             } else {
-                assert features.size() == 1;
+                assert features.size() == 2; // MFA + MULTITENANCY
             }
             assert features.contains(new JsonPrimitive("mfa"));
             assert maus.size() == 30;
@@ -209,23 +212,25 @@ public class FeatureFlagTest {
         JsonObject signUpResponse2 = Utils.signUpRequest_2_5(process, "random2@gmail.com", "validPass123");
         assert signUpResponse2.get("status").getAsString().equals("OK");
 
-        // Now enable TOTP for the first user by registering a device.
-        JsonObject body = new JsonObject();
-        body.addProperty("userId", signUpResponse.get("user").getAsJsonObject().get("id").getAsString());
-        body.addProperty("deviceName", "d1");
-        body.addProperty("skew", 0);
-        body.addProperty("period", 30);
-        JsonObject res = HttpRequestForTesting.sendJsonPOSTRequest(
-                process.getProcess(),
-                "",
-                "http://localhost:3567/recipe/totp/device",
-                body,
-                1000,
-                1000,
-                null,
-                Utils.getCdiVersionStringLatestForTests(),
-                "totp");
-        assert res.get("status").getAsString().equals("OK");
+        {
+            // Now enable TOTP for the first user by registering a device.
+            JsonObject body = new JsonObject();
+            body.addProperty("userId", signUpResponse.get("user").getAsJsonObject().get("id").getAsString());
+            body.addProperty("deviceName", "d1");
+            body.addProperty("skew", 0);
+            body.addProperty("period", 30);
+            JsonObject res = HttpRequestForTesting.sendJsonPOSTRequest(
+                    process.getProcess(),
+                    "",
+                    "http://localhost:3567/recipe/totp/device",
+                    body,
+                    1000,
+                    1000,
+                    null,
+                    Utils.getCdiVersionStringLatestForTests(),
+                    "totp");
+            assert res.get("status").getAsString().equals("OK");
+        }
 
         // Now check the stats again:
         {
@@ -241,7 +246,7 @@ public class FeatureFlagTest {
             if (StorageLayer.isInMemDb(process.main)) {
                 assert features.size() == EE_FEATURES.values().length;
             } else {
-                assert features.size() == 1;
+                assert features.size() == 2; // MFA + MULTITENANCY
             }
 
             assert features.contains(new JsonPrimitive("mfa"));
@@ -283,7 +288,7 @@ public class FeatureFlagTest {
             if (StorageLayer.isInMemDb(process.main)) {
                 assert features.size() == EE_FEATURES.values().length;
             } else {
-                assert features.size() == 1;
+                assert features.size() == 2; // MFA + MULTITENANCY
             }
 
             assert features.contains(new JsonPrimitive("mfa"));
@@ -291,15 +296,96 @@ public class FeatureFlagTest {
             assert maus.get(0).getAsInt() == 4; // 2 users have signed up
             assert maus.get(29).getAsInt() == 4;
 
-            JsonObject mfaStats = usageStats.get("mfa").getAsJsonObject();
-            int totalMfaUsers = mfaStats.get("totalUserCountWithMoreThanOneLoginMethodOrTOTPEnabled").getAsInt();
-            JsonArray mfaMaus = mfaStats.get("mauWithMoreThanOneLoginMethodOrTOTPEnabled").getAsJsonArray();
+            {
+                JsonObject mfaStats = usageStats.get("mfa").getAsJsonObject();
+                int totalMfaUsers = mfaStats.get("totalUserCountWithMoreThanOneLoginMethodOrTOTPEnabled").getAsInt();
+                JsonArray mfaMaus = mfaStats.get("mauWithMoreThanOneLoginMethodOrTOTPEnabled").getAsJsonArray();
 
-            assert mfaMaus.size() == 30;
-            assert mfaMaus.get(0).getAsInt() == 2; // 1 TOTP user + 1 account linked user
-            assert mfaMaus.get(29).getAsInt() == 2;
+                assert mfaMaus.size() == 30;
+                assert mfaMaus.get(0).getAsInt() == 2; // 1 TOTP user + 1 account linked user
+                assert mfaMaus.get(29).getAsInt() == 2;
 
-            assert totalMfaUsers == 2;
+                assert totalMfaUsers == 2;
+            }
+
+            // Add TOTP to the linked user
+            {
+                JsonObject body = new JsonObject();
+                body.addProperty("userId", user1.get("user").getAsJsonObject().get("id").getAsString());
+                body.addProperty("deviceName", "d1");
+                body.addProperty("skew", 0);
+                body.addProperty("period", 30);
+                JsonObject res = HttpRequestForTesting.sendJsonPOSTRequest(
+                        process.getProcess(),
+                        "",
+                        "http://localhost:3567/recipe/totp/device",
+                        body,
+                        1000,
+                        1000,
+                        null,
+                        Utils.getCdiVersionStringLatestForTests(),
+                        "totp");
+                assert res.get("status").getAsString().equals("OK");
+            }
+        }
+
+        {
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/ee/featureflag",
+                    null, 1000, 1000, null, WebserverAPI.getLatestCDIVersion().get(), "");
+            Assert.assertEquals("OK", response.get("status").getAsString());
+
+            JsonArray features = response.get("features").getAsJsonArray();
+            JsonObject usageStats = response.get("usageStats").getAsJsonObject();
+            JsonArray maus = usageStats.get("maus").getAsJsonArray();
+
+            { // MFA stats should still count 2 users
+                JsonObject mfaStats = usageStats.get("mfa").getAsJsonObject();
+                int totalMfaUsers = mfaStats.get("totalUserCountWithMoreThanOneLoginMethodOrTOTPEnabled").getAsInt();
+                JsonArray mfaMaus = mfaStats.get("mauWithMoreThanOneLoginMethodOrTOTPEnabled").getAsJsonArray();
+
+                assert mfaMaus.size() == 30;
+                assert mfaMaus.get(0).getAsInt() == 2; // 1 TOTP user + 1 account linked user
+                assert mfaMaus.get(29).getAsInt() == 2;
+
+                assert totalMfaUsers == 2;
+            }
+        }
+
+        { // Associate the user with multiple tenants and still the stats should be same
+            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                    new TenantIdentifier(null, null, "t1"),
+                    new EmailPasswordConfig(true),
+                    new ThirdPartyConfig(true, null),
+                    new PasswordlessConfig(true),
+                    new TotpConfig(false), null, null,
+                    new JsonObject()
+            ), false);
+            Multitenancy.addUserIdToTenant(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, "t1").withStorage(StorageLayer.getStorage(process.getProcess())),
+                    signUpResponse.get("user").getAsJsonObject().get("id").getAsString()
+                );
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/ee/featureflag",
+                    null, 1000, 1000, null, WebserverAPI.getLatestCDIVersion().get(), "");
+            Assert.assertEquals("OK", response.get("status").getAsString());
+
+            JsonArray features = response.get("features").getAsJsonArray();
+            JsonObject usageStats = response.get("usageStats").getAsJsonObject();
+            JsonArray maus = usageStats.get("maus").getAsJsonArray();
+
+            { // MFA stats should still count 2 users
+                JsonObject mfaStats = usageStats.get("mfa").getAsJsonObject();
+                int totalMfaUsers = mfaStats.get("totalUserCountWithMoreThanOneLoginMethodOrTOTPEnabled").getAsInt();
+                JsonArray mfaMaus = mfaStats.get("mauWithMoreThanOneLoginMethodOrTOTPEnabled").getAsJsonArray();
+
+                assert mfaMaus.size() == 30;
+                assert mfaMaus.get(0).getAsInt() == 2; // 1 TOTP user + 1 account linked user
+                assert mfaMaus.get(29).getAsInt() == 2;
+
+                assert totalMfaUsers == 2;
+            }
         }
 
         process.kill();
