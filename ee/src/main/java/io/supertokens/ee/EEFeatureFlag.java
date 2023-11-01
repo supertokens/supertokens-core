@@ -185,37 +185,6 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         return stats;
     }
 
-    private JsonObject getTOTPStats() throws StorageQueryException, TenantOrAppNotFoundException {
-        JsonObject totpStats = new JsonObject();
-        JsonArray totpMauArr = new JsonArray();
-
-        Storage[] storages = StorageLayer.getStoragesForApp(main, this.appIdentifier);
-
-        // TODO Active users are present only on public tenant and TOTP users may be present on different storages
-        Storage publicTenantStorage = StorageLayer.getStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main);
-         final long now = System.currentTimeMillis();
-         for (int i = 0; i < 30; i++) {
-             long today = now - (now % (24 * 60 * 60 * 1000L));
-             long timestamp = today - (i * 24 * 60 * 60 * 1000L);
-
-             int totpMau = 0;
-             // TODO Need to figure out a way to combine the data from different storages to get the final stats
-             // for (Storage storage : storages) {
-             totpMau += ((ActiveUsersStorage) publicTenantStorage).countUsersEnabledTotpAndActiveSince(this.appIdentifier, timestamp);
-             // }
-             totpMauArr.add(new JsonPrimitive(totpMau));
-         }
-
-         totpStats.add("maus", totpMauArr);
-
-        int totpTotalUsers = 0;
-        for (Storage storage : storages) {
-            totpTotalUsers += ((ActiveUsersStorage) storage).countUsersEnabledTotp(this.appIdentifier);
-        }
-        totpStats.addProperty("total_users", totpTotalUsers);
-        return totpStats;
-    }
-
     private boolean isEnterpriseThirdPartyId(String thirdPartyId) {
         for (String enterpriseThirdPartyId : ENTERPRISE_THIRD_PARTY_IDS) {
             if (thirdPartyId.startsWith(enterpriseThirdPartyId)) {
@@ -225,37 +194,29 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         return false;
     }
 
-
     private JsonObject getMFAStats() throws StorageQueryException, TenantOrAppNotFoundException{
-        JsonObject mfaStats = new JsonObject();
-        JsonArray mfaMauArr = new JsonArray();
-
+        // TODO: Active users are present only on public tenant and MFA users may be present on different storages
+        JsonObject result = new JsonObject();
         Storage[] storages = StorageLayer.getStoragesForApp(main, this.appIdentifier);
 
-        // TODO: Active users are present only on public tenant and MFA users may be present on different storages
-        Storage publicTenantStorage = StorageLayer.getStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main);
-        final long now = System.currentTimeMillis();
-        for (int i = 0; i < 30; i++) {
-            long today = now - (now % (24 * 60 * 60 * 1000L));
-            long timestamp = today - (i * 24 * 60 * 60 * 1000L);
+        int totalUserCountWithMoreThanOneLoginMethod = 0;
+        int[] maus = new int[30];
 
-            int mfaMau = 0;
-            // TODO Need to figure out a way to combine the data from different storages to get the final stats
-            // for (Storage storage : storages) {
-            mfaMau += ((ActiveUsersStorage) publicTenantStorage).countUsersEnabledMfaAndActiveSince(this.appIdentifier, timestamp);
-            // }
-            mfaMauArr.add(new JsonPrimitive(mfaMau));
-        }
+        long now = System.currentTimeMillis();
+        long today = now - (now % (24 * 60 * 60 * 1000L));
 
-        mfaStats.add("maus", mfaMauArr);
-        mfaStats.add("totp", getTOTPStats());
-
-        int mfaTotalUsers = 0;
         for (Storage storage : storages) {
-            mfaTotalUsers += ((ActiveUsersStorage) storage).countUsersEnabledMfa(this.appIdentifier);
+            totalUserCountWithMoreThanOneLoginMethod += ((AuthRecipeStorage)storage).getUsersCountWithMoreThanOneLoginMethodOrTOTPEnabled(this.appIdentifier);
+
+            for (int i = 0; i < 30; i++) {
+                long timestamp = today - (i * 24 * 60 * 60 * 1000L);
+                maus[i] += ((ActiveUsersStorage)storage).countUsersThatHaveMoreThanOneLoginMethodOrTOTPEnabledAndActiveSince(appIdentifier, timestamp);
+            }
         }
-        mfaStats.addProperty("total_users", mfaTotalUsers);
-        return mfaStats;
+
+        result.addProperty("totalUserCountWithMoreThanOneLoginMethodOrTOTPEnabled", totalUserCountWithMoreThanOneLoginMethod);
+        result.add("mauWithMoreThanOneLoginMethodOrTOTPEnabled", new Gson().toJsonTree(maus));
+        return result;
     }
 
     private JsonObject getMultiTenancyStats()
@@ -306,6 +267,7 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
     }
 
     private JsonObject getAccountLinkingStats() throws StorageQueryException {
+        // TODO: Active users are present only on public tenant and MFA users may be present on different storages
         JsonObject result = new JsonObject();
         Storage[] storages = StorageLayer.getStoragesForApp(main, this.appIdentifier);
         boolean usesAccountLinking = false;

@@ -90,10 +90,10 @@ public class RefreshSessionAPI extends WebserverAPI {
                             this.getAppIdentifierWithStorage(req),
                             sessionInfo.session.userId, UserIdType.ANY);
                     if (userIdMapping != null) {
-                        ActiveUsers.updateLastActive(appIdentifierWithStorage, main,
+                        ActiveUsers.updateLastActive(this.getPublicTenantStorage(req), main,
                                 userIdMapping.superTokensUserId);
                     } else {
-                        ActiveUsers.updateLastActive(appIdentifierWithStorage, main,
+                        ActiveUsers.updateLastActive(this.getPublicTenantStorage(req), main,
                                 sessionInfo.session.userId);
                     }
                 } catch (StorageQueryException ignored) {

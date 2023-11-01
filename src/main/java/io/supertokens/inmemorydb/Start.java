@@ -1212,44 +1212,6 @@ public class Start
     }
 
     @Override
-    public int countUsersEnabledTotp(AppIdentifier appIdentifier) throws StorageQueryException {
-        try {
-            return ActiveUsersQueries.countUsersEnabledTotp(this, appIdentifier);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
-    public int countUsersEnabledTotpAndActiveSince(AppIdentifier appIdentifier, long time)
-            throws StorageQueryException {
-        try {
-            return ActiveUsersQueries.countUsersEnabledTotpAndActiveSince(this, appIdentifier, time);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
-    public int countUsersEnabledMfa(AppIdentifier appIdentifier) throws StorageQueryException {
-        try {
-            return ActiveUsersQueries.countUsersEnabledMfa(this, appIdentifier);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
-    public int countUsersEnabledMfaAndActiveSince(AppIdentifier appIdentifier, long time)
-            throws StorageQueryException {
-        try {
-            return ActiveUsersQueries.countUsersEnabledMfaAndActiveSince(this, appIdentifier, time);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
     public void deleteUserActive_Transaction(TransactionConnection con, AppIdentifier appIdentifier, String userId)
             throws StorageQueryException {
         try {
@@ -2997,4 +2959,13 @@ public class Start
         }
     }
 
+    @Override
+    public int getUsersCountWithMoreThanOneLoginMethodOrTOTPEnabled(AppIdentifier appIdentifier) throws StorageQueryException {
+        return 0; // TODO
+    }
+
+    @Override
+    public int countUsersThatHaveMoreThanOneLoginMethodOrTOTPEnabledAndActiveSince(AppIdentifier appIdentifier, long timestamp) throws StorageQueryException {
+        return 0; // TODO
+    }
 }
