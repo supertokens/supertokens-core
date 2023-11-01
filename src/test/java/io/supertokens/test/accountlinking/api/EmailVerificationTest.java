@@ -40,8 +40,7 @@ import org.junit.rules.TestRule;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class EmailVerificationTest {
     @Rule
@@ -90,6 +89,7 @@ public class EmailVerificationTest {
                     WebserverAPI.getLatestCDIVersion().get(), "");
             JsonObject user = response.get("user").getAsJsonObject();
             assertTrue(user.get("loginMethods").getAsJsonArray().get(0).getAsJsonObject().get("verified").getAsBoolean());
+            assertFalse(user.get("loginMethods").getAsJsonArray().get(1).getAsJsonObject().get("verified").getAsBoolean());
         }
 
         process.kill();
