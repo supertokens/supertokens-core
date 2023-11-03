@@ -278,8 +278,8 @@ public class RequestStatsTest {
                             1000, null, Utils.getCdiVersionStringLatestForTests(), null);
             fail();
         } catch (HttpResponseException e) {
-            assertEquals(500, e.statusCode);
-            assertEquals("Http error. Status Code: 500. Message: AppId or tenantId not found => Tenant with the following connectionURIDomain, appId and tenantId combination not found: (, a1, public)", e.getMessage());
+            assertEquals(400, e.statusCode);
+            assertEquals("Http error. Status Code: 400. Message: AppId or tenantId not found => Tenant with the following connectionURIDomain, appId and tenantId combination not found: (, a1, public)", e.getMessage());
         }
 
         process.kill();

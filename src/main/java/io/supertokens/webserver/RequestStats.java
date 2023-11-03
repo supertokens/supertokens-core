@@ -97,6 +97,8 @@ public class RequestStats extends ResourceDistributor.SingletonResource {
             return (RequestStats) main.getResourceDistributor()
                     .getResource(appIdentifier.getAsPublicTenantIdentifier(), RESOURCE_KEY);
         } catch (TenantOrAppNotFoundException e) {
+            // appIdentifier parameter is coming from the API request and hence we need to check if the app exists
+            // before creating a resource for it
             if (Multitenancy.getTenantInfo(main, appIdentifier.getAsPublicTenantIdentifier()) == null) {
                 throw e;
             }

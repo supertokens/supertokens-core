@@ -484,7 +484,7 @@ public abstract class WebserverAPI extends HttpServlet {
         try {
             RequestStats.getInstance(main, tenantIdentifier.toAppIdentifier()).updateRequestStats();
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e); // should never happen
+            // Ignore the error as we would have already sent the response for tenantNotFound
         }
     }
 
