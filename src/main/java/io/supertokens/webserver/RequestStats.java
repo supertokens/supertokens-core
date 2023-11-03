@@ -62,7 +62,7 @@ public class RequestStats extends ResourceDistributor.SingletonResource {
 
     private void checkAndUpdateMinute(long currentSecond) {
         if (currentSecond / 60 == currentMinute) {
-            return; // no need to do anything
+            return; // stats update not required
         }
 
         int sum = 0;
@@ -75,7 +75,7 @@ public class RequestStats extends ResourceDistributor.SingletonResource {
         averageRequestsPerSecond[(int) (currentMinute % MAX_MINUTES)] = sum / 60.0;
         peakRequestsPerSecond[(int) (currentMinute % MAX_MINUTES)] = max;
 
-        // Fill zeros for passed minutes
+        // fill zeros for passed minutes
         for (long i = currentMinute + 1; i < currentSecond / 60; i++) {
             averageRequestsPerSecond[(int) (i % MAX_MINUTES)] = 0;
             peakRequestsPerSecond[(int) (i % MAX_MINUTES)] = 0;
