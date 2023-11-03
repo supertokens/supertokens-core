@@ -250,6 +250,8 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new AssociateUserToTenantAPI(main));
         addAPI(new DisassociateUserFromTenant(main));
 
+        addAPI(new RequestStatsAPI(main));
+
         StandardContext context = tomcatReference.getContext();
         Tomcat tomcat = tomcatReference.getTomcat();
 

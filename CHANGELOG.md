@@ -7,6 +7,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+## [6.0.16] - 2023-11-03
+
+- Collects requests stats per app
+- Adds `/requests/stats` API to return requests stats for the last day
+
 ## [6.0.15] - 2023-10-18
 
 - Fixes issue with cron tasks that run per app and tenant
