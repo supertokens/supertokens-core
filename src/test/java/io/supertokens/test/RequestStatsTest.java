@@ -20,8 +20,11 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlagTestContent;
+import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.multitenant.api.TestMultitenancyAPIHelper;
@@ -119,4 +122,129 @@ public class RequestStatsTest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    @Test
+    public void testLastMinuteStatsPerApp() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                new TenantIdentifier(null, "a1", null),
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                new JsonObject()
+        ), false);
+
+        // Wait for a minute to pass
+        Thread.sleep(60000 - (System.currentTimeMillis() % 60000) + 100);
+
+        ExecutorService ex = Executors.newFixedThreadPool(100);
+        int numRequests = 500;
+        for (int i = 0; i < numRequests; i++) {
+            int finalI = i;
+            ex.execute(() -> {
+                try {
+                    TestMultitenancyAPIHelper.epSignUp(TenantIdentifier.BASE_TENANT, "test" + finalI + "@example.com", "password", process.getProcess());
+                } catch (Exception e) {
+                    // ignore
+                }
+                if (finalI < 400) {
+                    try {
+                        TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", null), "test" + finalI + "@example.com", "password", process.getProcess());
+                    } catch (Exception e) {
+                        // ignore
+                    }
+                }
+            });
+        }
+
+        ex.shutdown();
+        ex.awaitTermination(45, TimeUnit.SECONDS); // should finish in 45 seconds
+
+        // Wait for a minute to pass
+        Thread.sleep(60000 - (System.currentTimeMillis() % 60000) + 100);
+
+        {
+            JsonObject stats = HttpRequestForTesting
+                    .sendGETRequest(process.getProcess(), "", "http://localhost:3567/requests/stats", null, 5000,
+                            5000, null, Utils.getCdiVersionStringLatestForTests(), null);
+
+            JsonArray avgRps = stats.get("averageRequestsPerSecond").getAsJsonArray();
+            JsonArray peakRps = stats.get("peakRequestsPerSecond").getAsJsonArray();
+
+            double avg = 10000;
+
+            int count = 0;
+            for (JsonElement e : avgRps) {
+                if (e.getAsDouble() == -1) {
+                    count++;
+                } else {
+                    assertEquals(numRequests, Math.round(e.getAsDouble() * 60));
+                    avg = e.getAsDouble();
+                }
+            }
+            assertEquals(1439, count);
+
+            count = 0;
+            for (JsonElement e : peakRps) {
+                if (e.getAsInt() == -1) {
+                    count++;
+                } else {
+                    assertTrue(e.getAsInt() > avg);
+                }
+            }
+            assertEquals(1439, count);
+
+            assertEquals(System.currentTimeMillis() / 60000, stats.get("atMinute").getAsLong());
+        }
+
+        {
+            JsonObject stats = HttpRequestForTesting
+                    .sendGETRequest(process.getProcess(), "", "http://localhost:3567/appid-a1/requests/stats", null, 1000,
+                            1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+
+            JsonArray avgRps = stats.get("averageRequestsPerSecond").getAsJsonArray();
+            JsonArray peakRps = stats.get("peakRequestsPerSecond").getAsJsonArray();
+
+            double avg = 10000;
+
+            int count = 0;
+            for (JsonElement e : avgRps) {
+                if (e.getAsDouble() == -1) {
+                    count++;
+                } else {
+                    assertEquals(400, Math.round(e.getAsDouble() * 60));
+                    avg = e.getAsDouble();
+                }
+            }
+            assertEquals(1439, count);
+
+            count = 0;
+            for (JsonElement e : peakRps) {
+                if (e.getAsInt() == -1) {
+                    count++;
+                } else {
+                    assertTrue(e.getAsInt() > avg);
+                }
+            }
+            assertEquals(1439, count);
+
+            assertEquals(System.currentTimeMillis() / 60000, stats.get("atMinute").getAsLong());
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
 }
