@@ -1526,6 +1526,32 @@ public class GeneralQueries {
         });
     }
 
+    public static int getUsersCountWithMoreThanOneLoginMethodOrTOTPEnabled(Start start, AppIdentifier appIdentifier)
+            throws SQLException, StorageQueryException {
+        String QUERY =
+                "SELECT COUNT (DISTINCT user_id) as c FROM ("
+                        + "  " // Users with number of login methods > 1
+                        + "    SELECT primary_or_recipe_user_id AS user_id FROM ("
+                        + "      SELECT COUNT(user_id) as num_login_methods, app_id, primary_or_recipe_user_id"
+                        + "      FROM " + getConfig(start).getAppIdToUserIdTable()
+                        + "      WHERE app_id = ? "
+                        + "      GROUP BY app_id, primary_or_recipe_user_id"
+                        + "    ) AS nloginmethods"
+                        + "    WHERE num_login_methods > 1"
+                        + "  UNION" // TOTP users
+                        + "    SELECT user_id FROM " + getConfig(start).getTotpUsersTable()
+                        + "    WHERE app_id = ?"
+                        + "  "
+                        + ") AS all_users";
+
+        return execute(start, QUERY, pst -> {
+            pst.setString(1, appIdentifier.getAppId());
+            pst.setString(2, appIdentifier.getAppId());
+        }, result -> {
+            return result.next() ? result.getInt("c") : 0;
+        });
+    }
+
     public static boolean checkIfUsesAccountLinking(Start start, AppIdentifier appIdentifier)
             throws SQLException, StorageQueryException {
         String QUERY = "SELECT 1 FROM "
