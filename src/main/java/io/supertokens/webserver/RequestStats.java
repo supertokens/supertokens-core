@@ -22,27 +22,41 @@ import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 
 public class RequestStats extends ResourceDistributor.SingletonResource {
     public static final String RESOURCE_KEY = "io.supertokens.webserver.RequestStats";
 
     private final int MAX_MINUTES = 24 * 60;
 
-    private long currentMinute;
-    private final int[] lastMinuteRps;
+    private long currentMinute; // current minute since epoch
+    private final int[] currentMinuteRequestCounts; // array of 60 items representing number of requests at each second in the current minute
 
-    private final double[] avgRps;
-    private final int[] peakRps;
+    // The 2 arrays below contains stats for a day for every minute
+    // the array is stored in such a way that array[currentMinute % MAX_MINUTES] contains the stats for a day ago
+    // until array[(currentMinute - 1) % MAX_MINUTES] which contains the stats for the last minute, circling around
+    // from end of array to the beginning
+    // for e.g. if currentMinute % MAX_MINUTES = 250,
+    // then array[250] contains stats for now - 1440 minutes
+    // array[251] contains stats for now - 1439 minutes
+    // ...
+    // array[1439] contains stats for now - 1191 minutes
+    // array[0] contains stats for now - 1190 minutes
+    // array[1] contains stats for now - 1189 minutes
+    // ...
+    // array[249] contains stats for now - 1 minute
+    private final double[] averageRequestsPerSecond;
+    private final int[] peakRequestsPerSecond;
 
     private RequestStats() {
         currentMinute = System.currentTimeMillis() / 60000;
-        lastMinuteRps = new int[60];
+        currentMinuteRequestCounts = new int[60];
 
-        avgRps = new double[MAX_MINUTES];
-        peakRps = new int[MAX_MINUTES];
+        averageRequestsPerSecond = new double[MAX_MINUTES];
+        peakRequestsPerSecond = new int[MAX_MINUTES];
         for (int i = 0; i < MAX_MINUTES; i++) {
-            avgRps[i] = -1;
-            peakRps[i] = -1;
+            averageRequestsPerSecond[i] = -1;
+            peakRequestsPerSecond[i] = -1;
         }
     }
 
@@ -54,32 +68,37 @@ public class RequestStats extends ResourceDistributor.SingletonResource {
         int sum = 0;
         int max = 0;
         for (int i = 0; i < 60; i++) {
-            sum += lastMinuteRps[i];
-            max = Math.max(max, lastMinuteRps[i]);
+            sum += currentMinuteRequestCounts[i];
+            max = Math.max(max, currentMinuteRequestCounts[i]);
         }
 
-        avgRps[(int) (currentMinute % MAX_MINUTES)] = sum / 60.0;
-        peakRps[(int) (currentMinute % MAX_MINUTES)] = max;
+        averageRequestsPerSecond[(int) (currentMinute % MAX_MINUTES)] = sum / 60.0;
+        peakRequestsPerSecond[(int) (currentMinute % MAX_MINUTES)] = max;
 
         // Fill zeros for passed minutes
         for (long i = currentMinute + 1; i < currentSecond / 60; i++) {
-            avgRps[(int) (i % MAX_MINUTES)] = 0;
-            peakRps[(int) (i % MAX_MINUTES)] = 0;
+            averageRequestsPerSecond[(int) (i % MAX_MINUTES)] = 0;
+            peakRequestsPerSecond[(int) (i % MAX_MINUTES)] = 0;
         }
 
         currentMinute = currentSecond / 60;
         for (int i = 0; i < 60; i++) {
-            lastMinuteRps[i] = 0;
+            currentMinuteRequestCounts[i] = 0;
         }
     }
 
     private void updateCounts(long currentSecond) {
-        lastMinuteRps[(int) (currentSecond % 60)]++;
+        currentMinuteRequestCounts[(int) (currentSecond % 60)]++;
     }
 
     public static RequestStats getInstance(Main main, AppIdentifier appIdentifier) {
-        return (RequestStats) main.getResourceDistributor()
-                .setResource(appIdentifier.getAsPublicTenantIdentifier(), RESOURCE_KEY, new RequestStats());
+        try {
+            return (RequestStats) main.getResourceDistributor()
+                    .getResource(appIdentifier.getAsPublicTenantIdentifier(), RESOURCE_KEY);
+        } catch (TenantOrAppNotFoundException e) {
+            return (RequestStats) main.getResourceDistributor()
+                    .setResource(appIdentifier.getAsPublicTenantIdentifier(), RESOURCE_KEY, new RequestStats());
+        }
     }
 
     synchronized public void updateRequestStats(boolean updateCounts) {
@@ -98,8 +117,8 @@ public class RequestStats extends ResourceDistributor.SingletonResource {
 
         int offset = (int) (atMinute % MAX_MINUTES);
         for (int i = 0; i < MAX_MINUTES; i++) {
-            avgRps.add(new JsonPrimitive(this.avgRps[(i + offset) % MAX_MINUTES]));
-            peakRps.add(new JsonPrimitive(this.peakRps[(i + offset) % MAX_MINUTES]));
+            avgRps.add(new JsonPrimitive(this.averageRequestsPerSecond[(i + offset) % MAX_MINUTES]));
+            peakRps.add(new JsonPrimitive(this.peakRequestsPerSecond[(i + offset) % MAX_MINUTES]));
         }
 
         JsonObject result = new JsonObject();
