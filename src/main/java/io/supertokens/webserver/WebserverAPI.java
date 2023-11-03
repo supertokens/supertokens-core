@@ -481,7 +481,11 @@ public abstract class WebserverAPI extends HttpServlet {
         }
         Logging.info(main, tenantIdentifier, "API ended: " + req.getRequestURI() + ". Method: " + req.getMethod(),
                 false);
-        RequestStats.getInstance(main, tenantIdentifier.toAppIdentifier()).updateRequestStats(true);
+        try {
+            RequestStats.getInstance(main, tenantIdentifier.toAppIdentifier()).updateRequestStats();
+        } catch (TenantOrAppNotFoundException e) {
+            throw new IllegalStateException(e); // should never happen
+        }
     }
 
     protected String getRIDFromRequest(HttpServletRequest req) {

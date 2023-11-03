@@ -21,6 +21,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
+import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 
@@ -91,17 +92,24 @@ public class RequestStats extends ResourceDistributor.SingletonResource {
         currentMinuteRequestCounts[(int) (currentSecond % 60)]++;
     }
 
-    public static RequestStats getInstance(Main main, AppIdentifier appIdentifier) {
+    public static RequestStats getInstance(Main main, AppIdentifier appIdentifier) throws TenantOrAppNotFoundException {
         try {
             return (RequestStats) main.getResourceDistributor()
                     .getResource(appIdentifier.getAsPublicTenantIdentifier(), RESOURCE_KEY);
         } catch (TenantOrAppNotFoundException e) {
+            if (Multitenancy.getTenantInfo(main, appIdentifier.getAsPublicTenantIdentifier()) == null) {
+                throw e;
+            }
             return (RequestStats) main.getResourceDistributor()
                     .setResource(appIdentifier.getAsPublicTenantIdentifier(), RESOURCE_KEY, new RequestStats());
         }
     }
 
-    synchronized public void updateRequestStats(boolean updateCounts) {
+    public void updateRequestStats() {
+        this.updateRequestStats(true);
+    }
+
+    synchronized private void updateRequestStats(boolean updateCounts) {
         long now = System.currentTimeMillis() / 1000;
         this.checkAndUpdateMinute(now);
         if (updateCounts) { this.updateCounts(now); }

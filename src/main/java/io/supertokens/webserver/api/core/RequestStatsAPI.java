@@ -46,11 +46,6 @@ public class RequestStatsAPI extends WebserverAPI {
     }
 
     @Override
-    protected boolean checkAPIKey(HttpServletRequest req) {
-        return false;
-    }
-
-    @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         // API is app specific
         try {

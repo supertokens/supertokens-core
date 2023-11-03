@@ -25,9 +25,12 @@ import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.multitenancy.*;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.test.multitenant.api.TestMultitenancyAPIHelper;
+import io.supertokens.webserver.RequestStats;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -241,6 +244,42 @@ public class RequestStatsTest {
             assertEquals(1439, count);
 
             assertEquals(System.currentTimeMillis() / 60000, stats.get("atMinute").getAsLong());
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testWithNonExistantApp() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        try {
+            RequestStats.getInstance(process.getProcess(), new AppIdentifier(null, "a1"));
+            fail();
+        } catch (TenantOrAppNotFoundException e) {
+            // ok
+        }
+
+        try {
+            JsonObject stats = HttpRequestForTesting
+                    .sendGETRequest(process.getProcess(), "", "http://localhost:3567/appid-a1/requests/stats", null, 1000,
+                            1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+            fail();
+        } catch (HttpResponseException e) {
+            assertEquals(500, e.statusCode);
+            assertEquals("Http error. Status Code: 500. Message: AppId or tenantId not found => Tenant with the following connectionURIDomain, appId and tenantId combination not found: (, a1, public)", e.getMessage());
         }
 
         process.kill();
