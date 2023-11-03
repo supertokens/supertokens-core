@@ -1,0 +1,122 @@
+/*
+ *    Copyright (c) 2023, VRAI Labs and/or its affiliates. All rights reserved.
+ *
+ *    This software is licensed under the Apache License, Version 2.0 (the
+ *    "License") as published by the Apache Software Foundation.
+ *
+ *    You may not use this file except in compliance with the License. You may
+ *    obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *    License for the specific language governing permissions and limitations
+ *    under the License.
+ */
+
+package io.supertokens.test;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import io.supertokens.ProcessState;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.test.multitenant.api.TestMultitenancyAPIHelper;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestRule;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
+import static org.junit.Assert.*;
+
+public class RequestStatsTest {
+    @Rule
+    public TestRule watchman = Utils.getOnFailure();
+
+    @AfterClass
+    public static void afterTesting() {
+        Utils.afterTesting();
+    }
+
+    @Before
+    public void beforeEach() {
+        Utils.reset();
+    }
+
+    @Test
+    public void testLastMinuteStats() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // Wait for a minute to pass
+        Thread.sleep(60000 - (System.currentTimeMillis() % 60000) + 100);
+
+        ExecutorService ex = Executors.newFixedThreadPool(100);
+        int numRequests = 1000;
+        for (int i = 0; i < numRequests; i++) {
+            int finalI = i;
+            ex.execute(() -> {
+                try {
+                    TestMultitenancyAPIHelper.epSignUp(TenantIdentifier.BASE_TENANT, "test" + finalI + "@example.com", "password", process.getProcess());
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        }
+
+        ex.shutdown();
+        ex.awaitTermination(45, TimeUnit.SECONDS); // should finish in 45 seconds
+
+        // Wait for a minute to pass
+        Thread.sleep(60000 - (System.currentTimeMillis() % 60000) + 100);
+
+        JsonObject stats = HttpRequestForTesting
+                .sendGETRequest(process.getProcess(), "", "http://localhost:3567/requests/stats", null, 5000,
+                        5000, null, Utils.getCdiVersionStringLatestForTests(), null);
+
+        JsonArray avgRps = stats.get("averageRequestsPerSecond").getAsJsonArray();
+        JsonArray peakRps = stats.get("peakRequestsPerSecond").getAsJsonArray();
+
+        double avg = 10000;
+
+        int count = 0;
+        for (JsonElement e : avgRps) {
+            if (e.getAsDouble() == -1) {
+                count++;
+            } else {
+                assertEquals(numRequests, Math.round(e.getAsDouble() * 60));
+                avg = e.getAsDouble();
+            }
+        }
+        assertEquals(1439, count);
+
+        count = 0;
+        for (JsonElement e : peakRps) {
+            if (e.getAsInt() == -1) {
+                count++;
+            } else {
+                assertTrue(e.getAsInt() > avg);
+            }
+        }
+        assertEquals(1439, count);
+
+        assertEquals(System.currentTimeMillis() / 60000, stats.get("atMinute").getAsLong());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+}

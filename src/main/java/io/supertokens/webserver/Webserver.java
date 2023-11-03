@@ -257,6 +257,8 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new UnlinkAccountAPI(main));
         addAPI(new ConsumeResetPasswordAPI(main));
 
+        addAPI(new RequestStatsAPI(main));
+
         StandardContext context = tomcatReference.getContext();
         Tomcat tomcat = tomcatReference.getTomcat();
 
