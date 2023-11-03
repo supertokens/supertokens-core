@@ -98,7 +98,7 @@ public class RequestStats extends ResourceDistributor.SingletonResource {
                     .getResource(appIdentifier.getAsPublicTenantIdentifier(), RESOURCE_KEY);
         } catch (TenantOrAppNotFoundException e) {
             // appIdentifier parameter is coming from the API request and hence we need to check if the app exists
-            // before creating a resource for it. The other resources are created during init or while refreshing
+            // before creating a resource for it, otherwise someone could fill up memory by making requests for apps that don't exist. The other resources are created during init or while refreshing
             // tenants from the db, so we don't need this kind of pattern for those resources.
             if (Multitenancy.getTenantInfo(main, appIdentifier.getAsPublicTenantIdentifier()) == null) {
                 throw e;
