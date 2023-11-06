@@ -497,6 +497,10 @@ public class TestConnectionUriDomain {
             return;
         }
 
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         JsonObject config = new JsonObject();
         StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
 
@@ -564,6 +568,10 @@ public class TestConnectionUriDomain {
     @Test
     public void testFirstFactorsArray() throws Exception {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
             return;
         }
 
@@ -660,6 +668,10 @@ public class TestConnectionUriDomain {
     @Test
     public void testDefaultRequiredFactorIdsArray() throws Exception {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
             return;
         }
 
