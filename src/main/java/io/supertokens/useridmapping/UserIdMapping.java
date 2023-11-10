@@ -45,16 +45,23 @@ import jakarta.servlet.ServletException;
 import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 public class UserIdMapping {
 
+    @TestOnly
     public static void createUserIdMapping(Main main, AppIdentifierWithStorage appIdentifierWithStorage,
                                            String superTokensUserId, String externalUserId,
                                            String externalUserIdInfo, boolean force)
+            throws ServletException, UnknownSuperTokensUserIdException, UserIdMappingAlreadyExistsException,
+            StorageQueryException, TenantOrAppNotFoundException {
+        createUserIdMapping(main, appIdentifierWithStorage, superTokensUserId, externalUserId, externalUserIdInfo,
+                force, false);
+    }
+
+    public static void createUserIdMapping(Main main, AppIdentifierWithStorage appIdentifierWithStorage,
+                                           String superTokensUserId, String externalUserId,
+                                           String externalUserIdInfo, boolean force, boolean makeExceptionForEmailVerification)
             throws UnknownSuperTokensUserIdException,
             UserIdMappingAlreadyExistsException, StorageQueryException, ServletException,
             TenantOrAppNotFoundException {
@@ -84,9 +91,6 @@ public class UserIdMapping {
 
         // if a userIdMapping is created with force, then we skip the following checks
         if (!force) {
-            // check that none of the non-auth recipes are using the superTokensUserId
-            assertThatUserIdIsNotBeingUsedInNonAuthRecipes(appIdentifierWithStorage, superTokensUserId);
-
             // We do not allow for a UserIdMapping to be created when the externalUserId is a SuperTokens userId.
             // There could be a case where User_1 has a userId mapping and a new SuperTokens User, User_2 is created
             // whose userId is equal to the User_1's externalUserId.
@@ -100,24 +104,57 @@ public class UserIdMapping {
                             "Cannot create a userId mapping where the externalId is also a SuperTokens userID"));
                 }
             }
+
+            if (makeExceptionForEmailVerification) {
+                // check that none of the non-auth recipes are using the superTokensUserId
+                List<String> storageClasses = findNonAuthStoragesWhereUserIdIsUsedOrAssertIfUsed(appIdentifierWithStorage, superTokensUserId, false);
+                if (storageClasses.size() == 1 && storageClasses.get(0).equals(EmailVerificationStorage.class.getName())) {
+                    // if the userId is used in email verification, then we do an exception and update the isEmailVerified
+                    // to the externalUserId. We do this because we automatically set the isEmailVerified to true for passwordless
+                    // and third party sign in up when the user info from provider says the email is verified and If we don't make
+                    // an exception, then the creation of userIdMapping for the user will be blocked. And, to overcome that the
+                    // email will have to be unverified first, then the userIdMapping should be created and then the email must be
+                    // verified again on the externalUserId, which is not a good user experience.
+                    appIdentifierWithStorage.getEmailVerificationStorage().updateIsEmailVerifiedToExternalUserId(appIdentifierWithStorage, superTokensUserId, externalUserId);
+                } else  if (storageClasses.size() > 0) {
+                    String recipeName = storageClasses.get(0);
+                    String[] parts = recipeName.split("[.]");
+                    recipeName = parts[parts.length - 1];
+                    recipeName = recipeName.replace("Storage", "");
+                    throw new ServletException(new WebserverAPI.BadRequestException(
+                            "UserId is already in use in " + recipeName + " recipe"));
+                }
+            } else {
+                findNonAuthStoragesWhereUserIdIsUsedOrAssertIfUsed(appIdentifierWithStorage, superTokensUserId, true);
+            }
+
+
         }
 
         appIdentifierWithStorage.getUserIdMappingStorage()
                 .createUserIdMapping(appIdentifierWithStorage, superTokensUserId,
                         externalUserId, externalUserIdInfo);
     }
-
     @TestOnly
     public static void createUserIdMapping(Main main,
                                            String superTokensUserId, String externalUserId,
                                            String externalUserIdInfo, boolean force)
+            throws ServletException, UnknownSuperTokensUserIdException, UserIdMappingAlreadyExistsException,
+            StorageQueryException, UnknownUserIdException {
+        createUserIdMapping(main, superTokensUserId, externalUserId, externalUserIdInfo, force, false);
+    }
+
+    @TestOnly
+    public static void createUserIdMapping(Main main,
+                                           String superTokensUserId, String externalUserId,
+                                           String externalUserIdInfo, boolean force, boolean makeExceptionForEmailVerification)
             throws UnknownSuperTokensUserIdException,
             UserIdMappingAlreadyExistsException, StorageQueryException, ServletException, UnknownUserIdException {
         try {
             Storage storage = StorageLayer.getStorage(main);
             createUserIdMapping(main, new AppIdentifierWithStorage(null, null, storage), superTokensUserId,
                     externalUserId,
-                    externalUserIdInfo, force);
+                    externalUserIdInfo, force, makeExceptionForEmailVerification);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
@@ -214,7 +251,7 @@ public class UserIdMapping {
             String externalId = mapping.externalUserId;
 
             // check if externalId is used in any non-auth recipes
-            assertThatUserIdIsNotBeingUsedInNonAuthRecipes(appIdentifierWithStorage, externalId);
+            findNonAuthStoragesWhereUserIdIsUsedOrAssertIfUsed(appIdentifierWithStorage, externalId, true);
         }
 
         // db is in state A3
@@ -306,40 +343,54 @@ public class UserIdMapping {
                 new TenantIdentifierWithStorage(null, null, null, storage), userIds);
     }
 
-    public static void assertThatUserIdIsNotBeingUsedInNonAuthRecipes(
-            AppIdentifierWithStorage appIdentifierWithStorage, String userId)
+    public static List<String> findNonAuthStoragesWhereUserIdIsUsedOrAssertIfUsed(
+            AppIdentifierWithStorage appIdentifierWithStorage, String userId, boolean assertIfUsed)
             throws StorageQueryException, ServletException {
         Storage storage = appIdentifierWithStorage.getStorage();
+        List<String> result = new ArrayList<>();
+
         {
             if (storage.isUserIdBeingUsedInNonAuthRecipe(appIdentifierWithStorage,
                     SessionStorage.class.getName(),
                     userId)) {
-                throw new ServletException(
-                        new WebserverAPI.BadRequestException("UserId is already in use in Session recipe"));
+                result.add(SessionStorage.class.getName());
+                if (assertIfUsed) {
+                    throw new ServletException(
+                            new WebserverAPI.BadRequestException("UserId is already in use in Session recipe"));
+                }
             }
         }
         {
             if (storage.isUserIdBeingUsedInNonAuthRecipe(appIdentifierWithStorage,
                     UserMetadataStorage.class.getName(),
                     userId)) {
-                throw new ServletException(
-                        new WebserverAPI.BadRequestException("UserId is already in use in UserMetadata recipe"));
+                result.add(UserMetadataStorage.class.getName());
+                if (assertIfUsed) {
+                    throw new ServletException(
+                            new WebserverAPI.BadRequestException("UserId is already in use in UserMetadata recipe"));
+                }
             }
         }
         {
             if (storage.isUserIdBeingUsedInNonAuthRecipe(appIdentifierWithStorage,
                     UserRolesStorage.class.getName(),
                     userId)) {
-                throw new ServletException(
-                        new WebserverAPI.BadRequestException("UserId is already in use in UserRoles recipe"));
+                result.add(UserRolesStorage.class.getName());
+                if (assertIfUsed) {
+                    throw new ServletException(
+                            new WebserverAPI.BadRequestException("UserId is already in use in UserRoles recipe"));
+                }
             }
         }
         {
             if (storage.isUserIdBeingUsedInNonAuthRecipe(appIdentifierWithStorage,
                     EmailVerificationStorage.class.getName(),
                     userId)) {
-                throw new ServletException(
-                        new WebserverAPI.BadRequestException("UserId is already in use in EmailVerification recipe"));
+                result.add(EmailVerificationStorage.class.getName());
+                if (assertIfUsed) {
+                    throw new ServletException(
+                            new WebserverAPI.BadRequestException("UserId is already in use in EmailVerification recipe"));
+                }
             }
         }
         {
@@ -352,10 +403,14 @@ public class UserIdMapping {
         {
             if (storage.isUserIdBeingUsedInNonAuthRecipe(appIdentifierWithStorage, TOTPStorage.class.getName(),
                     userId)) {
-                throw new ServletException(
-                        new WebserverAPI.BadRequestException("UserId is already in use in TOTP recipe"));
+                result.add(TOTPStorage.class.getName());
+                if (assertIfUsed) {
+                    throw new ServletException(
+                            new WebserverAPI.BadRequestException("UserId is already in use in TOTP recipe"));
+                }
             }
         }
+        return result;
     }
 
     public static void populateExternalUserIdForUsers(AppIdentifierWithStorage appIdentifierWithStorage, AuthRecipeUserInfo[] users)

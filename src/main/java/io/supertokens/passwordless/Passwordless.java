@@ -257,6 +257,23 @@ public class Passwordless {
     }
 
     @TestOnly
+    public static ConsumeCodeResponse consumeCode(Main main,
+                                                  String deviceId, String deviceIdHashFromUser,
+                                                  String userInputCode, String linkCode, boolean setEmailVerified)
+            throws RestartFlowException, ExpiredUserInputCodeException,
+            IncorrectUserInputCodeException, DeviceIdHashMismatchException, StorageTransactionLogicException,
+            StorageQueryException, NoSuchAlgorithmException, InvalidKeyException, IOException, Base64EncodingException {
+        try {
+            Storage storage = StorageLayer.getStorage(main);
+            return consumeCode(
+                    new TenantIdentifierWithStorage(null, null, null, storage),
+                    main, deviceId, deviceIdHashFromUser, userInputCode, linkCode, setEmailVerified);
+        } catch (TenantOrAppNotFoundException | BadPermissionException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    @TestOnly
     public static ConsumeCodeResponse consumeCode(TenantIdentifierWithStorage tenantIdentifierWithStorage, Main main,
                                                   String deviceId, String deviceIdHashFromUser,
                                                   String userInputCode, String linkCode)
