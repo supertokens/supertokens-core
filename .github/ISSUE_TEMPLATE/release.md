@@ -118,7 +118,8 @@ labels:
     - [ ] Update SaaS instances to use the latest docker images.
     - [ ] Change [checklist in contributing guide for which tables to pick when migrating data from dev to prod instance](https://test.supertokens.com/docs/contribute/checklists/saas/tables-to-consider-for-data-migration-dev-to-prod).
     - [ ] Update license key used for cores to include nea feature.
-    - [ ] Update table schema in mysql / postgresql section for self hosted in docs
+    - [ ] Update table schema in mysql / postgresql section for self hosted in docs.
+    - [ ] Update paid feature to min version mapping in /st/features GET.
     - [ ] Update API that returns the list of paid features in saas dashboard
     - [ ] Update logic for core to core migration for new saas architecture:
        - [ ] transfer of master database information
