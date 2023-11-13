@@ -229,7 +229,7 @@ Melvyn Hills</b></sub></a></td>
 <td align="center"><a href="https://github.com/mattanimation"><img src="https://avatars.githubusercontent.com/u/1426997?v=4" width="100px;" alt=""/><br /><sub><b>Matt Murray</b></sub></a></td>
 Melvyn Hills</b></sub></a></td>
 <td align="center"><a href="https://github.com/constantoine"><img src="https://avatars.githubusercontent.com/u/13930958?v=4" width="100px;" alt=""/><br /><sub><b>Cléo Rebert</b></sub></a></td>
-Melvyn Hills</b></sub></a></td>
+<td align="center"><a href="https://github.com/daniil-borovoy"><img src="https://avatars.githubusercontent.com/u/74528634?v=4" width="100px;" alt=""/><br /><sub><b>Daniil Borovoy</b></sub></a></td>
   </tr>
 </table>
 
