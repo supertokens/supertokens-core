@@ -18,6 +18,7 @@ import io.supertokens.totp.Totp;
 import io.supertokens.totp.exceptions.InvalidTotpException;
 import io.supertokens.totp.exceptions.LimitReachedException;
 import io.supertokens.useridmapping.UserIdType;
+import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -78,12 +79,20 @@ public class VerifyTotpAPI extends WebserverAPI {
         } catch (InvalidTotpException e) {
             result.addProperty("status", "INVALID_TOTP_ERROR");
             super.sendJsonResponse(200, result, resp);
+            if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_1)) {
+                result.addProperty("currentNumberOfAttempts", e.currentAttempts);
+                result.addProperty("maxNumberOfAttempts", e.maxAttempts);
+            }
         } catch (UnknownTotpUserIdException e) {
             result.addProperty("status", "UNKNOWN_USER_ID_ERROR");
             super.sendJsonResponse(200, result, resp);
         } catch (LimitReachedException e) {
             result.addProperty("status", "LIMIT_REACHED_ERROR");
             result.addProperty("retryAfterMs", e.retryAfterMs);
+            if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_1)) {
+                result.addProperty("currentNumberOfAttempts", e.currentAttempts);
+                result.addProperty("maxNumberOfAttempts", e.maxAttempts);
+            }
             super.sendJsonResponse(200, result, resp);
         } catch (StorageQueryException | StorageTransactionLogicException | FeatureNotEnabledException |
                  TenantOrAppNotFoundException e) {

@@ -191,7 +191,7 @@ public class VerifyTotpAPITest {
             assert res3.get("retryAfterMs") != null;
 
             // wait for cooldown to end (1s)
-            Thread.sleep(1200);
+            Thread.sleep(1300);
 
             // should pass now on valid code
             String validTotp = generateTotpCode(process.getProcess(), device);

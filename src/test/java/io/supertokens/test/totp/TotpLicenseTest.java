@@ -171,6 +171,7 @@ public class TotpLicenseTest {
         String code = generateTotpCode(main, device, 0);
         Totp.verifyDevice(main, device.userId, device.deviceName, code);
         // Verify code
+        Thread.sleep(1);
         String nextCode = generateTotpCode(main, device, 1);
         Totp.verifyCode(main, "user", nextCode);
     }
