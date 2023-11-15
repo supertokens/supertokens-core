@@ -55,8 +55,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.*;
 
 // TODO: Add test for UsedCodeAlreadyExistsException once we implement time mocking
 
@@ -213,15 +212,18 @@ public class TOTPRecipeTest {
                 () -> Totp.verifyCode(main, "user", newValidCode));
 
         // Use a code from next period:
+        Thread.sleep(1);
         String nextValidCode = generateTotpCode(main, device, 1);
         Totp.verifyCode(main, "user", nextValidCode);
 
         // Use previous period code (should fail coz validCode has been used):
+        Thread.sleep(1);
         String previousCode = generateTotpCode(main, device, -1);
         assert previousCode.equals(validCode);
         assertThrows(InvalidTotpException.class, () -> Totp.verifyCode(main, "user", previousCode));
 
         // Create device with skew = 0, check that it only works with the current code
+        Thread.sleep(1);
         TOTPDevice device2 = Totp.registerDevice(main, "user", "device2", 0, 1);
         assert !Objects.equals(device2.secretKey, device.secretKey);
         Totp.verifyDevice(main, "user", device2.deviceName, generateTotpCode(main, device2));
@@ -234,14 +236,17 @@ public class TOTPRecipeTest {
                 () -> Totp.verifyCode(main, "user", nextValidCode2));
 
         String previousValidCode2 = generateTotpCode(main, device2, -1);
+        Thread.sleep(1);
         assertThrows(InvalidTotpException.class,
                 () -> Totp.verifyCode(main, "user", previousValidCode2));
 
+        Thread.sleep(1);
         String currentValidCode2 = generateTotpCode(main, device2);
         Totp.verifyCode(main, "user", currentValidCode2);
 
         // Submit invalid code and check that it's expiry time is correct
         // created - expiryTime = max of ((2 * skew + 1) * period) for all devices
+        Thread.sleep(1);
         assertThrows(InvalidTotpException.class,
                 () -> Totp.verifyCode(main, "user", "invalid"));
 
@@ -288,6 +293,7 @@ public class TOTPRecipeTest {
         // This is to trigger rate limiting
         for (int i = 0; i < N; i++) {
             String code = "ic-" + i; // ic = invalid code
+            Thread.sleep(1);
             assertThrows(
                     InvalidTotpException.class,
                     () -> Totp.verifyCode(main, "user", code));
@@ -295,12 +301,15 @@ public class TOTPRecipeTest {
 
         // Any kind of attempt after this should fail with rate limiting error.
         // This should happen until rate limiting cooldown happens:
+        Thread.sleep(1);
         assertThrows(
                 LimitReachedException.class,
                 () -> Totp.verifyCode(main, "user", "icN+1"));
+        Thread.sleep(1);
         assertThrows(
                 LimitReachedException.class,
                 () -> Totp.verifyCode(main, "user", generateTotpCode(main, device)));
+        Thread.sleep(1);
         assertThrows(
                 LimitReachedException.class,
                 () -> Totp.verifyCode(main, "user", "icN+2"));
@@ -402,7 +411,9 @@ public class TOTPRecipeTest {
         // Verify device with wrong code
         assertThrows(InvalidTotpException.class, () -> Totp.verifyDevice(main, "user", "deviceName", "ic0"));
 
+
         // Verify device with correct code
+        Thread.sleep(1);
         String validCode = generateTotpCode(main, device);
         boolean justVerfied = Totp.verifyDevice(main, "user", "deviceName", validCode);
         assert justVerfied;
@@ -438,7 +449,9 @@ public class TOTPRecipeTest {
         TOTPDevice device1 = Totp.registerDevice(main, "user", "device1", 1, 30);
         TOTPDevice device2 = Totp.registerDevice(main, "user", "device2", 1, 30);
 
+        Thread.sleep(1);
         Totp.verifyDevice(main, "user", "device1", generateTotpCode(main, device1, -1));
+        Thread.sleep(1);
         Totp.verifyDevice(main, "user", "device2", generateTotpCode(main, device2, -1));
 
         TOTPDevice[] devices = Totp.getDevices(main, "user");
@@ -456,7 +469,9 @@ public class TOTPRecipeTest {
 
             Thread.sleep(1000 - System.currentTimeMillis() % 1000 + 10);
 
+            Thread.sleep(1);
             Totp.verifyCode(main, "user", generateTotpCode(main, device1));
+            Thread.sleep(1);
             Totp.verifyCode(main, "user", generateTotpCode(main, device2));
 
             // Delete device1
@@ -477,6 +492,7 @@ public class TOTPRecipeTest {
             // Create another user to test that other users aren't affected:
             TOTPDevice otherUserDevice = Totp.registerDevice(main, "other-user", "device", 1, 30);
             Totp.verifyDevice(main, "other-user", "device", generateTotpCode(main, otherUserDevice, -1));
+            Thread.sleep(1);
             Totp.verifyCode(main, "other-user", generateTotpCode(main, otherUserDevice));
             assertThrows(InvalidTotpException.class, () -> Totp.verifyCode(main, "other-user", "ic1"));
 
@@ -579,5 +595,73 @@ public class TOTPRecipeTest {
 
         Totp.registerDevice(main, "user", "device1", 1, 30);
         Totp.registerDevice(main, "user", "device1", 1, 30);
+    }
+
+    @Test
+    public void testCurrentAndMaxAttemptsInExceptions() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        TOTPDevice device = Totp.registerDevice(process.getProcess(), "userId", "deviceName", 1, 30);
+        try {
+            Totp.verifyDevice(process.getProcess(), "userId", "deviceName", "123456");
+            fail();
+        } catch (InvalidTotpException e) {
+            assertEquals(1, e.currentAttempts);
+            assertEquals(5, e.maxAttempts);
+        }
+        Thread.sleep(1);
+        try {
+            Totp.verifyDevice(process.getProcess(), "userId", "deviceName", "223456");
+            fail();
+        } catch (InvalidTotpException e) {
+            assertEquals(2, e.currentAttempts);
+            assertEquals(5, e.maxAttempts);
+        }
+        Thread.sleep(1);
+
+        try {
+            Totp.verifyDevice(process.getProcess(), "userId", "deviceName", "323456");
+            fail();
+        } catch (InvalidTotpException e) {
+            assertEquals(3, e.currentAttempts);
+            assertEquals(5, e.maxAttempts);
+        }
+        Thread.sleep(1);
+
+        try {
+            Totp.verifyDevice(process.getProcess(), "userId", "deviceName", "423456");
+            fail();
+        } catch (InvalidTotpException e) {
+            assertEquals(4, e.currentAttempts);
+            assertEquals(5, e.maxAttempts);
+        }
+        Thread.sleep(1);
+
+        try {
+            Totp.verifyDevice(process.getProcess(), "userId", "deviceName", "523456");
+            fail();
+        } catch (InvalidTotpException e) {
+            assertEquals(5, e.currentAttempts);
+            assertEquals(5, e.maxAttempts);
+        }
+        Thread.sleep(1);
+
+        try {
+            Totp.verifyDevice(process.getProcess(), "userId", "deviceName", "623456");
+            fail();
+        } catch (LimitReachedException e) {
+            assertEquals(5, e.currentAttempts);
+            assertEquals(5, e.maxAttempts);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 }

@@ -162,7 +162,10 @@ public class VerifyTotpDeviceAPITest {
                     null,
                     Utils.getCdiVersionStringLatestForTests(),
                     "totp");
+            assertEquals(3, res0.entrySet().size());
             assert res0.get("status").getAsString().equals("INVALID_TOTP_ERROR");
+            assertEquals(1, res0.get("currentNumberOfFailedAttempts").getAsInt());
+            assertEquals(1, res0.get("maxNumberOfFailedAttempts").getAsInt());
 
             // Check that rate limiting is triggered for the user:
             JsonObject res3 = HttpRequestForTesting.sendJsonPOSTRequest(
