@@ -80,8 +80,8 @@ public class VerifyTotpAPI extends WebserverAPI {
             result.addProperty("status", "INVALID_TOTP_ERROR");
             super.sendJsonResponse(200, result, resp);
             if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_1)) {
-                result.addProperty("currentNumberOfAttempts", e.currentAttempts);
-                result.addProperty("maxNumberOfAttempts", e.maxAttempts);
+                result.addProperty("currentNumberOfFailedAttempts", e.currentAttempts);
+                result.addProperty("maxNumberOfFailedAttempts", e.maxAttempts);
             }
         } catch (UnknownTotpUserIdException e) {
             result.addProperty("status", "UNKNOWN_USER_ID_ERROR");
@@ -90,8 +90,8 @@ public class VerifyTotpAPI extends WebserverAPI {
             result.addProperty("status", "LIMIT_REACHED_ERROR");
             result.addProperty("retryAfterMs", e.retryAfterMs);
             if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_1)) {
-                result.addProperty("currentNumberOfAttempts", e.currentAttempts);
-                result.addProperty("maxNumberOfAttempts", e.maxAttempts);
+                result.addProperty("currentNumberOfFailedAttempts", e.currentAttempts);
+                result.addProperty("maxNumberOfFailedAttempts", e.maxAttempts);
             }
             super.sendJsonResponse(200, result, resp);
         } catch (StorageQueryException | StorageTransactionLogicException | FeatureNotEnabledException |
