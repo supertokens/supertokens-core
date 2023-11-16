@@ -174,6 +174,33 @@ public class GetUserByAccountInfoTest {
     }
 
     @Test
+    public void testListUserByAccountInfoByUnnormalisedPhoneNumber() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        String phoneNumber = "+44-207 183 8750";
+        String normalisedPhoneNumber = io.supertokens.utils.Utils.normalizeIfPhoneNumber(phoneNumber);
+
+        AuthRecipeUserInfo user = createPasswordlessUserWithPhone(process.getProcess(), normalisedPhoneNumber);
+
+        JsonObject userJSON = getUserById(process.getProcess(), user.getSupertokensUserId());
+
+        assertEquals(userJSON, getUsersByAccountInfo(process.getProcess(), false, null, phoneNumber, null, null).get(0));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
     public void testListUsersByAccountInfoForUnlinkedAccountsWithUnionOption() throws Exception {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
