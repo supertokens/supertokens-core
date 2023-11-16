@@ -19,7 +19,7 @@ compileTestJava { options.encoding = "UTF-8" }
 //    }
 //}
 
-version = "7.0.11"
+version = "7.0.12"
 
 
 repositories {
@@ -72,7 +72,7 @@ dependencies {
     implementation group: 'commons-codec', name: 'commons-codec', version: '1.15'
 
     // https://mvnrepository.com/artifact/com.googlecode.libphonenumber/libphonenumber/
-    implementation group: 'com.googlecode.libphonenumber', name: 'libphonenumber', version: '8.13.12'
+    implementation group: 'com.googlecode.libphonenumber', name: 'libphonenumber', version: '8.13.25'
 
     compileOnly project(":supertokens-plugin-interface")
     testImplementation project(":supertokens-plugin-interface")

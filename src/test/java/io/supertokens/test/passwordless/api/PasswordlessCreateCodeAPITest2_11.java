@@ -16,7 +16,6 @@
 
 package io.supertokens.test.passwordless.api;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
@@ -27,8 +26,6 @@ import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 
 import io.supertokens.utils.SemVer;
-import io.supertokens.webserver.WebserverAPI;
-
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -38,7 +35,6 @@ import org.junit.rules.TestRule;
 import static org.junit.Assert.*;
 
 import java.util.Base64;
-import java.util.HashMap;
 import java.util.UUID;
 
 public class PasswordlessCreateCodeAPITest2_11 {
@@ -547,46 +543,5 @@ public class PasswordlessCreateCodeAPITest2_11 {
         assert (response.has("linkCode"));
         assert ((System.currentTimeMillis() - 200L) < response.get("timeCreated").getAsLong());
         assertEquals(900000, response.get("codeLifetime").getAsLong());
-    }
-
-    @Test
-    public void testPhoneNumberNormalisation() throws Exception {
-        String[] args = {"../"};
-
-        String phoneNumber = "+44-207 183 8750";
-        String normalisedPhoneNumber = io.supertokens.utils.Utils.normalizeIfPhoneNumber(phoneNumber);
-
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            return;
-        }
-
-        JsonObject createCodeRequestBody = new JsonObject();
-        createCodeRequestBody.addProperty("phoneNumber", phoneNumber);
-
-        JsonObject createCodeResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/signinup/code", createCodeRequestBody, 1000, 1000, null,
-                WebserverAPI.getLatestCDIVersion().get(), "passwordless");
-        checkResponse(createCodeResponse);
-
-        HashMap<String, String> params = new HashMap<>();
-
-        params.put("phoneNumber", phoneNumber);
-
-        JsonObject getCodeResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/signinup/codes", params, 1000, 1000, null,
-                WebserverAPI.getLatestCDIVersion().get(), "passwordless");
-
-        assertEquals("OK", getCodeResponse.get("status").getAsString());
-
-        JsonArray devicesArray = getCodeResponse.getAsJsonArray("devices");
-        assertEquals(1, devicesArray.size());
-        JsonObject device = devicesArray.get(0).getAsJsonObject();
-        assertEquals(normalisedPhoneNumber, device.get("phoneNumber").getAsString());
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 }

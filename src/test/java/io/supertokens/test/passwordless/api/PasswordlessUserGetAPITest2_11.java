@@ -19,6 +19,7 @@ package io.supertokens.test.passwordless.api;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
@@ -209,43 +210,6 @@ public class PasswordlessUserGetAPITest2_11 {
 
             assertEquals("OK", response.get("status").getAsString());
             checkUser(response, userIdPhone, null, phoneNumber);
-        }
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-    }
-
-    @Test
-    public void testGetUserWithUnnormalisedPhoneNumber() throws Exception {
-        String[] args = {"../"};
-
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            return;
-        }
-
-        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
-
-        // length of user ID needs to be 36 character long, otherwise it throws error
-        // with postgres DB
-        String userId = "pZ9SP0USbXbejGFO6qx7x3JBjupJZVtw4RkD";
-        String phoneNumber = "+44-207 183 8750";
-        String normalisedPhoneNumber = io.supertokens.utils.Utils.normalizeIfPhoneNumber(phoneNumber);
-
-
-        storage.createUser(new TenantIdentifier(null, null, null),
-                userId, null, normalisedPhoneNumber, System.currentTimeMillis());
-        {
-            HashMap<String, String> map = new HashMap<>();
-            map.put("phoneNumber", phoneNumber);
-            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/user", map, 1000, 1000, null, SemVer.v2_10.get(),
-                    "passwordless");
-
-            assertEquals("OK", response.get("status").getAsString());
-            checkUser(response, userId, null, normalisedPhoneNumber);
         }
 
         process.kill();

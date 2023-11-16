@@ -63,10 +63,18 @@ public class UtilsTest {
 
     @Test
     public void testNormalizeValidPhoneNumber() {
-        String inputPhoneNumber = "+1 650-555-1234";
-        String expectedNormalizedPhoneNumber = "+16505551234";
-        String actualNormalizedPhoneNumber = io.supertokens.utils.Utils.normalizeIfPhoneNumber(inputPhoneNumber);
-        assertEquals(expectedNormalizedPhoneNumber, actualNormalizedPhoneNumber);
+        {
+            String inputPhoneNumber = "+1 650-555-1234";
+            String expectedNormalizedPhoneNumber = "+16505551234";
+            String actualNormalizedPhoneNumber = io.supertokens.utils.Utils.normalizeIfPhoneNumber(inputPhoneNumber);
+            assertEquals(expectedNormalizedPhoneNumber, actualNormalizedPhoneNumber);
+        }
+        {
+            String inputPhoneNumber = "+640223334444";
+            String expectedNormalizedPhoneNumber = "+64223334444";
+            String actualNormalizedPhoneNumber = io.supertokens.utils.Utils.normalizeIfPhoneNumber(inputPhoneNumber);
+            assertEquals(expectedNormalizedPhoneNumber, actualNormalizedPhoneNumber);
+        }
     }
 
     @Test

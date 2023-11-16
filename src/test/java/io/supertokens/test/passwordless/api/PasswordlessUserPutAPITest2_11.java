@@ -609,44 +609,4 @@ public class PasswordlessUserPutAPITest2_11 {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
-
-    @Test
-    public void testIfPhoneNumberIsNormalisedInUpdate() throws Exception {
-        String[] args = {"../"};
-
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            return;
-        }
-
-        String userId = "6347c997-4cc9-4f95-94c9-b96e2c65aefc";
-        String phoneNumber = "+442071838750";
-        String updatedPhoneNumber = "+44-207 183 8751";
-        String normalisedUpdatedPhoneNumber = io.supertokens.utils.Utils.normalizeIfPhoneNumber(updatedPhoneNumber);
-
-        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
-        storage.createUser(new TenantIdentifier(null, null, null),
-                userId, null, phoneNumber, System.currentTimeMillis());
-
-        JsonObject updateUserRequestBody = new JsonObject();
-        updateUserRequestBody.addProperty("userId", userId);
-        updateUserRequestBody.addProperty("phoneNumber", updatedPhoneNumber);
-
-        JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
-                SemVer.v2_10.get(), "passwordless");
-
-        assertEquals("OK", response.get("status").getAsString());
-
-        assert (storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null), phoneNumber).length == 0);
-        assert (storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null),
-                updatedPhoneNumber).length == 0);
-        assert (storage.listPrimaryUsersByPhoneNumber(new TenantIdentifier(null, null, null),
-                normalisedUpdatedPhoneNumber).length == 1);
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-    }
 }

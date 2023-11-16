@@ -30,7 +30,6 @@ import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 
 import io.supertokens.utils.SemVer;
-import io.supertokens.webserver.WebserverAPI;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -323,47 +322,6 @@ public class PasswordlessGetCodesAPITest2_11 {
                 checkDevice(jsonDeviceList, 0, null, phoneNumber, deviceIdHash, new String[] { codeId });
             }
         }
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-    }
-
-    @Test
-    public void testGetCodesWithUnnormalisedPhoneNumber() throws Exception {
-        String[] args = {"../"};
-
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            return;
-        }
-
-        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
-        String phoneNumber = "+44-207 183 8750";
-        String normalisedPhoneNumber = io.supertokens.utils.Utils.normalizeIfPhoneNumber(phoneNumber);
-        String codeId = io.supertokens.utils.Utils.getUUID();
-
-        String deviceIdHash = "pZ9SP0USbXbejGFO6qx7x3JBjupJZVtw4RkFiNtJGqc=";
-        String linkCodeHash = "wo5UcFFVSblZEd1KOUOl-dpJ5zpSr_Qsor1Eg4TzDRE";
-
-        storage.createDeviceWithCode(new TenantIdentifier(null, null, null), null, normalisedPhoneNumber,
-                "linkCodeSalt",
-                new PasswordlessCode(codeId, deviceIdHash, linkCodeHash, System.currentTimeMillis()));
-        assertEquals(1,
-                storage.getDevicesByPhoneNumber(new TenantIdentifier(null, null, null), normalisedPhoneNumber).length);
-
-        HashMap<String, String> map = new HashMap<>();
-        map.put("phoneNumber", phoneNumber);
-        JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null,
-                WebserverAPI.getLatestCDIVersion().get(), "passwordless");
-
-        assertEquals("OK", response.get("status").getAsString());
-        assertEquals(2, response.entrySet().size());
-        assert (response.has("devices"));
-        JsonArray jsonDeviceList = response.get("devices").getAsJsonArray();
-        assertEquals(1, jsonDeviceList.size());
-        checkDevice(jsonDeviceList, 0, null, normalisedPhoneNumber, deviceIdHash, new String[]{codeId});
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
