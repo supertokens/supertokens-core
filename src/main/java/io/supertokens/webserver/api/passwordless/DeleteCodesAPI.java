@@ -52,8 +52,8 @@ public class DeleteCodesAPI extends WebserverAPI {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
         String email = InputParser.parseStringOrThrowError(input, "email", true);
-        String phoneNumber = InputParser.parseStringOrThrowError(input, "phoneNumber", true);
-
+        String phoneNumber = Utils.normalizeIfPhoneNumber(
+                InputParser.parseStringOrThrowError(input, "phoneNumber", true));
         if (phoneNumber != null && email != null) {
             throw new ServletException(new BadRequestException("Please provide exactly one of email or phoneNumber"));
         }
