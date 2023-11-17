@@ -7,7 +7,26 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [7.0.12] - 2023-11-16
 
-- Adds Phone Number normalisation
+In this release, the core API routes have been updated to incorporate phone number normalization before processing. Consequently, existing entries in the database also need to undergo normalization. To facilitate this, we have included a migration script to normalize phone numbers for all the existing entries.
+
+**NOTE**: You can skip the migration if you are not using passwordless via phone number.
+
+### Migration steps
+
+1. Ensure that the core is already upgraded to version 7.0.12 (CDI version 4.0)
+2. Run the migration script
+
+    <details>
+    <summary>Steps</summary>
+
+    Make sure your Node.js version is 16 or above to run the script. Locate the migration script at `supertokens-core/migration_scripts/to_version_7_1/index.js`. Modify the script by updating the `DB_HOST`, `DB_USER`, `DB_PASSWORD`, and `DB_NAME` variables with the correct values. Subsequently, run the following commands to initiate the script:
+    
+    ```bash
+       $ cd supertokens-core/migration_scripts/to_version_7_1
+       $ npm install
+       $ npm start
+    ```
+    </details>
 
 ## [7.0.11] - 2023-11-10
 
