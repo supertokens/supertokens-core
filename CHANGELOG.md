@@ -27,7 +27,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
        $ npm start
     ```
 
-    NOTE: If the script is experiencing slow performance, consider adjusting the `MAX_POOL_SIZE` to a higher value. Increasing this parameter allows the script to leverage more connections simultaneously, potentially improving execution speed.
+    Performance Note: On average, the script takes 19s for every 1000 rows with a maximum of 1 connection, 4.7s with a maximum of 5 connections (default), and 4.5s with a maximum of 10 connections. Increasing the `MAX_POOL_SIZE` allows the script to leverage more connections simultaneously, potentially improving execution speed.
 
 ## [7.0.11] - 2023-11-10
 

@@ -72,6 +72,9 @@ async function updatePhoneNumbers(table) {
 
   try {
     while (true) {
+      let totalRows = await knex.raw(`SELECT COUNT(*) FROM ${table} WHERE phone_number is NOT NULL`);
+      totalRows = totalRows.rows ? totalRows.rows[0].count : totalRows[0][0].count;
+
       const entries = await knex.raw(`SELECT * FROM ${table} WHERE phone_number is NOT NULL LIMIT ${batchSize} OFFSET ${offset}`);
       // In PostgreSQL, all rows are returned in `entries.rows`, whereas in MySQL, they can be found in `entries[0]`.
       const rows = entries.rows ? entries.rows : entries[0];
@@ -93,7 +96,7 @@ async function updatePhoneNumbers(table) {
       offset += rows.length;
       totalUpdatedRows += batchUpdates.length;
 
-      console.log(`Updated ${totalUpdatedRows}/${offset} rows for table ${table}`);
+      console.log(`Processed ${offset} out of ${totalRows} rows in table ${table}; ${totalUpdatedRows} rows updated`);
 
       if (rows.length < batchSize) {
         break;
@@ -111,6 +114,7 @@ async function runScript() {
   try {
     for (const table of tables) {
       await updatePhoneNumbers(table);
+      console.log(`\n\n\n`);
     }
     console.log('Finished normalising phone numbers!');
   } catch (error) {
