@@ -25,6 +25,7 @@ const CLIENT = ""; // Use "pg" for PostgreSQL and "mysql2" for MySQL DB
 
 const MIN_POOL_SIZE = 0;
 const MAX_POOL_SIZE = 5;
+const QUERY_TIMEOUT = 60000;
 
 if (!DB_HOST || !CLIENT) {
   console.error('Please update the DB_HOST, DB_USER, DB_PASSWORD, DB_DATABASE and CLIENT variables before running the script.');
@@ -44,12 +45,12 @@ const knex = require('knex')({
 
 function getUpdatePromise(table, entry, normalizedPhoneNumber) {
   if (table === 'passwordless_devices') {
-    return knex.raw(`UPDATE ${table} SET phone_number = ? WHERE app_id = ? AND tenant_id = ? AND device_id_hash = ?`, [normalizedPhoneNumber, entry.app_id, entry.tenant_id, entry.device_id_hash]);
+    return knex.raw(`UPDATE ${table} SET phone_number = ? WHERE app_id = ? AND tenant_id = ? AND device_id_hash = ?`, [normalizedPhoneNumber, entry.app_id, entry.tenant_id, entry.device_id_hash]).timeout(QUERY_TIMEOUT, { cancel: true });
   } else if (table === 'passwordless_users') {
     // Since passwordless_users and passwordless_user_to_tenant are consistent. We can update both tables at the same time. For consistency, we will use a transaction.
     return knex.transaction(async trx => {
-      await trx.raw(`UPDATE passwordless_users SET phone_number = ? WHERE app_id = ? AND user_id = ?`, [normalizedPhoneNumber, entry.app_id, entry.user_id]);
-      await trx.raw(`UPDATE passwordless_user_to_tenant SET phone_number = ? WHERE app_id = ? AND user_id = ?`, [normalizedPhoneNumber, entry.app_id, entry.user_id]);
+      await trx.raw(`UPDATE passwordless_users SET phone_number = ? WHERE app_id = ? AND user_id = ?`, [normalizedPhoneNumber, entry.app_id, entry.user_id]).timeout(QUERY_TIMEOUT, { cancel: true });
+      await trx.raw(`UPDATE passwordless_user_to_tenant SET phone_number = ? WHERE app_id = ? AND user_id = ?`, [normalizedPhoneNumber, entry.app_id, entry.user_id]).timeout(QUERY_TIMEOUT, { cancel: true });
     });
   } else {
     throw new Error(`Invalid table name: ${table}`);
@@ -99,20 +100,25 @@ async function updatePhoneNumbers(table) {
       }
     }
   } catch (error) {
-    console.error(`Error normalising phone numbers for table ${table}:`, error.message);
+    console.error(`Error normalising phone numbers for table ${table}: Retry running the script and if the error persists after retrying then create an issue at https://github.com/supertokens/supertokens-core/issues`);
+    throw error;
   }
 }
 
 async function runScript() {
   const tables = ['passwordless_users', 'passwordless_devices'];
 
-  for (const table of tables) {
-    await updatePhoneNumbers(table);
+  try {
+    for (const table of tables) {
+      await updatePhoneNumbers(table);
+    }
+    console.log('Finished normalising phone numbers!');
+  } catch (error) {
+    console.error(error);
+  } finally {
+    knex.destroy();
   }
 
-  console.log('Finished normalising phone numbers!');
-
-  knex.destroy();
 }
 
 runScript();
