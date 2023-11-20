@@ -72,7 +72,7 @@ async function updatePhoneNumbers(table) {
 
   try {
     while (true) {
-      let totalRows = await knex.raw(`SELECT COUNT(*) FROM ${table} WHERE phone_number is NOT NULL`);
+      let totalRows = await knex.raw(`SELECT COUNT(*) as count FROM ${table} WHERE phone_number is NOT NULL`);
       totalRows = totalRows.rows ? totalRows.rows[0].count : totalRows[0][0].count;
 
       const entries = await knex.raw(`SELECT * FROM ${table} WHERE phone_number is NOT NULL LIMIT ${batchSize} OFFSET ${offset}`);
