@@ -79,8 +79,8 @@ public class UtilsTest {
 
     @Test
     public void testNormalizeInvalidPhoneNumber() {
-        String inputPhoneNumber = "ThisIsNotAPhoneNumber";
-        String expectedTrimmedPhoneNumber = "ThisIsNotAPhoneNumber";
+        String inputPhoneNumber = "  johndoe@gmail.com  ";
+        String expectedTrimmedPhoneNumber = inputPhoneNumber.trim();
         String actualNormalizedPhoneNumber = io.supertokens.utils.Utils.normalizeIfPhoneNumber(inputPhoneNumber);
         assertEquals(expectedTrimmedPhoneNumber, actualNormalizedPhoneNumber);
     }
