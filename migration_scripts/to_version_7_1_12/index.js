@@ -23,7 +23,7 @@ const DB_PASSWORD = "";
 const DB_NAME = "";
 const CLIENT = ""; // Use "pg" for PostgreSQL and "mysql2" for MySQL DB
 
-if(!DB_HOST || !CLIENT) {
+if (!DB_HOST || !CLIENT) {
   console.error('Please update the DB_HOST, DB_USER, DB_PASSWORD, DB_DATABASE and CLIENT variables before running the script.');
   return;
 }
@@ -36,27 +36,19 @@ const knex = require('knex')({
     password: DB_PASSWORD,
     database: DB_NAME,
   },
+  pool: { min: 0, max: 5 }
 });
 
-function getUpdateQuery(table, entry, normalizedPhoneNumber) {
-  let query = `UPDATE ${table} SET phone_number = ? `;
-
-  if (table === 'passwordless_users') {
-    query += 'WHERE app_id = ? AND user_id = ?'
-    return knex.raw(query, [normalizedPhoneNumber, entry.app_id, entry.user_id]);
-  }
-
+function getUpdatePromise(table, entry, normalizedPhoneNumber) {
   if (table === 'passwordless_devices') {
-    query += 'WHERE app_id = ? AND tenant_id = ? AND device_id_hash = ?'
-    return knex.raw(query, [normalizedPhoneNumber, entry.app_id, entry.tenant_id, entry.device_id_hash]);
+    return knex.raw(`UPDATE ${table} SET phone_number = ? WHERE app_id = ? AND tenant_id = ? AND device_id_hash = ?`, [normalizedPhoneNumber, entry.app_id, entry.tenant_id, entry.device_id_hash]);
+  } else if (table === 'passwordless_users') {
+    // Since passwordless_users and passwordless_user_to_tenant are consistent. We can update both tables at the same time. For consistency, we will use a transaction.
+    return knex.transaction(async trx => {
+      await trx.raw(`UPDATE passwordless_users SET phone_number = ? WHERE app_id = ? AND user_id = ?`, [normalizedPhoneNumber, entry.app_id, entry.user_id]);
+      await trx.raw(`UPDATE passwordless_user_to_tenant SET phone_number = ? WHERE app_id = ? AND user_id = ?`, [normalizedPhoneNumber, entry.app_id, entry.user_id]);
+    });
   }
-
-  if (table === 'passwordless_user_to_tenant') {
-    query += 'WHERE app_id = ? AND tenant_id = ? AND user_id = ?'
-    return knex.raw(query, [normalizedPhoneNumber, entry.app_id, entry.tenant_id, entry.user_id]);
-  }
-
-  throw new Error(`Invalid table name: ${table}`);
 }
 
 function getNormalizedPhoneNumber(phoneNumber) {
@@ -83,8 +75,8 @@ async function updatePhoneNumbers(table) {
         const normalizedPhoneNumber = getNormalizedPhoneNumber(currentPhoneNumber);
 
         if (normalizedPhoneNumber && normalizedPhoneNumber !== currentPhoneNumber) {
-          const updateQuery = getUpdateQuery(table, entry, normalizedPhoneNumber);
-          batchUpdates.push(updateQuery);
+          const updatePromise = getUpdatePromise(table, entry, normalizedPhoneNumber);
+          batchUpdates.push(updatePromise);
         }
       }
 
