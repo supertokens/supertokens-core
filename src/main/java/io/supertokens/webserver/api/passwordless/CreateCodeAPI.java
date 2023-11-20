@@ -63,7 +63,8 @@ public class CreateCodeAPI extends WebserverAPI {
         String email = input.has("email")
                 ? Utils.normaliseEmail(InputParser.parseStringOrThrowError(input, "email", false))
                 : null;
-        String phoneNumber = InputParser.parseStringOrThrowError(input, "phoneNumber", true);
+        String phoneNumber = Utils.normalizeIfPhoneNumber(
+                InputParser.parseStringOrThrowError(input, "phoneNumber", true));
         String deviceId = InputParser.parseStringOrThrowError(input, "deviceId", true);
 
         if (Stream.of(email, phoneNumber, deviceId).filter(Objects::nonNull).count() != 1) {
@@ -77,7 +78,8 @@ public class CreateCodeAPI extends WebserverAPI {
         }
 
         try {
-            CreateCodeResponse createCodeResponse = Passwordless.createCode(this.getTenantIdentifierWithStorageFromRequest(req), main, email,
+            CreateCodeResponse createCodeResponse = Passwordless.createCode(
+                    this.getTenantIdentifierWithStorageFromRequest(req), main, email,
                     phoneNumber, deviceId,
                     userInputCode);
             long passwordlessCodeLifetime = Config.getConfig(this.getTenantIdentifierWithStorageFromRequest(req), main)
@@ -104,7 +106,8 @@ public class CreateCodeAPI extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", "USER_INPUT_CODE_ALREADY_USED_ERROR");
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | NoSuchAlgorithmException | InvalidKeyException | TenantOrAppNotFoundException | BadPermissionException e) {
+        } catch (StorageQueryException | NoSuchAlgorithmException | InvalidKeyException | TenantOrAppNotFoundException |
+                 BadPermissionException e) {
             throw new ServletException(e);
         } catch (Base64EncodingException ex) {
             throw new ServletException(new BadRequestException("Input encoding error in " + ex.source));

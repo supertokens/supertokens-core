@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.0.12] - 2023-11-16
+
+In this release, the core API routes have been updated to incorporate phone number normalization before processing. Consequently, existing entries in the database also need to undergo normalization. To facilitate this, we have included a migration script to normalize phone numbers for all the existing entries.
+
+**NOTE**: You can skip the migration if you are not using passwordless via phone number.
+
+### Migration steps
+
+This script updates the `phone_number` column in the `passwordless_users`, `passwordless_user_to_tenant`, and `passwordless_devices` tables with their respective normalized values. This script is idempotent and can be run multiple times without any issue. Follow the steps below to run the script: 
+
+1. Ensure that the core is already upgraded to version 7.0.12 (CDI version 4.0)
+2. Run the migration script
+
+    Make sure your Node.js version is 16 or above to run the script. Locate the migration script at `supertokens-core/migration_scripts/to_version_7_0_12/index.js`. Modify the script by updating the `DB_HOST`, `DB_USER`, `DB_PASSWORD`, and `DB_NAME` variables with the correct values. Subsequently, run the following commands to initiate the script:
+    
+    ```bash
+       $ git clone https://github.com/supertokens/supertokens-core.git
+       $ cd supertokens-core/migration_scripts/to_version_7_0_12
+       $ npm install
+       $ npm start
+    ```
+
+    Performance Note: On average, the script takes 19s for every 1000 rows with a maximum of 1 connection, 4.7s with a maximum of 5 connections (default), and 4.5s with a maximum of 10 connections. Increasing the `MAX_POOL_SIZE` allows the script to leverage more connections simultaneously, potentially improving execution speed.
+
 ## [7.0.11] - 2023-11-10
 
 - Fixes email verification behaviour with user id mapping

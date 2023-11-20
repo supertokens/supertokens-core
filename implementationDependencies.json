@@ -110,6 +110,11 @@
       "jar": "https://repo1.maven.org/maven2/commons-codec/commons-codec/1.15/commons-codec-1.15.jar",
       "name": "Commons Codec 1.15",
       "src": "https://repo1.maven.org/maven2/commons-codec/commons-codec/1.15/commons-codec-1.15-sources.jar"
+    },
+    {
+      "jar": "https://repo1.maven.org/maven2/com/googlecode/libphonenumber/libphonenumber/8.13.25/libphonenumber-8.13.25.jar",
+      "name": "Libphonenumber 8.13.25",
+      "src": "https://repo1.maven.org/maven2/com/googlecode/libphonenumber/libphonenumber/8.13.25/libphonenumber-8.13.25-sources.jar"
     }
   ]
 }

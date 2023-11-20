@@ -1,0 +1,21 @@
+{
+  "name": "to_version_7_0_12",
+  "version": "1.0.0",
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "description": "A migration script that normalizes phone numbers in the database",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "knex": "^3.0.1",
+    "libphonenumber-js": "^1.10.49",
+    "mysql2": "^3.6.3",
+    "pg": "^8.11.3"
+  }
+}

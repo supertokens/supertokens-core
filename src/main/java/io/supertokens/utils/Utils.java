@@ -20,6 +20,9 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.i18n.phonenumbers.PhoneNumberUtil;
+import com.google.i18n.phonenumbers.NumberParseException;
+import com.google.i18n.phonenumbers.Phonenumber;
 import io.supertokens.Main;
 import io.supertokens.config.Config;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
@@ -55,6 +58,42 @@ import java.util.UUID;
 
 public class Utils {
 
+    /**
+     * Normalizes a phone number by trimming and formatting it according to the
+     * E.164 standard.
+     * <p>
+     * The function attempts to parse the given phone number using libphonenumber.
+     * If parsing is successful,
+     * it formats the phone number according to the E.164 standard. If parsing fails
+     * (throws a NumberParseException),
+     * it still trims the input and returns the original trimmed phone number.
+     *
+     * @param phoneNumber The input phone number to be normalized.
+     * @return The normalized phone number or the original trimmed phone number if
+     * it cannot be parsed.
+     */
+    public static String normalizeIfPhoneNumber(String phoneNumber) {
+        if (phoneNumber == null) {
+            return null;
+        }
+
+        PhoneNumberUtil phoneNumberUtil = PhoneNumberUtil.getInstance();
+
+        try {
+            // Attempt to parse the phone number with default region code "ZZ" (unknown
+            // region)
+            Phonenumber.PhoneNumber parsedPhoneNumber = phoneNumberUtil.parse(phoneNumber.trim(), "ZZ");
+
+            // Format the parsed phone number according to E.164 standard
+            phoneNumber = phoneNumberUtil.format(parsedPhoneNumber, PhoneNumberUtil.PhoneNumberFormat.E164);
+        } catch (NumberParseException e) {
+            // Parsing failed, use the original trimmed phone number
+            phoneNumber = phoneNumber.trim();
+        }
+
+        return phoneNumber;
+    }
+
     public static String normaliseEmail(String email) {
         if (email == null) {
             return null;
@@ -79,7 +118,8 @@ public class Utils {
 
     // This function deserializes both B64 and B64URL encodings
     public static String convertFromBase64(String str) {
-        return new String(Base64.getDecoder().decode(stringToBytes(str.replace("-", "+").replace("_", "/"))), StandardCharsets.UTF_8);
+        return new String(Base64.getDecoder().decode(stringToBytes(str.replace("-", "+").replace("_", "/"))),
+                StandardCharsets.UTF_8);
     }
 
     public static String throwableStacktraceToString(Throwable e) {
@@ -282,10 +322,13 @@ public class Utils {
         }
 
         public PubPriKey(String s) {
-            // We split by both | and ; because in old versions we used to use ";" in dynamic and "|" in static keys
-            // Now we are consolidating all of them to use "|", but by handling legacy keys, we can avoid the need
+            // We split by both | and ; because in old versions we used to use ";" in
+            // dynamic and "|" in static keys
+            // Now we are consolidating all of them to use "|", but by handling legacy keys,
+            // we can avoid the need
             // for manual key migration.
-            // I.e.: this way only people who set access_token_signing_key_dynamic to false has to do manual
+            // I.e.: this way only people who set access_token_signing_key_dynamic to false
+            // has to do manual
             // migration instead of everyone.
             // for everyone else, the key rotation should get it done.
             String[] parts = s.split("[|;]");
@@ -338,7 +381,8 @@ public class Utils {
             TenantOrAppNotFoundException {
         if (Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getAccessTokenSigningKeyDynamic()) {
             result.addProperty("jwtSigningPublicKey",
-                    new Utils.PubPriKey(SigningKeys.getInstance(appIdentifier, main).getLatestIssuedDynamicKey().value).publicKey);
+                    new Utils.PubPriKey(
+                            SigningKeys.getInstance(appIdentifier, main).getLatestIssuedDynamicKey().value).publicKey);
             result.addProperty("jwtSigningPublicKeyExpiryTime",
                     SigningKeys.getInstance(appIdentifier, main).getDynamicSigningKeyExpiryTime());
 
