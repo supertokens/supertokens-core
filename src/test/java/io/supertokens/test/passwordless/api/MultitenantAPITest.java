@@ -571,7 +571,8 @@ public class MultitenantAPITest {
                 String newPhoneNumber = generateRandomNumber(8);
                 updatePhoneNumber(tenant, user.getAsJsonPrimitive("id").getAsString(), newPhoneNumber);
                 user.remove("phoneNumber");
-                user.addProperty("phoneNumber", newPhoneNumber);
+                // We need to normalize the phone number before adding it to the user object, as the update API performs normalization.
+                user.addProperty("phoneNumber", io.supertokens.utils.Utils.normalizeIfPhoneNumber(newPhoneNumber));
 
                 assertEquals(user, signInUpNumberUsingUserInputCode(userTenant, newPhoneNumber));
             }
