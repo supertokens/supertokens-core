@@ -71,10 +71,10 @@ async function updatePhoneNumbers(table) {
   let totalUpdatedRows = 0;
 
   try {
-    while (true) {
-      let totalRows = await knex.raw(`SELECT COUNT(*) as count FROM ${table} WHERE phone_number is NOT NULL`);
-      totalRows = totalRows.rows ? totalRows.rows[0].count : totalRows[0][0].count;
+    let totalRows = await knex.raw(`SELECT COUNT(*) as count FROM ${table} WHERE phone_number is NOT NULL`);
+    totalRows = totalRows.rows ? totalRows.rows[0].count : totalRows[0][0].count;
 
+    while (true) {
       const entries = await knex.raw(`SELECT * FROM ${table} WHERE phone_number is NOT NULL LIMIT ${batchSize} OFFSET ${offset}`);
       // In PostgreSQL, all rows are returned in `entries.rows`, whereas in MySQL, they can be found in `entries[0]`.
       const rows = entries.rows ? entries.rows : entries[0];
