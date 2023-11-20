@@ -1,5 +1,5 @@
 {
-  "name": "to_version_7_1_12",
+  "name": "to_version_7_0_12",
   "version": "1.0.0",
   "engines": {
     "node": ">=16.0.0"

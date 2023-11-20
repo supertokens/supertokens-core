@@ -23,6 +23,9 @@ const DB_PASSWORD = "";
 const DB_NAME = "";
 const CLIENT = ""; // Use "pg" for PostgreSQL and "mysql2" for MySQL DB
 
+const MIN_POOL_SIZE = 0;
+const MAX_POOL_SIZE = 5;
+
 if (!DB_HOST || !CLIENT) {
   console.error('Please update the DB_HOST, DB_USER, DB_PASSWORD, DB_DATABASE and CLIENT variables before running the script.');
   return;
@@ -36,7 +39,7 @@ const knex = require('knex')({
     password: DB_PASSWORD,
     database: DB_NAME,
   },
-  pool: { min: 0, max: 5 }
+  pool: { min: MIN_POOL_SIZE, max: MAX_POOL_SIZE }
 });
 
 function getUpdatePromise(table, entry, normalizedPhoneNumber) {
@@ -48,6 +51,8 @@ function getUpdatePromise(table, entry, normalizedPhoneNumber) {
       await trx.raw(`UPDATE passwordless_users SET phone_number = ? WHERE app_id = ? AND user_id = ?`, [normalizedPhoneNumber, entry.app_id, entry.user_id]);
       await trx.raw(`UPDATE passwordless_user_to_tenant SET phone_number = ? WHERE app_id = ? AND user_id = ?`, [normalizedPhoneNumber, entry.app_id, entry.user_id]);
     });
+  } else {
+    throw new Error(`Invalid table name: ${table}`);
   }
 }
 
@@ -62,10 +67,12 @@ function getNormalizedPhoneNumber(phoneNumber) {
 async function updatePhoneNumbers(table) {
   const batchSize = 1000;
   let offset = 0;
+  let totalUpdatedRows = 0;
 
   try {
     while (true) {
       const entries = await knex.raw(`SELECT * FROM ${table} WHERE phone_number is NOT NULL LIMIT ${batchSize} OFFSET ${offset}`);
+      // In PostgreSQL, all rows are returned in `entries.rows`, whereas in MySQL, they can be found in `entries[0]`.
       const rows = entries.rows ? entries.rows : entries[0];
 
       const batchUpdates = [];
@@ -83,8 +90,9 @@ async function updatePhoneNumbers(table) {
       await Promise.all(batchUpdates);
 
       offset += rows.length;
+      totalUpdatedRows += batchUpdates.length;
 
-      console.log(`Processed ${offset} rows for table ${table}`);
+      console.log(`Updated ${totalUpdatedRows}/${offset} rows for table ${table}`);
 
       if (rows.length < batchSize) {
         break;
@@ -96,7 +104,7 @@ async function updatePhoneNumbers(table) {
 }
 
 async function runScript() {
-  const tables = ['passwordless_users', 'passwordless_devices', 'passwordless_user_to_tenant'];
+  const tables = ['passwordless_users', 'passwordless_devices'];
 
   for (const table of tables) {
     await updatePhoneNumbers(table);

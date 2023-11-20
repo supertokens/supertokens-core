@@ -13,17 +13,21 @@ In this release, the core API routes have been updated to incorporate phone numb
 
 ### Migration steps
 
+This script updates the `phone_number` column in the `passwordless_users`, `passwordless_user_to_tenant`, and `passwordless_devices` tables with their respective normalized values. This script is idempotent and can be run multiple times without any issue. Follow the steps below to run the script: 
+
 1. Ensure that the core is already upgraded to version 7.0.12 (CDI version 4.0)
 2. Run the migration script
 
-    Make sure your Node.js version is 16 or above to run the script. Locate the migration script at `supertokens-core/migration_scripts/to_version_7_1_12/index.js`. Modify the script by updating the `DB_HOST`, `DB_USER`, `DB_PASSWORD`, and `DB_NAME` variables with the correct values. Subsequently, run the following commands to initiate the script:
+    Make sure your Node.js version is 16 or above to run the script. Locate the migration script at `supertokens-core/migration_scripts/to_version_7_0_12/index.js`. Modify the script by updating the `DB_HOST`, `DB_USER`, `DB_PASSWORD`, and `DB_NAME` variables with the correct values. Subsequently, run the following commands to initiate the script:
     
     ```bash
        $ git clone https://github.com/supertokens/supertokens-core.git
-       $ cd supertokens-core/migration_scripts/to_version_7_1_12
+       $ cd supertokens-core/migration_scripts/to_version_7_0_12
        $ npm install
        $ npm start
     ```
+
+    NOTE: If the script is experiencing slow performance, consider adjusting the `MAX_POOL_SIZE` to a higher value. Increasing this parameter allows the script to leverage more connections simultaneously, potentially improving execution speed.
 
 ## [7.0.11] - 2023-11-10
 
