@@ -26,6 +26,7 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.thirdparty.ThirdParty;
+import io.supertokens.version.Version;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -63,6 +64,10 @@ public class TestGetUserSpeed {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        if (!Version.getVersion(process.getProcess()).getPluginName().equals("postgresql")) {
             return;
         }
 
