@@ -66,6 +66,10 @@ public class TestGetUserSpeed {
             return;
         }
 
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         int numberOfUsers = 10000;
         List<String> userIds = new ArrayList<>();
         List<String> userIds2 = new ArrayList<>();
