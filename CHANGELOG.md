@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.0.13] - 2023-11-21
+
+- Adds test to user query speed
+
+### Migration
+
+If using PostgreSQL database, run the following sql script:
+
+```sql
+CREATE INDEX IF NOT EXISTS app_id_to_user_id_primary_user_id_index ON app_id_to_user_id (primary_or_recipe_user_id, app_id);
+```
+
 ## [7.0.12] - 2023-11-16
 
 In this release, the core API routes have been updated to incorporate phone number normalization before processing. Consequently, existing entries in the database also need to undergo normalization. To facilitate this, we have included a migration script to normalize phone numbers for all the existing entries.
