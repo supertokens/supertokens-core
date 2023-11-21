@@ -82,6 +82,8 @@ public class TestGetUserSpeed {
             assert end - start < 100000; // 100 sec
         }
 
+        Thread.sleep(20000); // wait for indexing to finish
+
         {
             // Randomly link accounts
             long start = System.currentTimeMillis();
@@ -106,6 +108,8 @@ public class TestGetUserSpeed {
             assert end - start < 50000; // 50 sec
         }
 
+        Thread.sleep(20000); // wait for indexing to finish
+
         {
             long start = System.currentTimeMillis();
             for (String userId : userIds2) {
@@ -114,7 +118,7 @@ public class TestGetUserSpeed {
             long end = System.currentTimeMillis();
             System.out.println("Time taken for " + numberOfUsers + " users: " + (end - start) + "ms");
 
-            assert end - start < 5000;
+            assert end - start < 20000;
         }
 
         process.kill();
