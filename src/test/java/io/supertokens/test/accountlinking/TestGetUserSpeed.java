@@ -148,17 +148,25 @@ public class TestGetUserSpeed {
             es.awaitTermination(5, TimeUnit.MINUTES);
             long end = System.currentTimeMillis();
             System.out.println("Accounts linked in " + (end - start) + "ms");
-            // assert end - start < 50000; // 50 sec
+            assert end - start < 70000; // 70 sec
         }
 
         {
+            ExecutorService es = Executors.newFixedThreadPool(32);
             long start = System.currentTimeMillis();
             for (String userId : userIds2) {
-                AuthRecipe.getUserById(process.getProcess(), userId);
+                es.execute(() -> {
+                    try {
+                        AuthRecipe.getUserById(process.getProcess(), userId);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
             }
+            es.shutdown();
+            es.awaitTermination(5, TimeUnit.MINUTES);
             long end = System.currentTimeMillis();
             System.out.println("Time taken for " + numberOfUsers + " users: " + (end - start) + "ms");
-
             assert end - start < 20000;
         }
 
