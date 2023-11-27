@@ -9,6 +9,15 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Updates test user query speed
 
+### Migration
+
+If using MySQL plugin, run the following SQL script:
+
+```sql
+CREATE INDEX app_id_to_user_id_primary_user_id_index ON app_id_to_user_id (primary_or_recipe_user_id);
+CREATE INDEX app_id_to_user_id_user_id_index ON app_id_to_user_id (user_id);
+```
+
 ## [7.0.13] - 2023-11-21
 
 - Adds test to user query speed
