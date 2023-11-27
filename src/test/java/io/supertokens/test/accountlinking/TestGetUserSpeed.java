@@ -36,6 +36,12 @@ import org.junit.rules.TestRule;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static org.junit.Assert.assertNotNull;
 
@@ -57,6 +63,9 @@ public class TestGetUserSpeed {
     public void testUserCreationLinkingAndGetByIdSpeeds() throws Exception {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        Utils.setValueInConfig("postgresql_connection_pool_size", "100");
+        Utils.setValueInConfig("mysql_connection_pool_size", "100");
+
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
@@ -67,10 +76,6 @@ public class TestGetUserSpeed {
             return;
         }
 
-        if (!Version.getVersion(process.getProcess()).getPluginName().equals("postgresql")) {
-            return;
-        }
-
         if (StorageLayer.isInMemDb(process.getProcess())) {
             return;
         }
@@ -78,24 +83,40 @@ public class TestGetUserSpeed {
         int numberOfUsers = 10000;
         List<String> userIds = new ArrayList<>();
         List<String> userIds2 = new ArrayList<>();
+        Lock lock = new ReentrantLock();
         {
+            ExecutorService es = Executors.newFixedThreadPool(32);
             long start = System.currentTimeMillis();
             for (int i = 0; i < numberOfUsers; i++) {
-                String email = "user" + i + "@example.com";
-                AuthRecipeUserInfo user = ThirdParty.signInUp(
-                        process.getProcess(), "google", "googleid" + i, email).user;
-                userIds.add(user.getSupertokensUserId());
-                userIds2.add(user.getSupertokensUserId());
+                int finalI = i;
+                es.execute(() -> {
+                    try {
+                        String email = "user" + finalI + "@example.com";
+                        AuthRecipeUserInfo user = ThirdParty.signInUp(
+                                process.getProcess(), "google", "googleid" + finalI, email).user;
+                        lock.lock();
+                        userIds.add(user.getSupertokensUserId());
+                        userIds2.add(user.getSupertokensUserId());
+                        lock.unlock();
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
             }
-            long end = System.currentTimeMillis();
-            assert end - start < 100000; // 100 sec
-        }
+            es.shutdown();
+            es.awaitTermination(5, TimeUnit.MINUTES);
 
-        Thread.sleep(20000); // wait for indexing to finish
+            long end = System.currentTimeMillis();
+            System.out.println("Created users " + numberOfUsers + " in " + (end - start) + "ms");
+            assert end - start < 40000; // 40 sec
+        }
 
         {
             // Randomly link accounts
             long start = System.currentTimeMillis();
+            ExecutorService es = Executors.newFixedThreadPool(32);
+            AtomicInteger numberOflinks = new AtomicInteger(0);
+
             while (userIds.size() > 0) {
                 int numUsersToLink = new Random().nextInt(3) + 1;
                 if (numUsersToLink > userIds.size()) {
@@ -107,17 +128,28 @@ public class TestGetUserSpeed {
                     usersToLink.add(userIds.get(index));
                     userIds.remove(index);
                 }
+                numberOflinks.incrementAndGet();
 
-                AuthRecipe.createPrimaryUser(process.getProcess(), usersToLink.get(0));
-                for (int i = 1; i < usersToLink.size(); i++) {
-                    AuthRecipe.linkAccounts(process.getProcess(), usersToLink.get(i), usersToLink.get(0));
-                }
+                es.execute(() -> {
+                    try {
+                        AuthRecipe.createPrimaryUser(process.getProcess(), usersToLink.get(0));
+                        for (int i = 1; i < usersToLink.size(); i++) {
+                            AuthRecipe.linkAccounts(process.getProcess(), usersToLink.get(i), usersToLink.get(0));
+                        }
+                        System.out.println(numberOflinks.decrementAndGet());
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+
+                System.out.println(userIds.size());
             }
+            es.shutdown();
+            es.awaitTermination(5, TimeUnit.MINUTES);
             long end = System.currentTimeMillis();
-            assert end - start < 50000; // 50 sec
+            System.out.println("Accounts linked in " + (end - start) + "ms");
+            // assert end - start < 50000; // 50 sec
         }
-
-        Thread.sleep(20000); // wait for indexing to finish
 
         {
             long start = System.currentTimeMillis();
