@@ -108,8 +108,10 @@ public class TestGetUserSpeed {
 
             long end = System.currentTimeMillis();
             System.out.println("Created users " + numberOfUsers + " in " + (end - start) + "ms");
-            assert end - start < 40000; // 40 sec
+            assert end - start < 25000; // 25 sec
         }
+
+        Thread.sleep(10000); // wait for index
 
         {
             // Randomly link accounts
@@ -136,20 +138,20 @@ public class TestGetUserSpeed {
                         for (int i = 1; i < usersToLink.size(); i++) {
                             AuthRecipe.linkAccounts(process.getProcess(), usersToLink.get(i), usersToLink.get(0));
                         }
-                        System.out.println(numberOflinks.decrementAndGet());
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
                 });
 
-//                System.out.println(userIds.size());
             }
             es.shutdown();
             es.awaitTermination(5, TimeUnit.MINUTES);
             long end = System.currentTimeMillis();
             System.out.println("Accounts linked in " + (end - start) + "ms");
-//            assert end - start < 70000; // 70 sec
+            assert end - start < 50000; // 50 sec
         }
+
+        Thread.sleep(10000); // wait for index
 
         {
             ExecutorService es = Executors.newFixedThreadPool(32);
@@ -167,7 +169,7 @@ public class TestGetUserSpeed {
             es.awaitTermination(5, TimeUnit.MINUTES);
             long end = System.currentTimeMillis();
             System.out.println("Time taken for " + numberOfUsers + " users: " + (end - start) + "ms");
-            assert end - start < 20000;
+            assert end - start < 20000; // 20 sec
         }
 
         process.kill();
