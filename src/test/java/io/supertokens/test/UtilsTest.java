@@ -22,6 +22,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
+import static org.junit.Assert.*;
+
 public class UtilsTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
@@ -38,7 +40,8 @@ public class UtilsTest {
 
     @Test
     public void encodeDecodeBase64WithUTF() {
-        assert (io.supertokens.utils.Utils.convertFromBase64(io.supertokens.utils.Utils.convertToBase64("łukasz 馬 / 马"))
+        assert (io.supertokens.utils.Utils.convertFromBase64(
+                        io.supertokens.utils.Utils.convertToBase64("łukasz 馬 / 马"))
                 .equals("łukasz 馬 / 马"));
     }
 
@@ -46,15 +49,59 @@ public class UtilsTest {
     public void pubPriKeyShouldHandleSemicolonSeparator() {
         io.supertokens.utils.Utils.PubPriKey parsed = new io.supertokens.utils.Utils.PubPriKey("pub;pri");
 
-        assert ( parsed.privateKey.equals("pri"));
-        assert ( parsed.publicKey.equals("pub"));
+        assert (parsed.privateKey.equals("pri"));
+        assert (parsed.publicKey.equals("pub"));
     }
 
     @Test
     public void pubPriKeyShouldHandleBarSeparator() {
         io.supertokens.utils.Utils.PubPriKey parsed = new io.supertokens.utils.Utils.PubPriKey("pub|pri");
 
-        assert ( parsed.privateKey.equals("pri"));
-        assert ( parsed.publicKey.equals("pub"));
+        assert (parsed.privateKey.equals("pri"));
+        assert (parsed.publicKey.equals("pub"));
+    }
+
+    @Test
+    public void testNormalizeValidPhoneNumber() {
+        {
+            String inputPhoneNumber = "+1 650-555-1234";
+            String expectedNormalizedPhoneNumber = "+16505551234";
+            String actualNormalizedPhoneNumber = io.supertokens.utils.Utils.normalizeIfPhoneNumber(inputPhoneNumber);
+            assertEquals(expectedNormalizedPhoneNumber, actualNormalizedPhoneNumber);
+        }
+        {
+            String inputPhoneNumber = "+640223334444";
+            String expectedNormalizedPhoneNumber = "+64223334444";
+            String actualNormalizedPhoneNumber = io.supertokens.utils.Utils.normalizeIfPhoneNumber(inputPhoneNumber);
+            assertEquals(expectedNormalizedPhoneNumber, actualNormalizedPhoneNumber);
+        }
+    }
+
+    @Test
+    public void testNormalizeInvalidPhoneNumber() {
+        String inputPhoneNumber = "  johndoe@gmail.com  ";
+        String expectedTrimmedPhoneNumber = inputPhoneNumber.trim();
+        String actualNormalizedPhoneNumber = io.supertokens.utils.Utils.normalizeIfPhoneNumber(inputPhoneNumber);
+        assertEquals(expectedTrimmedPhoneNumber, actualNormalizedPhoneNumber);
+    }
+
+    @Test
+    public void testNormalizeNullPhoneNumber() {
+        String inputPhoneNumber = null;
+        assertNull(io.supertokens.utils.Utils.normalizeIfPhoneNumber(inputPhoneNumber));
+    }
+
+    @Test
+    public void testNormalizeEmptyPhoneNumber() {
+        // Test with an empty input
+        String inputPhoneNumber = "";
+        assertEquals("", io.supertokens.utils.Utils.normalizeIfPhoneNumber(inputPhoneNumber));
+    }
+
+    @Test
+    public void testNormalizeWhitespacePhoneNumber() {
+        // Test with a phone number containing only whitespace
+        String inputPhoneNumber = "   ";
+        assertEquals("", io.supertokens.utils.Utils.normalizeIfPhoneNumber(inputPhoneNumber));
     }
 }

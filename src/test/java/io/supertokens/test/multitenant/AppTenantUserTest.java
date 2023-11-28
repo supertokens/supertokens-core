@@ -130,8 +130,8 @@ public class AppTenantUserTest {
                 StorageLayer.getStorage(process.main).addInfoToNonAuthRecipesBasedOnUserId(app, className, userId);
 
                 try {
-                    UserIdMapping.assertThatUserIdIsNotBeingUsedInNonAuthRecipes(
-                            tWithStorage.toAppIdentifierWithStorage(), userId);
+                    UserIdMapping.findNonAuthStoragesWhereUserIdIsUsedOrAssertIfUsed(
+                            tWithStorage.toAppIdentifierWithStorage(), userId, true);
                     fail(className);
                 } catch (Exception ignored) {
                     assertTrue(ignored.getMessage().contains("UserId is already in use"));
@@ -160,8 +160,8 @@ public class AppTenantUserTest {
                         null, null, new JsonObject()
                 ), false);
 
-                UserIdMapping.assertThatUserIdIsNotBeingUsedInNonAuthRecipes(tWithStorage.toAppIdentifierWithStorage(),
-                        userId);
+                UserIdMapping.findNonAuthStoragesWhereUserIdIsUsedOrAssertIfUsed(tWithStorage.toAppIdentifierWithStorage(),
+                        userId, true);
             }
         }
 
@@ -238,8 +238,8 @@ public class AppTenantUserTest {
             tenantWithStorage.getStorage().addInfoToNonAuthRecipesBasedOnUserId(tenant, className, userId);
 
             try {
-                UserIdMapping.assertThatUserIdIsNotBeingUsedInNonAuthRecipes(
-                        tenantWithStorage.toAppIdentifierWithStorage(), userId);
+                UserIdMapping.findNonAuthStoragesWhereUserIdIsUsedOrAssertIfUsed(
+                        tenantWithStorage.toAppIdentifierWithStorage(), userId, true);
                 fail(className);
             } catch (Exception ignored) {
                 assertTrue(ignored.getMessage().contains("UserId is already in use"));

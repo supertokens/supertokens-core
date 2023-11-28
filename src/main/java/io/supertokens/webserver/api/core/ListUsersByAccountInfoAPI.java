@@ -50,7 +50,8 @@ public class ListUsersByAccountInfoAPI extends WebserverAPI {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         // API is tenant specific.
         String email = InputParser.getQueryParamOrThrowError(req, "email", true);
-        String phoneNumber = InputParser.getQueryParamOrThrowError(req, "phoneNumber", true);
+        String phoneNumber = Utils.normalizeIfPhoneNumber(
+                InputParser.getQueryParamOrThrowError(req, "phoneNumber", true));
         String thirdPartyId = InputParser.getQueryParamOrThrowError(req, "thirdPartyId", true);
         String thirdPartyUserId = InputParser.getQueryParamOrThrowError(req, "thirdPartyUserId", true);
 

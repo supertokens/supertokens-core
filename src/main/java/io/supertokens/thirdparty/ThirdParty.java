@@ -127,6 +127,19 @@ public class ThirdParty {
     }
 
     @TestOnly
+    public static SignInUpResponse signInUp(Main main, String thirdPartyId, String thirdPartyUserId, String email, boolean isEmailVerified)
+            throws StorageQueryException, EmailChangeNotAllowedException {
+        try {
+            Storage storage = StorageLayer.getStorage(main);
+            return signInUp(
+                    new TenantIdentifierWithStorage(null, null, null, storage), main,
+                    thirdPartyId, thirdPartyUserId, email, isEmailVerified);
+        } catch (TenantOrAppNotFoundException | BadPermissionException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    @TestOnly
     public static SignInUpResponse signInUp(TenantIdentifierWithStorage tenantIdentifierWithStorage, Main main,
                                             String thirdPartyId,
                                             String thirdPartyUserId, String email)

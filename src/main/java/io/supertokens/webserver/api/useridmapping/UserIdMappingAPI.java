@@ -27,6 +27,7 @@ import io.supertokens.pluginInterface.useridmapping.exception.UserIdMappingAlrea
 import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
+import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -97,7 +98,8 @@ public class UserIdMappingAPI extends WebserverAPI {
                     this.getAppIdentifierWithStorageAndUserIdMappingFromRequest(req, superTokensUserId, UserIdType.SUPERTOKENS);
 
             UserIdMapping.createUserIdMapping(main, appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage,
-                    superTokensUserId, externalUserId, externalUserIdInfo, force);
+                    superTokensUserId, externalUserId, externalUserIdInfo, force, getVersionFromRequest(req).greaterThanOrEqualTo(
+                            SemVer.v4_0));
 
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
