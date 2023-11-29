@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [8.0.0] - 2023-11-29
+
+### Added
+
+- Supports CDI version `5.0`
+- MFA stats in `EEFeatureFlag`
+- Adds `CreatePrimaryUserAPI` and `LinkAccountsAPI` for MFA recipe
+- Adds `ImportTotpDeviceAPI`
+
+### Changes
+
+- `deviceName` in request body of `CreateOrUpdateTotpDeviceAPI` `POST` is now optional
+- Adds `isValidFirstFactorForTenant` in response of `SignUpAPI`, `SignInAPI`, `ConsumeCodeAPI`, `SignInUpAPI`
+- Adds `totpEnabled`, `firstFactors` and `defaultRequiredFactorIds` in request body of create or update CUD, App and
+  Tenant APIs
+- Adds `deviceName` in the response of `CreateOrUpdateTotpDeviceAPI` `POST`
+- `VerifyTOTPAPI` changes
+  - Removes `allowUnverifiedDevices` from request body and unverified devices are not allowed
+  - Adds `currentNumberOfFailedAttempts` and `maxNumberOfFailedAttempts` in response when status is 
+    `INVALID_TOTP_ERROR` or `LIMIT_REACHED_ERROR`
+  - Adds status `UNKNOWN_USER_ID_ERROR`
+- `VerifyTotpDeviceAPI` changes
+    - Adds `currentNumberOfFailedAttempts` and `maxNumberOfFailedAttempts` in response when status is
+      `INVALID_TOTP_ERROR` or `LIMIT_REACHED_ERROR`
+
+### Migration
+
+- TODO - copy once postgres / mysql changelog is done
+
 ## [7.0.14] - 2023-11-21
 
 - Updates test user query speed
