@@ -33,7 +33,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Set;
 
 public class CreateOrUpdateTenantOrGetTenantAPI extends BaseCreateOrUpdate {
 
@@ -68,7 +67,7 @@ public class CreateOrUpdateTenantOrGetTenantAPI extends BaseCreateOrUpdate {
         String[] defaultRequiredFactorIds = null;
         boolean hasDefaultRequiredFactorIds = false;
 
-        if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_1)) {
+        if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_0)) {
             totpEnabled = InputParser.parseBooleanOrThrowError(input, "totpEnabled", true);
             hasFirstFactors = input.has("firstFactors");
             if (hasFirstFactors && !input.get("firstFactors").isJsonNull()) {
@@ -121,7 +120,7 @@ public class CreateOrUpdateTenantOrGetTenantAPI extends BaseCreateOrUpdate {
             JsonObject result = config.toJson(shouldProtect, tenantIdentifier.getStorage(), CoreConfig.PROTECTED_CONFIGS);
             result.addProperty("status", "OK");
 
-            if (getVersionFromRequest(req).lesserThan(SemVer.v4_1)) {
+            if (getVersionFromRequest(req).lesserThan(SemVer.v5_0)) {
                 result.remove("totp");
                 result.remove("mfa");
             }

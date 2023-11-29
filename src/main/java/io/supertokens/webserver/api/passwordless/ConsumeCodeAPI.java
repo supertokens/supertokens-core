@@ -127,7 +127,7 @@ public class ConsumeCodeAPI extends WebserverAPI {
                 factorId += "phone";
             }
 
-            if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_1)) {
+            if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_0)) {
                 Boolean isValidFirstFactorForTenant = Multitenancy.isValidFirstFactorForTenant(super.main,
                         this.getTenantIdentifierWithStorageFromRequest(req), factorId);
                 if (isValidFirstFactorForTenant != null) {

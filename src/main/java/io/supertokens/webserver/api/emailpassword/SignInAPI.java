@@ -98,7 +98,7 @@ public class SignInAPI extends WebserverAPI {
                 }
             }
 
-            if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_1)) {
+            if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_0)) {
                 Boolean isValidFirstFactorForTenant = Multitenancy.isValidFirstFactorForTenant(super.main,
                         tenantIdentifierWithStorage, "emailpassword");
                 if (isValidFirstFactorForTenant != null) {

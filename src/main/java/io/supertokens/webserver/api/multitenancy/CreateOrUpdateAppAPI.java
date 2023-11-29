@@ -31,7 +31,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Set;
 
 public class CreateOrUpdateAppAPI extends BaseCreateOrUpdate {
 
@@ -65,7 +64,7 @@ public class CreateOrUpdateAppAPI extends BaseCreateOrUpdate {
         String[] defaultRequiredFactorIds = null;
         boolean hasDefaultRequiredFactorIds = false;
 
-        if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_1)) {
+        if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_0)) {
             totpEnabled = InputParser.parseBooleanOrThrowError(input, "totpEnabled", true);
             hasFirstFactors = input.has("firstFactors");
             if (hasFirstFactors && !input.get("firstFactors").isJsonNull()) {

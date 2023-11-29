@@ -513,7 +513,7 @@ public class TestConnectionUriDomain {
         assertTrue(response.get("createdNew").getAsBoolean());
 
         JsonObject tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier("127.0.0.1", null, null),
-                process.getProcess(), SemVer.v4_1);
+                process.getProcess(), SemVer.v5_0);
         assertTrue(tenant.get("totp").getAsJsonObject().get("enabled").getAsBoolean());
 
         response = TestMultitenancyAPIHelper.createConnectionUriDomain(
@@ -521,11 +521,11 @@ public class TestConnectionUriDomain {
                 new TenantIdentifier(null, null, null),
                 "127.0.0.1", null, null, null,
                 true, false, null, false, null,
-                config, SemVer.v4_1);
+                config, SemVer.v5_0);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier("127.0.0.1", null, null),
-                process.getProcess(), SemVer.v4_1);
+                process.getProcess(), SemVer.v5_0);
         assertTrue(tenant.get("totp").getAsJsonObject().get("enabled").getAsBoolean());
 
         response = TestMultitenancyAPIHelper.createConnectionUriDomain(
@@ -533,11 +533,11 @@ public class TestConnectionUriDomain {
                 new TenantIdentifier(null, null, null),
                 "127.0.0.1", null, null, null,
                 null, false, null, false, null,
-                config, SemVer.v4_1);
+                config, SemVer.v5_0);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier("127.0.0.1", null, null),
-                process.getProcess(), SemVer.v4_1);
+                process.getProcess(), SemVer.v5_0);
         assertTrue(tenant.get("totp").getAsJsonObject().get("enabled").getAsBoolean());
 
         response = TestMultitenancyAPIHelper.createConnectionUriDomain(
@@ -545,11 +545,11 @@ public class TestConnectionUriDomain {
                 new TenantIdentifier(null, null, null),
                 "127.0.0.1", null, null, null,
                 false, false, null, false, null,
-                config, SemVer.v4_1);
+                config, SemVer.v5_0);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier("127.0.0.1", null, null),
-                process.getProcess(), SemVer.v4_1);
+                process.getProcess(), SemVer.v5_0);
         assertFalse(tenant.get("totp").getAsJsonObject().get("enabled").getAsBoolean());
 
         response = TestMultitenancyAPIHelper.createConnectionUriDomain(
@@ -557,11 +557,11 @@ public class TestConnectionUriDomain {
                 new TenantIdentifier(null, null, null),
                 "127.0.0.1", null, null, null,
                 null, false, null, false, null,
-                config, SemVer.v4_1);
+                config, SemVer.v5_0);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier("127.0.0.1", null, null),
-                process.getProcess(), SemVer.v4_1);
+                process.getProcess(), SemVer.v5_0);
         assertFalse(tenant.get("totp").getAsJsonObject().get("enabled").getAsBoolean());
     }
 
@@ -587,7 +587,7 @@ public class TestConnectionUriDomain {
         assertTrue(response.get("createdNew").getAsBoolean());
 
         JsonObject tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier("127.0.0.1", null, null),
-                process.getProcess(), SemVer.v4_1);
+                process.getProcess(), SemVer.v5_0);
         assertNull(tenant.get("firstFactors"));
 
         // builtin firstFactor
@@ -597,11 +597,11 @@ public class TestConnectionUriDomain {
                 new TenantIdentifier(null, null, null),
                 "127.0.0.1", null, null, null,
                 null, true, new String[]{"otp-phone"}, false, null,
-                config, SemVer.v4_1);
+                config, SemVer.v5_0);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier("127.0.0.1", null, null),
-                process.getProcess(), SemVer.v4_1);
+                process.getProcess(), SemVer.v5_0);
         assertTrue(tenant.get("firstFactors").isJsonArray());
         assertEquals(1, tenant.get("firstFactors").getAsJsonArray().size());
         assertEquals(firstFactors, new Gson().fromJson(tenant.get("firstFactors").getAsJsonArray(), String[].class));
@@ -611,11 +611,11 @@ public class TestConnectionUriDomain {
                 new TenantIdentifier(null, null, null),
                 "127.0.0.1", null, null, null,
                 null, false, null, false, null,
-                config, SemVer.v4_1);
+                config, SemVer.v5_0);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier("127.0.0.1", null, null),
-                process.getProcess(), SemVer.v4_1);
+                process.getProcess(), SemVer.v5_0);
         assertTrue(tenant.get("firstFactors").isJsonArray());
         assertEquals(1, tenant.get("firstFactors").getAsJsonArray().size());
         assertEquals(firstFactors, new Gson().fromJson(tenant.get("firstFactors").getAsJsonArray(), String[].class));
@@ -627,11 +627,11 @@ public class TestConnectionUriDomain {
                 new TenantIdentifier(null, null, null),
                 "127.0.0.1", null, null, null,
                 null, true, firstFactors, false, null,
-                config, SemVer.v4_1);
+                config, SemVer.v5_0);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier("127.0.0.1", null, null),
-                process.getProcess(), SemVer.v4_1);
+                process.getProcess(), SemVer.v5_0);
         assertTrue(tenant.get("firstFactors").isJsonArray());
         assertEquals(1, tenant.get("firstFactors").getAsJsonArray().size());
         assertEquals(firstFactors, new Gson().fromJson(tenant.get("firstFactors").getAsJsonArray(), String[].class));
@@ -643,11 +643,11 @@ public class TestConnectionUriDomain {
                 new TenantIdentifier(null, null, null),
                 "127.0.0.1", null, null, null,
                 null, true, firstFactors, false, null,
-                config, SemVer.v4_1);
+                config, SemVer.v5_0);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier("127.0.0.1", null, null),
-                process.getProcess(), SemVer.v4_1);
+                process.getProcess(), SemVer.v5_0);
         assertTrue(tenant.get("firstFactors").isJsonArray());
         assertEquals(4, tenant.get("firstFactors").getAsJsonArray().size());
         assertEquals(Set.of(firstFactors), Set.of(new Gson().fromJson(tenant.get("firstFactors").getAsJsonArray(), String[].class)));
@@ -657,11 +657,11 @@ public class TestConnectionUriDomain {
                 new TenantIdentifier(null, null, null),
                 "127.0.0.1", null, null, null,
                 null, true, null, false, null,
-                config, SemVer.v4_1);
+                config, SemVer.v5_0);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier("127.0.0.1", null, null),
-                process.getProcess(), SemVer.v4_1);
+                process.getProcess(), SemVer.v5_0);
         assertNull(tenant.get("firstFactors"));
     }
 
@@ -687,7 +687,7 @@ public class TestConnectionUriDomain {
         assertTrue(response.get("createdNew").getAsBoolean());
 
         JsonObject tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier("127.0.0.1", null, null),
-                process.getProcess(), SemVer.v4_1);
+                process.getProcess(), SemVer.v5_0);
         assertNull(tenant.get("defaultRequiredFactorIds"));
 
         // builtin firstFactor
@@ -697,11 +697,11 @@ public class TestConnectionUriDomain {
                 new TenantIdentifier(null, null, null),
                 "127.0.0.1", null, null, null,
                 null, false, null, true, new String[]{"otp-phone"},
-                config, SemVer.v4_1);
+                config, SemVer.v5_0);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier("127.0.0.1", null, null),
-                process.getProcess(), SemVer.v4_1);
+                process.getProcess(), SemVer.v5_0);
         assertTrue(tenant.get("defaultRequiredFactorIds").isJsonArray());
         assertEquals(1, tenant.get("defaultRequiredFactorIds").getAsJsonArray().size());
         assertEquals(defaultRequiredFactorIds, new Gson().fromJson(tenant.get("defaultRequiredFactorIds").getAsJsonArray(), String[].class));
@@ -711,11 +711,11 @@ public class TestConnectionUriDomain {
                 new TenantIdentifier(null, null, null),
                 "127.0.0.1", null, null, null,
                 null, false, null, false, null,
-                config, SemVer.v4_1);
+                config, SemVer.v5_0);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier("127.0.0.1", null, null),
-                process.getProcess(), SemVer.v4_1);
+                process.getProcess(), SemVer.v5_0);
         assertTrue(tenant.get("defaultRequiredFactorIds").isJsonArray());
         assertEquals(1, tenant.get("defaultRequiredFactorIds").getAsJsonArray().size());
         assertEquals(defaultRequiredFactorIds, new Gson().fromJson(tenant.get("defaultRequiredFactorIds").getAsJsonArray(), String[].class));
@@ -727,11 +727,11 @@ public class TestConnectionUriDomain {
                 new TenantIdentifier(null, null, null),
                 "127.0.0.1", null, null, null,
                 null, false, null, true, defaultRequiredFactorIds,
-                config, SemVer.v4_1);
+                config, SemVer.v5_0);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier("127.0.0.1", null, null),
-                process.getProcess(), SemVer.v4_1);
+                process.getProcess(), SemVer.v5_0);
         assertTrue(tenant.get("defaultRequiredFactorIds").isJsonArray());
         assertEquals(1, tenant.get("defaultRequiredFactorIds").getAsJsonArray().size());
         assertEquals(defaultRequiredFactorIds, new Gson().fromJson(tenant.get("defaultRequiredFactorIds").getAsJsonArray(), String[].class));
@@ -743,11 +743,11 @@ public class TestConnectionUriDomain {
                 new TenantIdentifier(null, null, null),
                 "127.0.0.1", null, null, null,
                 null, false, null, true, defaultRequiredFactorIds,
-                config, SemVer.v4_1);
+                config, SemVer.v5_0);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier("127.0.0.1", null, null),
-                process.getProcess(), SemVer.v4_1);
+                process.getProcess(), SemVer.v5_0);
         assertTrue(tenant.get("defaultRequiredFactorIds").isJsonArray());
         assertEquals(4, tenant.get("defaultRequiredFactorIds").getAsJsonArray().size());
         assertEquals(Set.of(defaultRequiredFactorIds), Set.of(new Gson().fromJson(tenant.get("defaultRequiredFactorIds").getAsJsonArray(), String[].class)));
@@ -757,11 +757,11 @@ public class TestConnectionUriDomain {
                 new TenantIdentifier(null, null, null),
                 "127.0.0.1", null, null, null,
                 null, false, null, true, null,
-                config, SemVer.v4_1);
+                config, SemVer.v5_0);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier("127.0.0.1", null, null),
-                process.getProcess(), SemVer.v4_1);
+                process.getProcess(), SemVer.v5_0);
         assertNull(tenant.get("defaultRequiredFactorIds"));
     }
 
@@ -781,7 +781,7 @@ public class TestConnectionUriDomain {
                     new TenantIdentifier(null, null, null),
                     "127.0.0.1", null, null, null,
                     null, true, factors, false, null,
-                    config, SemVer.v4_1);
+                    config, SemVer.v5_0);
             fail();
         } catch (HttpResponseException e) {
             assertEquals(400, e.statusCode);
@@ -794,7 +794,7 @@ public class TestConnectionUriDomain {
                     new TenantIdentifier(null, null, null),
                     "127.0.0.1", null, null, null,
                     null, false, null, true, factors,
-                    config, SemVer.v4_1);
+                    config, SemVer.v5_0);
             fail();
         } catch (HttpResponseException e) {
             assertEquals(400, e.statusCode);

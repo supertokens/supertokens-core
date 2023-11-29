@@ -85,7 +85,7 @@ public class VerifyTotpDeviceAPI extends WebserverAPI {
         } catch (InvalidTotpException e) {
             result.addProperty("status", "INVALID_TOTP_ERROR");
 
-            if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_1)) {
+            if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_0)) {
                 result.addProperty("currentNumberOfFailedAttempts", e.currentAttempts);
                 result.addProperty("maxNumberOfFailedAttempts", e.maxAttempts);
             }
@@ -93,7 +93,7 @@ public class VerifyTotpDeviceAPI extends WebserverAPI {
         } catch (LimitReachedException e) {
             result.addProperty("status", "LIMIT_REACHED_ERROR");
             result.addProperty("retryAfterMs", e.retryAfterMs);
-            if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_1)) {
+            if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_0)) {
                 result.addProperty("currentNumberOfFailedAttempts", e.currentAttempts);
                 result.addProperty("maxNumberOfFailedAttempts", e.maxAttempts);
             }

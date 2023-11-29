@@ -165,7 +165,7 @@ public class SignInUpAPI extends WebserverAPI {
                     }
                 }
 
-                if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_1)) {
+                if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_0)) {
                     Boolean isValidFirstFactorForTenant = Multitenancy.isValidFirstFactorForTenant(super.main,
                             this.getTenantIdentifierWithStorageFromRequest(req), "thirdparty");
                     if (isValidFirstFactorForTenant != null) {

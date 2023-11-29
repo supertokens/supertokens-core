@@ -87,9 +87,9 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     new TenantIdentifier(null, null, null),
                     "t1", true, true, true,
                     null, true, null, false, null,
-                    config, SemVer.v4_1);
+                    config, SemVer.v5_0);
 
-            JsonObject response = TestMultitenancyAPIHelper.epSignUpAndGetResponse(t1, "test1@example.com", "password", process.getProcess(), SemVer.v4_1);
+            JsonObject response = TestMultitenancyAPIHelper.epSignUpAndGetResponse(t1, "test1@example.com", "password", process.getProcess(), SemVer.v5_0);
             assertFalse(response.has("isValidFirstFactorForTenant"));
         }
 
@@ -99,9 +99,9 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     new TenantIdentifier(null, null, null),
                     "t1", true, true, true,
                     null, true, new String[]{}, false, null,
-                    config, SemVer.v4_1);
+                    config, SemVer.v5_0);
 
-            JsonObject response = TestMultitenancyAPIHelper.epSignUpAndGetResponse(t1, "test2@example.com", "password", process.getProcess(), SemVer.v4_1);
+            JsonObject response = TestMultitenancyAPIHelper.epSignUpAndGetResponse(t1, "test2@example.com", "password", process.getProcess(), SemVer.v5_0);
             assertFalse(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
 
@@ -111,9 +111,9 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     new TenantIdentifier(null, null, null),
                     "t1", true, true, true,
                     null, true, new String[]{"thirdparty"}, false, null,
-                    config, SemVer.v4_1);
+                    config, SemVer.v5_0);
 
-            JsonObject response = TestMultitenancyAPIHelper.epSignUpAndGetResponse(t1, "test3@example.com", "password", process.getProcess(), SemVer.v4_1);
+            JsonObject response = TestMultitenancyAPIHelper.epSignUpAndGetResponse(t1, "test3@example.com", "password", process.getProcess(), SemVer.v5_0);
             assertFalse(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
 
@@ -123,9 +123,9 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     new TenantIdentifier(null, null, null),
                     "t1", true, true, true,
                     null, true, new String[]{"emailpassword"}, false, null,
-                    config, SemVer.v4_1);
+                    config, SemVer.v5_0);
 
-            JsonObject response = TestMultitenancyAPIHelper.epSignUpAndGetResponse(t1, "test4@example.com", "password", process.getProcess(), SemVer.v4_1);
+            JsonObject response = TestMultitenancyAPIHelper.epSignUpAndGetResponse(t1, "test4@example.com", "password", process.getProcess(), SemVer.v5_0);
             assertTrue(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
     }
@@ -146,9 +146,9 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     new TenantIdentifier(null, null, null),
                     "t1", true, true, true,
                     null, true, null, false, null,
-                    config, SemVer.v4_1);
+                    config, SemVer.v5_0);
 
-            TestMultitenancyAPIHelper.epSignUpAndGetResponse(t1, "test@example.com", "password", process.getProcess(), SemVer.v4_1);
+            TestMultitenancyAPIHelper.epSignUpAndGetResponse(t1, "test@example.com", "password", process.getProcess(), SemVer.v5_0);
         }
 
         { // first factors not configured
@@ -157,9 +157,9 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     new TenantIdentifier(null, null, null),
                     "t1", true, true, true,
                     null, true, null, false, null,
-                    config, SemVer.v4_1);
+                    config, SemVer.v5_0);
 
-            JsonObject response = TestMultitenancyAPIHelper.epSignInAndGetResponse(t1, "test@example.com", "password", process.getProcess(), SemVer.v4_1);
+            JsonObject response = TestMultitenancyAPIHelper.epSignInAndGetResponse(t1, "test@example.com", "password", process.getProcess(), SemVer.v5_0);
             assertFalse(response.has("isValidFirstFactorForTenant"));
         }
 
@@ -169,9 +169,9 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     new TenantIdentifier(null, null, null),
                     "t1", true, true, true,
                     null, true, new String[]{}, false, null,
-                    config, SemVer.v4_1);
+                    config, SemVer.v5_0);
 
-            JsonObject response = TestMultitenancyAPIHelper.epSignInAndGetResponse(t1, "test@example.com", "password", process.getProcess(), SemVer.v4_1);
+            JsonObject response = TestMultitenancyAPIHelper.epSignInAndGetResponse(t1, "test@example.com", "password", process.getProcess(), SemVer.v5_0);
             assertFalse(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
 
@@ -181,9 +181,9 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     new TenantIdentifier(null, null, null),
                     "t1", true, true, true,
                     null, true, new String[]{"thirdparty"}, false, null,
-                    config, SemVer.v4_1);
+                    config, SemVer.v5_0);
 
-            JsonObject response = TestMultitenancyAPIHelper.epSignInAndGetResponse(t1, "test@example.com", "password", process.getProcess(), SemVer.v4_1);
+            JsonObject response = TestMultitenancyAPIHelper.epSignInAndGetResponse(t1, "test@example.com", "password", process.getProcess(), SemVer.v5_0);
             assertFalse(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
 
@@ -193,9 +193,9 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     new TenantIdentifier(null, null, null),
                     "t1", true, true, true,
                     null, true, new String[]{"emailpassword"}, false, null,
-                    config, SemVer.v4_1);
+                    config, SemVer.v5_0);
 
-            JsonObject response = TestMultitenancyAPIHelper.epSignInAndGetResponse(t1, "test@example.com", "password", process.getProcess(), SemVer.v4_1);
+            JsonObject response = TestMultitenancyAPIHelper.epSignInAndGetResponse(t1, "test@example.com", "password", process.getProcess(), SemVer.v5_0);
             assertTrue(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
     }
@@ -216,9 +216,9 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     new TenantIdentifier(null, null, null),
                     "t1", true, true, true,
                     null, true, null, false, null,
-                    config, SemVer.v4_1);
+                    config, SemVer.v5_0);
 
-            JsonObject response = TestMultitenancyAPIHelper.tpSignInUpAndGetResponse(t1, "google", "gid1", "test1@example.com", process.getProcess(), SemVer.v4_1);
+            JsonObject response = TestMultitenancyAPIHelper.tpSignInUpAndGetResponse(t1, "google", "gid1", "test1@example.com", process.getProcess(), SemVer.v5_0);
             assertFalse(response.has("isValidFirstFactorForTenant"));
         }
 
@@ -228,9 +228,9 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     new TenantIdentifier(null, null, null),
                     "t1", true, true, true,
                     null, true, new String[]{}, false, null,
-                    config, SemVer.v4_1);
+                    config, SemVer.v5_0);
 
-            JsonObject response = TestMultitenancyAPIHelper.tpSignInUpAndGetResponse(t1, "google", "gid1", "test1@example.com", process.getProcess(), SemVer.v4_1);
+            JsonObject response = TestMultitenancyAPIHelper.tpSignInUpAndGetResponse(t1, "google", "gid1", "test1@example.com", process.getProcess(), SemVer.v5_0);
             assertFalse(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
 
@@ -240,9 +240,9 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     new TenantIdentifier(null, null, null),
                     "t1", true, true, true,
                     null, true, new String[]{"emailpassword"}, false, null,
-                    config, SemVer.v4_1);
+                    config, SemVer.v5_0);
 
-            JsonObject response = TestMultitenancyAPIHelper.tpSignInUpAndGetResponse(t1, "google", "gid1", "test1@example.com", process.getProcess(), SemVer.v4_1);
+            JsonObject response = TestMultitenancyAPIHelper.tpSignInUpAndGetResponse(t1, "google", "gid1", "test1@example.com", process.getProcess(), SemVer.v5_0);
             assertFalse(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
 
@@ -252,9 +252,9 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     new TenantIdentifier(null, null, null),
                     "t1", true, true, true,
                     null, true, new String[]{"thirdparty"}, false, null,
-                    config, SemVer.v4_1);
+                    config, SemVer.v5_0);
 
-            JsonObject response = TestMultitenancyAPIHelper.tpSignInUpAndGetResponse(t1, "google", "gid1", "test1@example.com", process.getProcess(), SemVer.v4_1);
+            JsonObject response = TestMultitenancyAPIHelper.tpSignInUpAndGetResponse(t1, "google", "gid1", "test1@example.com", process.getProcess(), SemVer.v5_0);
             assertTrue(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
     }
@@ -275,9 +275,9 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     new TenantIdentifier(null, null, null),
                     "t1", true, true, true,
                     null, true, null, false, null,
-                    config, SemVer.v4_1);
+                    config, SemVer.v5_0);
 
-            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithEmailOTP(t1, "test1@example.com", process.getProcess(), SemVer.v4_1);
+            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithEmailOTP(t1, "test1@example.com", process.getProcess(), SemVer.v5_0);
             assertFalse(response.has("isValidFirstFactorForTenant"));
         }
 
@@ -287,9 +287,9 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     new TenantIdentifier(null, null, null),
                     "t1", true, true, true,
                     null, true, new String[]{}, false, null,
-                    config, SemVer.v4_1);
+                    config, SemVer.v5_0);
 
-            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithEmailOTP(t1, "test2@example.com", process.getProcess(), SemVer.v4_1);
+            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithEmailOTP(t1, "test2@example.com", process.getProcess(), SemVer.v5_0);
             assertFalse(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
 
@@ -299,9 +299,9 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     new TenantIdentifier(null, null, null),
                     "t1", true, true, true,
                     null, true, new String[]{"thirdparty"}, false, null,
-                    config, SemVer.v4_1);
+                    config, SemVer.v5_0);
 
-            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithEmailOTP(t1, "test3@example.com", process.getProcess(), SemVer.v4_1);
+            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithEmailOTP(t1, "test3@example.com", process.getProcess(), SemVer.v5_0);
             assertFalse(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
 
@@ -311,9 +311,9 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     new TenantIdentifier(null, null, null),
                     "t1", true, true, true,
                     null, true, new String[]{"otp-email"}, false, null,
-                    config, SemVer.v4_1);
+                    config, SemVer.v5_0);
 
-            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithEmailOTP(t1, "test4@example.com", process.getProcess(), SemVer.v4_1);
+            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithEmailOTP(t1, "test4@example.com", process.getProcess(), SemVer.v5_0);
             assertTrue(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
     }
@@ -334,9 +334,9 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     new TenantIdentifier(null, null, null),
                     "t1", true, true, true,
                     null, true, null, false, null,
-                    config, SemVer.v4_1);
+                    config, SemVer.v5_0);
 
-            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithPhoneOTP(t1, "+919876543210", process.getProcess(), SemVer.v4_1);
+            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithPhoneOTP(t1, "+919876543210", process.getProcess(), SemVer.v5_0);
             assertFalse(response.has("isValidFirstFactorForTenant"));
         }
 
@@ -346,9 +346,9 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     new TenantIdentifier(null, null, null),
                     "t1", true, true, true,
                     null, true, new String[]{}, false, null,
-                    config, SemVer.v4_1);
+                    config, SemVer.v5_0);
 
-            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithPhoneOTP(t1, "+919876543210", process.getProcess(), SemVer.v4_1);
+            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithPhoneOTP(t1, "+919876543210", process.getProcess(), SemVer.v5_0);
             assertFalse(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
 
@@ -358,9 +358,9 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     new TenantIdentifier(null, null, null),
                     "t1", true, true, true,
                     null, true, new String[]{"thirdparty"}, false, null,
-                    config, SemVer.v4_1);
+                    config, SemVer.v5_0);
 
-            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithPhoneOTP(t1, "+919876543210", process.getProcess(), SemVer.v4_1);
+            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithPhoneOTP(t1, "+919876543210", process.getProcess(), SemVer.v5_0);
             assertFalse(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
 
@@ -370,9 +370,9 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     new TenantIdentifier(null, null, null),
                     "t1", true, true, true,
                     null, true, new String[]{"otp-phone"}, false, null,
-                    config, SemVer.v4_1);
+                    config, SemVer.v5_0);
 
-            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithPhoneOTP(t1, "+919876543210", process.getProcess(), SemVer.v4_1);
+            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithPhoneOTP(t1, "+919876543210", process.getProcess(), SemVer.v5_0);
             assertTrue(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
     }
@@ -393,9 +393,9 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     new TenantIdentifier(null, null, null),
                     "t1", true, true, true,
                     null, true, null, false, null,
-                    config, SemVer.v4_1);
+                    config, SemVer.v5_0);
 
-            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithEmailLink(t1, "test1@example.com", process.getProcess(), SemVer.v4_1);
+            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithEmailLink(t1, "test1@example.com", process.getProcess(), SemVer.v5_0);
             assertFalse(response.has("isValidFirstFactorForTenant"));
         }
 
@@ -405,9 +405,9 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     new TenantIdentifier(null, null, null),
                     "t1", true, true, true,
                     null, true, new String[]{}, false, null,
-                    config, SemVer.v4_1);
+                    config, SemVer.v5_0);
 
-            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithEmailLink(t1, "test2@example.com", process.getProcess(), SemVer.v4_1);
+            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithEmailLink(t1, "test2@example.com", process.getProcess(), SemVer.v5_0);
             assertFalse(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
 
@@ -417,9 +417,9 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     new TenantIdentifier(null, null, null),
                     "t1", true, true, true,
                     null, true, new String[]{"thirdparty"}, false, null,
-                    config, SemVer.v4_1);
+                    config, SemVer.v5_0);
 
-            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithEmailLink(t1, "test3@example.com", process.getProcess(), SemVer.v4_1);
+            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithEmailLink(t1, "test3@example.com", process.getProcess(), SemVer.v5_0);
             assertFalse(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
 
@@ -429,9 +429,9 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     new TenantIdentifier(null, null, null),
                     "t1", true, true, true,
                     null, true, new String[]{"link-email"}, false, null,
-                    config, SemVer.v4_1);
+                    config, SemVer.v5_0);
 
-            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithEmailLink(t1, "test4@example.com", process.getProcess(), SemVer.v4_1);
+            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithEmailLink(t1, "test4@example.com", process.getProcess(), SemVer.v5_0);
             assertTrue(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
     }
@@ -452,9 +452,9 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     new TenantIdentifier(null, null, null),
                     "t1", true, true, true,
                     null, true, null, false, null,
-                    config, SemVer.v4_1);
+                    config, SemVer.v5_0);
 
-            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithPhoneLink(t1, "+919876543210", process.getProcess(), SemVer.v4_1);
+            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithPhoneLink(t1, "+919876543210", process.getProcess(), SemVer.v5_0);
             assertFalse(response.has("isValidFirstFactorForTenant"));
         }
 
@@ -464,9 +464,9 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     new TenantIdentifier(null, null, null),
                     "t1", true, true, true,
                     null, true, new String[]{}, false, null,
-                    config, SemVer.v4_1);
+                    config, SemVer.v5_0);
 
-            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithPhoneLink(t1, "+919876543210", process.getProcess(), SemVer.v4_1);
+            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithPhoneLink(t1, "+919876543210", process.getProcess(), SemVer.v5_0);
             assertFalse(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
 
@@ -476,9 +476,9 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     new TenantIdentifier(null, null, null),
                     "t1", true, true, true,
                     null, true, new String[]{"thirdparty"}, false, null,
-                    config, SemVer.v4_1);
+                    config, SemVer.v5_0);
 
-            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithPhoneLink(t1, "+919876543210", process.getProcess(), SemVer.v4_1);
+            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithPhoneLink(t1, "+919876543210", process.getProcess(), SemVer.v5_0);
             assertFalse(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
 
@@ -488,9 +488,9 @@ public class TestFirstFactorResponseInSignInUpAPIs {
                     new TenantIdentifier(null, null, null),
                     "t1", true, true, true,
                     null, true, new String[]{"link-phone"}, false, null,
-                    config, SemVer.v4_1);
+                    config, SemVer.v5_0);
 
-            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithPhoneLink(t1, "+919876543210", process.getProcess(), SemVer.v4_1);
+            JsonObject response = TestMultitenancyAPIHelper.plSignInUpWithPhoneLink(t1, "+919876543210", process.getProcess(), SemVer.v5_0);
             assertTrue(response.get("isValidFirstFactorForTenant").getAsBoolean());
         }
     }
