@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+## [6.0.17] - 2023-12-04
+
+- Returns 400, instead of 500, for badly typed core config while creating CUD, App or Tenant
+
 ## [6.0.16] - 2023-11-03
 
 - Collects requests stats per app

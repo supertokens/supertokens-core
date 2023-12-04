@@ -507,4 +507,26 @@ public class TestApp {
         assertTrue(tenant.get("thirdParty").getAsJsonObject().get("enabled").getAsBoolean());
         assertTrue(tenant.get("passwordless").getAsJsonObject().get("enabled").getAsBoolean());
     }
+
+    @Test
+    public void testInvalidTypedValueInCoreConfigWhileCreatingApp() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        JsonObject config = new JsonObject();
+        config.addProperty("access_token_validity", "abcd");
+        StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
+
+        try {
+            JsonObject response = TestMultitenancyAPIHelper.createApp(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    "a1", null, null, null,
+                    config);
+        } catch (HttpResponseException e) {
+            assertEquals(400, e.statusCode);
+            assertTrue(e.getMessage().contains("Cannot deserialize value `abcd` for property `access_token_validity`"));
+        }
+    }
 }
