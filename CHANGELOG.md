@@ -7,7 +7,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [7.0.16] - 2023-12-04
 
-- Returns 400, instead of 500, for badly typed core config while create CUD, App or Tenant
+- Returns 400, instead of 500, for badly typed core config while creating CUD, App or Tenant
 
 ## [7.0.15] - 2023-11-28
 
