@@ -17,6 +17,7 @@
 package io.supertokens.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -57,9 +58,16 @@ public class Config extends ResourceDistributor.SingletonResource {
     private Config(Main main, JsonObject jsonConfig) throws IOException, InvalidConfigException {
         this.main = main;
         final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-        CoreConfig config = mapper.readValue(jsonConfig.toString(), CoreConfig.class);
-        config.normalizeAndValidate(main);
-        this.core = config;
+        try {
+            CoreConfig config = mapper.readValue(jsonConfig.toString(), CoreConfig.class);
+            config.normalizeAndValidate(main);
+            this.core = config;
+        } catch (InvalidFormatException e) {
+            throw new InvalidConfigException(
+                    "Cannot set value " + e.getValue().toString() + " for field " + e.getPath().get(0).getFieldName()
+                            + " of type " + e.getTargetType().getSimpleName()
+            );
+        }
     }
 
     public static Config getInstance(TenantIdentifier tenantIdentifier, Main main)

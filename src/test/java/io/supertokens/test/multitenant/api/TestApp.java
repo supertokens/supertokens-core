@@ -514,19 +514,54 @@ public class TestApp {
             return;
         }
 
-        JsonObject config = new JsonObject();
-        config.addProperty("access_token_validity", "abcd");
-        StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
 
-        try {
-            JsonObject response = TestMultitenancyAPIHelper.createApp(
-                    process.getProcess(),
-                    new TenantIdentifier(null, null, null),
-                    "a1", null, null, null,
-                    config);
-        } catch (HttpResponseException e) {
-            assertEquals(400, e.statusCode);
-            assertTrue(e.getMessage().contains("Cannot deserialize value `abcd` for property `access_token_validity`"));
+        String[] properties = new String[]{
+                "access_token_validity", // long
+                "disable_telemetry", // boolean
+                "postgresql_connection_pool_size", // int
+                "mysql_connection_pool_size", // int
+        };
+        Object[] values = new Object[]{
+                "abcd", // access_token_validity
+                "abcd", // disable_telemetry
+                "abcd", // postgresql_connection_pool_size
+                "abcd", // mysql_connection_pool_size
+        };
+
+        System.out.println(StorageLayer.getStorage(process.getProcess()).getClass().getCanonicalName());
+
+        for (int i = 0; i < properties.length; i++) {
+            try {
+                System.out.println("Test case " + i);
+                JsonObject config = new JsonObject();
+                if (values[i] instanceof String) {
+                    config.addProperty(properties[i], (String) values[i]);
+                } else if (values[i] instanceof Boolean) {
+                    config.addProperty(properties[i], (Boolean) values[i]);
+                } else if (values[i] instanceof Number) {
+                    config.addProperty(properties[i], (Number) values[i]);
+                } else {
+                    throw new RuntimeException("Invalid type");
+                }
+                StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
+
+                JsonObject response = TestMultitenancyAPIHelper.createApp(
+                        process.getProcess(),
+                        new TenantIdentifier(null, null, null),
+                        "a1", null, null, null,
+                        config);
+                fail();
+            } catch (HttpResponseException e) {
+                System.out.println(e.getMessage());
+                assertEquals(400, e.statusCode);
+                if (!e.getMessage().contains("Invalid config key")) {
+                    assertTrue(e.getMessage().contains("Cannot set value"));
+                    assertTrue(e.getMessage().contains("for field " + properties[i]));
+                }
+            }
         }
     }
 }

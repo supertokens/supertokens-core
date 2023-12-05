@@ -16,7 +16,6 @@
 
 package io.supertokens.webserver.api.multitenancy;
 
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
@@ -139,8 +138,6 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
             throw new ServletException(new BadRequestException("Invalid core config: " + e.getMessage()));
         } catch (InvalidProviderConfigException e) {
             throw new ServletException(new BadRequestException("Invalid third party config: " + e.getMessage()));
-        } catch (InvalidFormatException e) {
-            throw new ServletException(new BadRequestException("Cannot deserialize value `" + e.getValue() + "` for property `" + e.getPath().get(0).getFieldName() + "`"));
         }
     }
 
