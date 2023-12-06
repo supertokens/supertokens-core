@@ -18,9 +18,12 @@ package io.supertokens.test;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.JsonObject;
+import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.utils.ConfigMapper;
-import org.junit.Assert;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 public class ConfigMapperTest {
 
@@ -30,6 +33,12 @@ public class ConfigMapperTest {
 
         @JsonProperty
         long long_property;
+
+        @JsonProperty
+        float float_property;
+
+        @JsonProperty
+        double double_property;
 
         @JsonProperty
         String string_property;
@@ -44,83 +53,211 @@ public class ConfigMapperTest {
         {
             JsonObject config = new JsonObject();
             config.addProperty("int_property", "100");
-            Assert.assertEquals(100, ConfigMapper.mapConfig(config, DummyConfig.class).int_property);
+            assertEquals(100, ConfigMapper.mapConfig(config, DummyConfig.class).int_property);
         }
         {
             JsonObject config = new JsonObject();
             config.addProperty("int_property", 100);
-            Assert.assertEquals(100, ConfigMapper.mapConfig(config, DummyConfig.class).int_property);
+            assertEquals(100, ConfigMapper.mapConfig(config, DummyConfig.class).int_property);
         }
 
         // valid for long
         {
             JsonObject config = new JsonObject();
             config.addProperty("long_property", "100");
-            Assert.assertEquals(100, ConfigMapper.mapConfig(config, DummyConfig.class).long_property);
+            assertEquals(100, ConfigMapper.mapConfig(config, DummyConfig.class).long_property);
         }
         {
             JsonObject config = new JsonObject();
             config.addProperty("long_property", 100);
-            Assert.assertEquals(100, ConfigMapper.mapConfig(config, DummyConfig.class).long_property);
+            assertEquals(100, ConfigMapper.mapConfig(config, DummyConfig.class).long_property);
+        }
+
+        // valid for float
+        {
+            JsonObject config = new JsonObject();
+            config.addProperty("float_property", 100);
+            System.out.println(ConfigMapper.mapConfig(config, DummyConfig.class).float_property);
+            assertEquals((float) 100, ConfigMapper.mapConfig(config, DummyConfig.class).float_property, 0.001);
+        }
+        {
+            JsonObject config = new JsonObject();
+            config.addProperty("float_property", 3.14);
+            assertEquals((float) 3.14, ConfigMapper.mapConfig(config, DummyConfig.class).float_property, 0.001);
+        }
+        {
+            JsonObject config = new JsonObject();
+            config.addProperty("float_property", "100");
+            assertEquals((float) 100, ConfigMapper.mapConfig(config, DummyConfig.class).float_property, 0.001);
+        }
+        {
+            JsonObject config = new JsonObject();
+            config.addProperty("float_property", "3.14");
+            assertEquals((float) 3.14, ConfigMapper.mapConfig(config, DummyConfig.class).float_property, 0.001);
+        }
+
+        // valid double
+        {
+            JsonObject config = new JsonObject();
+            config.addProperty("double_property", 100);
+            assertEquals((double) 100, ConfigMapper.mapConfig(config, DummyConfig.class).double_property, 0.001);
+        }
+        {
+            JsonObject config = new JsonObject();
+            config.addProperty("double_property", 3.14);
+            assertEquals((double) 3.14, ConfigMapper.mapConfig(config, DummyConfig.class).double_property, 0.001);
+        }
+        {
+            JsonObject config = new JsonObject();
+            config.addProperty("double_property", "100");
+            assertEquals((double) 100, ConfigMapper.mapConfig(config, DummyConfig.class).double_property, 0.001);
+        }
+        {
+            JsonObject config = new JsonObject();
+            config.addProperty("double_property", "3.14");
+            assertEquals((double) 3.14, ConfigMapper.mapConfig(config, DummyConfig.class).double_property, 0.001);
         }
 
         // valid for bool
         {
             JsonObject config = new JsonObject();
             config.addProperty("bool_property", "true");
-            Assert.assertEquals(true, ConfigMapper.mapConfig(config, DummyConfig.class).bool_property);
+            assertEquals(true, ConfigMapper.mapConfig(config, DummyConfig.class).bool_property);
         }
         {
             JsonObject config = new JsonObject();
             config.addProperty("bool_property", "TRUE");
-            Assert.assertEquals(true, ConfigMapper.mapConfig(config, DummyConfig.class).bool_property);
+            assertEquals(true, ConfigMapper.mapConfig(config, DummyConfig.class).bool_property);
         }
         {
             JsonObject config = new JsonObject();
             config.addProperty("bool_property", "false");
-            Assert.assertEquals(false, ConfigMapper.mapConfig(config, DummyConfig.class).bool_property);
+            assertEquals(false, ConfigMapper.mapConfig(config, DummyConfig.class).bool_property);
         }
         {
             JsonObject config = new JsonObject();
             config.addProperty("bool_property", true);
-            Assert.assertEquals(true, ConfigMapper.mapConfig(config, DummyConfig.class).bool_property);
+            assertEquals(true, ConfigMapper.mapConfig(config, DummyConfig.class).bool_property);
         }
         {
             JsonObject config = new JsonObject();
             config.addProperty("bool_property", false);
-            Assert.assertEquals(false, ConfigMapper.mapConfig(config, DummyConfig.class).bool_property);
+            assertEquals(false, ConfigMapper.mapConfig(config, DummyConfig.class).bool_property);
         }
 
         // valid for string
         {
             JsonObject config = new JsonObject();
             config.addProperty("string_property", "true");
-            Assert.assertEquals("true", ConfigMapper.mapConfig(config, DummyConfig.class).string_property);
+            assertEquals("true", ConfigMapper.mapConfig(config, DummyConfig.class).string_property);
         }
         {
             JsonObject config = new JsonObject();
             config.addProperty("string_property", true);
-            Assert.assertEquals("true", ConfigMapper.mapConfig(config, DummyConfig.class).string_property);
+            assertEquals("true", ConfigMapper.mapConfig(config, DummyConfig.class).string_property);
         }
         {
             JsonObject config = new JsonObject();
             config.addProperty("string_property", 100);
-            Assert.assertEquals("100", ConfigMapper.mapConfig(config, DummyConfig.class).string_property);
+            assertEquals("100", ConfigMapper.mapConfig(config, DummyConfig.class).string_property);
         }
         {
             JsonObject config = new JsonObject();
             config.addProperty("string_property", 3.14);
-            Assert.assertEquals("3.14", ConfigMapper.mapConfig(config, DummyConfig.class).string_property);
+            assertEquals("3.14", ConfigMapper.mapConfig(config, DummyConfig.class).string_property);
         }
         {
             JsonObject config = new JsonObject();
             config.addProperty("string_property", "hello");
-            Assert.assertEquals("hello", ConfigMapper.mapConfig(config, DummyConfig.class).string_property);
+            assertEquals("hello", ConfigMapper.mapConfig(config, DummyConfig.class).string_property);
         }
     }
 
     @Test
     public void testInvalidConversions() throws Exception {
+        String[] properties = new String[]{
+                "int_property",
+                "int_property",
+                "int_property",
+                "int_property",
+                "int_property",
 
+                "long_property",
+                "long_property",
+                "long_property",
+                "long_property",
+
+                "float_property",
+                "float_property",
+                "float_property",
+
+                "double_property",
+                "double_property",
+                "double_property",
+        };
+        Object[] values = new Object[]{
+                "abcd", // int
+                "", // int
+                true, // int
+                new Double(4.5), // int
+                new Long(1234567892342l), // int
+
+                "abcd", // long
+                "", // long
+                true, // long
+                new Double(4.5), // long
+
+                "abcd", // float
+                "", // float
+                true, // float
+
+                "abcd", // double
+                "", // double
+                true, // double
+        };
+
+        String[] expectedErrorMessages = new String[]{
+                "'int_property' must be of type int", // int
+                "'int_property' must be of type int", // int
+                "'int_property' must be of type int", // int
+                "'int_property' must be of type int", // int
+                "'int_property' must be of type int", // int
+
+                "'long_property' must be of type long", // long
+                "'long_property' must be of type long", // long
+                "'long_property' must be of type long", // long
+                "'long_property' must be of type long", // long
+
+                "'float_property' must be of type float", // float
+                "'float_property' must be of type float", // float
+                "'float_property' must be of type float", // float
+
+                "'double_property' must be of type double", // double
+                "'double_property' must be of type double", // double
+                "'double_property' must be of type double", // double
+        };
+
+        for (int i = 0; i < properties.length; i++) {
+            try {
+                System.out.println("Test case " + i);
+                JsonObject config = new JsonObject();
+                if (values[i] == null) {
+                    config.add(properties[i], null);
+                }
+                else if (values[i] instanceof String) {
+                    config.addProperty(properties[i], (String) values[i]);
+                } else if (values[i] instanceof Boolean) {
+                    config.addProperty(properties[i], (Boolean) values[i]);
+                } else if (values[i] instanceof Number) {
+                    config.addProperty(properties[i], (Number) values[i]);
+                } else {
+                    throw new RuntimeException("Invalid type");
+                }
+                DummyConfig dc = ConfigMapper.mapConfig(config, DummyConfig.class);
+                fail();
+            } catch (InvalidConfigException e) {
+                assertEquals(expectedErrorMessages[i], e.getMessage());
+            }
+        }
     }
 }
