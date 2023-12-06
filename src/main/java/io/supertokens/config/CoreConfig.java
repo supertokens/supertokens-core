@@ -394,7 +394,7 @@ public class CoreConfig {
                 : CLIOptions.get(main).getConfigFilePath()).getAbsolutePath();
     }
 
-    void normalizeAndValidate(Main main) throws InvalidConfigException {
+    void normalizeAndValidate(Main main, boolean includeConfigFilePath) throws InvalidConfigException {
         if (isNormalizedAndValid) {
             return;
         }
@@ -407,8 +407,9 @@ public class CoreConfig {
         }
         if (access_token_validity < 1 || access_token_validity > 86400000) {
             throw new InvalidConfigException(
-                    "'access_token_validity' must be between 1 and 86400000 seconds inclusive. The config file can be"
-                            + " found here: " + getConfigFileLocation(main));
+                    "'access_token_validity' must be between 1 and 86400000 seconds inclusive." +
+                            (includeConfigFilePath ? " The config file can be"
+                            + " found here: " + getConfigFileLocation(main) : ""));
         }
         Boolean validityTesting = CoreConfigTestContent.getInstance(main)
                 .getValue(CoreConfigTestContent.VALIDITY_TESTING);
@@ -417,16 +418,18 @@ public class CoreConfig {
         if ((refresh_token_validity * 60) <= access_token_validity) {
             if (!Main.isTesting || validityTesting) {
                 throw new InvalidConfigException(
-                        "'refresh_token_validity' must be strictly greater than 'access_token_validity'. The config "
-                                + "file can be found here: " + getConfigFileLocation(main));
+                        "'refresh_token_validity' must be strictly greater than 'access_token_validity'." +
+                                (includeConfigFilePath ? " The config file can be"
+                                        + " found here: " + getConfigFileLocation(main) : ""));
             }
         }
 
         if (!Main.isTesting || validityTesting) { // since in testing we make this really small
             if (access_token_dynamic_signing_key_update_interval < 1) {
                 throw new InvalidConfigException(
-                        "'access_token_dynamic_signing_key_update_interval' must be greater than, equal to 1 hour. The "
-                                + "config file can be found here: " + getConfigFileLocation(main));
+                        "'access_token_dynamic_signing_key_update_interval' must be greater than, equal to 1 hour." +
+                                (includeConfigFilePath ? " The config file can be"
+                                        + " found here: " + getConfigFileLocation(main) : ""));
             }
         }
 
@@ -456,8 +459,9 @@ public class CoreConfig {
 
         if (max_server_pool_size <= 0) {
             throw new InvalidConfigException(
-                    "'max_server_pool_size' must be >= 1. The config file can be found here: "
-                            + getConfigFileLocation(main));
+                    "'max_server_pool_size' must be >= 1." +
+                            (includeConfigFilePath ? " The config file can be"
+                                    + " found here: " + getConfigFileLocation(main) : ""));
         }
 
         if (api_keys != null) {

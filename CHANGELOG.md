@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.0.16] - 2023-12-04
+
+- Returns 400, instead of 500, for badly typed core config while creating CUD, App or Tenant
+
 ## [7.0.15] - 2023-11-28
 
 - Adds test for user pagination from old version

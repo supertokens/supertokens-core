@@ -19,6 +19,7 @@ package io.supertokens.test.multitenant.api;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
+import io.supertokens.config.CoreConfigTestContent;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
@@ -31,13 +32,11 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
-import io.supertokens.test.HttpRequestTest;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
-import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.Webserver;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -49,7 +48,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.rmi.ServerException;
 
 import static org.junit.Assert.*;
 
@@ -506,5 +504,109 @@ public class TestApp {
         assertTrue(tenant.get("emailPassword").getAsJsonObject().get("enabled").getAsBoolean());
         assertTrue(tenant.get("thirdParty").getAsJsonObject().get("enabled").getAsBoolean());
         assertTrue(tenant.get("passwordless").getAsJsonObject().get("enabled").getAsBoolean());
+    }
+
+    @Test
+    public void testInvalidTypedValueInCoreConfigWhileCreatingApp() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
+        String[] properties = new String[]{
+                "access_token_validity", // long
+                "access_token_validity", // long
+                "access_token_validity", // long
+                "access_token_validity", // long
+                "disable_telemetry", // boolean
+                "postgresql_connection_pool_size", // int
+                "mysql_connection_pool_size", // int
+        };
+        Object[] values = new Object[]{
+                "abcd", // access_token_validity
+                "",
+                "null",
+                null,
+                "abcd", // disable_telemetry
+                "abcd", // postgresql_connection_pool_size
+                "abcd", // mysql_connection_pool_size
+        };
+
+        String[] expectedErrorMessages = new String[]{
+                "Http error. Status Code: 400. Message: Invalid core config: 'access_token_validity' must be of type long", // access_token_validity
+                "Http error. Status Code: 400. Message: Invalid core config: 'access_token_validity' must be of type long", // access_token_validity
+                "Http error. Status Code: 400. Message: Invalid core config: 'access_token_validity' must be of type long", // access_token_validity
+                null,
+                "Http error. Status Code: 400. Message: Invalid core config: 'disable_telemetry' must be of type boolean", // disable_telemetry
+                "Http error. Status Code: 400. Message: Invalid core config: 'postgresql_connection_pool_size' must be of type int", // postgresql_connection_pool_size
+                "Http error. Status Code: 400. Message: Invalid core config: 'mysql_connection_pool_size' must be of type int", // mysql_connection_pool_size
+        };
+
+        System.out.println(StorageLayer.getStorage(process.getProcess()).getClass().getCanonicalName());
+
+        for (int i = 0; i < properties.length; i++) {
+            try {
+                System.out.println("Test case " + i);
+                JsonObject config = new JsonObject();
+                if (values[i] == null) {
+                    config.add(properties[i], null);
+                }
+                else if (values[i] instanceof String) {
+                    config.addProperty(properties[i], (String) values[i]);
+                } else if (values[i] instanceof Boolean) {
+                    config.addProperty(properties[i], (Boolean) values[i]);
+                } else if (values[i] instanceof Number) {
+                    config.addProperty(properties[i], (Number) values[i]);
+                } else {
+                    throw new RuntimeException("Invalid type");
+                }
+                StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
+
+                JsonObject response = TestMultitenancyAPIHelper.createApp(
+                        process.getProcess(),
+                        new TenantIdentifier(null, null, null),
+                        "a1", null, null, null,
+                        config);
+                if (expectedErrorMessages[i] != null) {
+                    fail();
+                }
+            } catch (HttpResponseException e) {
+                assertEquals(400, e.statusCode);
+                if (!e.getMessage().contains("Invalid config key")) {
+                    assertEquals(expectedErrorMessages[i], e.getMessage());
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testInvalidCoreConfig() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+        CoreConfigTestContent.getInstance(process.getProcess()).setKeyValue(CoreConfigTestContent.VALIDITY_TESTING,
+                true);
+
+        {
+            JsonObject config = new JsonObject();
+            config.addProperty("access_token_validity", 3600);
+            config.addProperty("refresh_token_validity", 3);
+            StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
+
+            try {
+                JsonObject response = TestMultitenancyAPIHelper.createApp(
+                        process.getProcess(),
+                        new TenantIdentifier(null, null, null),
+                        "a1", null, null, null,
+                        config);
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(400, e.statusCode);
+                assertEquals("Http error. Status Code: 400. Message: Invalid core config: 'refresh_token_validity' must be strictly greater than 'access_token_validity'.", e.getMessage());
+            }
+        }
     }
 }
