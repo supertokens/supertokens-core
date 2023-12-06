@@ -558,8 +558,8 @@ public class TestApp {
                 System.out.println(e.getMessage());
                 assertEquals(400, e.statusCode);
                 if (!e.getMessage().contains("Invalid config key")) {
-                    assertTrue(e.getMessage().contains("Cannot set value"));
-                    assertTrue(e.getMessage().contains("for field " + properties[i]));
+                    assertTrue(e.getMessage().contains("must be of type"));
+                    assertTrue(e.getMessage().contains(properties[i]));
                 }
             }
         }

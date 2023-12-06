@@ -50,9 +50,14 @@ public class Config extends ResourceDistributor.SingletonResource {
     private Config(Main main, String configFilePath) throws InvalidConfigException, IOException {
         this.main = main;
         final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-        CoreConfig config = mapper.readValue(new File(configFilePath), CoreConfig.class);
-        config.normalizeAndValidate(main);
-        this.core = config;
+        try {
+            CoreConfig config = mapper.readValue(new File(configFilePath), CoreConfig.class);
+            config.normalizeAndValidate(main);
+            this.core = config;
+        } catch (InvalidFormatException e) {
+            throw new InvalidConfigException(
+                    "'" + e.getPath().get(0).getFieldName() + "' must be of type " + e.getTargetType().getSimpleName());
+        }
     }
 
     private Config(Main main, JsonObject jsonConfig) throws IOException, InvalidConfigException {
@@ -64,9 +69,7 @@ public class Config extends ResourceDistributor.SingletonResource {
             this.core = config;
         } catch (InvalidFormatException e) {
             throw new InvalidConfigException(
-                    "Cannot set value " + e.getValue().toString() + " for field " + e.getPath().get(0).getFieldName()
-                            + " of type " + e.getTargetType().getSimpleName()
-            );
+                    "'" + e.getPath().get(0).getFieldName() + "' must be of type " + e.getTargetType().getSimpleName());
         }
     }
 
