@@ -53,15 +53,14 @@ public class Config extends ResourceDistributor.SingletonResource {
         Object configObj = mapper.readValue(new File(configFilePath), Object.class);
         JsonObject jsonConfig = new Gson().toJsonTree(configObj).getAsJsonObject();
         CoreConfig config = ConfigMapper.mapConfig(jsonConfig, CoreConfig.class);
-        config.normalizeAndValidate(main);
+        config.normalizeAndValidate(main, true);
         this.core = config;
     }
 
     private Config(Main main, JsonObject jsonConfig) throws IOException, InvalidConfigException {
         this.main = main;
-        final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
         CoreConfig config = ConfigMapper.mapConfig(jsonConfig, CoreConfig.class);
-        config.normalizeAndValidate(main);
+        config.normalizeAndValidate(main, false);
         this.core = config;
     }
 
