@@ -531,6 +531,13 @@ public class TestApp {
                 "abcd", // mysql_connection_pool_size
         };
 
+        String[] expectedErrorMessages = new String[]{
+                "Http error. Status Code: 400. Message: Invalid core config: 'access_token_validity' must be of type long", // access_token_validity
+                "Http error. Status Code: 400. Message: Invalid core config: 'disable_telemetry' must be of type boolean", // disable_telemetry
+                "Http error. Status Code: 400. Message: Invalid core config: 'postgresql_connection_pool_size' must be of type int", // postgresql_connection_pool_size
+                "Http error. Status Code: 400. Message: Invalid core config: 'mysql_connection_pool_size' must be of type int", // mysql_connection_pool_size
+        };
+
         System.out.println(StorageLayer.getStorage(process.getProcess()).getClass().getCanonicalName());
 
         for (int i = 0; i < properties.length; i++) {
@@ -555,11 +562,9 @@ public class TestApp {
                         config);
                 fail();
             } catch (HttpResponseException e) {
-                System.out.println(e.getMessage());
                 assertEquals(400, e.statusCode);
                 if (!e.getMessage().contains("Invalid config key")) {
-                    assertTrue(e.getMessage().contains("must be of type"));
-                    assertTrue(e.getMessage().contains(properties[i]));
+                    assertEquals(expectedErrorMessages[i], e.getMessage());
                 }
             }
         }
