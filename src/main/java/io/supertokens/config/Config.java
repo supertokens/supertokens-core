@@ -31,7 +31,7 @@ import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
-import io.supertokens.pluginInterface.utils.ConfigMapper;
+import io.supertokens.utils.ConfigMapper;
 import org.jetbrains.annotations.TestOnly;
 
 import java.io.File;

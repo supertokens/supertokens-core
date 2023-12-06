@@ -19,7 +19,7 @@ package io.supertokens.test;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.JsonObject;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
-import io.supertokens.pluginInterface.utils.ConfigMapper;
+import io.supertokens.utils.ConfigMapper;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
