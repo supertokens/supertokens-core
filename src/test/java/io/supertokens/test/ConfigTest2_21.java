@@ -24,6 +24,7 @@ import io.supertokens.test.TestingProcessManager.TestingProcess;
 import org.junit.*;
 import org.junit.rules.TestRule;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 public class ConfigTest2_21 {
@@ -83,5 +84,24 @@ public class ConfigTest2_21 {
         process.kill();
         EventAndException stopEvent = process.checkOrWaitForEvent(PROCESS_STATE.STOPPED);
         assertNotNull(stopEvent);
+    }
+
+    @Test
+    public void testCoreConfigTypeValidationInConfigYaml() throws Exception {
+        Utils.setValueInConfig("access_token_validity", "abcd");
+
+        String[] args = { "../" };
+
+        TestingProcess process = TestingProcessManager.start(args);
+
+        EventAndException startEvent = process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
+        assertNotNull(startEvent);
+
+        assertEquals("io.supertokens.pluginInterface.exceptions.InvalidConfigException: 'access_token_validity' must be of type long", startEvent.exception.getMessage());
+
+        process.kill();
+        EventAndException stopEvent = process.checkOrWaitForEvent(PROCESS_STATE.STOPPED);
+        assertNotNull(stopEvent);
+
     }
 }
