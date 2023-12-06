@@ -19,6 +19,7 @@ package io.supertokens.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
@@ -51,7 +52,7 @@ public class Config extends ResourceDistributor.SingletonResource {
         this.main = main;
         final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
         Object configObj = mapper.readValue(new File(configFilePath), Object.class);
-        JsonObject jsonConfig = new Gson().toJsonTree(configObj).getAsJsonObject();
+        JsonObject jsonConfig = new GsonBuilder().serializeNulls().create().toJsonTree(configObj).getAsJsonObject();
         CoreConfig config = ConfigMapper.mapConfig(jsonConfig, CoreConfig.class);
         config.normalizeAndValidate(main, true);
         this.core = config;
@@ -91,7 +92,7 @@ public class Config extends ResourceDistributor.SingletonResource {
         // omit them from the output json.
         ObjectMapper yamlReader = new ObjectMapper(new YAMLFactory());
         Object obj = yamlReader.readValue(new File(getConfigFilePath(main)), Object.class);
-        return new Gson().toJsonTree(obj).getAsJsonObject();
+        return new GsonBuilder().serializeNulls().create().toJsonTree(obj).getAsJsonObject();
     }
 
     private static String getConfigFilePath(Main main) {
