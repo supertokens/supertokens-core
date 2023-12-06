@@ -17,6 +17,7 @@
 package io.supertokens.test.multitenant.api;
 
 import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.featureflag.EE_FEATURES;
@@ -520,12 +521,18 @@ public class TestApp {
 
         String[] properties = new String[]{
                 "access_token_validity", // long
+                "access_token_validity", // long
+                "access_token_validity", // long
+                "access_token_validity", // long
                 "disable_telemetry", // boolean
                 "postgresql_connection_pool_size", // int
                 "mysql_connection_pool_size", // int
         };
         Object[] values = new Object[]{
                 "abcd", // access_token_validity
+                "",
+                "null",
+                null,
                 "abcd", // disable_telemetry
                 "abcd", // postgresql_connection_pool_size
                 "abcd", // mysql_connection_pool_size
@@ -533,6 +540,9 @@ public class TestApp {
 
         String[] expectedErrorMessages = new String[]{
                 "Http error. Status Code: 400. Message: Invalid core config: 'access_token_validity' must be of type long", // access_token_validity
+                "Http error. Status Code: 400. Message: Invalid core config: 'access_token_validity' must be of type long", // access_token_validity
+                "Http error. Status Code: 400. Message: Invalid core config: 'access_token_validity' must be of type long", // access_token_validity
+                null,
                 "Http error. Status Code: 400. Message: Invalid core config: 'disable_telemetry' must be of type boolean", // disable_telemetry
                 "Http error. Status Code: 400. Message: Invalid core config: 'postgresql_connection_pool_size' must be of type int", // postgresql_connection_pool_size
                 "Http error. Status Code: 400. Message: Invalid core config: 'mysql_connection_pool_size' must be of type int", // mysql_connection_pool_size
@@ -544,7 +554,10 @@ public class TestApp {
             try {
                 System.out.println("Test case " + i);
                 JsonObject config = new JsonObject();
-                if (values[i] instanceof String) {
+                if (values[i] == null) {
+                    config.add(properties[i], null);
+                }
+                else if (values[i] instanceof String) {
                     config.addProperty(properties[i], (String) values[i]);
                 } else if (values[i] instanceof Boolean) {
                     config.addProperty(properties[i], (Boolean) values[i]);
@@ -560,7 +573,9 @@ public class TestApp {
                         new TenantIdentifier(null, null, null),
                         "a1", null, null, null,
                         config);
-                fail();
+                if (expectedErrorMessages[i] != null) {
+                    fail();
+                }
             } catch (HttpResponseException e) {
                 assertEquals(400, e.statusCode);
                 if (!e.getMessage().contains("Invalid config key")) {

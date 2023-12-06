@@ -17,7 +17,6 @@
 package io.supertokens.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -32,6 +31,7 @@ import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.pluginInterface.utils.ConfigMapper;
 import org.jetbrains.annotations.TestOnly;
 
 import java.io.File;
@@ -50,27 +50,19 @@ public class Config extends ResourceDistributor.SingletonResource {
     private Config(Main main, String configFilePath) throws InvalidConfigException, IOException {
         this.main = main;
         final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-        try {
-            CoreConfig config = mapper.readValue(new File(configFilePath), CoreConfig.class);
-            config.normalizeAndValidate(main);
-            this.core = config;
-        } catch (InvalidFormatException e) {
-            throw new InvalidConfigException(
-                    "'" + e.getPath().get(0).getFieldName() + "' must be of type " + e.getTargetType().getSimpleName());
-        }
+        Object configObj = mapper.readValue(new File(configFilePath), Object.class);
+        JsonObject jsonConfig = new Gson().toJsonTree(configObj).getAsJsonObject();
+        CoreConfig config = ConfigMapper.mapConfig(jsonConfig, CoreConfig.class);
+        config.normalizeAndValidate(main);
+        this.core = config;
     }
 
     private Config(Main main, JsonObject jsonConfig) throws IOException, InvalidConfigException {
         this.main = main;
         final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-        try {
-            CoreConfig config = mapper.readValue(jsonConfig.toString(), CoreConfig.class);
-            config.normalizeAndValidate(main);
-            this.core = config;
-        } catch (InvalidFormatException e) {
-            throw new InvalidConfigException(
-                    "'" + e.getPath().get(0).getFieldName() + "' must be of type " + e.getTargetType().getSimpleName());
-        }
+        CoreConfig config = ConfigMapper.mapConfig(jsonConfig, CoreConfig.class);
+        config.normalizeAndValidate(main);
+        this.core = config;
     }
 
     public static Config getInstance(TenantIdentifier tenantIdentifier, Main main)

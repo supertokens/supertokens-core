@@ -102,6 +102,5 @@ public class ConfigTest2_21 {
         process.kill();
         EventAndException stopEvent = process.checkOrWaitForEvent(PROCESS_STATE.STOPPED);
         assertNotNull(stopEvent);
-
     }
 }
