@@ -72,27 +72,19 @@ public class ConfigMapper {
     }
 
     private static <T> void setValue(T object, Field field, JsonElement value) throws InvalidConfigException {
-        boolean foundAnnotation = false;
-        for (Annotation a : field.getAnnotations()) {
-            if (a.toString().contains("JsonProperty")) {
-                foundAnnotation = true;
-                break;
-            }
-        }
-
-        if (!foundAnnotation) {
-            return;
-        }
-
         field.setAccessible(true);
         Object convertedValue = convertJsonElementToTargetType(value, field.getType(), field.getName());
-        if (convertedValue != null) {
+        if (convertedValue != null || isNullable(field.getType())) {
             try {
                 field.set(object, convertedValue);
             } catch (IllegalAccessException e) {
                 throw new IllegalStateException("should never happen");
             }
         }
+    }
+
+    private static boolean isNullable(Class<?> type) {
+        return !type.isPrimitive();
     }
 
     private static Object convertJsonElementToTargetType(JsonElement value, Class<?> targetType, String fieldName)

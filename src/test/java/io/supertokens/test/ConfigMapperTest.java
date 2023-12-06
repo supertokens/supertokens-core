@@ -29,26 +29,40 @@ public class ConfigMapperTest {
 
     public static class DummyConfig {
         @JsonProperty
-        int int_property;
+        int int_property = -1;
 
         @JsonProperty
-        long long_property;
+        long long_property = -1;
 
         @JsonProperty
-        float float_property;
+        float float_property = -1;
 
         @JsonProperty
-        double double_property;
+        double double_property = -1;
 
         @JsonProperty
-        String string_property;
+        String string_property = "default_string";
 
         @JsonProperty
         boolean bool_property;
+
+        @JsonProperty
+        Long nullable_long_property = new Long(-1);
     }
 
     @Test
     public void testAllValidConversions() throws Exception {
+        // Test defaults
+        {
+            JsonObject config = new JsonObject();
+            assertEquals(-1, ConfigMapper.mapConfig(config, DummyConfig.class).int_property);
+            assertEquals(-1, ConfigMapper.mapConfig(config, DummyConfig.class).long_property);
+            assertEquals(-1, ConfigMapper.mapConfig(config, DummyConfig.class).float_property, 0.0001);
+            assertEquals(-1, ConfigMapper.mapConfig(config, DummyConfig.class).double_property, 0.0001);
+            assertEquals("default_string", ConfigMapper.mapConfig(config, DummyConfig.class).string_property);
+            assertEquals(new Long(-1), ConfigMapper.mapConfig(config, DummyConfig.class).nullable_long_property);
+        }
+
         // valid for int
         {
             JsonObject config = new JsonObject();
@@ -170,6 +184,25 @@ public class ConfigMapperTest {
             JsonObject config = new JsonObject();
             config.addProperty("string_property", "hello");
             assertEquals("hello", ConfigMapper.mapConfig(config, DummyConfig.class).string_property);
+        }
+
+        {
+            JsonObject config = new JsonObject();
+            config.add("string_property", null);
+            assertEquals(null, ConfigMapper.mapConfig(config, DummyConfig.class).string_property);
+        }
+
+        // valid for nullable long
+        {
+            JsonObject config = new JsonObject();
+            config.add("nullable_long_property", null);
+            assertEquals(null, ConfigMapper.mapConfig(config, DummyConfig.class).nullable_long_property);
+        }
+
+        {
+            JsonObject config = new JsonObject();
+            config.addProperty("nullable_long_property", 100);
+            assertEquals(new Long(100), ConfigMapper.mapConfig(config, DummyConfig.class).nullable_long_property);
         }
     }
 
