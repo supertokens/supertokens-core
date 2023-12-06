@@ -52,6 +52,17 @@ public class ConfigMapperTest {
 
     @Test
     public void testAllValidConversions() throws Exception {
+        // Test defaults
+        {
+            JsonObject config = new JsonObject();
+            assertEquals(-1, ConfigMapper.mapConfig(config, DummyConfig.class).int_property);
+            assertEquals(-1, ConfigMapper.mapConfig(config, DummyConfig.class).long_property);
+            assertEquals(-1, ConfigMapper.mapConfig(config, DummyConfig.class).float_property, 0.0001);
+            assertEquals(-1, ConfigMapper.mapConfig(config, DummyConfig.class).double_property, 0.0001);
+            assertEquals("default_string", ConfigMapper.mapConfig(config, DummyConfig.class).string_property);
+            assertEquals(new Long(-1), ConfigMapper.mapConfig(config, DummyConfig.class).nullable_long_property);
+        }
+
         // valid for int
         {
             JsonObject config = new JsonObject();
