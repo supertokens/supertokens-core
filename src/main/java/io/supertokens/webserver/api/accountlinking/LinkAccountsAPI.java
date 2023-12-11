@@ -59,7 +59,7 @@ public class LinkAccountsAPI extends WebserverAPI {
         return "/recipe/accountlinking/user/link";
     }
 
-    public void handle(HttpServletRequest req, HttpServletResponse resp, boolean forMfa) throws IOException, ServletException {
+    public void handle(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String inputRecipeUserId = InputParser.parseStringOrThrowError(input, "recipeUserId", false);
         String inputPrimaryUserId = InputParser.parseStringOrThrowError(input, "primaryUserId", false);
@@ -101,7 +101,7 @@ public class LinkAccountsAPI extends WebserverAPI {
 
             AuthRecipe.LinkAccountsResult linkAccountsResult = AuthRecipe.linkAccounts(main,
                     primaryUserIdAppIdentifierWithStorage,
-                    recipeUserId, primaryUserId, forMfa);
+                    recipeUserId, primaryUserId);
 
             UserIdMapping.populateExternalUserIdForUsers(primaryUserIdAppIdentifierWithStorage, new AuthRecipeUserInfo[]{linkAccountsResult.user});
             JsonObject response = new JsonObject();
@@ -152,6 +152,6 @@ public class LinkAccountsAPI extends WebserverAPI {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         // API is app specific
-        handle(req, resp, false);
+        handle(req, resp);
     }
 }

@@ -81,7 +81,7 @@ public class CreatePrimaryUserAPITest {
             params.addProperty("recipeUserId", user.getSupertokensUserId());
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/mfa/user/primary", params, 1000, 1000, null,
+                    "http://localhost:3567/recipe/accountlinking/user/primary", params, 1000, 1000, null,
                     WebserverAPI.getLatestCDIVersion().get(), "");
             assertEquals(3, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
@@ -107,14 +107,14 @@ public class CreatePrimaryUserAPITest {
             userObj = jsonUser;
         }
 
-        AuthRecipe.createPrimaryUser(process.main, user.getSupertokensUserId(), true);
+        AuthRecipe.createPrimaryUser(process.main, user.getSupertokensUserId());
 
         {
             JsonObject params = new JsonObject();
             params.addProperty("recipeUserId", user.getSupertokensUserId());
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/mfa/user/primary", params, 1000, 1000, null,
+                    "http://localhost:3567/recipe/accountlinking/user/primary", params, 1000, 1000, null,
                     WebserverAPI.getLatestCDIVersion().get(), "");
             assertEquals(3, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
@@ -149,7 +149,7 @@ public class CreatePrimaryUserAPITest {
             params.addProperty("recipeUserId", "r1");
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/mfa/user/primary", params, 1000, 1000, null,
+                    "http://localhost:3567/recipe/accountlinking/user/primary", params, 1000, 1000, null,
                     WebserverAPI.getLatestCDIVersion().get(), "");
             assertEquals(3, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
@@ -174,14 +174,14 @@ public class CreatePrimaryUserAPITest {
             userObj = jsonUser;
         }
 
-        AuthRecipe.createPrimaryUser(process.main, user.getSupertokensUserId(), true);
+        AuthRecipe.createPrimaryUser(process.main, user.getSupertokensUserId());
 
         {
             JsonObject params = new JsonObject();
             params.addProperty("recipeUserId", "r1");
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/mfa/user/primary", params, 1000, 1000, null,
+                    "http://localhost:3567/recipe/accountlinking/user/primary", params, 1000, 1000, null,
                     WebserverAPI.getLatestCDIVersion().get(), "");
             assertEquals(3, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
@@ -194,7 +194,7 @@ public class CreatePrimaryUserAPITest {
             params.addProperty("recipeUserId", user.getSupertokensUserId());
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/mfa/user/primary", params, 1000, 1000, null,
+                    "http://localhost:3567/recipe/accountlinking/user/primary", params, 1000, 1000, null,
                     WebserverAPI.getLatestCDIVersion().get(), "");
             assertEquals(3, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
@@ -225,7 +225,7 @@ public class CreatePrimaryUserAPITest {
 
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/mfa/user/primary", new JsonObject(), 1000, 1000, null,
+                        "http://localhost:3567/recipe/accountlinking/user/primary", new JsonObject(), 1000, 1000, null,
                         WebserverAPI.getLatestCDIVersion().get(), "");
                 assert (false);
             } catch (HttpResponseException e) {
@@ -242,7 +242,7 @@ public class CreatePrimaryUserAPITest {
 
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/mfa/user/primary", params, 1000, 1000, null,
+                        "http://localhost:3567/recipe/accountlinking/user/primary", params, 1000, 1000, null,
                         WebserverAPI.getLatestCDIVersion().get(), "");
                 assert (false);
             } catch (HttpResponseException e) {
@@ -273,7 +273,7 @@ public class CreatePrimaryUserAPITest {
         AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(process.getProcess(), "test@example.com",
                 "pass1234");
 
-        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.getSupertokensUserId(), true);
+        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.getSupertokensUserId());
         assert (!result.wasAlreadyAPrimaryUser);
 
         ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, "google", "user-google",
@@ -284,7 +284,7 @@ public class CreatePrimaryUserAPITest {
             params.addProperty("recipeUserId", signInUpResponse.user.getSupertokensUserId());
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/mfa/user/primary", params, 1000, 1000, null,
+                    "http://localhost:3567/recipe/accountlinking/user/primary", params, 1000, 1000, null,
                     WebserverAPI.getLatestCDIVersion().get(), "");
             assertEquals(3, response.entrySet().size());
             assertEquals("ACCOUNT_INFO_ALREADY_ASSOCIATED_WITH_ANOTHER_PRIMARY_USER_ID_ERROR",
@@ -317,15 +317,15 @@ public class CreatePrimaryUserAPITest {
         AuthRecipeUserInfo emailPasswordUser2 = EmailPassword.signUp(process.getProcess(), "test2@example.com",
                 "pass1234");
 
-        AuthRecipe.createPrimaryUser(process.main, emailPasswordUser1.getSupertokensUserId(), true);
-        AuthRecipe.linkAccounts(process.main, emailPasswordUser2.getSupertokensUserId(), emailPasswordUser1.getSupertokensUserId(), true);
+        AuthRecipe.createPrimaryUser(process.main, emailPasswordUser1.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.main, emailPasswordUser2.getSupertokensUserId(), emailPasswordUser1.getSupertokensUserId());
 
         {
             JsonObject params = new JsonObject();
             params.addProperty("recipeUserId", emailPasswordUser2.getSupertokensUserId());
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/mfa/user/primary", params, 1000, 1000, null,
+                    "http://localhost:3567/recipe/accountlinking/user/primary", params, 1000, 1000, null,
                     WebserverAPI.getLatestCDIVersion().get(), "");
             assertEquals(3, response.entrySet().size());
             assertEquals("RECIPE_USER_ID_ALREADY_LINKED_WITH_PRIMARY_USER_ID_ERROR",
@@ -358,7 +358,7 @@ public class CreatePrimaryUserAPITest {
                 "pass1234");
         UserIdMapping.createUserIdMapping(process.main, emailPasswordUser.getSupertokensUserId(), "r1", null, false);
 
-        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.getSupertokensUserId(), true);
+        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.getSupertokensUserId());
         assert (!result.wasAlreadyAPrimaryUser);
 
         ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, "google", "user-google",
@@ -369,7 +369,7 @@ public class CreatePrimaryUserAPITest {
             params.addProperty("recipeUserId", signInUpResponse.user.getSupertokensUserId());
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/mfa/user/primary", params, 1000, 1000, null,
+                    "http://localhost:3567/recipe/accountlinking/user/primary", params, 1000, 1000, null,
                     WebserverAPI.getLatestCDIVersion().get(), "");
             assertEquals(3, response.entrySet().size());
             assertEquals("ACCOUNT_INFO_ALREADY_ASSOCIATED_WITH_ANOTHER_PRIMARY_USER_ID_ERROR",
@@ -403,15 +403,15 @@ public class CreatePrimaryUserAPITest {
         AuthRecipeUserInfo emailPasswordUser2 = EmailPassword.signUp(process.getProcess(), "test2@example.com",
                 "pass1234");
 
-        AuthRecipe.createPrimaryUser(process.main, emailPasswordUser1.getSupertokensUserId(), true);
-        AuthRecipe.linkAccounts(process.main, emailPasswordUser2.getSupertokensUserId(), emailPasswordUser1.getSupertokensUserId(), true);
+        AuthRecipe.createPrimaryUser(process.main, emailPasswordUser1.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.main, emailPasswordUser2.getSupertokensUserId(), emailPasswordUser1.getSupertokensUserId());
 
         {
             JsonObject params = new JsonObject();
             params.addProperty("recipeUserId", emailPasswordUser2.getSupertokensUserId());
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/mfa/user/primary", params, 1000, 1000, null,
+                    "http://localhost:3567/recipe/accountlinking/user/primary", params, 1000, 1000, null,
                     WebserverAPI.getLatestCDIVersion().get(), "");
             assertEquals(3, response.entrySet().size());
             assertEquals("RECIPE_USER_ID_ALREADY_LINKED_WITH_PRIMARY_USER_ID_ERROR",
@@ -467,7 +467,7 @@ public class CreatePrimaryUserAPITest {
             params.addProperty("recipeUserId", user.getSupertokensUserId());
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/mfa/user/primary", params, 1000, 1000, null,
+                    "http://localhost:3567/recipe/accountlinking/user/primary", params, 1000, 1000, null,
                     WebserverAPI.getLatestCDIVersion().get(), "");
             assertEquals(3, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
@@ -499,14 +499,14 @@ public class CreatePrimaryUserAPITest {
 
         AuthRecipe.createPrimaryUser(process.main,
                 tenantIdentifier.toAppIdentifier().withStorage(StorageLayer.getStorage(tenantIdentifier, process.main)),
-                user.getSupertokensUserId(), true);
+                user.getSupertokensUserId());
 
         {
             JsonObject params = new JsonObject();
             params.addProperty("recipeUserId", user.getSupertokensUserId());
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/mfa/user/primary", params, 1000, 1000, null,
+                    "http://localhost:3567/recipe/accountlinking/user/primary", params, 1000, 1000, null,
                     WebserverAPI.getLatestCDIVersion().get(), "");
             assertEquals(3, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
@@ -542,7 +542,7 @@ public class CreatePrimaryUserAPITest {
 
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/mfa/user/primary", params, 1000, 1000, null,
+                        "http://localhost:3567/recipe/accountlinking/user/primary", params, 1000, 1000, null,
                         WebserverAPI.getLatestCDIVersion().get(), "");
                 assert (false);
             } catch (HttpResponseException e) {

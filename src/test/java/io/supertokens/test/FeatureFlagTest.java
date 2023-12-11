@@ -273,8 +273,8 @@ public class FeatureFlagTest {
             JsonObject user2 = Utils.signUpRequest_2_5(process, "test2@gmail.com", "validPass123");
             assert signUpResponse2.get("status").getAsString().equals("OK");
 
-            AuthRecipe.createPrimaryUser(process.getProcess(), user1.get("user").getAsJsonObject().get("id").getAsString(), true);
-            AuthRecipe.linkAccounts(process.getProcess(), user2.get("user").getAsJsonObject().get("id").getAsString(), user1.get("user").getAsJsonObject().get("id").getAsString(), true);
+            AuthRecipe.createPrimaryUser(process.getProcess(), user1.get("user").getAsJsonObject().get("id").getAsString());
+            AuthRecipe.linkAccounts(process.getProcess(), user2.get("user").getAsJsonObject().get("id").getAsString(), user1.get("user").getAsJsonObject().get("id").getAsString());
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/ee/featureflag",

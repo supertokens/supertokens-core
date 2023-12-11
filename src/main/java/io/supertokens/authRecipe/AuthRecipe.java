@@ -24,7 +24,6 @@ import io.supertokens.authRecipe.exception.RecipeUserIdAlreadyLinkedWithPrimaryU
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
-import io.supertokens.mfa.Mfa;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
@@ -325,51 +324,23 @@ public class AuthRecipe {
         AppIdentifierWithStorage appId = new AppIdentifierWithStorage(null, null,
                 StorageLayer.getStorage(main));
         try {
-            return linkAccounts(main, appId, recipeUserId, primaryUserId, false);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @TestOnly
-    public static LinkAccountsResult linkAccounts(Main main, String recipeUserId, String primaryUserId, boolean forMfa)
-            throws StorageQueryException, AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
-            UnknownUserIdException,
-            FeatureNotEnabledException, InputUserIdIsNotAPrimaryUserException,
-            RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException {
-        AppIdentifierWithStorage appId = new AppIdentifierWithStorage(null, null,
-                StorageLayer.getStorage(main));
-        try {
-            return linkAccounts(main, appId, recipeUserId, primaryUserId, forMfa);
+            return linkAccounts(main, appId, recipeUserId, primaryUserId);
         } catch (TenantOrAppNotFoundException e) {
             throw new RuntimeException(e);
         }
     }
 
     public static LinkAccountsResult linkAccounts(Main main, AppIdentifierWithStorage appIdentifierWithStorage,
-                                                  String _recipeUserId, String _primaryUserId)
-            throws StorageQueryException,
-            AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
-            RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException, InputUserIdIsNotAPrimaryUserException,
-            UnknownUserIdException, TenantOrAppNotFoundException, FeatureNotEnabledException {
-        return linkAccounts(main, appIdentifierWithStorage, _recipeUserId, _primaryUserId, false);
-    }
-
-    public static LinkAccountsResult linkAccounts(Main main, AppIdentifierWithStorage appIdentifierWithStorage,
-                                       String _recipeUserId, String _primaryUserId, boolean forMfa)
+                                       String _recipeUserId, String _primaryUserId)
             throws StorageQueryException,
             AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
             RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException, InputUserIdIsNotAPrimaryUserException,
             UnknownUserIdException, TenantOrAppNotFoundException, FeatureNotEnabledException {
 
-        if (forMfa) {
-            Mfa.checkForMFAFeature(appIdentifierWithStorage, main);
-        } else {
-            if (Arrays.stream(FeatureFlag.getInstance(main, appIdentifierWithStorage).getEnabledFeatures())
-                    .noneMatch(t -> t == EE_FEATURES.ACCOUNT_LINKING)) {
-                throw new FeatureNotEnabledException(
-                        "Account linking feature is not enabled for this app. Please contact support to enable it.");
-            }
+        if (Arrays.stream(FeatureFlag.getInstance(main, appIdentifierWithStorage).getEnabledFeatures())
+                .noneMatch(t -> (t == EE_FEATURES.ACCOUNT_LINKING || t == EE_FEATURES.MFA))) {
+            throw new FeatureNotEnabledException(
+                    "Account linking feature is not enabled for this app. Please contact support to enable it.");
         }
 
         AuthRecipeSQLStorage storage = (AuthRecipeSQLStorage) appIdentifierWithStorage.getAuthRecipeStorage();
@@ -559,53 +530,23 @@ public class AuthRecipe {
         AppIdentifierWithStorage appId = new AppIdentifierWithStorage(null, null,
                 StorageLayer.getStorage(main));
         try {
-            return createPrimaryUser(main, appId, recipeUserId, false);
+            return createPrimaryUser(main, appId, recipeUserId);
         } catch (TenantOrAppNotFoundException e) {
             throw new RuntimeException(e);
         }
     }
 
-    @TestOnly
-    public static CreatePrimaryUserResult createPrimaryUser(Main main,
-                                                            String recipeUserId,
-                                                            boolean forMfa)
-            throws StorageQueryException, AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
-            RecipeUserIdAlreadyLinkedWithPrimaryUserIdException, UnknownUserIdException,
-            FeatureNotEnabledException {
-        AppIdentifierWithStorage appId = new AppIdentifierWithStorage(null, null,
-                StorageLayer.getStorage(main));
-        try {
-            return createPrimaryUser(main, appId, recipeUserId, forMfa);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @TestOnly
     public static CreatePrimaryUserResult createPrimaryUser(Main main,
                                                             AppIdentifierWithStorage appIdentifierWithStorage,
                                                             String recipeUserId)
             throws StorageQueryException, AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
             RecipeUserIdAlreadyLinkedWithPrimaryUserIdException, UnknownUserIdException, TenantOrAppNotFoundException,
             FeatureNotEnabledException {
-        return createPrimaryUser(main, appIdentifierWithStorage, recipeUserId, false);
-    }
 
-    public static CreatePrimaryUserResult createPrimaryUser(Main main,
-                                                            AppIdentifierWithStorage appIdentifierWithStorage,
-                                                            String recipeUserId, boolean forMfa)
-            throws StorageQueryException, AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
-            RecipeUserIdAlreadyLinkedWithPrimaryUserIdException, UnknownUserIdException, TenantOrAppNotFoundException,
-            FeatureNotEnabledException {
-
-        if (forMfa) {
-            Mfa.checkForMFAFeature(appIdentifierWithStorage, main);
-        } else {
-            if (Arrays.stream(FeatureFlag.getInstance(main, appIdentifierWithStorage).getEnabledFeatures())
-                    .noneMatch(t -> t == EE_FEATURES.ACCOUNT_LINKING)) {
-                throw new FeatureNotEnabledException(
-                        "Account linking feature is not enabled for this app. Please contact support to enable it.");
-            }
+        if (Arrays.stream(FeatureFlag.getInstance(main, appIdentifierWithStorage).getEnabledFeatures())
+                .noneMatch(t -> (t == EE_FEATURES.ACCOUNT_LINKING || t == EE_FEATURES.MFA))) {
+            throw new FeatureNotEnabledException(
+                    "Account linking feature is not enabled for this app. Please contact support to enable it.");
         }
 
         AuthRecipeSQLStorage storage = (AuthRecipeSQLStorage) appIdentifierWithStorage.getAuthRecipeStorage();
