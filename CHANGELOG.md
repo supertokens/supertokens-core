@@ -11,13 +11,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Supports CDI version `5.0`
 - MFA stats in `EEFeatureFlag`
-- Adds `CreatePrimaryUserAPI` and `LinkAccountsAPI` for MFA recipe
 - Adds `ImportTotpDeviceAPI`
 
 ### Changes
 
 - `deviceName` in request body of `CreateOrUpdateTotpDeviceAPI` `POST` is now optional
-- Adds `isValidFirstFactorForTenant` in response of `SignUpAPI`, `SignInAPI`, `ConsumeCodeAPI`, `SignInUpAPI`
 - Adds `totpEnabled`, `firstFactors` and `defaultRequiredFactorIds` in request body of create or update CUD, App and
   Tenant APIs
 - Adds `deviceName` in the response of `CreateOrUpdateTotpDeviceAPI` `POST`

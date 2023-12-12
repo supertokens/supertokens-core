@@ -99,13 +99,6 @@ public class SignUpAPI extends WebserverAPI {
                 result.addProperty("recipeUserId", user.getSupertokensOrExternalUserId());
             }
 
-            if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_0)) {
-                Boolean isValidFirstFactorForTenant = Multitenancy.isValidFirstFactorForTenant(super.main,
-                        tenant, "emailpassword");
-                if (isValidFirstFactorForTenant != null) {
-                    result.addProperty("isValidFirstFactorForTenant", isValidFirstFactorForTenant);
-                }
-            }
             super.sendJsonResponse(200, result, resp);
         } catch (DuplicateEmailException e) {
             Logging.debug(main, tenantIdentifier, Utils.exceptionStacktraceToString(e));

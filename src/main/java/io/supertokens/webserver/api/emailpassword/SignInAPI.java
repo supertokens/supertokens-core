@@ -98,14 +98,6 @@ public class SignInAPI extends WebserverAPI {
                 }
             }
 
-            if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_0)) {
-                Boolean isValidFirstFactorForTenant = Multitenancy.isValidFirstFactorForTenant(super.main,
-                        tenantIdentifierWithStorage, "emailpassword");
-                if (isValidFirstFactorForTenant != null) {
-                    result.addProperty("isValidFirstFactorForTenant", isValidFirstFactorForTenant);
-                }
-            }
-
             super.sendJsonResponse(200, result, resp);
 
         } catch (WrongCredentialsException e) {
