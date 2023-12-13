@@ -44,16 +44,14 @@ public class CreatePrimaryUserAPI extends WebserverAPI {
         super(main, RECIPE_ID.ACCOUNT_LINKING.toString());
     }
 
-    public CreatePrimaryUserAPI(Main main, String recipeId) {
-        super(main, recipeId);
-    }
-
     @Override
     public String getPath() {
         return "/recipe/accountlinking/user/primary";
     }
 
-    public void handle(HttpServletRequest req, HttpServletResponse resp)  throws IOException, ServletException {
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is app specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String inputRecipeUserId = InputParser.parseStringOrThrowError(input, "recipeUserId", false);
 
@@ -119,11 +117,5 @@ public class CreatePrimaryUserAPI extends WebserverAPI {
                 throw new ServletException(ex);
             }
         }
-    }
-
-    @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        // API is app specific
-        handle(req, resp);
     }
 }

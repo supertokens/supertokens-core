@@ -50,16 +50,14 @@ public class LinkAccountsAPI extends WebserverAPI {
         super(main, RECIPE_ID.ACCOUNT_LINKING.toString());
     }
 
-    public LinkAccountsAPI(Main main, String recipeId) {
-        super(main, recipeId);
-    }
-
     @Override
     public String getPath() {
         return "/recipe/accountlinking/user/link";
     }
 
-    public void handle(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is app specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String inputRecipeUserId = InputParser.parseStringOrThrowError(input, "recipeUserId", false);
         String inputPrimaryUserId = InputParser.parseStringOrThrowError(input, "primaryUserId", false);
@@ -147,11 +145,5 @@ public class LinkAccountsAPI extends WebserverAPI {
             response.addProperty("status", "INPUT_USER_IS_NOT_A_PRIMARY_USER");
             super.sendJsonResponse(200, response, resp);
         }
-    }
-
-    @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        // API is app specific
-        handle(req, resp);
     }
 }
