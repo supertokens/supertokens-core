@@ -45,7 +45,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
 
     protected void handle(HttpServletRequest req, TenantIdentifier sourceTenantIdentifier,
                           TenantIdentifier targetTenantIdentifier, Boolean emailPasswordEnabled,
-                          Boolean thirdPartyEnabled, Boolean passwordlessEnabled, Boolean totpEnabled,
+                          Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
                           boolean hasFirstFactors, String[] firstFactors,
                           boolean hasRequiredSecondaryFactors, String[] requiredSecondaryFactors,
                           JsonObject coreConfig, HttpServletResponse resp)
@@ -106,16 +106,6 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                     tenantConfig.emailPasswordConfig,
                     tenantConfig.thirdPartyConfig,
                     new PasswordlessConfig(passwordlessEnabled),
-                    tenantConfig.firstFactors, tenantConfig.requiredSecondaryFactors, tenantConfig.coreConfig
-            );
-        }
-
-        if (totpEnabled != null) {
-            tenantConfig = new TenantConfig(
-                    tenantConfig.tenantIdentifier,
-                    tenantConfig.emailPasswordConfig,
-                    tenantConfig.thirdPartyConfig,
-                    tenantConfig.passwordlessConfig,
                     tenantConfig.firstFactors, tenantConfig.requiredSecondaryFactors, tenantConfig.coreConfig
             );
         }

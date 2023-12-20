@@ -61,14 +61,12 @@ public class CreateOrUpdateTenantOrGetTenantAPI extends BaseCreateOrUpdate {
         Boolean passwordlessEnabled = InputParser.parseBooleanOrThrowError(input, "passwordlessEnabled", true);
         JsonObject coreConfig = InputParser.parseJsonObjectOrThrowError(input, "coreConfig", true);
 
-        Boolean totpEnabled = null;
         String[] firstFactors = null;
         boolean hasFirstFactors = false;
         String[] requiredSecondaryFactors = null;
         boolean hasRequiredSecondaryFactors = false;
 
         if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_0)) {
-            totpEnabled = InputParser.parseBooleanOrThrowError(input, "totpEnabled", true);
             hasFirstFactors = input.has("firstFactors");
             if (hasFirstFactors && !input.get("firstFactors").isJsonNull()) {
                 JsonArray firstFactorsArr = InputParser.parseArrayOrThrowError(input, "firstFactors", true);
@@ -104,7 +102,7 @@ public class CreateOrUpdateTenantOrGetTenantAPI extends BaseCreateOrUpdate {
                 req, sourceTenantIdentifier,
                 new TenantIdentifier(sourceTenantIdentifier.getConnectionUriDomain(), sourceTenantIdentifier.getAppId(), tenantId),
                 emailPasswordEnabled, thirdPartyEnabled, passwordlessEnabled,
-                totpEnabled, hasFirstFactors, firstFactors, hasRequiredSecondaryFactors, requiredSecondaryFactors,
+                hasFirstFactors, firstFactors, hasRequiredSecondaryFactors, requiredSecondaryFactors,
                 coreConfig, resp);
     }
 
