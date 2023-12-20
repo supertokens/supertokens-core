@@ -28,15 +28,20 @@ import java.util.Date;
 class CustomLayout extends LayoutBase<ILoggingEvent> {
 
     private String processID;
+    private String coreVersion;
 
-    CustomLayout(String processID) {
+    CustomLayout(String processID, String coreVersion) {
         super();
         this.processID = processID;
+        this.coreVersion = coreVersion;
     }
 
     @Override
     public String doLayout(ILoggingEvent event) {
         StringBuilder sbuf = new StringBuilder();
+
+        sbuf.append("Core Version " + coreVersion);
+        sbuf.append(" | ");
 
         DateFormat dateFormat = new SimpleDateFormat("dd MMM yyyy HH:mm:ss:SSS Z");
         sbuf.append(dateFormat.format(new Date(event.getTimeStamp())));

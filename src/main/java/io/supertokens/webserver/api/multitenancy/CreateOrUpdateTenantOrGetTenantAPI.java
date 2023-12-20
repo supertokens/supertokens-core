@@ -121,8 +121,8 @@ public class CreateOrUpdateTenantOrGetTenantAPI extends BaseCreateOrUpdate {
             result.addProperty("status", "OK");
 
             if (getVersionFromRequest(req).lesserThan(SemVer.v5_0)) {
-                result.remove("totp");
-                result.remove("mfa");
+                result.remove("firstFactors");
+                result.remove("requiredSecondaryFactors");
             }
 
             super.sendJsonResponse(200, result, resp);
