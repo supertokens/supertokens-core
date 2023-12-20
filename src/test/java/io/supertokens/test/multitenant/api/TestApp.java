@@ -735,7 +735,269 @@ public class TestApp {
             assertEquals(400, e.statusCode);
             assertEquals("Http error. Status Code: 400. Message: requiredSecondaryFactors input should not contain duplicate values", e.getMessage());
         }
+    }
+
+    @Test
+    public void testFirstFactorArrayValueValidationBasedOnDisabledRecipe() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        JsonObject config = new JsonObject();
+        StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
+
+        TestMultitenancyAPIHelper.createApp(
+            process.getProcess(),
+            new TenantIdentifier(null, null, null),
+            "a1", true, true, true,
+            null, false, null, false, null,
+            config, SemVer.v5_0);
+
+        {
+            String[] factors = new String[]{"emailpassword", "custom"};
+            try {
+                TestMultitenancyAPIHelper.createApp(
+                        process.getProcess(),
+                        new TenantIdentifier(null, null, null),
+                        "a1", false, null, null,
+                        null, true, factors, false, null,
+                        config, SemVer.v5_0);
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(400, e.statusCode);
+                assertEquals("Http error. Status Code: 400. Message: Invalid core config: firstFactors should not contain 'emailpassword' because emailPassword is disabled for the tenant.", e.getMessage());
+            }
+
+            {
+                TestMultitenancyAPIHelper.createApp(
+                        process.getProcess(),
+                        new TenantIdentifier(null, null, null),
+                        "a1", false, null, null,
+                        null, false, null, false, null,
+                        config, SemVer.v5_0);
+            }
+
+            try {
+                TestMultitenancyAPIHelper.createApp(
+                        process.getProcess(),
+                        new TenantIdentifier(null, null, null),
+                        "a1", null, null, null,
+                        null, true, factors, false, null,
+                        config, SemVer.v5_0);
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(400, e.statusCode);
+                assertEquals("Http error. Status Code: 400. Message: Invalid core config: firstFactors should not contain 'emailpassword' because emailPassword is disabled for the tenant.", e.getMessage());
+            }
+        }
+
+        {
+            String[] factors = new String[]{"otp-email", "custom"};
+            try {
+                TestMultitenancyAPIHelper.createApp(
+                        process.getProcess(),
+                        new TenantIdentifier(null, null, null),
+                        "a1", null, null, false,
+                        null, true, factors, false, null,
+                        config, SemVer.v5_0);
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(400, e.statusCode);
+                assertEquals("Http error. Status Code: 400. Message: Invalid core config: firstFactors should not contain 'otp-email' because passwordless is disabled for the tenant.", e.getMessage());
+            }
+
+            {
+                TestMultitenancyAPIHelper.createApp(
+                        process.getProcess(),
+                        new TenantIdentifier(null, null, null),
+                        "a1", null, null, false,
+                        null, false, null, false, null,
+                        config, SemVer.v5_0);
+            }
+
+            try {
+                TestMultitenancyAPIHelper.createApp(
+                        process.getProcess(),
+                        new TenantIdentifier(null, null, null),
+                        "a1", null, null, null,
+                        null, true, factors, false, null,
+                        config, SemVer.v5_0);
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(400, e.statusCode);
+                assertEquals("Http error. Status Code: 400. Message: Invalid core config: firstFactors should not contain 'otp-email' because passwordless is disabled for the tenant.", e.getMessage());
+            }
+        }
+
+        {
+            String[] factors = new String[]{"thirdparty", "custom"};
+            try {
+                TestMultitenancyAPIHelper.createApp(
+                        process.getProcess(),
+                        new TenantIdentifier(null, null, null),
+                        "a1", null, false, null,
+                        null, true, factors, false, null,
+                        config, SemVer.v5_0);
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(400, e.statusCode);
+                assertEquals("Http error. Status Code: 400. Message: Invalid core config: firstFactors should not contain 'thirdparty' because thirdParty is disabled for the tenant.", e.getMessage());
+            }
+
+            {
+                TestMultitenancyAPIHelper.createApp(
+                        process.getProcess(),
+                        new TenantIdentifier(null, null, null),
+                        "a1", null, false, null,
+                        null, false, null, false, null,
+                        config, SemVer.v5_0);
+            }
+
+            try {
+                TestMultitenancyAPIHelper.createApp(
+                        process.getProcess(),
+                        new TenantIdentifier(null, null, null),
+                        "a1", null, null, null,
+                        null, true, factors, false, null,
+                        config, SemVer.v5_0);
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(400, e.statusCode);
+                assertEquals("Http error. Status Code: 400. Message: Invalid core config: firstFactors should not contain 'thirdparty' because thirdParty is disabled for the tenant.", e.getMessage());
+            }
+        }
 
     }
 
+    @Test
+    public void testRequiredSecondaryFactorArrayValueValidationBasedOnDisabledRecipe() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        JsonObject config = new JsonObject();
+        StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
+
+        TestMultitenancyAPIHelper.createApp(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "a1", true, true, true,
+                null, false, null, false, null,
+                config, SemVer.v5_0);
+
+        {
+            String[] factors = new String[]{"emailpassword", "custom"};
+            try {
+                TestMultitenancyAPIHelper.createApp(
+                        process.getProcess(),
+                        new TenantIdentifier(null, null, null),
+                        "a1", false, null, null,
+                        null, false, null, true, factors,
+                        config, SemVer.v5_0);
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(400, e.statusCode);
+                assertEquals("Http error. Status Code: 400. Message: Invalid core config: requiredSecondaryFactors should not contain 'emailpassword' because emailPassword is disabled for the tenant.", e.getMessage());
+            }
+
+            {
+                TestMultitenancyAPIHelper.createApp(
+                        process.getProcess(),
+                        new TenantIdentifier(null, null, null),
+                        "a1", false, null, null,
+                        null, false, null, false, null,
+                        config, SemVer.v5_0);
+            }
+
+            try {
+                TestMultitenancyAPIHelper.createApp(
+                        process.getProcess(),
+                        new TenantIdentifier(null, null, null),
+                        "a1", null, null, null,
+                        null, false, null, true, factors,
+                        config, SemVer.v5_0);
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(400, e.statusCode);
+                assertEquals("Http error. Status Code: 400. Message: Invalid core config: requiredSecondaryFactors should not contain 'emailpassword' because emailPassword is disabled for the tenant.", e.getMessage());
+            }
+        }
+
+        {
+            String[] factors = new String[]{"otp-email", "custom"};
+            try {
+                TestMultitenancyAPIHelper.createApp(
+                        process.getProcess(),
+                        new TenantIdentifier(null, null, null),
+                        "a1", null, null, false,
+                        null, false, null, true, factors,
+                        config, SemVer.v5_0);
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(400, e.statusCode);
+                assertEquals("Http error. Status Code: 400. Message: Invalid core config: requiredSecondaryFactors should not contain 'otp-email' because passwordless is disabled for the tenant.", e.getMessage());
+            }
+
+            {
+                TestMultitenancyAPIHelper.createApp(
+                        process.getProcess(),
+                        new TenantIdentifier(null, null, null),
+                        "a1", null, null, false,
+                        null, false, null, false, null,
+                        config, SemVer.v5_0);
+            }
+
+            try {
+                TestMultitenancyAPIHelper.createApp(
+                        process.getProcess(),
+                        new TenantIdentifier(null, null, null),
+                        "a1", null, null, null,
+                        null, false, null, true, factors,
+                        config, SemVer.v5_0);
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(400, e.statusCode);
+                assertEquals("Http error. Status Code: 400. Message: Invalid core config: requiredSecondaryFactors should not contain 'otp-email' because passwordless is disabled for the tenant.", e.getMessage());
+            }
+        }
+
+        {
+            String[] factors = new String[]{"thirdparty", "custom"};
+            try {
+                TestMultitenancyAPIHelper.createApp(
+                        process.getProcess(),
+                        new TenantIdentifier(null, null, null),
+                        "a1", null, false, null,
+                        null, false, null, true, factors,
+                        config, SemVer.v5_0);
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(400, e.statusCode);
+                assertEquals("Http error. Status Code: 400. Message: Invalid core config: requiredSecondaryFactors should not contain 'thirdparty' because thirdParty is disabled for the tenant.", e.getMessage());
+            }
+
+            {
+                TestMultitenancyAPIHelper.createApp(
+                        process.getProcess(),
+                        new TenantIdentifier(null, null, null),
+                        "a1", null, false, null,
+                        null, false, null, false, null,
+                        config, SemVer.v5_0);
+            }
+
+            try {
+                TestMultitenancyAPIHelper.createApp(
+                        process.getProcess(),
+                        new TenantIdentifier(null, null, null),
+                        "a1", null, null, null,
+                        null, false, null, true, factors,
+                        config, SemVer.v5_0);
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(400, e.statusCode);
+                assertEquals("Http error. Status Code: 400. Message: Invalid core config: requiredSecondaryFactors should not contain 'thirdparty' because thirdParty is disabled for the tenant.", e.getMessage());
+            }
+        }
+
+    }
 }
