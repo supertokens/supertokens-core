@@ -47,9 +47,6 @@ public class MultitenancyQueries {
                 + "email_password_enabled BOOLEAN,"
                 + "passwordless_enabled BOOLEAN,"
                 + "third_party_enabled BOOLEAN,"
-                + "totp_enabled BOOLEAN,"
-                + "has_first_factors BOOLEAN DEFAULT FALSE,"
-                + "has_default_required_factor_ids BOOLEAN DEFAULT FALSE,"
                 + "PRIMARY KEY (connection_uri_domain, app_id, tenant_id)"
                 + ");";
         // @formatter:on
@@ -71,27 +68,20 @@ public class MultitenancyQueries {
         // @formatter:on
     }
 
-    public static String getQueryToCreateDefaultRequiredFactorIdsTable(Start start) {
-        String tableName = Config.getConfig(start).getTenantDefaultRequiredFactorIdsTable();
+    public static String getQueryToCreateRequiredSecondaryFactorsTable(Start start) {
+        String tableName = Config.getConfig(start).getTenantRequiredSecondaryFactorsTable();
         // @formatter:off
         return "CREATE TABLE IF NOT EXISTS " + tableName + " ("
                 + "connection_uri_domain VARCHAR(256) DEFAULT '',"
                 + "app_id VARCHAR(64) DEFAULT 'public',"
                 + "tenant_id VARCHAR(64) DEFAULT 'public',"
                 + "factor_id VARCHAR(128),"
-                + "order_idx INTEGER NOT NULL,"
                 + "PRIMARY KEY (connection_uri_domain, app_id, tenant_id, factor_id),"
                 + "FOREIGN KEY (connection_uri_domain, app_id, tenant_id)"
                 + " REFERENCES " + Config.getConfig(start).getTenantConfigsTable()
-                + " (connection_uri_domain, app_id, tenant_id) ON DELETE CASCADE,"
-                + "UNIQUE (connection_uri_domain, app_id, tenant_id, order_idx)"
+                + " (connection_uri_domain, app_id, tenant_id) ON DELETE CASCADE"
                 + ");";
         // @formatter:on
-    }
-
-    public static String getQueryToCreateOrderIndexForDefaultRequiredFactorIdsTable(Start start) {
-        return "CREATE INDEX IF NOT EXISTS tenant_default_required_factor_ids_tenant_id_index ON "
-                + Config.getConfig(start).getTenantDefaultRequiredFactorIdsTable() + " (order_idx ASC);";
     }
 
     static String getQueryToCreateTenantThirdPartyProvidersTable(Start start) {
@@ -159,7 +149,7 @@ public class MultitenancyQueries {
         }
 
         MfaSqlHelper.createFirstFactors(start, sqlCon, tenantConfig.tenantIdentifier, tenantConfig.firstFactors);
-        MfaSqlHelper.createDefaultRequiredFactorIds(start, sqlCon, tenantConfig.tenantIdentifier, tenantConfig.defaultRequiredFactorIds);
+        MfaSqlHelper.createRequiredSecondaryFactors(start, sqlCon, tenantConfig.tenantIdentifier, tenantConfig.requiredSecondaryFactors);
     }
 
     public static void createTenantConfig(Start start, TenantConfig tenantConfig) throws StorageQueryException, StorageTransactionLogicException {
@@ -241,10 +231,10 @@ public class MultitenancyQueries {
             // Map (tenantIdentifier) -> firstFactors
             HashMap<TenantIdentifier, String[]> firstFactorsMap = MfaSqlHelper.selectAllFirstFactors(start);
 
-            // Map (tenantIdentifier) -> defaultRequiredFactorIds
-            HashMap<TenantIdentifier, String[]> defaultRequiredFactorIdsMap = MfaSqlHelper.selectAllDefaultRequiredFactorIds(start);
+            // Map (tenantIdentifier) -> requiredSecondaryFactors
+            HashMap<TenantIdentifier, String[]> requiredSecondaryFactorsMap = MfaSqlHelper.selectAllRequiredSecondaryFactors(start);
 
-            return TenantConfigSQLHelper.selectAll(start, providerMap, firstFactorsMap, defaultRequiredFactorIdsMap);
+            return TenantConfigSQLHelper.selectAll(start, providerMap, firstFactorsMap, requiredSecondaryFactorsMap);
         } catch (SQLException throwables) {
             throw new StorageQueryException(throwables);
         }

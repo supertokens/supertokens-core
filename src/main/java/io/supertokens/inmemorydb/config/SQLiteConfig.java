@@ -49,8 +49,8 @@ public class SQLiteConfig {
         return "tenant_first_factors";
     }
 
-    public String getTenantDefaultRequiredFactorIdsTable() {
-        return "tenant_default_required_factor_ids";
+    public String getTenantRequiredSecondaryFactorsTable() {
+        return "tenant_required_secondary_factors";
     }
 
     public String getTenantThirdPartyProvidersTable() {

@@ -47,7 +47,7 @@ public class TestMultitenancyAPIHelper {
                                                        Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
                                                        Boolean totpEnabled,
                                                        boolean setFirstFactors, String[] firstFactors,
-                                                       boolean setDefaultRequiredFactorIds, String[] defaultRequiredFactorIds,
+                                                       boolean setRequiredSecondaryFactors, String[] requiredSecondaryFactors,
                                                        JsonObject coreConfig, SemVer version) throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
         if (connectionUriDomain != null) {
@@ -68,8 +68,8 @@ public class TestMultitenancyAPIHelper {
         if (setFirstFactors || firstFactors != null) {
             requestBody.add("firstFactors", new Gson().toJsonTree(firstFactors));
         }
-        if (setDefaultRequiredFactorIds || defaultRequiredFactorIds != null) {
-            requestBody.add("defaultRequiredFactorIds", new Gson().toJsonTree(defaultRequiredFactorIds));
+        if (setRequiredSecondaryFactors || requiredSecondaryFactors != null) {
+            requestBody.add("requiredSecondaryFactors", new Gson().toJsonTree(requiredSecondaryFactors));
         }
 
         requestBody.add("coreConfig", coreConfig);
@@ -121,7 +121,7 @@ public class TestMultitenancyAPIHelper {
                                        Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
                                        Boolean totpEnabled,
                                        boolean setFirstFactors, String[] firstFactors,
-                                       boolean setDefaultRequiredFactorIds, String[] defaultRequiredFactorIds,
+                                       boolean setRequiredSecondaryFactors, String[] requiredSecondaryFactors,
                                        JsonObject coreConfig, SemVer version) throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("appId", appId);
@@ -140,8 +140,8 @@ public class TestMultitenancyAPIHelper {
         if (setFirstFactors || firstFactors != null) {
             requestBody.add("firstFactors", new Gson().toJsonTree(firstFactors));
         }
-        if (setDefaultRequiredFactorIds || defaultRequiredFactorIds != null) {
-            requestBody.add("defaultRequiredFactorIds", new Gson().toJsonTree(defaultRequiredFactorIds));
+        if (setRequiredSecondaryFactors || requiredSecondaryFactors != null) {
+            requestBody.add("requiredSecondaryFactors", new Gson().toJsonTree(requiredSecondaryFactors));
         }
         requestBody.add("coreConfig", coreConfig);
 
@@ -190,7 +190,7 @@ public class TestMultitenancyAPIHelper {
                                           Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
                                           Boolean totpEnabled,
                                           boolean setFirstFactors, String[] firstFactors,
-                                          boolean setDefaultRequiredFactorIds, String[] defaultRequiredFactorIds,
+                                          boolean setRequiredSecondaryFactors, String[] requiredSecondaryFactors,
                                           JsonObject coreConfig, SemVer version) throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("tenantId", tenantId);
@@ -209,8 +209,8 @@ public class TestMultitenancyAPIHelper {
         if (setFirstFactors || firstFactors != null) {
             requestBody.add("firstFactors", new Gson().toJsonTree(firstFactors));
         }
-        if (setDefaultRequiredFactorIds || defaultRequiredFactorIds != null) {
-            requestBody.add("defaultRequiredFactorIds", new Gson().toJsonTree(defaultRequiredFactorIds));
+        if (setRequiredSecondaryFactors || requiredSecondaryFactors != null) {
+            requestBody.add("requiredSecondaryFactors", new Gson().toJsonTree(requiredSecondaryFactors));
         }
 
         requestBody.add("coreConfig", coreConfig);

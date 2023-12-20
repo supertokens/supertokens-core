@@ -47,7 +47,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                           TenantIdentifier targetTenantIdentifier, Boolean emailPasswordEnabled,
                           Boolean thirdPartyEnabled, Boolean passwordlessEnabled, Boolean totpEnabled,
                           boolean hasFirstFactors, String[] firstFactors,
-                          boolean hasDefaultRequiredFactorIds, String[] defaultRequiredFactorIds,
+                          boolean hasRequiredSecondaryFactors, String[] requiredSecondaryFactors,
                           JsonObject coreConfig, HttpServletResponse resp)
             throws ServletException, IOException {
 
@@ -65,7 +65,6 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        new TotpConfig(true),
                         null, null, new JsonObject()
                 );
             } else {
@@ -75,7 +74,6 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                         new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(false),
-                        new TotpConfig(false),
                         null, null, new JsonObject()
                 );
             }
@@ -88,8 +86,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                     new EmailPasswordConfig(emailPasswordEnabled),
                     tenantConfig.thirdPartyConfig,
                     tenantConfig.passwordlessConfig,
-                    tenantConfig.totpConfig,
-                    tenantConfig.firstFactors, tenantConfig.defaultRequiredFactorIds, tenantConfig.coreConfig
+                    tenantConfig.firstFactors, tenantConfig.requiredSecondaryFactors, tenantConfig.coreConfig
             );
         }
 
@@ -99,8 +96,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                     tenantConfig.emailPasswordConfig,
                     new ThirdPartyConfig(thirdPartyEnabled, tenantConfig.thirdPartyConfig.providers),
                     tenantConfig.passwordlessConfig,
-                    tenantConfig.totpConfig,
-                    tenantConfig.firstFactors, tenantConfig.defaultRequiredFactorIds, tenantConfig.coreConfig
+                    tenantConfig.firstFactors, tenantConfig.requiredSecondaryFactors, tenantConfig.coreConfig
             );
         }
 
@@ -110,8 +106,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                     tenantConfig.emailPasswordConfig,
                     tenantConfig.thirdPartyConfig,
                     new PasswordlessConfig(passwordlessEnabled),
-                    tenantConfig.totpConfig,
-                    tenantConfig.firstFactors, tenantConfig.defaultRequiredFactorIds, tenantConfig.coreConfig
+                    tenantConfig.firstFactors, tenantConfig.requiredSecondaryFactors, tenantConfig.coreConfig
             );
         }
 
@@ -121,8 +116,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                     tenantConfig.emailPasswordConfig,
                     tenantConfig.thirdPartyConfig,
                     tenantConfig.passwordlessConfig,
-                    new TotpConfig(totpEnabled),
-                    tenantConfig.firstFactors, tenantConfig.defaultRequiredFactorIds, tenantConfig.coreConfig
+                    tenantConfig.firstFactors, tenantConfig.requiredSecondaryFactors, tenantConfig.coreConfig
             );
         }
 
@@ -132,19 +126,17 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                     tenantConfig.emailPasswordConfig,
                     tenantConfig.thirdPartyConfig,
                     tenantConfig.passwordlessConfig,
-                    tenantConfig.totpConfig,
-                    firstFactors, tenantConfig.defaultRequiredFactorIds, tenantConfig.coreConfig
+                    firstFactors, tenantConfig.requiredSecondaryFactors, tenantConfig.coreConfig
             );
         }
 
-        if (hasDefaultRequiredFactorIds) {
+        if (hasRequiredSecondaryFactors) {
             tenantConfig = new TenantConfig(
                     tenantConfig.tenantIdentifier,
                     tenantConfig.emailPasswordConfig,
                     tenantConfig.thirdPartyConfig,
                     tenantConfig.passwordlessConfig,
-                    tenantConfig.totpConfig,
-                    tenantConfig.firstFactors, defaultRequiredFactorIds, tenantConfig.coreConfig
+                    tenantConfig.firstFactors, requiredSecondaryFactors, tenantConfig.coreConfig
             );
         }
 
@@ -155,8 +147,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                     tenantConfig.emailPasswordConfig,
                     tenantConfig.thirdPartyConfig,
                     tenantConfig.passwordlessConfig,
-                    tenantConfig.totpConfig,
-                    tenantConfig.firstFactors, tenantConfig.defaultRequiredFactorIds, coreConfig
+                    tenantConfig.firstFactors, tenantConfig.requiredSecondaryFactors, coreConfig
             );
         }
 

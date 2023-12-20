@@ -462,7 +462,6 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new TotpConfig(false),
                 null, null,
                 new JsonObject()
         ), false);
@@ -471,7 +470,6 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new TotpConfig(false),
                 null, null,
                 new JsonObject()
         ), false);
@@ -480,7 +478,6 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new TotpConfig(false),
                 null, null,
                 new JsonObject()
         ), false);
@@ -489,7 +486,6 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new TotpConfig(false),
                 null, null,
                 new JsonObject()
         ), false);
@@ -504,7 +500,6 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new TotpConfig(false),
                 null, null,
                 config
         ), false);
@@ -514,7 +509,6 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new TotpConfig(false),
                 null, null,
                 config
         ), false);
@@ -523,7 +517,6 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new TotpConfig(false),
                 null, null,
                 config
         ), false);
@@ -532,7 +525,6 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new TotpConfig(false),
                 null, null,
                 config
         ), false);
@@ -562,7 +554,6 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new TotpConfig(false),
                 null, null,
                 new JsonObject()
         ), false);
@@ -571,7 +562,6 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new TotpConfig(false),
                 null, null,
                 new JsonObject()
         ), false);
@@ -580,7 +570,6 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new TotpConfig(false),
                 null, null,
                 new JsonObject()
         ), false);
@@ -589,7 +578,6 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new TotpConfig(false),
                 null, null,
                 new JsonObject()
         ), false);
@@ -622,7 +610,6 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new TotpConfig(false),
                 null, null,
                 new JsonObject()
         ), false);
@@ -631,7 +618,6 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new TotpConfig(false),
                 null, null,
                 new JsonObject()
         ), false);
@@ -640,7 +626,6 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new TotpConfig(false),
                 null, null,
                 new JsonObject()
         ), false);
@@ -649,7 +634,6 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new TotpConfig(false),
                 null, null,
                 new JsonObject()
         ), false);
@@ -683,7 +667,6 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new TotpConfig(false),
                 null, null,
                 new JsonObject()
         ), false);
@@ -692,7 +675,6 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new TotpConfig(false),
                 null, null,
                 new JsonObject()
         ), false);
@@ -701,7 +683,6 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new TotpConfig(false),
                 null, null,
                 new JsonObject()
         ), false);
@@ -710,7 +691,6 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new TotpConfig(false),
                 null, null,
                 new JsonObject()
         ), false);
@@ -748,7 +728,6 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new TotpConfig(false),
                 null, null,
                 new JsonObject()
         ), false);
@@ -757,7 +736,6 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new TotpConfig(false),
                 null, null,
                 new JsonObject()
         ), false);
@@ -769,7 +747,6 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new TotpConfig(false),
                 null, null,
                 config
         ), false);
@@ -778,7 +755,6 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new TotpConfig(false),
                 null, null,
                 config
         ), false);
@@ -819,7 +795,6 @@ public class CronjobTest {
                 new EmailPasswordConfig(false),
                 new ThirdPartyConfig(false, null),
                 new PasswordlessConfig(false),
-                new TotpConfig(false),
                 null, null,
                 new JsonObject()
         ), false);
@@ -841,7 +816,6 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(false, null),
                 new PasswordlessConfig(false),
-                new TotpConfig(false),
                 null, null,
                 new JsonObject()
         ));
@@ -943,7 +917,6 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new TotpConfig(false),
                 null, null,
                 coreConfig
         ), false, false, true);
@@ -952,7 +925,6 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new TotpConfig(false),
                 null, null,
                 coreConfig
         ), false, false, true);
@@ -961,7 +933,6 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new TotpConfig(false),
                 null, null,
                 coreConfig
         ), false, false, true);
@@ -970,7 +941,6 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new TotpConfig(false),
                 null, null,
                 coreConfig
         ), false, false, true);

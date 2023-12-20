@@ -91,13 +91,6 @@ public class GenerateTenantConfig {
         return ConfigGenerator.generate(ThirdPartyConfig.class);
     }
 
-    public static ConfigGenerator.GeneratedValueAndExpectation generate_totpConfig()
-            throws ClassNotFoundException, InvocationTargetException, NoSuchMethodException, IllegalAccessException,
-            InstantiationException {
-        return ConfigGenerator.generate(TotpConfig.class);
-    }
-
-
     public static ConfigGenerator.GeneratedValueAndExpectation generate_firstFactors() {
         if (new Random().nextFloat() < 0.15) {
             return new ConfigGenerator.GeneratedValueAndExpectation(
@@ -111,7 +104,7 @@ public class GenerateTenantConfig {
                 new ConfigGenerator.Expectation("ok", factors));
     }
 
-    public static ConfigGenerator.GeneratedValueAndExpectation generate_defaultRequiredFactorIds() {
+    public static ConfigGenerator.GeneratedValueAndExpectation generate_requiredSecondaryFactors() {
         if (new Random().nextFloat() < 0.15) {
             return new ConfigGenerator.GeneratedValueAndExpectation(
                     null,

@@ -16,7 +16,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changes
 
 - `deviceName` in request body of `CreateOrUpdateTotpDeviceAPI` `POST` is now optional
-- Adds `totpEnabled`, `firstFactors` and `defaultRequiredFactorIds` in request body of create or update CUD, App and
+- Adds `firstFactors` and `requiredSecondaryFactors` in request body of create or update CUD, App and
   Tenant APIs
 - Adds `deviceName` in the response of `CreateOrUpdateTotpDeviceAPI` `POST`
 - `VerifyTOTPAPI` changes
@@ -25,8 +25,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     `INVALID_TOTP_ERROR` or `LIMIT_REACHED_ERROR`
   - Adds status `UNKNOWN_USER_ID_ERROR`
 - `VerifyTotpDeviceAPI` changes
-    - Adds `currentNumberOfFailedAttempts` and `maxNumberOfFailedAttempts` in response when status is
-      `INVALID_TOTP_ERROR` or `LIMIT_REACHED_ERROR`
+  - Adds `currentNumberOfFailedAttempts` and `maxNumberOfFailedAttempts` in response when status is
+    `INVALID_TOTP_ERROR` or `LIMIT_REACHED_ERROR`
 
 ### Migration
 

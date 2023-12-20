@@ -54,10 +54,10 @@ public class MfaSqlHelper {
         });
     }
 
-    public static HashMap<TenantIdentifier, String[]> selectAllDefaultRequiredFactorIds(Start start)
+    public static HashMap<TenantIdentifier, String[]> selectAllRequiredSecondaryFactors(Start start)
             throws SQLException, StorageQueryException {
-        String QUERY = "SELECT connection_uri_domain, app_id, tenant_id, factor_id, order_idx FROM "
-                + Config.getConfig(start).getTenantDefaultRequiredFactorIdsTable() + " ORDER BY order_idx ASC;";
+        String QUERY = "SELECT connection_uri_domain, app_id, tenant_id, factor_id FROM "
+                + Config.getConfig(start).getTenantRequiredSecondaryFactorsTable() + ";";
         return execute(start, QUERY, pst -> {}, result -> {
             HashMap<TenantIdentifier, List<String>> defaultRequiredFactors = new HashMap<>();
 
@@ -97,24 +97,20 @@ public class MfaSqlHelper {
         }
     }
 
-    public static void createDefaultRequiredFactorIds(Start start, Connection sqlCon, TenantIdentifier tenantIdentifier, String[] defaultRequiredFactorIds)
+    public static void createRequiredSecondaryFactors(Start start, Connection sqlCon, TenantIdentifier tenantIdentifier, String[] requiredSecondaryFactors)
             throws SQLException, StorageQueryException {
-        if (defaultRequiredFactorIds == null || defaultRequiredFactorIds.length == 0) {
+        if (requiredSecondaryFactors == null || requiredSecondaryFactors.length == 0) {
             return;
         }
 
-        String QUERY = "INSERT INTO " + Config.getConfig(start).getTenantDefaultRequiredFactorIdsTable() + "(connection_uri_domain, app_id, tenant_id, factor_id, order_idx) VALUES (?, ?, ?, ?, ?);";
-        int orderIdx = 0;
-        for (String factorId : defaultRequiredFactorIds) {
-            int finalOrderIdx = orderIdx;
+        String QUERY = "INSERT INTO " + Config.getConfig(start).getTenantRequiredSecondaryFactorsTable() + "(connection_uri_domain, app_id, tenant_id, factor_id) VALUES (?, ?, ?, ?);";
+        for (String factorId : requiredSecondaryFactors) {
             update(sqlCon, QUERY, pst -> {
                 pst.setString(1, tenantIdentifier.getConnectionUriDomain());
                 pst.setString(2, tenantIdentifier.getAppId());
                 pst.setString(3, tenantIdentifier.getTenantId());
                 pst.setString(4, factorId);
-                pst.setInt(5, finalOrderIdx);
             });
-            orderIdx++;
         }
     }
 }

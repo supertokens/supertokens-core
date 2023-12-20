@@ -118,7 +118,6 @@ public class SigningKeysTest {
                 new TenantConfig(new TenantIdentifier("c1", null, null), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        new TotpConfig(false),
                         null, null, tenantConfig)};
 
         for (TenantConfig config : tenants) {
@@ -190,12 +189,10 @@ public class SigningKeysTest {
                 new TenantConfig(new TenantIdentifier("c1", null, null), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        new TotpConfig(false),
                         null, null, tenantConfig),
                 new TenantConfig(new TenantIdentifier("c2", null, null), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        new TotpConfig(false),
                         null, null, tenantConfig2)};
 
         for (TenantConfig config : tenants) {

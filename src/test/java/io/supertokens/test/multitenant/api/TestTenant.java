@@ -349,76 +349,6 @@ public class TestTenant {
     }
 
     @Test
-    public void testTotpEnabledBoolean() throws Exception {
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            return;
-        }
-
-        JsonObject config = new JsonObject();
-        StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
-
-        JsonObject response = TestMultitenancyAPIHelper.createTenant(
-                process.getProcess(),
-                new TenantIdentifier(null, null, null),
-                "t1", null, null, null,
-                config);
-
-        assertTrue(response.get("createdNew").getAsBoolean());
-
-        JsonObject tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, null, "t1"),
-                process.getProcess(), SemVer.v5_0);
-        assertFalse(tenant.get("totp").getAsJsonObject().get("enabled").getAsBoolean());
-
-        response = TestMultitenancyAPIHelper.createTenant(
-                process.getProcess(),
-                new TenantIdentifier(null, null, null),
-                "t1", null, null, null,
-                true, false, null, false, null,
-                config, SemVer.v5_0);
-        assertFalse(response.get("createdNew").getAsBoolean());
-
-        tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, null, "t1"),
-                process.getProcess(), SemVer.v5_0);
-        assertTrue(tenant.get("totp").getAsJsonObject().get("enabled").getAsBoolean());
-
-        response = TestMultitenancyAPIHelper.createTenant(
-                process.getProcess(),
-                new TenantIdentifier(null, null, null),
-                "t1", null, null, null,
-                null, false, null, false, null,
-                config, SemVer.v5_0);
-        assertFalse(response.get("createdNew").getAsBoolean());
-
-        tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, null, "t1"),
-                process.getProcess(), SemVer.v5_0);
-        assertTrue(tenant.get("totp").getAsJsonObject().get("enabled").getAsBoolean());
-
-        response = TestMultitenancyAPIHelper.createTenant(
-                process.getProcess(),
-                new TenantIdentifier(null, null, null),
-                "t1", null, null, null,
-                false, false, null, false, null,
-                config, SemVer.v5_0);
-        assertFalse(response.get("createdNew").getAsBoolean());
-
-        tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, null, "t1"),
-                process.getProcess(), SemVer.v5_0);
-        assertFalse(tenant.get("totp").getAsJsonObject().get("enabled").getAsBoolean());
-
-        response = TestMultitenancyAPIHelper.createTenant(
-                process.getProcess(),
-                new TenantIdentifier(null, null, null),
-                "t1", null, null, null,
-                null, false, null, false, null,
-                config, SemVer.v5_0);
-        assertFalse(response.get("createdNew").getAsBoolean());
-
-        tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, null, "t1"),
-                process.getProcess(), SemVer.v5_0);
-        assertFalse(tenant.get("totp").getAsJsonObject().get("enabled").getAsBoolean());
-    }
-
-    @Test
     public void testFirstFactorsArray() throws Exception {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
@@ -515,7 +445,7 @@ public class TestTenant {
     }
 
     @Test
-    public void testDefaultRequiredFactorIdsArray() throws Exception {
+    public void testRequiredSecondaryFactorsArray() throws Exception {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
@@ -533,10 +463,10 @@ public class TestTenant {
 
         JsonObject tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, null, "t1"),
                 process.getProcess(), SemVer.v5_0);
-        assertNull(tenant.get("defaultRequiredFactorIds"));
+        assertNull(tenant.get("requiredSecondaryFactors"));
 
         // builtin firstFactor
-        String[] defaultRequiredFactorIds = new String[]{"otp-phone"};
+        String[] requiredSecondaryFactors = new String[]{"otp-phone"};
         response = TestMultitenancyAPIHelper.createTenant(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
@@ -547,9 +477,9 @@ public class TestTenant {
 
         tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, null, "t1"),
                 process.getProcess(), SemVer.v5_0);
-        assertTrue(tenant.get("defaultRequiredFactorIds").isJsonArray());
-        assertEquals(1, tenant.get("defaultRequiredFactorIds").getAsJsonArray().size());
-        assertEquals(defaultRequiredFactorIds, new Gson().fromJson(tenant.get("defaultRequiredFactorIds").getAsJsonArray(), String[].class));
+        assertTrue(tenant.get("requiredSecondaryFactors").isJsonArray());
+        assertEquals(1, tenant.get("requiredSecondaryFactors").getAsJsonArray().size());
+        assertEquals(requiredSecondaryFactors, new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class));
 
         response = TestMultitenancyAPIHelper.createTenant(
                 process.getProcess(),
@@ -561,41 +491,41 @@ public class TestTenant {
 
         tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, null, "t1"),
                 process.getProcess(), SemVer.v5_0);
-        assertTrue(tenant.get("defaultRequiredFactorIds").isJsonArray());
-        assertEquals(1, tenant.get("defaultRequiredFactorIds").getAsJsonArray().size());
-        assertEquals(defaultRequiredFactorIds, new Gson().fromJson(tenant.get("defaultRequiredFactorIds").getAsJsonArray(), String[].class));
+        assertTrue(tenant.get("requiredSecondaryFactors").isJsonArray());
+        assertEquals(1, tenant.get("requiredSecondaryFactors").getAsJsonArray().size());
+        assertEquals(requiredSecondaryFactors, new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class));
 
         // custom factors
-        defaultRequiredFactorIds = new String[]{"biometric"};
+        requiredSecondaryFactors = new String[]{"biometric"};
         response = TestMultitenancyAPIHelper.createTenant(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
                 "t1", null, null, null,
-                null, false, null, true, defaultRequiredFactorIds,
+                null, false, null, true, requiredSecondaryFactors,
                 config, SemVer.v5_0);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, null, "t1"),
                 process.getProcess(), SemVer.v5_0);
-        assertTrue(tenant.get("defaultRequiredFactorIds").isJsonArray());
-        assertEquals(1, tenant.get("defaultRequiredFactorIds").getAsJsonArray().size());
-        assertEquals(defaultRequiredFactorIds, new Gson().fromJson(tenant.get("defaultRequiredFactorIds").getAsJsonArray(), String[].class));
+        assertTrue(tenant.get("requiredSecondaryFactors").isJsonArray());
+        assertEquals(1, tenant.get("requiredSecondaryFactors").getAsJsonArray().size());
+        assertEquals(requiredSecondaryFactors, new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class));
 
         // test both
-        defaultRequiredFactorIds = new String[]{"otp-phone", "emailpassword", "biometric", "custom"};
+        requiredSecondaryFactors = new String[]{"otp-phone", "emailpassword", "biometric", "custom"};
         response = TestMultitenancyAPIHelper.createTenant(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
                 "t1", null, null, null,
-                null, false, null, true, defaultRequiredFactorIds,
+                null, false, null, true, requiredSecondaryFactors,
                 config, SemVer.v5_0);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, null, "t1"),
                 process.getProcess(), SemVer.v5_0);
-        assertTrue(tenant.get("defaultRequiredFactorIds").isJsonArray());
-        assertEquals(4, tenant.get("defaultRequiredFactorIds").getAsJsonArray().size());
-        assertEquals(Set.of(defaultRequiredFactorIds), Set.of(new Gson().fromJson(tenant.get("defaultRequiredFactorIds").getAsJsonArray(), String[].class)));
+        assertTrue(tenant.get("requiredSecondaryFactors").isJsonArray());
+        assertEquals(4, tenant.get("requiredSecondaryFactors").getAsJsonArray().size());
+        assertEquals(Set.of(requiredSecondaryFactors), Set.of(new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class)));
 
         response = TestMultitenancyAPIHelper.createTenant(
                 process.getProcess(),
@@ -607,11 +537,11 @@ public class TestTenant {
 
         tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, null, "t1"),
                 process.getProcess(), SemVer.v5_0);
-        assertNull(tenant.get("defaultRequiredFactorIds"));
+        assertNull(tenant.get("requiredSecondaryFactors"));
     }
 
     @Test
-    public void testDuplicateValuesInFirstFactorsAndDefaultRequiredFactorIds() throws Exception {
+    public void testDuplicateValuesInFirstFactorsAndRequiredSecondaryFactors() throws Exception {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
@@ -643,7 +573,7 @@ public class TestTenant {
             fail();
         } catch (HttpResponseException e) {
             assertEquals(400, e.statusCode);
-            assertEquals("Http error. Status Code: 400. Message: defaultRequiredFactorIds input should not contain duplicate values", e.getMessage());
+            assertEquals("Http error. Status Code: 400. Message: requiredSecondaryFactors input should not contain duplicate values", e.getMessage());
         }
 
     }

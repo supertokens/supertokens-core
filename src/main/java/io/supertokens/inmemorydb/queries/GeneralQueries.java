@@ -182,7 +182,7 @@ public class GeneralQueries {
                 + Config.getConfig(start).getKeyValueTable() + "(app_id, tenant_id);";
     }
 
-   private static String getQueryToCreateAppIdToUserIdTable(Start start) {
+    private static String getQueryToCreateAppIdToUserIdTable(Start start) {
         String appToUserTable = Config.getConfig(start).getAppIdToUserIdTable();
         // @formatter:off
         return "CREATE TABLE IF NOT EXISTS " + appToUserTable + " ("
@@ -264,14 +264,9 @@ public class GeneralQueries {
             update(start, MultitenancyQueries.getQueryToCreateFirstFactorsTable(start), NO_OP_SETTER);
         }
 
-        if (!doesTableExists(start, Config.getConfig(start).getTenantDefaultRequiredFactorIdsTable())) {
+        if (!doesTableExists(start, Config.getConfig(start).getTenantRequiredSecondaryFactorsTable())) {
             getInstance(main).addState(CREATING_NEW_TABLE, null);
-            update(start, MultitenancyQueries.getQueryToCreateDefaultRequiredFactorIdsTable(start), NO_OP_SETTER);
-
-            // index
-            update(start,
-                    MultitenancyQueries.getQueryToCreateOrderIndexForDefaultRequiredFactorIdsTable(start),
-                    NO_OP_SETTER);
+            update(start, MultitenancyQueries.getQueryToCreateRequiredSecondaryFactorsTable(start), NO_OP_SETTER);
         }
 
         if (!doesTableExists(start, Config.getConfig(start).getTenantThirdPartyProvidersTable())) {
