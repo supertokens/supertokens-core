@@ -754,6 +754,23 @@ public class TestApp {
             config, SemVer.v5_0);
 
         {
+            try {
+                TestMultitenancyAPIHelper.createApp(
+                        process.getProcess(),
+                        new TenantIdentifier(null, null, null),
+                        "a1", false, null, null,
+                        true, new String[]{}, false, null,
+                        config, SemVer.v5_0);
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(400, e.statusCode);
+                assertEquals(
+                        "Http error. Status Code: 400. Message: firstFactors cannot be empty",
+                        e.getMessage());
+            }
+        }
+
+        {
             String[] factors = new String[]{"emailpassword", "custom"};
             try {
                 TestMultitenancyAPIHelper.createApp(
@@ -884,6 +901,23 @@ public class TestApp {
                 "a1", true, true, true,
                 false, null, false, null,
                 config, SemVer.v5_0);
+
+        {
+            try {
+                TestMultitenancyAPIHelper.createApp(
+                        process.getProcess(),
+                        new TenantIdentifier(null, null, null),
+                        "a1", false, null, null,
+                        false, null, true, new String[]{},
+                        config, SemVer.v5_0);
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(400, e.statusCode);
+                assertEquals(
+                        "Http error. Status Code: 400. Message: requiredSecondaryFactors cannot be empty",
+                        e.getMessage());
+            }
+        }
 
         {
             String[] factors = new String[]{"emailpassword", "custom"};

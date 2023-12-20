@@ -51,6 +51,14 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                           JsonObject coreConfig, HttpServletResponse resp)
             throws ServletException, IOException {
 
+        if (hasFirstFactors && firstFactors != null && firstFactors.length == 0) {
+            throw new ServletException(new BadRequestException("firstFactors cannot be empty"));
+        }
+
+        if (hasRequiredSecondaryFactors && requiredSecondaryFactors != null && requiredSecondaryFactors.length == 0) {
+            throw new ServletException(new BadRequestException("requiredSecondaryFactors cannot be empty"));
+        }
+
         TenantConfig tenantConfig = Multitenancy.getTenantInfo(main,
                 new TenantIdentifier(targetTenantIdentifier.getConnectionUriDomain(), targetTenantIdentifier.getAppId(),
                         targetTenantIdentifier.getTenantId()));

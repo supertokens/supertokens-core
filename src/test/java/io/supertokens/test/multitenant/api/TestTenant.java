@@ -374,7 +374,7 @@ public class TestTenant {
         response = TestMultitenancyAPIHelper.createTenant(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "t1", null, null, null,
+                "t1", null, null, true,
                 true, new String[]{"otp-phone"}, false, null,
                 config, SemVer.v5_0);
         assertFalse(response.get("createdNew").getAsBoolean());
@@ -420,7 +420,7 @@ public class TestTenant {
         response = TestMultitenancyAPIHelper.createTenant(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "t1", null, null, null,
+                "t1", true, null, true,
                 true, firstFactors, false, null,
                 config, SemVer.v5_0);
         assertFalse(response.get("createdNew").getAsBoolean());
@@ -470,7 +470,7 @@ public class TestTenant {
         response = TestMultitenancyAPIHelper.createTenant(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "t1", null, null, null,
+                "t1", null, null, true,
                 false, null, true, new String[]{"otp-phone"},
                 config, SemVer.v5_0);
         assertFalse(response.get("createdNew").getAsBoolean());
@@ -516,7 +516,7 @@ public class TestTenant {
         response = TestMultitenancyAPIHelper.createTenant(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "t1", null, null, null,
+                "t1", true, null, true,
                 false, null, true, requiredSecondaryFactors,
                 config, SemVer.v5_0);
         assertFalse(response.get("createdNew").getAsBoolean());

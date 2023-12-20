@@ -26,12 +26,12 @@ import java.util.Set;
 
 public class GenerateTenantConfig {
     private static final String[] FACTORS = new String[]{
-            "emailpassword",
-            "thirdparty",
-            "otp-email",
-            "otp-phone",
-            "link-email",
-            "link-phone",
+            "emailpassword1",
+            "thirdparty1",
+            "otp-email1",
+            "otp-phone1",
+            "link-email1",
+            "link-phone1",
             "totp",
             "biometric",
             "custom"
