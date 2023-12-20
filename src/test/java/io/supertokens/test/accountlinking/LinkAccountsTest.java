@@ -465,7 +465,6 @@ public class LinkAccountsTest {
         Multitenancy.addNewOrUpdateAppOrTenant(process.main, new TenantIdentifier(null, null, null),
                 new TenantConfig(new TenantIdentifier(null, null, "t1"), new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[0]), new PasswordlessConfig(true),
-                        new TotpConfig(false),
                         null, null, new JsonObject()));
 
         TenantIdentifierWithStorage tenantIdentifierWithStorage = new TenantIdentifierWithStorage(null, null, "t1",
@@ -519,7 +518,6 @@ public class LinkAccountsTest {
         Multitenancy.addNewOrUpdateAppOrTenant(process.main, new TenantIdentifier(null, null, null),
                 new TenantConfig(new TenantIdentifier(null, null, "t1"), new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[0]), new PasswordlessConfig(true),
-                        new TotpConfig(false),
                         null, null, new JsonObject()));
 
         TenantIdentifierWithStorage tenantIdentifierWithStorage = new TenantIdentifierWithStorage(null, null, "t1",

@@ -103,7 +103,7 @@ public class TestAppData {
             return;
         }
 
-        String[] tablesToIgnore = new String[]{"tenant_thirdparty_provider_clients", "tenant_thirdparty_providers", "tenant_first_factors", "tenant_default_required_factor_ids"};
+        String[] tablesToIgnore = new String[]{"tenant_thirdparty_provider_clients", "tenant_thirdparty_providers", "tenant_first_factors", "tenant_required_secondary_factors"};
 
         TenantIdentifier app = new TenantIdentifier(null, "a1", null);
 
@@ -112,7 +112,6 @@ public class TestAppData {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new TotpConfig(false),
                 null, null, new JsonObject()
         ), false);
 

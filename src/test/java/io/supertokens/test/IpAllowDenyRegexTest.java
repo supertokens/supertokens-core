@@ -385,13 +385,13 @@ public class IpAllowDenyRegexTest extends Mockito {
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     new TenantIdentifier(null, null, "t1"),
                     new EmailPasswordConfig(true), new ThirdPartyConfig(true, null), new PasswordlessConfig(true),
-                    new TotpConfig(false),null, null,
+                    null, null,
                     coreConfig
             ), false);
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     new TenantIdentifier(null, null, "t2"),
                     new EmailPasswordConfig(true), new ThirdPartyConfig(true, null), new PasswordlessConfig(true),
-                    new TotpConfig(false),null, null,
+                    null, null,
                     new JsonObject()
             ), false);
 
@@ -427,13 +427,13 @@ public class IpAllowDenyRegexTest extends Mockito {
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     new TenantIdentifier(null, null, "t1"),
                     new EmailPasswordConfig(true), new ThirdPartyConfig(true, null), new PasswordlessConfig(true),
-                    new TotpConfig(false),null, null,
+                    null, null,
                     coreConfig
             ), false);
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     new TenantIdentifier(null, null, "t2"),
                     new EmailPasswordConfig(true), new ThirdPartyConfig(true, null), new PasswordlessConfig(true),
-                    new TotpConfig(false),null, null,
+                    null, null,
                     new JsonObject()
             ), false);
 
