@@ -492,80 +492,6 @@ public class TestConnectionUriDomain {
     }
 
     @Test
-    public void testTotpEnabledBoolean() throws Exception {
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            return;
-        }
-
-        if (StorageLayer.isInMemDb(process.getProcess())) {
-            return;
-        }
-
-        JsonObject config = new JsonObject();
-        StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
-
-        JsonObject response = TestMultitenancyAPIHelper.createConnectionUriDomain(
-                process.getProcess(),
-                new TenantIdentifier(null, null, null),
-                "127.0.0.1", null, null, null,
-                config);
-
-        assertTrue(response.get("createdNew").getAsBoolean());
-
-        JsonObject tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier("127.0.0.1", null, null),
-                process.getProcess(), SemVer.v5_0);
-        assertTrue(tenant.get("totp").getAsJsonObject().get("enabled").getAsBoolean());
-
-        response = TestMultitenancyAPIHelper.createConnectionUriDomain(
-                process.getProcess(),
-                new TenantIdentifier(null, null, null),
-                "127.0.0.1", null, null, null,
-                true, false, null, false, null,
-                config, SemVer.v5_0);
-        assertFalse(response.get("createdNew").getAsBoolean());
-
-        tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier("127.0.0.1", null, null),
-                process.getProcess(), SemVer.v5_0);
-        assertTrue(tenant.get("totp").getAsJsonObject().get("enabled").getAsBoolean());
-
-        response = TestMultitenancyAPIHelper.createConnectionUriDomain(
-                process.getProcess(),
-                new TenantIdentifier(null, null, null),
-                "127.0.0.1", null, null, null,
-                null, false, null, false, null,
-                config, SemVer.v5_0);
-        assertFalse(response.get("createdNew").getAsBoolean());
-
-        tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier("127.0.0.1", null, null),
-                process.getProcess(), SemVer.v5_0);
-        assertTrue(tenant.get("totp").getAsJsonObject().get("enabled").getAsBoolean());
-
-        response = TestMultitenancyAPIHelper.createConnectionUriDomain(
-                process.getProcess(),
-                new TenantIdentifier(null, null, null),
-                "127.0.0.1", null, null, null,
-                false, false, null, false, null,
-                config, SemVer.v5_0);
-        assertFalse(response.get("createdNew").getAsBoolean());
-
-        tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier("127.0.0.1", null, null),
-                process.getProcess(), SemVer.v5_0);
-        assertFalse(tenant.get("totp").getAsJsonObject().get("enabled").getAsBoolean());
-
-        response = TestMultitenancyAPIHelper.createConnectionUriDomain(
-                process.getProcess(),
-                new TenantIdentifier(null, null, null),
-                "127.0.0.1", null, null, null,
-                null, false, null, false, null,
-                config, SemVer.v5_0);
-        assertFalse(response.get("createdNew").getAsBoolean());
-
-        tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier("127.0.0.1", null, null),
-                process.getProcess(), SemVer.v5_0);
-        assertFalse(tenant.get("totp").getAsJsonObject().get("enabled").getAsBoolean());
-    }
-
-    @Test
     public void testFirstFactorsArray() throws Exception {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
@@ -596,7 +522,7 @@ public class TestConnectionUriDomain {
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
                 "127.0.0.1", null, null, null,
-                null, true, new String[]{"otp-phone"}, false, null,
+                true, new String[]{"otp-phone"}, false, null,
                 config, SemVer.v5_0);
         assertFalse(response.get("createdNew").getAsBoolean());
 
@@ -610,7 +536,7 @@ public class TestConnectionUriDomain {
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
                 "127.0.0.1", null, null, null,
-                null, false, null, false, null,
+                false, null, false, null,
                 config, SemVer.v5_0);
         assertFalse(response.get("createdNew").getAsBoolean());
 
@@ -626,7 +552,7 @@ public class TestConnectionUriDomain {
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
                 "127.0.0.1", null, null, null,
-                null, true, firstFactors, false, null,
+                true, firstFactors, false, null,
                 config, SemVer.v5_0);
         assertFalse(response.get("createdNew").getAsBoolean());
 
@@ -642,7 +568,7 @@ public class TestConnectionUriDomain {
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
                 "127.0.0.1", null, null, null,
-                null, true, firstFactors, false, null,
+                true, firstFactors, false, null,
                 config, SemVer.v5_0);
         assertFalse(response.get("createdNew").getAsBoolean());
 
@@ -656,7 +582,7 @@ public class TestConnectionUriDomain {
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
                 "127.0.0.1", null, null, null,
-                null, true, null, false, null,
+                true, null, false, null,
                 config, SemVer.v5_0);
         assertFalse(response.get("createdNew").getAsBoolean());
 
@@ -696,7 +622,7 @@ public class TestConnectionUriDomain {
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
                 "127.0.0.1", null, null, null,
-                null, false, null, true, new String[]{"otp-phone"},
+                false, null, true, new String[]{"otp-phone"},
                 config, SemVer.v5_0);
         assertFalse(response.get("createdNew").getAsBoolean());
 
@@ -710,7 +636,7 @@ public class TestConnectionUriDomain {
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
                 "127.0.0.1", null, null, null,
-                null, false, null, false, null,
+                false, null, false, null,
                 config, SemVer.v5_0);
         assertFalse(response.get("createdNew").getAsBoolean());
 
@@ -726,7 +652,7 @@ public class TestConnectionUriDomain {
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
                 "127.0.0.1", null, null, null,
-                null, false, null, true, requiredSecondaryFactors,
+                false, null, true, requiredSecondaryFactors,
                 config, SemVer.v5_0);
         assertFalse(response.get("createdNew").getAsBoolean());
 
@@ -742,7 +668,7 @@ public class TestConnectionUriDomain {
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
                 "127.0.0.1", null, null, null,
-                null, false, null, true, requiredSecondaryFactors,
+                false, null, true, requiredSecondaryFactors,
                 config, SemVer.v5_0);
         assertFalse(response.get("createdNew").getAsBoolean());
 
@@ -756,7 +682,7 @@ public class TestConnectionUriDomain {
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
                 "127.0.0.1", null, null, null,
-                null, false, null, true, null,
+                false, null, true, null,
                 config, SemVer.v5_0);
         assertFalse(response.get("createdNew").getAsBoolean());
 
@@ -780,7 +706,7 @@ public class TestConnectionUriDomain {
                     process.getProcess(),
                     new TenantIdentifier(null, null, null),
                     "127.0.0.1", null, null, null,
-                    null, true, factors, false, null,
+                    true, factors, false, null,
                     config, SemVer.v5_0);
             fail();
         } catch (HttpResponseException e) {
@@ -793,7 +719,7 @@ public class TestConnectionUriDomain {
                     process.getProcess(),
                     new TenantIdentifier(null, null, null),
                     "127.0.0.1", null, null, null,
-                    null, false, null, true, factors,
+                    false, null, true, factors,
                     config, SemVer.v5_0);
             fail();
         } catch (HttpResponseException e) {

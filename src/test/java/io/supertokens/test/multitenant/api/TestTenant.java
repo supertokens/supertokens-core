@@ -375,7 +375,7 @@ public class TestTenant {
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
                 "t1", null, null, null,
-                null, true, new String[]{"otp-phone"}, false, null,
+                true, new String[]{"otp-phone"}, false, null,
                 config, SemVer.v5_0);
         assertFalse(response.get("createdNew").getAsBoolean());
 
@@ -389,7 +389,7 @@ public class TestTenant {
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
                 "t1", null, null, null,
-                null, false, null, false, null,
+                false, null, false, null,
                 config, SemVer.v5_0);
         assertFalse(response.get("createdNew").getAsBoolean());
 
@@ -405,7 +405,7 @@ public class TestTenant {
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
                 "t1", null, null, null,
-                null, true, firstFactors, false, null,
+                true, firstFactors, false, null,
                 config, SemVer.v5_0);
         assertFalse(response.get("createdNew").getAsBoolean());
 
@@ -421,7 +421,7 @@ public class TestTenant {
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
                 "t1", null, null, null,
-                null, true, firstFactors, false, null,
+                true, firstFactors, false, null,
                 config, SemVer.v5_0);
         assertFalse(response.get("createdNew").getAsBoolean());
 
@@ -435,7 +435,7 @@ public class TestTenant {
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
                 "t1", null, null, null,
-                null, true, null, false, null,
+                true, null, false, null,
                 config, SemVer.v5_0);
         assertFalse(response.get("createdNew").getAsBoolean());
 
@@ -471,7 +471,7 @@ public class TestTenant {
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
                 "t1", null, null, null,
-                null, false, null, true, new String[]{"otp-phone"},
+                false, null, true, new String[]{"otp-phone"},
                 config, SemVer.v5_0);
         assertFalse(response.get("createdNew").getAsBoolean());
 
@@ -485,7 +485,7 @@ public class TestTenant {
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
                 "t1", null, null, null,
-                null, false, null, false, null,
+                false, null, false, null,
                 config, SemVer.v5_0);
         assertFalse(response.get("createdNew").getAsBoolean());
 
@@ -501,7 +501,7 @@ public class TestTenant {
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
                 "t1", null, null, null,
-                null, false, null, true, requiredSecondaryFactors,
+                false, null, true, requiredSecondaryFactors,
                 config, SemVer.v5_0);
         assertFalse(response.get("createdNew").getAsBoolean());
 
@@ -517,7 +517,7 @@ public class TestTenant {
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
                 "t1", null, null, null,
-                null, false, null, true, requiredSecondaryFactors,
+                false, null, true, requiredSecondaryFactors,
                 config, SemVer.v5_0);
         assertFalse(response.get("createdNew").getAsBoolean());
 
@@ -531,7 +531,7 @@ public class TestTenant {
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
                 "t1", null, null, null,
-                null, false, null, true, null,
+                false, null, true, null,
                 config, SemVer.v5_0);
         assertFalse(response.get("createdNew").getAsBoolean());
 
@@ -555,7 +555,7 @@ public class TestTenant {
                     process.getProcess(),
                     new TenantIdentifier(null, null, null),
                     "t1", null, null, null,
-                    null, true, factors, false, null,
+                    true, factors, false, null,
                     config, SemVer.v5_0);
             fail();
         } catch (HttpResponseException e) {
@@ -568,7 +568,7 @@ public class TestTenant {
                     process.getProcess(),
                     new TenantIdentifier(null, null, null),
                     "t1", null, null, null,
-                    null, false, null, true, factors,
+                    false, null, true, factors,
                     config, SemVer.v5_0);
             fail();
         } catch (HttpResponseException e) {

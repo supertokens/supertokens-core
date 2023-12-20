@@ -17,7 +17,6 @@
 package io.supertokens.test.multitenant.api;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
@@ -39,13 +38,12 @@ public class TestMultitenancyAPIHelper {
                                                        Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
                                                        JsonObject coreConfig) throws HttpResponseException, IOException {
         return createConnectionUriDomain(main, sourceTenant, connectionUriDomain, emailPasswordEnabled, thirdPartyEnabled,
-                passwordlessEnabled, false, false, null, false, null, coreConfig, SemVer.v3_0);
+                passwordlessEnabled, false, null, false, null, coreConfig, SemVer.v3_0);
 
     }
 
     public static JsonObject createConnectionUriDomain(Main main, TenantIdentifier sourceTenant, String connectionUriDomain, Boolean emailPasswordEnabled,
                                                        Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
-                                                       Boolean totpEnabled,
                                                        boolean setFirstFactors, String[] firstFactors,
                                                        boolean setRequiredSecondaryFactors, String[] requiredSecondaryFactors,
                                                        JsonObject coreConfig, SemVer version) throws HttpResponseException, IOException {
@@ -61,9 +59,6 @@ public class TestMultitenancyAPIHelper {
         }
         if (passwordlessEnabled != null) {
             requestBody.addProperty("passwordlessEnabled", passwordlessEnabled);
-        }
-        if (totpEnabled != null) {
-            requestBody.addProperty("totpEnabled", totpEnabled);
         }
         if (setFirstFactors || firstFactors != null) {
             requestBody.add("firstFactors", new Gson().toJsonTree(firstFactors));
@@ -114,12 +109,11 @@ public class TestMultitenancyAPIHelper {
                                        Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
                                        JsonObject coreConfig) throws HttpResponseException, IOException {
         return createApp(main, sourceTenant, appId, emailPasswordEnabled, thirdPartyEnabled, passwordlessEnabled,
-                false, false, null, false, null, coreConfig, SemVer.v3_0);
+                false, null, false, null, coreConfig, SemVer.v3_0);
     }
 
         public static JsonObject createApp(Main main, TenantIdentifier sourceTenant, String appId, Boolean emailPasswordEnabled,
                                        Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
-                                       Boolean totpEnabled,
                                        boolean setFirstFactors, String[] firstFactors,
                                        boolean setRequiredSecondaryFactors, String[] requiredSecondaryFactors,
                                        JsonObject coreConfig, SemVer version) throws HttpResponseException, IOException {
@@ -133,9 +127,6 @@ public class TestMultitenancyAPIHelper {
         }
         if (passwordlessEnabled != null) {
             requestBody.addProperty("passwordlessEnabled", passwordlessEnabled);
-        }
-        if (totpEnabled != null) {
-            requestBody.addProperty("totpEnabled", totpEnabled);
         }
         if (setFirstFactors || firstFactors != null) {
             requestBody.add("firstFactors", new Gson().toJsonTree(firstFactors));
@@ -183,12 +174,11 @@ public class TestMultitenancyAPIHelper {
                                           Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
                                           JsonObject coreConfig) throws HttpResponseException, IOException {
         return createTenant(main, sourceTenant, tenantId, emailPasswordEnabled, thirdPartyEnabled, passwordlessEnabled,
-                null, false, null, false, null, coreConfig, SemVer.v3_0);
+                false, null, false, null, coreConfig, SemVer.v3_0);
     }
 
     public static JsonObject createTenant(Main main, TenantIdentifier sourceTenant, String tenantId, Boolean emailPasswordEnabled,
                                           Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
-                                          Boolean totpEnabled,
                                           boolean setFirstFactors, String[] firstFactors,
                                           boolean setRequiredSecondaryFactors, String[] requiredSecondaryFactors,
                                           JsonObject coreConfig, SemVer version) throws HttpResponseException, IOException {
@@ -202,9 +192,6 @@ public class TestMultitenancyAPIHelper {
         }
         if (passwordlessEnabled != null) {
             requestBody.addProperty("passwordlessEnabled", passwordlessEnabled);
-        }
-        if (totpEnabled != null) {
-            requestBody.addProperty("totpEnabled", totpEnabled);
         }
         if (setFirstFactors || firstFactors != null) {
             requestBody.add("firstFactors", new Gson().toJsonTree(firstFactors));
