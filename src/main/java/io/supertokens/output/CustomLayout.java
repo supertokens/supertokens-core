@@ -40,9 +40,6 @@ class CustomLayout extends LayoutBase<ILoggingEvent> {
     public String doLayout(ILoggingEvent event) {
         StringBuilder sbuf = new StringBuilder();
 
-        sbuf.append("Core Version " + coreVersion);
-        sbuf.append(" | ");
-
         DateFormat dateFormat = new SimpleDateFormat("dd MMM yyyy HH:mm:ss:SSS Z");
         sbuf.append(dateFormat.format(new Date(event.getTimeStamp())));
         sbuf.append(" | ");
@@ -52,6 +49,9 @@ class CustomLayout extends LayoutBase<ILoggingEvent> {
 
         sbuf.append("pid: ");
         sbuf.append(this.processID);
+        sbuf.append(" | ");
+
+        sbuf.append("v" + coreVersion);
         sbuf.append(" | ");
 
         sbuf.append("[");
