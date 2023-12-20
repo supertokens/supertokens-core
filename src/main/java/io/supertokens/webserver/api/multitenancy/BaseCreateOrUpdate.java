@@ -52,11 +52,11 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
             throws ServletException, IOException {
 
         if (hasFirstFactors && firstFactors != null && firstFactors.length == 0) {
-            throw new ServletException(new BadRequestException("firstFactors cannot be empty"));
+            throw new ServletException(new BadRequestException("firstFactors cannot be empty. Set null instead to remove all first factors."));
         }
 
         if (hasRequiredSecondaryFactors && requiredSecondaryFactors != null && requiredSecondaryFactors.length == 0) {
-            throw new ServletException(new BadRequestException("requiredSecondaryFactors cannot be empty"));
+            throw new ServletException(new BadRequestException("requiredSecondaryFactors cannot be empty. Set null instead to remove all required secondary factors."));
         }
 
         TenantConfig tenantConfig = Multitenancy.getTenantInfo(main,

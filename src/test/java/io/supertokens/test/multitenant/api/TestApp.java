@@ -765,7 +765,7 @@ public class TestApp {
             } catch (HttpResponseException e) {
                 assertEquals(400, e.statusCode);
                 assertEquals(
-                        "Http error. Status Code: 400. Message: firstFactors cannot be empty",
+                        "Http error. Status Code: 400. Message: firstFactors cannot be empty. Set null instead to remove all first factors.",
                         e.getMessage());
             }
         }
@@ -914,7 +914,7 @@ public class TestApp {
             } catch (HttpResponseException e) {
                 assertEquals(400, e.statusCode);
                 assertEquals(
-                        "Http error. Status Code: 400. Message: requiredSecondaryFactors cannot be empty",
+                        "Http error. Status Code: 400. Message: requiredSecondaryFactors cannot be empty. Set null instead to remove all required secondary factors.",
                         e.getMessage());
             }
         }
