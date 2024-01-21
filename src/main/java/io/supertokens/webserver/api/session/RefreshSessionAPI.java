@@ -67,8 +67,8 @@ public class RefreshSessionAPI extends WebserverAPI {
         String refreshToken = InputParser.parseStringOrThrowError(input, "refreshToken", false);
         String antiCsrfToken = InputParser.parseStringOrThrowError(input, "antiCsrfToken", true);
         Boolean enableAntiCsrf = InputParser.parseBooleanOrThrowError(input, "enableAntiCsrf", false);
-        Boolean useStaticKey = version.greaterThanOrEqualTo(SemVer.v5_0) ?
-                InputParser.parseBooleanOrThrowError(input, "useStaticKey", false) : null;
+        Boolean useDynamicSigningKey = version.greaterThanOrEqualTo(SemVer.v5_0) ?
+                InputParser.parseBooleanOrThrowError(input, "useDynamicSigningKey", false) : null;
         assert enableAntiCsrf != null;
         assert refreshToken != null;
 
@@ -84,7 +84,9 @@ public class RefreshSessionAPI extends WebserverAPI {
 
             SessionInformationHolder sessionInfo = Session.refreshSession(appIdentifierWithStorage, main,
                     refreshToken, antiCsrfToken,
-                    enableAntiCsrf, accessTokenVersion, useStaticKey);
+                    enableAntiCsrf, accessTokenVersion,
+                    useDynamicSigningKey == null ? null : Boolean.FALSE.equals(useDynamicSigningKey)
+            );
 
             if (StorageLayer.getStorage(this.getTenantIdentifierWithStorageFromRequest(req), main).getType() ==
                     STORAGE_TYPE.SQL) {
