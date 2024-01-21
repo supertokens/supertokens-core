@@ -751,6 +751,7 @@ public class StorageTest {
         jsonBody.addProperty("refreshToken",
                 sessionCreated.get("refreshToken").getAsJsonObject().get("token").getAsString());
         jsonBody.addProperty("enableAntiCsrf", false);
+        jsonBody.addProperty("useDynamicSigningKey", true);
 
         storage.setStorageLayerEnabled(false);
 
