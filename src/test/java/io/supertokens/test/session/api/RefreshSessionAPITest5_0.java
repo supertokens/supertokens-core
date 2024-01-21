@@ -314,9 +314,7 @@ public class RefreshSessionAPITest5_0 {
         assertEquals(response.get("accessToken").getAsJsonObject().entrySet().size(), 3);
 
         JWT.JWTPreParseInfo tokenInfo = JWT.preParseJWTInfo(response.get("accessToken").getAsJsonObject().get("token").getAsString());
-
-        System.out.println(tokenInfo.kid);
-
+        
         if (useStaticKey) {
             assert(tokenInfo.kid.startsWith("s-"));
         } else {
