@@ -76,7 +76,7 @@ public class RefreshSessionAPITest2_21 {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/session/refresh", sessionRefreshBody, 1000, 1000, null,
-                    Utils.getCdiVersionStringLatestForTests(), "session");
+                    SemVer.v2_21.get(), "session");
 
         assertEquals(response.entrySet().size(), 2);
         assertEquals(response.get("status").getAsString(), "UNAUTHORISED");
