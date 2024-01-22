@@ -19,6 +19,7 @@ package io.supertokens.test.passwordless.api;
 import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
 import io.supertokens.ProcessState;
+import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.Passwordless.CreateCodeResponse;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
@@ -494,6 +495,8 @@ public class PasswordlessConsumeCodeAPITest5_0 {
 
         int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
         assert (activeUsers == 0);
+
+        assertEquals(0, AuthRecipe.getUsersCount(process.getProcess(), null)); // ensure that no user was actually created
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
