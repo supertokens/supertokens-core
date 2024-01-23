@@ -93,8 +93,16 @@ public class EmailPassword {
         }
     }
 
+    @TestOnly
     public static AuthRecipeUserInfo signUp(TenantIdentifierWithStorage tenantIdentifierWithStorage, Main main,
-                                  @Nonnull String email, @Nonnull String password)
+                                            @Nonnull String email, @Nonnull String password)
+            throws DuplicateEmailException, StorageQueryException, TenantOrAppNotFoundException,
+            BadPermissionException {
+        return signUp(tenantIdentifierWithStorage, main, email, password, false);
+    }
+
+    public static AuthRecipeUserInfo signUp(TenantIdentifierWithStorage tenantIdentifierWithStorage, Main main,
+                                  @Nonnull String email, @Nonnull String password, boolean setVerifiedForFakeEmails)
             throws DuplicateEmailException, StorageQueryException, TenantOrAppNotFoundException,
             BadPermissionException {
 
@@ -115,9 +123,37 @@ public class EmailPassword {
             long timeJoined = System.currentTimeMillis();
 
             try {
-                return tenantIdentifierWithStorage.getEmailPasswordStorage()
+                AuthRecipeUserInfo newUser = tenantIdentifierWithStorage.getEmailPasswordStorage()
                         .signUp(tenantIdentifierWithStorage, userId, email, hashedPassword, timeJoined);
 
+                if (setVerifiedForFakeEmails && Utils.isFakeEmail(email)) {
+                    try {
+                        AuthRecipeUserInfo finalUser = newUser;
+                        tenantIdentifierWithStorage.getEmailVerificationStorage().startTransaction(con -> {
+                            try {
+
+                                tenantIdentifierWithStorage.getEmailVerificationStorage()
+                                        .updateIsEmailVerified_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con,
+                                                finalUser.getSupertokensUserId(), email, true);
+                                tenantIdentifierWithStorage.getEmailVerificationStorage()
+                                        .commitTransaction(con);
+
+                                return null;
+                            } catch (TenantOrAppNotFoundException e) {
+                                throw new StorageTransactionLogicException(e);
+                            }
+                        });
+                        newUser.loginMethods[0].setVerified(); // newly created user has only one loginMethod
+                    } catch (StorageTransactionLogicException e) {
+                        if (e.actualException instanceof TenantOrAppNotFoundException) {
+                            throw (TenantOrAppNotFoundException) e.actualException;
+                        }
+                        throw new StorageQueryException(e);
+                    }
+
+                }
+
+                return newUser;
             } catch (DuplicateUserIdException ignored) {
                 // we retry with a new userId (while loop)
             }

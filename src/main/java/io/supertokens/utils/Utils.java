@@ -312,6 +312,10 @@ public class Utils {
         return sign.verify(decoder.decode(signature));
     }
 
+    public static boolean isFakeEmail(String email) {
+        return email.endsWith("@stfakeemail.supertokens.com") || email.endsWith(".fakeemail.com");
+    }
+
     public static class PubPriKey {
         public String publicKey;
         public String privateKey;
