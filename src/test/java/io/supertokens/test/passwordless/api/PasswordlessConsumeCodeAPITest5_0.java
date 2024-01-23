@@ -490,8 +490,11 @@ public class PasswordlessConsumeCodeAPITest5_0 {
                 "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
                 SemVer.v5_0.get(), "passwordless");
 
-        assertEquals(1, response.entrySet().size());
+        assertEquals(2, response.entrySet().size());
         assertEquals("OK", response.get("status").getAsString());
+
+        JsonObject consumedDevice = response.get("consumedDevice").getAsJsonObject();
+        assertEquals("test@example.com", consumedDevice.get("email").getAsString());
 
         int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
         assert (activeUsers == 0);
@@ -784,15 +787,193 @@ public class PasswordlessConsumeCodeAPITest5_0 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    @Test
+    public void testLinkCodeWithoutCreatingUser() throws Exception {
+        String[] args = { "../" };
 
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        long startTs = System.currentTimeMillis();
+
+        String email = "test@example.com";
+        CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), email, null, null, null);
+
+        JsonObject consumeCodeRequestBody = new JsonObject();
+        consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
+        consumeCodeRequestBody.addProperty("linkCode", createResp.linkCode);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                SemVer.v5_0.get(), "passwordless");
+
+        checkResponse(response, true, email, null);
+
+        int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
+        assert (activeUsers == 1);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testExpiredLinkCodeWithoutCreatingUser() throws Exception {
+        String[] args = { "../" };
+
+        Utils.setValueInConfig("passwordless_code_lifetime", "100");
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        long startTs = System.currentTimeMillis();
+
+        String email = "test@example.com";
+        CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), email, null, null, null);
+        Thread.sleep(150);
+        JsonObject consumeCodeRequestBody = new JsonObject();
+        consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
+        consumeCodeRequestBody.addProperty("linkCode", createResp.linkCode);
+        consumeCodeRequestBody.addProperty("createRecipeUserIfNotExists", false);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                SemVer.v5_0.get(), "passwordless");
+
+        assertEquals("RESTART_FLOW_ERROR", response.get("status").getAsString());
+
+        int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
+        assert (activeUsers == 0);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testExpiredUserInputCodeWithoutCreatingUser() throws Exception {
+        String[] args = { "../" };
+
+        Utils.setValueInConfig("passwordless_code_lifetime", "100");
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        long startTs = System.currentTimeMillis();
+
+        String email = "test@example.com";
+        CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), email, null, null, null);
+        Thread.sleep(150);
+
+        JsonObject consumeCodeRequestBody = new JsonObject();
+        consumeCodeRequestBody.addProperty("deviceId", createResp.deviceId);
+        consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
+        consumeCodeRequestBody.addProperty("userInputCode", createResp.userInputCode);
+        consumeCodeRequestBody.addProperty("createRecipeUserIfNotExists", false);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                SemVer.v5_0.get(), "passwordless");
+
+        assertEquals("EXPIRED_USER_INPUT_CODE_ERROR", response.get("status").getAsString());
+
+        int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
+        assert (activeUsers == 0);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testIncorrectUserInputCodeWithoutCreatingUser() throws Exception {
+        String[] args = { "../" };
+
+        Utils.setValueInConfig("passwordless_max_code_input_attempts", "2"); // Only 2 code entries permitted (1 retry)
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        String email = "test@example.com";
+        CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), email, null, null, null);
+
+        JsonObject consumeCodeRequestBody = new JsonObject();
+        consumeCodeRequestBody.addProperty("deviceId", createResp.deviceId);
+        consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
+        consumeCodeRequestBody.addProperty("userInputCode", createResp.userInputCode + "nope");
+        consumeCodeRequestBody.addProperty("createRecipeUserIfNotExists", false);
+
+        {
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                    SemVer.v5_0.get(), "passwordless");
+
+            assertEquals("INCORRECT_USER_INPUT_CODE_ERROR", response.get("status").getAsString());
+        }
+
+        {
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                    SemVer.v5_0.get(), "passwordless");
+
+            assertEquals("RESTART_FLOW_ERROR", response.get("status").getAsString());
+        }
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testLinkCodeWithCreateUserSetToTrue() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        long startTs = System.currentTimeMillis();
+
+        String email = "test@example.com";
+        CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), email, null, null, null);
+
+        JsonObject consumeCodeRequestBody = new JsonObject();
+        consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
+        consumeCodeRequestBody.addProperty("linkCode", createResp.linkCode);
+        consumeCodeRequestBody.addProperty("createRecipeUserIfNotExists", true);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                SemVer.v5_0.get(), "passwordless");
+
+        checkResponse(response, true, email, null);
+
+        int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
+        assert (activeUsers == 1);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 
     private void checkResponse(JsonObject response, Boolean isNewUser, String email, String phoneNumber) {
         assertEquals("OK", response.get("status").getAsString());
         assertEquals(isNewUser, response.get("createdNewUser").getAsBoolean());
         assert (response.has("user"));
 
-        assertEquals(4, response.entrySet().size());
-
+        assertEquals(5, response.entrySet().size());
 
         JsonObject userJson = response.getAsJsonObject("user");
         if (email == null) {
@@ -806,7 +987,17 @@ public class PasswordlessConsumeCodeAPITest5_0 {
         } else if (phoneNumber != null) {
             assertEquals(phoneNumber, userJson.get("phoneNumbers").getAsJsonArray().get(0).getAsString());
         }
+
         assertEquals(8, userJson.entrySet().size());
         assertEquals(response.get("recipeUserId").getAsString(), userJson.get("id").getAsString());
+
+        JsonObject consumedDevice = response.getAsJsonObject("consumedDevice");
+        if (email != null) {
+            assertEquals(email, consumedDevice.get("email").getAsString());
+        }
+
+        if (phoneNumber != null) {
+            assertEquals(phoneNumber, consumedDevice.get("phoneNumber").getAsString());
+        }
     }
 }

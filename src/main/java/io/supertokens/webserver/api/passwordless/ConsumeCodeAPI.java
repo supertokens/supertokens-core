@@ -126,16 +126,20 @@ public class ConsumeCodeAPI extends WebserverAPI {
                 }
             }
 
-            String factorId;
-            if (linkCode != null) {
-                factorId = "link-";
-            } else {
-                factorId = "otp-";
-            }
-            if (consumeCodeResponse.email != null) {
-                factorId += "email";
-            } else {
-                factorId += "phone";
+            if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_0)) {
+                JsonObject jsonDevice = new JsonObject();
+                jsonDevice.addProperty("preAuthSessionId", consumeCodeResponse.consumedDevice.deviceIdHash);
+                jsonDevice.addProperty("failedCodeInputAttemptCount", consumeCodeResponse.consumedDevice.failedAttempts);
+
+                if (consumeCodeResponse.consumedDevice.email != null) {
+                    jsonDevice.addProperty("email", consumeCodeResponse.consumedDevice.email);
+                }
+
+                if (consumeCodeResponse.consumedDevice.phoneNumber != null) {
+                    jsonDevice.addProperty("phoneNumber", consumeCodeResponse.consumedDevice.phoneNumber);
+                }
+
+                result.add("consumedDevice", jsonDevice);
             }
 
             super.sendJsonResponse(200, result, resp);

@@ -473,7 +473,7 @@ public class Passwordless {
                             }
                         }
 
-                        return new ConsumeCodeResponse(true, user, consumedDevice.email, consumedDevice.phoneNumber);
+                        return new ConsumeCodeResponse(true, user, consumedDevice.email, consumedDevice.phoneNumber, consumedDevice);
                     } catch (DuplicateEmailException | DuplicatePhoneNumberException e) {
                         // Getting these would mean that between getting the user and trying creating it:
                         // 1. the user managed to do a full create+consume flow
@@ -523,7 +523,7 @@ public class Passwordless {
                 removeCodesByPhoneNumber(tenantIdentifierWithStorage, loginMethod.phoneNumber);
             }
         }
-        return new ConsumeCodeResponse(false, user, consumedDevice.email, consumedDevice.phoneNumber);
+        return new ConsumeCodeResponse(false, user, consumedDevice.email, consumedDevice.phoneNumber, consumedDevice);
     }
 
     @TestOnly
@@ -870,11 +870,14 @@ public class Passwordless {
         public String email;
         public String phoneNumber;
 
-        public ConsumeCodeResponse(boolean createdNewUser, @Nullable AuthRecipeUserInfo user, String email, String phoneNumber) {
+        public PasswordlessDevice consumedDevice;
+
+        public ConsumeCodeResponse(boolean createdNewUser, @Nullable AuthRecipeUserInfo user, String email, String phoneNumber, PasswordlessDevice consumedDevice) {
             this.createdNewUser = createdNewUser;
             this.user = user;
             this.email = email;
             this.phoneNumber = phoneNumber;
+            this.consumedDevice = consumedDevice;
         }
     }
 
