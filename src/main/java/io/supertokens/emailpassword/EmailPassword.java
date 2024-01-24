@@ -128,13 +128,12 @@ public class EmailPassword {
 
                 if (setVerifiedForFakeEmails && Utils.isFakeEmail(email)) {
                     try {
-                        AuthRecipeUserInfo finalUser = newUser;
                         tenantIdentifierWithStorage.getEmailVerificationStorage().startTransaction(con -> {
                             try {
 
                                 tenantIdentifierWithStorage.getEmailVerificationStorage()
                                         .updateIsEmailVerified_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con,
-                                                finalUser.getSupertokensUserId(), email, true);
+                                                newUser.getSupertokensUserId(), email, true);
                                 tenantIdentifierWithStorage.getEmailVerificationStorage()
                                         .commitTransaction(con);
 
@@ -150,7 +149,6 @@ public class EmailPassword {
                         }
                         throw new StorageQueryException(e);
                     }
-
                 }
 
                 return newUser;
