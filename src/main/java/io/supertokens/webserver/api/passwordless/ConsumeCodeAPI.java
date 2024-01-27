@@ -64,6 +64,7 @@ public class ConsumeCodeAPI extends WebserverAPI {
         String linkCode = null;
         String deviceId = null;
         String userInputCode = null;
+        Boolean createRecipeUserIfNotExists = true;
 
         String deviceIdHash = InputParser.parseStringOrThrowError(input, "preAuthSessionId", false);
 
@@ -81,50 +82,64 @@ public class ConsumeCodeAPI extends WebserverAPI {
                     new BadRequestException("Please provide exactly one of linkCode or deviceId+userInputCode"));
         }
 
+        if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_0)) {
+            if (input.has("createRecipeUserIfNotExists")) {
+                createRecipeUserIfNotExists = InputParser.parseBooleanOrThrowError(input, "createRecipeUserIfNotExists", false);
+            }
+        }
+
         try {
             ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(
                     this.getTenantIdentifierWithStorageFromRequest(req), main,
                     deviceId, deviceIdHash,
                     userInputCode, linkCode,
                     // From CDI version 4.0 onwards, the email verification will be set
-                    getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0));
-            io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(this.getTenantIdentifierWithStorageFromRequest(req), new AuthRecipeUserInfo[]{consumeCodeResponse.user});
-
-            ActiveUsers.updateLastActive(this.getPublicTenantStorage(req), main, consumeCodeResponse.user.getSupertokensUserId());
+                    getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0),
+                    createRecipeUserIfNotExists);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
-            JsonObject userJson =
-                    getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0) ? consumeCodeResponse.user.toJson() :
-                            consumeCodeResponse.user.toJsonWithoutAccountLinking();
 
-            if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
-                userJson.remove("tenantIds");
-            }
+            if (consumeCodeResponse.user != null) {
+                io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(this.getTenantIdentifierWithStorageFromRequest(req), new AuthRecipeUserInfo[]{consumeCodeResponse.user});
 
-            result.addProperty("createdNewUser", consumeCodeResponse.createdNewUser);
-            result.add("user", userJson);
-            if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0)) {
-                for (LoginMethod loginMethod : consumeCodeResponse.user.loginMethods) {
-                    if (loginMethod.recipeId.equals(RECIPE_ID.PASSWORDLESS)
-                            && (consumeCodeResponse.email == null || Objects.equals(loginMethod.email, consumeCodeResponse.email))
-                            && (consumeCodeResponse.phoneNumber == null || Objects.equals(loginMethod.phoneNumber, consumeCodeResponse.phoneNumber))) {
-                        result.addProperty("recipeUserId", loginMethod.getSupertokensOrExternalUserId());
-                        break;
+                ActiveUsers.updateLastActive(this.getPublicTenantStorage(req), main, consumeCodeResponse.user.getSupertokensUserId());
+
+                JsonObject userJson = getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0) ? consumeCodeResponse.user.toJson() :
+                        consumeCodeResponse.user.toJsonWithoutAccountLinking();
+
+                if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
+                    userJson.remove("tenantIds");
+                }
+
+                result.addProperty("createdNewUser", consumeCodeResponse.createdNewUser);
+                result.add("user", userJson);
+                if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0)) {
+                    for (LoginMethod loginMethod : consumeCodeResponse.user.loginMethods) {
+                        if (loginMethod.recipeId.equals(RECIPE_ID.PASSWORDLESS)
+                                && (consumeCodeResponse.email == null || Objects.equals(loginMethod.email, consumeCodeResponse.email))
+                                && (consumeCodeResponse.phoneNumber == null || Objects.equals(loginMethod.phoneNumber, consumeCodeResponse.phoneNumber))) {
+                            result.addProperty("recipeUserId", loginMethod.getSupertokensOrExternalUserId());
+                            break;
+                        }
                     }
                 }
             }
 
-            String factorId;
-            if (linkCode != null) {
-                factorId = "link-";
-            } else {
-                factorId = "otp-";
-            }
-            if (consumeCodeResponse.email != null) {
-                factorId += "email";
-            } else {
-                factorId += "phone";
+            if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_0)) {
+                JsonObject jsonDevice = new JsonObject();
+                jsonDevice.addProperty("preAuthSessionId", consumeCodeResponse.consumedDevice.deviceIdHash);
+                jsonDevice.addProperty("failedCodeInputAttemptCount", consumeCodeResponse.consumedDevice.failedAttempts);
+
+                if (consumeCodeResponse.consumedDevice.email != null) {
+                    jsonDevice.addProperty("email", consumeCodeResponse.consumedDevice.email);
+                }
+
+                if (consumeCodeResponse.consumedDevice.phoneNumber != null) {
+                    jsonDevice.addProperty("phoneNumber", consumeCodeResponse.consumedDevice.phoneNumber);
+                }
+
+                result.add("consumedDevice", jsonDevice);
             }
 
             super.sendJsonResponse(200, result, resp);
