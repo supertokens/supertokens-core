@@ -89,9 +89,12 @@ public class ImportTotpDeviceAPI extends WebserverAPI {
                 appIdentifierWithStorage = getAppIdentifierWithStorage(req);
             }
 
-            Totp.createDevice(super.main, appIdentifierWithStorage, new TOTPDevice(userId, deviceName, secretKey, period, skew, true, System.currentTimeMillis()));
+            TOTPDevice createdDevice = Totp.createDevice(super.main, appIdentifierWithStorage,
+                    new TOTPDevice(userId, deviceName,
+                            secretKey, period, skew, true, System.currentTimeMillis()));
 
             result.addProperty("status", "OK");
+            result.addProperty("deviceName", createdDevice.deviceName);
             super.sendJsonResponse(200, result, resp);
         } catch (DeviceAlreadyExistsException e) {
             result.addProperty("status", "DEVICE_ALREADY_EXISTS_ERROR");

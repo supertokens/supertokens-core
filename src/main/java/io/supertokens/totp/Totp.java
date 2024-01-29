@@ -87,46 +87,34 @@ public class Totp {
 
         Mfa.checkForMFAFeature(appIdentifierWithStorage, main);
 
-        TOTPSQLStorage totpStorage = appIdentifierWithStorage.getTOTPStorage();
-        try {
-            return totpStorage.startTransaction(con -> {
-                try {
-                    TOTPDevice existingDevice = totpStorage.getDeviceByName_Transaction(con, appIdentifierWithStorage, device.userId, device.deviceName);
-                    if (existingDevice == null) {
-                        return totpStorage.createDevice_Transaction(con, appIdentifierWithStorage, device);
-                    } else if (!existingDevice.verified) {
-                        totpStorage.deleteDevice_Transaction(con, appIdentifierWithStorage, device.userId, device.deviceName);
-                        return totpStorage.createDevice_Transaction(con, appIdentifierWithStorage, device);
-                    } else {
-                        throw new StorageTransactionLogicException(new DeviceAlreadyExistsException());
+        if (device.deviceName != null) {
+            TOTPSQLStorage totpStorage = appIdentifierWithStorage.getTOTPStorage();
+            try {
+                return totpStorage.startTransaction(con -> {
+                    try {
+                        TOTPDevice existingDevice = totpStorage.getDeviceByName_Transaction(con, appIdentifierWithStorage, device.userId, device.deviceName);
+                        if (existingDevice == null) {
+                            return totpStorage.createDevice_Transaction(con, appIdentifierWithStorage, device);
+                        } else if (!existingDevice.verified) {
+                            totpStorage.deleteDevice_Transaction(con, appIdentifierWithStorage, device.userId, device.deviceName);
+                            return totpStorage.createDevice_Transaction(con, appIdentifierWithStorage, device);
+                        } else {
+                            throw new StorageTransactionLogicException(new DeviceAlreadyExistsException());
+                        }
+                    } catch (TenantOrAppNotFoundException | DeviceAlreadyExistsException e) {
+                        throw new StorageTransactionLogicException(e);
                     }
-                } catch (TenantOrAppNotFoundException | DeviceAlreadyExistsException e) {
-                    throw new StorageTransactionLogicException(e);
+                });
+            } catch (StorageTransactionLogicException e) {
+                if (e.actualException instanceof DeviceAlreadyExistsException) {
+                    throw (DeviceAlreadyExistsException) e.actualException;
                 }
-            });
-        } catch (StorageTransactionLogicException e) {
-            if (e.actualException instanceof DeviceAlreadyExistsException) {
-                throw (DeviceAlreadyExistsException) e.actualException;
+                throw new StorageQueryException(e.actualException);
             }
-            throw new StorageQueryException(e.actualException);
         }
-    }
 
-    public static TOTPDevice registerDevice(AppIdentifierWithStorage appIdentifierWithStorage, Main main, String userId,
-            String deviceName, int skew, int period)
-            throws StorageQueryException, DeviceAlreadyExistsException, NoSuchAlgorithmException,
-            FeatureNotEnabledException, TenantOrAppNotFoundException, StorageTransactionLogicException {
-
-        String secret = generateSecret();
-        TOTPDevice device = new TOTPDevice(userId, deviceName, secret, period, skew, false, System.currentTimeMillis());
         TOTPSQLStorage totpStorage = appIdentifierWithStorage.getTOTPStorage();
-
-        if (deviceName != null) {
-            return createDevice(main, appIdentifierWithStorage, device);
-        }
-
-        // Find number of existing devices to set device name
-        TOTPDevice[] devices = totpStorage.getDevices(appIdentifierWithStorage, userId);
+        TOTPDevice[] devices = totpStorage.getDevices(appIdentifierWithStorage, device.userId);
         int verifiedDevicesCount = Arrays.stream(devices).filter(d -> d.verified).toArray().length;
 
         while (true) {
@@ -144,6 +132,17 @@ public class Totp {
             }
             verifiedDevicesCount++;
         }
+    }
+
+    public static TOTPDevice registerDevice(AppIdentifierWithStorage appIdentifierWithStorage, Main main, String userId,
+            String deviceName, int skew, int period)
+            throws StorageQueryException, DeviceAlreadyExistsException, NoSuchAlgorithmException,
+            FeatureNotEnabledException, TenantOrAppNotFoundException, StorageTransactionLogicException {
+
+        String secret = generateSecret();
+        TOTPDevice device = new TOTPDevice(userId, deviceName, secret, period, skew, false, System.currentTimeMillis());
+
+        return createDevice(main, appIdentifierWithStorage, device);
     }
 
     private static void checkAndStoreCode(TenantIdentifierWithStorage tenantIdentifierWithStorage, Main main,
