@@ -150,6 +150,7 @@ public class ImportTotpDeviceAPITest {
                     Utils.getCdiVersionStringLatestForTests(),
                     "totp");
             assert res.get("status").getAsString().equals("OK");
+            assertEquals("d1", res.get("deviceName").getAsString());
 
             // try again with same device name:
             JsonObject res2 = HttpRequestForTesting.sendJsonPOSTRequest(
@@ -187,5 +188,74 @@ public class ImportTotpDeviceAPITest {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testApiWithoutDeviceName() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        FeatureFlag.getInstance(process.main)
+                .setLicenseKeyAndSyncFeatures(TotpLicenseTest.OPAQUE_KEY_WITH_MFA_FEATURE);
+        FeatureFlagTestContent.getInstance(process.main)
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MFA});
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        {
+            String secret = "ZNPARPDTO6BFVSOFM3BPJGORPYTNTDSF";
+
+            JsonObject body = new JsonObject();
+            body.addProperty("secretKey", "");
+            body.addProperty("userId", "user-id");
+            body.addProperty("secretKey", secret);
+            body.addProperty("skew", 0);
+            body.addProperty("period", 30);
+
+            JsonObject res = HttpRequestForTesting.sendJsonPOSTRequest(
+                    process.getProcess(),
+                    "",
+                    "http://localhost:3567/recipe/totp/device/import",
+                    body,
+                    1000,
+                    1000,
+                    null,
+                    Utils.getCdiVersionStringLatestForTests(),
+                    "totp");
+            assert res.get("status").getAsString().equals("OK");
+            assertEquals("TOTP Device 0", res.get("deviceName").getAsString());
+        }
+
+        { // Check for device already exists
+            String secret = "ZNPARPDTO6BFVSOFM3BPJGORPYTNTDSF";
+
+            JsonObject body = new JsonObject();
+            body.addProperty("secretKey", "");
+            body.addProperty("userId", "user-id");
+            body.addProperty("secretKey", secret);
+            body.addProperty("skew", 0);
+            body.addProperty("period", 30);
+            body.addProperty("deviceName", "TOTP Device 0");
+
+            JsonObject res = HttpRequestForTesting.sendJsonPOSTRequest(
+                    process.getProcess(),
+                    "",
+                    "http://localhost:3567/recipe/totp/device/import",
+                    body,
+                    1000,
+                    1000,
+                    null,
+                    Utils.getCdiVersionStringLatestForTests(),
+                    "totp");
+            assert res.get("status").getAsString().equals("DEVICE_ALREADY_EXISTS_ERROR");
+        }
     }
 }
