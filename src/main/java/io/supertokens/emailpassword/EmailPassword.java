@@ -93,16 +93,8 @@ public class EmailPassword {
         }
     }
 
-    @TestOnly
     public static AuthRecipeUserInfo signUp(TenantIdentifierWithStorage tenantIdentifierWithStorage, Main main,
-                                            @Nonnull String email, @Nonnull String password)
-            throws DuplicateEmailException, StorageQueryException, TenantOrAppNotFoundException,
-            BadPermissionException {
-        return signUp(tenantIdentifierWithStorage, main, email, password, false);
-    }
-
-    public static AuthRecipeUserInfo signUp(TenantIdentifierWithStorage tenantIdentifierWithStorage, Main main,
-                                  @Nonnull String email, @Nonnull String password, boolean setVerifiedForFakeEmails)
+                                  @Nonnull String email, @Nonnull String password)
             throws DuplicateEmailException, StorageQueryException, TenantOrAppNotFoundException,
             BadPermissionException {
 
@@ -118,7 +110,6 @@ public class EmailPassword {
                 .createHashWithSalt(tenantIdentifierWithStorage.toAppIdentifier(), password);
 
         while (true) {
-
             String userId = Utils.getUUID();
             long timeJoined = System.currentTimeMillis();
 
@@ -126,7 +117,7 @@ public class EmailPassword {
                 AuthRecipeUserInfo newUser = tenantIdentifierWithStorage.getEmailPasswordStorage()
                         .signUp(tenantIdentifierWithStorage, userId, email, hashedPassword, timeJoined);
 
-                if (setVerifiedForFakeEmails && Utils.isFakeEmail(email)) {
+                if (Utils.isFakeEmail(email)) {
                     try {
                         tenantIdentifierWithStorage.getEmailVerificationStorage().startTransaction(con -> {
                             try {

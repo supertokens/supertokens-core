@@ -80,8 +80,7 @@ public class SignUpAPI extends WebserverAPI {
         try {
             TenantIdentifierWithStorage tenant = this.getTenantIdentifierWithStorageFromRequest(req);
             AuthRecipeUserInfo user = EmailPassword.signUp(
-                    tenant, super.main, normalisedEmail, password,
-                    getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_0));
+                    tenant, super.main, normalisedEmail, password);
 
             ActiveUsers.updateLastActive(this.getPublicTenantStorage(req), main, user.getSupertokensUserId());
 
