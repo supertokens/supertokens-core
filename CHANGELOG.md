@@ -27,6 +27,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `VerifyTotpDeviceAPI` changes
   - Adds `currentNumberOfFailedAttempts` and `maxNumberOfFailedAttempts` in response when status is
     `INVALID_TOTP_ERROR` or `LIMIT_REACHED_ERROR`
+- Adds a new required `useDynamicSigningKey` into the request body of `RefreshSessionAPI`
+  - This enables smooth switching between `useDynamicAccessTokenSigningKey` settings by allowing refresh calls to 
+    change the signing key type of a session
 
 ### Migration
 

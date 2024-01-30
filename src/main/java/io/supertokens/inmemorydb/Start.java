@@ -520,11 +520,11 @@ public class Start
     @Override
     public void updateSessionInfo_Transaction(TenantIdentifier tenantIdentifier, TransactionConnection con,
                                               String sessionHandle, String refreshTokenHash2,
-                                              long expiry) throws StorageQueryException {
+                                              long expiry, boolean useStaticKey) throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
             SessionQueries.updateSessionInfo_Transaction(this, sqlCon, tenantIdentifier, sessionHandle,
-                    refreshTokenHash2, expiry);
+                    refreshTokenHash2, expiry, useStaticKey);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
