@@ -41,6 +41,7 @@ import io.supertokens.pluginInterface.session.noSqlStorage.SessionNoSQLStorage_1
 import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
 
 import java.security.NoSuchAlgorithmException;
@@ -90,7 +91,13 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
         }
     }
 
+    @TestOnly
     public static void loadForAllTenants(Main main, List<AppIdentifier> apps, List<TenantIdentifier> tenantsThatChanged) {
+        loadForAllTenants(main, apps, tenantsThatChanged, null);
+    }
+
+    public static void loadForAllTenants(Main main, List<AppIdentifier> apps, List<TenantIdentifier> tenantsThatChanged,
+                                         @Nullable String loadOnlyCUD) {
         try {
             main.getResourceDistributor().withResourceDistributorLock(() -> {
                 Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingResources =
@@ -98,6 +105,12 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                                 .getAllResourcesWithResourceKey(RESOURCE_KEY);
                 main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
                 for (AppIdentifier app : apps) {
+                    if (loadOnlyCUD != null) {
+                        if (!(app.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI)
+                                || app.getConnectionUriDomain().equals(loadOnlyCUD))) {
+                            continue;
+                        }
+                    }
                     ResourceDistributor.SingletonResource resource = existingResources.get(
                             new ResourceDistributor.KeyClass(
                                     app,

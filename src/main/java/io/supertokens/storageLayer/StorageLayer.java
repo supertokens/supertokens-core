@@ -35,6 +35,7 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import jakarta.servlet.ServletException;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
 
 import java.io.File;
@@ -190,7 +191,13 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                 new StorageLayer(main, pluginFolderPath, configJson, TenantIdentifier.BASE_TENANT));
     }
 
+    @TestOnly
     public static void loadAllTenantStorage(Main main, TenantConfig[] tenants)
+            throws InvalidConfigException, IOException {
+        loadAllTenantStorage(main, tenants, null);
+    }
+
+    public static void loadAllTenantStorage(Main main, TenantConfig[] tenants, @Nullable String loadOnlyCUD)
             throws InvalidConfigException, IOException {
         // We decided not to include tenantsThatChanged in this function because we do not want to reload the storage
         // when the db config has not change. And when db config has changed, it results in a
@@ -206,6 +213,14 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         {
             Map<String, Storage> idToStorageMap = new HashMap<>();
             for (ResourceDistributor.KeyClass key : normalisedConfigs.keySet()) {
+
+                if (loadOnlyCUD != null) {
+                    if (!(key.getTenantIdentifier().getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI)
+                            || key.getTenantIdentifier().getConnectionUriDomain().equals(loadOnlyCUD))) {
+                        continue;
+                    }
+                }
+
                 // setting doNotLog to true so that plugin loading is not logged here
                 Storage storage = StorageLayer.getNewStorageInstance(main, normalisedConfigs.get(key), key.getTenantIdentifier(), true);
                 String userPoolId = storage.getUserPoolId();

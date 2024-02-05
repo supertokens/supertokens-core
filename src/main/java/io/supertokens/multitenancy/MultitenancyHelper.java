@@ -21,6 +21,7 @@ import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
+import io.supertokens.config.CoreConfig;
 import io.supertokens.cronjobs.Cronjobs;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
@@ -39,6 +40,7 @@ import io.supertokens.signingkeys.JWTSigningKey;
 import io.supertokens.signingkeys.SigningKeys;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.*;
@@ -105,6 +107,8 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
     public List<TenantIdentifier> refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(
             boolean reloadAllResources) {
         try {
+            String loadOnlyCUD = Config.getBaseConfig(main).getSuperTokensLoadOnlyCUD();
+
             return main.getResourceDistributor().withResourceDistributorLock(() -> {
                 try {
                     TenantConfig[] tenantsFromDb = getAllTenantsFromDb();
@@ -146,8 +150,8 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
                     } else {
                         // we do these two here cause they don't really depend on any table in the db, and these
                         // two are required for allocating any further resource for this tenant
-                        loadConfig(tenantsThatChanged);
-                        loadStorageLayer();
+                        loadConfig(tenantsThatChanged, loadOnlyCUD);
+                        loadStorageLayer(loadOnlyCUD);
                     }
                     return tenantsThatChanged;
                 } catch (Exception e) {
@@ -162,12 +166,14 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
 
     public void forceReloadAllResources(List<TenantIdentifier> tenantsThatChanged) {
         try {
+            String loadOnlyCUD = Config.getBaseConfig(main).getSuperTokensLoadOnlyCUD();
+
             main.getResourceDistributor().withResourceDistributorLock(() -> {
                 try {
-                    loadConfig(tenantsThatChanged);
-                    loadStorageLayer();
-                    loadFeatureFlag(tenantsThatChanged);
-                    loadSigningKeys(tenantsThatChanged);
+                    loadConfig(tenantsThatChanged, loadOnlyCUD);
+                    loadStorageLayer(loadOnlyCUD);
+                    loadFeatureFlag(tenantsThatChanged, loadOnlyCUD);
+                    loadSigningKeys(tenantsThatChanged, loadOnlyCUD);
                     refreshCronjobs();
                 } catch (Exception e) {
                     Logging.error(main, TenantIdentifier.BASE_TENANT, e.getMessage(), false, e);
@@ -179,15 +185,15 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public void loadConfig(List<TenantIdentifier> tenantsThatChanged) throws IOException, InvalidConfigException {
-        Config.loadAllTenantConfig(main, this.tenantConfigs, tenantsThatChanged);
+    public void loadConfig(List<TenantIdentifier> tenantsThatChanged, String loadOnlyCUD) throws IOException, InvalidConfigException {
+        Config.loadAllTenantConfig(main, this.tenantConfigs, tenantsThatChanged, loadOnlyCUD);
     }
 
-    public void loadStorageLayer() throws IOException, InvalidConfigException {
-        StorageLayer.loadAllTenantStorage(main, this.tenantConfigs);
+    public void loadStorageLayer(String loadOnlyCUD) throws IOException, InvalidConfigException {
+        StorageLayer.loadAllTenantStorage(main, this.tenantConfigs, loadOnlyCUD);
     }
 
-    public void loadFeatureFlag(List<TenantIdentifier> tenantsThatChanged) {
+    public void loadFeatureFlag(List<TenantIdentifier> tenantsThatChanged, @Nullable String loadOnlyCUD) {
         List<AppIdentifier> apps = new ArrayList<>();
         Set<AppIdentifier> appsSet = new HashSet<>();
         for (TenantConfig t : tenantConfigs) {
@@ -197,10 +203,10 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
             apps.add(t.tenantIdentifier.toAppIdentifier());
             appsSet.add(t.tenantIdentifier.toAppIdentifier());
         }
-        FeatureFlag.loadForAllTenants(main, apps, tenantsThatChanged);
+        FeatureFlag.loadForAllTenants(main, apps, tenantsThatChanged, loadOnlyCUD);
     }
 
-    public void loadSigningKeys(List<TenantIdentifier> tenantsThatChanged)
+    public void loadSigningKeys(List<TenantIdentifier> tenantsThatChanged, @Nullable String loadOnlyCUD)
             throws UnsupportedJWTSigningAlgorithmException {
         List<AppIdentifier> apps = new ArrayList<>();
         Set<AppIdentifier> appsSet = new HashSet<>();
@@ -211,10 +217,10 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
             apps.add(t.tenantIdentifier.toAppIdentifier());
             appsSet.add(t.tenantIdentifier.toAppIdentifier());
         }
-        AccessTokenSigningKey.loadForAllTenants(main, apps, tenantsThatChanged);
-        RefreshTokenKey.loadForAllTenants(main, apps, tenantsThatChanged);
-        JWTSigningKey.loadForAllTenants(main, apps, tenantsThatChanged);
-        SigningKeys.loadForAllTenants(main, apps, tenantsThatChanged);
+        AccessTokenSigningKey.loadForAllTenants(main, apps, tenantsThatChanged, loadOnlyCUD);
+        RefreshTokenKey.loadForAllTenants(main, apps, tenantsThatChanged, loadOnlyCUD);
+        JWTSigningKey.loadForAllTenants(main, apps, tenantsThatChanged, loadOnlyCUD);
+        SigningKeys.loadForAllTenants(main, apps, tenantsThatChanged, loadOnlyCUD);
     }
 
     public void refreshCronjobs() {
@@ -237,5 +243,15 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
         } catch (ResourceDistributor.FuncException e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    public boolean isValidConnectionUriDomain(String cud) {
+        for (TenantConfig config : this.tenantConfigs) {
+            if (config.tenantIdentifier.getConnectionUriDomain().equals(cud)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

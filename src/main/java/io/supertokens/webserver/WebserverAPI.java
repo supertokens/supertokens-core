@@ -24,6 +24,7 @@ import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
+import io.supertokens.multitenancy.MultitenancyHelper;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.Storage;
@@ -287,15 +288,18 @@ public abstract class WebserverAPI extends HttpServlet {
         String connectionUriDomain = req.getServerName();
         connectionUriDomain = Utils.normalizeAndValidateConnectionUriDomain(connectionUriDomain, false);
 
-        try {
-            if (Config.getConfig(new TenantIdentifier(connectionUriDomain, null, null), main) ==
-                    Config.getConfig(new TenantIdentifier(null, null, null), main)) {
-                return null;
+        if (MultitenancyHelper.getInstance(main).isValidConnectionUriDomain(connectionUriDomain)) {
+            CoreConfig baseConfig = Config.getBaseConfig(main);
+            if (baseConfig.getSuperTokensLoadOnlyCUD() != null) {
+                if (!connectionUriDomain.equals(baseConfig.getSuperTokensLoadOnlyCUD())) {
+                    throw new ServletException(new BadPermissionException("Connection URI domain is disallowed"));
+                }
             }
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
+
+            return connectionUriDomain;
         }
-        return connectionUriDomain;
+
+        return null;
     }
 
     @TestOnly
@@ -481,10 +485,13 @@ public abstract class WebserverAPI extends HttpServlet {
         }
         Logging.info(main, tenantIdentifier, "API ended: " + req.getRequestURI() + ". Method: " + req.getMethod(),
                 false);
-        try {
-            RequestStats.getInstance(main, tenantIdentifier.toAppIdentifier()).updateRequestStats();
-        } catch (TenantOrAppNotFoundException e) {
-            // Ignore the error as we would have already sent the response for tenantNotFound
+
+        if (tenantIdentifier != null) {
+            try {
+                RequestStats.getInstance(main, tenantIdentifier.toAppIdentifier()).updateRequestStats();
+            } catch (TenantOrAppNotFoundException e) {
+                // Ignore the error as we would have already sent the response for tenantNotFound
+            }
         }
     }
 

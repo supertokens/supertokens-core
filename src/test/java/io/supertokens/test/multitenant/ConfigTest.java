@@ -1914,6 +1914,7 @@ public class ConfigTest {
                 "argon2_memory_kb",
                 "argon2_parallelism",
                 "bcrypt_log_rounds",
+                "supertokens_saas_load_only_cud"
         };
         Object[] disallowedValues = new Object[]{
                 3567, // port
@@ -1930,6 +1931,7 @@ public class ConfigTest {
                 87795, // argon2_memory_kb
                 2, // argon2_parallelism
                 11, // bcrypt_log_rounds
+                "mydomain.com", // supertokens_saas_load_only_cud
         };
 
         process.kill();
@@ -1995,7 +1997,7 @@ public class ConfigTest {
                 new Object[]{true, false}, // disable_telemetry
                 new Object[]{"BCRYPT", "ARGON2"}, // password_hashing_alg
                 new Object[]{"abcd1234abcd1234abcd1234abcd1234", "qwer1234qwer1234qwer1234qwer1234"}, // firebase_password_hashing_signer_key
-                new Object[]{"2.21", "3.0"} // supertokens_max_cdi_version
+                new Object[]{"2.21", "3.0"}, // supertokens_max_cdi_version
         };
 
         for (int i=0; i<conflictingInSameUserPool.length; i++) {

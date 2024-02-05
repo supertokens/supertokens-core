@@ -47,6 +47,7 @@ import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUs
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
 import io.supertokens.thirdparty.ThirdParty;
+import io.supertokens.webserver.WebserverAPI;
 import org.jetbrains.annotations.TestOnly;
 
 import java.io.IOException;

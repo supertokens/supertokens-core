@@ -27,6 +27,7 @@ import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
 
 import java.io.File;
@@ -124,7 +125,7 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
     }
 
     public static void loadForAllTenants(Main main, List<AppIdentifier> apps,
-                                         List<TenantIdentifier> tenantsThatChanged) {
+                                         List<TenantIdentifier> tenantsThatChanged, @Nullable String loadOnlyCUD) {
         try {
             main.getResourceDistributor().withResourceDistributorLock(() -> {
                 Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingResources =
@@ -132,6 +133,14 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
                                 .getAllResourcesWithResourceKey(RESOURCE_KEY);
                 main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
                 for (AppIdentifier app : apps) {
+
+                    if (loadOnlyCUD != null) {
+                        if (!(app.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI)
+                                || app.getConnectionUriDomain().equals(loadOnlyCUD))) {
+                            continue;
+                        }
+                    }
+
                     ResourceDistributor.SingletonResource resource = existingResources.get(
                             new ResourceDistributor.KeyClass(
                                     app,

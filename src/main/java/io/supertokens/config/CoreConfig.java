@@ -260,6 +260,10 @@ public class CoreConfig {
         return base_path;
     }
 
+    public String getSuperTokensLoadOnlyCUD() {
+        return supertokens_saas_load_only_cud;
+    }
+
     public enum PASSWORD_HASHING_ALG {
         ARGON2, BCRYPT, FIREBASE_SCRYPT
     }
@@ -673,7 +677,7 @@ public class CoreConfig {
             host = cliHost;
         }
 
-        if (supertokens_saas_secret != null) {
+        if (supertokens_saas_load_only_cud != null) {
             try {
                 supertokens_saas_load_only_cud =
                         Utils.normalizeAndValidateConnectionUriDomain(supertokens_saas_load_only_cud, true);
