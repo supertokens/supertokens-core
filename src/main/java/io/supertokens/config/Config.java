@@ -108,8 +108,7 @@ public class Config extends ResourceDistributor.SingletonResource {
         loadAllTenantConfig(main, tenants, new ArrayList<>());
     }
 
-    public static void loadAllTenantConfig(Main main, TenantConfig[] tenants,
-                                           List<TenantIdentifier> tenantsThatChanged)
+    public static void loadAllTenantConfig(Main main, TenantConfig[] tenants, List<TenantIdentifier> tenantsThatChanged)
             throws IOException, InvalidConfigException {
         ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.LOADING_ALL_TENANT_CONFIG, null);
         Map<ResourceDistributor.KeyClass, JsonObject> normalisedConfigs = getNormalisedConfigsForAllTenants(

@@ -35,7 +35,6 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import jakarta.servlet.ServletException;
-import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
 
 import java.io.File;
@@ -207,7 +206,6 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         {
             Map<String, Storage> idToStorageMap = new HashMap<>();
             for (ResourceDistributor.KeyClass key : normalisedConfigs.keySet()) {
-
                 // setting doNotLog to true so that plugin loading is not logged here
                 Storage storage = StorageLayer.getNewStorageInstance(main, normalisedConfigs.get(key), key.getTenantIdentifier(), true);
                 String userPoolId = storage.getUserPoolId();

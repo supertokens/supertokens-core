@@ -27,7 +27,6 @@ import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
-import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
 
 import java.io.File;
@@ -133,7 +132,6 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
                                 .getAllResourcesWithResourceKey(RESOURCE_KEY);
                 main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
                 for (AppIdentifier app : apps) {
-
                     ResourceDistributor.SingletonResource resource = existingResources.get(
                             new ResourceDistributor.KeyClass(
                                     app,

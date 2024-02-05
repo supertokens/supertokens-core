@@ -33,7 +33,6 @@ import io.supertokens.pluginInterface.session.noSqlStorage.SessionNoSQLStorage_1
 import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
-import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
 
 import java.security.NoSuchAlgorithmException;
