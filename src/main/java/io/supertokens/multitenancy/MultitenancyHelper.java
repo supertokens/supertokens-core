@@ -51,11 +51,11 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
 
     public static final String RESOURCE_KEY = "io.supertokens.multitenancy.Multitenancy";
     private Main main;
-    private TenantConfig[] tenantConfigs;
+    private TenantConfig[] tenantConfigs2;
 
     private MultitenancyHelper(Main main) throws StorageQueryException {
         this.main = main;
-        this.tenantConfigs = getAllTenantsFromDb();
+        this.tenantConfigs2 = getAllTenantsFromDb();
     }
 
     public static MultitenancyHelper getInstance(Main main) {
@@ -107,19 +107,17 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
     public List<TenantIdentifier> refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(
             boolean reloadAllResources) {
         try {
-            String loadOnlyCUD = Config.getBaseConfig(main).getSuperTokensLoadOnlyCUD();
-
             return main.getResourceDistributor().withResourceDistributorLock(() -> {
                 try {
                     TenantConfig[] tenantsFromDb = getAllTenantsFromDb();
 
                     Map<ResourceDistributor.KeyClass, JsonObject> normalizedTenantsFromDb =
                             Config.getNormalisedConfigsForAllTenants(
-                            tenantsFromDb, Config.getBaseConfigAsJsonObject(main));
+                            this.getFilteredTenantConfigs(tenantsFromDb), Config.getBaseConfigAsJsonObject(main));
 
                     Map<ResourceDistributor.KeyClass, JsonObject> normalizedTenantsFromMemory =
                             Config.getNormalisedConfigsForAllTenants(
-                            this.tenantConfigs, Config.getBaseConfigAsJsonObject(main));
+                            this.getFilteredTenantConfigs(this.tenantConfigs2), Config.getBaseConfigAsJsonObject(main));
 
                     List<TenantIdentifier> tenantsThatChanged = new ArrayList<>();
 
@@ -133,9 +131,9 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
                         }
                     }
 
-                    boolean sameNumberOfTenants = tenantsFromDb.length == this.tenantConfigs.length;
+                    boolean sameNumberOfTenants = this.getFilteredTenantConfigs(tenantsFromDb).length == this.getFilteredTenantConfigs(this.tenantConfigs2).length;
 
-                    this.tenantConfigs = tenantsFromDb;
+                    this.tenantConfigs2 = tenantsFromDb;
                     if (tenantsThatChanged.size() == 0 && sameNumberOfTenants) {
                         return tenantsThatChanged;
                     }
@@ -150,8 +148,8 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
                     } else {
                         // we do these two here cause they don't really depend on any table in the db, and these
                         // two are required for allocating any further resource for this tenant
-                        loadConfig(tenantsThatChanged, loadOnlyCUD);
-                        loadStorageLayer(loadOnlyCUD);
+                        loadConfig(tenantsThatChanged);
+                        loadStorageLayer();
                     }
                     return tenantsThatChanged;
                 } catch (Exception e) {
@@ -166,14 +164,12 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
 
     public void forceReloadAllResources(List<TenantIdentifier> tenantsThatChanged) {
         try {
-            String loadOnlyCUD = Config.getBaseConfig(main).getSuperTokensLoadOnlyCUD();
-
             main.getResourceDistributor().withResourceDistributorLock(() -> {
                 try {
-                    loadConfig(tenantsThatChanged, loadOnlyCUD);
-                    loadStorageLayer(loadOnlyCUD);
-                    loadFeatureFlag(tenantsThatChanged, loadOnlyCUD);
-                    loadSigningKeys(tenantsThatChanged, loadOnlyCUD);
+                    loadConfig(tenantsThatChanged);
+                    loadStorageLayer();
+                    loadFeatureFlag(tenantsThatChanged);
+                    loadSigningKeys(tenantsThatChanged);
                     refreshCronjobs();
                 } catch (Exception e) {
                     Logging.error(main, TenantIdentifier.BASE_TENANT, e.getMessage(), false, e);
@@ -185,42 +181,42 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public void loadConfig(List<TenantIdentifier> tenantsThatChanged, String loadOnlyCUD) throws IOException, InvalidConfigException {
-        Config.loadAllTenantConfig(main, this.tenantConfigs, tenantsThatChanged, loadOnlyCUD);
+    public void loadConfig(List<TenantIdentifier> tenantsThatChanged) throws IOException, InvalidConfigException {
+        Config.loadAllTenantConfig(main, this.getFilteredTenantConfigs(this.tenantConfigs2), tenantsThatChanged);
     }
 
-    public void loadStorageLayer(String loadOnlyCUD) throws IOException, InvalidConfigException {
-        StorageLayer.loadAllTenantStorage(main, this.tenantConfigs, loadOnlyCUD);
+    public void loadStorageLayer() throws IOException, InvalidConfigException {
+        StorageLayer.loadAllTenantStorage(main, this.getFilteredTenantConfigs(this.tenantConfigs2));
     }
 
-    public void loadFeatureFlag(List<TenantIdentifier> tenantsThatChanged, @Nullable String loadOnlyCUD) {
+    public void loadFeatureFlag(List<TenantIdentifier> tenantsThatChanged) {
         List<AppIdentifier> apps = new ArrayList<>();
         Set<AppIdentifier> appsSet = new HashSet<>();
-        for (TenantConfig t : tenantConfigs) {
+        for (TenantConfig t : this.getFilteredTenantConfigs(this.tenantConfigs2)) {
             if (appsSet.contains(t.tenantIdentifier.toAppIdentifier())) {
                 continue;
             }
             apps.add(t.tenantIdentifier.toAppIdentifier());
             appsSet.add(t.tenantIdentifier.toAppIdentifier());
         }
-        FeatureFlag.loadForAllTenants(main, apps, tenantsThatChanged, loadOnlyCUD);
+        FeatureFlag.loadForAllTenants(main, apps, tenantsThatChanged);
     }
 
-    public void loadSigningKeys(List<TenantIdentifier> tenantsThatChanged, @Nullable String loadOnlyCUD)
+    public void loadSigningKeys(List<TenantIdentifier> tenantsThatChanged)
             throws UnsupportedJWTSigningAlgorithmException {
         List<AppIdentifier> apps = new ArrayList<>();
         Set<AppIdentifier> appsSet = new HashSet<>();
-        for (TenantConfig t : tenantConfigs) {
+        for (TenantConfig t : this.getFilteredTenantConfigs(this.tenantConfigs2)) {
             if (appsSet.contains(t.tenantIdentifier.toAppIdentifier())) {
                 continue;
             }
             apps.add(t.tenantIdentifier.toAppIdentifier());
             appsSet.add(t.tenantIdentifier.toAppIdentifier());
         }
-        AccessTokenSigningKey.loadForAllTenants(main, apps, tenantsThatChanged, loadOnlyCUD);
-        RefreshTokenKey.loadForAllTenants(main, apps, tenantsThatChanged, loadOnlyCUD);
-        JWTSigningKey.loadForAllTenants(main, apps, tenantsThatChanged, loadOnlyCUD);
-        SigningKeys.loadForAllTenants(main, apps, tenantsThatChanged, loadOnlyCUD);
+        AccessTokenSigningKey.loadForAllTenants(main, apps, tenantsThatChanged);
+        RefreshTokenKey.loadForAllTenants(main, apps, tenantsThatChanged);
+        JWTSigningKey.loadForAllTenants(main, apps, tenantsThatChanged);
+        SigningKeys.loadForAllTenants(main, apps, tenantsThatChanged);
     }
 
     public void refreshCronjobs() {
@@ -233,10 +229,11 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
             return main.getResourceDistributor().withResourceDistributorLockWithReturn(() -> {
                 // Returning a deep copy of the tenantConfigs array so that the functions consuming it
                 // do not modify the original array
-                TenantConfig[] tenantConfigs = new TenantConfig[this.tenantConfigs.length];
+                TenantConfig[] filteredTenantConfigs = this.getFilteredTenantConfigs(this.tenantConfigs2);
+                TenantConfig[] tenantConfigs = new TenantConfig[filteredTenantConfigs.length];
 
-                for (int i = 0; i < this.tenantConfigs.length; i++) {
-                    tenantConfigs[i] = new TenantConfig(this.tenantConfigs[i]);
+                for (int i = 0; i < filteredTenantConfigs.length; i++) {
+                    tenantConfigs[i] = new TenantConfig(filteredTenantConfigs[i]);
                 }
                 return tenantConfigs;
             });
@@ -245,8 +242,21 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
         }
     }
 
+    private TenantConfig[] getFilteredTenantConfigs(TenantConfig[] inputTenantConfigs) {
+        String loadOnlyCUD = Config.getBaseConfig(main).getSuperTokensLoadOnlyCUD();
+
+        if (loadOnlyCUD == null) {
+            return inputTenantConfigs;
+        }
+
+        return Arrays.stream(inputTenantConfigs)
+                .filter(tenantConfig -> tenantConfig.tenantIdentifier.getConnectionUriDomain().equals(loadOnlyCUD)
+                        || tenantConfig.tenantIdentifier.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI))
+                .toArray(TenantConfig[]::new);
+    }
+
     public boolean isValidConnectionUriDomain(String cud) {
-        for (TenantConfig config : this.tenantConfigs) {
+        for (TenantConfig config : this.tenantConfigs2) {
             if (config.tenantIdentifier.getConnectionUriDomain().equals(cud)) {
                 return true;
             }

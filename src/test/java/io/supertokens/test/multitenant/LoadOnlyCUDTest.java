@@ -20,7 +20,6 @@ import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
-import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
@@ -139,11 +138,10 @@ public class LoadOnlyCUDTest {
 
         JsonObject coreConfig = new JsonObject();
         StorageLayer.getStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(coreConfig, 1);
-
         TestMultitenancyAPIHelper.createConnectionUriDomain(process.getProcess(), TenantIdentifier.BASE_TENANT,
                 "127.0.0.1", true, true, true, coreConfig);
-        StorageLayer.getStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(coreConfig, 2);
 
+        StorageLayer.getStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(coreConfig, 2);
         TestMultitenancyAPIHelper.createConnectionUriDomain(process.getProcess(), TenantIdentifier.BASE_TENANT,
                 "localhost.org", true, true, true, coreConfig);
 
@@ -154,6 +152,7 @@ public class LoadOnlyCUDTest {
         process = TestingProcessManager.start(args, false);
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        
 
         JsonObject result = TestMultitenancyAPIHelper.listConnectionUriDomains(TenantIdentifier.BASE_TENANT,
                 process.getProcess());

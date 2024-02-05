@@ -105,18 +105,11 @@ public class Config extends ResourceDistributor.SingletonResource {
     @TestOnly
     public static void loadAllTenantConfig(Main main, TenantConfig[] tenants)
             throws IOException, InvalidConfigException {
-        loadAllTenantConfig(main, tenants, new ArrayList<>(),null);
+        loadAllTenantConfig(main, tenants, new ArrayList<>());
     }
 
-    @TestOnly
     public static void loadAllTenantConfig(Main main, TenantConfig[] tenants,
                                            List<TenantIdentifier> tenantsThatChanged)
-            throws IOException, InvalidConfigException {
-        loadAllTenantConfig(main, tenants, tenantsThatChanged, null);
-    }
-
-    public static void loadAllTenantConfig(Main main, TenantConfig[] tenants,
-                                           List<TenantIdentifier> tenantsThatChanged, @Nullable String loadOnlyCUD)
             throws IOException, InvalidConfigException {
         ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.LOADING_ALL_TENANT_CONFIG, null);
         Map<ResourceDistributor.KeyClass, JsonObject> normalisedConfigs = getNormalisedConfigsForAllTenants(
@@ -134,13 +127,6 @@ public class Config extends ResourceDistributor.SingletonResource {
                                     .getAllResourcesWithResourceKey(RESOURCE_KEY);
                     main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
                     for (ResourceDistributor.KeyClass key : normalisedConfigs.keySet()) {
-                        if (loadOnlyCUD != null) {
-                            if (!(key.getTenantIdentifier().getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI)
-                                    || key.getTenantIdentifier().getConnectionUriDomain().equals(loadOnlyCUD))) {
-                                continue;
-                            }
-                        }
-
                         ResourceDistributor.SingletonResource resource = existingResources.get(
                                 new ResourceDistributor.KeyClass(
                                         key.getTenantIdentifier(),

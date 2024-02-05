@@ -62,8 +62,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public static void loadForAllTenants(Main main, List<AppIdentifier> apps, List<TenantIdentifier> tenantsThatChanged,
-                                         @Nullable String loadOnlyCUD)
+    public static void loadForAllTenants(Main main, List<AppIdentifier> apps, List<TenantIdentifier> tenantsThatChanged)
             throws UnsupportedJWTSigningAlgorithmException {
         try {
             main.getResourceDistributor().withResourceDistributorLock(() -> {
@@ -73,12 +72,6 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
                                     .getAllResourcesWithResourceKey(RESOURCE_KEY);
                     main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
                     for (AppIdentifier app : apps) {
-                        if (loadOnlyCUD != null) {
-                            if (!(app.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI)
-                                    || app.getConnectionUriDomain().equals(loadOnlyCUD))) {
-                                continue;
-                            }
-                        }
                         ResourceDistributor.SingletonResource resource = existingResources.get(
                                 new ResourceDistributor.KeyClass(app, RESOURCE_KEY));
                         if (resource != null && !tenantsThatChanged.contains(app.getAsPublicTenantIdentifier())) {

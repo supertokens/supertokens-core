@@ -204,23 +204,22 @@ public class Main {
         MultitenancyHelper.init(this);
         FeatureFlag.initForBaseTenant(this, CLIOptions.get(this).getInstallationPath() + "ee/");
 
-        String loadOnlyCUD = Config.getBaseConfig(this).getSuperTokensLoadOnlyCUD();
         try {
             // load all configs for each of the tenants.
-            MultitenancyHelper.getInstance(this).loadConfig(new ArrayList<>(), loadOnlyCUD);
+            MultitenancyHelper.getInstance(this).loadConfig(new ArrayList<>());
 
             // init storage layers for each unique db connection based on unique (user pool ID, connection pool ID).
-            MultitenancyHelper.getInstance(this).loadStorageLayer(loadOnlyCUD);
+            MultitenancyHelper.getInstance(this).loadStorageLayer();
         } catch (InvalidConfigException e) {
             throw new QuitProgramException(e);
         }
 
         // load feature flag for all loaded apps
-        MultitenancyHelper.getInstance(this).loadFeatureFlag(new ArrayList<>(), loadOnlyCUD);
+        MultitenancyHelper.getInstance(this).loadFeatureFlag(new ArrayList<>());
 
         // init signing keys
         try {
-            MultitenancyHelper.getInstance(this).loadSigningKeys(new ArrayList<>(), loadOnlyCUD);
+            MultitenancyHelper.getInstance(this).loadSigningKeys(new ArrayList<>());
         } catch (UnsupportedJWTSigningAlgorithmException e) {
             throw new QuitProgramException(e);
         }
