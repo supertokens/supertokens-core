@@ -232,11 +232,10 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
             return main.getResourceDistributor().withResourceDistributorLockWithReturn(() -> {
                 // Returning a deep copy of the tenantConfigs array so that the functions consuming it
                 // do not modify the original array
-                TenantConfig[] filteredTenantConfigs = this.tenantConfigs;
-                TenantConfig[] tenantConfigs = new TenantConfig[filteredTenantConfigs.length];
+                TenantConfig[] tenantConfigs = new TenantConfig[this.tenantConfigs.length];
 
-                for (int i = 0; i < filteredTenantConfigs.length; i++) {
-                    tenantConfigs[i] = new TenantConfig(filteredTenantConfigs[i]);
+                for (int i = 0; i < this.tenantConfigs.length; i++) {
+                    tenantConfigs[i] = new TenantConfig(this.tenantConfigs[i]);
                 }
                 return tenantConfigs;
             });
