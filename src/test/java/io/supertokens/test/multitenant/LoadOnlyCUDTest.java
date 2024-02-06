@@ -16,13 +16,20 @@
 
 package io.supertokens.test.multitenant;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import io.supertokens.Main;
 import io.supertokens.ProcessState;
+import io.supertokens.cronjobs.CronTask;
+import io.supertokens.cronjobs.Cronjobs;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.test.CronjobTest;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpResponseException;
@@ -32,6 +39,10 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import static org.junit.Assert.*;
 
@@ -152,13 +163,91 @@ public class LoadOnlyCUDTest {
         process = TestingProcessManager.start(args, false);
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-        
 
         JsonObject result = TestMultitenancyAPIHelper.listConnectionUriDomains(TenantIdentifier.BASE_TENANT,
                 process.getProcess());
-        System.out.println(result);
+        assertEquals("OK", result.get("status").getAsString());
+        assertEquals(2, result.get("connectionUriDomains").getAsJsonArray().size());
+
+        for (JsonElement elem : result.get("connectionUriDomains").getAsJsonArray()) {
+            assertNotEquals("localhost.org", elem.getAsJsonObject().get("connectionUriDomain").getAsString());
+        }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testCronDoesNotRunForOtherCUDsWithLoadOnlyCUD() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        JsonObject coreConfig = new JsonObject();
+        StorageLayer.getStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(coreConfig, 1);
+        TestMultitenancyAPIHelper.createConnectionUriDomain(process.getProcess(), TenantIdentifier.BASE_TENANT,
+                "127.0.0.1", true, true, true, coreConfig);
+
+        StorageLayer.getStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(coreConfig, 2);
+        TestMultitenancyAPIHelper.createConnectionUriDomain(process.getProcess(), TenantIdentifier.BASE_TENANT,
+                "localhost.org", true, true, true, coreConfig);
+
+        process.kill(false);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
+        Utils.setValueInConfig("supertokens_saas_load_only_cud", "127.0.0.1:3567");
+        process = TestingProcessManager.start(args, false);
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        List<List<TenantIdentifier>> uniqueUserPoolIdsTenants = StorageLayer.getTenantsWithUniqueUserPoolId(process.getProcess());
+        Cronjobs.addCronjob(process.getProcess(), LoadOnlyCUDTest.PerAppCronjob.getInstance(process.getProcess(), uniqueUserPoolIdsTenants));
+
+        Thread.sleep(3000);
+        Set<AppIdentifier> appIdentifiersFromCron = PerAppCronjob.getInstance(process.getProcess(), uniqueUserPoolIdsTenants).appIdentifiers;
+        assertEquals(2, appIdentifiersFromCron.size());
+        for (AppIdentifier app : appIdentifiersFromCron) {
+            assertNotEquals("localhost.org", app.getConnectionUriDomain());
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    static class PerAppCronjob extends CronTask {
+        private static final String RESOURCE_ID = "io.supertokens.test.CronjobTest.NormalCronjob";
+
+        private PerAppCronjob(Main main, List<List<TenantIdentifier>> tenantsInfo) {
+            super("PerTenantCronjob", main, tenantsInfo, true);
+        }
+
+        Set<AppIdentifier> appIdentifiers = new HashSet<>();
+
+        public static LoadOnlyCUDTest.PerAppCronjob getInstance(Main main, List<List<TenantIdentifier>> tenantsInfo) {
+            try {
+                return (LoadOnlyCUDTest.PerAppCronjob) main.getResourceDistributor().getResource(new TenantIdentifier(null, null, null), RESOURCE_ID);
+            } catch (TenantOrAppNotFoundException e) {
+                return (LoadOnlyCUDTest.PerAppCronjob) main.getResourceDistributor()
+                        .setResource(new TenantIdentifier(null, null, null), RESOURCE_ID, new LoadOnlyCUDTest.PerAppCronjob(main, tenantsInfo));
+            }
+        }
+
+        @Override
+        public int getIntervalTimeSeconds() {
+            return 1;
+        }
+
+        @Override
+        public int getInitialWaitTimeSeconds() {
+            return 0;
+        }
+
+        @Override
+        protected void doTaskPerApp(AppIdentifier app) throws Exception {
+            appIdentifiers.add(app);
+        }
     }
 }
