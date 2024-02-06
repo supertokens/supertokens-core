@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+## [6.0.17] - 2024-02-06
+
+- Adds new config `supertokens_saas_load_only_cud` that makes the core instance load a particular CUD only, irrespective of the CUDs present in the db.
+
 ## [6.0.16] - 2023-11-03
 
 - Collects requests stats per app
