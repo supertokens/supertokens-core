@@ -30,7 +30,9 @@ import io.supertokens.config.annotations.NotConflictingInApp;
 import io.supertokens.pluginInterface.LOG_LEVEL;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.utils.SemVer;
+import io.supertokens.webserver.Utils;
 import io.supertokens.webserver.WebserverAPI;
+import jakarta.servlet.ServletException;
 import org.apache.catalina.filters.RemoteAddrFilter;
 import org.jetbrains.annotations.TestOnly;
 
@@ -197,6 +199,10 @@ public class CoreConfig {
     @JsonProperty
     private String supertokens_max_cdi_version = null;
 
+    @ConfigYamlOnly
+    @JsonProperty
+    private String supertokens_saas_load_only_cud = null;
+
     @IgnoreForAnnotationCheck
     private Set<LOG_LEVEL> allowedLogLevels = null;
 
@@ -252,6 +258,10 @@ public class CoreConfig {
 
     public String getBasePath() {
         return base_path;
+    }
+
+    public String getSuperTokensLoadOnlyCUD() {
+        return supertokens_saas_load_only_cud;
     }
 
     public enum PASSWORD_HASHING_ALG {
@@ -665,6 +675,15 @@ public class CoreConfig {
         String cliHost = CLIOptions.get(main).getHost();
         if (cliHost != null) {
             host = cliHost;
+        }
+
+        if (supertokens_saas_load_only_cud != null) {
+            try {
+                supertokens_saas_load_only_cud =
+                        Utils.normalizeAndValidateConnectionUriDomain(supertokens_saas_load_only_cud, true);
+            } catch (ServletException e) {
+                throw new InvalidConfigException("supertokens_saas_load_only_cud is invalid");
+            }
         }
 
         access_token_validity = access_token_validity * 1000;
