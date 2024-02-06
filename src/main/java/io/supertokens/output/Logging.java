@@ -51,11 +51,11 @@ public class Logging extends ResourceDistributor.SingletonResource {
 
     private Logging(Main main) {
         this.infoLogger = Config.getBaseConfig(main).getInfoLogPath(main).equals("null")
-                ? createLoggerForConsole(main, "io.supertokens.Info")
+                ? createLoggerForConsole(main, "io.supertokens.Info", LOG_LEVEL.INFO)
                 : createLoggerForFile(main, Config.getBaseConfig(main).getInfoLogPath(main),
                 "io.supertokens.Info");
         this.errorLogger = Config.getBaseConfig(main).getErrorLogPath(main).equals("null")
-                ? createLoggerForConsole(main, "io.supertokens.Error")
+                ? createLoggerForConsole(main, "io.supertokens.Error", LOG_LEVEL.ERROR)
                 : createLoggerForFile(main, Config.getBaseConfig(main).getErrorLogPath(main),
                 "io.supertokens.Error");
         Storage storage = StorageLayer.getBaseStorage(main);
@@ -250,12 +250,13 @@ public class Logging extends ResourceDistributor.SingletonResource {
         return logger;
     }
 
-    private Logger createLoggerForConsole(Main main, String name) {
+    private Logger createLoggerForConsole(Main main, String name, LOG_LEVEL logLevel) {
         LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
         LayoutWrappingEncoder ple = new LayoutWrappingEncoder(main.getProcessId());
         ple.setContext(lc);
         ple.start();
         ConsoleAppender<ILoggingEvent> logConsoleAppender = new ConsoleAppender<>();
+        logConsoleAppender.setTarget(logLevel == LOG_LEVEL.ERROR ? "System.err" : "System.out");
         logConsoleAppender.setEncoder(ple);
         logConsoleAppender.setContext(lc);
         logConsoleAppender.start();
