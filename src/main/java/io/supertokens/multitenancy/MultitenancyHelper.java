@@ -50,10 +50,12 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
     public static final String RESOURCE_KEY = "io.supertokens.multitenancy.Multitenancy";
     private Main main;
     private TenantConfig[] tenantConfigs;
+    private TenantConfig[] allTenantConfigsFromDbDangerous;
 
     private MultitenancyHelper(Main main) throws StorageQueryException {
         this.main = main;
-        this.tenantConfigs = getAllTenantsFromDb();
+        this.allTenantConfigsFromDbDangerous = getAllTenantsFromDb();
+        this.tenantConfigs = this.getFilteredTenantConfigs(this.allTenantConfigsFromDbDangerous);
     }
 
     public static MultitenancyHelper getInstance(Main main) {
@@ -108,14 +110,15 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
             return main.getResourceDistributor().withResourceDistributorLock(() -> {
                 try {
                     TenantConfig[] tenantsFromDb = getAllTenantsFromDb();
+                    TenantConfig[] filteredTenantsFromDb = this.getFilteredTenantConfigs(tenantsFromDb);
 
                     Map<ResourceDistributor.KeyClass, JsonObject> normalizedTenantsFromDb =
                             Config.getNormalisedConfigsForAllTenants(
-                            this.getFilteredTenantConfigs(tenantsFromDb), Config.getBaseConfigAsJsonObject(main));
+                            filteredTenantsFromDb, Config.getBaseConfigAsJsonObject(main));
 
                     Map<ResourceDistributor.KeyClass, JsonObject> normalizedTenantsFromMemory =
                             Config.getNormalisedConfigsForAllTenants(
-                            this.getFilteredTenantConfigs(this.tenantConfigs), Config.getBaseConfigAsJsonObject(main));
+                            this.tenantConfigs, Config.getBaseConfigAsJsonObject(main));
 
                     List<TenantIdentifier> tenantsThatChanged = new ArrayList<>();
 
@@ -129,9 +132,11 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
                         }
                     }
 
-                    boolean sameNumberOfTenants = this.getFilteredTenantConfigs(tenantsFromDb).length == this.getFilteredTenantConfigs(this.tenantConfigs).length;
+                    boolean sameNumberOfTenants =
+                            filteredTenantsFromDb.length == this.tenantConfigs.length;
 
-                    this.tenantConfigs = tenantsFromDb;
+                    this.allTenantConfigsFromDbDangerous = tenantsFromDb;
+                    this.tenantConfigs = filteredTenantsFromDb;
                     if (tenantsThatChanged.size() == 0 && sameNumberOfTenants) {
                         return tenantsThatChanged;
                     }
@@ -180,17 +185,17 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
     }
 
     public void loadConfig(List<TenantIdentifier> tenantsThatChanged) throws IOException, InvalidConfigException {
-        Config.loadAllTenantConfig(main, this.getFilteredTenantConfigs(this.tenantConfigs), tenantsThatChanged);
+        Config.loadAllTenantConfig(main, this.tenantConfigs, tenantsThatChanged);
     }
 
     public void loadStorageLayer() throws IOException, InvalidConfigException {
-        StorageLayer.loadAllTenantStorage(main, this.getFilteredTenantConfigs(this.tenantConfigs));
+        StorageLayer.loadAllTenantStorage(main, this.tenantConfigs);
     }
 
     public void loadFeatureFlag(List<TenantIdentifier> tenantsThatChanged) {
         List<AppIdentifier> apps = new ArrayList<>();
         Set<AppIdentifier> appsSet = new HashSet<>();
-        for (TenantConfig t : this.getFilteredTenantConfigs(this.tenantConfigs)) {
+        for (TenantConfig t : this.tenantConfigs) {
             if (appsSet.contains(t.tenantIdentifier.toAppIdentifier())) {
                 continue;
             }
@@ -204,7 +209,7 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
             throws UnsupportedJWTSigningAlgorithmException {
         List<AppIdentifier> apps = new ArrayList<>();
         Set<AppIdentifier> appsSet = new HashSet<>();
-        for (TenantConfig t : this.getFilteredTenantConfigs(this.tenantConfigs)) {
+        for (TenantConfig t : this.tenantConfigs) {
             if (appsSet.contains(t.tenantIdentifier.toAppIdentifier())) {
                 continue;
             }
@@ -227,7 +232,7 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
             return main.getResourceDistributor().withResourceDistributorLockWithReturn(() -> {
                 // Returning a deep copy of the tenantConfigs array so that the functions consuming it
                 // do not modify the original array
-                TenantConfig[] filteredTenantConfigs = this.getFilteredTenantConfigs(this.tenantConfigs);
+                TenantConfig[] filteredTenantConfigs = this.tenantConfigs;
                 TenantConfig[] tenantConfigs = new TenantConfig[filteredTenantConfigs.length];
 
                 for (int i = 0; i < filteredTenantConfigs.length; i++) {
@@ -253,8 +258,8 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
                 .toArray(TenantConfig[]::new);
     }
 
-    public boolean isValidConnectionUriDomain(String cud) {
-        for (TenantConfig config : this.tenantConfigs) {
+    public boolean isConnectionUriDomainPresentInDb(String cud) {
+        for (TenantConfig config : this.allTenantConfigsFromDbDangerous) {
             if (config.tenantIdentifier.getConnectionUriDomain().equals(cud)) {
                 return true;
             }

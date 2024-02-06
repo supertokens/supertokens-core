@@ -288,7 +288,7 @@ public abstract class WebserverAPI extends HttpServlet {
         String connectionUriDomain = req.getServerName();
         connectionUriDomain = Utils.normalizeAndValidateConnectionUriDomain(connectionUriDomain, false);
 
-        if (MultitenancyHelper.getInstance(main).isValidConnectionUriDomain(connectionUriDomain)) {
+        if (MultitenancyHelper.getInstance(main).isConnectionUriDomainPresentInDb(connectionUriDomain)) {
             CoreConfig baseConfig = Config.getBaseConfig(main);
             if (baseConfig.getSuperTokensLoadOnlyCUD() != null) {
                 if (!connectionUriDomain.equals(baseConfig.getSuperTokensLoadOnlyCUD())) {
