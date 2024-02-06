@@ -9,6 +9,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Fixes issue where error logs were printed to StdOut instead of StdErr.
 - Adds new config `supertokens_saas_load_only_cud` that makes the core instance load a particular CUD only, irrespective of the CUDs present in the db.
+- Fixes connection pool handling when connection pool size changes for a tenant.
 
 ## [7.0.16] - 2023-12-04
 
