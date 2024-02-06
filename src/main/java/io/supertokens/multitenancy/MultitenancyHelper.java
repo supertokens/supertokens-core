@@ -50,12 +50,21 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
     public static final String RESOURCE_KEY = "io.supertokens.multitenancy.Multitenancy";
     private Main main;
     private TenantConfig[] tenantConfigs;
-    private TenantConfig[] allTenantConfigsFromDbDangerous;
+
+    // when the core has `supertokens_saas_load_only_cud` set, the tenantConfigs array will be filtered
+    // based on the config value. However, we need to keep all the list of CUDs from the db to be able
+    // to check if the CUD is present in the DB or not, while processing the requests.
+    private final Set<String> dangerous_allCUDsFromDb = new HashSet<>();
 
     private MultitenancyHelper(Main main) throws StorageQueryException {
         this.main = main;
-        this.allTenantConfigsFromDbDangerous = getAllTenantsFromDb();
-        this.tenantConfigs = this.getFilteredTenantConfigs(this.allTenantConfigsFromDbDangerous);
+        TenantConfig[] allTenantsFromDb = getAllTenantsFromDb();
+        this.tenantConfigs = this.getFilteredTenantConfigs(allTenantsFromDb);
+        this.dangerous_allCUDsFromDb.clear();
+
+        for (TenantConfig config : allTenantsFromDb) {
+            this.dangerous_allCUDsFromDb.add(config.tenantIdentifier.getConnectionUriDomain());
+        }
     }
 
     public static MultitenancyHelper getInstance(Main main) {
@@ -135,7 +144,10 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
                     boolean sameNumberOfTenants =
                             filteredTenantsFromDb.length == this.tenantConfigs.length;
 
-                    this.allTenantConfigsFromDbDangerous = tenantsFromDb;
+                    this.dangerous_allCUDsFromDb.clear();
+                    for (TenantConfig tenant : tenantsFromDb) {
+                        this.dangerous_allCUDsFromDb.add(tenant.tenantIdentifier.getConnectionUriDomain());
+                    }
                     this.tenantConfigs = filteredTenantsFromDb;
                     if (tenantsThatChanged.size() == 0 && sameNumberOfTenants) {
                         return tenantsThatChanged;
@@ -258,12 +270,6 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
     }
 
     public boolean isConnectionUriDomainPresentInDb(String cud) {
-        for (TenantConfig config : this.allTenantConfigsFromDbDangerous) {
-            if (config.tenantIdentifier.getConnectionUriDomain().equals(cud)) {
-                return true;
-            }
-        }
-
-        return false;
+        return this.dangerous_allCUDsFromDb.contains(cud);
     }
 }
