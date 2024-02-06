@@ -242,7 +242,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                 }
                 main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
 
-                Set<String> userPoolsInUse = new HashSet<>();
+                Set<String> uniquePoolsInUse = new HashSet<>();
 
                 for (ResourceDistributor.KeyClass key : resourceKeyToStorageMap.keySet()) {
                     Storage currStorage = resourceKeyToStorageMap.get(key);
@@ -259,11 +259,16 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                     main.getResourceDistributor().setResource(key.getTenantIdentifier(), RESOURCE_KEY,
                             new StorageLayer(resourceKeyToStorageMap.get(key)));
 
-                    userPoolsInUse.add(userPoolId);
+                    uniquePoolsInUse.add(uniqueId);
                 }
 
                 for (ResourceDistributor.KeyClass key : existingStorageMap.keySet()) {
-                    if (!userPoolsInUse.contains(((StorageLayer) existingStorageMap.get(key)).storage.getUserPoolId())) {
+                    Storage existingStorage = ((StorageLayer) existingStorageMap.get(key)).storage;
+                    String userPoolId = existingStorage.getUserPoolId();
+                    String connectionPoolId = existingStorage.getConnectionPoolId();
+                    String uniqueId = userPoolId + "~" + connectionPoolId;
+
+                    if (!uniquePoolsInUse.contains(uniqueId)) {
                         ((StorageLayer) existingStorageMap.get(key)).storage.close();
                         ((StorageLayer) existingStorageMap.get(key)).storage.stopLogging();
                     }
