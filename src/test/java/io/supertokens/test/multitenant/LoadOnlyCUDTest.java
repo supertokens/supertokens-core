@@ -92,7 +92,7 @@ public class LoadOnlyCUDTest {
                     "password123", process.getProcess());
             fail();
         } catch (HttpResponseException e) {
-            assertEquals(403, e.statusCode);
+            assertEquals(400, e.statusCode);
         }
 
         // check that it's allowed with 127.0.0.1

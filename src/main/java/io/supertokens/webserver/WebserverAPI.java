@@ -292,7 +292,7 @@ public abstract class WebserverAPI extends HttpServlet {
             CoreConfig baseConfig = Config.getBaseConfig(main);
             if (baseConfig.getSuperTokensLoadOnlyCUD() != null) {
                 if (!connectionUriDomain.equals(baseConfig.getSuperTokensLoadOnlyCUD())) {
-                    throw new ServletException(new BadPermissionException("Connection URI domain is disallowed"));
+                    throw new ServletException(new BadRequestException("Connection URI domain is disallowed"));
                 }
             }
 
