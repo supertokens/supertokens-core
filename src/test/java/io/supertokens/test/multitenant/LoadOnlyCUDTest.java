@@ -69,6 +69,14 @@ public class LoadOnlyCUDTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         JsonObject coreConfig = new JsonObject();
         StorageLayer.getStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(coreConfig, 1);
 
@@ -119,6 +127,10 @@ public class LoadOnlyCUDTest {
             return;
         }
 
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         try {
             TestMultitenancyAPIHelper.createConnectionUriDomain(process.getProcess(), TenantIdentifier.BASE_TENANT,
                     "localhost:3567", true, true, true, new JsonObject());
@@ -146,6 +158,14 @@ public class LoadOnlyCUDTest {
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
 
         JsonObject coreConfig = new JsonObject();
         StorageLayer.getStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(coreConfig, 1);
@@ -185,6 +205,14 @@ public class LoadOnlyCUDTest {
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
 
         JsonObject coreConfig = new JsonObject();
         StorageLayer.getStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(coreConfig, 1);
