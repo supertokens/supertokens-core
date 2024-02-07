@@ -20,11 +20,15 @@ import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.cliOptions.CLIOptions;
+import io.supertokens.config.annotations.ConfigDescription;
 import io.supertokens.config.annotations.ConfigYamlOnly;
+import io.supertokens.config.annotations.DifferentAcrossTenants;
+import io.supertokens.config.annotations.EnumProperty;
 import io.supertokens.config.annotations.IgnoreForAnnotationCheck;
 import io.supertokens.config.annotations.NotConflictingInApp;
 import io.supertokens.pluginInterface.LOG_LEVEL;
@@ -46,49 +50,65 @@ import java.util.regex.PatternSyntaxException;
 public class CoreConfig {
 
     @IgnoreForAnnotationCheck
-    public static final String[] PROTECTED_CONFIGS = new String[]{
+    public static final String[] PROTECTED_CONFIGS = new String[] {
             "ip_allow_regex",
             "ip_deny_regex",
     };
 
     @IgnoreForAnnotationCheck
     @JsonProperty
+    @ConfigDescription("The version of the core config.")
     private int core_config_version = -1;
 
     @NotConflictingInApp
     @JsonProperty
+    @ConfigDescription("Time in seconds for how long an access token is valid for. [Default: 3600 (1 hour)]")
     private long access_token_validity = 3600; // in seconds
 
     @NotConflictingInApp
     @JsonProperty
+    @ConfigDescription("Deprecated, please see changelog. Only used in CDI<=2.18\n If true, allows for immediate revocation of any access token. Keep in mind that setting this to true will result in a db query for each API call that requires authentication. (Default: false)")
     private boolean access_token_blacklisting = false;
 
     @NotConflictingInApp
     @JsonProperty
+    @ConfigDescription("Time in mins for how long a refresh token is valid for. [Default: 60 * 2400 (100 days)]")
     private double refresh_token_validity = 60 * 2400; // in mins
 
     @IgnoreForAnnotationCheck
     @JsonProperty
+    @DifferentAcrossTenants
+    @ConfigDescription("Time in milliseconds for how long a password reset token / link is valid for. [Default: 3600000 (1 hour)]")
     private long password_reset_token_lifetime = 3600000; // in MS
 
     @IgnoreForAnnotationCheck
     @JsonProperty
+    @DifferentAcrossTenants
+    @ConfigDescription("Time in milliseconds for how long an email verification token / link is valid for. [Default: 24 * 3600 * 1000 (1 day)]")
     private long email_verification_token_lifetime = 24 * 3600 * 1000; // in MS
 
     @IgnoreForAnnotationCheck
     @JsonProperty
+    @DifferentAcrossTenants
+    @ConfigDescription("The maximum number of code input attempts per login before the user needs to restart. (Default: 5)")
     private int passwordless_max_code_input_attempts = 5;
 
     @IgnoreForAnnotationCheck
     @JsonProperty
+    @DifferentAcrossTenants
+    @ConfigDescription("Time in milliseconds for how long a passwordless code is valid for. [Default: 900000 (15 mins)]")
     private long passwordless_code_lifetime = 900000; // in MS
 
     @IgnoreForAnnotationCheck
     @JsonProperty
+    @DifferentAcrossTenants
+    @ConfigDescription("The maximum number of invalid TOTP attempts that will trigger rate limiting. (Default: 5)")
     private int totp_max_attempts = 5;
 
     @IgnoreForAnnotationCheck
     @JsonProperty
+    @DifferentAcrossTenants
+    @ConfigDescription("The time in seconds for which the user will be rate limited once totp_max_attempts is crossed. [Default: 900 (15 mins)]")
     private int totp_rate_limit_cooldown_sec = 900; // in seconds (Default 15 mins)
 
     @IgnoreForAnnotationCheck
@@ -96,67 +116,84 @@ public class CoreConfig {
 
     @ConfigYamlOnly
     @JsonProperty
+    @ConfigDescription("Give the path to a file (on your local system) in which the SuperTokens service can write INFO logs to. Set it to \"null\" if you want it to log to standard output instead. (Default: installation directory/logs/info.log)")
     private String info_log_path = logDefault;
 
     @ConfigYamlOnly
     @JsonProperty
+    @ConfigDescription("Give the path to a file (on your local system) in which the SuperTokens service can write ERROR logs to. Set it to \"null\" if you want it to log to\n standard error instead. (Default: installation directory/logs/error.log)")
     private String error_log_path = logDefault;
 
     @NotConflictingInApp
     @JsonProperty
+    @ConfigDescription("Deprecated, please see changelog.\n If this is set to true, the access tokens created using CDI<=2.18 will be signed using a static signing key. (Default: true)")
     private boolean access_token_signing_key_dynamic = true;
 
     @NotConflictingInApp
     @JsonProperty("access_token_dynamic_signing_key_update_interval")
-    @JsonAlias({"access_token_dynamic_signing_key_update_interval", "access_token_signing_key_update_interval"})
+    @JsonAlias({ "access_token_dynamic_signing_key_update_interval", "access_token_signing_key_update_interval" })
+    @ConfigDescription("Time in hours for how frequently the dynamic signing key will change. [Default: 168 (1 week)]")
     private double access_token_dynamic_signing_key_update_interval = 168; // in hours
 
     @ConfigYamlOnly
     @JsonProperty
+    @ConfigDescription("The port on which the SuperTokens service will run. (Default: 3567)")
     private int port = 3567;
 
     @ConfigYamlOnly
     @JsonProperty
+    @ConfigDescription("The host on which the SuperTokens service will run. Values here can be localhost, example.com, 0.0.0.0 or any IP address associated with your machine. (Default: localhost)")
     private String host = "localhost";
 
     @ConfigYamlOnly
     @JsonProperty
+    @ConfigDescription("Sets the max thread pool size for incoming http server requests. (Default: 10)")
     private int max_server_pool_size = 10;
 
     @NotConflictingInApp
     @JsonProperty
+    @ConfigDescription("The API keys to query an instance using this config file. The format is \"key1,key2,key3\". Keys can only contain '=', '-' and alpha-numeric (including capital) chars. Each key must have a minimum length of 20 chars. (Default: null)")
     private String api_keys = null;
 
     @NotConflictingInApp
     @JsonProperty
+    @ConfigDescription("Learn more about Telemetry here: https://github.com/supertokens/supertokens-core/wiki/Telemetry. (Default: false)")
     private boolean disable_telemetry = false;
 
     @NotConflictingInApp
     @JsonProperty
+    @ConfigDescription("The password hashing algorithm to use. Values are \"ARGON2\" | \"BCRYPT\". (Default: BCRYPT)")
+    @EnumProperty({ "ARGON2", "BCRYPT" })
     private String password_hashing_alg = "BCRYPT";
 
     @ConfigYamlOnly
     @JsonProperty
+    @ConfigDescription("Number of iterations for argon2 password hashing. (Default: 1)")
     private int argon2_iterations = 1;
 
     @ConfigYamlOnly
     @JsonProperty
+    @ConfigDescription("Amount of memory in kb for argon2 password hashing. [Default: 87795 (85 mb)]")
     private int argon2_memory_kb = 87795; // 85 mb
 
     @ConfigYamlOnly
     @JsonProperty
+    @ConfigDescription("Amount of parallelism for argon2 password hashing. (Default: 2)")
     private int argon2_parallelism = 2;
 
     @ConfigYamlOnly
     @JsonProperty
+    @ConfigDescription("Number of concurrent argon2 hashes that can happen at the same time for sign up or sign in requests. (Default: 1)")
     private int argon2_hashing_pool_size = 1;
 
     @ConfigYamlOnly
     @JsonProperty
+    @ConfigDescription("Number of concurrent firebase scrypt hashes that can happen at the same time for sign in requests. (Default: 1)")
     private int firebase_password_hashing_pool_size = 1;
 
     @ConfigYamlOnly
     @JsonProperty
+    @ConfigDescription("Number of rounds to set for bcrypt password hashing. (Default: 11)")
     private int bcrypt_log_rounds = 11;
 
     // TODO: add https in later version
@@ -173,30 +210,40 @@ public class CoreConfig {
 
     @ConfigYamlOnly
     @JsonProperty
+    @ConfigDescription("Used to prepend a base path to all APIs when querying the core.")
     private String base_path = "";
 
     @ConfigYamlOnly
     @JsonProperty
+    @ConfigDescription("Logging level for the core. Values are \"DEBUG\" | \"INFO\" | \"WARN\" | \"ERROR\" | \"NONE\". (Default: INFO)")
+    @EnumProperty({ "DEBUG", "INFO", "WARN", "ERROR", "NONE" })
     private String log_level = "INFO";
 
     @NotConflictingInApp
     @JsonProperty
+    @ConfigDescription("The signer key used for firebase scrypt password hashing. (Default: null)")
     private String firebase_password_hashing_signer_key = null;
 
     @IgnoreForAnnotationCheck
     @JsonProperty
+    @DifferentAcrossTenants
+    @ConfigDescription("Regex for allowing requests from IP addresses that match with the value. For example, use the value of 127\\.\\d+\\.\\d+\\.\\d+|::1|0:0:0:0:0:0:0:1 to allow only localhost to query the core")
     private String ip_allow_regex = null;
 
     @IgnoreForAnnotationCheck
     @JsonProperty
+    @DifferentAcrossTenants
+    @ConfigDescription("Regex for denying requests from IP addresses that match with the value. Comment this value to deny no IP address.")
     private String ip_deny_regex = null;
 
     @ConfigYamlOnly
     @JsonProperty
+    @ConfigDescription("This is used when deploying the core in SuperTokens SaaS infrastructure. If set, limits what database information is shown to / modifiable by the dev when they query the core to get the information about their tenants. It only exposes that information when this key is used instead of the regular api_keys config.")
     private String supertokens_saas_secret = null;
 
     @NotConflictingInApp
     @JsonProperty
+    @ConfigDescription("This is used when the core needs to assume a specific CDI version when CDI version is not specified in the request. When set to null, the core will assume the latest version of the CDI. (Default: null)")
     private String supertokens_max_cdi_version = null;
 
     @ConfigYamlOnly
@@ -419,7 +466,7 @@ public class CoreConfig {
             throw new InvalidConfigException(
                     "'access_token_validity' must be between 1 and 86400000 seconds inclusive." +
                             (includeConfigFilePath ? " The config file can be"
-                            + " found here: " + getConfigFileLocation(main) : ""));
+                                    + " found here: " + getConfigFileLocation(main) : ""));
         }
         Boolean validityTesting = CoreConfigTestContent.getInstance(main)
                 .getValue(CoreConfigTestContent.VALIDITY_TESTING);
@@ -566,7 +613,8 @@ public class CoreConfig {
                 try {
                     filter.setAllow(ip_allow_regex);
                 } catch (PatternSyntaxException e) {
-                    throw new InvalidConfigException("Provided regular expression is invalid for ip_allow_regex config");
+                    throw new InvalidConfigException(
+                            "Provided regular expression is invalid for ip_allow_regex config");
                 }
             }
             if (ip_deny_regex != null) {
@@ -687,7 +735,8 @@ public class CoreConfig {
         }
 
         access_token_validity = access_token_validity * 1000;
-        access_token_dynamic_signing_key_update_interval = access_token_dynamic_signing_key_update_interval * 3600 * 1000;
+        access_token_dynamic_signing_key_update_interval = access_token_dynamic_signing_key_update_interval * 3600
+                * 1000;
         refresh_token_validity = refresh_token_validity * 60 * 1000;
 
         isNormalizedAndValid = true;
@@ -718,14 +767,64 @@ public class CoreConfig {
     }
 
     static void assertThatCertainConfigIsNotSetForAppOrTenants(JsonObject config) throws InvalidConfigException {
-        // these are all configs that are per core. So we do not allow the developer to set these dynamically.
+        // these are all configs that are per core. So we do not allow the developer to
+        // set these dynamically.
         for (Field field : CoreConfig.class.getDeclaredFields()) {
             if (field.isAnnotationPresent(ConfigYamlOnly.class)) {
                 if (config.has(field.getName())) {
-                    throw new InvalidConfigException(field.getName() + " can only be set via the core's base config setting");
+                    throw new InvalidConfigException(
+                            field.getName() + " can only be set via the core's base config setting");
                 }
             }
         }
+    }
+
+    public static JsonArray getConfigFieldsJson() {
+        JsonArray result = new JsonArray();
+
+        for (String fieldId : CoreConfig.getValidFields()) {
+            try {
+                Field field = CoreConfig.class.getDeclaredField(fieldId);
+                // If fieldId exists in PROTECTED_CONFIGS or is not annotated with JsonProperty
+                // or is annotated with ConfigYamlOnly, then skip
+                if (Arrays.asList(PROTECTED_CONFIGS).contains(fieldId) || !field.isAnnotationPresent(JsonProperty.class)
+                        || field.isAnnotationPresent(ConfigYamlOnly.class)) {
+                    continue;
+                }
+                JsonObject fieldJson = new JsonObject();
+                fieldJson.addProperty("name", field.getName());
+                fieldJson.addProperty("description", field.isAnnotationPresent(ConfigDescription.class)
+                        ? field.getAnnotation(ConfigDescription.class).value()
+                        : "");
+                fieldJson.addProperty("isDifferentAcrossTenants",
+                        field.isAnnotationPresent(DifferentAcrossTenants.class));
+
+                String type = "string";
+
+                Class<?> fieldType = field.getType();
+
+                if (fieldType == java.lang.String.class) {
+                    type = "string";
+                } else if (fieldType == boolean.class) {
+                    type = "boolean";
+                } else if (fieldType == int.class || fieldType == long.class || fieldType == double.class) {
+                    type = "number";
+                }
+
+                if (field.isAnnotationPresent(EnumProperty.class)) {
+                    type = "enum";
+                    fieldJson.add("options",
+                            new GsonBuilder().create().toJsonTree(field.getAnnotation(EnumProperty.class).value()));
+                }
+
+                fieldJson.addProperty("type", type);
+                result.add(fieldJson);
+
+            } catch (NoSuchFieldException e) {
+                continue;
+            }
+        }
+        return result;
     }
 
     void assertThatConfigFromSameAppIdAreNotConflicting(CoreConfig other) throws InvalidConfigException {
