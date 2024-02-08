@@ -27,12 +27,12 @@ import io.supertokens.Main;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.annotations.ConfigDescription;
 import io.supertokens.config.annotations.ConfigYamlOnly;
-import io.supertokens.config.annotations.DifferentAcrossTenants;
 import io.supertokens.config.annotations.EnumProperty;
 import io.supertokens.config.annotations.IgnoreForAnnotationCheck;
 import io.supertokens.config.annotations.NotConflictingInApp;
 import io.supertokens.pluginInterface.LOG_LEVEL;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.Utils;
 import io.supertokens.webserver.WebserverAPI;
@@ -77,37 +77,31 @@ public class CoreConfig {
 
     @IgnoreForAnnotationCheck
     @JsonProperty
-    @DifferentAcrossTenants
     @ConfigDescription("Time in milliseconds for how long a password reset token / link is valid for. [Default: 3600000 (1 hour)]")
     private long password_reset_token_lifetime = 3600000; // in MS
 
     @IgnoreForAnnotationCheck
     @JsonProperty
-    @DifferentAcrossTenants
     @ConfigDescription("Time in milliseconds for how long an email verification token / link is valid for. [Default: 24 * 3600 * 1000 (1 day)]")
     private long email_verification_token_lifetime = 24 * 3600 * 1000; // in MS
 
     @IgnoreForAnnotationCheck
     @JsonProperty
-    @DifferentAcrossTenants
     @ConfigDescription("The maximum number of code input attempts per login before the user needs to restart. (Default: 5)")
     private int passwordless_max_code_input_attempts = 5;
 
     @IgnoreForAnnotationCheck
     @JsonProperty
-    @DifferentAcrossTenants
     @ConfigDescription("Time in milliseconds for how long a passwordless code is valid for. [Default: 900000 (15 mins)]")
     private long passwordless_code_lifetime = 900000; // in MS
 
     @IgnoreForAnnotationCheck
     @JsonProperty
-    @DifferentAcrossTenants
     @ConfigDescription("The maximum number of invalid TOTP attempts that will trigger rate limiting. (Default: 5)")
     private int totp_max_attempts = 5;
 
     @IgnoreForAnnotationCheck
     @JsonProperty
-    @DifferentAcrossTenants
     @ConfigDescription("The time in seconds for which the user will be rate limited once totp_max_attempts is crossed. [Default: 900 (15 mins)]")
     private int totp_rate_limit_cooldown_sec = 900; // in seconds (Default 15 mins)
 
@@ -226,13 +220,11 @@ public class CoreConfig {
 
     @IgnoreForAnnotationCheck
     @JsonProperty
-    @DifferentAcrossTenants
     @ConfigDescription("Regex for allowing requests from IP addresses that match with the value. For example, use the value of 127\\.\\d+\\.\\d+\\.\\d+|::1|0:0:0:0:0:0:0:1 to allow only localhost to query the core")
     private String ip_allow_regex = null;
 
     @IgnoreForAnnotationCheck
     @JsonProperty
-    @DifferentAcrossTenants
     @ConfigDescription("Regex for denying requests from IP addresses that match with the value. Comment this value to deny no IP address.")
     private String ip_deny_regex = null;
 
@@ -638,6 +630,29 @@ public class CoreConfig {
             }
         }
 
+        try {
+            String[] allowedPasswordHashingAlgos = CoreConfig.class.getDeclaredField("password_hashing_alg")
+                    .getAnnotation(EnumProperty.class).value();
+
+            if (!Arrays.asList(allowedPasswordHashingAlgos).contains(password_hashing_alg)) {
+                throw new InvalidConfigException("password_hashing_alg property is not set correctly");
+            }
+        } catch (NoSuchFieldException e) {
+            throw new InvalidConfigException("password_hashing_alg field not found");
+        }
+
+        try {
+            String[] allowedLogLevels = CoreConfig.class.getDeclaredField("log_level")
+                    .getAnnotation(EnumProperty.class).value();
+
+            if (!Arrays.asList(allowedLogLevels).contains(log_level)) {
+                throw new InvalidConfigException("log_level property is not set correctly");
+            }
+        } catch (NoSuchFieldException e) {
+            throw new InvalidConfigException("log_level field not found");
+        }
+
+
         // Normalize
         if (ip_allow_regex != null) {
             ip_allow_regex = ip_allow_regex.trim();
@@ -727,8 +742,8 @@ public class CoreConfig {
 
         if (supertokens_saas_load_only_cud != null) {
             try {
-                supertokens_saas_load_only_cud =
-                        Utils.normalizeAndValidateConnectionUriDomain(supertokens_saas_load_only_cud, true);
+                supertokens_saas_load_only_cud = Utils
+                        .normalizeAndValidateConnectionUriDomain(supertokens_saas_load_only_cud, true);
             } catch (ServletException e) {
                 throw new InvalidConfigException("supertokens_saas_load_only_cud is invalid");
             }
@@ -779,7 +794,7 @@ public class CoreConfig {
         }
     }
 
-    public static JsonArray getConfigFieldsJson() {
+    public static JsonArray getConfigFieldsJson(Main main) {
         JsonArray result = new JsonArray();
 
         for (String fieldId : CoreConfig.getValidFields()) {
@@ -797,7 +812,7 @@ public class CoreConfig {
                         ? field.getAnnotation(ConfigDescription.class).value()
                         : "");
                 fieldJson.addProperty("isDifferentAcrossTenants",
-                        field.isAnnotationPresent(DifferentAcrossTenants.class));
+                        !field.isAnnotationPresent(NotConflictingInApp.class));
 
                 String type = "string";
 
@@ -824,6 +839,13 @@ public class CoreConfig {
                 continue;
             }
         }
+
+        JsonArray storageFields = StorageLayer.getBaseStorage(main).getConfigFieldsJson();
+
+        for (JsonElement field : storageFields) {
+            result.add(field);
+        }
+
         return result;
     }
 

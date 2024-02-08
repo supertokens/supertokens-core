@@ -47,7 +47,7 @@ public class CoreConfigListAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        JsonArray config = CoreConfig.getConfigFieldsJson();
+        JsonArray config = CoreConfig.getConfigFieldsJson(main);
         JsonObject result = new JsonObject();
         result.addProperty("status", "OK");
         result.add("config", config);

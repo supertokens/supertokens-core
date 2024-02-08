@@ -16,6 +16,7 @@
 
 package io.supertokens.inmemorydb;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
@@ -2756,6 +2757,11 @@ public class Start
     @Override
     public Set<String> getValidFieldsInConfig() {
         return SQLiteConfig.getValidFields();
+    }
+
+    @Override
+    public JsonArray getConfigFieldsJson() {
+        return new JsonArray();
     }
 
     @Override
