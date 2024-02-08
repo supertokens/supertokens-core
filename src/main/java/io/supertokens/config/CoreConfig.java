@@ -652,7 +652,6 @@ public class CoreConfig {
             throw new InvalidConfigException("log_level field not found");
         }
 
-
         // Normalize
         if (ip_allow_regex != null) {
             ip_allow_regex = ip_allow_regex.trim();
@@ -802,8 +801,10 @@ public class CoreConfig {
                 Field field = CoreConfig.class.getDeclaredField(fieldId);
                 // If fieldId exists in PROTECTED_CONFIGS or is not annotated with JsonProperty
                 // or is annotated with ConfigYamlOnly, then skip
-                if (Arrays.asList(PROTECTED_CONFIGS).contains(fieldId) || !field.isAnnotationPresent(JsonProperty.class)
-                        || field.isAnnotationPresent(ConfigYamlOnly.class)) {
+                if (Arrays.asList(PROTECTED_CONFIGS).contains(fieldId)
+                        || !field.isAnnotationPresent(JsonProperty.class)
+                        || field.isAnnotationPresent(ConfigYamlOnly.class)
+                        || fieldId == "core_config_version") {
                     continue;
                 }
                 JsonObject fieldJson = new JsonObject();
