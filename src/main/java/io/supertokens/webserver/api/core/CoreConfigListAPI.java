@@ -17,16 +17,19 @@
 package io.supertokens.webserver.api.core;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import io.supertokens.Main;
 import io.supertokens.config.CoreConfig;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.webserver.WebserverAPI;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Arrays;
 
 public class CoreConfigListAPI extends WebserverAPI {
     private static final long serialVersionUID = -4641988458637882374L;
@@ -49,6 +52,23 @@ public class CoreConfigListAPI extends WebserverAPI {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonArray config = CoreConfig.getConfigFieldsJson(main);
         JsonObject result = new JsonObject();
+
+        try {
+            if (shouldProtectProtectedConfig(req)) {
+                JsonArray configWithouProtectedFields = new JsonArray();
+                String[] protectedFields = StorageLayer.getBaseStorage(main)
+                        .getProtectedConfigsFromSuperTokensSaaSUsers();
+                for (JsonElement field : config) {
+                    String fieldName = field.getAsJsonObject().get("name").getAsString();
+                    if (!Arrays.asList(protectedFields).contains(fieldName)) {
+                        configWithouProtectedFields.add(field);
+                    }
+                }
+                config = configWithouProtectedFields;
+            }
+        } catch (Exception e) {
+        }
+
         result.addProperty("status", "OK");
         result.add("config", config);
         super.sendJsonResponse(200, result, resp);
