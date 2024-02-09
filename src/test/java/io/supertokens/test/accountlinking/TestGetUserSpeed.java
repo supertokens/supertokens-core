@@ -59,18 +59,8 @@ public class TestGetUserSpeed {
         Utils.reset();
     }
 
-    @Test
-    public void testUserCreationLinkingAndGetByIdSpeeds() throws Exception {
-        String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
-        Utils.setValueInConfig("postgresql_connection_pool_size", "100");
-        Utils.setValueInConfig("mysql_connection_pool_size", "100");
-
-        FeatureFlagTestContent.getInstance(process.getProcess())
-                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
-                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+    public void testUserCreationLinkingAndGetByIdSpeedsCommon(TestingProcessManager.TestingProcess process,
+                                                              long createTime, long linkingTime, long getTime) throws Exception {
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
@@ -81,6 +71,7 @@ public class TestGetUserSpeed {
         }
 
         int numberOfUsers = 10000;
+
         List<String> userIds = new ArrayList<>();
         List<String> userIds2 = new ArrayList<>();
         Lock lock = new ReentrantLock();
@@ -108,7 +99,7 @@ public class TestGetUserSpeed {
 
             long end = System.currentTimeMillis();
             System.out.println("Created users " + numberOfUsers + " in " + (end - start) + "ms");
-            assert end - start < 25000; // 25 sec
+            assert end - start < createTime; // 25 sec
         }
 
         Thread.sleep(10000); // wait for index
@@ -148,7 +139,7 @@ public class TestGetUserSpeed {
             es.awaitTermination(5, TimeUnit.MINUTES);
             long end = System.currentTimeMillis();
             System.out.println("Accounts linked in " + (end - start) + "ms");
-            assert end - start < 50000; // 50 sec
+            assert end - start < linkingTime; // 50 sec
         }
 
         Thread.sleep(10000); // wait for index
@@ -169,10 +160,44 @@ public class TestGetUserSpeed {
             es.awaitTermination(5, TimeUnit.MINUTES);
             long end = System.currentTimeMillis();
             System.out.println("Time taken for " + numberOfUsers + " users: " + (end - start) + "ms");
-            assert end - start < 20000; // 20 sec
+            assert end - start < getTime; // 20 sec
         }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testUserCreationLinkingAndGetByIdSpeedsWithoutMinIdle() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        Utils.setValueInConfig("postgresql_connection_pool_size", "100");
+        Utils.setValueInConfig("mysql_connection_pool_size", "100");
+
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        testUserCreationLinkingAndGetByIdSpeedsCommon(process, 25000, 50000, 20000);
+    }
+
+    @Test
+    public void testUserCreationLinkingAndGetByIdSpeedsWithMinIdle() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        Utils.setValueInConfig("postgresql_connection_pool_size", "100");
+        Utils.setValueInConfig("mysql_connection_pool_size", "100");
+        Utils.setValueInConfig("postgresql_minimum_idle_connections", "1");
+        Utils.setValueInConfig("mysql_minimum_idle_connections", "1");
+
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        testUserCreationLinkingAndGetByIdSpeedsCommon(process, 60000, 50000, 20000);
     }
 }
