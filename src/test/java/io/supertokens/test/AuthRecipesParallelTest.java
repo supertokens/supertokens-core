@@ -20,7 +20,11 @@ import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -56,6 +60,48 @@ public class AuthRecipesParallelTest {
 
     @Test
     public void timeTakenFor500SignInParallel() throws Exception {
+        { // warm up the db with some data
+            String[] args = {"../"};
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+            Utils.setValueInConfig("postgresql_connection_pool_size", "100");
+            Utils.setValueInConfig("mysql_connection_pool_size", "100");
+
+            FeatureFlagTestContent.getInstance(process.getProcess())
+                    .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                            EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+            process.startProcess();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
+            if (StorageLayer.isInMemDb(process.getProcess())) {
+                return;
+            }
+
+            int numberOfUsers = 10;
+
+            // Warm up
+            ExecutorService es = Executors.newFixedThreadPool(32);
+
+            for (int i = 0; i < numberOfUsers; i++) {
+                int finalI = i;
+                es.execute(() -> {
+                    try {
+                        EmailPassword.signUp(process.getProcess(), "test" + finalI + "@example.com", "password123");
+                    } catch (Exception e) {
+                        // ignore
+                    }
+                });
+            }
+            es.shutdown();
+            es.awaitTermination(5, TimeUnit.MINUTES);
+
+            process.kill(false);
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);

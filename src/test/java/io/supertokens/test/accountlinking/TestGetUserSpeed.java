@@ -61,6 +61,39 @@ public class TestGetUserSpeed {
 
     @Test
     public void testUserCreationLinkingAndGetByIdSpeeds() throws Exception {
+        { // warm up the db with some data
+            String[] args = {"../"};
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+            Utils.setValueInConfig("postgresql_connection_pool_size", "100");
+            Utils.setValueInConfig("mysql_connection_pool_size", "100");
+
+            FeatureFlagTestContent.getInstance(process.getProcess())
+                    .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                            EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+            process.startProcess();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
+            if (StorageLayer.isInMemDb(process.getProcess())) {
+                return;
+            }
+
+            int numberOfUsers = 10000;
+
+            // Warm up
+            for (int i = 0; i < numberOfUsers; i++) {
+                int finalI = i;
+                AuthRecipeUserInfo user = ThirdParty.signInUp(
+                        process.getProcess(), "facebook", "fbid" + finalI, "email" + finalI + "@example.com").user;
+            }
+
+            process.kill(false);
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         Utils.setValueInConfig("postgresql_connection_pool_size", "100");
@@ -81,6 +114,7 @@ public class TestGetUserSpeed {
         }
 
         int numberOfUsers = 10000;
+
         List<String> userIds = new ArrayList<>();
         List<String> userIds2 = new ArrayList<>();
         Lock lock = new ReentrantLock();
