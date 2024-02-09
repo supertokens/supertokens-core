@@ -41,8 +41,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 public class AuthRecipesParallelTest {
     @Rule
@@ -60,92 +59,58 @@ public class AuthRecipesParallelTest {
 
     @Test
     public void timeTakenFor500SignInParallel() throws Exception {
-        { // warm up the db with some data
+        for (int t = 0; t < 5; t++) {
             String[] args = {"../"};
-            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
-            Utils.setValueInConfig("postgresql_connection_pool_size", "100");
-            Utils.setValueInConfig("mysql_connection_pool_size", "100");
 
-            FeatureFlagTestContent.getInstance(process.getProcess())
-                    .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
-                            EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-            process.startProcess();
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
             if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
                 return;
             }
 
-            if (StorageLayer.isInMemDb(process.getProcess())) {
-                return;
-            }
+            ExecutorService ex = Executors.newFixedThreadPool(1000);
+            int numberOfThreads = 500;
 
-            int numberOfUsers = 10;
+            EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
+            AtomicInteger counter = new AtomicInteger(0);
+            AtomicInteger retryCounter = new AtomicInteger(0);
 
-            // Warm up
-            ExecutorService es = Executors.newFixedThreadPool(32);
-
-            for (int i = 0; i < numberOfUsers; i++) {
-                int finalI = i;
-                es.execute(() -> {
-                    try {
-                        EmailPassword.signUp(process.getProcess(), "test" + finalI + "@example.com", "password123");
-                    } catch (Exception e) {
-                        // ignore
+            long st = System.currentTimeMillis();
+            for (int i = 0; i < numberOfThreads; i++) {
+                ex.execute(() -> {
+                    while(true) {
+                        try {
+                            EmailPassword.signIn(process.getProcess(), "test@example.com", "password");
+                            counter.incrementAndGet();
+                            break;
+                        } catch (StorageQueryException e) {
+                            retryCounter.incrementAndGet();
+                            // continue
+                        } catch (WrongCredentialsException e) {
+                            throw new RuntimeException(e);
+                        }
                     }
                 });
             }
-            es.shutdown();
-            es.awaitTermination(5, TimeUnit.MINUTES);
 
-            process.kill(false);
-            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-        }
+            ex.shutdown();
 
-        String[] args = {"../"};
+            ex.awaitTermination(2, TimeUnit.MINUTES);
+            System.out.println("Time taken for " + numberOfThreads + " sign in parallel: " + (System.currentTimeMillis() - st) + "ms");
+            System.out.println("Retry counter: " + retryCounter.get());
+            assertEquals(counter.get(), numberOfThreads);
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            if (retryCounter.get() == 0) {
+                process.kill();
+                assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+                continue; // retry
+            }
+            assertEquals(0, retryCounter.get());
             return;
         }
 
-        ExecutorService ex = Executors.newFixedThreadPool(1000);
-        int numberOfThreads = 500;
-
-        EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
-        AtomicInteger counter = new AtomicInteger(0);
-        AtomicInteger retryCounter = new AtomicInteger(0);
-
-        long st = System.currentTimeMillis();
-        for (int i = 0; i < numberOfThreads; i++) {
-            ex.execute(() -> {
-                while(true) {
-                    try {
-                        EmailPassword.signIn(process.getProcess(), "test@example.com", "password");
-                        counter.incrementAndGet();
-                        break;
-                    } catch (StorageQueryException e) {
-                        retryCounter.incrementAndGet();
-                        // continue
-                    } catch (WrongCredentialsException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            });
-        }
-
-        ex.shutdown();
-
-        ex.awaitTermination(2, TimeUnit.MINUTES);
-        System.out.println("Time taken for " + numberOfThreads + " sign in parallel: " + (System.currentTimeMillis() - st) + "ms");
-        System.out.println("Retry counter: " + retryCounter.get());
-        assertEquals(counter.get(), numberOfThreads);
-        assertEquals(0, retryCounter.get());
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        fail(); // tried 5 times
     }
 
     @Test
