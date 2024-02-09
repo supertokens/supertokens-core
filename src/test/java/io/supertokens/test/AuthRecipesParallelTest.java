@@ -101,7 +101,7 @@ public class AuthRecipesParallelTest {
             System.out.println("Retry counter: " + retryCounter.get());
             assertEquals(counter.get(), numberOfThreads);
 
-            if (retryCounter.get() == 0) {
+            if (retryCounter.get() != 0) {
                 process.kill();
                 assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
                 continue; // retry
