@@ -107,6 +107,9 @@ public class AuthRecipesParallelTest {
                 continue; // retry
             }
             assertEquals(0, retryCounter.get());
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
             return;
         }
 
