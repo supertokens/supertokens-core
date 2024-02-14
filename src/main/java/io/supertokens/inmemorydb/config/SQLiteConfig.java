@@ -156,4 +156,8 @@ public class SQLiteConfig {
     public String getDashboardSessionsTable() {
         return "dashboard_user_sessions";
     }
+
+    public String getBulkImportUsersTable() {
+        return "bulk_import_users";
+    }
 }
