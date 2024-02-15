@@ -17,13 +17,18 @@
 package io.supertokens.webserver.api.bulkimport;
 
 import io.supertokens.Main;
+import io.supertokens.bulkimport.BulkImport;
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.multitenancy.Multitenancy;
-import io.supertokens.pluginInterface.bulkimport.BulkImportStorage;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
 import io.supertokens.pluginInterface.bulkimport.exceptions.InvalidBulkImportDataException;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -55,31 +60,27 @@ public class AddBulkImportUsers extends WebserverAPI {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         JsonArray users = InputParser.parseArrayOrThrowError(input, "users", false);
 
-        if (users.size() > MAX_USERS_TO_ADD) {
+        if (users.size() <= 0 || users.size() > MAX_USERS_TO_ADD) {
             JsonObject errorResponseJson = new JsonObject();
-            errorResponseJson.addProperty("error", "You can only add 1000 users at a time.");
-            super.sendJsonResponse(400, errorResponseJson, resp);
-            return;
+            String errorMsg = users.size() <= 0 ? "You need to add at least one user."
+                    : "You can only add 10000 users at a time.";
+            errorResponseJson.addProperty("error", errorMsg);
+            throw new ServletException(new WebserverAPI.BadRequestException(errorResponseJson.toString()));
         }
 
-        AppIdentifier appIdentifier = null;
-        try {
-            appIdentifier = getTenantIdentifierFromRequest(req).toAppIdentifier();
-        } catch (ServletException e) {
-            throw new ServletException(e);
-        }
-
-        TenantConfig[] allTenantConfigs = Multitenancy.getAllTenantsForApp(appIdentifier, main);
-        ArrayList<String> validTenantIds = new ArrayList<>();
-        Arrays.stream(allTenantConfigs)
-                .forEach(tenantConfig -> validTenantIds.add(tenantConfig.tenantIdentifier.getTenantId()));
+        AppIdentifier appIdentifier = getTenantIdentifierFromRequest(req).toAppIdentifier();
 
         JsonArray errorsJson = new JsonArray();
         ArrayList<BulkImportUser> usersToAdd = new ArrayList<>();
 
         for (int i = 0; i < users.size(); i++) {
             try {
-                usersToAdd.add(new BulkImportUser(users.get(i).getAsJsonObject(), validTenantIds, null));
+                BulkImportUser user = new BulkImportUser(users.get(i).getAsJsonObject(), null);
+                usersToAdd.add(user);
+
+                for (BulkImportUser.LoginMethod loginMethod : user.loginMethods) {
+                    validateTenantId(appIdentifier, loginMethod.tenantId, loginMethod.recipeId);
+                }
             } catch (InvalidBulkImportDataException e) {
                 JsonObject errorObj = new JsonObject();
 
@@ -89,12 +90,6 @@ public class AddBulkImportUsers extends WebserverAPI {
 
                 errorObj.addProperty("index", i);
                 errorObj.add("errors", errors);
-
-                errorsJson.add(errorObj);
-            } catch (Exception e) {
-                JsonObject errorObj = new JsonObject();
-                errorObj.addProperty("index", i);
-                errorObj.addProperty("errors", "An unknown error occurred");
                 errorsJson.add(errorObj);
             }
         }
@@ -104,21 +99,46 @@ public class AddBulkImportUsers extends WebserverAPI {
             errorResponseJson.addProperty("error",
                     "Data has missing or invalid fields. Please check the users field for more details.");
             errorResponseJson.add("users", errorsJson);
-            super.sendJsonResponse(400, errorResponseJson, resp);
-            return;
+            throw new ServletException(new WebserverAPI.BadRequestException(errorResponseJson.toString()));
         }
 
         try {
             AppIdentifierWithStorage appIdentifierWithStorage = getAppIdentifierWithStorage(req);
-            BulkImportStorage storage = appIdentifierWithStorage.getBulkImportStorage();
-            storage.addBulkImportUsers(appIdentifierWithStorage, usersToAdd);
-        } catch (Exception e) {
+            BulkImport.addUsers(appIdentifierWithStorage, usersToAdd);
+        } catch (TenantOrAppNotFoundException | StorageQueryException e) {
             throw new ServletException(e);
         }
 
         JsonObject result = new JsonObject();
         result.addProperty("status", "OK");
         super.sendJsonResponse(200, result, resp);
+    }
 
+    private void validateTenantId(AppIdentifier appIdentifier, String tenantId, String recipeId)
+            throws InvalidBulkImportDataException, ServletException {
+        if (tenantId == null || tenantId.equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
+            return;
+        }
+
+        try {
+            if (Arrays.stream(FeatureFlag.getInstance(main, appIdentifier).getEnabledFeatures())
+                    .noneMatch(t -> t == EE_FEATURES.MULTI_TENANCY)) {
+                throw new InvalidBulkImportDataException(new ArrayList<>(
+                        Arrays.asList("Multitenancy must be enabled before importing users to a different tenant.")));
+            }
+        } catch (TenantOrAppNotFoundException | StorageQueryException e) {
+            throw new ServletException(e);
+        }
+
+        TenantConfig[] allTenantConfigs = Multitenancy
+                .getAllTenantsForApp(appIdentifier, main);
+        ArrayList<String> validTenantIds = new ArrayList<>();
+        Arrays.stream(allTenantConfigs)
+                .forEach(tenantConfig -> validTenantIds.add(tenantConfig.tenantIdentifier.getTenantId()));
+
+        if (!validTenantIds.contains(tenantId)) {
+            throw new InvalidBulkImportDataException(
+                    new ArrayList<>(Arrays.asList("Invalid tenantId: " + tenantId + " for " + recipeId + " recipe.")));
+        }
     }
 }

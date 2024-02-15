@@ -33,6 +33,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import io.supertokens.ProcessState;
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -285,6 +287,40 @@ public class AddBulkImportUsersTest {
                         "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"email should be of type string for a passwordless recipe.\",\"phoneNumber should be of type string for a passwordless recipe.\"]}]}");
             }
         }
+        // Validate tenantId
+        {
+            // CASE 1: Different tenantId when multitenancy is not enabled
+            try {
+                JsonObject request = new JsonParser().parse(
+                        "{\"users\":[{\"loginMethods\":[{\"tenantId\":\"invalid\",\"recipeId\":\"passwordless\",\"email\":\"johndoe@gmail.com\"}]}]}")
+                        .getAsJsonObject();
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/bulk-import/add-users",
+                        request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                String responseString = getResponseMessageFromError(e.getMessage());
+                assertEquals(400, e.statusCode);
+                assertEquals(responseString,
+                        "{\"error\":\"" + genericErrMsg + "\",\"users\":[{\"index\":0,\"errors\":[\"Multitenancy must be enabled before importing users to a different tenant.\"]}]}");
+            }
+            // CASE 2: Different tenantId when multitenancy is enabled
+            try {
+                FeatureFlagTestContent.getInstance(process.getProcess())
+                    .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+
+                JsonObject request = new JsonParser().parse(
+                        "{\"users\":[{\"loginMethods\":[{\"tenantId\":\"invalid\",\"recipeId\":\"passwordless\",\"email\":\"johndoe@gmail.com\"}]}]}")
+                        .getAsJsonObject();
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/bulk-import/add-users",
+                        request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                String responseString = getResponseMessageFromError(e.getMessage());
+                assertEquals(400, e.statusCode);
+                assertEquals(responseString,
+                        "{\"error\":\"" + genericErrMsg + "\",\"users\":[{\"index\":0,\"errors\":[\"Invalid tenantId: invalid for passwordless recipe.\"]}]}");
+            }
+        }
         // No two loginMethods can have isPrimary as true
         {
             // CASE 1: email, passwordHash and hashingAlgorithm are not present
@@ -301,7 +337,20 @@ public class AddBulkImportUsersTest {
                         "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"No two loginMethods can have isPrimary as true.\"]}]}");
             }
         }
-        // Can't import than 10000 users at a time
+        // Can't import less than 1 user at a time
+        {
+            try {
+                JsonObject request = generateUsersJson(0);
+            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+            "http://localhost:3567/bulk-import/add-users",
+            request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                String responseString = getResponseMessageFromError(e.getMessage());
+                assertEquals(400, e.statusCode);
+                assertEquals(responseString, "{\"error\":\"You need to add at least one user.\"}");
+            }
+        }
+        // Can't import more than 10000 users at a time
         {
             try {
                 JsonObject request = generateUsersJson(10001);
@@ -311,7 +360,7 @@ public class AddBulkImportUsersTest {
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 String responseString = getResponseMessageFromError(e.getMessage());
                 assertEquals(400, e.statusCode);
-                assertEquals(responseString, "{\"error\":\"You can only add 1000 users at a time.\"}");
+                assertEquals(responseString, "{\"error\":\"You can only add 10000 users at a time.\"}");
             }
         }
 
@@ -383,7 +432,7 @@ public class AddBulkImportUsersTest {
 
     private static JsonObject createThirdPartyLoginMethod(String email) {
         JsonObject loginMethod = new JsonObject();
-        loginMethod.addProperty("tenantId", "somethingelse");
+        loginMethod.addProperty("tenantId", "public");
         loginMethod.addProperty("recipeId", "thirdparty");
         loginMethod.addProperty("email", email);
         loginMethod.addProperty("thirdPartyId", "google");
