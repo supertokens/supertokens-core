@@ -96,26 +96,25 @@ public class Telemetry extends CronTask {
         json.addProperty("telemetryId", telemetryId.value);
         json.addProperty("superTokensVersion", coreVersion);
 
-        ActiveUsersStorage activeUsersStorage = (ActiveUsersStorage) StorageLayer.getStorage(
-                app.getAsPublicTenantIdentifier(), main);
-
         json.addProperty("appId", app.getAppId());
         json.addProperty("connectionUriDomain", app.getConnectionUriDomain());
 
-        Storage[] storages = StorageLayer.getStoragesForApp(main, app);
-        AppIdentifierWithStorage appIdentifierWithAllTenantStorages = new AppIdentifierWithStorage(
-                app.getConnectionUriDomain(), app.getAppId(),
-                StorageLayer.getStorage(app.getAsPublicTenantIdentifier(), main), storages
-        );
-
         if (StorageLayer.getBaseStorage(main).getType() == STORAGE_TYPE.SQL) {
+            { // Users count across all tenants
+                Storage[] storages = StorageLayer.getStoragesForApp(main, app);
+                AppIdentifierWithStorage appIdentifierWithAllTenantStorages = new AppIdentifierWithStorage(
+                        app.getConnectionUriDomain(), app.getAppId(),
+                        StorageLayer.getStorage(app.getAsPublicTenantIdentifier(), main), storages
+                );
 
-            // Users count across all tenants
-            json.addProperty("usersCount", AuthRecipe.getUsersCountAcrossAllTenants(appIdentifierWithAllTenantStorages, null));
+                json.addProperty("usersCount",
+                        AuthRecipe.getUsersCountAcrossAllTenants(appIdentifierWithAllTenantStorages, null));
+            }
 
             { // Dashboard user emails
+                // Dashboard APIs are app specific and are always stored on the public tenant
                 DashboardUser[] dashboardUsers = Dashboard.getAllDashboardUsers(
-                        appIdentifierWithAllTenantStorages, main);
+                        app.withStorage(StorageLayer.getStorage(app.getAsPublicTenantIdentifier(), main)), main);
                 JsonArray dashboardUserEmails = new JsonArray();
                 for (DashboardUser user : dashboardUsers) {
                     dashboardUserEmails.add(new JsonPrimitive(user.email));
@@ -125,6 +124,10 @@ public class Telemetry extends CronTask {
             }
 
             { // MAUs
+                // Active users are always tracked on the public tenant, so we use the public tenant's storage
+                ActiveUsersStorage activeUsersStorage = (ActiveUsersStorage) StorageLayer.getStorage(
+                        app.getAsPublicTenantIdentifier(), main);
+
                 JsonArray mauArr = new JsonArray();
 
                 for (int i = 0; i < 30; i++) {
@@ -143,14 +146,13 @@ public class Telemetry extends CronTask {
             json.add("maus", new JsonArray());
         }
 
-
         String url = "https://api.supertokens.io/0/st/telemetry";
 
         // we call the API only if we are not testing the core, of if the request can be mocked (in case a test
         // wants
         // to use this)
         if (!Main.isTesting || HttpRequestMocking.getInstance(main).getMockURL(REQUEST_ID, url) != null) {
-            HttpRequest.sendJsonPOSTRequest(main, REQUEST_ID, url, json, 10000, 10000, 4);
+            HttpRequest.sendJsonPOSTRequest(main, REQUEST_ID, url, json, 10000, 10000, 5);
             ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.SENT_TELEMETRY, null);
         }
     }
