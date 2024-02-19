@@ -8,6 +8,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [7.0.18] - 2024-02-19
 
 - Fixes vulnerabilities in dependencies
+- Updates telemetry payload
 
 ## [7.0.17] - 2024-02-06
 
