@@ -22,7 +22,7 @@ dependencies {
     implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: '2.10.0'
 
     // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core
-    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.10.0'
+    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.16.1'
 
     // https://mvnrepository.com/artifact/de.mkammerer/argon2-jvm
     implementation group: 'de.mkammerer', name: 'argon2-jvm', version: '2.11'

@@ -49,7 +49,7 @@ dependencies {
     testImplementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: '2.14.0'
 
     // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core
-    testImplementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.14.0'
+    testImplementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.16.1'
 
     testImplementation group: 'org.jetbrains', name: 'annotations', version: '13.0'
 }
