@@ -19,7 +19,7 @@ compileTestJava { options.encoding = "UTF-8" }
 //    }
 //}
 
-version = "6.0.17"
+version = "6.0.18"
 
 
 repositories {
@@ -33,22 +33,22 @@ dependencies {
     implementation group: 'com.google.code.gson', name: 'gson', version: '2.3.1'
 
     // https://mvnrepository.com/artifact/com.fasterxml.jackson.dataformat/jackson-dataformat-yaml
-    implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: '2.14.0'
+    implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: '2.14.2'
 
     // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core
-    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.14.0'
+    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.16.1'
 
     // https://mvnrepository.com/artifact/ch.qos.logback/logback-classic
-    implementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'
+    implementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.4.14'
 
     // https://mvnrepository.com/artifact/org.apache.tomcat.embed/tomcat-embed-core
-    implementation group: 'org.apache.tomcat.embed', name: 'tomcat-embed-core', version: '10.1.1'
+    implementation group: 'org.apache.tomcat.embed', name: 'tomcat-embed-core', version: '10.1.18'
 
     // https://mvnrepository.com/artifact/com.google.code.findbugs/jsr305
     implementation group: 'com.google.code.findbugs', name: 'jsr305', version: '3.0.2'
 
     // https://mvnrepository.com/artifact/org.xerial/sqlite-jdbc
-    implementation group: 'org.xerial', name: 'sqlite-jdbc', version: '3.30.1'
+    implementation group: 'org.xerial', name: 'sqlite-jdbc', version: '3.45.1.0'
 
     // https://mvnrepository.com/artifact/org.mindrot/jbcrypt
     implementation group: 'org.mindrot', name: 'jbcrypt', version: '0.4'
