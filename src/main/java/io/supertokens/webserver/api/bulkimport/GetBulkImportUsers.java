@@ -17,7 +17,6 @@
 package io.supertokens.webserver.api.bulkimport;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -26,7 +25,10 @@ import io.supertokens.Main;
 import io.supertokens.bulkimport.BulkImport;
 import io.supertokens.bulkimport.BulkImportUserPaginationContainer;
 import io.supertokens.bulkimport.BulkImportUserPaginationToken;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.output.Logging;
+import io.supertokens.pluginInterface.bulkimport.BulkImportStorage.BulkImportUserStatus;
+import io.supertokens.pluginInterface.bulkimport.BulkImportUserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -49,7 +51,7 @@ public class GetBulkImportUsers extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        String status = InputParser.getQueryParamOrThrowError(req, "status", true);
+        String statusString = InputParser.getQueryParamOrThrowError(req, "status", true);
         String paginationToken = InputParser.getQueryParamOrThrowError(req, "paginationToken", true);
         Integer limit = InputParser.getIntQueryParamOrThrowError(req, "limit", true);
 
@@ -64,29 +66,31 @@ public class GetBulkImportUsers extends WebserverAPI {
             limit = BulkImport.GET_USERS_DEFAULT_LIMIT;
         }
 
-        if (status != null
-                && !Arrays.asList("NEW", "PROCESSING", "FAILED").contains(status)) {
-            throw new ServletException(new BadRequestException(
-                    "Invalid value for status. Pass one of NEW, PROCESSING or, FAILED!"));
+        BulkImportUserStatus status = null;
+        if (statusString != null) {
+            try {
+                status = BulkImportUserStatus.valueOf(statusString);
+            } catch (IllegalArgumentException e) {
+                throw new ServletException(new BadRequestException("Invalid value for status. Pass one of NEW, PROCESSING, or FAILED!"));
+            }
         }
 
         AppIdentifierWithStorage appIdentifierWithStorage = null;
 
         try {
-            appIdentifierWithStorage = this.getAppIdentifierWithStorage(req);
-        } catch (TenantOrAppNotFoundException e) {
+            appIdentifierWithStorage = getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(req);
+        } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
 
         try {
-            BulkImportUserPaginationContainer users = BulkImport.getUsers(appIdentifierWithStorage, limit, status,
-                    paginationToken);
+            BulkImportUserPaginationContainer users = BulkImport.getUsers(appIdentifierWithStorage, limit, status, paginationToken);
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
 
             JsonArray usersJson = new JsonArray();
-            for (JsonObject user : users.users) {
-                usersJson.add(user);
+            for (BulkImportUserInfo user : users.users) {
+                usersJson.add(user.toJsonObject());
             }
             result.add("users", usersJson);
 
@@ -97,7 +101,7 @@ public class GetBulkImportUsers extends WebserverAPI {
         } catch (BulkImportUserPaginationToken.InvalidTokenException e) {
             Logging.debug(main, null, Utils.exceptionStacktraceToString(e));
             throw new ServletException(new BadRequestException("invalid pagination token"));
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException e) {
             throw new ServletException(e);
         }
     }

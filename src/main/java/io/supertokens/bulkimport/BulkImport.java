@@ -16,15 +16,16 @@
 
 package io.supertokens.bulkimport;
 
+import io.supertokens.pluginInterface.bulkimport.BulkImportStorage.BulkImportUserStatus;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
+import io.supertokens.pluginInterface.bulkimport.BulkImportUserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.utils.Utils;
 
-import com.google.gson.JsonObject;
 
-import java.util.ArrayList;
+import java.util.List;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -34,12 +35,12 @@ public class BulkImport {
     public static final int GET_USERS_PAGINATION_LIMIT = 500;
     public static final int GET_USERS_DEFAULT_LIMIT = 100;
 
-    public static void addUsers(AppIdentifierWithStorage appIdentifierWithStorage, ArrayList<BulkImportUser> users)
+    public static void addUsers(AppIdentifierWithStorage appIdentifierWithStorage, List<BulkImportUser> users)
             throws StorageQueryException, TenantOrAppNotFoundException {
         while (true) {
             try {
-              appIdentifierWithStorage.getBulkImportStorage().addBulkImportUsers(appIdentifierWithStorage, users);
-              break;
+                appIdentifierWithStorage.getBulkImportStorage().addBulkImportUsers(appIdentifierWithStorage, users);
+                break;
             } catch (io.supertokens.pluginInterface.bulkimport.exceptions.DuplicateUserIdException ignored) {
                 // We re-generate the user id for every user and retry
                 for (BulkImportUser user : users) {
@@ -50,10 +51,9 @@ public class BulkImport {
     }
 
     public static BulkImportUserPaginationContainer getUsers(AppIdentifierWithStorage appIdentifierWithStorage,
-            @Nonnull Integer limit, @Nullable String status, @Nullable String paginationToken)
-            throws StorageQueryException, BulkImportUserPaginationToken.InvalidTokenException,
-            TenantOrAppNotFoundException {
-        JsonObject[] users;
+            @Nonnull Integer limit, @Nullable BulkImportUserStatus status, @Nullable String paginationToken)
+            throws StorageQueryException, BulkImportUserPaginationToken.InvalidTokenException {
+        List<BulkImportUserInfo> users;
 
         if (paginationToken == null) {
             users = appIdentifierWithStorage.getBulkImportStorage()
@@ -65,15 +65,14 @@ public class BulkImport {
         }
 
         String nextPaginationToken = null;
-        int maxLoop = users.length;
-        if (users.length == limit + 1) {
+        int maxLoop = users.size();
+        if (users.size() == limit + 1) {
             maxLoop = limit;
-            nextPaginationToken = new BulkImportUserPaginationToken(users[limit].get("id").getAsString())
-                    .generateToken();
+            BulkImportUserInfo user = users.get(limit);
+            nextPaginationToken = new BulkImportUserPaginationToken(user.id, user.createdAt).generateToken();
         }
 
-        JsonObject[] resultUsers = new JsonObject[maxLoop];
-        System.arraycopy(users, 0, resultUsers, 0, maxLoop);
+        List<BulkImportUserInfo> resultUsers = users.subList(0, maxLoop);
         return new BulkImportUserPaginationContainer(resultUsers, nextPaginationToken);
     }
 }

@@ -75,7 +75,7 @@ public class GetBulkImportUsersTest {
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertEquals(400, e.statusCode);
             assertEquals(
-                    "Http error. Status Code: 400. Message: Invalid value for status. Pass one of NEW, PROCESSING or, FAILED!",
+                    "Http error. Status Code: 400. Message: Invalid value for status. Pass one of NEW, PROCESSING, or FAILED!",
                     e.getMessage());
         }
 
@@ -150,7 +150,7 @@ public class GetBulkImportUsersTest {
         assertEquals(1, bulkImportUsers.size());
         JsonObject bulkImportUserJson = bulkImportUsers.get(0).getAsJsonObject();
         bulkImportUserJson.get("status").getAsString().equals("NEW");
-        bulkImportUserJson.get("raw_data").getAsString().equals(rawData);
+        bulkImportUserJson.get("rawData").getAsString().equals(rawData);
     
         process.kill();
         Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

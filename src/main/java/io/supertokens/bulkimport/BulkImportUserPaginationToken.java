@@ -20,22 +20,30 @@ import java.util.Base64;
 
 public class BulkImportUserPaginationToken {
     public final String bulkImportUserId;
+    public final long createdAt;
 
-    public BulkImportUserPaginationToken(String bulkImportUserId) {
+    public BulkImportUserPaginationToken(String bulkImportUserId, long timeJoined) {
         this.bulkImportUserId = bulkImportUserId;
+        this.createdAt = timeJoined;
     }
 
     public static BulkImportUserPaginationToken extractTokenInfo(String token) throws InvalidTokenException {
         try {
-            String bulkImportUserId = new String(Base64.getDecoder().decode(token));
-            return new BulkImportUserPaginationToken(bulkImportUserId);
+            String decodedPaginationToken = new String(Base64.getDecoder().decode(token));
+            String[] splitDecodedToken = decodedPaginationToken.split(";");
+            if (splitDecodedToken.length != 2) {
+                throw new InvalidTokenException();
+            }
+            String bulkImportUserId = splitDecodedToken[0];
+            long timeJoined = Long.parseLong(splitDecodedToken[1]);
+            return new BulkImportUserPaginationToken(bulkImportUserId, timeJoined);
         } catch (Exception e) {
             throw new InvalidTokenException();
         }
     }
 
     public String generateToken() {
-        return new String(Base64.getEncoder().encode((this.bulkImportUserId).getBytes()));
+        return new String(Base64.getEncoder().encode((this.bulkImportUserId + ";" + this.createdAt).getBytes()));
     }
 
     public static class InvalidTokenException extends Exception {

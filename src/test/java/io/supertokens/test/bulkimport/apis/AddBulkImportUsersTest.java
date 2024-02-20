@@ -19,6 +19,7 @@ package io.supertokens.test.bulkimport.apis;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+import java.util.HashMap;
 import java.util.UUID;
 
 import org.junit.AfterClass;
@@ -382,8 +383,54 @@ public class AddBulkImportUsersTest {
         JsonObject request = generateUsersJson(10000);
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
         "http://localhost:3567/bulk-import/add-users",
+        request, 1000, 10000, null, Utils.getCdiVersionStringLatestForTests(), null);
+        assertEquals("OK", response.get("status").getAsString());
+
+        process.kill();
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void shouldNormaliseFields() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        JsonObject request = generateUsersJson(1);
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+        "http://localhost:3567/bulk-import/add-users",
         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
         assertEquals("OK", response.get("status").getAsString());
+
+        JsonObject getResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/bulk-import/users",
+                new HashMap<>(), 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+
+        assertEquals("OK", getResponse.get("status").getAsString());
+        JsonArray bulkImportUsers = getResponse.get("users").getAsJsonArray();
+        assertEquals(1, bulkImportUsers.size());
+
+        JsonParser parser = new JsonParser();
+        JsonObject bulkImportUserJson = bulkImportUsers.get(0).getAsJsonObject();
+        JsonArray loginMethods = parser.parse(bulkImportUserJson.get("rawData").getAsString()).getAsJsonObject().getAsJsonArray("loginMethods");
+
+        for (int i = 0; i < loginMethods.size(); i++) {
+            JsonObject loginMethod = loginMethods.get(i).getAsJsonObject();
+            if (loginMethod.has("email")) {
+                assertEquals("johndoe+1@gmail.com", loginMethod.get("hashingAlgorithm").getAsString());
+            }
+            if (loginMethod.has("phoneNumber")) {
+                assertEquals("919999999999", loginMethod.get("phoneNumber").getAsString());
+            }
+            if (loginMethod.has("hashingAlgorithm")) {
+                assertEquals("ARGON2", loginMethod.get("hashingAlgorithm").getAsString());
+            }
+        }
 
         process.kill();
         Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -400,9 +447,9 @@ public class AddBulkImportUsersTest {
             user.addProperty("externalUserId", UUID.randomUUID().toString());
             user.add("userMetadata", parser.parse("{\"key1\":\"value1\",\"key2\":{\"key3\":\"value3\"}}"));
             user.add("roles", parser.parse("[\"role1\", \"role2\"]"));
-            user.add("totp", parser.parse("[{\"secretKey\":\"secretKey\",\"period\":0,\"skew\":0,\"deviceName\":\"deviceName\"}]"));
+            user.add("totp", parser.parse("[{\"secretKey\":\"secretKey\",\"period\": 30,\"skew\":1,\"deviceName\":\"deviceName\"}]"));
 
-            String email = "johndoe+" + i + "@gmail.com";
+            String email = " johndoe+" + i + "@gmail.com ";
 
             JsonArray loginMethodsArray = new JsonArray();
             loginMethodsArray.add(createEmailLoginMethod(email));

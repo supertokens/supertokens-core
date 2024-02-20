@@ -14,21 +14,20 @@
  *    under the License.
  */
 
-package io.supertokens.bulkimport;
+package io.supertokens.bulkimport.exceptions;
 
 import java.util.List;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+public class InvalidBulkImportDataException extends Exception {
+    private static final long serialVersionUID = 1L;
+    public List<String> errors;
 
-import io.supertokens.pluginInterface.bulkimport.BulkImportUserInfo;
+    public InvalidBulkImportDataException(List<String> errors) {
+        super("Data has missing or invalid fields. Please check the errors field for more details.");
+        this.errors = errors;
+    }
 
-public class BulkImportUserPaginationContainer {
-    public final List<BulkImportUserInfo> users;
-    public final String nextPaginationToken;
-
-    public BulkImportUserPaginationContainer(@Nonnull List<BulkImportUserInfo> users, @Nullable String nextPaginationToken) {
-        this.users = users;
-        this.nextPaginationToken = nextPaginationToken;
+    public void addError(String error) {
+        this.errors.add(error);
     }
 }
