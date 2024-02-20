@@ -21,6 +21,7 @@ import com.google.gson.JsonParser;
 import io.supertokens.ProcessState;
 import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.cronjobs.telemetry.Telemetry;
+import io.supertokens.dashboard.Dashboard;
 import io.supertokens.httpRequest.HttpRequestMocking;
 import io.supertokens.test.TestingProcessManager.TestingProcess;
 import io.supertokens.version.Version;
@@ -111,6 +112,14 @@ public class TelemetryTest extends Mockito {
         String[] args = { "../" };
 
         TestingProcess process = TestingProcessManager.start(args, false);
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        Dashboard.signUpDashboardUser(process.getProcess(), "test@example.com", "password123");
+
+        // Restarting the process to send telemetry again
+        process.kill();
+        process = TestingProcessManager.start(args, false);
 
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         final HttpURLConnection mockCon = mock(HttpURLConnection.class);
@@ -149,10 +158,18 @@ public class TelemetryTest extends Mockito {
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.SENT_TELEMETRY));
 
         JsonObject telemetryData = new JsonParser().parse(output.toString()).getAsJsonObject();
+        assertEquals(7, telemetryData.entrySet().size());
 
         assertTrue(telemetryData.has("telemetryId"));
         assertEquals(telemetryData.get("superTokensVersion").getAsString(),
                 Version.getVersion(process.getProcess()).getCoreVersion());
+        assertEquals(telemetryData.get("appId").getAsString(), "public");
+        assertEquals(telemetryData.get("connectionUriDomain").getAsString(), "");
+        assertTrue(telemetryData.has("maus"));
+        assertTrue(telemetryData.has("dashboardUserEmails"));
+        assertEquals(1, telemetryData.get("dashboardUserEmails").getAsJsonArray().size());
+        assertEquals("test@example.com", telemetryData.get("dashboardUserEmails").getAsJsonArray().get(0).getAsString());
+        assertEquals(30, telemetryData.get("maus").getAsJsonArray().size());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));

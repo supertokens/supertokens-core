@@ -16,17 +16,24 @@
 
 package io.supertokens.cronjobs.telemetry;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.ResourceDistributor;
+import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.config.Config;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
+import io.supertokens.dashboard.Dashboard;
 import io.supertokens.httpRequest.HttpRequest;
 import io.supertokens.httpRequest.HttpRequestMocking;
+import io.supertokens.pluginInterface.ActiveUsersStorage;
 import io.supertokens.pluginInterface.KeyValueInfo;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.dashboard.DashboardUser;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
@@ -74,6 +81,48 @@ public class Telemetry extends CronTask {
         JsonObject json = new JsonObject();
         json.addProperty("telemetryId", telemetryId.value);
         json.addProperty("superTokensVersion", coreVersion);
+
+        json.addProperty("appId", "public");
+        json.addProperty("connectionUriDomain", "");
+
+        if (storage.getType() == STORAGE_TYPE.SQL) {
+            { // Users count across all tenants
+                json.addProperty("usersCount",
+                        AuthRecipe.getUsersCount(main, null));
+            }
+
+            { // Dashboard user emails
+                // Dashboard APIs are app specific and are always stored on the public tenant
+                DashboardUser[] dashboardUsers = Dashboard.getAllDashboardUsers(main);
+                JsonArray dashboardUserEmails = new JsonArray();
+                for (DashboardUser user : dashboardUsers) {
+                    dashboardUserEmails.add(new JsonPrimitive(user.email));
+                }
+
+                json.add("dashboardUserEmails", dashboardUserEmails);
+            }
+
+            { // MAUs
+                // Active users are always tracked on the public tenant, so we use the public tenant's storage
+                ActiveUsersStorage activeUsersStorage = (ActiveUsersStorage) storage;
+
+                JsonArray mauArr = new JsonArray();
+
+                for (int i = 0; i < 30; i++) {
+                    long now = System.currentTimeMillis();
+                    long today = now - (now % (24 * 60 * 60 * 1000L));
+                    long timestamp = today - (i * 24 * 60 * 60 * 1000L);
+                    int mau = activeUsersStorage.countUsersActiveSince(timestamp);
+                    mauArr.add(new JsonPrimitive(mau));
+                }
+
+                json.add("maus", mauArr);
+            }
+        } else {
+            json.addProperty("usersCount", -1);
+            json.add("dashboardUserEmails", new JsonArray());
+            json.add("maus", new JsonArray());
+        }
 
         String url = "https://api.supertokens.io/0/st/telemetry";
 
