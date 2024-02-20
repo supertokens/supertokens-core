@@ -9,6 +9,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Fixes vulnerabilities in dependencies
 - Updates telemetry payload
+- Fixes Active User tracking to use the right storage
 
 ## [7.0.17] - 2024-02-06
 
