@@ -216,7 +216,7 @@ public class AddBulkImportUsersTest {
             // CASE 3: hashingAlgorithm is not one of bcrypt, argon2, firebase_scrypt
             try {
                 JsonObject request = new JsonParser().parse(
-                        "{\"users\":[{\"loginMethods\":[{\"recipeId\":\"emailpassword\",\"email\":\"johndoe@gmail.com\",\"passwordHash\":\"somehash\",\"hashingAlgorithm\":\"invalid_algorithm\"}]}]}")
+                        "{\"users\":[{\"loginMethods\":[{\"recipeId\":\"emailpassword\",\"email\":\"johndoe@gmail.com\",\"passwordHash\":\"$2a\",\"hashingAlgorithm\":\"invalid_algorithm\"}]}]}")
                         .getAsJsonObject();
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/bulk-import/add-users",
@@ -327,7 +327,7 @@ public class AddBulkImportUsersTest {
             // CASE 1: email, passwordHash and hashingAlgorithm are not present
             try {
                 JsonObject request = new JsonParser()
-                        .parse("{\"users\":[{\"loginMethods\":[{\"recipeId\":\"emailpassword\",\"email\":\"johndoe@gmail.com\",\"passwordHash\":\"somehash\",\"hashingAlgorithm\":\"bcrypt\",\"isPrimary\":true},{\"recipeId\":\"passwordless\",\"email\":\"johndoe@gmail.com\",\"isPrimary\":true}]}]}").getAsJsonObject();
+                        .parse("{\"users\":[{\"loginMethods\":[{\"recipeId\":\"emailpassword\",\"email\":\"johndoe@gmail.com\",\"passwordHash\":\"$2a\",\"hashingAlgorithm\":\"bcrypt\",\"isPrimary\":true},{\"recipeId\":\"passwordless\",\"email\":\"johndoe@gmail.com\",\"isPrimary\":true}]}]}").getAsJsonObject();
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/bulk-import/add-users",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);

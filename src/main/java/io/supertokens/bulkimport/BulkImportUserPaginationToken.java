@@ -22,9 +22,9 @@ public class BulkImportUserPaginationToken {
     public final String bulkImportUserId;
     public final long createdAt;
 
-    public BulkImportUserPaginationToken(String bulkImportUserId, long timeJoined) {
+    public BulkImportUserPaginationToken(String bulkImportUserId, long createdAt) {
         this.bulkImportUserId = bulkImportUserId;
-        this.createdAt = timeJoined;
+        this.createdAt = createdAt;
     }
 
     public static BulkImportUserPaginationToken extractTokenInfo(String token) throws InvalidTokenException {
@@ -35,8 +35,8 @@ public class BulkImportUserPaginationToken {
                 throw new InvalidTokenException();
             }
             String bulkImportUserId = splitDecodedToken[0];
-            long timeJoined = Long.parseLong(splitDecodedToken[1]);
-            return new BulkImportUserPaginationToken(bulkImportUserId, timeJoined);
+            long createdAt = Long.parseLong(splitDecodedToken[1]);
+            return new BulkImportUserPaginationToken(bulkImportUserId, createdAt);
         } catch (Exception e) {
             throw new InvalidTokenException();
         }

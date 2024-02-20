@@ -17,40 +17,56 @@
 package io.supertokens.bulkimport;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import io.supertokens.Main;
 import io.supertokens.bulkimport.exceptions.InvalidBulkImportDataException;
+import io.supertokens.config.CoreConfig;
+import io.supertokens.emailpassword.PasswordHashingUtils;
+import io.supertokens.emailpassword.exceptions.UnsupportedPasswordHashingFormatException;
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlag;
+import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser.LoginMethod;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser.LoginMethod.EmailPasswordLoginMethod;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser.LoginMethod.ThirdPartyLoginMethod;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser.LoginMethod.PasswordlessLoginMethod;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser.TotpDevice;
-import io.supertokens.pluginInterface.utils.JsonValidatorUtils.ValueType;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantConfig;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.utils.Utils;
+import io.supertokens.utils.JsonValidatorUtils.ValueType;
 
-import static io.supertokens.pluginInterface.utils.JsonValidatorUtils.parseAndValidateField;
-import static io.supertokens.pluginInterface.utils.JsonValidatorUtils.validateJsonFieldType;
+import static io.supertokens.utils.JsonValidatorUtils.parseAndValidateField;
+import static io.supertokens.utils.JsonValidatorUtils.validateJsonFieldType;
 
 public class BulkImportUserUtils {
-    public static BulkImportUser createBulkImportUserFromJSON(JsonObject userData, String id) throws InvalidBulkImportDataException {
+    public static BulkImportUser createBulkImportUserFromJSON(Main main, AppIdentifier appIdentifier, JsonObject userData, String id)
+            throws InvalidBulkImportDataException, StorageQueryException, TenantOrAppNotFoundException {
         List<String> errors = new ArrayList<>();
 
-        String externalUserId = parseAndValidateField(userData, "externalUserId", ValueType.STRING, false, String.class, errors, ".");
-        JsonObject userMetadata = parseAndValidateField(userData, "userMetadata", ValueType.OBJECT, false, JsonObject.class, errors, ".");
-        List<String>  userRoles = getParsedUserRoles(userData, errors);
+        String externalUserId = parseAndValidateField(userData, "externalUserId", ValueType.STRING, false, String.class,
+                errors, ".");
+        JsonObject userMetadata = parseAndValidateField(userData, "userMetadata", ValueType.OBJECT, false,
+                JsonObject.class, errors, ".");
+        List<String> userRoles = getParsedUserRoles(userData, errors);
         List<TotpDevice> totpDevices = getParsedTotpDevices(userData, errors);
-        List<LoginMethod> loginMethods = getParsedLoginMethods(userData, errors);
+        List<LoginMethod> loginMethods = getParsedLoginMethods(main, appIdentifier, userData, errors);
 
         if (!errors.isEmpty()) {
             throw new InvalidBulkImportDataException(errors);
         }
         return new BulkImportUser(id, externalUserId, userMetadata, userRoles, totpDevices, loginMethods);
-    } 
+    }
 
     private static List<String> getParsedUserRoles(JsonObject userData, List<String> errors) {
         JsonArray jsonUserRoles = parseAndValidateField(userData, "roles", ValueType.ARRAY_OF_STRING,
@@ -88,7 +104,7 @@ public class BulkImportUserUtils {
                 errors.add("skew should be >= 0 for a totp device.");
             }
 
-            if(deviceName != null) {
+            if (deviceName != null) {
                 deviceName = deviceName.trim();
             }
             totpDevices.add(new TotpDevice(secretKey, period.intValue(), skew.intValue(), deviceName));
@@ -96,72 +112,115 @@ public class BulkImportUserUtils {
         return totpDevices;
     }
 
-    private static List<LoginMethod> getParsedLoginMethods(JsonObject userData, List<String> errors) {
-      JsonArray jsonLoginMethods = parseAndValidateField(userData, "loginMethods", ValueType.ARRAY_OF_OBJECT, true, JsonArray.class, errors, ".");
+    private static List<LoginMethod> getParsedLoginMethods(Main main, AppIdentifier appIdentifier, JsonObject userData, List<String> errors)
+            throws StorageQueryException, TenantOrAppNotFoundException {
+        JsonArray jsonLoginMethods = parseAndValidateField(userData, "loginMethods", ValueType.ARRAY_OF_OBJECT, true, JsonArray.class, errors, ".");
 
-      if (jsonLoginMethods == null) {
-          return new ArrayList<>();
-      }
+        if (jsonLoginMethods == null) {
+            return new ArrayList<>();
+        }
 
-      if (jsonLoginMethods.size() == 0) {
-          errors.add("At least one loginMethod is required.");
-          return new ArrayList<>();
-      }
+        if (jsonLoginMethods.size() == 0) {
+            errors.add("At least one loginMethod is required.");
+            return new ArrayList<>();
+        }
 
-      Boolean hasPrimaryLoginMethod = false;
+        boolean hasPrimaryLoginMethod = false;
 
-      List<LoginMethod> loginMethods = new ArrayList<>();
-      for (JsonElement jsonLoginMethod : jsonLoginMethods) {
-          JsonObject jsonLoginMethodObj = jsonLoginMethod.getAsJsonObject();
+        List<LoginMethod> loginMethods = new ArrayList<>();
+        for (JsonElement jsonLoginMethod : jsonLoginMethods) {
+            JsonObject jsonLoginMethodObj = jsonLoginMethod.getAsJsonObject();
 
-          if (validateJsonFieldType(jsonLoginMethodObj, "isPrimary", ValueType.BOOLEAN)) {
-              if (jsonLoginMethodObj.get("isPrimary").getAsBoolean()) {
-                  if (hasPrimaryLoginMethod) {
-                      errors.add("No two loginMethods can have isPrimary as true.");
-                  }
-                  hasPrimaryLoginMethod = true;
-              }
-          }
+            if (validateJsonFieldType(jsonLoginMethodObj, "isPrimary", ValueType.BOOLEAN)) {
+                if (jsonLoginMethodObj.get("isPrimary").getAsBoolean()) {
+                    if (hasPrimaryLoginMethod) {
+                        errors.add("No two loginMethods can have isPrimary as true.");
+                    }
+                    hasPrimaryLoginMethod = true;
+                }
+            }
 
-          String recipeId = parseAndValidateField(jsonLoginMethodObj, "recipeId", ValueType.STRING, true, String.class, errors, " for a loginMethod.");
-          String tenantId = parseAndValidateField(jsonLoginMethodObj, "tenantId", ValueType.STRING, false, String.class, errors, " for a loginMethod.");
-          Boolean isVerified = parseAndValidateField(jsonLoginMethodObj, "isVerified", ValueType.BOOLEAN, false, Boolean.class, errors, " for a loginMethod.");
-          Boolean isPrimary = parseAndValidateField(jsonLoginMethodObj, "isPrimary", ValueType.BOOLEAN, false, Boolean.class, errors, " for a loginMethod.");
-          Number timeJoined = parseAndValidateField(jsonLoginMethodObj, "timeJoinedInMSSinceEpoch", ValueType.NUMBER, false, Number.class, errors, " for a loginMethod");
-          Long timeJoinedInMSSinceEpoch = timeJoined != null ? timeJoined.longValue() : 0;
+            String recipeId = parseAndValidateField(jsonLoginMethodObj, "recipeId", ValueType.STRING, true, String.class, errors, " for a loginMethod.");
+            String tenantId = parseAndValidateField(jsonLoginMethodObj, "tenantId", ValueType.STRING, false, String.class, errors, " for a loginMethod.");
+            Boolean isVerified = parseAndValidateField(jsonLoginMethodObj, "isVerified", ValueType.BOOLEAN, false, Boolean.class, errors, " for a loginMethod.");
+            Boolean isPrimary = parseAndValidateField(jsonLoginMethodObj, "isPrimary", ValueType.BOOLEAN, false, Boolean.class, errors, " for a loginMethod.");
+            Number timeJoined = parseAndValidateField(jsonLoginMethodObj, "timeJoinedInMSSinceEpoch", ValueType.NUMBER, false, Number.class, errors, " for a loginMethod");
+            long timeJoinedInMSSinceEpoch = timeJoined != null ? timeJoined.longValue() : 0;
 
-          if ("emailpassword".equals(recipeId)) {
-            String email = parseAndValidateField(jsonLoginMethodObj, "email", ValueType.STRING, true, String.class, errors, " for an emailpassword recipe.");
-            String passwordHash = parseAndValidateField(jsonLoginMethodObj, "passwordHash", ValueType.STRING, true, String.class, errors, " for an emailpassword recipe.");
-            String hashingAlgorithm = parseAndValidateField(jsonLoginMethodObj, "hashingAlgorithm", ValueType.STRING, true, String.class, errors, " for an emailpassword recipe.");
+            validateTenantId(main, appIdentifier, tenantId, recipeId, errors);
 
-            email = email != null ? Utils.normaliseEmail(email) : null;
-            hashingAlgorithm = hashingAlgorithm != null ? hashingAlgorithm.trim().toUpperCase() : null;
+            if ("emailpassword".equals(recipeId)) {
+                String email = parseAndValidateField(jsonLoginMethodObj, "email", ValueType.STRING, true, String.class, errors, " for an emailpassword recipe.");
+                String passwordHash = parseAndValidateField(jsonLoginMethodObj, "passwordHash", ValueType.STRING, true, String.class, errors, " for an emailpassword recipe.");
+                String hashingAlgorithm = parseAndValidateField(jsonLoginMethodObj, "hashingAlgorithm", ValueType.STRING, true, String.class, errors, " for an emailpassword recipe.");
 
-            EmailPasswordLoginMethod emailPasswordLoginMethod = new EmailPasswordLoginMethod(email, passwordHash, hashingAlgorithm);
-            loginMethods.add(new LoginMethod(tenantId, recipeId, isVerified, isPrimary, timeJoinedInMSSinceEpoch, emailPasswordLoginMethod, null, null));
-          } else if ("thirdparty".equals(recipeId)) {
-            String email = parseAndValidateField(jsonLoginMethodObj, "email", ValueType.STRING, true, String.class, errors, " for a thirdparty recipe.");
-            String thirdPartyId = parseAndValidateField(jsonLoginMethodObj, "thirdPartyId", ValueType.STRING, true, String.class, errors, " for a thirdparty recipe.");
-            String thirdPartyUserId = parseAndValidateField(jsonLoginMethodObj, "thirdPartyUserId", ValueType.STRING, true, String.class, errors, " for a thirdparty recipe.");
+                email = email != null ? Utils.normaliseEmail(email) : null;
+                hashingAlgorithm = hashingAlgorithm != null ? hashingAlgorithm.trim().toUpperCase() : null;
 
-            email = email != null ? Utils.normaliseEmail(email) : null;
+                EmailPasswordLoginMethod emailPasswordLoginMethod = new EmailPasswordLoginMethod(email, passwordHash, hashingAlgorithm);
 
-            ThirdPartyLoginMethod thirdPartyLoginMethod = new ThirdPartyLoginMethod(email, thirdPartyId, thirdPartyUserId);
-            loginMethods.add(new LoginMethod(tenantId, recipeId, isVerified, isPrimary, timeJoinedInMSSinceEpoch, null, thirdPartyLoginMethod, null));
-          } else if ("passwordless".equals(recipeId)) {
-            String email = parseAndValidateField(jsonLoginMethodObj, "email", ValueType.STRING, false, String.class, errors, " for a passwordless recipe.");
-            String phoneNumber = parseAndValidateField(jsonLoginMethodObj, "phoneNumber", ValueType.STRING, false, String.class, errors, " for a passwordless recipe.");
+                validatePasswordHashingAlgorithm(main, appIdentifier, emailPasswordLoginMethod, errors);
 
-            email = email != null ? Utils.normaliseEmail(email) : null;
-            phoneNumber = Utils.normalizeIfPhoneNumber(phoneNumber);
+                loginMethods.add(new LoginMethod(tenantId, recipeId, isVerified, isPrimary, timeJoinedInMSSinceEpoch, emailPasswordLoginMethod, null, null));
+            } else if ("thirdparty".equals(recipeId)) {
+                String email = parseAndValidateField(jsonLoginMethodObj, "email", ValueType.STRING, true, String.class, errors, " for a thirdparty recipe.");
+                String thirdPartyId = parseAndValidateField(jsonLoginMethodObj, "thirdPartyId", ValueType.STRING, true, String.class, errors, " for a thirdparty recipe.");
+                String thirdPartyUserId = parseAndValidateField(jsonLoginMethodObj, "thirdPartyUserId", ValueType.STRING, true, String.class, errors, " for a thirdparty recipe.");
 
-            PasswordlessLoginMethod passwordlessLoginMethod = new PasswordlessLoginMethod(email, phoneNumber);
-            loginMethods.add(new LoginMethod(tenantId, recipeId, isVerified, isPrimary, timeJoinedInMSSinceEpoch, null, null, passwordlessLoginMethod));
-          } else if (recipeId != null) {
-            errors.add("Invalid recipeId for loginMethod. Pass one of emailpassword, thirdparty or, passwordless!");
-          }
-      }
-      return loginMethods;
-  }
+                email = email != null ? Utils.normaliseEmail(email) : null;
+
+                ThirdPartyLoginMethod thirdPartyLoginMethod = new ThirdPartyLoginMethod(email, thirdPartyId, thirdPartyUserId);
+                loginMethods.add(new LoginMethod(tenantId, recipeId, isVerified, isPrimary, timeJoinedInMSSinceEpoch, null, thirdPartyLoginMethod, null));
+            } else if ("passwordless".equals(recipeId)) {
+                String email = parseAndValidateField(jsonLoginMethodObj, "email", ValueType.STRING, false, String.class, errors, " for a passwordless recipe.");
+                String phoneNumber = parseAndValidateField(jsonLoginMethodObj, "phoneNumber", ValueType.STRING, false, String.class, errors, " for a passwordless recipe.");
+
+                email = email != null ? Utils.normaliseEmail(email) : null;
+                phoneNumber = Utils.normalizeIfPhoneNumber(phoneNumber);
+
+                PasswordlessLoginMethod passwordlessLoginMethod = new PasswordlessLoginMethod(email, phoneNumber);
+                loginMethods.add(new LoginMethod(tenantId, recipeId, isVerified, isPrimary, timeJoinedInMSSinceEpoch, null, null, passwordlessLoginMethod));
+            } else if (recipeId != null) {
+                errors.add("Invalid recipeId for loginMethod. Pass one of emailpassword, thirdparty or, passwordless!");
+            }
+        }
+        return loginMethods;
+    }
+
+    private static void validateTenantId(Main main, AppIdentifier appIdentifier, String tenantId, String recipeId, List<String> errors)
+            throws StorageQueryException, TenantOrAppNotFoundException {
+        if (tenantId == null || tenantId.equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
+            return;
+        }
+
+        if (Arrays.stream(FeatureFlag.getInstance(main, appIdentifier).getEnabledFeatures())
+                .noneMatch(t -> t == EE_FEATURES.MULTI_TENANCY)) {
+            errors.add("Multitenancy must be enabled before importing users to a different tenant.");
+            return;
+        }
+ 
+        TenantConfig[] allTenantConfigs = Multitenancy.getAllTenantsForApp(appIdentifier, main);
+        ArrayList<String> validTenantIds = new ArrayList<>();
+        Arrays.stream(allTenantConfigs)
+                .forEach(tenantConfig -> validTenantIds.add(tenantConfig.tenantIdentifier.getTenantId()));
+
+        if (!validTenantIds.contains(tenantId)) {
+            errors.add("Invalid tenantId: " + tenantId + " for " + recipeId + " recipe.");
+        }
+    }
+
+    private static void validatePasswordHashingAlgorithm(Main main, AppIdentifier appIdentifier, EmailPasswordLoginMethod emailPasswordLoginMethod, List<String> errors) throws TenantOrAppNotFoundException {
+        if(emailPasswordLoginMethod.hashingAlgorithm == null || emailPasswordLoginMethod.passwordHash == null) {
+            return;
+        }
+
+        try {
+            CoreConfig.PASSWORD_HASHING_ALG passwordHashingAlgorithm = CoreConfig.PASSWORD_HASHING_ALG.valueOf(emailPasswordLoginMethod.hashingAlgorithm);
+            PasswordHashingUtils.assertSuperTokensSupportInputPasswordHashFormat(appIdentifier, main, emailPasswordLoginMethod.passwordHash, passwordHashingAlgorithm);
+        } catch (UnsupportedPasswordHashingFormatException  e) { 
+            errors.add(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            errors.add("Invalid hashingAlgorithm for emailpassword recipe. Pass one of bcrypt, argon2 or, firebase_scrypt!");
+        }
+    }
 }

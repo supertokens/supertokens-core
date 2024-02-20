@@ -19,21 +19,10 @@ package io.supertokens.webserver.api.bulkimport;
 import io.supertokens.Main;
 import io.supertokens.bulkimport.BulkImport;
 import io.supertokens.bulkimport.BulkImportUserUtils;
-import io.supertokens.bulkimport.exceptions.InvalidBulkImportDataException;
-import io.supertokens.config.CoreConfig;
-import io.supertokens.emailpassword.PasswordHashingUtils;
-import io.supertokens.emailpassword.exceptions.UnsupportedPasswordHashingFormatException;
-import io.supertokens.featureflag.EE_FEATURES;
-import io.supertokens.featureflag.FeatureFlag;
-import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
-import io.supertokens.pluginInterface.bulkimport.BulkImportUser.LoginMethod.EmailPasswordLoginMethod;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
-import io.supertokens.pluginInterface.multitenancy.TenantConfig;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
@@ -44,7 +33,6 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -87,15 +75,7 @@ public class AddBulkImportUsers extends WebserverAPI {
 
         for (int i = 0; i < users.size(); i++) {
             try {
-                BulkImportUser user = BulkImportUserUtils.createBulkImportUserFromJSON(users.get(i).getAsJsonObject(), Utils.getUUID());
-                
-                for (BulkImportUser.LoginMethod loginMethod : user.loginMethods) {
-                    validateTenantId(appIdentifierWithStorage, loginMethod.tenantId, loginMethod.recipeId);
-
-                    if (loginMethod.emailPasswordLoginMethod != null) {
-                        validatePasswordHashingAlgorithm(appIdentifierWithStorage, loginMethod.emailPasswordLoginMethod);
-                    }
-                }
+                BulkImportUser user = BulkImportUserUtils.createBulkImportUserFromJSON(main, appIdentifierWithStorage, users.get(i).getAsJsonObject(), Utils.getUUID());
                 usersToAdd.add(user);
             } catch (io.supertokens.bulkimport.exceptions.InvalidBulkImportDataException e) {
                 JsonObject errorObj = new JsonObject();
@@ -107,6 +87,8 @@ public class AddBulkImportUsers extends WebserverAPI {
                 errorObj.addProperty("index", i);
                 errorObj.add("errors", errors);
                 errorsJson.add(errorObj);
+            } catch (TenantOrAppNotFoundException | StorageQueryException e) {
+                throw new ServletException(e);
             }
         }
 
@@ -127,44 +109,5 @@ public class AddBulkImportUsers extends WebserverAPI {
         JsonObject result = new JsonObject();
         result.addProperty("status", "OK");
         super.sendJsonResponse(200, result, resp);
-    }
-
-    private void validateTenantId(AppIdentifier appIdentifier, String tenantId, String recipeId)
-            throws InvalidBulkImportDataException, ServletException {
-        if (tenantId == null || tenantId.equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
-            return;
-        }
-
-        try {
-            if (Arrays.stream(FeatureFlag.getInstance(main, appIdentifier).getEnabledFeatures())
-                    .noneMatch(t -> t == EE_FEATURES.MULTI_TENANCY)) {
-                throw new InvalidBulkImportDataException(new ArrayList<>(
-                        Arrays.asList("Multitenancy must be enabled before importing users to a different tenant.")));
-            }
-        } catch (TenantOrAppNotFoundException | StorageQueryException e) {
-            throw new ServletException(e);
-        }
-
-        TenantConfig[] allTenantConfigs = Multitenancy
-                .getAllTenantsForApp(appIdentifier, main);
-        ArrayList<String> validTenantIds = new ArrayList<>();
-        Arrays.stream(allTenantConfigs)
-                .forEach(tenantConfig -> validTenantIds.add(tenantConfig.tenantIdentifier.getTenantId()));
-
-        if (!validTenantIds.contains(tenantId)) {
-            throw new InvalidBulkImportDataException(
-                    new ArrayList<>(Arrays.asList("Invalid tenantId: " + tenantId + " for " + recipeId + " recipe.")));
-        }
-    }
-
-    private void validatePasswordHashingAlgorithm(AppIdentifier appIdentifier, EmailPasswordLoginMethod emailPasswordLoginMethod) throws InvalidBulkImportDataException, ServletException {
-        try {
-            CoreConfig.PASSWORD_HASHING_ALG passwordHashingAlgorithm = CoreConfig.PASSWORD_HASHING_ALG.valueOf(emailPasswordLoginMethod.hashingAlgorithm);
-            PasswordHashingUtils.assertSuperTokensSupportInputPasswordHashFormat(appIdentifier, main, emailPasswordLoginMethod.passwordHash, passwordHashingAlgorithm);
-        } catch (UnsupportedPasswordHashingFormatException | TenantOrAppNotFoundException e) { 
-            throw new InvalidBulkImportDataException(new ArrayList<>(Arrays.asList(e.getMessage())));
-        } catch (IllegalArgumentException e) {
-            throw new InvalidBulkImportDataException(new ArrayList<>(Arrays.asList("Invalid hashingAlgorithm for emailpassword recipe. Pass one of bcrypt, argon2 or, firebase_scrypt!")));
-        }
     }
 }

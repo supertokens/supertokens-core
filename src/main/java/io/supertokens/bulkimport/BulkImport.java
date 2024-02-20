@@ -57,11 +57,11 @@ public class BulkImport {
 
         if (paginationToken == null) {
             users = appIdentifierWithStorage.getBulkImportStorage()
-                    .getBulkImportUsers(appIdentifierWithStorage, limit + 1, status, null);
+                    .getBulkImportUsers(appIdentifierWithStorage, limit + 1, status, null, null);
         } else {
             BulkImportUserPaginationToken tokenInfo = BulkImportUserPaginationToken.extractTokenInfo(paginationToken);
             users = appIdentifierWithStorage.getBulkImportStorage()
-                    .getBulkImportUsers(appIdentifierWithStorage, limit + 1, status, tokenInfo.bulkImportUserId);
+                    .getBulkImportUsers(appIdentifierWithStorage, limit + 1, status, tokenInfo.bulkImportUserId, tokenInfo.createdAt);
         }
 
         String nextPaginationToken = null;
