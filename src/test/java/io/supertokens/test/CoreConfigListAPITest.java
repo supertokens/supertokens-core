@@ -14,44 +14,44 @@
  *    under the License.
  */
 
- package io.supertokens.test;
+package io.supertokens.test;
 
- import com.google.gson.JsonArray;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
- import io.supertokens.ProcessState;
- import io.supertokens.httpRequest.HttpRequest;
- import org.junit.AfterClass;
- import org.junit.Before;
- import org.junit.Rule;
- import org.junit.Test;
- import org.junit.rules.TestRule;
+import io.supertokens.ProcessState;
+import io.supertokens.httpRequest.HttpRequest;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestRule;
 
- 
- import static org.junit.Assert.*;
- 
- public class CoreConfigListAPITest {
-     @Rule
-     public TestRule watchman = Utils.getOnFailure();
- 
-     @AfterClass
-     public static void afterTesting() {
-         Utils.afterTesting();
-     }
- 
-     @Before
-     public void beforeEach() {
-         Utils.reset();
-     }
- 
-     @Test
-     public void testRetreivingConfigProperties() throws Exception {
+import static org.junit.Assert.*;
+
+public class CoreConfigListAPITest {
+    @Rule
+    public TestRule watchman = Utils.getOnFailure();
+
+    @AfterClass
+    public static void afterTesting() {
+        Utils.afterTesting();
+    }
+
+    @Before
+    public void beforeEach() {
+        Utils.reset();
+    }
+
+    @Test
+    public void testRetreivingConfigProperties() throws Exception {
         String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        JsonObject response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/core-config/list", null,
-        1000, 1000, null);
+        JsonObject response = HttpRequest.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/core-config/list", null,
+                1000, 1000, null);
 
         assertEquals(response.get("status").getAsString(), "OK");
         JsonArray result = response.get("config").getAsJsonArray();
@@ -68,7 +68,6 @@ import com.google.gson.JsonObject;
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-     }
- 
- }
- 
+    }
+
+}

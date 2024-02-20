@@ -67,7 +67,7 @@ public class CoreConfig {
 
     @NotConflictingInApp
     @JsonProperty
-    @ConfigDescription("Deprecated, please see changelog. Only used in CDI<=2.18\n If true, allows for immediate revocation of any access token. Keep in mind that setting this to true will result in a db query for each API call that requires authentication. (Default: false)")
+    @ConfigDescription("Deprecated, please see changelog. Only used in CDI<=2.18 If true, allows for immediate revocation of any access token. Keep in mind that setting this to true will result in a db query for each API call that requires authentication. (Default: false)")
     private boolean access_token_blacklisting = false;
 
     @NotConflictingInApp
@@ -115,12 +115,12 @@ public class CoreConfig {
 
     @ConfigYamlOnly
     @JsonProperty
-    @ConfigDescription("Give the path to a file (on your local system) in which the SuperTokens service can write ERROR logs to. Set it to \"null\" if you want it to log to\n standard error instead. (Default: installation directory/logs/error.log)")
+    @ConfigDescription("Give the path to a file (on your local system) in which the SuperTokens service can write ERROR logs to. Set it to \"null\" if you want it to log to standard error instead. (Default: installation directory/logs/error.log)")
     private String error_log_path = logDefault;
 
     @NotConflictingInApp
     @JsonProperty
-    @ConfigDescription("Deprecated, please see changelog.\n If this is set to true, the access tokens created using CDI<=2.18 will be signed using a static signing key. (Default: true)")
+    @ConfigDescription("Deprecated, please see changelog. If this is set to true, the access tokens created using CDI<=2.18 will be signed using a static signing key. (Default: true)")
     private boolean access_token_signing_key_dynamic = true;
 
     @NotConflictingInApp
@@ -240,6 +240,7 @@ public class CoreConfig {
 
     @ConfigYamlOnly
     @JsonProperty
+    @ConfigDescription("If specified, the supertokens service will only load the specified CUD even if there are more CUDs in the database and block all other CUDs from being used from this instance.")
     private String supertokens_saas_load_only_cud = null;
 
     @IgnoreForAnnotationCheck
