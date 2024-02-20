@@ -35,10 +35,10 @@ dependencies {
     testImplementation group: 'org.mockito', name: 'mockito-core', version: '3.1.0'
 
     // https://mvnrepository.com/artifact/org.apache.tomcat.embed/tomcat-embed-core
-    testImplementation group: 'org.apache.tomcat.embed', name: 'tomcat-embed-core', version: '10.1.1'
+    testImplementation group: 'org.apache.tomcat.embed', name: 'tomcat-embed-core', version: '10.1.18'
 
     // https://mvnrepository.com/artifact/ch.qos.logback/logback-classic
-    testImplementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'
+    testImplementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.4.14'
 
     // https://mvnrepository.com/artifact/com.google.code.gson/gson
     testImplementation group: 'com.google.code.gson', name: 'gson', version: '2.3.1'
@@ -46,7 +46,7 @@ dependencies {
     testImplementation 'com.tngtech.archunit:archunit-junit4:0.22.0'
 
     // https://mvnrepository.com/artifact/com.fasterxml.jackson.dataformat/jackson-dataformat-yaml
-    testImplementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: '2.14.0'
+    testImplementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: '2.14.2'
 
     // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core
     testImplementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.16.1'
