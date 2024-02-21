@@ -177,6 +177,10 @@ public class TelemetryTest extends Mockito {
             assertEquals("test@example.com", telemetryData.get("dashboardUserEmails").getAsJsonArray().get(0).getAsString());
             assertEquals(30, telemetryData.get("maus").getAsJsonArray().size());
             assertEquals(0, telemetryData.get("usersCount").getAsInt());
+        } else {
+            assertEquals(0, telemetryData.get("dashboardUserEmails").getAsJsonArray().size());
+            assertEquals(0, telemetryData.get("maus").getAsJsonArray().size());
+            assertEquals(-1, telemetryData.get("usersCount").getAsInt());
         }
 
         process.kill();
