@@ -131,12 +131,12 @@ public class CoreConfig {
 
     @ConfigYamlOnly
     @JsonProperty
-    @ConfigDescription("The port on which the SuperTokens service will run. (Default: 3567)")
+    @ConfigDescription("The port at which SuperTokens service runs. (Default: 3567)")
     private int port = 3567;
 
     @ConfigYamlOnly
     @JsonProperty
-    @ConfigDescription("The host on which the SuperTokens service will run. Values here can be localhost, example.com, 0.0.0.0 or any IP address associated with your machine. (Default: localhost)")
+    @ConfigDescription("The host on which SuperTokens service runs. Values here can be localhost, example.com, 0.0.0.0 or any IP address associated with your machine. (Default: localhost)")
     private String host = "localhost";
 
     @ConfigYamlOnly

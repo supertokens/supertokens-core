@@ -16,9 +16,12 @@
 
 package io.supertokens.test;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
+import io.supertokens.config.CoreConfig;
+import io.supertokens.config.annotations.ConfigDescription;
 import io.supertokens.httpRequest.HttpRequest;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -27,6 +30,14 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import static org.junit.Assert.*;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.io.FileReader;
+import java.io.BufferedReader;
+import java.lang.reflect.Field;
 
 public class CoreConfigListAPITest {
     @Rule
@@ -59,11 +70,90 @@ public class CoreConfigListAPITest {
         for (int i = 0; i < result.size(); i++) {
             JsonObject config = result.get(i).getAsJsonObject();
             assertTrue(config.get("name").getAsJsonPrimitive().isString());
+            // Ensure that the name is not present in the protected configs
+            assertTrue(!Arrays.asList(CoreConfig.PROTECTED_CONFIGS).contains(config.get("name").getAsString()));
             assertTrue(config.get("description").getAsJsonPrimitive().isString());
             assertTrue(config.get("isDifferentAcrossTenants").getAsJsonPrimitive().isBoolean());
             assertTrue(config.get("type").getAsJsonPrimitive().isString());
             String type = config.get("type").getAsString();
             assertTrue(type.equals("number") || type.equals("boolean") || type.equals("string") || type.equals("enum"));
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testMatchConfigPropertiesDescription() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        try (BufferedReader reader = new BufferedReader(new FileReader("./config.yaml"))) {
+            // Get the content of the file as string
+            String content = reader.lines().collect(Collectors.joining(System.lineSeparator()));
+            // Find the line that contains 'core_config_version', and then split
+            // the file after that line
+            String allProperties = content.split("core_config_version:\\s*\\d+\n\n")[1];
+
+            // Split by all the other allProperties string by new line
+            String[] properties = allProperties.split("\n\n");
+            // This will contain the description of each property from the yaml file
+            Map<String, String> propertyDescriptions = new HashMap<String, String>();
+
+            for (int i = 0; i < properties.length; i++) {
+                String possibleProperty = properties[i].trim();
+                String[] lines = possibleProperty.split("\n");
+                // This ensures that it is a property with a description as a comment
+                // at the top
+                if (lines[lines.length - 1].endsWith(":")) {
+                    String propertyKeyString = lines[lines.length - 1];
+                    // Remove the comment "# " from the start
+                    String propertyKey = propertyKeyString.substring(2, propertyKeyString.length() - 1);
+                    String propertyDescription = "";
+                    // Remove the comment "# " from the start and merge all the lines to form the
+                    // description
+                    for (int j = 0; j < lines.length - 1; j++) {
+                        propertyDescription = propertyDescription + " " + lines[j].substring(2);
+                    }
+                    propertyDescription = propertyDescription.trim();
+
+                    propertyDescriptions.put(propertyKey, propertyDescription);
+                }
+            }
+
+            for (String fieldId : CoreConfig.getValidFields()) {
+                // access_token_signing_key_update_interval is an alias for
+                // access_token_dynamic_signing_key_update_interval,
+                // we don't have a description for core_config_version
+                // and webserver_https_enabled is not present in the config.yaml file
+                // so we skip these properties.
+                if (fieldId.equals("access_token_signing_key_update_interval")
+                        || fieldId.equals("core_config_version")
+                        || fieldId.equals("webserver_https_enabled")) {
+                    continue;
+                }
+
+                Field field = CoreConfig.class.getDeclaredField(fieldId);
+
+                // Skip fields that are not annotated with JsonProperty
+                if (!field.isAnnotationPresent(JsonProperty.class)) {
+                    continue;
+                }
+
+                String descriptionInConfig = field.getAnnotation(ConfigDescription.class).value();
+                String descriptionInYaml = propertyDescriptions.get(fieldId);
+                // Remove the default value from config, since we add default value at the end
+                // config description
+                descriptionInConfig = descriptionInConfig.replaceAll("\\s\\[Default:.*|\\s\\(Default:.*", "").trim();
+                // Remove period from end if present, since not all descriptions in
+                // config.yaml have that
+                descriptionInConfig = descriptionInConfig.replaceAll("\\.$", "").trim();
+
+                // Assert that description in yaml contains the description in config
+                assertTrue(descriptionInYaml.contains(descriptionInConfig));
+            }
         }
 
         process.kill();
