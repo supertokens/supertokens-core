@@ -90,7 +90,31 @@ public class CoreConfigListAPITest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        try (BufferedReader reader = new BufferedReader(new FileReader("./config.yaml"))) {
+        // access_token_signing_key_update_interval is an alias for
+        // access_token_dynamic_signing_key_update_interval,
+        // we don't have a description for core_config_version
+        // and webserver_https_enabled is not present in the config.yaml file
+        // so we skip these properties.
+        String[] ignoredProperties = {"access_token_signing_key_update_interval", "core_config_version", "webserver_https_enabled"};
+
+        // Match the descriptions in the config.yaml file with the descriptions in the
+        // CoreConfig class
+        matchYamlAndConfigDescriptions("./config.yaml", ignoredProperties);
+
+        // Match the descriptions in the devConfig.yaml file with the descriptions in
+        // the CoreConfig class
+        String[] devConfigIgnoredProperties = Arrays.copyOf(ignoredProperties, ignoredProperties.length + 1);
+        // We ignore this property in devConfig.yaml because it has a different description
+        // in devConfig.yaml and has a default value
+        devConfigIgnoredProperties[ignoredProperties.length] = "disable_telemetry";
+        matchYamlAndConfigDescriptions("./devConfig.yaml", devConfigIgnoredProperties);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    private void matchYamlAndConfigDescriptions(String path, String[] ignoreProperties) throws Exception {
+        try (BufferedReader reader = new BufferedReader(new FileReader(path))) {
             // Get the content of the file as string
             String content = reader.lines().collect(Collectors.joining(System.lineSeparator()));
             // Find the line that contains 'core_config_version', and then split
@@ -124,14 +148,7 @@ public class CoreConfigListAPITest {
             }
 
             for (String fieldId : CoreConfig.getValidFields()) {
-                // access_token_signing_key_update_interval is an alias for
-                // access_token_dynamic_signing_key_update_interval,
-                // we don't have a description for core_config_version
-                // and webserver_https_enabled is not present in the config.yaml file
-                // so we skip these properties.
-                if (fieldId.equals("access_token_signing_key_update_interval")
-                        || fieldId.equals("core_config_version")
-                        || fieldId.equals("webserver_https_enabled")) {
+                if (Arrays.asList(ignoreProperties).contains(fieldId)) {
                     continue;
                 }
 
@@ -144,6 +161,11 @@ public class CoreConfigListAPITest {
 
                 String descriptionInConfig = field.getAnnotation(ConfigDescription.class).value();
                 String descriptionInYaml = propertyDescriptions.get(fieldId);
+
+                if (descriptionInYaml == null) {
+                    fail("Unable to find description or property for " + fieldId + " in " + path + " file");
+                }
+
                 // Remove the default value from config, since we add default value at the end
                 // config description
                 descriptionInConfig = descriptionInConfig.replaceAll("\\s\\[Default:.*|\\s\\(Default:.*", "").trim();
@@ -152,12 +174,11 @@ public class CoreConfigListAPITest {
                 descriptionInConfig = descriptionInConfig.replaceAll("\\.$", "").trim();
 
                 // Assert that description in yaml contains the description in config
-                assertTrue(descriptionInYaml.contains(descriptionInConfig));
+                if (!descriptionInYaml.contains(descriptionInConfig)) {
+                    fail("Description in config class for " + fieldId + " does not match description in " + path + " file");
+                }
             }
         }
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
 }
