@@ -110,10 +110,10 @@ public class SessionAPI extends WebserverAPI {
                                     this.getAppIdentifierWithStorage(req),
                                     sessionInfo.session.userId, UserIdType.ANY);
                     if (userIdMapping != null) {
-                        ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main,
+                        ActiveUsers.updateLastActive(this.getPublicTenantStorage(req), main,
                                 userIdMapping.superTokensUserId);
                     } else {
-                        ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main,
+                        ActiveUsers.updateLastActive(this.getPublicTenantStorage(req), main,
                                 sessionInfo.session.userId);
                     }
                 } catch (StorageQueryException ignored) {
