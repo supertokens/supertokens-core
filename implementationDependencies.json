@@ -12,9 +12,9 @@
       "src": "https://repo1.maven.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.16.1/jackson-dataformat-yaml-2.16.1-sources.jar"
     },
     {
-      "jar": "https://repo1.maven.org/maven2/org/yaml/snakeyaml/2.0/snakeyaml-2.0.jar",
-      "name": "SnakeYAML 2.0",
-      "src": "https://repo1.maven.org/maven2/org/yaml/snakeyaml/2.0/snakeyaml-2.0-sources.jar"
+      "jar": "https://repo1.maven.org/maven2/org/yaml/snakeyaml/2.2/snakeyaml-2.2.jar",
+      "name": "SnakeYAML 2.2",
+      "src": "https://repo1.maven.org/maven2/org/yaml/snakeyaml/2.2/snakeyaml-2.2-sources.jar"
     },
     {
       "jar": "https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-core/2.16.1/jackson-core-2.16.1.jar",
@@ -47,9 +47,9 @@
       "src": "https://repo1.maven.org/maven2/org/slf4j/slf4j-api/2.0.7/slf4j-api-2.0.7-sources.jar"
     },
     {
-      "jar": "https://repo1.maven.org/maven2/org/apache/tomcat/tomcat-annotations-api/10.1.1/tomcat-annotations-api-10.1.1.jar",
-      "name": "Tomcat annotations API 10.1.1",
-      "src": "https://repo1.maven.org/maven2/org/apache/tomcat/tomcat-annotations-api/10.1.1/tomcat-annotations-api-10.1.1-sources.jar"
+      "jar": "https://repo1.maven.org/maven2/org/apache/tomcat/tomcat-annotations-api/10.1.18/tomcat-annotations-api-10.1.18.jar",
+      "name": "Tomcat annotations API 10.1.18",
+      "src": "https://repo1.maven.org/maven2/org/apache/tomcat/tomcat-annotations-api/10.1.18/tomcat-annotations-api-10.1.18-sources.jar"
     },
     {
       "jar": "https://repo1.maven.org/maven2/org/apache/tomcat/embed/tomcat-embed-core/10.1.18/tomcat-embed-core-10.1.18.jar",
