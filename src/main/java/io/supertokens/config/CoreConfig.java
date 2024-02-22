@@ -20,7 +20,6 @@ import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
@@ -30,6 +29,7 @@ import io.supertokens.config.annotations.ConfigYamlOnly;
 import io.supertokens.config.annotations.EnumProperty;
 import io.supertokens.config.annotations.IgnoreForAnnotationCheck;
 import io.supertokens.config.annotations.NotConflictingInApp;
+import io.supertokens.pluginInterface.ConfigFieldInfo;
 import io.supertokens.pluginInterface.LOG_LEVEL;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.storageLayer.StorageLayer;
@@ -794,8 +794,8 @@ public class CoreConfig {
         }
     }
 
-    public static JsonArray getConfigFieldsJson(Main main) {
-        JsonArray result = new JsonArray();
+    public static ArrayList<ConfigFieldInfo> getConfigFieldsInfo(Main main) {
+        ArrayList<ConfigFieldInfo> result = new ArrayList<ConfigFieldInfo>();
 
         for (String fieldId : CoreConfig.getValidFields()) {
             try {
@@ -808,13 +808,12 @@ public class CoreConfig {
                         || fieldId == "core_config_version") {
                     continue;
                 }
-                JsonObject fieldJson = new JsonObject();
-                fieldJson.addProperty("name", field.getName());
-                fieldJson.addProperty("description", field.isAnnotationPresent(ConfigDescription.class)
+
+                String name = field.getName();
+                String description = field.isAnnotationPresent(ConfigDescription.class)
                         ? field.getAnnotation(ConfigDescription.class).value()
-                        : "");
-                fieldJson.addProperty("isDifferentAcrossTenants",
-                        !field.isAnnotationPresent(NotConflictingInApp.class));
+                        : "";
+                boolean isDifferentAcrossTenants = !field.isAnnotationPresent(NotConflictingInApp.class);
 
                 String type = "string";
 
@@ -824,29 +823,26 @@ public class CoreConfig {
                     type = "string";
                 } else if (fieldType == boolean.class) {
                     type = "boolean";
-                } else if (fieldType == int.class || fieldType == long.class || fieldType == double.class) {
+                } else if (fieldType == byte.class || fieldType == short.class || fieldType == int.class || fieldType == long.class || fieldType == float.class || fieldType == double.class) {
                     type = "number";
                 }
 
+                String[] options = null;
+
                 if (field.isAnnotationPresent(EnumProperty.class)) {
                     type = "enum";
-                    fieldJson.add("options",
-                            new GsonBuilder().create().toJsonTree(field.getAnnotation(EnumProperty.class).value()));
+                    options = field.getAnnotation(EnumProperty.class).value();
                 }
-
-                fieldJson.addProperty("type", type);
-                result.add(fieldJson);
+                result.add(new ConfigFieldInfo(name, description, isDifferentAcrossTenants, type, options));
 
             } catch (NoSuchFieldException e) {
                 continue;
             }
         }
 
-        JsonArray storageFields = StorageLayer.getBaseStorage(main).getConfigFieldsJson();
+        ArrayList<ConfigFieldInfo> storageFields = StorageLayer.getBaseStorage(main).getConfigFieldsInfo();
 
-        for (JsonElement field : storageFields) {
-            result.add(field);
-        }
+        result.addAll(storageFields);
 
         return result;
     }

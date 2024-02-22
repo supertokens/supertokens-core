@@ -16,7 +16,6 @@
 
 package io.supertokens.inmemorydb;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
@@ -2760,8 +2759,8 @@ public class Start
     }
 
     @Override
-    public JsonArray getConfigFieldsJson() {
-        return new JsonArray();
+    public ArrayList<ConfigFieldInfo> getConfigFieldsInfo() {
+        return new ArrayList<ConfigFieldInfo>();
     }
 
     @Override

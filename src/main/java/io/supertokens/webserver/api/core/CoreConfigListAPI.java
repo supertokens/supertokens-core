@@ -19,9 +19,11 @@ package io.supertokens.webserver.api.core;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 
 import io.supertokens.Main;
 import io.supertokens.config.CoreConfig;
+import io.supertokens.pluginInterface.ConfigFieldInfo;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.webserver.WebserverAPI;
 
@@ -29,6 +31,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 public class CoreConfigListAPI extends WebserverAPI {
@@ -50,27 +53,44 @@ public class CoreConfigListAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        JsonArray config = CoreConfig.getConfigFieldsJson(main);
+        ArrayList<ConfigFieldInfo> config = CoreConfig.getConfigFieldsInfo(main);
         JsonObject result = new JsonObject();
+
+        JsonArray configJson = new JsonArray();
+        for (ConfigFieldInfo field : config) {
+            JsonObject fieldJson = new JsonObject();
+            fieldJson.addProperty("name", field.name);
+            fieldJson.addProperty("description", field.description);
+            fieldJson.addProperty("isDifferentAcrossTenants", field.isDifferentAcrossTenants);
+            fieldJson.addProperty("type", field.type);
+            if (field.options != null) {
+                JsonArray options = new JsonArray();
+                for (String option : field.options) {
+                    options.add(new JsonPrimitive(option));
+                }
+                fieldJson.add("options", options);
+            }
+            configJson.add(fieldJson);
+        }
 
         try {
             if (shouldProtectProtectedConfig(req)) {
                 JsonArray configWithouProtectedFields = new JsonArray();
                 String[] protectedFields = StorageLayer.getBaseStorage(main)
                         .getProtectedConfigsFromSuperTokensSaaSUsers();
-                for (JsonElement field : config) {
+                for (JsonElement field : configJson) {
                     String fieldName = field.getAsJsonObject().get("name").getAsString();
                     if (!Arrays.asList(protectedFields).contains(fieldName)) {
                         configWithouProtectedFields.add(field);
                     }
                 }
-                config = configWithouProtectedFields;
+                configJson = configWithouProtectedFields;
             }
         } catch (Exception e) {
         }
 
         result.addProperty("status", "OK");
-        result.add("config", config);
+        result.add("config", configJson);
         super.sendJsonResponse(200, result, resp);
 
     }
