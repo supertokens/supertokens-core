@@ -25,7 +25,7 @@
  
  public class JsonValidatorUtils {
      @SuppressWarnings("unchecked")
-     public static <T> T parseAndValidateField(JsonObject jsonObject, String key, ValueType expectedType,
+     public static <T> T parseAndValidateFieldType(JsonObject jsonObject, String key, ValueType expectedType,
              boolean isRequired, Class<T> targetType, List<String> errors, String errorSuffix) {
          if (jsonObject.has(key)) {
              if (validateJsonFieldType(jsonObject, key, expectedType)) {
