@@ -7,9 +7,9 @@
       "src": "https://repo1.maven.org/maven2/com/google/code/gson/gson/2.3.1/gson-2.3.1-sources.jar"
     },
     {
-      "jar": "https://repo1.maven.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.14.2/jackson-dataformat-yaml-2.14.2.jar",
-      "name": "Jackson Dataformat 2.14.2",
-      "src": "https://repo1.maven.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.14.2/jackson-dataformat-yaml-2.14.2-sources.jar"
+      "jar": "https://repo1.maven.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.16.1/jackson-dataformat-yaml-2.16.1.jar",
+      "name": "Jackson Dataformat 2.16.1",
+      "src": "https://repo1.maven.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.16.1/jackson-dataformat-yaml-2.16.1-sources.jar"
     },
     {
       "jar": "https://repo1.maven.org/maven2/org/yaml/snakeyaml/2.0/snakeyaml-2.0.jar",
@@ -42,9 +42,9 @@
       "src": "https://repo1.maven.org/maven2/ch/qos/logback/logback-core/1.4.14/logback-core-1.4.14-sources.jar"
     },
     {
-      "jar": "https://repo1.maven.org/maven2/org/slf4j/slf4j-api/1.7.25/slf4j-api-1.7.25.jar",
-      "name": "SLF4j API 1.7.25",
-      "src": "https://repo1.maven.org/maven2/org/slf4j/slf4j-api/1.7.25/slf4j-api-1.7.25-sources.jar"
+      "jar": "https://repo1.maven.org/maven2/org/slf4j/slf4j-api/2.0.7/slf4j-api-2.0.7.jar",
+      "name": "SLF4j API 2.0.7",
+      "src": "https://repo1.maven.org/maven2/org/slf4j/slf4j-api/2.0.7/slf4j-api-2.0.7-sources.jar"
     },
     {
       "jar": "https://repo1.maven.org/maven2/org/apache/tomcat/tomcat-annotations-api/10.1.1/tomcat-annotations-api-10.1.1.jar",
