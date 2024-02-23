@@ -136,7 +136,7 @@ public class GetBulkImportUsersTest {
         {
             JsonObject request = new JsonParser().parse(rawData).getAsJsonObject();
             JsonObject res = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/bulk-import/add-users",
+                    "http://localhost:3567/bulk-import/users",
                     request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
             assert res.get("status").getAsString().equals("OK");
         }

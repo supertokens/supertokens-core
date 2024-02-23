@@ -94,18 +94,18 @@ public class BulkImportUserUtils {
             JsonObject jsonTotpDevice = jsonTotpDeviceEl.getAsJsonObject();
 
             String secretKey = parseAndValidateFieldType(jsonTotpDevice, "secretKey", ValueType.STRING, true, String.class, errors, " for a totp device.");
-            Number period = parseAndValidateFieldType(jsonTotpDevice, "period", ValueType.NUMBER, true, Number.class, errors, " for a totp device.");
-            Number skew = parseAndValidateFieldType(jsonTotpDevice, "skew", ValueType.NUMBER, true, Number.class, errors, " for a totp device.");
+            Integer period = parseAndValidateFieldType(jsonTotpDevice, "period", ValueType.INTEGER, true, Integer.class, errors, " for a totp device.");
+            Integer skew = parseAndValidateFieldType(jsonTotpDevice, "skew", ValueType.INTEGER, true, Integer.class, errors, " for a totp device.");
             String deviceName = parseAndValidateFieldType(jsonTotpDevice, "deviceName", ValueType.STRING, false, String.class, errors, " for a totp device.");
 
-            totpDevices.add(
-                new TotpDevice(
-                    validateAndNormaliseTotpSecretKey(secretKey),
-                    validateAndNormaliseTotpPeriod(period, errors),
-                    validateAndNormaliseTotpSkew(skew, errors),
-                    validateAndNormaliseTotpDeviceName(deviceName)
-                )
-            );
+            secretKey = validateAndNormaliseTotpSecretKey(secretKey);
+            period = validateAndNormaliseTotpPeriod(period, errors);
+            skew = validateAndNormaliseTotpSkew(skew, errors);
+            deviceName = validateAndNormaliseTotpDeviceName(deviceName);
+
+            if (secretKey != null && period != null && skew != null) {
+                totpDevices.add(new TotpDevice(secretKey, period, skew, deviceName));
+            }
         }
         return totpDevices;
     }
@@ -134,11 +134,13 @@ public class BulkImportUserUtils {
             String tenantId = parseAndValidateFieldType(jsonLoginMethodObj, "tenantId", ValueType.STRING, false, String.class, errors, " for a loginMethod.");
             Boolean isVerified = parseAndValidateFieldType(jsonLoginMethodObj, "isVerified", ValueType.BOOLEAN, false, Boolean.class, errors, " for a loginMethod.");
             Boolean isPrimary = parseAndValidateFieldType(jsonLoginMethodObj, "isPrimary", ValueType.BOOLEAN, false, Boolean.class, errors, " for a loginMethod.");
-            Number timeJoined = parseAndValidateFieldType(jsonLoginMethodObj, "timeJoinedInMSSinceEpoch", ValueType.NUMBER, false, Number.class, errors, " for a loginMethod");
+            Integer timeJoined = parseAndValidateFieldType(jsonLoginMethodObj, "timeJoinedInMSSinceEpoch", ValueType.INTEGER, false, Integer.class, errors, " for a loginMethod");
 
             recipeId = validateAndNormaliseRecipeId(recipeId, errors);
             tenantId= validateAndNormaliseTenantId(main, appIdentifier, tenantId, recipeId, errors);
+            isPrimary = validateAndNormaliseIsPrimary(isPrimary);
             isVerified = validateAndNormaliseIsVerified(isVerified);
+
             long timeJoinedInMSSinceEpoch = validateAndNormaliseTimeJoined(timeJoined);
 
             if ("emailpassword".equals(recipeId)) {
@@ -147,8 +149,9 @@ public class BulkImportUserUtils {
                 String hashingAlgorithm = parseAndValidateFieldType(jsonLoginMethodObj, "hashingAlgorithm", ValueType.STRING, true, String.class, errors, " for an emailpassword recipe.");
 
                 email = validateAndNormaliseEmail(email);
-                passwordHash = validateAndNormalisePasswordHash(passwordHash);
-                hashingAlgorithm = validateAndNormaliseHashingAlgorithm(main, appIdentifier, hashingAlgorithm, passwordHash, errors);
+                CoreConfig.PASSWORD_HASHING_ALG normalisedHashingAlgorithm = validateAndNormaliseHashingAlgorithm(hashingAlgorithm, errors);
+                hashingAlgorithm = normalisedHashingAlgorithm != null ? normalisedHashingAlgorithm.toString() : hashingAlgorithm;
+                passwordHash = validateAndNormalisePasswordHash(main, appIdentifier, normalisedHashingAlgorithm, passwordHash, errors);
 
                 EmailPasswordLoginMethod emailPasswordLoginMethod = new EmailPasswordLoginMethod(email, passwordHash, hashingAlgorithm);
                 loginMethods.add(new LoginMethod(tenantId, recipeId, isVerified, isPrimary, timeJoinedInMSSinceEpoch, emailPasswordLoginMethod, null, null));
@@ -264,12 +267,17 @@ public class BulkImportUserUtils {
         return normalisedTenantId;
     }
 
-    private static Boolean validateAndNormaliseIsVerified(Boolean isPrimary) {
-        // No normalisation needs to be done for isVerified
-        return isPrimary;
+    private static Boolean validateAndNormaliseIsPrimary(Boolean isPrimary) {
+        // We set the default value as false
+        return isPrimary == null ? false : isPrimary;
     }
 
-    private static long validateAndNormaliseTimeJoined(Number timeJoined) {
+    private static Boolean validateAndNormaliseIsVerified(Boolean isVerified) {
+        // We set the default value as false
+        return isVerified == null ? false : isVerified;
+    }
+
+    private static long validateAndNormaliseTimeJoined(Integer timeJoined) {
         // We default timeJoined to 0 if it is null
         return timeJoined != null ? timeJoined.longValue() : 0;
     }
@@ -279,27 +287,35 @@ public class BulkImportUserUtils {
         return email != null ? Utils.normaliseEmail(email) : null;
     }
 
-    private static String validateAndNormalisePasswordHash(String passwordHash) {
-        // We trim the passwordHash as per the ImportUserWithPasswordHashAPI.java
-        return passwordHash != null ? passwordHash.trim() : null;
-    }
-
-    private static String validateAndNormaliseHashingAlgorithm(Main main, AppIdentifier appIdentifier, String hashingAlgorithm, String passwordHash, List<String> errors) throws TenantOrAppNotFoundException {
-        if (hashingAlgorithm == null || passwordHash == null) {
-            return hashingAlgorithm;
+    private static CoreConfig.PASSWORD_HASHING_ALG validateAndNormaliseHashingAlgorithm(String hashingAlgorithm, List<String> errors) {
+        if (hashingAlgorithm == null) {
+            return null;
         }
         
         try {
             // We trim the hashingAlgorithm and make it uppercase as per the ImportUserWithPasswordHashAPI.java
-            CoreConfig.PASSWORD_HASHING_ALG normalisedHashingAlgorithm = CoreConfig.PASSWORD_HASHING_ALG.valueOf(hashingAlgorithm.trim().toUpperCase());
-            PasswordHashingUtils.assertSuperTokensSupportInputPasswordHashFormat(appIdentifier, main, passwordHash, normalisedHashingAlgorithm);
-            return normalisedHashingAlgorithm.toString();
-        } catch (UnsupportedPasswordHashingFormatException  e) { 
-            errors.add(e.getMessage());
+            return CoreConfig.PASSWORD_HASHING_ALG.valueOf(hashingAlgorithm.trim().toUpperCase());
         } catch (IllegalArgumentException e) {
             errors.add("Invalid hashingAlgorithm for emailpassword recipe. Pass one of bcrypt, argon2 or, firebase_scrypt!");
+            return null;
         }
-        return hashingAlgorithm;
+    }
+
+    private static String validateAndNormalisePasswordHash(Main main, AppIdentifier appIdentifier, CoreConfig.PASSWORD_HASHING_ALG hashingAlgorithm, String passwordHash, List<String> errors) throws TenantOrAppNotFoundException {
+        if (hashingAlgorithm == null || passwordHash == null) {
+            return passwordHash;
+        }
+        
+        // We trim the passwordHash and validate it as per ImportUserWithPasswordHashAPI.java
+        passwordHash = passwordHash.trim();
+
+        try {
+            PasswordHashingUtils.assertSuperTokensSupportInputPasswordHashFormat(appIdentifier, main, passwordHash, hashingAlgorithm);
+        } catch (UnsupportedPasswordHashingFormatException  e) { 
+            errors.add(e.getMessage());
+        }
+
+        return passwordHash;
     }
 
     private static String validateAndNormaliseThirdPartyId(String thirdPartyId) {

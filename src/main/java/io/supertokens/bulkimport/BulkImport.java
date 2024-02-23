@@ -32,6 +32,7 @@ import javax.annotation.Nullable;
 
 public class BulkImport {
 
+    public static final int MAX_USERS_TO_ADD = 10000;
     public static final int GET_USERS_PAGINATION_LIMIT = 500;
     public static final int GET_USERS_DEFAULT_LIMIT = 100;
 

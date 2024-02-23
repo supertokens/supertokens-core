@@ -79,7 +79,7 @@ public class AddBulkImportUsersTest {
             try {
                 JsonObject request = new JsonObject();
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/add-users",
+                        "http://localhost:3567/bulk-import/users",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 String responseString = getResponseMessageFromError(e.getMessage());
@@ -90,7 +90,7 @@ public class AddBulkImportUsersTest {
             try {
                 JsonObject request = new JsonParser().parse("{\"users\": \"string\"}").getAsJsonObject();
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/add-users",
+                        "http://localhost:3567/bulk-import/users",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 String responseString = getResponseMessageFromError(e.getMessage());
@@ -104,7 +104,7 @@ public class AddBulkImportUsersTest {
             try {
                 JsonObject request = new JsonParser().parse("{\"users\":[{}]}").getAsJsonObject();
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/add-users",
+                        "http://localhost:3567/bulk-import/users",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 String responseString = getResponseMessageFromError(e.getMessage());
@@ -116,7 +116,7 @@ public class AddBulkImportUsersTest {
                 JsonObject request = new JsonParser().parse("{\"users\":[{\"loginMethods\": \"string\"}]}")
                         .getAsJsonObject();
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/add-users",
+                        "http://localhost:3567/bulk-import/users",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 String responseString = getResponseMessageFromError(e.getMessage());
@@ -128,7 +128,7 @@ public class AddBulkImportUsersTest {
             try {
                 JsonObject request = new JsonParser().parse("{\"users\":[{\"loginMethods\": []}]}").getAsJsonObject();
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/add-users",
+                        "http://localhost:3567/bulk-import/users",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 String responseString = getResponseMessageFromError(e.getMessage());
@@ -143,7 +143,7 @@ public class AddBulkImportUsersTest {
                         .parse("{\"users\":[{\"externalUserId\":[],\"userMetaData\":[],\"roles\":{},\"totp\":{}}]}")
                         .getAsJsonObject();
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/add-users",
+                        "http://localhost:3567/bulk-import/users",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 String responseString = getResponseMessageFromError(e.getMessage());
@@ -159,13 +159,13 @@ public class AddBulkImportUsersTest {
                         "{\"users\":[{\"loginMethods\":[{\"recipeId\":[],\"tenantId\":[],\"isPrimary\":[],\"isVerified\":[],\"timeJoinedInMSSinceEpoch\":[]}]}]}")
                         .getAsJsonObject();
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/add-users",
+                        "http://localhost:3567/bulk-import/users",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 String responseString = getResponseMessageFromError(e.getMessage());
                 assertEquals(400, e.statusCode);
                 assertEquals(responseString,
-                        "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"recipeId should be of type string for a loginMethod.\",\"tenantId should be of type string for a loginMethod.\",\"isVerified should be of type boolean for a loginMethod.\",\"isPrimary should be of type boolean for a loginMethod.\",\"timeJoinedInMSSinceEpoch should be of type number for a loginMethod\"]}]}");
+                        "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"recipeId should be of type string for a loginMethod.\",\"tenantId should be of type string for a loginMethod.\",\"isVerified should be of type boolean for a loginMethod.\",\"isPrimary should be of type boolean for a loginMethod.\",\"timeJoinedInMSSinceEpoch should be of type integer for a loginMethod\"]}]}");
             }
         }
         // Invalid recipeId
@@ -175,7 +175,7 @@ public class AddBulkImportUsersTest {
                         .parse("{\"users\":[{\"loginMethods\":[{\"recipeId\":\"invalid_recipe_id\"}]}]}")
                         .getAsJsonObject();
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/add-users",
+                        "http://localhost:3567/bulk-import/users",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 String responseString = getResponseMessageFromError(e.getMessage());
@@ -191,7 +191,7 @@ public class AddBulkImportUsersTest {
                 JsonObject request = new JsonParser()
                         .parse("{\"users\":[{\"loginMethods\":[{\"recipeId\":\"emailpassword\"}]}]}").getAsJsonObject();
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/add-users",
+                        "http://localhost:3567/bulk-import/users",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 String responseString = getResponseMessageFromError(e.getMessage());
@@ -205,7 +205,7 @@ public class AddBulkImportUsersTest {
                         "{\"users\":[{\"loginMethods\":[{\"recipeId\":\"emailpassword\",\"email\":[],\"passwordHash\":[],\"hashingAlgorithm\":[]}]}]}")
                         .getAsJsonObject();
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/add-users",
+                        "http://localhost:3567/bulk-import/users",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 String responseString = getResponseMessageFromError(e.getMessage());
@@ -219,7 +219,7 @@ public class AddBulkImportUsersTest {
                         "{\"users\":[{\"loginMethods\":[{\"recipeId\":\"emailpassword\",\"email\":\"johndoe@gmail.com\",\"passwordHash\":\"$2a\",\"hashingAlgorithm\":\"invalid_algorithm\"}]}]}")
                         .getAsJsonObject();
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/add-users",
+                        "http://localhost:3567/bulk-import/users",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 String responseString = getResponseMessageFromError(e.getMessage());
@@ -235,7 +235,7 @@ public class AddBulkImportUsersTest {
                 JsonObject request = new JsonParser()
                         .parse("{\"users\":[{\"loginMethods\":[{\"recipeId\":\"thirdparty\"}]}]}").getAsJsonObject();
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/add-users",
+                        "http://localhost:3567/bulk-import/users",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 String responseString = getResponseMessageFromError(e.getMessage());
@@ -249,7 +249,7 @@ public class AddBulkImportUsersTest {
                         "{\"users\":[{\"loginMethods\":[{\"recipeId\":\"thirdparty\",\"email\":[],\"thirdPartyId\":[],\"thirdPartyUserId\":[]}]}]}")
                         .getAsJsonObject();
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/add-users",
+                        "http://localhost:3567/bulk-import/users",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 String responseString = getResponseMessageFromError(e.getMessage());
@@ -265,7 +265,7 @@ public class AddBulkImportUsersTest {
                 JsonObject request = new JsonParser()
                         .parse("{\"users\":[{\"loginMethods\":[{\"recipeId\":\"passwordless\"}]}]}").getAsJsonObject();
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/add-users",
+                        "http://localhost:3567/bulk-import/users",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 String responseString = getResponseMessageFromError(e.getMessage());
@@ -279,7 +279,7 @@ public class AddBulkImportUsersTest {
                         "{\"users\":[{\"loginMethods\":[{\"recipeId\":\"passwordless\",\"email\":[],\"phoneNumber\":[]}]}]}")
                         .getAsJsonObject();
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/add-users",
+                        "http://localhost:3567/bulk-import/users",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 String responseString = getResponseMessageFromError(e.getMessage());
@@ -296,7 +296,7 @@ public class AddBulkImportUsersTest {
                         "{\"users\":[{\"loginMethods\":[{\"tenantId\":\"invalid\",\"recipeId\":\"passwordless\",\"email\":\"johndoe@gmail.com\"}]}]}")
                         .getAsJsonObject();
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/add-users",
+                        "http://localhost:3567/bulk-import/users",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 String responseString = getResponseMessageFromError(e.getMessage());
@@ -313,7 +313,7 @@ public class AddBulkImportUsersTest {
                         "{\"users\":[{\"loginMethods\":[{\"tenantId\":\"invalid\",\"recipeId\":\"passwordless\",\"email\":\"johndoe@gmail.com\"}]}]}")
                         .getAsJsonObject();
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/add-users",
+                        "http://localhost:3567/bulk-import/users",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 String responseString = getResponseMessageFromError(e.getMessage());
@@ -329,7 +329,7 @@ public class AddBulkImportUsersTest {
                 JsonObject request = new JsonParser()
                         .parse("{\"users\":[{\"loginMethods\":[{\"recipeId\":\"emailpassword\",\"email\":\"johndoe@gmail.com\",\"passwordHash\":\"$2a\",\"hashingAlgorithm\":\"bcrypt\",\"isPrimary\":true},{\"recipeId\":\"passwordless\",\"email\":\"johndoe@gmail.com\",\"isPrimary\":true}]}]}").getAsJsonObject();
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/add-users",
+                        "http://localhost:3567/bulk-import/users",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 String responseString = getResponseMessageFromError(e.getMessage());
@@ -343,7 +343,7 @@ public class AddBulkImportUsersTest {
             try {
                 JsonObject request = generateUsersJson(0);
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-            "http://localhost:3567/bulk-import/add-users",
+            "http://localhost:3567/bulk-import/users",
             request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 String responseString = getResponseMessageFromError(e.getMessage());
@@ -356,7 +356,7 @@ public class AddBulkImportUsersTest {
             try {
                 JsonObject request = generateUsersJson(10001);
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-            "http://localhost:3567/bulk-import/add-users",
+            "http://localhost:3567/bulk-import/users",
             request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 String responseString = getResponseMessageFromError(e.getMessage());
@@ -382,7 +382,7 @@ public class AddBulkImportUsersTest {
 
         JsonObject request = generateUsersJson(10000);
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-        "http://localhost:3567/bulk-import/add-users",
+        "http://localhost:3567/bulk-import/users",
         request, 1000, 10000, null, Utils.getCdiVersionStringLatestForTests(), null);
         assertEquals("OK", response.get("status").getAsString());
 
@@ -403,7 +403,7 @@ public class AddBulkImportUsersTest {
 
         JsonObject request = generateUsersJson(1);
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-        "http://localhost:3567/bulk-import/add-users",
+        "http://localhost:3567/bulk-import/users",
         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
         assertEquals("OK", response.get("status").getAsString());
 
