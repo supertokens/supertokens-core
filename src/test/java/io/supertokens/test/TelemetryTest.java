@@ -175,7 +175,7 @@ public class TelemetryTest extends Mockito {
         if (StorageLayer.getBaseStorage(process.getProcess()).getType() == STORAGE_TYPE.SQL) {
             assertEquals(1, telemetryData.get("dashboardUserEmails").getAsJsonArray().size());
             assertEquals("test@example.com", telemetryData.get("dashboardUserEmails").getAsJsonArray().get(0).getAsString());
-            assertEquals(30, telemetryData.get("maus").getAsJsonArray().size());
+            assertEquals(31, telemetryData.get("maus").getAsJsonArray().size());
             assertEquals(0, telemetryData.get("usersCount").getAsInt());
         } else {
             assertEquals(0, telemetryData.get("dashboardUserEmails").getAsJsonArray().size());

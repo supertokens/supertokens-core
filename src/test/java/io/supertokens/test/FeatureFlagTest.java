@@ -192,7 +192,7 @@ public class FeatureFlagTest {
                 assert features.size() == 1;
             }
             assert features.contains(new JsonPrimitive("totp"));
-            assert maus.size() == 30;
+            assert maus.size() == 31;
             assert maus.get(0).getAsInt() == 0;
             assert maus.get(29).getAsInt() == 0;
 
@@ -200,7 +200,7 @@ public class FeatureFlagTest {
             JsonArray totpMaus = totpStats.get("maus").getAsJsonArray();
             int totalTotpUsers = totpStats.get("total_users").getAsInt();
 
-            assert totpMaus.size() == 30;
+            assert totpMaus.size() == 31;
             assert totpMaus.get(0).getAsInt() == 0;
             assert totpMaus.get(29).getAsInt() == 0;
 
@@ -259,7 +259,7 @@ public class FeatureFlagTest {
             JsonArray totpMaus = totpStats.get("maus").getAsJsonArray();
             int totalTotpUsers = totpStats.get("total_users").getAsInt();
 
-            assert totpMaus.size() == 30;
+            assert totpMaus.size() == 31;
             assert totpMaus.get(0).getAsInt() == 1; // only 1 user has TOTP enabled
             assert totpMaus.get(29).getAsInt() == 1;
 
