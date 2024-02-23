@@ -792,7 +792,7 @@ public class CoreConfig {
         }
     }
 
-    public static ArrayList<ConfigFieldInfo> getConfigFieldsInfo() throws InvalidConfigException {
+    public static ArrayList<ConfigFieldInfo> getConfigFieldsInfo() {
         ArrayList<ConfigFieldInfo> result = new ArrayList<ConfigFieldInfo>();
 
         for (String fieldId : CoreConfig.getValidFields()) {
@@ -823,10 +823,8 @@ public class CoreConfig {
                     type = "boolean";
                 } else if (fieldType == int.class || fieldType == long.class || fieldType == double.class) {
                     type = "number";
-                }
-
-                if (type == null) {
-                    throw new InvalidConfigException("Unknown type for field " + name);
+                } else {
+                    throw new RuntimeException("Unknown field type " + fieldType.getName());
                 }
 
                 String[] options = null;

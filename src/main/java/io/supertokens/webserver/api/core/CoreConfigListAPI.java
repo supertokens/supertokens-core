@@ -53,18 +53,10 @@ public class CoreConfigListAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        ArrayList<ConfigFieldInfo> config = new ArrayList<ConfigFieldInfo>();
+        ArrayList<ConfigFieldInfo> config = CoreConfig.getConfigFieldsInfo();
+        ArrayList<ConfigFieldInfo> storageFields = StorageLayer.getBaseStorage(main).getConfigFieldsInfo();
 
-        try {
-            ArrayList<ConfigFieldInfo> coreConfig = CoreConfig.getConfigFieldsInfo();
-            ArrayList<ConfigFieldInfo> storageFields = StorageLayer.getBaseStorage(main).getConfigFieldsInfo();
-
-            config.addAll(coreConfig);
-            config.addAll(storageFields);
-
-        } catch (Exception e) {
-            throw new ServletException(e);
-        }
+        config.addAll(storageFields);
 
         JsonObject result = new JsonObject();
 
