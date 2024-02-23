@@ -32,7 +32,6 @@ import io.supertokens.config.annotations.NotConflictingInApp;
 import io.supertokens.pluginInterface.ConfigFieldInfo;
 import io.supertokens.pluginInterface.LOG_LEVEL;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
-import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.Utils;
 import io.supertokens.webserver.WebserverAPI;
@@ -636,9 +635,8 @@ public class CoreConfig {
                 Field field = CoreConfig.class.getDeclaredField(fieldId);
                 if (field.isAnnotationPresent(EnumProperty.class)) {
                     String[] allowedValues = field.getAnnotation(EnumProperty.class).value();
-                    // Get the value of fieldId
                     try {
-                        String value = (String) field.get(this);
+                        String value = field.get(this) != null ? field.get(this).toString() : null;
                         if (!Arrays.asList(allowedValues).contains(value)) {
                             throw new InvalidConfigException(
                                     fieldId + " property is not set correctly. It must be one of "
@@ -794,7 +792,7 @@ public class CoreConfig {
         }
     }
 
-    public static ArrayList<ConfigFieldInfo> getConfigFieldsInfo(Main main) {
+    public static ArrayList<ConfigFieldInfo> getConfigFieldsInfo() throws InvalidConfigException {
         ArrayList<ConfigFieldInfo> result = new ArrayList<ConfigFieldInfo>();
 
         for (String fieldId : CoreConfig.getValidFields()) {
@@ -815,17 +813,20 @@ public class CoreConfig {
                         : "";
                 boolean isDifferentAcrossTenants = !field.isAnnotationPresent(NotConflictingInApp.class);
 
-                String type = "string";
+                String type = null;
 
                 Class<?> fieldType = field.getType();
 
-                if (fieldType == java.lang.String.class) {
+                if (fieldType == String.class) {
                     type = "string";
                 } else if (fieldType == boolean.class) {
                     type = "boolean";
-                } else if (fieldType == byte.class || fieldType == short.class || fieldType == int.class
-                        || fieldType == long.class || fieldType == float.class || fieldType == double.class) {
+                } else if (fieldType == int.class || fieldType == long.class || fieldType == double.class) {
                     type = "number";
+                }
+
+                if (type == null) {
+                    throw new InvalidConfigException("Unknown type for field " + name);
                 }
 
                 String[] options = null;
@@ -840,10 +841,6 @@ public class CoreConfig {
                 continue;
             }
         }
-
-        ArrayList<ConfigFieldInfo> storageFields = StorageLayer.getBaseStorage(main).getConfigFieldsInfo();
-
-        result.addAll(storageFields);
 
         return result;
     }

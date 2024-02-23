@@ -16,10 +16,10 @@
 
 package io.supertokens.webserver.api.core;
 
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
 
 import io.supertokens.Main;
 import io.supertokens.config.CoreConfig;
@@ -53,23 +53,24 @@ public class CoreConfigListAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        ArrayList<ConfigFieldInfo> config = CoreConfig.getConfigFieldsInfo(main);
+        ArrayList<ConfigFieldInfo> config = new ArrayList<ConfigFieldInfo>();
+
+        try {
+            ArrayList<ConfigFieldInfo> coreConfig = CoreConfig.getConfigFieldsInfo();
+            ArrayList<ConfigFieldInfo> storageFields = StorageLayer.getBaseStorage(main).getConfigFieldsInfo();
+
+            config.addAll(coreConfig);
+            config.addAll(storageFields);
+
+        } catch (Exception e) {
+            throw new ServletException(e);
+        }
+
         JsonObject result = new JsonObject();
 
         JsonArray configJson = new JsonArray();
         for (ConfigFieldInfo field : config) {
-            JsonObject fieldJson = new JsonObject();
-            fieldJson.addProperty("name", field.name);
-            fieldJson.addProperty("description", field.description);
-            fieldJson.addProperty("isDifferentAcrossTenants", field.isDifferentAcrossTenants);
-            fieldJson.addProperty("type", field.type);
-            if (field.options != null) {
-                JsonArray options = new JsonArray();
-                for (String option : field.options) {
-                    options.add(new JsonPrimitive(option));
-                }
-                fieldJson.add("options", options);
-            }
+            JsonObject fieldJson = new GsonBuilder().create().toJsonTree(field).getAsJsonObject();
             configJson.add(fieldJson);
         }
 

@@ -75,8 +75,14 @@ public class CoreConfigListAPITest {
             assertTrue(config.get("description").getAsJsonPrimitive().isString());
             assertTrue(config.get("isDifferentAcrossTenants").getAsJsonPrimitive().isBoolean());
             assertTrue(config.get("type").getAsJsonPrimitive().isString());
+
             String type = config.get("type").getAsString();
             assertTrue(type.equals("number") || type.equals("boolean") || type.equals("string") || type.equals("enum"));
+
+            if (type.equals("enum")) {
+                assertTrue(config.get("options").getAsJsonArray().size() > 0);
+            }
+
         }
 
         process.kill();
