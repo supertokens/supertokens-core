@@ -94,18 +94,18 @@ public class BulkImportUserUtils {
             JsonObject jsonTotpDevice = jsonTotpDeviceEl.getAsJsonObject();
 
             String secretKey = parseAndValidateFieldType(jsonTotpDevice, "secretKey", ValueType.STRING, true, String.class, errors, " for a totp device.");
-            Number period = parseAndValidateFieldType(jsonTotpDevice, "period", ValueType.NUMBER, true, Number.class, errors, " for a totp device.");
-            Number skew = parseAndValidateFieldType(jsonTotpDevice, "skew", ValueType.NUMBER, true, Number.class, errors, " for a totp device.");
+            Integer period = parseAndValidateFieldType(jsonTotpDevice, "period", ValueType.INTEGER, true, Integer.class, errors, " for a totp device.");
+            Integer skew = parseAndValidateFieldType(jsonTotpDevice, "skew", ValueType.INTEGER, true, Integer.class, errors, " for a totp device.");
             String deviceName = parseAndValidateFieldType(jsonTotpDevice, "deviceName", ValueType.STRING, false, String.class, errors, " for a totp device.");
 
-            totpDevices.add(
-                new TotpDevice(
-                    validateAndNormaliseTotpSecretKey(secretKey),
-                    validateAndNormaliseTotpPeriod(period, errors),
-                    validateAndNormaliseTotpSkew(skew, errors),
-                    validateAndNormaliseTotpDeviceName(deviceName)
-                )
-            );
+            secretKey = validateAndNormaliseTotpSecretKey(secretKey);
+            period = validateAndNormaliseTotpPeriod(period, errors);
+            skew = validateAndNormaliseTotpSkew(skew, errors);
+            deviceName = validateAndNormaliseTotpDeviceName(deviceName);
+
+            if (secretKey != null && period != null && skew != null) {
+                totpDevices.add(new TotpDevice(secretKey, period, skew, deviceName));
+            }
         }
         return totpDevices;
     }
@@ -134,11 +134,13 @@ public class BulkImportUserUtils {
             String tenantId = parseAndValidateFieldType(jsonLoginMethodObj, "tenantId", ValueType.STRING, false, String.class, errors, " for a loginMethod.");
             Boolean isVerified = parseAndValidateFieldType(jsonLoginMethodObj, "isVerified", ValueType.BOOLEAN, false, Boolean.class, errors, " for a loginMethod.");
             Boolean isPrimary = parseAndValidateFieldType(jsonLoginMethodObj, "isPrimary", ValueType.BOOLEAN, false, Boolean.class, errors, " for a loginMethod.");
-            Number timeJoined = parseAndValidateFieldType(jsonLoginMethodObj, "timeJoinedInMSSinceEpoch", ValueType.NUMBER, false, Number.class, errors, " for a loginMethod");
+            Integer timeJoined = parseAndValidateFieldType(jsonLoginMethodObj, "timeJoinedInMSSinceEpoch", ValueType.INTEGER, false, Integer.class, errors, " for a loginMethod");
 
             recipeId = validateAndNormaliseRecipeId(recipeId, errors);
             tenantId= validateAndNormaliseTenantId(main, appIdentifier, tenantId, recipeId, errors);
+            isPrimary = validateAndNormaliseIsPrimary(isPrimary);
             isVerified = validateAndNormaliseIsVerified(isVerified);
+
             long timeJoinedInMSSinceEpoch = validateAndNormaliseTimeJoined(timeJoined);
 
             if ("emailpassword".equals(recipeId)) {
@@ -264,12 +266,17 @@ public class BulkImportUserUtils {
         return normalisedTenantId;
     }
 
-    private static Boolean validateAndNormaliseIsVerified(Boolean isPrimary) {
-        // No normalisation needs to be done for isVerified
-        return isPrimary;
+    private static Boolean validateAndNormaliseIsPrimary(Boolean isPrimary) {
+        // We set the default value as false
+        return isPrimary == null ? false : isPrimary;
     }
 
-    private static long validateAndNormaliseTimeJoined(Number timeJoined) {
+    private static Boolean validateAndNormaliseIsVerified(Boolean isVerified) {
+        // We set the default value as false
+        return isVerified == null ? false : isVerified;
+    }
+
+    private static long validateAndNormaliseTimeJoined(Integer timeJoined) {
         // We default timeJoined to 0 if it is null
         return timeJoined != null ? timeJoined.longValue() : 0;
     }

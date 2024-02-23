@@ -34,8 +34,9 @@
                      case STRING:
                          value = (T) jsonObject.get(key).getAsString();
                          break;
-                     case NUMBER:
-                         value = (T) jsonObject.get(key).getAsNumber();
+                     case INTEGER:
+                        Integer intValue = jsonObject.get(key).getAsNumber().intValue();
+                         value = (T) intValue;
                          break;
                      case BOOLEAN:
                          Boolean boolValue = jsonObject.get(key).getAsBoolean();
@@ -67,7 +68,7 @@
  
      public enum ValueType {
          STRING,
-         NUMBER,
+         INTEGER,
          BOOLEAN,
          OBJECT,
          ARRAY_OF_STRING,
@@ -77,7 +78,7 @@
      private static String getTypeForErrorMessage(ValueType type) {
          return switch (type) {
              case STRING -> "string";
-             case NUMBER -> "number";
+             case INTEGER -> "integer";
              case BOOLEAN -> "boolean";
              case OBJECT -> "object";
              case ARRAY_OF_STRING -> "array of string";
@@ -90,7 +91,7 @@
              return switch (expectedType) {
                  case STRING -> jsonObject.get(key).isJsonPrimitive() && jsonObject.getAsJsonPrimitive(key).isString()
                          && !jsonObject.get(key).getAsString().isEmpty();
-                 case NUMBER -> jsonObject.get(key).isJsonPrimitive() && jsonObject.getAsJsonPrimitive(key).isNumber();
+                 case INTEGER -> jsonObject.get(key).isJsonPrimitive() && jsonObject.getAsJsonPrimitive(key).isNumber();
                  case BOOLEAN -> jsonObject.get(key).isJsonPrimitive() && jsonObject.getAsJsonPrimitive(key).isBoolean();
                  case OBJECT -> jsonObject.get(key).isJsonObject();
                  case ARRAY_OF_OBJECT, ARRAY_OF_STRING -> jsonObject.get(key).isJsonArray()

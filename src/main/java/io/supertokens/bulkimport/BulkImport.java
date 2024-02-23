@@ -32,8 +32,10 @@ import javax.annotation.Nullable;
 
 public class BulkImport {
 
+    public static final int MAX_USERS_TO_ADD = 10000;
     public static final int GET_USERS_PAGINATION_LIMIT = 500;
     public static final int GET_USERS_DEFAULT_LIMIT = 100;
+    public static final int DELETE_FAILED_USERS_LIMIT = 500;
 
     public static void addUsers(AppIdentifierWithStorage appIdentifierWithStorage, List<BulkImportUser> users)
             throws StorageQueryException, TenantOrAppNotFoundException {
@@ -74,5 +76,9 @@ public class BulkImport {
 
         List<BulkImportUserInfo> resultUsers = users.subList(0, maxLoop);
         return new BulkImportUserPaginationContainer(resultUsers, nextPaginationToken);
+    }
+
+    public static void deleteUsers(AppIdentifierWithStorage appIdentifierWithStorage, String[] userIds) throws StorageQueryException {
+        appIdentifierWithStorage.getBulkImportStorage().deleteBulkImportUsers(appIdentifierWithStorage, userIds);
     }
 }
