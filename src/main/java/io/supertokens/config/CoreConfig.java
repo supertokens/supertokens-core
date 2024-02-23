@@ -631,26 +631,26 @@ public class CoreConfig {
             }
         }
 
-        try {
-            String[] allowedPasswordHashingAlgos = CoreConfig.class.getDeclaredField("password_hashing_alg")
-                    .getAnnotation(EnumProperty.class).value();
-
-            if (!Arrays.asList(allowedPasswordHashingAlgos).contains(password_hashing_alg)) {
-                throw new InvalidConfigException("password_hashing_alg property is not set correctly");
+        for (String fieldId : CoreConfig.getValidFields()) {
+            try {
+                Field field = CoreConfig.class.getDeclaredField(fieldId);
+                if (field.isAnnotationPresent(EnumProperty.class)) {
+                    String[] allowedValues = field.getAnnotation(EnumProperty.class).value();
+                    // Get the value of fieldId
+                    try {
+                        String value = (String) field.get(this);
+                        if (!Arrays.asList(allowedValues).contains(value)) {
+                            throw new InvalidConfigException(
+                                    fieldId + " property is not set correctly. It must be one of "
+                                            + Arrays.toString(allowedValues));
+                        }
+                    } catch (IllegalAccessException e) {
+                        throw new InvalidConfigException("Could not access field " + fieldId);
+                    }
+                }
+            } catch (NoSuchFieldException e) {
+                continue;
             }
-        } catch (NoSuchFieldException e) {
-            throw new InvalidConfigException("password_hashing_alg field not found");
-        }
-
-        try {
-            String[] allowedLogLevels = CoreConfig.class.getDeclaredField("log_level")
-                    .getAnnotation(EnumProperty.class).value();
-
-            if (!Arrays.asList(allowedLogLevels).contains(log_level)) {
-                throw new InvalidConfigException("log_level property is not set correctly");
-            }
-        } catch (NoSuchFieldException e) {
-            throw new InvalidConfigException("log_level field not found");
         }
 
         // Normalize
@@ -823,7 +823,8 @@ public class CoreConfig {
                     type = "string";
                 } else if (fieldType == boolean.class) {
                     type = "boolean";
-                } else if (fieldType == byte.class || fieldType == short.class || fieldType == int.class || fieldType == long.class || fieldType == float.class || fieldType == double.class) {
+                } else if (fieldType == byte.class || fieldType == short.class || fieldType == int.class
+                        || fieldType == long.class || fieldType == float.class || fieldType == double.class) {
                     type = "number";
                 }
 
