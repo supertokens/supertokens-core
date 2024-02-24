@@ -194,7 +194,7 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         // TODO Active users are present only on public tenant and TOTP users may be present on different storages
         Storage publicTenantStorage = StorageLayer.getStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main);
          final long now = System.currentTimeMillis();
-         for (int i = 0; i < 30; i++) {
+         for (int i = 0; i < 31; i++) {
              long today = now - (now % (24 * 60 * 60 * 1000L));
              long timestamp = today - (i * 24 * 60 * 60 * 1000L);
 
@@ -288,7 +288,7 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         if (!usesAccountLinking) {
             result.addProperty("totalUserCountWithMoreThanOneLoginMethod", 0);
             JsonArray mauArray = new JsonArray();
-            for (int i = 0; i < 30; i++) {
+            for (int i = 0; i < 31; i++) {
                 mauArray.add(new JsonPrimitive(0));
             }
             result.add("mauWithMoreThanOneLoginMethod", mauArray);
@@ -304,7 +304,7 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         for (Storage storage : storages) {
             totalUserCountWithMoreThanOneLoginMethod += ((AuthRecipeStorage)storage).getUsersCountWithMoreThanOneLoginMethod(this.appIdentifier);
 
-            for (int i = 0; i < 30; i++) {
+            for (int i = 0; i < 31; i++) {
                 long timestamp = today - (i * 24 * 60 * 60 * 1000L);
                 maus[i] += ((ActiveUsersStorage)storage).countUsersThatHaveMoreThanOneLoginMethodAndActiveSince(appIdentifier, timestamp);
             }
@@ -317,7 +317,7 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
 
     private JsonArray getMAUs() throws StorageQueryException, TenantOrAppNotFoundException {
         JsonArray mauArr = new JsonArray();
-        for (int i = 0; i < 30; i++) {
+        for (int i = 0; i < 31; i++) {
             long now = System.currentTimeMillis();
             long today = now - (now % (24 * 60 * 60 * 1000L));
             long timestamp = today - (i * 24 * 60 * 60 * 1000L);

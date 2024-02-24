@@ -130,7 +130,7 @@ public class Telemetry extends CronTask {
 
                 JsonArray mauArr = new JsonArray();
 
-                for (int i = 0; i < 30; i++) {
+                for (int i = 0; i < 31; i++) {
                     long now = System.currentTimeMillis();
                     long today = now - (now % (24 * 60 * 60 * 1000L));
                     long timestamp = today - (i * 24 * 60 * 60 * 1000L);
