@@ -69,11 +69,11 @@ public class CoreConfigListAPI extends WebserverAPI {
         try {
             if (shouldProtectProtectedConfig(req)) {
                 JsonArray configWithouProtectedFields = new JsonArray();
-                String[] protectedFields = StorageLayer.getBaseStorage(main)
+                String[] protectedPluginFields = StorageLayer.getBaseStorage(main)
                         .getProtectedConfigsFromSuperTokensSaaSUsers();
                 for (JsonElement field : configJson) {
                     String fieldName = field.getAsJsonObject().get("name").getAsString();
-                    if (!Arrays.asList(protectedFields).contains(fieldName)) {
+                    if (!Arrays.asList(protectedPluginFields).contains(fieldName) && !Arrays.asList(CoreConfig.PROTECTED_CONFIGS).contains(fieldName)) {
                         configWithouProtectedFields.add(field);
                     }
                 }

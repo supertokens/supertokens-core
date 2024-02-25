@@ -798,10 +798,9 @@ public class CoreConfig {
         for (String fieldId : CoreConfig.getValidFields()) {
             try {
                 Field field = CoreConfig.class.getDeclaredField(fieldId);
-                // If fieldId exists in PROTECTED_CONFIGS or is not annotated with JsonProperty
+                // If fieldId is not annotated with JsonProperty
                 // or is annotated with ConfigYamlOnly, then skip
-                if (Arrays.asList(PROTECTED_CONFIGS).contains(fieldId)
-                        || !field.isAnnotationPresent(JsonProperty.class)
+                if ( !field.isAnnotationPresent(JsonProperty.class)
                         || field.isAnnotationPresent(ConfigYamlOnly.class)
                         || fieldId == "core_config_version") {
                     continue;
@@ -833,6 +832,7 @@ public class CoreConfig {
                     type = "enum";
                     options = field.getAnnotation(EnumProperty.class).value();
                 }
+
                 result.add(new ConfigFieldInfo(name, description, isDifferentAcrossTenants, type, options));
 
             } catch (NoSuchFieldException e) {

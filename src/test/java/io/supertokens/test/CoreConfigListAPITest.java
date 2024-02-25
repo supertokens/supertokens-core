@@ -23,6 +23,10 @@ import io.supertokens.ProcessState;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.config.annotations.ConfigDescription;
 import io.supertokens.httpRequest.HttpRequest;
+import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.utils.SemVer;
+
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -33,7 +37,9 @@ import static org.junit.Assert.*;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.io.FileReader;
 import java.io.BufferedReader;
@@ -70,8 +76,6 @@ public class CoreConfigListAPITest {
         for (int i = 0; i < result.size(); i++) {
             JsonObject config = result.get(i).getAsJsonObject();
             assertTrue(config.get("name").getAsJsonPrimitive().isString());
-            // Ensure that the name is not present in the protected configs
-            assertTrue(!Arrays.asList(CoreConfig.PROTECTED_CONFIGS).contains(config.get("name").getAsString()));
             assertTrue(config.get("description").getAsJsonPrimitive().isString());
             assertTrue(config.get("isDifferentAcrossTenants").getAsJsonPrimitive().isBoolean());
             assertTrue(config.get("type").getAsJsonPrimitive().isString());
@@ -90,6 +94,70 @@ public class CoreConfigListAPITest {
     }
 
     @Test
+    public void testProtectedConfigsAreHandledCorrectlyIfSuperTokensSaaSSecretIsSet() throws Exception {
+        String[] args = { "../" };
+
+        String saasSecret = "hg40239oirjgBHD9450=Beew123--hg40239oirjgBHD9450=Beew123--hg40239oirjgBHD9450=Beew123-";
+        Utils.setValueInConfig("supertokens_saas_secret", saasSecret);
+        String apiKey = "hg40239oirjgBHD9450=Beew123--hg40239oiBeew123-";
+        Utils.setValueInConfig("api_keys", apiKey);
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        String[] protectedPluginFields = StorageLayer.getBaseStorage(process.main)
+                        .getProtectedConfigsFromSuperTokensSaaSUsers();
+
+        {
+            JsonObject response = HttpRequestForTesting.sendJsonRequest(process.getProcess(), "",
+                    "http://localhost:3567/core-config/list",
+                    null, 1000, 1000, null,
+                    SemVer.v3_0.get(), "GET", apiKey, "");
+
+            assertEquals(response.get("status").getAsString(), "OK");
+            JsonArray result = response.get("config").getAsJsonArray();
+
+            for (int i = 0; i < result.size(); i++) {
+                String fieldName = result.get(i).getAsJsonObject().get("name").getAsString();
+                if (Arrays.asList(protectedPluginFields).contains(fieldName)
+                        || Arrays.asList(CoreConfig.PROTECTED_CONFIGS).contains(fieldName)) {
+                    fail("Protected config " + fieldName
+                            + " is included in the response even though supertokens_saas_secret is set and api key does not match.");
+                }
+            }
+        }
+
+        {
+            JsonObject response = HttpRequestForTesting.sendJsonRequest(process.getProcess(), "",
+                    "http://localhost:3567/core-config/list",
+                    null, 1000, 1000, null,
+                    SemVer.v3_0.get(), "GET", saasSecret, "");
+
+            assertEquals(response.get("status").getAsString(), "OK");
+            JsonArray result = response.get("config").getAsJsonArray();
+
+            Set<String> allProtectedFields = new HashSet<String>();
+            allProtectedFields.addAll(Arrays.asList(CoreConfig.PROTECTED_CONFIGS));
+            allProtectedFields.addAll(Arrays.asList(protectedPluginFields));
+
+            for (int i = 0; i < result.size(); i++) {
+                String fieldName = result.get(i).getAsJsonObject().get("name").getAsString();
+               // Ensure that all the protected fields are included in the response
+                if (allProtectedFields.contains(fieldName)) {
+                    allProtectedFields.remove(fieldName);
+                }
+            }
+
+            if (allProtectedFields.size() > 0) {
+                fail("Protected configs " + allProtectedFields + " are not included in the response even though supertokens_saas_secret is added in the request.");
+            }
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
     public void testMatchConfigPropertiesDescription() throws Exception {
         String[] args = { "../" };
 
@@ -101,7 +169,8 @@ public class CoreConfigListAPITest {
         // we don't have a description for core_config_version
         // and webserver_https_enabled is not present in the config.yaml file
         // so we skip these properties.
-        String[] ignoredProperties = {"access_token_signing_key_update_interval", "core_config_version", "webserver_https_enabled"};
+        String[] ignoredProperties = { "access_token_signing_key_update_interval", "core_config_version",
+                "webserver_https_enabled" };
 
         // Match the descriptions in the config.yaml file with the descriptions in the
         // CoreConfig class
@@ -110,7 +179,8 @@ public class CoreConfigListAPITest {
         // Match the descriptions in the devConfig.yaml file with the descriptions in
         // the CoreConfig class
         String[] devConfigIgnoredProperties = Arrays.copyOf(ignoredProperties, ignoredProperties.length + 1);
-        // We ignore this property in devConfig.yaml because it has a different description
+        // We ignore this property in devConfig.yaml because it has a different
+        // description
         // in devConfig.yaml and has a default value
         devConfigIgnoredProperties[ignoredProperties.length] = "disable_telemetry";
         matchYamlAndConfigDescriptions("./devConfig.yaml", devConfigIgnoredProperties);
@@ -181,7 +251,8 @@ public class CoreConfigListAPITest {
 
                 // Assert that description in yaml contains the description in config
                 if (!descriptionInYaml.contains(descriptionInConfig)) {
-                    fail("Description in config class for " + fieldId + " does not match description in " + path + " file");
+                    fail("Description in config class for " + fieldId + " does not match description in " + path
+                            + " file");
                 }
             }
         }
