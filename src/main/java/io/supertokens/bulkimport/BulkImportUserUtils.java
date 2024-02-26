@@ -18,7 +18,9 @@ package io.supertokens.bulkimport;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -79,7 +81,7 @@ public class BulkImportUserUtils {
 
         // We already know that the jsonUserRoles is an array of non-empty strings, we will normalise each role now
         List<String> userRoles = new ArrayList<>();
-        jsonUserRoles.forEach(role -> userRoles.add(validateAndNormaliseUserRole(role.getAsString())));
+        jsonUserRoles.forEach(role -> userRoles.add(validateAndNormaliseUserRole(role.getAsString(), errors)));
         return userRoles;
     }
 
@@ -98,10 +100,10 @@ public class BulkImportUserUtils {
             Integer skew = parseAndValidateFieldType(jsonTotpDevice, "skew", ValueType.INTEGER, true, Integer.class, errors, " for a totp device.");
             String deviceName = parseAndValidateFieldType(jsonTotpDevice, "deviceName", ValueType.STRING, false, String.class, errors, " for a totp device.");
 
-            secretKey = validateAndNormaliseTotpSecretKey(secretKey);
+            secretKey = validateAndNormaliseTotpSecretKey(secretKey, errors);
             period = validateAndNormaliseTotpPeriod(period, errors);
             skew = validateAndNormaliseTotpSkew(skew, errors);
-            deviceName = validateAndNormaliseTotpDeviceName(deviceName);
+            deviceName = validateAndNormaliseTotpDeviceName(deviceName, errors);
 
             if (secretKey != null && period != null && skew != null) {
                 totpDevices.add(new TotpDevice(secretKey, period, skew, deviceName));
@@ -141,14 +143,14 @@ public class BulkImportUserUtils {
             isPrimary = validateAndNormaliseIsPrimary(isPrimary);
             isVerified = validateAndNormaliseIsVerified(isVerified);
 
-            long timeJoinedInMSSinceEpoch = validateAndNormaliseTimeJoined(timeJoined);
+            long timeJoinedInMSSinceEpoch = validateAndNormaliseTimeJoined(timeJoined, errors);
 
             if ("emailpassword".equals(recipeId)) {
                 String email = parseAndValidateFieldType(jsonLoginMethodObj, "email", ValueType.STRING, true, String.class, errors, " for an emailpassword recipe.");
                 String passwordHash = parseAndValidateFieldType(jsonLoginMethodObj, "passwordHash", ValueType.STRING, true, String.class, errors, " for an emailpassword recipe.");
                 String hashingAlgorithm = parseAndValidateFieldType(jsonLoginMethodObj, "hashingAlgorithm", ValueType.STRING, true, String.class, errors, " for an emailpassword recipe.");
 
-                email = validateAndNormaliseEmail(email);
+                email = validateAndNormaliseEmail(email, errors);
                 CoreConfig.PASSWORD_HASHING_ALG normalisedHashingAlgorithm = validateAndNormaliseHashingAlgorithm(hashingAlgorithm, errors);
                 hashingAlgorithm = normalisedHashingAlgorithm != null ? normalisedHashingAlgorithm.toString() : hashingAlgorithm;
                 passwordHash = validateAndNormalisePasswordHash(main, appIdentifier, normalisedHashingAlgorithm, passwordHash, errors);
@@ -160,9 +162,9 @@ public class BulkImportUserUtils {
                 String thirdPartyId = parseAndValidateFieldType(jsonLoginMethodObj, "thirdPartyId", ValueType.STRING, true, String.class, errors, " for a thirdparty recipe.");
                 String thirdPartyUserId = parseAndValidateFieldType(jsonLoginMethodObj, "thirdPartyUserId", ValueType.STRING, true, String.class, errors, " for a thirdparty recipe.");
 
-                email = validateAndNormaliseEmail(email);
-                thirdPartyId = validateAndNormaliseThirdPartyId(thirdPartyId);
-                thirdPartyUserId = validateAndNormaliseThirdPartyUserId(thirdPartyUserId);
+                email = validateAndNormaliseEmail(email, errors);
+                thirdPartyId = validateAndNormaliseThirdPartyId(thirdPartyId, errors);
+                thirdPartyUserId = validateAndNormaliseThirdPartyUserId(thirdPartyUserId, errors);
 
                 ThirdPartyLoginMethod thirdPartyLoginMethod = new ThirdPartyLoginMethod(email, thirdPartyId, thirdPartyUserId);
                 loginMethods.add(new LoginMethod(tenantId, recipeId, isVerified, isPrimary, timeJoinedInMSSinceEpoch, null, thirdPartyLoginMethod, null));
@@ -170,8 +172,8 @@ public class BulkImportUserUtils {
                 String email = parseAndValidateFieldType(jsonLoginMethodObj, "email", ValueType.STRING, false, String.class, errors, " for a passwordless recipe.");
                 String phoneNumber = parseAndValidateFieldType(jsonLoginMethodObj, "phoneNumber", ValueType.STRING, false, String.class, errors, " for a passwordless recipe.");
 
-                email = validateAndNormaliseEmail(email);
-                phoneNumber = validateAndNormalisePhoneNumber(phoneNumber);
+                email = validateAndNormaliseEmail(email, errors);
+                phoneNumber = validateAndNormalisePhoneNumber(phoneNumber, errors);
 
                 PasswordlessLoginMethod passwordlessLoginMethod = new PasswordlessLoginMethod(email, phoneNumber);
                 loginMethods.add(new LoginMethod(tenantId, recipeId, isVerified, isPrimary, timeJoinedInMSSinceEpoch, null, null, passwordlessLoginMethod));
@@ -180,17 +182,29 @@ public class BulkImportUserUtils {
         return loginMethods;
     }
 
-    private static String validateAndNormaliseUserRole(String role) {
+    private static String validateAndNormaliseUserRole(String role, List<String> errors) {
+        if (role.length() > 255) {
+            errors.add("role " + role + " is too long. Max length is 255.");
+        }
+
         // We just trim the role the CreateRoleAPI.java
         return role.trim();
     }
 
-    private static String validateAndNormaliseTotpSecretKey(String secretKey) {
+    private static String validateAndNormaliseTotpSecretKey(String secretKey, List<String> errors) {
+        if (secretKey == null ) {
+            return null;
+        }
+
+        if (secretKey.length() > 256) {
+            errors.add("TOTP secretKey " + secretKey + " is too long. Max length is 256.");
+        }
+
          // We don't perform any normalisation on the secretKey in ImportTotpDeviceAPI.java
         return secretKey;
     }
 
-    private static Integer validateAndNormaliseTotpPeriod(Number period, List<String> errors) {
+    private static Integer validateAndNormaliseTotpPeriod(Integer period, List<String> errors) {
         // We don't perform any normalisation on the period in ImportTotpDeviceAPI.java other than checking if it is > 0
         if (period != null && period.intValue() < 1) {
             errors.add("period should be > 0 for a totp device.");
@@ -199,7 +213,7 @@ public class BulkImportUserUtils {
         return period != null ? period.intValue() : null;
     }
 
-    private static Integer validateAndNormaliseTotpSkew(Number skew, List<String> errors) {
+    private static Integer validateAndNormaliseTotpSkew(Integer skew, List<String> errors) {
         // We don't perform any normalisation on the period in ImportTotpDeviceAPI.java other than checking if it is >= 0
         if (skew != null && skew.intValue() < 0) {
             errors.add("skew should be >= 0 for a totp device.");
@@ -208,9 +222,17 @@ public class BulkImportUserUtils {
         return skew != null ? skew.intValue() : null;
     }
 
-    private static String validateAndNormaliseTotpDeviceName(String deviceName) {
+    private static String validateAndNormaliseTotpDeviceName(String deviceName, List<String> errors) {
+        if (deviceName == null ) {
+            return null;
+        }
+
+        if (deviceName.length() > 256) {
+            errors.add("TOTP deviceName " + deviceName + " is too long. Max length is 256.");
+        }
+
         // We normalise the deviceName as per the ImportTotpDeviceAPI.java
-        return deviceName != null ? deviceName.trim() : null;
+        return deviceName.trim();
     }
 
     private static void validateAndNormaliseIsPrimaryField(JsonArray jsonLoginMethods, List<String> errors) {
@@ -257,7 +279,7 @@ public class BulkImportUserUtils {
         // We make the tenantId lowercase while parsing from the request in WebserverAPI.java
         String normalisedTenantId = tenantId.trim().toLowerCase();
         TenantConfig[] allTenantConfigs = Multitenancy.getAllTenantsForApp(appIdentifier, main);
-        ArrayList<String> validTenantIds = new ArrayList<>();
+        Set<String> validTenantIds = new HashSet<>();
         Arrays.stream(allTenantConfigs)
                 .forEach(tenantConfig -> validTenantIds.add(tenantConfig.tenantIdentifier.getTenantId()));
 
@@ -277,14 +299,34 @@ public class BulkImportUserUtils {
         return isVerified == null ? false : isVerified;
     }
 
-    private static long validateAndNormaliseTimeJoined(Integer timeJoined) {
+    private static long validateAndNormaliseTimeJoined(Integer timeJoined, List<String> errors) {
         // We default timeJoined to 0 if it is null
-        return timeJoined != null ? timeJoined.longValue() : 0;
+        if (timeJoined == null) {
+            return 0;
+        }
+
+        if (timeJoined > System.currentTimeMillis()) {
+            errors.add("timeJoined cannot be in future for a loginMethod.");
+        }
+
+        if (timeJoined < 0) {
+            errors.add("timeJoined cannot be < 0 for a loginMethod.");
+        }
+
+        return timeJoined.longValue();
     }
 
-    private static String validateAndNormaliseEmail(String email) {
+    private static String validateAndNormaliseEmail(String email, List<String> errors) {
+        if (email == null) {
+            return null;
+        }
+
+        if (email.length() > 255) {
+            errors.add("email " + email + " is too long. Max length is 256.");
+        }
+
         // We normalise the email as per the SignUpAPI.java
-        return email != null ? Utils.normaliseEmail(email) : null;
+        return Utils.normaliseEmail(email);
     }
 
     private static CoreConfig.PASSWORD_HASHING_ALG validateAndNormaliseHashingAlgorithm(String hashingAlgorithm, List<String> errors) {
@@ -305,6 +347,10 @@ public class BulkImportUserUtils {
         if (hashingAlgorithm == null || passwordHash == null) {
             return passwordHash;
         }
+
+        if (passwordHash.length() > 256) {
+            errors.add("passwordHash is too long. Max length is 256.");
+        }
         
         // We trim the passwordHash and validate it as per ImportUserWithPasswordHashAPI.java
         passwordHash = passwordHash.trim();
@@ -318,19 +364,43 @@ public class BulkImportUserUtils {
         return passwordHash;
     }
 
-    private static String validateAndNormaliseThirdPartyId(String thirdPartyId) {
+    private static String validateAndNormaliseThirdPartyId(String thirdPartyId, List<String> errors) {
+        if (thirdPartyId == null) {
+            return null;
+        }
+
+        if (thirdPartyId.length() > 28) {
+            errors.add("thirdPartyId " + thirdPartyId + " is too long. Max length is 28.");
+        }
+
         // We don't perform any normalisation on the thirdPartyId in SignInUpAPI.java
        return thirdPartyId;
    }
 
-    private static String validateAndNormaliseThirdPartyUserId(String thirdPartyUserId) {
+    private static String validateAndNormaliseThirdPartyUserId(String thirdPartyUserId, List<String> errors) {
+        if (thirdPartyUserId == null) {
+            return null;
+        }
+
+        if (thirdPartyUserId.length() > 256) {
+            errors.add("thirdPartyUserId " + thirdPartyUserId + " is too long. Max length is 256.");
+        }
+
         // We don't perform any normalisation on the thirdPartyUserId in SignInUpAPI.java
        return thirdPartyUserId;
    }
 
-    private static String validateAndNormalisePhoneNumber(String phoneNumber) {
+    private static String validateAndNormalisePhoneNumber(String phoneNumber, List<String> errors) {
+        if (phoneNumber == null) {
+            return null;
+        }
+
+        if (phoneNumber.length() > 256) {
+            errors.add("phoneNumber " + phoneNumber + " is too long. Max length is 256.");
+        }
+
         // We normalise the phoneNumber as per the CreateCodeAPI.java
-        return phoneNumber != null ?  Utils.normalizeIfPhoneNumber(phoneNumber) : null;
+        return Utils.normalizeIfPhoneNumber(phoneNumber);
     }
 
 }
