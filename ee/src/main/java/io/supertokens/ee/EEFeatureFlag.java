@@ -194,9 +194,8 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         // TODO Active users are present only on public tenant and TOTP users may be present on different storages
         Storage publicTenantStorage = StorageLayer.getStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main);
          final long now = System.currentTimeMillis();
-         for (int i = 0; i < 31; i++) {
-             long today = now - (now % (24 * 60 * 60 * 1000L));
-             long timestamp = today - (i * 24 * 60 * 60 * 1000L);
+         for (int i = 1; i <= 31; i++) {
+             long timestamp = now - (i+1 * 24 * 60 * 60 * 1000L);
 
              int totpMau = 0;
              // TODO Need to figure out a way to combine the data from different storages to get the final stats
@@ -296,17 +295,18 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         }
 
         int totalUserCountWithMoreThanOneLoginMethod = 0;
-        int[] maus = new int[30];
+        int[] maus = new int[31];
 
         long now = System.currentTimeMillis();
-        long today = now - (now % (24 * 60 * 60 * 1000L));
 
         for (Storage storage : storages) {
             totalUserCountWithMoreThanOneLoginMethod += ((AuthRecipeStorage)storage).getUsersCountWithMoreThanOneLoginMethod(this.appIdentifier);
 
-            for (int i = 0; i < 31; i++) {
-                long timestamp = today - (i * 24 * 60 * 60 * 1000L);
-                maus[i] += ((ActiveUsersStorage)storage).countUsersThatHaveMoreThanOneLoginMethodAndActiveSince(appIdentifier, timestamp);
+            for (int i = 1; i <= 31; i++) {
+                long timestamp = now - (i * 24 * 60 * 60 * 1000L);
+
+                // `maus[i-1]` because i starts from 1
+                maus[i-1] += ((ActiveUsersStorage)storage).countUsersThatHaveMoreThanOneLoginMethodAndActiveSince(appIdentifier, timestamp);
             }
         }
 
@@ -317,10 +317,10 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
 
     private JsonArray getMAUs() throws StorageQueryException, TenantOrAppNotFoundException {
         JsonArray mauArr = new JsonArray();
-        for (int i = 0; i < 31; i++) {
-            long now = System.currentTimeMillis();
-            long today = now - (now % (24 * 60 * 60 * 1000L));
-            long timestamp = today - (i * 24 * 60 * 60 * 1000L);
+        long now = System.currentTimeMillis();
+
+        for (int i = 1; i <= 31; i++) {
+            long timestamp = now - (i * 24 * 60 * 60 * 1000L);
             ActiveUsersStorage activeUsersStorage = (ActiveUsersStorage) StorageLayer.getStorage(
                     this.appIdentifier.getAsPublicTenantIdentifier(), main);
             int mau = activeUsersStorage.countUsersActiveSince(this.appIdentifier, timestamp);
