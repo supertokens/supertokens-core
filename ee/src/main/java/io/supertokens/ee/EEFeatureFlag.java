@@ -193,19 +193,19 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
 
         // TODO Active users are present only on public tenant and TOTP users may be present on different storages
         Storage publicTenantStorage = StorageLayer.getStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main);
-         final long now = System.currentTimeMillis();
-         for (int i = 1; i <= 31; i++) {
-             long timestamp = now - (i+1 * 24 * 60 * 60 * 1000L);
+        final long now = System.currentTimeMillis();
+        for (int i = 1; i <= 31; i++) {
+            long timestamp = now - (i * 24 * 60 * 60 * 1000L);
 
-             int totpMau = 0;
-             // TODO Need to figure out a way to combine the data from different storages to get the final stats
-             // for (Storage storage : storages) {
-             totpMau += ((ActiveUsersStorage) publicTenantStorage).countUsersEnabledTotpAndActiveSince(this.appIdentifier, timestamp);
-             // }
-             totpMauArr.add(new JsonPrimitive(totpMau));
-         }
+            int totpMau = 0;
+            // TODO Need to figure out a way to combine the data from different storages to get the final stats
+            // for (Storage storage : storages) {
+            totpMau += ((ActiveUsersStorage) publicTenantStorage).countUsersEnabledTotpAndActiveSince(this.appIdentifier, timestamp);
+            // }
+            totpMauArr.add(new JsonPrimitive(totpMau));
+        }
 
-         totpStats.add("maus", totpMauArr);
+        totpStats.add("maus", totpMauArr);
 
         int totpTotalUsers = 0;
         for (Storage storage : storages) {
