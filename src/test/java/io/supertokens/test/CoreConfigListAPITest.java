@@ -108,6 +108,8 @@ public class CoreConfigListAPITest {
         String[] protectedPluginFields = StorageLayer.getBaseStorage(process.main)
                         .getProtectedConfigsFromSuperTokensSaaSUsers();
 
+        // Make sure that the protected fields are not included in the response
+        // if supertokens_saas_secret is set and it is not used for api_key
         {
             JsonObject response = HttpRequestForTesting.sendJsonRequest(process.getProcess(), "",
                     "http://localhost:3567/core-config/list",
@@ -127,6 +129,8 @@ public class CoreConfigListAPITest {
             }
         }
 
+        // Make sure that the protected fields are included in the response
+        // if supertokens_saas_secret is set and it is used for the api_key
         {
             JsonObject response = HttpRequestForTesting.sendJsonRequest(process.getProcess(), "",
                     "http://localhost:3567/core-config/list",
@@ -149,7 +153,7 @@ public class CoreConfigListAPITest {
             }
 
             if (allProtectedFields.size() > 0) {
-                fail("Protected configs " + allProtectedFields + " are not included in the response even though supertokens_saas_secret is added in the request.");
+                fail("Protected configs " + allProtectedFields.toString() + " are not included in the response even though supertokens_saas_secret is added in the request.");
             }
         }
 
