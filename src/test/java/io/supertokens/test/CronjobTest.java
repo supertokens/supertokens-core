@@ -462,6 +462,7 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
+                null, null,
                 new JsonObject()
         ), false);
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
@@ -469,6 +470,7 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
+                null, null,
                 new JsonObject()
         ), false);
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
@@ -476,6 +478,7 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
+                null, null,
                 new JsonObject()
         ), false);
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
@@ -483,6 +486,7 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
+                null, null,
                 new JsonObject()
         ), false);
 
@@ -496,6 +500,7 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
+                null, null,
                 config
         ), false);
 
@@ -504,6 +509,7 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
+                null, null,
                 config
         ), false);
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
@@ -511,6 +517,7 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
+                null, null,
                 config
         ), false);
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
@@ -518,6 +525,7 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
+                null, null,
                 config
         ), false);
 
@@ -546,6 +554,7 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
+                null, null,
                 new JsonObject()
         ), false);
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
@@ -553,6 +562,7 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
+                null, null,
                 new JsonObject()
         ), false);
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
@@ -560,6 +570,7 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
+                null, null,
                 new JsonObject()
         ), false);
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
@@ -567,6 +578,7 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
+                null, null,
                 new JsonObject()
         ), false);
 
@@ -598,6 +610,7 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
+                null, null,
                 new JsonObject()
         ), false);
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
@@ -605,6 +618,7 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
+                null, null,
                 new JsonObject()
         ), false);
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
@@ -612,6 +626,7 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
+                null, null,
                 new JsonObject()
         ), false);
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
@@ -619,6 +634,7 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
+                null, null,
                 new JsonObject()
         ), false);
 
@@ -651,6 +667,7 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
+                null, null,
                 new JsonObject()
         ), false);
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
@@ -658,6 +675,7 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
+                null, null,
                 new JsonObject()
         ), false);
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
@@ -665,6 +683,7 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
+                null, null,
                 new JsonObject()
         ), false);
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
@@ -672,6 +691,7 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
+                null, null,
                 new JsonObject()
         ), false);
 
@@ -708,6 +728,7 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
+                null, null,
                 new JsonObject()
         ), false);
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
@@ -715,6 +736,7 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
+                null, null,
                 new JsonObject()
         ), false);
         JsonObject config = new JsonObject();
@@ -725,6 +747,7 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
+                null, null,
                 config
         ), false);
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
@@ -732,6 +755,7 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
+                null, null,
                 config
         ), false);
 
@@ -771,6 +795,7 @@ public class CronjobTest {
                 new EmailPasswordConfig(false),
                 new ThirdPartyConfig(false, null),
                 new PasswordlessConfig(false),
+                null, null,
                 new JsonObject()
         ), false);
 
@@ -791,6 +816,7 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(false, null),
                 new PasswordlessConfig(false),
+                null, null,
                 new JsonObject()
         ));
 
@@ -891,6 +917,7 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
+                null, null,
                 coreConfig
         ), false, false, true);
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
@@ -898,6 +925,7 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
+                null, null,
                 coreConfig
         ), false, false, true);
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
@@ -905,6 +933,7 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
+                null, null,
                 coreConfig
         ), false, false, true);
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
@@ -912,6 +941,7 @@ public class CronjobTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
+                null, null,
                 coreConfig
         ), false, false, true);
 

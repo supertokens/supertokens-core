@@ -218,6 +218,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new VerifyTotpAPI(main));
         addAPI(new RemoveTotpDeviceAPI(main));
         addAPI(new GetTotpDevicesAPI(main));
+        addAPI(new ImportTotpDeviceAPI(main));
         addAPI(new UpdateExternalUserIdInfoAPI(main));
         addAPI(new ImportUserWithPasswordHashAPI(main));
         addAPI(new LicenseKeyAPI(main));

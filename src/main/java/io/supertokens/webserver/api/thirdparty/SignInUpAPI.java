@@ -20,6 +20,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
+import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
@@ -28,7 +29,6 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.useridmapping.UserIdMapping;
-import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
@@ -81,7 +81,7 @@ public class SignInUpAPI extends WebserverAPI {
                         thirdPartyUserId, email, isEmailVerified);
                 UserIdMapping.populateExternalUserIdForUsers(this.getTenantIdentifierWithStorageFromRequest(req), new AuthRecipeUserInfo[]{response.user});
 
-                ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main, response.user.getSupertokensUserId());
+                ActiveUsers.updateLastActive(this.getPublicTenantStorage(req), main, response.user.getSupertokensUserId());
 
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
@@ -103,6 +103,7 @@ public class SignInUpAPI extends WebserverAPI {
                         }
                     }
                 }
+
                 super.sendJsonResponse(200, result, resp);
 
             } catch (StorageQueryException | TenantOrAppNotFoundException e) {
@@ -139,7 +140,7 @@ public class SignInUpAPI extends WebserverAPI {
                         email, isEmailVerified);
                 UserIdMapping.populateExternalUserIdForUsers(this.getTenantIdentifierWithStorageFromRequest(req), new AuthRecipeUserInfo[]{response.user});
 
-                ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main, response.user.getSupertokensUserId());
+                ActiveUsers.updateLastActive(this.getPublicTenantStorage(req), main, response.user.getSupertokensUserId());
 
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
@@ -163,6 +164,7 @@ public class SignInUpAPI extends WebserverAPI {
                         }
                     }
                 }
+
                 super.sendJsonResponse(200, result, resp);
 
             } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {

@@ -422,7 +422,7 @@ public class CreatePrimaryUserTest {
         Multitenancy.addNewOrUpdateAppOrTenant(process.main, new TenantIdentifier(null, null, null),
                 new TenantConfig(new TenantIdentifier(null, null, "t1"), new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[0]), new PasswordlessConfig(true),
-                        new JsonObject()));
+                        null, null, new JsonObject()));
 
         TenantIdentifierWithStorage tenantIdentifierWithStorage = new TenantIdentifierWithStorage(null, null, "t1",
                 StorageLayer.getStorage(process.main));
@@ -468,7 +468,7 @@ public class CreatePrimaryUserTest {
         Multitenancy.addNewOrUpdateAppOrTenant(process.main, new TenantIdentifier(null, null, null),
                 new TenantConfig(new TenantIdentifier(null, null, "t1"), new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[0]), new PasswordlessConfig(true),
-                        new JsonObject()));
+                        null, null, new JsonObject()));
 
         TenantIdentifierWithStorage tenantIdentifierWithStorage = new TenantIdentifierWithStorage(null, null, "t1",
                 StorageLayer.getStorage(process.main));

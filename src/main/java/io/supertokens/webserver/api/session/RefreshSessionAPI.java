@@ -60,11 +60,15 @@ public class RefreshSessionAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        SemVer version = super.getVersionFromRequest(req);
+
         // API is app specific, but session is updated based on tenantId obtained from the refreshToken
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String refreshToken = InputParser.parseStringOrThrowError(input, "refreshToken", false);
         String antiCsrfToken = InputParser.parseStringOrThrowError(input, "antiCsrfToken", true);
         Boolean enableAntiCsrf = InputParser.parseBooleanOrThrowError(input, "enableAntiCsrf", false);
+        Boolean useDynamicSigningKey = version.greaterThanOrEqualTo(SemVer.v5_0) ?
+                InputParser.parseBooleanOrThrowError(input, "useDynamicSigningKey", false) : null;
         assert enableAntiCsrf != null;
         assert refreshToken != null;
 
@@ -75,13 +79,14 @@ public class RefreshSessionAPI extends WebserverAPI {
             throw new ServletException(e);
         }
 
-        SemVer version = super.getVersionFromRequest(req);
         try {
             AccessToken.VERSION accessTokenVersion = AccessToken.getAccessTokenVersionForCDI(version);
 
             SessionInformationHolder sessionInfo = Session.refreshSession(appIdentifierWithStorage, main,
                     refreshToken, antiCsrfToken,
-                    enableAntiCsrf, accessTokenVersion);
+                    enableAntiCsrf, accessTokenVersion,
+                    useDynamicSigningKey == null ? null : Boolean.FALSE.equals(useDynamicSigningKey)
+            );
 
             if (StorageLayer.getStorage(this.getTenantIdentifierWithStorageFromRequest(req), main).getType() ==
                     STORAGE_TYPE.SQL) {
@@ -90,10 +95,10 @@ public class RefreshSessionAPI extends WebserverAPI {
                             this.getAppIdentifierWithStorage(req),
                             sessionInfo.session.userId, UserIdType.ANY);
                     if (userIdMapping != null) {
-                        ActiveUsers.updateLastActive(appIdentifierWithStorage, main,
+                        ActiveUsers.updateLastActive(this.getPublicTenantStorage(req), main,
                                 userIdMapping.superTokensUserId);
                     } else {
-                        ActiveUsers.updateLastActive(appIdentifierWithStorage, main,
+                        ActiveUsers.updateLastActive(this.getPublicTenantStorage(req), main,
                                 sessionInfo.session.userId);
                     }
                 } catch (StorageQueryException ignored) {

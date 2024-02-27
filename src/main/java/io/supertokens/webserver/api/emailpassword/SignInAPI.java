@@ -21,6 +21,7 @@ import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
+import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
@@ -29,8 +30,6 @@ import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
-import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
@@ -79,7 +78,7 @@ public class SignInAPI extends WebserverAPI {
                     password);
             io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(tenantIdentifierWithStorage, new AuthRecipeUserInfo[]{user});
 
-            ActiveUsers.updateLastActive(tenantIdentifierWithStorage.toAppIdentifierWithStorage(), main,
+            ActiveUsers.updateLastActive(this.getPublicTenantStorage(req), main,
                     user.getSupertokensUserId()); // use the internal user id
 
             JsonObject result = new JsonObject();

@@ -16,12 +16,14 @@
 
 package io.supertokens.webserver.api.multitenancy;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.Utils;
 import jakarta.servlet.ServletException;
@@ -29,6 +31,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashSet;
 
 public class CreateOrUpdateTenantOrGetTenantAPI extends BaseCreateOrUpdate {
 
@@ -57,6 +61,36 @@ public class CreateOrUpdateTenantOrGetTenantAPI extends BaseCreateOrUpdate {
         Boolean passwordlessEnabled = InputParser.parseBooleanOrThrowError(input, "passwordlessEnabled", true);
         JsonObject coreConfig = InputParser.parseJsonObjectOrThrowError(input, "coreConfig", true);
 
+        String[] firstFactors = null;
+        boolean hasFirstFactors = false;
+        String[] requiredSecondaryFactors = null;
+        boolean hasRequiredSecondaryFactors = false;
+
+        if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_0)) {
+            hasFirstFactors = input.has("firstFactors");
+            if (hasFirstFactors && !input.get("firstFactors").isJsonNull()) {
+                JsonArray firstFactorsArr = InputParser.parseArrayOrThrowError(input, "firstFactors", true);
+                firstFactors = new String[firstFactorsArr.size()];
+                for (int i = 0; i < firstFactors.length; i++) {
+                    firstFactors[i] = InputParser.parseStringFromElementOrThrowError(firstFactorsArr.get(i), "firstFactors", false);
+                }
+                if (firstFactors.length != new HashSet<>(Arrays.asList(firstFactors)).size()) {
+                    throw new ServletException(new BadRequestException("firstFactors input should not contain duplicate values"));
+                }
+            }
+            hasRequiredSecondaryFactors = input.has("requiredSecondaryFactors");
+            if (hasRequiredSecondaryFactors && !input.get("requiredSecondaryFactors").isJsonNull()) {
+                JsonArray requiredSecondaryFactorsArr = InputParser.parseArrayOrThrowError(input, "requiredSecondaryFactors", true);
+                requiredSecondaryFactors = new String[requiredSecondaryFactorsArr.size()];
+                for (int i = 0; i < requiredSecondaryFactors.length; i++) {
+                    requiredSecondaryFactors[i] = InputParser.parseStringFromElementOrThrowError(requiredSecondaryFactorsArr.get(i), "requiredSecondaryFactors", false);
+                }
+                if (requiredSecondaryFactors.length != new HashSet<>(Arrays.asList(requiredSecondaryFactors)).size()) {
+                    throw new ServletException(new BadRequestException("requiredSecondaryFactors input should not contain duplicate values"));
+                }
+            }
+        }
+
         TenantIdentifier sourceTenantIdentifier;
         try {
             sourceTenantIdentifier = this.getTenantIdentifierWithStorageFromRequest(req);
@@ -67,8 +101,9 @@ public class CreateOrUpdateTenantOrGetTenantAPI extends BaseCreateOrUpdate {
         super.handle(
                 req, sourceTenantIdentifier,
                 new TenantIdentifier(sourceTenantIdentifier.getConnectionUriDomain(), sourceTenantIdentifier.getAppId(), tenantId),
-                emailPasswordEnabled, thirdPartyEnabled, passwordlessEnabled, coreConfig, resp);
-
+                emailPasswordEnabled, thirdPartyEnabled, passwordlessEnabled,
+                hasFirstFactors, firstFactors, hasRequiredSecondaryFactors, requiredSecondaryFactors,
+                coreConfig, resp);
     }
 
     @Override
@@ -82,6 +117,11 @@ public class CreateOrUpdateTenantOrGetTenantAPI extends BaseCreateOrUpdate {
             boolean shouldProtect = shouldProtectProtectedConfig(req);
             JsonObject result = config.toJson(shouldProtect, tenantIdentifier.getStorage(), CoreConfig.PROTECTED_CONFIGS);
             result.addProperty("status", "OK");
+
+            if (getVersionFromRequest(req).lesserThan(SemVer.v5_0)) {
+                result.remove("firstFactors");
+                result.remove("requiredSecondaryFactors");
+            }
 
             super.sendJsonResponse(200, result, resp);
         } catch (TenantOrAppNotFoundException e) {

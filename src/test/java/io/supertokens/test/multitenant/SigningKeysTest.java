@@ -118,7 +118,7 @@ public class SigningKeysTest {
                 new TenantConfig(new TenantIdentifier("c1", null, null), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        tenantConfig)};
+                        null, null, tenantConfig)};
 
         for (TenantConfig config : tenants) {
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantIdentifier(null, null, null),
@@ -189,11 +189,11 @@ public class SigningKeysTest {
                 new TenantConfig(new TenantIdentifier("c1", null, null), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        tenantConfig),
+                        null, null, tenantConfig),
                 new TenantConfig(new TenantIdentifier("c2", null, null), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        tenantConfig2)};
+                        null, null, tenantConfig2)};
 
         for (TenantConfig config : tenants) {
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantIdentifier(null, null, null),

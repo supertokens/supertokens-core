@@ -338,7 +338,7 @@ public class AuthRecipe {
             UnknownUserIdException, TenantOrAppNotFoundException, FeatureNotEnabledException {
 
         if (Arrays.stream(FeatureFlag.getInstance(main, appIdentifierWithStorage).getEnabledFeatures())
-                .noneMatch(t -> t == EE_FEATURES.ACCOUNT_LINKING)) {
+                .noneMatch(t -> (t == EE_FEATURES.ACCOUNT_LINKING || t == EE_FEATURES.MFA))) {
             throw new FeatureNotEnabledException(
                     "Account linking feature is not enabled for this app. Please contact support to enable it.");
         }
@@ -544,7 +544,7 @@ public class AuthRecipe {
             FeatureNotEnabledException {
 
         if (Arrays.stream(FeatureFlag.getInstance(main, appIdentifierWithStorage).getEnabledFeatures())
-                .noneMatch(t -> t == EE_FEATURES.ACCOUNT_LINKING)) {
+                .noneMatch(t -> (t == EE_FEATURES.ACCOUNT_LINKING || t == EE_FEATURES.MFA))) {
             throw new FeatureNotEnabledException(
                     "Account linking feature is not enabled for this app. Please contact support to enable it.");
         }
@@ -934,7 +934,6 @@ public class AuthRecipe {
                 .deleteAllRolesForUser_Transaction(con, appIdentifierWithStorage, userId);
         appIdentifierWithStorage.getActiveUsersStorage()
                 .deleteUserActive_Transaction(con, appIdentifierWithStorage, userId);
-        appIdentifierWithStorage.getTOTPStorage().removeUser_Transaction(con, appIdentifierWithStorage, userId);
     }
 
     private static void deleteAuthRecipeUser(TransactionConnection con,
@@ -973,6 +972,8 @@ public class AuthRecipe {
 
         didExist = tenantIdentifierWithStorage.getTOTPStorage()
                 .removeUser(tenantIdentifierWithStorage, userId);
+        finalDidExist = finalDidExist || didExist;
+
         finalDidExist = finalDidExist || didExist;
 
         return finalDidExist;

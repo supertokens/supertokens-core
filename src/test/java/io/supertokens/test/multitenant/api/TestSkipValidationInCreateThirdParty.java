@@ -68,7 +68,7 @@ public class TestSkipValidationInCreateThirdParty {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new JsonObject()
+                null, null, new JsonObject()
         ), false);
 
         try {

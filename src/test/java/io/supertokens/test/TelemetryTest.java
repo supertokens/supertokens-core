@@ -21,7 +21,10 @@ import com.google.gson.JsonParser;
 import io.supertokens.ProcessState;
 import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.cronjobs.telemetry.Telemetry;
+import io.supertokens.dashboard.Dashboard;
 import io.supertokens.httpRequest.HttpRequestMocking;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager.TestingProcess;
 import io.supertokens.version.Version;
 import org.junit.AfterClass;
@@ -111,6 +114,16 @@ public class TelemetryTest extends Mockito {
         String[] args = { "../" };
 
         TestingProcess process = TestingProcessManager.start(args, false);
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getBaseStorage(process.getProcess()).getType() == STORAGE_TYPE.SQL) {
+            Dashboard.signUpDashboardUser(process.getProcess(), "test@example.com", "password123");
+        }
+
+        // Restarting the process to send telemetry again
+        process.kill(false);
+        process = TestingProcessManager.start(args, false);
 
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         final HttpURLConnection mockCon = mock(HttpURLConnection.class);
@@ -149,13 +162,26 @@ public class TelemetryTest extends Mockito {
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.SENT_TELEMETRY));
 
         JsonObject telemetryData = new JsonParser().parse(output.toString()).getAsJsonObject();
+        assertEquals(7, telemetryData.entrySet().size());
 
         assertTrue(telemetryData.has("telemetryId"));
         assertEquals(telemetryData.get("superTokensVersion").getAsString(),
                 Version.getVersion(process.getProcess()).getCoreVersion());
         assertEquals(telemetryData.get("appId").getAsString(), "public");
         assertEquals(telemetryData.get("connectionUriDomain").getAsString(), "");
-        assertTrue(telemetryData.has("mau"));
+        assertTrue(telemetryData.has("maus"));
+        assertTrue(telemetryData.has("dashboardUserEmails"));
+
+        if (StorageLayer.getBaseStorage(process.getProcess()).getType() == STORAGE_TYPE.SQL) {
+            assertEquals(1, telemetryData.get("dashboardUserEmails").getAsJsonArray().size());
+            assertEquals("test@example.com", telemetryData.get("dashboardUserEmails").getAsJsonArray().get(0).getAsString());
+            assertEquals(31, telemetryData.get("maus").getAsJsonArray().size());
+            assertEquals(0, telemetryData.get("usersCount").getAsInt());
+        } else {
+            assertEquals(0, telemetryData.get("dashboardUserEmails").getAsJsonArray().size());
+            assertEquals(0, telemetryData.get("maus").getAsJsonArray().size());
+            assertEquals(-1, telemetryData.get("usersCount").getAsInt());
+        }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));

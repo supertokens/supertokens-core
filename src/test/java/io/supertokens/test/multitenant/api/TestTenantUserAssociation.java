@@ -197,8 +197,9 @@ public class TestTenantUserAssociation {
             }
 
             if (name.equals(UserMetadataStorage.class.getName())
-                    || name.equals(JWTRecipeStorage.class.getName()) ||
-                    name.equals(ActiveUsersStorage.class.getName())) {
+                    || name.equals(JWTRecipeStorage.class.getName())
+                    || name.equals(ActiveUsersStorage.class.getName())
+            ) {
                 // user metadata is app specific and does not have any tenant specific data
                 // JWT storage does not have any user specific data
                 // Active users storage does not have tenant specific data

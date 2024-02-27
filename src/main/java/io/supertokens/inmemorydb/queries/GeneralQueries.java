@@ -182,7 +182,7 @@ public class GeneralQueries {
                 + Config.getConfig(start).getKeyValueTable() + "(app_id, tenant_id);";
     }
 
-   private static String getQueryToCreateAppIdToUserIdTable(Start start) {
+    private static String getQueryToCreateAppIdToUserIdTable(Start start) {
         String appToUserTable = Config.getConfig(start).getAppIdToUserIdTable();
         // @formatter:off
         return "CREATE TABLE IF NOT EXISTS " + appToUserTable + " ("
@@ -257,6 +257,16 @@ public class GeneralQueries {
         if (!doesTableExists(start, Config.getConfig(start).getTenantConfigsTable())) {
             getInstance(main).addState(CREATING_NEW_TABLE, null);
             update(start, MultitenancyQueries.getQueryToCreateTenantConfigsTable(start), NO_OP_SETTER);
+        }
+
+        if (!doesTableExists(start, Config.getConfig(start).getTenantFirstFactorsTable())) {
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, MultitenancyQueries.getQueryToCreateFirstFactorsTable(start), NO_OP_SETTER);
+        }
+
+        if (!doesTableExists(start, Config.getConfig(start).getTenantRequiredSecondaryFactorsTable())) {
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, MultitenancyQueries.getQueryToCreateRequiredSecondaryFactorsTable(start), NO_OP_SETTER);
         }
 
         if (!doesTableExists(start, Config.getConfig(start).getTenantThirdPartyProvidersTable())) {
@@ -405,13 +415,6 @@ public class GeneralQueries {
             update(start, TOTPQueries.getQueryToCreateUsedCodesTable(start), NO_OP_SETTER);
             // index:
             update(start, TOTPQueries.getQueryToCreateUsedCodesExpiryTimeIndex(start), NO_OP_SETTER);
-        }
-
-        if (!doesTableExists(start, Config.getConfig(start).getBulkImportUsersTable())) {
-            getInstance(main).addState(CREATING_NEW_TABLE, null);
-            update(start, BulkImportQueries.getQueryToCreateBulkImportUsersTable(start), NO_OP_SETTER);
-            // index:
-            update(start, BulkImportQueries.getQueryToCreateStatusUpdatedAtIndex(start), NO_OP_SETTER);
         }
     }
 
@@ -1512,6 +1515,32 @@ public class GeneralQueries {
 
         return execute(start, QUERY, pst -> {
             pst.setString(1, appIdentifier.getAppId());
+        }, result -> {
+            return result.next() ? result.getInt("c") : 0;
+        });
+    }
+
+    public static int getUsersCountWithMoreThanOneLoginMethodOrTOTPEnabled(Start start, AppIdentifier appIdentifier)
+            throws SQLException, StorageQueryException {
+        String QUERY =
+                "SELECT COUNT (DISTINCT user_id) as c FROM ("
+                        + "  " // Users with number of login methods > 1
+                        + "    SELECT primary_or_recipe_user_id AS user_id FROM ("
+                        + "      SELECT COUNT(user_id) as num_login_methods, app_id, primary_or_recipe_user_id"
+                        + "      FROM " + getConfig(start).getAppIdToUserIdTable()
+                        + "      WHERE app_id = ? "
+                        + "      GROUP BY app_id, primary_or_recipe_user_id"
+                        + "    ) AS nloginmethods"
+                        + "    WHERE num_login_methods > 1"
+                        + "  UNION" // TOTP users
+                        + "    SELECT user_id FROM " + getConfig(start).getTotpUsersTable()
+                        + "    WHERE app_id = ?"
+                        + "  "
+                        + ") AS all_users";
+
+        return execute(start, QUERY, pst -> {
+            pst.setString(1, appIdentifier.getAppId());
+            pst.setString(2, appIdentifier.getAppId());
         }, result -> {
             return result.next() ? result.getInt("c") : 0;
         });
