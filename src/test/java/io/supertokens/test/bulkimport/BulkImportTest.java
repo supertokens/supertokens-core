@@ -36,6 +36,7 @@ import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.bulkimport.BulkImportStorage;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
 import io.supertokens.pluginInterface.bulkimport.BulkImportStorage.BulkImportUserStatus;
+import io.supertokens.pluginInterface.bulkimport.sqlStorage.BulkImportSQLStorage;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUserInfo;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
@@ -144,7 +145,7 @@ public class BulkImportTest {
             return;
         }
         
-        BulkImportStorage storage = (BulkImportStorage) StorageLayer.getStorage(process.main);
+        BulkImportSQLStorage storage = (BulkImportSQLStorage) StorageLayer.getStorage(process.main);
         AppIdentifierWithStorage appIdentifierWithStorage = new AppIdentifierWithStorage(null, null, storage);
 
         // Test with status = 'NEW'
@@ -162,9 +163,13 @@ public class BulkImportTest {
             BulkImport.addUsers(appIdentifierWithStorage, users);
 
             // Update the users status to PROCESSING
-            for (BulkImportUser user : users) {
-                storage.updateBulkImportUserStatus(appIdentifierWithStorage, user.id, BulkImportUserStatus.PROCESSING);
-            }
+            String[] userIds = users.stream().map(user -> user.id).toArray(String[]::new);
+
+            storage.startTransaction(con -> {
+                storage.updateBulkImportUserStatus_Transaction(appIdentifierWithStorage, con, userIds, BulkImportUserStatus.PROCESSING);
+                storage.commitTransaction(con);
+                return null;
+            });
 
             List<BulkImportUserInfo> addedUsers = storage.getBulkImportUsers(appIdentifierWithStorage, null, BulkImportUserStatus.PROCESSING, null, null);
             assertEquals(10, addedUsers.size());
@@ -176,9 +181,13 @@ public class BulkImportTest {
             BulkImport.addUsers(appIdentifierWithStorage, users);
 
             // Update the users status to FAILED
-            for (BulkImportUser user : users) {
-                storage.updateBulkImportUserStatus(appIdentifierWithStorage, user.id, BulkImportUserStatus.FAILED);
-            }
+            String[] userIds = users.stream().map(user -> user.id).toArray(String[]::new);
+
+            storage.startTransaction(con -> {
+                storage.updateBulkImportUserStatus_Transaction(appIdentifierWithStorage, con, userIds, BulkImportUserStatus.FAILED);
+                storage.commitTransaction(con);
+                return null;
+            });
 
             List<BulkImportUserInfo> addedUsers = storage.getBulkImportUsers(appIdentifierWithStorage, null, BulkImportUserStatus.FAILED, null, null);
             assertEquals(10, addedUsers.size());
@@ -248,79 +257,6 @@ public class BulkImportTest {
             } while (paginationToken != null);
 
             assert (indexIntoUsers == sortedUsers.size());
-        }
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-    }
-
-    @Test
-    public void shouldDeleteUsersFromTheBulkImportUsersTable() throws Exception {
-        String[] args = {"../"};
-
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            return;
-        }
-        
-        BulkImportStorage storage = (BulkImportStorage) StorageLayer.getStorage(process.main);
-        AppIdentifierWithStorage appIdentifierWithStorage = new AppIdentifierWithStorage(null, null, storage);
-
-        // Test with status = 'NEW'
-        {
-            List<BulkImportUser> users = generateBulkImportUser(10);
-            BulkImport.addUsers(appIdentifierWithStorage, users);
-
-            List<BulkImportUserInfo> addedUsers = storage.getBulkImportUsers(appIdentifierWithStorage, null, BulkImportUserStatus.NEW, null, null);
-            assertEquals(10, addedUsers.size());
-
-            String userIds[] = addedUsers.stream().map(user -> user.id).toArray(String[]::new);
-            BulkImport.deleteUsers(appIdentifierWithStorage, userIds);
-
-            List<BulkImportUserInfo> usersAfterDelete = storage.getBulkImportUsers(appIdentifierWithStorage, null, BulkImportUserStatus.NEW, null, null);
-            assertEquals(0, usersAfterDelete.size());
-        }
-
-        // Test with status = 'PROCESSING'
-        {
-            List<BulkImportUser> users = generateBulkImportUser(10);
-            BulkImport.addUsers(appIdentifierWithStorage, users);
-
-            // Update the users status to PROCESSING
-            for (BulkImportUser user : users) {
-                storage.updateBulkImportUserStatus(appIdentifierWithStorage, user.id, BulkImportUserStatus.PROCESSING);
-            }
-
-            List<BulkImportUserInfo> addedUsers = storage.getBulkImportUsers(appIdentifierWithStorage, null, BulkImportUserStatus.PROCESSING, null, null);
-            assertEquals(10, addedUsers.size());
-
-            String userIds[] = addedUsers.stream().map(user -> user.id).toArray(String[]::new);
-            BulkImport.deleteUsers(appIdentifierWithStorage, userIds);
-
-            List<BulkImportUserInfo> usersAfterDelete = storage.getBulkImportUsers(appIdentifierWithStorage, null, BulkImportUserStatus.PROCESSING, null, null);
-            assertEquals(0, usersAfterDelete.size());
-        }
-
-        // Test with status = 'FAILED'
-        {
-            List<BulkImportUser> users = generateBulkImportUser(10);
-            BulkImport.addUsers(appIdentifierWithStorage, users);
-
-            // Update the users status to FAILED
-            for (BulkImportUser user : users) {
-                storage.updateBulkImportUserStatus(appIdentifierWithStorage, user.id, BulkImportUserStatus.FAILED);
-            }
-
-            List<BulkImportUserInfo> addedUsers = storage.getBulkImportUsers(appIdentifierWithStorage, null, BulkImportUserStatus.FAILED, null, null);
-            assertEquals(10, addedUsers.size());
-
-            String userIds[] = addedUsers.stream().map(user -> user.id).toArray(String[]::new);
-            BulkImport.deleteUsers(appIdentifierWithStorage, userIds);
-
-            List<BulkImportUserInfo> usersAfterDelete = storage.getBulkImportUsers(appIdentifierWithStorage, null, BulkImportUserStatus.PROCESSING, null, null);
-            assertEquals(0, usersAfterDelete.size());
         }
 
         process.kill();

@@ -107,6 +107,7 @@ public class SessionRegenerateAPITest2_21 {
         sessionRefreshBody.addProperty("refreshToken",
                 sessionInfo.get("refreshToken").getAsJsonObject().get("token").getAsString());
         sessionRefreshBody.addProperty("enableAntiCsrf", false);
+        sessionRefreshBody.addProperty("useDynamicSigningKey", true);
 
         JsonObject sessionRefreshResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session/refresh", sessionRefreshBody, 1000, 1000, null,

@@ -52,7 +52,6 @@ public class BulkImportTestUtils {
             ThirdPartyLoginMethod thirdPartyLoginMethod = new ThirdPartyLoginMethod(email, "thirdPartyId", "thirdPartyUserId");
             PasswordlessLoginMethod passwordlessLoginMethod = new PasswordlessLoginMethod(email, "+911234567890");
 
-
             List<LoginMethod> loginMethods = new ArrayList<>();
             loginMethods.add(new LoginMethod("public", "emailpassword", true, true, 0,  emailPasswordLoginMethod, null, null));
             loginMethods.add(new LoginMethod("public", "thirdparty", true, false, 0,  null, thirdPartyLoginMethod, null));

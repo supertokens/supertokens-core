@@ -84,7 +84,7 @@ public class VerifyTotpDeviceAPITest {
             return;
         }
 
-        FeatureFlagTestContent.getInstance(process.main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[] { EE_FEATURES.TOTP });
+        FeatureFlagTestContent.getInstance(process.main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[] { EE_FEATURES.MFA });
 
         // Setup user and devices:
         JsonObject createDeviceReq = new JsonObject();
@@ -106,7 +106,7 @@ public class VerifyTotpDeviceAPITest {
         assertEquals(createDeviceRes.get("status").getAsString(), "OK");
         String secretKey = createDeviceRes.get("secret").getAsString();
 
-        TOTPDevice device = new TOTPDevice("user-id", "deviceName", secretKey, 30, 0, false);
+        TOTPDevice device = new TOTPDevice("user-id", "deviceName", secretKey, 30, 0, false, System.currentTimeMillis());
 
         // Start the actual tests for update device API:
 
@@ -162,7 +162,10 @@ public class VerifyTotpDeviceAPITest {
                     null,
                     Utils.getCdiVersionStringLatestForTests(),
                     "totp");
+            assertEquals(3, res0.entrySet().size());
             assert res0.get("status").getAsString().equals("INVALID_TOTP_ERROR");
+            assertEquals(1, res0.get("currentNumberOfFailedAttempts").getAsInt());
+            assertEquals(1, res0.get("maxNumberOfFailedAttempts").getAsInt());
 
             // Check that rate limiting is triggered for the user:
             JsonObject res3 = HttpRequestForTesting.sendJsonPOSTRequest(
@@ -238,7 +241,7 @@ public class VerifyTotpDeviceAPITest {
                     null,
                     Utils.getCdiVersionStringLatestForTests(),
                     "totp");
-            assert res5.get("status").getAsString().equals("TOTP_NOT_ENABLED_ERROR");
+            assert res5.get("status").getAsString().equals("UNKNOWN_DEVICE_ERROR");
         }
 
         process.kill();

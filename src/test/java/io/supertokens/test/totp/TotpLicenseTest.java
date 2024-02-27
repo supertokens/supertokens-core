@@ -42,8 +42,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 
 public class TotpLicenseTest {
-    public final static String OPAQUE_KEY_WITH_TOTP_FEATURE = "pXhNK=nYiEsb6gJEOYP2kIR6M0kn4XLvNqcwT1XbX8xHtm44K" +
-            "-lQfGCbaeN0Ieeza39fxkXr=tiiUU=DXxDH40Y=4FLT4CE-rG1ETjkXxO4yucLpJvw3uSegPayoISGL";
+    public final static String OPAQUE_KEY_WITH_MFA_FEATURE = "Qk8olVa=v-9PU=snnUFMF4ihMCx4zVBOO6Jd7Nrg6Cg5YyFliEj252ADgpwEpDLfFowA0U5OyVo3XL=U4FMft2HDHCDGg9hWD4iwQQiyjMRi6Mu03CVbAxIkNGaXtJ53";
 
     @Rule
     public TestRule watchman = Utils.getOnFailure();
@@ -99,7 +98,7 @@ public class TotpLicenseTest {
         });
         // Verify code
         assertThrows(FeatureNotEnabledException.class, () -> {
-            Totp.verifyCode(main, "user", "device1", true);
+            Totp.verifyCode(main, "user", "device1");
         });
 
         // Try to create device via API:
@@ -126,14 +125,13 @@ public class TotpLicenseTest {
                 }
         );
         assert e.statusCode == 402;
-        assert e.getMessage().contains("TOTP feature is not enabled");
+        assert e.getMessage().contains("MFA feature is not enabled");
 
 
         // Try to verify code via API:
         JsonObject body2 = new JsonObject();
         body2.addProperty("userId", "user-id");
         body2.addProperty("totp", "123456");
-        body2.addProperty("allowUnverifiedDevices", true);
 
 
         HttpResponseException e2 = assertThrows(
@@ -152,7 +150,7 @@ public class TotpLicenseTest {
                 }
         );
         assert e2.statusCode == 402;
-        assert e2.getMessage().contains("TOTP feature is not enabled");
+        assert e2.getMessage().contains("MFA feature is not enabled");
     }
 
 
@@ -163,15 +161,19 @@ public class TotpLicenseTest {
             return;
         }
         FeatureFlagTestContent.getInstance(result.process.main)
-                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.TOTP});
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MFA});
 
         Main main = result.process.getProcess();
 
         // Create device
         TOTPDevice device = Totp.registerDevice(main, "user", "device1", 1, 30);
+        // Verify device
+        String code = generateTotpCode(main, device, 0);
+        Totp.verifyDevice(main, device.userId, device.deviceName, code);
         // Verify code
-        String code = generateTotpCode(main, device);
-        Totp.verifyCode(main, "user", code, true);
+        Thread.sleep(1);
+        String nextCode = generateTotpCode(main, device, 1);
+        Totp.verifyCode(main, "user", nextCode);
     }
 
 

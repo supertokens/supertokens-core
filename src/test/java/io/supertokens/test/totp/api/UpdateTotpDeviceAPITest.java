@@ -76,7 +76,7 @@ public class UpdateTotpDeviceAPITest {
             return;
         }
 
-        FeatureFlagTestContent.getInstance(process.main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[] { EE_FEATURES.TOTP });
+        FeatureFlagTestContent.getInstance(process.main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[] { EE_FEATURES.MFA });
 
         // Setup user and devices:
         JsonObject createDeviceReq = new JsonObject();
@@ -199,7 +199,7 @@ public class UpdateTotpDeviceAPITest {
                     null,
                     Utils.getCdiVersionStringLatestForTests(),
                     "totp");
-            assert res4.get("status").getAsString().equals("TOTP_NOT_ENABLED_ERROR");
+            assert res4.get("status").getAsString().equals("UNKNOWN_DEVICE_ERROR");
         }
 
         process.kill();

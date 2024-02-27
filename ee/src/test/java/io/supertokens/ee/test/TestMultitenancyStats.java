@@ -78,6 +78,7 @@ public class TestMultitenancyStats {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
+                    null, null,
                     config
             ), false);
 
@@ -86,6 +87,7 @@ public class TestMultitenancyStats {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
+                    null, null,
                     config
             ), false);
 
@@ -94,6 +96,7 @@ public class TestMultitenancyStats {
                     new EmailPasswordConfig(true),
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
+                    null, null,
                     config
             ), false);
         }

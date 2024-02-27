@@ -89,7 +89,7 @@ public class SessionTests {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            config
+                            null, null, config
                     )
             );
         }
@@ -109,7 +109,7 @@ public class SessionTests {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            config
+                            null, null, config
                     )
             );
         }
@@ -129,7 +129,7 @@ public class SessionTests {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            config
+                            null, null, config
                     )
             );
         }
@@ -149,7 +149,7 @@ public class SessionTests {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            config
+                            null, null, config
                     )
             );
         }
