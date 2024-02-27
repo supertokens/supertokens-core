@@ -46,7 +46,7 @@ dependencies {
     testImplementation 'com.tngtech.archunit:archunit-junit4:0.22.0'
 
     // https://mvnrepository.com/artifact/com.fasterxml.jackson.dataformat/jackson-dataformat-yaml
-    testImplementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: '2.14.2'
+    testImplementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: '2.16.1'
 
     // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core
     testImplementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.16.1'
