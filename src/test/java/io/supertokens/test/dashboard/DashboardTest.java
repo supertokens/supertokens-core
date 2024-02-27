@@ -288,7 +288,7 @@ public class DashboardTest {
             JsonObject usageStats = response.get("usageStats").getAsJsonObject();
             JsonArray mauArr = usageStats.get("maus").getAsJsonArray();
             assertEquals(1, usageStats.entrySet().size());
-            assertEquals(30, mauArr.size());
+            assertEquals(31, mauArr.size());
             assertEquals(0, mauArr.get(0).getAsInt());
             assertEquals(0, mauArr.get(29).getAsInt());
         }
@@ -306,7 +306,7 @@ public class DashboardTest {
             JsonObject usageStats = response.get("usageStats").getAsJsonObject();
             JsonArray mauArr = usageStats.get("maus").getAsJsonArray();
             assertEquals(1, usageStats.entrySet().size());
-            assertEquals(30, mauArr.size());
+            assertEquals(31, mauArr.size());
             assertEquals(0, mauArr.get(0).getAsInt());
             assertEquals(0, mauArr.get(29).getAsInt());
         }
@@ -327,7 +327,7 @@ public class DashboardTest {
             JsonObject usageStats = response.get("usageStats").getAsJsonObject();
             JsonObject dashboardLoginObject = usageStats.get("dashboard_login").getAsJsonObject();
             assertEquals(2, usageStats.entrySet().size());
-            assertEquals(30, usageStats.get("maus").getAsJsonArray().size());
+            assertEquals(31, usageStats.get("maus").getAsJsonArray().size());
             assertEquals(1, dashboardLoginObject.entrySet().size());
             assertEquals(1, dashboardLoginObject.get("user_count").getAsInt());
         }
@@ -350,7 +350,7 @@ public class DashboardTest {
             JsonObject usageStats = response.get("usageStats").getAsJsonObject();
             JsonObject dashboardLoginObject = usageStats.get("dashboard_login").getAsJsonObject();
             assertEquals(2, usageStats.entrySet().size());
-            assertEquals(30, usageStats.get("maus").getAsJsonArray().size());
+            assertEquals(31, usageStats.get("maus").getAsJsonArray().size());
             assertEquals(1, dashboardLoginObject.entrySet().size());
             assertEquals(4, dashboardLoginObject.get("user_count").getAsInt());
         }

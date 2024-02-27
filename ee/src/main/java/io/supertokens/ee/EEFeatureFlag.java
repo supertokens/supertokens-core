@@ -160,10 +160,10 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
                 JsonObject totpStats = new JsonObject();
                 JsonArray totpMauArr = new JsonArray();
 
-                for (int i = 0; i < 30; i++) {
-                    long now = System.currentTimeMillis();
-                    long today = now - (now % (24 * 60 * 60 * 1000L));
-                    long timestamp = today - (i * 24 * 60 * 60 * 1000L);
+                long now = System.currentTimeMillis();
+
+                for (int i = 1; i <= 31; i++) {
+                    long timestamp = now - (i * 24 * 60 * 60 * 1000L);
 
                     int totpMau = activeUsersStorage.countUsersEnabledTotpAndActiveSince(timestamp);
                     totpMauArr.add(new JsonPrimitive(totpMau));
@@ -179,10 +179,10 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
 
         if (activeUsersStorage != null) {
             JsonArray mauArr = new JsonArray();
-            for (int i = 0; i < 30; i++) {
-                long now = System.currentTimeMillis();
-                long today = now - (now % (24 * 60 * 60 * 1000L));
-                long timestamp = today - (i * 24 * 60 * 60 * 1000L);
+            long now = System.currentTimeMillis();
+
+            for (int i = 1; i <= 31; i++) {
+                long timestamp = now - (i * 24 * 60 * 60 * 1000L);
 
                 int mau = activeUsersStorage.countUsersActiveSince(timestamp);
                 mauArr.add(new JsonPrimitive(mau));

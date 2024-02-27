@@ -71,7 +71,7 @@ public class FeatureFlagTest {
 
         JsonObject stats = FeatureFlag.getInstance(process.getProcess()).getPaidFeatureStats();
         Assert.assertEquals(stats.entrySet().size(), 1);
-        Assert.assertEquals(stats.get("maus").getAsJsonArray().size(), 30);
+        Assert.assertEquals(stats.get("maus").getAsJsonArray().size(), 31);
         Assert.assertEquals(stats.get("maus").getAsJsonArray().get(0).getAsInt(), 0);
         Assert.assertEquals(stats.get("maus").getAsJsonArray().get(29).getAsInt(), 0);
 
@@ -155,7 +155,7 @@ public class FeatureFlagTest {
 
             assert features.size() == 1;
             assert features.get(0).getAsString().equals("totp");
-            assert maus.size() == 30;
+            assert maus.size() == 31;
             assert maus.get(0).getAsInt() == 0;
             assert maus.get(29).getAsInt() == 0;
 
@@ -163,7 +163,7 @@ public class FeatureFlagTest {
             JsonArray totpMaus = totpStats.get("maus").getAsJsonArray();
             int totalTotpUsers = totpStats.get("total_users").getAsInt();
 
-            assert totpMaus.size() == 30;
+            assert totpMaus.size() == 31;
             assert totpMaus.get(0).getAsInt() == 0;
             assert totpMaus.get(29).getAsInt() == 0;
 
@@ -209,7 +209,7 @@ public class FeatureFlagTest {
 
             assert features.size() == 1;
             assert features.get(0).getAsString().equals("totp");
-            assert maus.size() == 30;
+            assert maus.size() == 31;
             assert maus.get(0).getAsInt() == 2; // 2 users have signed up
             assert maus.get(29).getAsInt() == 2;
 
@@ -217,7 +217,7 @@ public class FeatureFlagTest {
             JsonArray totpMaus = totpStats.get("maus").getAsJsonArray();
             int totalTotpUsers = totpStats.get("total_users").getAsInt();
 
-            assert totpMaus.size() == 30;
+            assert totpMaus.size() == 31;
             assert totpMaus.get(0).getAsInt() == 1; // only 1 user has TOTP enabled
             assert totpMaus.get(29).getAsInt() == 1;
 
