@@ -146,3 +146,8 @@ core_config_version: 0
 # when CDI version is not specified in the request. When set to null, the core will assume the latest version of the
 # CDI.
 # supertokens_max_cdi_version:
+
+
+# (OPTIONAL | Default: null) string value. If specified, the supertokens service will only load the specified CUD even
+# if there are more CUDs in the database and block all other CUDs from being used from this instance.
+# supertokens_saas_load_only_cud:

@@ -19,6 +19,8 @@ package io.supertokens.webserver.api.multitenancy;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.config.Config;
+import io.supertokens.config.CoreConfig;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
@@ -57,6 +59,14 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
 
         if (hasRequiredSecondaryFactors && requiredSecondaryFactors != null && requiredSecondaryFactors.length == 0) {
             throw new ServletException(new BadRequestException("requiredSecondaryFactors cannot be empty. Set null instead to remove all required secondary factors."));
+        }
+
+        CoreConfig baseConfig = Config.getBaseConfig(main);
+        if (baseConfig.getSuperTokensLoadOnlyCUD() != null) {
+            if (!(targetTenantIdentifier.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI) || targetTenantIdentifier.getConnectionUriDomain().equals(baseConfig.getSuperTokensLoadOnlyCUD()))) {
+                throw new ServletException(new BadRequestException("Creation of connection uri domain or app or " +
+                        "tenant is disallowed"));
+            }
         }
 
         TenantConfig tenantConfig = Multitenancy.getTenantInfo(main,

@@ -35,6 +35,26 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - TODO - copy once postgres / mysql changelog is done
 
+## [7.0.18] - 2024-02-19
+
+- Fixes vulnerabilities in dependencies
+- Updates telemetry payload
+- Fixes Active User tracking to use the right storage
+
+## [7.0.17] - 2024-02-06
+
+- Fixes issue where error logs were printed to StdOut instead of StdErr.
+- Adds new config `supertokens_saas_load_only_cud` that makes the core instance load a particular CUD only, irrespective of the CUDs present in the db.
+- Fixes connection pool handling when connection pool size changes for a tenant.
+
+## [7.0.16] - 2023-12-04
+
+- Returns 400, instead of 500, for badly typed core config while creating CUD, App or Tenant
+
+## [7.0.15] - 2023-11-28
+
+- Adds test for user pagination from old version
+
 ## [7.0.14] - 2023-11-21
 
 - Updates test user query speed

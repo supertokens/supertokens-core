@@ -200,17 +200,18 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         Storage[] storages = StorageLayer.getStoragesForApp(main, this.appIdentifier);
 
         int totalUserCountWithMoreThanOneLoginMethod = 0;
-        int[] maus = new int[30];
+        int[] maus = new int[31];
 
         long now = System.currentTimeMillis();
-        long today = now - (now % (24 * 60 * 60 * 1000L));
 
         for (Storage storage : storages) {
             totalUserCountWithMoreThanOneLoginMethod += ((AuthRecipeStorage)storage).getUsersCountWithMoreThanOneLoginMethodOrTOTPEnabled(this.appIdentifier);
 
-            for (int i = 0; i < 30; i++) {
-                long timestamp = today - (i * 24 * 60 * 60 * 1000L);
-                maus[i] += ((ActiveUsersStorage)storage).countUsersThatHaveMoreThanOneLoginMethodOrTOTPEnabledAndActiveSince(appIdentifier, timestamp);
+            for (int i = 1; i <= 31; i++) {
+                long timestamp = now - (i * 24 * 60 * 60 * 1000L);
+
+                // `maus[i-1]` since i starts from 1
+                maus[i-1] += ((ActiveUsersStorage)storage).countUsersThatHaveMoreThanOneLoginMethodOrTOTPEnabledAndActiveSince(appIdentifier, timestamp);
             }
         }
 
@@ -283,7 +284,7 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         if (!usesAccountLinking) {
             result.addProperty("totalUserCountWithMoreThanOneLoginMethod", 0);
             JsonArray mauArray = new JsonArray();
-            for (int i = 0; i < 30; i++) {
+            for (int i = 0; i < 31; i++) {
                 mauArray.add(new JsonPrimitive(0));
             }
             result.add("mauWithMoreThanOneLoginMethod", mauArray);
@@ -291,17 +292,18 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         }
 
         int totalUserCountWithMoreThanOneLoginMethod = 0;
-        int[] maus = new int[30];
+        int[] maus = new int[31];
 
         long now = System.currentTimeMillis();
-        long today = now - (now % (24 * 60 * 60 * 1000L));
 
         for (Storage storage : storages) {
             totalUserCountWithMoreThanOneLoginMethod += ((AuthRecipeStorage)storage).getUsersCountWithMoreThanOneLoginMethod(this.appIdentifier);
 
-            for (int i = 0; i < 30; i++) {
-                long timestamp = today - (i * 24 * 60 * 60 * 1000L);
-                maus[i] += ((ActiveUsersStorage)storage).countUsersThatHaveMoreThanOneLoginMethodAndActiveSince(appIdentifier, timestamp);
+            for (int i = 1; i <= 31; i++) {
+                long timestamp = now - (i * 24 * 60 * 60 * 1000L);
+
+                // `maus[i-1]` because i starts from 1
+                maus[i-1] += ((ActiveUsersStorage)storage).countUsersThatHaveMoreThanOneLoginMethodAndActiveSince(appIdentifier, timestamp);
             }
         }
 
@@ -312,10 +314,10 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
 
     private JsonArray getMAUs() throws StorageQueryException, TenantOrAppNotFoundException {
         JsonArray mauArr = new JsonArray();
-        for (int i = 0; i < 30; i++) {
-            long now = System.currentTimeMillis();
-            long today = now - (now % (24 * 60 * 60 * 1000L));
-            long timestamp = today - (i * 24 * 60 * 60 * 1000L);
+        long now = System.currentTimeMillis();
+
+        for (int i = 1; i <= 31; i++) {
+            long timestamp = now - (i * 24 * 60 * 60 * 1000L);
             ActiveUsersStorage activeUsersStorage = (ActiveUsersStorage) StorageLayer.getStorage(
                     this.appIdentifier.getAsPublicTenantIdentifier(), main);
             int mau = activeUsersStorage.countUsersActiveSince(this.appIdentifier, timestamp);

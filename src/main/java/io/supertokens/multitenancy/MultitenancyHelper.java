@@ -51,9 +51,20 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
     private Main main;
     private TenantConfig[] tenantConfigs;
 
+    // when the core has `supertokens_saas_load_only_cud` set, the tenantConfigs array will be filtered
+    // based on the config value. However, we need to keep all the list of CUDs from the db to be able
+    // to check if the CUD is present in the DB or not, while processing the requests.
+    private final Set<String> dangerous_allCUDsFromDb = new HashSet<>();
+
     private MultitenancyHelper(Main main) throws StorageQueryException {
         this.main = main;
-        this.tenantConfigs = getAllTenantsFromDb();
+        TenantConfig[] allTenantsFromDb = getAllTenantsFromDb();
+        this.tenantConfigs = this.getFilteredTenantConfigs(allTenantsFromDb);
+        this.dangerous_allCUDsFromDb.clear();
+
+        for (TenantConfig config : allTenantsFromDb) {
+            this.dangerous_allCUDsFromDb.add(config.tenantIdentifier.getConnectionUriDomain());
+        }
     }
 
     public static MultitenancyHelper getInstance(Main main) {
@@ -109,10 +120,11 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
             return main.getResourceDistributor().withResourceDistributorLock(() -> {
                 try {
                     TenantConfig[] tenantsFromDb = getAllTenantsFromDb();
+                    TenantConfig[] filteredTenantsFromDb = this.getFilteredTenantConfigs(tenantsFromDb);
 
                     Map<ResourceDistributor.KeyClass, JsonObject> normalizedTenantsFromDb =
                             Config.getNormalisedConfigsForAllTenants(
-                            tenantsFromDb, Config.getBaseConfigAsJsonObject(main));
+                            filteredTenantsFromDb, Config.getBaseConfigAsJsonObject(main));
 
                     Map<ResourceDistributor.KeyClass, JsonObject> normalizedTenantsFromMemory =
                             Config.getNormalisedConfigsForAllTenants(
@@ -130,9 +142,14 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
                         }
                     }
 
-                    boolean sameNumberOfTenants = tenantsFromDb.length == this.tenantConfigs.length;
+                    boolean sameNumberOfTenants =
+                            filteredTenantsFromDb.length == this.tenantConfigs.length;
 
-                    this.tenantConfigs = tenantsFromDb;
+                    this.dangerous_allCUDsFromDb.clear();
+                    for (TenantConfig tenant : tenantsFromDb) {
+                        this.dangerous_allCUDsFromDb.add(tenant.tenantIdentifier.getConnectionUriDomain());
+                    }
+                    this.tenantConfigs = filteredTenantsFromDb;
                     if (tenantsThatChanged.size() == 0 && sameNumberOfTenants) {
                         return tenantsThatChanged;
                     }
@@ -191,7 +208,7 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
     public void loadFeatureFlag(List<TenantIdentifier> tenantsThatChanged) {
         List<AppIdentifier> apps = new ArrayList<>();
         Set<AppIdentifier> appsSet = new HashSet<>();
-        for (TenantConfig t : tenantConfigs) {
+        for (TenantConfig t : this.tenantConfigs) {
             if (appsSet.contains(t.tenantIdentifier.toAppIdentifier())) {
                 continue;
             }
@@ -205,7 +222,7 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
             throws UnsupportedJWTSigningAlgorithmException {
         List<AppIdentifier> apps = new ArrayList<>();
         Set<AppIdentifier> appsSet = new HashSet<>();
-        for (TenantConfig t : tenantConfigs) {
+        for (TenantConfig t : this.tenantConfigs) {
             if (appsSet.contains(t.tenantIdentifier.toAppIdentifier())) {
                 continue;
             }
@@ -238,5 +255,22 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
         } catch (ResourceDistributor.FuncException e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    private TenantConfig[] getFilteredTenantConfigs(TenantConfig[] inputTenantConfigs) {
+        String loadOnlyCUD = Config.getBaseConfig(main).getSuperTokensLoadOnlyCUD();
+
+        if (loadOnlyCUD == null) {
+            return inputTenantConfigs;
+        }
+
+        return Arrays.stream(inputTenantConfigs)
+                .filter(tenantConfig -> tenantConfig.tenantIdentifier.getConnectionUriDomain().equals(loadOnlyCUD)
+                        || tenantConfig.tenantIdentifier.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI))
+                .toArray(TenantConfig[]::new);
+    }
+
+    public boolean isConnectionUriDomainPresentInDb(String cud) {
+        return this.dangerous_allCUDsFromDb.contains(cud);
     }
 }

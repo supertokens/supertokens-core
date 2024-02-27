@@ -1533,7 +1533,9 @@ public class PathRouterTest extends Mockito {
     public void tenantNotFoundTest3()
             throws InterruptedException, IOException, io.supertokens.httpRequest.HttpResponseException,
             InvalidConfigException,
-            io.supertokens.test.httpRequest.HttpResponseException, TenantOrAppNotFoundException {
+            io.supertokens.test.httpRequest.HttpResponseException, TenantOrAppNotFoundException,
+            InvalidProviderConfigException, StorageQueryException, FeatureNotEnabledException,
+            CannotModifyBaseConfigException, BadPermissionException {
         String[] args = {"../"};
 
         Utils.setValueInConfig("host", "\"0.0.0.0\"");
@@ -1556,15 +1558,26 @@ public class PathRouterTest extends Mockito {
         StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
                 .modifyConfigToAddANewUserPoolForTesting(tenantConfig, 2);
 
-        Config.loadAllTenantConfig(process.getProcess(), new TenantConfig[]{
-                new TenantConfig(new TenantIdentifier("localhost", null, null), new EmailPasswordConfig(false),
+        Multitenancy.addNewOrUpdateAppOrTenant(
+                process.getProcess(),
+                new TenantConfig(
+                        new TenantIdentifier("localhost", null, null),
+                        new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
                         null, null, tenantConfig),
-                new TenantConfig(new TenantIdentifier("localhost", null, "t1"), new EmailPasswordConfig(false),
+                false
+        );
+        Multitenancy.addNewOrUpdateAppOrTenant(
+                process.getProcess(),
+                new TenantConfig(
+                        new TenantIdentifier("localhost", null, "t1"),
+                        new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        null, null, tenantConfig)}, new ArrayList<>());
+                        null, null, tenantConfig),
+                false
+        );
 
         Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
 
@@ -2788,7 +2801,9 @@ public class PathRouterTest extends Mockito {
     public void tenantNotFoundWithAppIdTest3()
             throws InterruptedException, IOException, io.supertokens.httpRequest.HttpResponseException,
             InvalidConfigException,
-            io.supertokens.test.httpRequest.HttpResponseException, TenantOrAppNotFoundException {
+            io.supertokens.test.httpRequest.HttpResponseException, TenantOrAppNotFoundException,
+            InvalidProviderConfigException, StorageQueryException, FeatureNotEnabledException,
+            CannotModifyBaseConfigException, BadPermissionException {
         String[] args = {"../"};
 
         Utils.setValueInConfig("host", "\"0.0.0.0\"");
@@ -2811,15 +2826,26 @@ public class PathRouterTest extends Mockito {
         StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
                 .modifyConfigToAddANewUserPoolForTesting(tenantConfig, 2);
 
-        Config.loadAllTenantConfig(process.getProcess(), new TenantConfig[]{
-                new TenantConfig(new TenantIdentifier("localhost", null, null), new EmailPasswordConfig(false),
+        Multitenancy.addNewOrUpdateAppOrTenant(
+                process.getProcess(),
+                new TenantConfig(
+                        new TenantIdentifier("localhost", null, null),
+                        new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
                         null, null, tenantConfig),
-                new TenantConfig(new TenantIdentifier("localhost", "app1", "t1"), new EmailPasswordConfig(false),
+                false
+        );
+        Multitenancy.addNewOrUpdateAppOrTenant(
+                process.getProcess(),
+                new TenantConfig(
+                        new TenantIdentifier("localhost", "app1", "t1"),
+                        new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        null, null, tenantConfig)}, new ArrayList<>());
+                        null, null, tenantConfig),
+                false
+        );
 
         Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
 
