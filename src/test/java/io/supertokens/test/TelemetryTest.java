@@ -23,6 +23,7 @@ import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.cronjobs.telemetry.Telemetry;
 import io.supertokens.dashboard.Dashboard;
 import io.supertokens.httpRequest.HttpRequestMocking;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager.TestingProcess;
 import io.supertokens.version.Version;
