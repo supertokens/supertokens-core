@@ -18,6 +18,7 @@ package io.supertokens.inmemorydb.queries;
 
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
+import io.supertokens.inmemorydb.queries.multitenancy.MfaSqlHelper;
 import io.supertokens.inmemorydb.queries.multitenancy.TenantConfigSQLHelper;
 import io.supertokens.inmemorydb.queries.multitenancy.ThirdPartyProviderClientSQLHelper;
 import io.supertokens.inmemorydb.queries.multitenancy.ThirdPartyProviderSQLHelper;
@@ -47,6 +48,38 @@ public class MultitenancyQueries {
                 + "passwordless_enabled BOOLEAN,"
                 + "third_party_enabled BOOLEAN,"
                 + "PRIMARY KEY (connection_uri_domain, app_id, tenant_id)"
+                + ");";
+        // @formatter:on
+    }
+
+    public static String getQueryToCreateFirstFactorsTable(Start start) {
+        String tableName = Config.getConfig(start).getTenantFirstFactorsTable();
+        // @formatter:off
+        return "CREATE TABLE IF NOT EXISTS " + tableName + " ("
+                + "connection_uri_domain VARCHAR(256) DEFAULT '',"
+                + "app_id VARCHAR(64) DEFAULT 'public',"
+                + "tenant_id VARCHAR(64) DEFAULT 'public',"
+                + "factor_id VARCHAR(128),"
+                + "PRIMARY KEY (connection_uri_domain, app_id, tenant_id, factor_id),"
+                + "FOREIGN KEY (connection_uri_domain, app_id, tenant_id)"
+                + " REFERENCES " + Config.getConfig(start).getTenantConfigsTable()
+                + " (connection_uri_domain, app_id, tenant_id) ON DELETE CASCADE"
+                + ");";
+        // @formatter:on
+    }
+
+    public static String getQueryToCreateRequiredSecondaryFactorsTable(Start start) {
+        String tableName = Config.getConfig(start).getTenantRequiredSecondaryFactorsTable();
+        // @formatter:off
+        return "CREATE TABLE IF NOT EXISTS " + tableName + " ("
+                + "connection_uri_domain VARCHAR(256) DEFAULT '',"
+                + "app_id VARCHAR(64) DEFAULT 'public',"
+                + "tenant_id VARCHAR(64) DEFAULT 'public',"
+                + "factor_id VARCHAR(128),"
+                + "PRIMARY KEY (connection_uri_domain, app_id, tenant_id, factor_id),"
+                + "FOREIGN KEY (connection_uri_domain, app_id, tenant_id)"
+                + " REFERENCES " + Config.getConfig(start).getTenantConfigsTable()
+                + " (connection_uri_domain, app_id, tenant_id) ON DELETE CASCADE"
                 + ");";
         // @formatter:on
     }
@@ -114,6 +147,9 @@ public class MultitenancyQueries {
                 ThirdPartyProviderClientSQLHelper.create(start, sqlCon, tenantConfig, provider, providerClient);
             }
         }
+
+        MfaSqlHelper.createFirstFactors(start, sqlCon, tenantConfig.tenantIdentifier, tenantConfig.firstFactors);
+        MfaSqlHelper.createRequiredSecondaryFactors(start, sqlCon, tenantConfig.tenantIdentifier, tenantConfig.requiredSecondaryFactors);
     }
 
     public static void createTenantConfig(Start start, TenantConfig tenantConfig) throws StorageQueryException, StorageTransactionLogicException {
@@ -192,7 +228,13 @@ public class MultitenancyQueries {
             // Map (tenantIdentifier) -> thirdPartyId -> provider
             HashMap<TenantIdentifier, HashMap<String, ThirdPartyConfig.Provider>> providerMap = ThirdPartyProviderSQLHelper.selectAll(start, providerClientsMap);
 
-            return TenantConfigSQLHelper.selectAll(start, providerMap);
+            // Map (tenantIdentifier) -> firstFactors
+            HashMap<TenantIdentifier, String[]> firstFactorsMap = MfaSqlHelper.selectAllFirstFactors(start);
+
+            // Map (tenantIdentifier) -> requiredSecondaryFactors
+            HashMap<TenantIdentifier, String[]> requiredSecondaryFactorsMap = MfaSqlHelper.selectAllRequiredSecondaryFactors(start);
+
+            return TenantConfigSQLHelper.selectAll(start, providerMap, firstFactorsMap, requiredSecondaryFactorsMap);
         } catch (SQLException throwables) {
             throw new StorageQueryException(throwables);
         }
