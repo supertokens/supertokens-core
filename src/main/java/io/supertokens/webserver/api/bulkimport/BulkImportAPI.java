@@ -18,6 +18,7 @@ package io.supertokens.webserver.api.bulkimport;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -171,5 +172,61 @@ public class BulkImportAPI extends WebserverAPI {
         JsonObject result = new JsonObject();
         result.addProperty("status", "OK");
         super.sendJsonResponse(200, result, resp);
+    }
+
+    @Override
+    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
+        JsonArray arr = InputParser.parseArrayOrThrowError(input, "ids", false);
+
+        if (arr.size() == 0) {
+            throw new ServletException(new WebserverAPI.BadRequestException("Field name 'ids' cannot be an empty array"));
+        }
+
+        if (arr.size() > BulkImport.DELETE_USERS_LIMIT) {
+            throw new ServletException(new WebserverAPI.BadRequestException("Field name 'ids' cannot contain more than "
+                    + BulkImport.DELETE_USERS_LIMIT + " elements"));
+        }
+
+        String[] userIds = new String[arr.size()];
+
+        for (int i = 0; i < userIds.length; i++) {
+            String userId = InputParser.parseStringFromElementOrThrowError(arr.get(i), "ids", false);
+            if (userId.isEmpty()) {
+                throw new ServletException(new WebserverAPI.BadRequestException("Field name 'ids' cannot contain an empty string"));
+            }
+            userIds[i] = userId;
+        }
+
+        AppIdentifierWithStorage appIdentifierWithStorage;
+        try {
+            appIdentifierWithStorage = getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(req);
+        } catch (TenantOrAppNotFoundException | BadPermissionException e) {
+            throw new ServletException(e);
+        }
+
+        try {
+            List<String> deletedUserIds = BulkImport.deleteUsers(appIdentifierWithStorage, userIds);
+
+            JsonArray deletedUserIdsJson = new JsonArray();
+            JsonArray invalidUserIds = new JsonArray();
+    
+            for (String userId : userIds) {
+                if (deletedUserIds.contains(userId)) {
+                    deletedUserIdsJson.add(new JsonPrimitive(userId));
+                } else {
+                    invalidUserIds.add(new JsonPrimitive(userId));
+                }
+            }
+    
+            JsonObject result = new JsonObject();
+            result.add("deletedUserIds", deletedUserIdsJson);
+            result.add("invalidUserIds", invalidUserIds);
+
+            super.sendJsonResponse(200, result, resp);
+
+        } catch (StorageQueryException e) {
+            throw new ServletException(e);
+        }
     }
 }

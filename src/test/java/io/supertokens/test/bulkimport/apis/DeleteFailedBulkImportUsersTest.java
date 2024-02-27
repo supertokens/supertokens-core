@@ -18,6 +18,7 @@ package io.supertokens.test.bulkimport.apis;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.util.List;
 
@@ -145,17 +146,26 @@ public class DeleteFailedBulkImportUsersTest {
         List<BulkImportUser> users = generateBulkImportUser(5);
         BulkImport.addUsers(appIdentifierWithStorage, users);
 
+        String invalidId = io.supertokens.utils.Utils.getUUID();
         JsonObject request = new JsonObject();
-        JsonArray ids = new JsonArray();
+        JsonArray validIds = new JsonArray();
         for (BulkImportUser user : users) {
-            ids.add(new JsonPrimitive(user.id));
+            validIds.add(new JsonPrimitive(user.id));
         }
-        request.add("ids", ids);
+        validIds.add(new JsonPrimitive(invalidId));
+        
+        request.add("ids", validIds);
+
 
         JsonObject response = HttpRequestForTesting.sendJsonDELETERequest(process.getProcess(), "",
         "http://localhost:3567/bulk-import/users",
-        request, 1000, 10000, null, Utils.getCdiVersionStringLatestForTests(), null);
-        assertEquals("OK", response.get("status").getAsString());
+        request, 1000000, 1000000, null, Utils.getCdiVersionStringLatestForTests(), null);
+
+        response.get("deletedUserIds").getAsJsonArray().forEach(id -> {
+            assertTrue(validIds.contains(id));
+        });
+
+        assertEquals(invalidId, response.get("invalidUserIds").getAsJsonArray().get(0).getAsString());
 
         process.kill();
         Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
