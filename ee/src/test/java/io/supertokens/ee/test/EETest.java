@@ -1326,7 +1326,7 @@ public class EETest extends Mockito {
             JsonObject paidFeatureUsageStats = j.getAsJsonObject("paidFeatureUsageStats");
             JsonArray mauArr = paidFeatureUsageStats.get("maus").getAsJsonArray();
             assertEquals(paidFeatureUsageStats.entrySet().size(), 1);
-            assertEquals(mauArr.size(), 30);
+            assertEquals(mauArr.size(), 31);
             assertEquals(mauArr.get(0).getAsInt(), 0);
             assertEquals(mauArr.get(29).getAsInt(), 0);
         }

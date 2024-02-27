@@ -19,6 +19,7 @@ package io.supertokens.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
@@ -31,6 +32,7 @@ import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.utils.ConfigMapper;
 import org.jetbrains.annotations.TestOnly;
 
 import java.io.File;
@@ -49,16 +51,17 @@ public class Config extends ResourceDistributor.SingletonResource {
     private Config(Main main, String configFilePath) throws InvalidConfigException, IOException {
         this.main = main;
         final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-        CoreConfig config = mapper.readValue(new File(configFilePath), CoreConfig.class);
-        config.normalizeAndValidate(main);
+        Object configObj = mapper.readValue(new File(configFilePath), Object.class);
+        JsonObject jsonConfig = new GsonBuilder().serializeNulls().create().toJsonTree(configObj).getAsJsonObject();
+        CoreConfig config = ConfigMapper.mapConfig(jsonConfig, CoreConfig.class);
+        config.normalizeAndValidate(main, true);
         this.core = config;
     }
 
     private Config(Main main, JsonObject jsonConfig) throws IOException, InvalidConfigException {
         this.main = main;
-        final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-        CoreConfig config = mapper.readValue(jsonConfig.toString(), CoreConfig.class);
-        config.normalizeAndValidate(main);
+        CoreConfig config = ConfigMapper.mapConfig(jsonConfig, CoreConfig.class);
+        config.normalizeAndValidate(main, false);
         this.core = config;
     }
 
@@ -89,7 +92,7 @@ public class Config extends ResourceDistributor.SingletonResource {
         // omit them from the output json.
         ObjectMapper yamlReader = new ObjectMapper(new YAMLFactory());
         Object obj = yamlReader.readValue(new File(getConfigFilePath(main)), Object.class);
-        return new Gson().toJsonTree(obj).getAsJsonObject();
+        return new GsonBuilder().serializeNulls().create().toJsonTree(obj).getAsJsonObject();
     }
 
     private static String getConfigFilePath(Main main) {

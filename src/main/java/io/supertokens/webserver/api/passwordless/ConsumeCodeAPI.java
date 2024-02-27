@@ -97,6 +97,10 @@ public class ConsumeCodeAPI extends WebserverAPI {
                     getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0),
                     createRecipeUserIfNotExists);
 
+            io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(this.getTenantIdentifierWithStorageFromRequest(req), new AuthRecipeUserInfo[]{consumeCodeResponse.user});
+
+            ActiveUsers.updateLastActive(this.getPublicTenantStorage(req), main, consumeCodeResponse.user.getSupertokensUserId());
+
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
 
