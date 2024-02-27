@@ -416,6 +416,7 @@ public class GeneralQueries {
             // index:
             update(start, TOTPQueries.getQueryToCreateUsedCodesExpiryTimeIndex(start), NO_OP_SETTER);
         }
+
     }
 
 
