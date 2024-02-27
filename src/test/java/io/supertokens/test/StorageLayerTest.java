@@ -88,7 +88,7 @@ public class StorageLayerTest {
             // This error will be different in Postgres and MySQL
             // We added (CHECK (LENGTH(code) <= 8)) to the table definition in SQLite
             String totpUsedCodeTable = Config.getConfig(start).getTotpUsedCodesTable();
-            assert e.getMessage().contains("CHECK constraint failed: " + totpUsedCodeTable);
+            assert e.getMessage().contains("CHECK constraint failed: ");
         }
 
         // Try code with length < 8

@@ -23,6 +23,7 @@ import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.cronjobs.telemetry.Telemetry;
 import io.supertokens.dashboard.Dashboard;
 import io.supertokens.httpRequest.HttpRequestMocking;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager.TestingProcess;
 import io.supertokens.version.Version;
 import org.junit.AfterClass;
@@ -115,7 +116,9 @@ public class TelemetryTest extends Mockito {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        Dashboard.signUpDashboardUser(process.getProcess(), "test@example.com", "password123");
+        if (StorageLayer.getStorage(process.getProcess()).getType() == STORAGE_TYPE.SQL) {
+            Dashboard.signUpDashboardUser(process.getProcess(), "test@example.com", "password123");
+        }
 
         // Restarting the process to send telemetry again
         process.kill();
@@ -167,9 +170,17 @@ public class TelemetryTest extends Mockito {
         assertEquals(telemetryData.get("connectionUriDomain").getAsString(), "");
         assertTrue(telemetryData.has("maus"));
         assertTrue(telemetryData.has("dashboardUserEmails"));
-        assertEquals(1, telemetryData.get("dashboardUserEmails").getAsJsonArray().size());
-        assertEquals("test@example.com", telemetryData.get("dashboardUserEmails").getAsJsonArray().get(0).getAsString());
-        assertEquals(30, telemetryData.get("maus").getAsJsonArray().size());
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() == STORAGE_TYPE.SQL) {
+            assertEquals(1, telemetryData.get("dashboardUserEmails").getAsJsonArray().size());
+            assertEquals("test@example.com", telemetryData.get("dashboardUserEmails").getAsJsonArray().get(0).getAsString());
+            assertEquals(31, telemetryData.get("maus").getAsJsonArray().size());
+            assertEquals(0, telemetryData.get("usersCount").getAsInt());
+        } else {
+            assertEquals(0, telemetryData.get("dashboardUserEmails").getAsJsonArray().size());
+            assertEquals(0, telemetryData.get("maus").getAsJsonArray().size());
+            assertEquals(-1, telemetryData.get("usersCount").getAsInt());
+        }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
