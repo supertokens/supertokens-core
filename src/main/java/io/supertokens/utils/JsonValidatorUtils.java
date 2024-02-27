@@ -90,7 +90,7 @@
          if (jsonObject.has(key)) {
              return switch (expectedType) {
                  case STRING -> jsonObject.get(key).isJsonPrimitive() && jsonObject.getAsJsonPrimitive(key).isString()
-                         && !jsonObject.get(key).getAsString().isEmpty();
+                         && !jsonObject.get(key).getAsString().isBlank();
                  case INTEGER -> jsonObject.get(key).isJsonPrimitive() && jsonObject.getAsJsonPrimitive(key).isNumber();
                  case BOOLEAN -> jsonObject.get(key).isJsonPrimitive() && jsonObject.getAsJsonPrimitive(key).isBoolean();
                  case OBJECT -> jsonObject.get(key).isJsonObject();
@@ -110,7 +110,7 @@
              case ARRAY_OF_OBJECT -> elements.stream().allMatch(JsonElement::isJsonObject);
              case ARRAY_OF_STRING ->
                  elements.stream().allMatch(el -> el.isJsonPrimitive() && el.getAsJsonPrimitive().isString()
-                         && !el.getAsString().isEmpty());
+                         && !el.getAsString().isBlank());
              default -> false;
          };
      }

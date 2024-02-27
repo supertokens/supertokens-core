@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser.LoginMethod;
@@ -32,14 +33,14 @@ import io.supertokens.pluginInterface.bulkimport.BulkImportUser.TotpDevice;
 public class BulkImportTestUtils {
     public static List<BulkImportUser> generateBulkImportUser(int numberOfUsers) {
         List<BulkImportUser> users = new ArrayList<>();
+        JsonParser parser = new JsonParser();
 
         for (int i = 0; i < numberOfUsers; i++) {
             String email = "user" + i + "@example.com";
             String id = io.supertokens.utils.Utils.getUUID();
             String externalId = io.supertokens.utils.Utils.getUUID();
 
-            JsonObject userMetadata = new JsonObject();
-            userMetadata.addProperty("key", "value");
+            JsonObject userMetadata = parser.parse("{\"key1\":\"value1\",\"key2\":{\"key3\":\"value3\"}}").getAsJsonObject();
 
             List<String> userRoles = new ArrayList<>();
             userRoles.add("role1");

@@ -64,6 +64,8 @@ public class BulkImportUserUtils {
         List<TotpDevice> totpDevices = getParsedTotpDevices(userData, errors);
         List<LoginMethod> loginMethods = getParsedLoginMethods(main, appIdentifier, userData, errors);
 
+        externalUserId = validateAndNormaliseExternalUserId(externalUserId, errors);
+
         if (!errors.isEmpty()) {
             throw new InvalidBulkImportDataException(errors);
         }
@@ -182,12 +184,25 @@ public class BulkImportUserUtils {
         return loginMethods;
     }
 
+    private static String validateAndNormaliseExternalUserId(String externalUserId, List<String> errors) {
+        if (externalUserId == null ) {
+            return null;
+        }
+
+        if (externalUserId.length() > 255) {
+            errors.add("externalUserId " + externalUserId + " is too long. Max length is 128.");
+        }
+
+        // We just trim the externalUserId as per the UpdateExternalUserIdInfoAPI.java
+        return externalUserId.trim();
+    }
+
     private static String validateAndNormaliseUserRole(String role, List<String> errors) {
         if (role.length() > 255) {
             errors.add("role " + role + " is too long. Max length is 255.");
         }
 
-        // We just trim the role the CreateRoleAPI.java
+        // We just trim the role as per the CreateRoleAPI.java
         return role.trim();
     }
 
