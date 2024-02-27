@@ -407,6 +407,12 @@ public class GeneralQueries {
             update(start, TOTPQueries.getQueryToCreateUsedCodesExpiryTimeIndex(start), NO_OP_SETTER);
         }
 
+        if (!doesTableExists(start, Config.getConfig(start).getBulkImportUsersTable())) {
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, BulkImportQueries.getQueryToCreateBulkImportUsersTable(start), NO_OP_SETTER);
+            // index:
+            update(start, BulkImportQueries.getQueryToCreateStatusUpdatedAtIndex(start), NO_OP_SETTER);
+        }
     }
 
 

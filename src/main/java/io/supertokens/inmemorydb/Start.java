@@ -26,6 +26,8 @@ import io.supertokens.pluginInterface.*;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
+import io.supertokens.pluginInterface.bulkimport.BulkImportStorage;
+import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
 import io.supertokens.pluginInterface.dashboard.DashboardSearchTags;
 import io.supertokens.pluginInterface.dashboard.DashboardSessionInfo;
 import io.supertokens.pluginInterface.dashboard.DashboardUser;
@@ -102,7 +104,7 @@ public class Start
         implements SessionSQLStorage, EmailPasswordSQLStorage, EmailVerificationSQLStorage, ThirdPartySQLStorage,
         JWTRecipeSQLStorage, PasswordlessSQLStorage, UserMetadataSQLStorage, UserRolesSQLStorage, UserIdMappingStorage,
         UserIdMappingSQLStorage, MultitenancyStorage, MultitenancySQLStorage, TOTPSQLStorage, ActiveUsersStorage,
-        DashboardSQLStorage, AuthRecipeSQLStorage {
+        DashboardSQLStorage, AuthRecipeSQLStorage, BulkImportStorage {
 
     private static final Object appenderLock = new Object();
     private static final String APP_ID_KEY_NAME = "app_id";
@@ -2952,4 +2954,12 @@ public class Start
         }
     }
 
+    @Override
+    public void addBulkImportUsers(AppIdentifier appIdentifier, ArrayList<BulkImportUser> users) throws StorageQueryException {
+        try {
+             BulkImportQueries.insertBulkImportUsers(this, users);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
 }
