@@ -87,7 +87,7 @@ public class ConsumeCodeAPI extends WebserverAPI {
                     deviceId, deviceIdHash,
                     userInputCode, linkCode);
 
-            ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main, consumeCodeResponse.user.id);
+            ActiveUsers.updateLastActive(this.getPublicTenantStorage(req), main, consumeCodeResponse.user.id);
             
             UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
                     this.getAppIdentifierWithStorage(req),

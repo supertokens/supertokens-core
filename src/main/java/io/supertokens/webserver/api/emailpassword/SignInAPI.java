@@ -79,7 +79,7 @@ public class SignInAPI extends WebserverAPI {
         try {
             UserInfo user = EmailPassword.signIn(tenantIdentifierWithStorage, super.main, normalisedEmail, password);
 
-            ActiveUsers.updateLastActive(tenantIdentifierWithStorage.toAppIdentifierWithStorage(), main, user.id); // use the internal user id
+            ActiveUsers.updateLastActive(this.getPublicTenantStorage(req), main, user.id); // use the internal user id
 
             // if a userIdMapping exists, pass the externalUserId to the response
             UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(

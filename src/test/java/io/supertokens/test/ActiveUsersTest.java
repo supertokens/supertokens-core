@@ -4,10 +4,15 @@ import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
+import io.supertokens.test.multitenant.api.TestMultitenancyAPIHelper;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -212,4 +217,80 @@ public class ActiveUsersTest {
         assert res.get("count").getAsInt() == 2;
     }
 
+    @Test
+    public void testThatActiveUserDataIsSavedInPublicTenantStorage() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        { // Create a tenant
+            JsonObject coreConfig = new JsonObject();
+
+            StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                    .modifyConfigToAddANewUserPoolForTesting(coreConfig, 1);
+
+            TestMultitenancyAPIHelper.createTenant(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    "t1", true, true, true,
+                    coreConfig);
+        }
+
+        { // no active users yet
+            HashMap<String, String> params = new HashMap<>();
+            params.put("since", "0");
+            JsonObject res = HttpRequestForTesting.sendGETRequest(
+                    process.getProcess(),
+                    "",
+                    "http://localhost:3567/users/count/active",
+                    params,
+                    1000,
+                    1000,
+                    null,
+                    Utils.getCdiVersionStringLatestForTests(),
+                    "");
+
+            assert res.get("status").getAsString().equals("OK");
+            assert res.get("count").getAsInt() == 0;
+        }
+
+        { // Sign up, which updates active users
+            JsonObject responseBody = new JsonObject();
+            responseBody.addProperty("email", "random@gmail.com");
+            responseBody.addProperty("password", "validPass123");
+
+            JsonObject signInResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/t1/recipe/signup", responseBody, 1000, 1000, null, SemVer.v3_0.get(),
+                    "emailpassword");
+        }
+
+        { // 1 active user in the public tenant
+            HashMap<String, String> params = new HashMap<>();
+            params.put("since", "0");
+            JsonObject res = HttpRequestForTesting.sendGETRequest(
+                    process.getProcess(),
+                    "",
+                    "http://localhost:3567/users/count/active",
+                    params,
+                    1000,
+                    1000,
+                    null,
+                    Utils.getCdiVersionStringLatestForTests(),
+                    "");
+
+            assert res.get("status").getAsString().equals("OK");
+            assert res.get("count").getAsInt() == 1;
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }

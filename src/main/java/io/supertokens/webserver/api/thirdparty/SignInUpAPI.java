@@ -78,7 +78,7 @@ public class SignInUpAPI extends WebserverAPI {
                         thirdPartyId,
                         thirdPartyUserId, email, isEmailVerified);
 
-                ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main, response.user.id);
+                ActiveUsers.updateLastActive(this.getPublicTenantStorage(req), main, response.user.id);
 
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
@@ -118,7 +118,7 @@ public class SignInUpAPI extends WebserverAPI {
                         this.getTenantIdentifierWithStorageFromRequest(req), super.main, thirdPartyId, thirdPartyUserId,
                         email);
 
-                ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main, response.user.id);
+                ActiveUsers.updateLastActive(this.getPublicTenantStorage(req), main, response.user.id);
 
                 //
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
