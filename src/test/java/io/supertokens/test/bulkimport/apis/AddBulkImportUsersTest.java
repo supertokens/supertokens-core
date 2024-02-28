@@ -152,6 +152,20 @@ public class AddBulkImportUsersTest {
                 assertEquals(responseString,
                         "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"externalUserId should be of type string.\",\"userRoles should be of type array of string.\",\"totpDevices should be of type array of object.\",\"loginMethods is required.\"]}]}");
             }
+            // secretKey is required in totpDevices
+            try {
+                JsonObject request = new JsonParser()
+                        .parse("{\"users\":[{\"totpDevices\":[{\"secret\": \"secret\"}]}]}")
+                        .getAsJsonObject();
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/bulk-import/users",
+                        request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                String responseString = getResponseMessageFromError(e.getMessage());
+                assertEquals(400, e.statusCode);
+                assertEquals(responseString,
+                        "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"secretKey is required for a totp device.\",\"loginMethods is required.\"]}]}");
+            }
             // Invalid role (does not exist)
             try {
                 JsonObject request = new JsonParser()
@@ -444,8 +458,16 @@ public class AddBulkImportUsersTest {
         assertEquals(1, bulkImportUsers.size());
 
         JsonObject bulkImportUserJson = bulkImportUsers.get(0).getAsJsonObject();
-        JsonArray loginMethods = bulkImportUserJson.getAsJsonArray("loginMethods");
 
+        // Test if default values were set in totpDevices
+        JsonArray totpDevices = bulkImportUserJson.getAsJsonArray("totpDevices");
+        for (int i = 0; i < totpDevices.size(); i++) {
+            JsonObject totpDevice = totpDevices.get(i).getAsJsonObject();
+            assertEquals(30, totpDevice.get("period").getAsInt());
+            assertEquals(1, totpDevice.get("skew").getAsInt());
+        }
+
+        JsonArray loginMethods = bulkImportUserJson.getAsJsonArray("loginMethods");
         for (int i = 0; i < loginMethods.size(); i++) {
             JsonObject loginMethod = loginMethods.get(i).getAsJsonObject();
             if (loginMethod.has("email")) {
@@ -474,7 +496,7 @@ public class AddBulkImportUsersTest {
             user.addProperty("externalUserId", UUID.randomUUID().toString());
             user.add("userMetadata", parser.parse("{\"key1\":\"value1\",\"key2\":{\"key3\":\"value3\"}}"));
             user.add("userRoles", parser.parse("[\"role1\", \"role2\"]"));
-            user.add("totpDevices", parser.parse("[{\"secretKey\":\"secretKey\",\"period\": 30,\"skew\":1,\"deviceName\":\"deviceName\"}]"));
+            user.add("totpDevices", parser.parse("[{\"secretKey\":\"secretKey\",\"deviceName\":\"deviceName\"}]"));
 
             String email = " johndoe+" + i + "@gmail.com ";
 

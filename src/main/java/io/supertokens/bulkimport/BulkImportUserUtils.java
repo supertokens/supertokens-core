@@ -95,8 +95,8 @@ public class BulkImportUserUtils {
             JsonObject jsonTotpDevice = jsonTotpDeviceEl.getAsJsonObject();
 
             String secretKey = parseAndValidateFieldType(jsonTotpDevice, "secretKey", ValueType.STRING, true, String.class, errors, " for a totp device.");
-            Integer period = parseAndValidateFieldType(jsonTotpDevice, "period", ValueType.INTEGER, true, Integer.class, errors, " for a totp device.");
-            Integer skew = parseAndValidateFieldType(jsonTotpDevice, "skew", ValueType.INTEGER, true, Integer.class, errors, " for a totp device.");
+            Integer period = parseAndValidateFieldType(jsonTotpDevice, "period", ValueType.INTEGER, false, Integer.class, errors, " for a totp device.");
+            Integer skew = parseAndValidateFieldType(jsonTotpDevice, "skew", ValueType.INTEGER, false, Integer.class, errors, " for a totp device.");
             String deviceName = parseAndValidateFieldType(jsonTotpDevice, "deviceName", ValueType.STRING, false, String.class, errors, " for a totp device.");
 
             secretKey = validateAndNormaliseTotpSecretKey(secretKey, errors);
@@ -220,21 +220,29 @@ public class BulkImportUserUtils {
     }
 
     private static Integer validateAndNormaliseTotpPeriod(Integer period, List<String> errors) {
-        // We don't perform any normalisation on the period in ImportTotpDeviceAPI.java other than checking if it is > 0
-        if (period != null && period.intValue() < 1) {
+        // We default to 30 if period is null
+        if (period == null) {
+            return 30;
+        }
+
+        if (period.intValue() < 1) {
             errors.add("period should be > 0 for a totp device.");
             return null;
         }
-        return period != null ? period.intValue() : null;
+        return period;
     }
 
     private static Integer validateAndNormaliseTotpSkew(Integer skew, List<String> errors) {
-        // We don't perform any normalisation on the period in ImportTotpDeviceAPI.java other than checking if it is >= 0
-        if (skew != null && skew.intValue() < 0) {
+        // We default to 1 if skew is null
+        if (skew == null) {
+            return 1;
+        }
+
+        if (skew.intValue() < 0) {
             errors.add("skew should be >= 0 for a totp device.");
             return null;
         }
-        return skew != null ? skew.intValue() : null;
+        return skew;
     }
 
     private static String validateAndNormaliseTotpDeviceName(String deviceName, List<String> errors) {
