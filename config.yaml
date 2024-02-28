@@ -48,7 +48,7 @@ core_config_version: 0
 # password_reset_token_lifetime:
 
 
-# (DIFFERENT_ACROSS_TENANTS | OPTIONAL | Default: 86400000 (1 day)) long value. Time in milliseconds for how long an 
+# (DIFFERENT_ACROSS_TENANTS | OPTIONAL | Default: 86400000 (1 day)) long value. Time in milliseconds for how long an
 # email verification token / link is valid for.
 # email_verification_token_lifetime:
 
@@ -139,7 +139,7 @@ core_config_version: 0
 
 # (OPTIONAL | Default: null). This is used when deploying the core in SuperTokens SaaS infrastructure. If set, limits
 # what database information is shown to / modifiable by the dev when they query the core to get the information about
-#  their tenants. It only exposes that information when this key is used instead of the regular api_keys config.
+# their tenants. It only exposes that information when this key is used instead of the regular api_keys config.
 # supertokens_saas_secret:
 
 # (DIFFERENT_ACROSS_APPS | OPTIONAL | Default: null). This is used when the core needs to assume a specific CDI version
