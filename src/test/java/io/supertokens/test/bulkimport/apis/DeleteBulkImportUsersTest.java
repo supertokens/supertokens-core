@@ -156,16 +156,15 @@ public class DeleteBulkImportUsersTest {
         
         request.add("ids", validIds);
 
-
         JsonObject response = HttpRequestForTesting.sendJsonDELETERequest(process.getProcess(), "",
         "http://localhost:3567/bulk-import/users",
         request, 1000000, 1000000, null, Utils.getCdiVersionStringLatestForTests(), null);
 
-        response.get("deletedUserIds").getAsJsonArray().forEach(id -> {
+        response.get("deletedIds").getAsJsonArray().forEach(id -> {
             assertTrue(validIds.contains(id));
         });
 
-        assertEquals(invalidId, response.get("invalidUserIds").getAsJsonArray().get(0).getAsString());
+        assertEquals(invalidId, response.get("invalidIds").getAsJsonArray().get(0).getAsString());
 
         process.kill();
         Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

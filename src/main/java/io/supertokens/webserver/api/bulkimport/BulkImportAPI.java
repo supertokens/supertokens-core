@@ -211,22 +211,22 @@ public class BulkImportAPI extends WebserverAPI {
         }
 
         try {
-            List<String> deletedUserIds = BulkImport.deleteUsers(appIdentifierWithStorage, userIds);
+            List<String> deletedIds = BulkImport.deleteUsers(appIdentifierWithStorage, userIds);
 
-            JsonArray deletedUserIdsJson = new JsonArray();
-            JsonArray invalidUserIds = new JsonArray();
+            JsonArray deletedIdsJson = new JsonArray();
+            JsonArray invalidIds = new JsonArray();
     
             for (String userId : userIds) {
-                if (deletedUserIds.contains(userId)) {
-                    deletedUserIdsJson.add(new JsonPrimitive(userId));
+                if (deletedIds.contains(userId)) {
+                    deletedIdsJson.add(new JsonPrimitive(userId));
                 } else {
-                    invalidUserIds.add(new JsonPrimitive(userId));
+                    invalidIds.add(new JsonPrimitive(userId));
                 }
             }
     
             JsonObject result = new JsonObject();
-            result.add("deletedUserIds", deletedUserIdsJson);
-            result.add("invalidUserIds", invalidUserIds);
+            result.add("deletedIds", deletedIdsJson);
+            result.add("invalidIds", invalidIds);
 
             super.sendJsonResponse(200, result, resp);
 
