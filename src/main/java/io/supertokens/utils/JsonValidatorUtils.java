@@ -38,6 +38,10 @@
                         Integer intValue = jsonObject.get(key).getAsNumber().intValue();
                          value = (T) intValue;
                          break;
+                     case LONG:
+                        Long longValue = jsonObject.get(key).getAsNumber().longValue();
+                         value = (T) longValue;
+                         break;
                      case BOOLEAN:
                          Boolean boolValue = jsonObject.get(key).getAsBoolean();
                          value = (T) boolValue;
@@ -69,6 +73,7 @@
      public enum ValueType {
          STRING,
          INTEGER,
+         LONG,
          BOOLEAN,
          OBJECT,
          ARRAY_OF_STRING,
@@ -79,6 +84,7 @@
          return switch (type) {
              case STRING -> "string";
              case INTEGER -> "integer";
+             case LONG -> "integer"; // choosing integer over long because it is user facing
              case BOOLEAN -> "boolean";
              case OBJECT -> "object";
              case ARRAY_OF_STRING -> "array of string";
@@ -90,8 +96,8 @@
          if (jsonObject.has(key)) {
              return switch (expectedType) {
                  case STRING -> jsonObject.get(key).isJsonPrimitive() && jsonObject.getAsJsonPrimitive(key).isString()
-                         && !jsonObject.get(key).getAsString().isEmpty();
-                 case INTEGER -> jsonObject.get(key).isJsonPrimitive() && jsonObject.getAsJsonPrimitive(key).isNumber();
+                         && !jsonObject.get(key).getAsString().isBlank();
+                 case INTEGER, LONG -> jsonObject.get(key).isJsonPrimitive() && jsonObject.getAsJsonPrimitive(key).isNumber();
                  case BOOLEAN -> jsonObject.get(key).isJsonPrimitive() && jsonObject.getAsJsonPrimitive(key).isBoolean();
                  case OBJECT -> jsonObject.get(key).isJsonObject();
                  case ARRAY_OF_OBJECT, ARRAY_OF_STRING -> jsonObject.get(key).isJsonArray()
@@ -110,7 +116,7 @@
              case ARRAY_OF_OBJECT -> elements.stream().allMatch(JsonElement::isJsonObject);
              case ARRAY_OF_STRING ->
                  elements.stream().allMatch(el -> el.isJsonPrimitive() && el.getAsJsonPrimitive().isString()
-                         && !el.getAsString().isEmpty());
+                         && !el.getAsString().isBlank());
              default -> false;
          };
      }

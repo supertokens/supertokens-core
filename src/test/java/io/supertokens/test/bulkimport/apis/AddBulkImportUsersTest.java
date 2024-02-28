@@ -41,6 +41,7 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.userroles.UserRoles;
 
 public class AddBulkImportUsersTest {
     @Rule
@@ -140,7 +141,7 @@ public class AddBulkImportUsersTest {
         {
             try {
                 JsonObject request = new JsonParser()
-                        .parse("{\"users\":[{\"externalUserId\":[],\"userMetaData\":[],\"roles\":{},\"totp\":{}}]}")
+                        .parse("{\"users\":[{\"externalUserId\":[],\"userMetaData\":[],\"userRoles\":{},\"totpDevices\":{}}]}")
                         .getAsJsonObject();
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/bulk-import/users",
@@ -149,7 +150,22 @@ public class AddBulkImportUsersTest {
                 String responseString = getResponseMessageFromError(e.getMessage());
                 assertEquals(400, e.statusCode);
                 assertEquals(responseString,
-                        "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"externalUserId should be of type string.\",\"roles should be of type array of string.\",\"totp should be of type array of object.\",\"loginMethods is required.\"]}]}");
+                        "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"externalUserId should be of type string.\",\"userRoles should be of type array of string.\",\"totpDevices should be of type array of object.\",\"loginMethods is required.\"]}]}");
+            }
+            // Invalid role (does not exist)
+            try {
+                JsonObject request = new JsonParser()
+                        .parse("{\"users\":[{\"userRoles\":[\"role5\"]}]}")
+                        .getAsJsonObject();
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/bulk-import/users",
+                        request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                String responseString = getResponseMessageFromError(e.getMessage());
+                assertEquals(400, e.statusCode);
+                
+                assertEquals(responseString,
+                        "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"Role role5 does not exist.\",\"loginMethods is required.\"]}]}");
             }
         }
         // Invalid field type of non required fields inside loginMethod
@@ -380,6 +396,12 @@ public class AddBulkImportUsersTest {
             return;
         }
 
+        // Create user roles before inserting bulk users
+        {
+            UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), "role1", null);
+            UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), "role2", null);
+        }
+
         JsonObject request = generateUsersJson(10000);
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
         "http://localhost:3567/bulk-import/users",
@@ -401,6 +423,12 @@ public class AddBulkImportUsersTest {
             return;
         }
 
+        // Create user roles before inserting bulk users
+        {
+            UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), "role1", null);
+            UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), "role2", null);
+        }
+
         JsonObject request = generateUsersJson(1);
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
         "http://localhost:3567/bulk-import/users",
@@ -415,17 +443,16 @@ public class AddBulkImportUsersTest {
         JsonArray bulkImportUsers = getResponse.get("users").getAsJsonArray();
         assertEquals(1, bulkImportUsers.size());
 
-        JsonParser parser = new JsonParser();
         JsonObject bulkImportUserJson = bulkImportUsers.get(0).getAsJsonObject();
-        JsonArray loginMethods = parser.parse(bulkImportUserJson.get("rawData").getAsString()).getAsJsonObject().getAsJsonArray("loginMethods");
+        JsonArray loginMethods = bulkImportUserJson.getAsJsonArray("loginMethods");
 
         for (int i = 0; i < loginMethods.size(); i++) {
             JsonObject loginMethod = loginMethods.get(i).getAsJsonObject();
             if (loginMethod.has("email")) {
-                assertEquals("johndoe+1@gmail.com", loginMethod.get("hashingAlgorithm").getAsString());
+                assertEquals("johndoe+0@gmail.com", loginMethod.get("email").getAsString());
             }
             if (loginMethod.has("phoneNumber")) {
-                assertEquals("919999999999", loginMethod.get("phoneNumber").getAsString());
+                assertEquals("+919999999999", loginMethod.get("phoneNumber").getAsString());
             }
             if (loginMethod.has("hashingAlgorithm")) {
                 assertEquals("ARGON2", loginMethod.get("hashingAlgorithm").getAsString());
@@ -446,8 +473,8 @@ public class AddBulkImportUsersTest {
 
             user.addProperty("externalUserId", UUID.randomUUID().toString());
             user.add("userMetadata", parser.parse("{\"key1\":\"value1\",\"key2\":{\"key3\":\"value3\"}}"));
-            user.add("roles", parser.parse("[\"role1\", \"role2\"]"));
-            user.add("totp", parser.parse("[{\"secretKey\":\"secretKey\",\"period\": 30,\"skew\":1,\"deviceName\":\"deviceName\"}]"));
+            user.add("userRoles", parser.parse("[\"role1\", \"role2\"]"));
+            user.add("totpDevices", parser.parse("[{\"secretKey\":\"secretKey\",\"period\": 30,\"skew\":1,\"deviceName\":\"deviceName\"}]"));
 
             String email = " johndoe+" + i + "@gmail.com ";
 

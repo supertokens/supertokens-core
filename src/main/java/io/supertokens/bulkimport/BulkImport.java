@@ -16,9 +16,8 @@
 
 package io.supertokens.bulkimport;
 
-import io.supertokens.pluginInterface.bulkimport.BulkImportStorage.BulkImportUserStatus;
+import io.supertokens.pluginInterface.bulkimport.BulkImportStorage.BULK_IMPORT_USER_STATUS;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
-import io.supertokens.pluginInterface.bulkimport.BulkImportUserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -53,9 +52,9 @@ public class BulkImport {
     }
 
     public static BulkImportUserPaginationContainer getUsers(AppIdentifierWithStorage appIdentifierWithStorage,
-            @Nonnull Integer limit, @Nullable BulkImportUserStatus status, @Nullable String paginationToken)
+            @Nonnull Integer limit, @Nullable BULK_IMPORT_USER_STATUS status, @Nullable String paginationToken)
             throws StorageQueryException, BulkImportUserPaginationToken.InvalidTokenException {
-        List<BulkImportUserInfo> users;
+        List<BulkImportUser> users;
 
         if (paginationToken == null) {
             users = appIdentifierWithStorage.getBulkImportStorage()
@@ -70,11 +69,11 @@ public class BulkImport {
         int maxLoop = users.size();
         if (users.size() == limit + 1) {
             maxLoop = limit;
-            BulkImportUserInfo user = users.get(limit);
+            BulkImportUser user = users.get(limit);
             nextPaginationToken = new BulkImportUserPaginationToken(user.id, user.createdAt).generateToken();
         }
 
-        List<BulkImportUserInfo> resultUsers = users.subList(0, maxLoop);
+        List<BulkImportUser> resultUsers = users.subList(0, maxLoop);
         return new BulkImportUserPaginationContainer(resultUsers, nextPaginationToken);
     }
 
