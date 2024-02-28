@@ -70,7 +70,7 @@ public class BulkImportUserUtils {
     }
 
     private static List<String> getParsedUserRoles(JsonObject userData, String[] allUserRoles, List<String> errors) {
-        JsonArray jsonUserRoles = parseAndValidateFieldType(userData, "roles", ValueType.ARRAY_OF_STRING,
+        JsonArray jsonUserRoles = parseAndValidateFieldType(userData, "userRoles", ValueType.ARRAY_OF_STRING,
                 false,
                 JsonArray.class, errors, ".");
 
@@ -80,12 +80,12 @@ public class BulkImportUserUtils {
 
         // We already know that the jsonUserRoles is an array of non-empty strings, we will normalise each role now
         List<String> userRoles = new ArrayList<>();
-        jsonUserRoles.forEach(role -> validateAndNormaliseUserRole(role.getAsString(), allUserRoles, errors));
+        jsonUserRoles.forEach(role -> userRoles.add(validateAndNormaliseUserRole(role.getAsString(), allUserRoles, errors)));
         return userRoles;
     }
 
     private static List<TotpDevice> getParsedTotpDevices(JsonObject userData, List<String> errors) {
-        JsonArray jsonTotpDevices = parseAndValidateFieldType(userData, "totp", ValueType.ARRAY_OF_OBJECT, false, JsonArray.class, errors, ".");
+        JsonArray jsonTotpDevices = parseAndValidateFieldType(userData, "totpDevices", ValueType.ARRAY_OF_OBJECT, false, JsonArray.class, errors, ".");
         if (jsonTotpDevices == null) {
             return null;
         }

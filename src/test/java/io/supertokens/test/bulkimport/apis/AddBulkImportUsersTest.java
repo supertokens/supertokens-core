@@ -141,7 +141,7 @@ public class AddBulkImportUsersTest {
         {
             try {
                 JsonObject request = new JsonParser()
-                        .parse("{\"users\":[{\"externalUserId\":[],\"userMetaData\":[],\"roles\":{},\"totp\":{}}]}")
+                        .parse("{\"users\":[{\"externalUserId\":[],\"userMetaData\":[],\"userRoles\":{},\"totpDevices\":{}}]}")
                         .getAsJsonObject();
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/bulk-import/users",
@@ -150,12 +150,12 @@ public class AddBulkImportUsersTest {
                 String responseString = getResponseMessageFromError(e.getMessage());
                 assertEquals(400, e.statusCode);
                 assertEquals(responseString,
-                        "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"externalUserId should be of type string.\",\"roles should be of type array of string.\",\"totp should be of type array of object.\",\"loginMethods is required.\"]}]}");
+                        "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"externalUserId should be of type string.\",\"userRoles should be of type array of string.\",\"totpDevices should be of type array of object.\",\"loginMethods is required.\"]}]}");
             }
             // Invalid role (does not exist)
             try {
                 JsonObject request = new JsonParser()
-                        .parse("{\"users\":[{\"roles\":[\"role5\"]}]}")
+                        .parse("{\"users\":[{\"userRoles\":[\"role5\"]}]}")
                         .getAsJsonObject();
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/bulk-import/users",
