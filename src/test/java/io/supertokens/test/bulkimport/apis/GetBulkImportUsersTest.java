@@ -35,6 +35,7 @@ import com.google.gson.JsonParser;
 
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -150,7 +151,7 @@ public class GetBulkImportUsersTest {
         assertEquals(1, bulkImportUsers.size());
         JsonObject bulkImportUserJson = bulkImportUsers.get(0).getAsJsonObject();
         bulkImportUserJson.get("status").getAsString().equals("NEW");
-        bulkImportUserJson.get("rawData").getAsString().equals(rawData);
+        BulkImportUser.fromJson(bulkImportUserJson).toRawData().equals(rawData);
     
         process.kill();
         Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

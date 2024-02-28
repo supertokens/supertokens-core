@@ -443,9 +443,8 @@ public class AddBulkImportUsersTest {
         JsonArray bulkImportUsers = getResponse.get("users").getAsJsonArray();
         assertEquals(1, bulkImportUsers.size());
 
-        JsonParser parser = new JsonParser();
         JsonObject bulkImportUserJson = bulkImportUsers.get(0).getAsJsonObject();
-        JsonArray loginMethods = parser.parse(bulkImportUserJson.get("rawData").getAsString()).getAsJsonObject().getAsJsonArray("loginMethods");
+        JsonArray loginMethods = bulkImportUserJson.getAsJsonArray("loginMethods");
 
         for (int i = 0; i < loginMethods.size(); i++) {
             JsonObject loginMethod = loginMethods.get(i).getAsJsonObject();
