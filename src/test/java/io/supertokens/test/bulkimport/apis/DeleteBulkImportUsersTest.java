@@ -47,7 +47,7 @@ import io.supertokens.test.httpRequest.HttpRequestForTesting;
 
 import static io.supertokens.test.bulkimport.BulkImportTestUtils.generateBulkImportUser;
 
-public class DeleteFailedBulkImportUsersTest {
+public class DeleteBulkImportUsersTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
