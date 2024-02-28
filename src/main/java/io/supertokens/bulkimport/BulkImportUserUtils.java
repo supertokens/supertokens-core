@@ -80,14 +80,7 @@ public class BulkImportUserUtils {
 
         // We already know that the jsonUserRoles is an array of non-empty strings, we will normalise each role now
         List<String> userRoles = new ArrayList<>();
-        jsonUserRoles.forEach(role -> {
-            String normalisedRole = validateAndNormaliseUserRole(role.getAsString(), errors);
-            if (Arrays.asList(allUserRoles).contains(normalisedRole)) {
-                userRoles.add(normalisedRole);
-            } else {
-                errors.add("Role " + normalisedRole + " does not exist.");
-            }
-        });
+        jsonUserRoles.forEach(role -> validateAndNormaliseUserRole(role.getAsString(), allUserRoles, errors));
         return userRoles;
     }
 
@@ -198,13 +191,19 @@ public class BulkImportUserUtils {
         return externalUserId.trim();
     }
 
-    private static String validateAndNormaliseUserRole(String role, List<String> errors) {
+    private static String validateAndNormaliseUserRole(String role, String[] allUserRoles, List<String> errors) {
         if (role.length() > 255) {
             errors.add("role " + role + " is too long. Max length is 255.");
         }
 
         // We just trim the role as per the CreateRoleAPI.java
-        return role.trim();
+        String normalisedRole = role.trim();
+
+        if (!Arrays.asList(allUserRoles).contains(normalisedRole)) {
+            errors.add("Role " + normalisedRole + " does not exist.");
+        }
+
+        return normalisedRole;
     }
 
     private static String validateAndNormaliseTotpSecretKey(String secretKey, List<String> errors) {

@@ -35,7 +35,7 @@ import io.supertokens.bulkimport.BulkImportUserPaginationContainer;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.bulkimport.BulkImportStorage;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
-import io.supertokens.pluginInterface.bulkimport.BulkImportStorage.BulkImportUserStatus;
+import io.supertokens.pluginInterface.bulkimport.BulkImportStorage.BULK_IMPORT_USER_STATUS;
 import io.supertokens.pluginInterface.bulkimport.sqlStorage.BulkImportSQLStorage;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
@@ -75,7 +75,7 @@ public class BulkImportTest {
         BulkImportStorage storage = (BulkImportStorage) StorageLayer.getStorage(process.main);
         BulkImport.addUsers(new AppIdentifierWithStorage(null, null, storage), users);
 
-        List<BulkImportUser> addedUsers = storage.getBulkImportUsers(new AppIdentifier(null, null), null, BulkImportUserStatus.NEW, null, null);
+        List<BulkImportUser> addedUsers = storage.getBulkImportUsers(new AppIdentifier(null, null), null, BULK_IMPORT_USER_STATUS.NEW, null, null);
 
         // Verify that all users are present in addedUsers
         for (BulkImportUser user : users) {
@@ -85,8 +85,8 @@ public class BulkImportTest {
                     .orElse(null);
 
             assertNotNull(matchingUser);
-            assertEquals(BulkImportUserStatus.NEW, matchingUser.status);
-            assertEquals(user.toString(), matchingUser.toRawData());
+            assertEquals(BULK_IMPORT_USER_STATUS.NEW, matchingUser.status);
+            assertEquals(user.toRawDataForDbStorage(), matchingUser.toRawDataForDbStorage());
         }
 
         process.kill();
@@ -115,17 +115,17 @@ public class BulkImportTest {
         AppIdentifierWithStorage appIdentifierWithStorage = new AppIdentifierWithStorage(null, null, storage);
         BulkImport.addUsers(appIdentifierWithStorage, users);
 
-        List<BulkImportUser> addedUsers = storage.getBulkImportUsers(appIdentifierWithStorage, null, BulkImportUserStatus.NEW, null, null);
+        List<BulkImportUser> addedUsers = storage.getBulkImportUsers(appIdentifierWithStorage, null, BULK_IMPORT_USER_STATUS.NEW, null, null);
 
         // Verify that the other properties are same but ids changed
         for (BulkImportUser user : users) {
             BulkImportUser matchingUser = addedUsers.stream()
-                    .filter(addedUser -> user.toString().equals(addedUser.toRawData()))
+                    .filter(addedUser -> user.toRawDataForDbStorage().equals(addedUser.toRawDataForDbStorage()))
                     .findFirst()
                     .orElse(null);
 
             assertNotNull(matchingUser);
-            assertEquals(BulkImportUserStatus.NEW, matchingUser.status);
+            assertEquals(BULK_IMPORT_USER_STATUS.NEW, matchingUser.status);
             assertFalse(initialIds.contains(matchingUser.id));
         }
 
@@ -152,7 +152,7 @@ public class BulkImportTest {
             List<BulkImportUser> users = generateBulkImportUser(10);
             BulkImport.addUsers(appIdentifierWithStorage, users);
 
-            List<BulkImportUser> addedUsers = storage.getBulkImportUsers(appIdentifierWithStorage, null, BulkImportUserStatus.NEW, null, null);
+            List<BulkImportUser> addedUsers = storage.getBulkImportUsers(appIdentifierWithStorage, null, BULK_IMPORT_USER_STATUS.NEW, null, null);
             assertEquals(10, addedUsers.size());
         }
 
@@ -165,12 +165,12 @@ public class BulkImportTest {
             String[] userIds = users.stream().map(user -> user.id).toArray(String[]::new);
 
             storage.startTransaction(con -> {
-                storage.updateBulkImportUserStatus_Transaction(appIdentifierWithStorage, con, userIds, BulkImportUserStatus.PROCESSING);
+                storage.updateBulkImportUserStatus_Transaction(appIdentifierWithStorage, con, userIds, BULK_IMPORT_USER_STATUS.PROCESSING);
                 storage.commitTransaction(con);
                 return null;
             });
 
-            List<BulkImportUser> addedUsers = storage.getBulkImportUsers(appIdentifierWithStorage, null, BulkImportUserStatus.PROCESSING, null, null);
+            List<BulkImportUser> addedUsers = storage.getBulkImportUsers(appIdentifierWithStorage, null, BULK_IMPORT_USER_STATUS.PROCESSING, null, null);
             assertEquals(10, addedUsers.size());
         }
 
@@ -183,12 +183,12 @@ public class BulkImportTest {
             String[] userIds = users.stream().map(user -> user.id).toArray(String[]::new);
 
             storage.startTransaction(con -> {
-                storage.updateBulkImportUserStatus_Transaction(appIdentifierWithStorage, con, userIds, BulkImportUserStatus.FAILED);
+                storage.updateBulkImportUserStatus_Transaction(appIdentifierWithStorage, con, userIds, BULK_IMPORT_USER_STATUS.FAILED);
                 storage.commitTransaction(con);
                 return null;
             });
 
-            List<BulkImportUser> addedUsers = storage.getBulkImportUsers(appIdentifierWithStorage, null, BulkImportUserStatus.FAILED, null, null);
+            List<BulkImportUser> addedUsers = storage.getBulkImportUsers(appIdentifierWithStorage, null, BULK_IMPORT_USER_STATUS.FAILED, null, null);
             assertEquals(10, addedUsers.size());
         }
 
@@ -248,7 +248,8 @@ public class BulkImportTest {
                     BulkImportUser expectedUser = sortedUsers.get(indexIntoUsers);
 
                     assertEquals(expectedUser.id, actualUser.id);
-                    assertEquals(expectedUser.toString(), actualUser.toString());
+                    assertEquals(expectedUser.status, actualUser.status);
+                    assertEquals(expectedUser.toRawDataForDbStorage(), actualUser.toRawDataForDbStorage());
                     indexIntoUsers++;
                 }
 

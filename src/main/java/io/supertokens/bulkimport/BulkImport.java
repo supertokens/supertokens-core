@@ -16,7 +16,7 @@
 
 package io.supertokens.bulkimport;
 
-import io.supertokens.pluginInterface.bulkimport.BulkImportStorage.BulkImportUserStatus;
+import io.supertokens.pluginInterface.bulkimport.BulkImportStorage.BULK_IMPORT_USER_STATUS;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
@@ -51,7 +51,7 @@ public class BulkImport {
     }
 
     public static BulkImportUserPaginationContainer getUsers(AppIdentifierWithStorage appIdentifierWithStorage,
-            @Nonnull Integer limit, @Nullable BulkImportUserStatus status, @Nullable String paginationToken)
+            @Nonnull Integer limit, @Nullable BULK_IMPORT_USER_STATUS status, @Nullable String paginationToken)
             throws StorageQueryException, BulkImportUserPaginationToken.InvalidTokenException {
         List<BulkImportUser> users;
 

@@ -30,7 +30,7 @@ import io.supertokens.bulkimport.BulkImportUserPaginationToken;
 import io.supertokens.bulkimport.BulkImportUserUtils;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.output.Logging;
-import io.supertokens.pluginInterface.bulkimport.BulkImportStorage.BulkImportUserStatus;
+import io.supertokens.pluginInterface.bulkimport.BulkImportStorage.BULK_IMPORT_USER_STATUS;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
@@ -69,10 +69,10 @@ public class BulkImportAPI extends WebserverAPI {
             limit = BulkImport.GET_USERS_DEFAULT_LIMIT;
         }
 
-        BulkImportUserStatus status = null;
+        BULK_IMPORT_USER_STATUS status = null;
         if (statusString != null) {
             try {
-                status = BulkImportUserStatus.valueOf(statusString);
+                status = BULK_IMPORT_USER_STATUS.valueOf(statusString);
             } catch (IllegalArgumentException e) {
                 throw new ServletException(new BadRequestException("Invalid value for status. Pass one of NEW, PROCESSING, or FAILED!"));
             }

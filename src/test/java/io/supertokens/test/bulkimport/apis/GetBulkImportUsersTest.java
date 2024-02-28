@@ -151,7 +151,7 @@ public class GetBulkImportUsersTest {
         assertEquals(1, bulkImportUsers.size());
         JsonObject bulkImportUserJson = bulkImportUsers.get(0).getAsJsonObject();
         bulkImportUserJson.get("status").getAsString().equals("NEW");
-        BulkImportUser.fromJson(bulkImportUserJson).toRawData().equals(rawData);
+        BulkImportUser.fromJson(bulkImportUserJson).toRawDataForDbStorage().equals(rawData);
     
         process.kill();
         Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
