@@ -21,13 +21,13 @@ import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import io.supertokens.pluginInterface.bulkimport.BulkImportUserInfo;
+import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
 
 public class BulkImportUserPaginationContainer {
-    public final List<BulkImportUserInfo> users;
+    public final List<BulkImportUser> users;
     public final String nextPaginationToken;
 
-    public BulkImportUserPaginationContainer(@Nonnull List<BulkImportUserInfo> users, @Nullable String nextPaginationToken) {
+    public BulkImportUserPaginationContainer(@Nonnull List<BulkImportUser> users, @Nullable String nextPaginationToken) {
         this.users = users;
         this.nextPaginationToken = nextPaginationToken;
     }

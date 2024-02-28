@@ -32,7 +32,6 @@ import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.bulkimport.BulkImportStorage.BulkImportUserStatus;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
-import io.supertokens.pluginInterface.bulkimport.BulkImportUserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -93,7 +92,7 @@ public class BulkImportAPI extends WebserverAPI {
             result.addProperty("status", "OK");
 
             JsonArray usersJson = new JsonArray();
-            for (BulkImportUserInfo user : users.users) {
+            for (BulkImportUser user : users.users) {
                 usersJson.add(user.toJsonObject());
             }
             result.add("users", usersJson);
@@ -130,12 +129,20 @@ public class BulkImportAPI extends WebserverAPI {
             throw new ServletException(e);
         }
 
+        String[] allUserRoles = null;
+
+        try {
+            allUserRoles = appIdentifierWithStorage.getUserRolesStorage().getRoles(appIdentifierWithStorage);
+        } catch (StorageQueryException e) {
+            throw new ServletException(e);
+        }
+
         JsonArray errorsJson = new JsonArray();
         ArrayList<BulkImportUser> usersToAdd = new ArrayList<>();
 
         for (int i = 0; i < users.size(); i++) {
             try {
-                BulkImportUser user = BulkImportUserUtils.createBulkImportUserFromJSON(main, appIdentifierWithStorage, users.get(i).getAsJsonObject(), Utils.getUUID());
+                BulkImportUser user = BulkImportUserUtils.createBulkImportUserFromJSON(main, appIdentifierWithStorage, users.get(i).getAsJsonObject(), Utils.getUUID(), allUserRoles);
                 usersToAdd.add(user);
             } catch (io.supertokens.bulkimport.exceptions.InvalidBulkImportDataException e) {
                 JsonObject errorObj = new JsonObject();
@@ -147,9 +154,7 @@ public class BulkImportAPI extends WebserverAPI {
                 errorObj.addProperty("index", i);
                 errorObj.add("errors", errors);
                 errorsJson.add(errorObj);
-            } catch (Exception e) {
-                System.out.println("error: " + e.getMessage());
-                e.printStackTrace();
+            } catch (StorageQueryException | TenantOrAppNotFoundException e) {
                 throw new ServletException(e);
             }
         }
