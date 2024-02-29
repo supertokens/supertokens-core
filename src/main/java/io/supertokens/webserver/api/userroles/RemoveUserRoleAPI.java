@@ -48,7 +48,7 @@ public class RemoveUserRoleAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        // API is tenant specific
+        // API is tenant specific, but uses public tenant storage
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
         String role = InputParser.parseStringOrThrowError(input, "role", false);
@@ -60,7 +60,8 @@ public class RemoveUserRoleAPI extends WebserverAPI {
         }
 
         try {
-            boolean didUserHaveRole = UserRoles.removeUserRole(this.getTenantStorage(req),
+            boolean didUserHaveRole = UserRoles.removeUserRole(
+                    this.getTenantStorage(req).withStorage(this.getPublicTenantStorage(req).getStorage()),
                     userId, role);
 
             JsonObject response = new JsonObject();

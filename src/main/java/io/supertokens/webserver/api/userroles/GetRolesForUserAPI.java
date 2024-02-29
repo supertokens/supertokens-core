@@ -48,11 +48,11 @@ public class GetRolesForUserAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        // API is tenant specific
+        // API is tenant specific, but using the public tenant storage
         String userId = InputParser.getQueryParamOrThrowError(req, "userId", false);
         try {
-
-            String[] userRoles = UserRoles.getRolesForUser(this.getTenantStorage(req),
+            String[] userRoles = UserRoles.getRolesForUser(
+                    this.getTenantStorage(req).withStorage(this.getPublicTenantStorage(req).getStorage()),
                     userId);
             JsonArray arr = new JsonArray();
             for (String s : userRoles) {
