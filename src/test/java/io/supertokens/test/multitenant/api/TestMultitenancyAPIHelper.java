@@ -434,4 +434,40 @@ public class TestMultitenancyAPIHelper {
                 SemVer.v3_0.get(), "useridmapping");
         assertEquals("OK", response.get("status").getAsString());
     }
+
+    public static JsonObject getUserById(TenantIdentifier tenantIdentifier, String userId, Main main)
+            throws HttpResponseException, IOException {
+        Map<String, String> params = new HashMap<>();
+        params.put("userId", userId);
+        JsonObject response = HttpRequestForTesting.sendGETRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/user/id"),
+                params, 1000, 1000, null,
+                WebserverAPI.getLatestCDIVersion().get(), "");
+        return response;
+    }
+
+    public static JsonObject updateUserMetadata(TenantIdentifier tenantIdentifier, String userId, JsonObject metadata,
+                                        Main main)
+            throws HttpResponseException, IOException {
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("userId", userId);
+        requestBody.add("metadataUpdate", metadata);
+        JsonObject resp = HttpRequestForTesting.sendJsonPUTRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user/metadata"),
+                requestBody, 1000, 1000, null,
+                WebserverAPI.getLatestCDIVersion().get(), "usermetadata");
+        return resp;
+    }
+
+    public static JsonObject removeMetadata(TenantIdentifier tenantIdentifier, String userId, Main main)
+            throws HttpResponseException, IOException {
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("userId", userId);
+        JsonObject resp = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user/metadata/remove"),
+                requestBody, 1000, 1000, null,
+                WebserverAPI.getLatestCDIVersion().get(), "usermetadata");
+
+        return resp;
+    }
 }

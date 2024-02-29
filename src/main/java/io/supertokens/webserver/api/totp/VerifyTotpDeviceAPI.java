@@ -14,7 +14,6 @@ import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.totp.exception.TotpNotEnabledException;
 import io.supertokens.pluginInterface.totp.exception.UnknownDeviceException;
-import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.totp.Totp;
 import io.supertokens.totp.exceptions.InvalidTotpException;
 import io.supertokens.totp.exceptions.LimitReachedException;
@@ -64,7 +63,7 @@ public class VerifyTotpDeviceAPI extends WebserverAPI {
                 // This step is required only because user_last_active table stores supertokens internal user id.
                 // While sending the usage stats we do a join, so totp tables also must use internal user id.
 
-                TenantIdentifierWithStorageAndUserIdMapping mappingAndStorage = getTenantIdentifierWithStorageAndUserIdMappingFromRequest(
+                TenantIdentifierWithStorageAndUserIdMapping mappingAndStorage = getStorageAndUserIdMappingForTenantSpecificApi(
                         req, userId, UserIdType.ANY);
 
                 if (mappingAndStorage.userIdMapping != null) {
@@ -73,7 +72,7 @@ public class VerifyTotpDeviceAPI extends WebserverAPI {
                 tenantIdentifierWithStorage = mappingAndStorage.tenantIdentifierWithStorage;
             } catch (UnknownUserIdException e) {
                 // if the user is not found, just use the storage of the tenant of interest
-                tenantIdentifierWithStorage = getTenantIdentifierWithStorageFromRequest(req);
+                tenantIdentifierWithStorage = getTenantStorage(req);
             }
             boolean isNewlyVerified = Totp.verifyDevice(tenantIdentifierWithStorage, main, userId, deviceName, totp);
 

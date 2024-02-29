@@ -69,10 +69,10 @@ public class SessionUserAPI extends WebserverAPI {
             String[] sessionHandles;
             if (fetchAcrossAllTenants) {
                 sessionHandles = Session.getAllNonExpiredSessionHandlesForUser(
-                        main, this.getAppIdentifierWithStorage(req), userId, fetchSessionsForAllLinkedAccounts);
+                        main, this.getTenantStorage(req).toAppIdentifierWithStorage(), userId, fetchSessionsForAllLinkedAccounts);
             } else {
                 sessionHandles = Session.getAllNonExpiredSessionHandlesForUser(
-                        this.getTenantIdentifierWithStorageFromRequest(req), userId, fetchSessionsForAllLinkedAccounts);
+                        this.getTenantStorage(req), userId, fetchSessionsForAllLinkedAccounts);
             }
 
             JsonObject result = new JsonObject();

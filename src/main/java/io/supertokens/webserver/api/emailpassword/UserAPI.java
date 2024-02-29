@@ -21,6 +21,7 @@ import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
@@ -81,7 +82,7 @@ public class UserAPI extends WebserverAPI {
                 if (userId != null) {
                     // Query by userId
                     AppIdentifierWithStorageAndUserIdMapping appIdentifierWithStorageAndUserIdMapping =
-                            this.getAppIdentifierWithStorageAndUserIdMappingFromRequest(req, userId, UserIdType.ANY);
+                            this.getStorageAndUserIdMappingForAppSpecificApi(req, userId, UserIdType.ANY);
                     // if a userIdMapping exists, pass the superTokensUserId to the getUserUsingId function
                     if (appIdentifierWithStorageAndUserIdMapping.userIdMapping != null) {
                         userId = appIdentifierWithStorageAndUserIdMapping.userIdMapping.superTokensUserId;
@@ -98,7 +99,7 @@ public class UserAPI extends WebserverAPI {
                     // Query by email
                     String normalisedEmail = Utils.normaliseEmail(email);
                     TenantIdentifierWithStorage tenantIdentifierWithStorage =
-                            this.getTenantIdentifierWithStorageFromRequest(
+                            this.getTenantStorage(
                                     req);
                     user = EmailPassword.getUserUsingEmail(tenantIdentifierWithStorage, normalisedEmail);
 
@@ -131,7 +132,7 @@ public class UserAPI extends WebserverAPI {
                 super.sendJsonResponse(200, result, resp);
             }
 
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
 
@@ -158,16 +159,11 @@ public class UserAPI extends WebserverAPI {
         }
 
         email = Utils.normaliseEmail(email);
-        AppIdentifier appIdentifier = null;
-        try {
-            appIdentifier = this.getAppIdentifierWithStorage(req);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new ServletException(e);
-        }
+        AppIdentifier appIdentifier = this.getAppIdentifier(req);
 
         try {
             AppIdentifierWithStorageAndUserIdMapping appIdentifierWithStorageAndUserIdMapping =
-                    this.getAppIdentifierWithStorageAndUserIdMappingFromRequest(req, userId, UserIdType.ANY);
+                    this.getStorageAndUserIdMappingForAppSpecificApi(req, userId, UserIdType.ANY);
             // if a userIdMapping exists, pass the superTokensUserId to the updateUsersEmailOrPassword
             if (appIdentifierWithStorageAndUserIdMapping.userIdMapping != null) {
                 userId = appIdentifierWithStorageAndUserIdMapping.userIdMapping.superTokensUserId;
@@ -181,7 +177,8 @@ public class UserAPI extends WebserverAPI {
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
 
-        } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException |
+                 BadPermissionException e) {
             throw new ServletException(e);
 
         } catch (UnknownUserIdException e) {

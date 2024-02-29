@@ -29,8 +29,6 @@ import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
-import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -84,12 +82,12 @@ public class ConsumeCodeAPI extends WebserverAPI {
 
         try {
             ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(
-                    this.getTenantIdentifierWithStorageFromRequest(req), main,
+                    this.getTenantStorage(req), main,
                     deviceId, deviceIdHash,
                     userInputCode, linkCode,
                     // From CDI version 4.0 onwards, the email verification will be set
                     getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0));
-            io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(this.getTenantIdentifierWithStorageFromRequest(req), new AuthRecipeUserInfo[]{consumeCodeResponse.user});
+            io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(this.getTenantStorage(req), new AuthRecipeUserInfo[]{consumeCodeResponse.user});
 
             ActiveUsers.updateLastActive(this.getPublicTenantStorage(req), main, consumeCodeResponse.user.getSupertokensUserId());
 

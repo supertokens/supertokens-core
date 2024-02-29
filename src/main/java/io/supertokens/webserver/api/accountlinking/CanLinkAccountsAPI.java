@@ -23,6 +23,7 @@ import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.authRecipe.exception.AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException;
 import io.supertokens.authRecipe.exception.InputUserIdIsNotAPrimaryUserException;
 import io.supertokens.authRecipe.exception.RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
@@ -62,7 +63,7 @@ public class CanLinkAccountsAPI extends WebserverAPI {
             String recipeUserId = inputRecipeUserId;
             {
                 AppIdentifierWithStorageAndUserIdMapping mappingAndStorage =
-                        getAppIdentifierWithStorageAndUserIdMappingFromRequest(
+                        getStorageAndUserIdMappingForAppSpecificApi(
                                 req, inputRecipeUserId, UserIdType.ANY);
                 if (mappingAndStorage.userIdMapping != null) {
                     recipeUserId = mappingAndStorage.userIdMapping.superTokensUserId;
@@ -72,7 +73,7 @@ public class CanLinkAccountsAPI extends WebserverAPI {
             String primaryUserId = inputPrimaryUserId;
             {
                 AppIdentifierWithStorageAndUserIdMapping mappingAndStorage =
-                        getAppIdentifierWithStorageAndUserIdMappingFromRequest(
+                        getStorageAndUserIdMappingForAppSpecificApi(
                                 req, inputPrimaryUserId, UserIdType.ANY);
                 if (mappingAndStorage.userIdMapping != null) {
                     primaryUserId = mappingAndStorage.userIdMapping.superTokensUserId;
@@ -97,7 +98,7 @@ public class CanLinkAccountsAPI extends WebserverAPI {
             response.addProperty("status", "OK");
             response.addProperty("accountsAlreadyLinked", result.alreadyLinked);
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         } catch (UnknownUserIdException e) {
             throw new ServletException(new BadRequestException("Unknown user ID provided"));

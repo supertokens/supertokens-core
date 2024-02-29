@@ -24,13 +24,16 @@ import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.AnotherPrimaryUserWithEmailAlreadyExistsException;
 import io.supertokens.multitenancy.exception.AnotherPrimaryUserWithPhoneNumberAlreadyExistsException;
 import io.supertokens.multitenancy.exception.AnotherPrimaryUserWithThirdPartyInfoAlreadyExistsException;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.passwordless.exception.DuplicatePhoneNumberException;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
+import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.InputParser;
@@ -73,14 +76,15 @@ public class AssociateUserToTenantAPI extends WebserverAPI {
         }
 
         try {
-            AppIdentifierWithStorageAndUserIdMapping mappingAndStorage =
-                    getAppIdentifierWithStorageAndUserIdMappingFromRequest(req, userId, UserIdType.ANY);
-            if (mappingAndStorage.userIdMapping != null) {
-                userId = mappingAndStorage.userIdMapping.superTokensUserId;
+            AppIdentifierWithStorage appIdentifierWithStorage = getTenantStorage(req).toAppIdentifierWithStorage();
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping = UserIdMapping.getUserIdMapping(
+                    appIdentifierWithStorage, userId, UserIdType.ANY);
+            if (mapping != null) {
+                userId = mapping.superTokensUserId;
             }
 
             boolean addedToTenant = Multitenancy.addUserIdToTenant(main,
-                    getTenantIdentifierWithStorageFromRequest(req), userId);
+                    getTenantStorage(req), userId);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

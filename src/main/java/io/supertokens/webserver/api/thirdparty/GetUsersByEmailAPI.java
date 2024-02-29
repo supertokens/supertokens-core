@@ -28,7 +28,6 @@ import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.useridmapping.UserIdMapping;
-import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
@@ -56,9 +55,9 @@ public class GetUsersByEmailAPI extends WebserverAPI {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         // this API is tenant specific
         try {
-            TenantIdentifierWithStorage tenantIdentifierWithStorage = this.getTenantIdentifierWithStorageFromRequest(
+            TenantIdentifierWithStorage tenantIdentifierWithStorage = this.getTenantStorage(
                     req);
-            AppIdentifierWithStorage appIdentifierWithStorage = this.getAppIdentifierWithStorage(req);
+            AppIdentifierWithStorage appIdentifierWithStorage = tenantIdentifierWithStorage.toAppIdentifierWithStorage();
 
             String email = InputParser.getQueryParamOrThrowError(req, "email", false);
             email = Utils.normaliseEmail(email);

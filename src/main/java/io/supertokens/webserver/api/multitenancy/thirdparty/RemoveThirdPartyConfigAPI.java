@@ -59,7 +59,7 @@ public class RemoveThirdPartyConfigAPI extends WebserverAPI {
         thirdPartyId = thirdPartyId.trim();
 
         try {
-            TenantIdentifierWithStorage tenantIdentifier = this.getTenantIdentifierWithStorageFromRequest(req);
+            TenantIdentifierWithStorage tenantIdentifier = this.getTenantStorage(req);
             TenantConfig config = Multitenancy.getTenantInfo(main, tenantIdentifier);
             if (config == null) {
                 throw new TenantOrAppNotFoundException(tenantIdentifier);

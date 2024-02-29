@@ -18,19 +18,15 @@ package io.supertokens.webserver.api.core;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
-import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.RequestStats;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import java.io.File;
 import java.io.IOException;
 
 public class RequestStatsAPI extends WebserverAPI {
@@ -49,7 +45,7 @@ public class RequestStatsAPI extends WebserverAPI {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         // API is app specific
         try {
-            AppIdentifier appIdentifier = getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(req);
+            AppIdentifier appIdentifier = enforcePublicTenantAndGetPublicTenantStorage(req);
             JsonObject stats = RequestStats.getInstance(main, appIdentifier).getStats();
             stats.addProperty("status", "OK");
             super.sendJsonResponse(200, stats, resp);

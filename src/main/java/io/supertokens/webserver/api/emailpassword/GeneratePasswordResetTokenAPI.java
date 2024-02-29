@@ -62,14 +62,14 @@ public class GeneratePasswordResetTokenAPI extends WebserverAPI {
         // logic according to https://github.com/supertokens/supertokens-core/issues/106
         TenantIdentifier tenantIdentifier = null;
         try {
-            tenantIdentifier = getTenantIdentifierWithStorageFromRequest(req);
+            tenantIdentifier = getTenantStorage(req);
         } catch (TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
 
         try {
             TenantIdentifierWithStorageAndUserIdMapping tenantIdentifierStorageAndMapping =
-                    getTenantIdentifierWithStorageAndUserIdMappingFromRequest(req, userId, UserIdType.ANY);
+                    getStorageAndUserIdMappingForTenantSpecificApi(req, userId, UserIdType.ANY);
             // if a userIdMapping exists, pass the superTokensUserId to the generatePasswordResetToken
             if (tenantIdentifierStorageAndMapping.userIdMapping != null) {
                 userId = tenantIdentifierStorageAndMapping.userIdMapping.superTokensUserId;

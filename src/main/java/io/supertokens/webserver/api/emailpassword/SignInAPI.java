@@ -29,8 +29,6 @@ import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
-import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
@@ -69,7 +67,7 @@ public class SignInAPI extends WebserverAPI {
 
         TenantIdentifierWithStorage tenantIdentifierWithStorage = null;
         try {
-            tenantIdentifierWithStorage = getTenantIdentifierWithStorageFromRequest(req);
+            tenantIdentifierWithStorage = getTenantStorage(req);
         } catch (TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }

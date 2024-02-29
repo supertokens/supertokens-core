@@ -18,6 +18,7 @@ package io.supertokens.webserver.api.useridmapping;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
@@ -85,7 +86,7 @@ public class RemoveUserIdMappingAPI extends WebserverAPI {
 
         try {
             AppIdentifierWithStorageAndUserIdMapping appIdentifierWithStorageAndUserIdMapping =
-                    this.getAppIdentifierWithStorageAndUserIdMappingFromRequest(req, userId, userIdType);
+                    this.getStorageAndUserIdMappingForAppSpecificApi(req, userId, userIdType);
 
             boolean didMappingExist = UserIdMapping.deleteUserIdMapping(
                     appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage, userId, userIdType, force);
@@ -94,7 +95,7 @@ public class RemoveUserIdMappingAPI extends WebserverAPI {
             response.addProperty("didMappingExist", didMappingExist);
             super.sendJsonResponse(200, response, resp);
 
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
 
         } catch (UnknownUserIdException e) {

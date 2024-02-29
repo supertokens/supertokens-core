@@ -53,7 +53,7 @@ public class RevokeSessionAPI extends WebserverAPI {
 
         try {
             Dashboard.revokeSessionWithSessionId(
-                    super.getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(req), sessionId);
+                    super.enforcePublicTenantAndGetPublicTenantStorage(req), sessionId);
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             super.sendJsonResponse(200, response, resp);

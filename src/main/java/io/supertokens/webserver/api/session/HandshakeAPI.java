@@ -57,17 +57,17 @@ public class HandshakeAPI extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
 
-            Utils.addLegacySigningKeyInfos(this.getAppIdentifierWithStorage(req), main, result,
+            Utils.addLegacySigningKeyInfos(this.getAppIdentifier(req), main, result,
                     super.getVersionFromRequest(req).betweenInclusive(SemVer.v2_9, SemVer.v2_21));
 
             result.addProperty("accessTokenBlacklistingEnabled",
-                    Config.getConfig(this.getTenantIdentifierWithStorageFromRequest(req), main)
+                    Config.getConfig(this.getTenantStorage(req), main)
                             .getAccessTokenBlacklisting());
             result.addProperty("accessTokenValidity",
-                    Config.getConfig(this.getTenantIdentifierWithStorageFromRequest(req), main)
+                    Config.getConfig(this.getTenantStorage(req), main)
                             .getAccessTokenValidity());
             result.addProperty("refreshTokenValidity",
-                    Config.getConfig(this.getTenantIdentifierWithStorageFromRequest(req), main)
+                    Config.getConfig(this.getTenantStorage(req), main)
                             .getRefreshTokenValidity());
             super.sendJsonResponse(200, result, resp);
         } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException | UnsupportedJWTSigningAlgorithmException e) {

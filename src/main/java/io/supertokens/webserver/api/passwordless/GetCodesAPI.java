@@ -70,24 +70,24 @@ public class GetCodesAPI extends WebserverAPI {
         }
 
         try {
-            long passwordlessCodeLifetime = Config.getConfig(this.getTenantIdentifierWithStorageFromRequest(req), main)
+            long passwordlessCodeLifetime = Config.getConfig(this.getTenantStorage(req), main)
                     .getPasswordlessCodeLifetime();
             List<Passwordless.DeviceWithCodes> devicesInfos;
             if (deviceId != null) {
-                DeviceWithCodes deviceWithCodes = Passwordless.getDeviceWithCodesById(this.getTenantIdentifierWithStorageFromRequest(req),
+                DeviceWithCodes deviceWithCodes = Passwordless.getDeviceWithCodesById(this.getTenantStorage(req),
                         deviceId);
                 devicesInfos = deviceWithCodes == null ? Collections.emptyList()
                         : Collections.singletonList(deviceWithCodes);
             } else if (deviceIdHash != null) {
                 DeviceWithCodes deviceWithCodes = Passwordless.getDeviceWithCodesByIdHash(
-                        this.getTenantIdentifierWithStorageFromRequest(req), deviceIdHash);
+                        this.getTenantStorage(req), deviceIdHash);
                 devicesInfos = deviceWithCodes == null ? Collections.emptyList()
                         : Collections.singletonList(deviceWithCodes);
             } else if (email != null) {
                 email = Utils.normaliseEmail(email);
-                devicesInfos = Passwordless.getDevicesWithCodesByEmail(this.getTenantIdentifierWithStorageFromRequest(req), email);
+                devicesInfos = Passwordless.getDevicesWithCodesByEmail(this.getTenantStorage(req), email);
             } else {
-                devicesInfos = Passwordless.getDevicesWithCodesByPhoneNumber(this.getTenantIdentifierWithStorageFromRequest(req),
+                devicesInfos = Passwordless.getDevicesWithCodesByPhoneNumber(this.getTenantStorage(req),
                         phoneNumber);
             }
 

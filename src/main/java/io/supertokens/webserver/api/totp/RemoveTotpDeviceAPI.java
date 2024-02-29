@@ -3,6 +3,7 @@ package io.supertokens.webserver.api.totp;
 import com.google.gson.JsonObject;
 import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -58,7 +59,7 @@ public class RemoveTotpDeviceAPI extends WebserverAPI {
 
                 // Try to find the appIdentifier with right storage based on the userId
                 AppIdentifierWithStorageAndUserIdMapping mappingAndStorage =
-                        getAppIdentifierWithStorageAndUserIdMappingFromRequest(
+                        getStorageAndUserIdMappingForAppSpecificApi(
                         req, userId, UserIdType.ANY);
 
                 if (mappingAndStorage.userIdMapping != null) {
@@ -67,7 +68,7 @@ public class RemoveTotpDeviceAPI extends WebserverAPI {
                 appIdentifierWithStorage = mappingAndStorage.appIdentifierWithStorage;
             } catch (UnknownUserIdException e) {
                 // if the user is not found, just use the storage of the tenant of interest
-                appIdentifierWithStorage = getAppIdentifierWithStorage(req);
+                appIdentifierWithStorage = enforcePublicTenantAndGetPublicTenantStorage(req);
             }
 
             Totp.removeDevice(appIdentifierWithStorage, userId, deviceName);
@@ -82,7 +83,8 @@ public class RemoveTotpDeviceAPI extends WebserverAPI {
             result.addProperty("status", "OK");
             result.addProperty("didDeviceExist", false);
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException |
+                 BadPermissionException e) {
             throw new ServletException(e);
         }
     }

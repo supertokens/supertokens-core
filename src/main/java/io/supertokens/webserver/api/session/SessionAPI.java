@@ -29,6 +29,7 @@ import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
@@ -85,7 +86,7 @@ public class SessionAPI extends WebserverAPI {
         assert userDataInDatabase != null;
 
         try {
-            boolean useStaticSigningKey = !Config.getConfig(this.getTenantIdentifierWithStorageFromRequest(req), main)
+            boolean useStaticSigningKey = !Config.getConfig(this.getTenantStorage(req), main)
                     .getAccessTokenSigningKeyDynamic();
             if (version.greaterThanOrEqualTo(SemVer.v2_21)) {
                 Boolean useDynamicSigningKey = InputParser.parseBooleanOrThrowError(input, "useDynamicSigningKey",
@@ -98,16 +99,16 @@ public class SessionAPI extends WebserverAPI {
             AccessToken.VERSION accessTokenVersion = AccessToken.getAccessTokenVersionForCDI(version);
 
             SessionInformationHolder sessionInfo = Session.createNewSession(
-                    this.getTenantIdentifierWithStorageFromRequest(req), main, userId, userDataInJWT,
+                    this.getTenantStorage(req), main, userId, userDataInJWT,
                     userDataInDatabase, enableAntiCsrf, accessTokenVersion,
                     useStaticSigningKey);
 
-            if (StorageLayer.getStorage(this.getTenantIdentifierWithStorageFromRequest(req), main).getType() ==
+            if (StorageLayer.getStorage(this.getTenantStorage(req), main).getType() ==
                     STORAGE_TYPE.SQL) {
                 try {
                     io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping =
                             io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                                    this.getAppIdentifierWithStorage(req),
+                                    this.getTenantStorage(req).toAppIdentifierWithStorage(),
                                     sessionInfo.session.userId, UserIdType.ANY);
                     if (userIdMapping != null) {
                         ActiveUsers.updateLastActive(this.getPublicTenantStorage(req), main,
@@ -134,7 +135,7 @@ public class SessionAPI extends WebserverAPI {
             if (super.getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_21)) {
                 result.remove("idRefreshToken");
             } else {
-                Utils.addLegacySigningKeyInfos(this.getAppIdentifierWithStorage(req), main, result,
+                Utils.addLegacySigningKeyInfos(this.getTenantStorage(req).toAppIdentifier(), main, result,
                         super.getVersionFromRequest(req).betweenInclusive(SemVer.v2_9, SemVer.v2_21));
             }
 
@@ -157,7 +158,7 @@ public class SessionAPI extends WebserverAPI {
 
         TenantIdentifierWithStorage tenantIdentifierWithStorage = null;
         try {
-            AppIdentifierWithStorage appIdentifier = getAppIdentifierWithStorage(req);
+            AppIdentifier appIdentifier = getAppIdentifier(req);
             TenantIdentifier tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
                     appIdentifier.getAppId(), Session.getTenantIdFromSessionHandle(sessionHandle));
             tenantIdentifierWithStorage = tenantIdentifier.withStorage(StorageLayer.getStorage(tenantIdentifier, main));

@@ -71,13 +71,13 @@ public class SignUpAPI extends WebserverAPI {
 
         TenantIdentifier tenantIdentifier = null;
         try {
-            tenantIdentifier = getTenantIdentifierWithStorageFromRequest(req);
+            tenantIdentifier = getTenantStorage(req);
         } catch (TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
 
         try {
-            TenantIdentifierWithStorage tenant = this.getTenantIdentifierWithStorageFromRequest(req);
+            TenantIdentifierWithStorage tenant = this.getTenantStorage(req);
             AuthRecipeUserInfo user = EmailPassword.signUp(tenant, super.main, normalisedEmail, password);
 
             ActiveUsers.updateLastActive(this.getPublicTenantStorage(req), main, user.getSupertokensUserId());

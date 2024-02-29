@@ -50,7 +50,7 @@ public class ListTenantsAPI extends WebserverAPI {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         TenantIdentifierWithStorage tenantIdentifierWithStorage;
         try {
-            tenantIdentifierWithStorage = this.getTenantIdentifierWithStorageFromRequest(req);
+            tenantIdentifierWithStorage = this.getTenantStorage(req);
 
             if (!tenantIdentifierWithStorage.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
                 throw new BadPermissionException("Only the public tenantId is allowed to list all tenants " +

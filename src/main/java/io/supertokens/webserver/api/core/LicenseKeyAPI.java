@@ -24,7 +24,6 @@ import io.supertokens.featureflag.exceptions.NoLicenseKeyFoundException;
 import io.supertokens.httpRequest.HttpResponseException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -53,10 +52,10 @@ public class LicenseKeyAPI extends WebserverAPI {
         try {
             boolean success = false;
             if (licenseKey != null) {
-                success = FeatureFlag.getInstance(main, this.getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(req))
+                success = FeatureFlag.getInstance(main, this.enforcePublicTenantAndGetPublicTenantStorage(req))
                         .setLicenseKeyAndSyncFeatures(licenseKey);
             } else {
-                success = FeatureFlag.getInstance(main, this.getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(req))
+                success = FeatureFlag.getInstance(main, this.enforcePublicTenantAndGetPublicTenantStorage(req))
                         .syncFeatureFlagWithLicenseKey();
             }
             JsonObject result = new JsonObject();
@@ -75,7 +74,7 @@ public class LicenseKeyAPI extends WebserverAPI {
     protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         // API is app specific and can be queried only from public tenant
         try {
-            FeatureFlag.getInstance(main, this.getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(req))
+            FeatureFlag.getInstance(main, this.enforcePublicTenantAndGetPublicTenantStorage(req))
                     .removeLicenseKeyAndSyncFeatures();
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
@@ -89,7 +88,7 @@ public class LicenseKeyAPI extends WebserverAPI {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         // API is app specific and can be queried only from public tenant
         try {
-            String licenseKey = FeatureFlag.getInstance(main, this.getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(req))
+            String licenseKey = FeatureFlag.getInstance(main, this.enforcePublicTenantAndGetPublicTenantStorage(req))
                     .getLicenseKey();
             JsonObject result = new JsonObject();
             result.addProperty("licenseKey", licenseKey);

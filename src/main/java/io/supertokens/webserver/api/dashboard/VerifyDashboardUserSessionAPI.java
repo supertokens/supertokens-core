@@ -61,7 +61,7 @@ public class VerifyDashboardUserSessionAPI extends WebserverAPI {
         try {
             JsonObject invalidSessionResp = new JsonObject();
             invalidSessionResp.addProperty("status", "INVALID_SESSION_ERROR");
-            AppIdentifierWithStorage identifierWithStorage = super.getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(req);
+            AppIdentifierWithStorage identifierWithStorage = super.enforcePublicTenantAndGetPublicTenantStorage(req);
 
             if (Dashboard.isValidUserSession(identifierWithStorage, main, sessionId)) {
                 String email = Dashboard.getEmailFromSessionId(identifierWithStorage, main, sessionId);

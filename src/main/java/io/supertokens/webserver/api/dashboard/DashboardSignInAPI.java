@@ -61,7 +61,7 @@ public class DashboardSignInAPI extends WebserverAPI {
 
         try {
             String sessionId = Dashboard.signInDashboardUser(
-                    super.getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(req), main, email, password);
+                    super.enforcePublicTenantAndGetPublicTenantStorage(req), main, email, password);
             if (sessionId == null) {
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "INVALID_CREDENTIALS_ERROR");

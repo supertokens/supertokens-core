@@ -322,7 +322,7 @@ public class TestApp {
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException,
                     ServletException {
                 try {
-                    super.sendTextResponse(200, this.getAppIdentifierWithStorage(req).getAppId(), resp);
+                    super.sendTextResponse(200, this.getTenantStorage(req).getAppId(), resp);
                 } catch (TenantOrAppNotFoundException e) {
                     throw new ServletException(e);
                 }

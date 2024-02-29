@@ -20,6 +20,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
 import io.supertokens.authRecipe.AuthRecipe;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -59,12 +60,13 @@ public class DeleteUserAPI extends WebserverAPI {
 
         try {
             AppIdentifierWithStorageAndUserIdMapping appIdentifierWithStorageAndUserIdMapping =
-                    this.getAppIdentifierWithStorageAndUserIdMappingFromRequest(req, userId, UserIdType.ANY);
+                    this.getStorageAndUserIdMappingForAppSpecificApi(req, userId, UserIdType.ANY);
 
             AuthRecipe.deleteUser(appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage, userId,
                     removeAllLinkedAccounts,
                     appIdentifierWithStorageAndUserIdMapping.userIdMapping);
-        } catch (StorageQueryException | TenantOrAppNotFoundException | StorageTransactionLogicException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | StorageTransactionLogicException |
+                 BadPermissionException e) {
             throw new ServletException(e);
         } catch (UnknownUserIdException e) {
             // Do nothing

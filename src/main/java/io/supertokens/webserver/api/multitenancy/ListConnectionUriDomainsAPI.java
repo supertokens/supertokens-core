@@ -54,7 +54,7 @@ public class ListConnectionUriDomainsAPI extends WebserverAPI {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         TenantIdentifierWithStorage tenantIdentifierWithStorage;
         try {
-            tenantIdentifierWithStorage = this.getTenantIdentifierWithStorageFromRequest(req);
+            tenantIdentifierWithStorage = this.getTenantStorage(req);
 
             if (!tenantIdentifierWithStorage.equals(new TenantIdentifier(null, null, null))) {
                 throw new BadPermissionException(

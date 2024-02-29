@@ -17,7 +17,6 @@
 package io.supertokens.webserver.api.accountlinking;
 
 import com.google.gson.JsonObject;
-import io.supertokens.ActiveUsers;
 import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
 import io.supertokens.authRecipe.AuthRecipe;
@@ -25,9 +24,9 @@ import io.supertokens.authRecipe.exception.AccountInfoAlreadyAssociatedWithAnoth
 import io.supertokens.authRecipe.exception.InputUserIdIsNotAPrimaryUserException;
 import io.supertokens.authRecipe.exception.RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
-import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
@@ -41,8 +40,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 public class LinkAccountsAPI extends WebserverAPI {
 
@@ -68,7 +65,7 @@ public class LinkAccountsAPI extends WebserverAPI {
             String recipeUserId = inputRecipeUserId;
             {
                 AppIdentifierWithStorageAndUserIdMapping mappingAndStorage =
-                        getAppIdentifierWithStorageAndUserIdMappingFromRequest(
+                        getStorageAndUserIdMappingForAppSpecificApi(
                                 req, inputRecipeUserId, UserIdType.ANY);
                 if (mappingAndStorage.userIdMapping != null) {
                     recipeUserId = mappingAndStorage.userIdMapping.superTokensUserId;
@@ -78,7 +75,7 @@ public class LinkAccountsAPI extends WebserverAPI {
             String primaryUserId = inputPrimaryUserId;
             {
                 AppIdentifierWithStorageAndUserIdMapping mappingAndStorage =
-                        getAppIdentifierWithStorageAndUserIdMappingFromRequest(
+                        getStorageAndUserIdMappingForAppSpecificApi(
                                 req, inputPrimaryUserId, UserIdType.ANY);
                 if (mappingAndStorage.userIdMapping != null) {
                     primaryUserId = mappingAndStorage.userIdMapping.superTokensUserId;
@@ -107,7 +104,8 @@ public class LinkAccountsAPI extends WebserverAPI {
             response.addProperty("accountsAlreadyLinked", linkAccountsResult.wasAlreadyLinked);
             response.add("user", linkAccountsResult.user.toJson());
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | TenantOrAppNotFoundException | FeatureNotEnabledException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | FeatureNotEnabledException |
+                 BadPermissionException e) {
             throw new ServletException(e);
         } catch (UnknownUserIdException e) {
             throw new ServletException(new BadRequestException("Unknown user ID provided"));

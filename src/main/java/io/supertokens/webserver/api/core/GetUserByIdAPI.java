@@ -20,6 +20,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
 import io.supertokens.authRecipe.AuthRecipe;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -55,7 +56,7 @@ public class GetUserByIdAPI extends WebserverAPI {
 
             try {
                 AppIdentifierWithStorageAndUserIdMapping appIdentifierWithStorageAndUserIdMapping =
-                        this.getAppIdentifierWithStorageAndUserIdMappingFromRequest(req, userId, UserIdType.ANY);
+                        this.getStorageAndUserIdMappingForAppSpecificApi(req, userId, UserIdType.ANY);
                 // if a userIdMapping exists, pass the superTokensUserId to the getUserUsingId function
                 if (appIdentifierWithStorageAndUserIdMapping.userIdMapping != null) {
                     userId = appIdentifierWithStorageAndUserIdMapping.userIdMapping.superTokensUserId;
@@ -87,7 +88,7 @@ public class GetUserByIdAPI extends WebserverAPI {
                 super.sendJsonResponse(200, result, resp);
             }
 
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
 

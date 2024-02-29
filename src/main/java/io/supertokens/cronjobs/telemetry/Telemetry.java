@@ -36,6 +36,7 @@ import io.supertokens.pluginInterface.dashboard.DashboardUser;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorages;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
@@ -102,13 +103,12 @@ public class Telemetry extends CronTask {
         if (StorageLayer.getBaseStorage(main).getType() == STORAGE_TYPE.SQL) {
             { // Users count across all tenants
                 Storage[] storages = StorageLayer.getStoragesForApp(main, app);
-                AppIdentifierWithStorage appIdentifierWithAllTenantStorages = new AppIdentifierWithStorage(
-                        app.getConnectionUriDomain(), app.getAppId(),
-                        StorageLayer.getStorage(app.getAsPublicTenantIdentifier(), main), storages
+                AppIdentifierWithStorages appIdentifierWithStorages = new AppIdentifierWithStorages(
+                        app.getConnectionUriDomain(), app.getAppId(), storages
                 );
 
                 json.addProperty("usersCount",
-                        AuthRecipe.getUsersCountAcrossAllTenants(appIdentifierWithAllTenantStorages, null));
+                        AuthRecipe.getUsersCountAcrossAllTenants(appIdentifierWithStorages, null));
             }
 
             { // Dashboard user emails

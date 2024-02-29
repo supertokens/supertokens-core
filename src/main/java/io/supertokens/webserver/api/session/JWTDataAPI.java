@@ -24,6 +24,7 @@ import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
@@ -66,7 +67,7 @@ public class JWTDataAPI extends WebserverAPI {
 
         TenantIdentifierWithStorage tenantIdentifierWithStorage = null;
         try {
-            AppIdentifierWithStorage appIdentifier = getAppIdentifierWithStorage(req);
+            AppIdentifier appIdentifier = getAppIdentifier(req);
             TenantIdentifier tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(), Session.getTenantIdFromSessionHandle(sessionHandle));
             tenantIdentifierWithStorage = tenantIdentifier.withStorage(StorageLayer.getStorage(tenantIdentifier, main));
         } catch (TenantOrAppNotFoundException e) {
@@ -110,7 +111,7 @@ public class JWTDataAPI extends WebserverAPI {
 
         TenantIdentifierWithStorage tenantIdentifierWithStorage = null;
         try {
-            AppIdentifierWithStorage appIdentifier = getAppIdentifierWithStorage(req);
+            AppIdentifier appIdentifier = getAppIdentifier(req);
             TenantIdentifier tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(), Session.getTenantIdFromSessionHandle(sessionHandle));
             tenantIdentifierWithStorage = tenantIdentifier.withStorage(StorageLayer.getStorage(tenantIdentifier, main));
         } catch (TenantOrAppNotFoundException e) {

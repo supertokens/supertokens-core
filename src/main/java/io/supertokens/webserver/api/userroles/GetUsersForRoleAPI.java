@@ -61,7 +61,7 @@ public class GetUsersForRoleAPI extends WebserverAPI {
 
         try {
 
-            String[] roleUsers = UserRoles.getUsersForRole(this.getTenantIdentifierWithStorageFromRequest(req), role);
+            String[] roleUsers = UserRoles.getUsersForRole(this.getTenantStorage(req), role);
             JsonArray arr = new JsonArray();
 
             for (String s : roleUsers) {

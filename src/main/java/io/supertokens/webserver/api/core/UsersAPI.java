@@ -41,7 +41,6 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.stream.Stream;
 
 public class UsersAPI extends WebserverAPI {
@@ -77,7 +76,7 @@ public class UsersAPI extends WebserverAPI {
 
         TenantIdentifierWithStorage tenantIdentifierWithStorage = null;
         try {
-            tenantIdentifierWithStorage = this.getTenantIdentifierWithStorageFromRequest(req);
+            tenantIdentifierWithStorage = this.getTenantStorage(req);
         } catch (TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }

@@ -28,6 +28,7 @@ import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
@@ -68,26 +69,21 @@ public class RefreshSessionAPI extends WebserverAPI {
         assert enableAntiCsrf != null;
         assert refreshToken != null;
 
-        AppIdentifierWithStorage appIdentifierWithStorage = null;
-        try {
-            appIdentifierWithStorage = this.getAppIdentifierWithStorage(req);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new ServletException(e);
-        }
+        AppIdentifier appIdentifier = this.getAppIdentifier(req);
 
         SemVer version = super.getVersionFromRequest(req);
         try {
             AccessToken.VERSION accessTokenVersion = AccessToken.getAccessTokenVersionForCDI(version);
 
-            SessionInformationHolder sessionInfo = Session.refreshSession(appIdentifierWithStorage, main,
+            SessionInformationHolder sessionInfo = Session.refreshSession(appIdentifier, main,
                     refreshToken, antiCsrfToken,
                     enableAntiCsrf, accessTokenVersion);
 
-            if (StorageLayer.getStorage(this.getTenantIdentifierWithStorageFromRequest(req), main).getType() ==
+            if (StorageLayer.getStorage(this.getTenantStorage(req), main).getType() ==
                     STORAGE_TYPE.SQL) {
                 try {
                     UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                            this.getAppIdentifierWithStorage(req),
+                            this.getTenantStorage(req).toAppIdentifierWithStorage(),
                             sessionInfo.session.userId, UserIdType.ANY);
                     if (userIdMapping != null) {
                         ActiveUsers.updateLastActive(this.getPublicTenantStorage(req), main,
@@ -118,14 +114,14 @@ public class RefreshSessionAPI extends WebserverAPI {
                  UnsupportedJWTSigningAlgorithmException e) {
             throw new ServletException(e);
         } catch (AccessTokenPayloadError | UnauthorisedException e) {
-            Logging.debug(main, appIdentifierWithStorage.getAsPublicTenantIdentifier(),
+            Logging.debug(main, appIdentifier.getAsPublicTenantIdentifier(),
                     Utils.exceptionStacktraceToString(e));
             JsonObject reply = new JsonObject();
             reply.addProperty("status", "UNAUTHORISED");
             reply.addProperty("message", e.getMessage());
             super.sendJsonResponse(200, reply, resp);
         } catch (TokenTheftDetectedException e) {
-            Logging.debug(main, appIdentifierWithStorage.getAsPublicTenantIdentifier(),
+            Logging.debug(main, appIdentifier.getAsPublicTenantIdentifier(),
                     Utils.exceptionStacktraceToString(e));
             JsonObject reply = new JsonObject();
             reply.addProperty("status", "TOKEN_THEFT_DETECTED");

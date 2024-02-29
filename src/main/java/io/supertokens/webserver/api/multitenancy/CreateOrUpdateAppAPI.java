@@ -18,12 +18,10 @@ package io.supertokens.webserver.api.multitenancy;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
-import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.Utils;
-import io.supertokens.webserver.api.multitenancy.BaseCreateOrUpdate;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -58,7 +56,7 @@ public class CreateOrUpdateAppAPI extends BaseCreateOrUpdate {
 
         TenantIdentifier sourceTenantIdentifier;
         try {
-            sourceTenantIdentifier = this.getTenantIdentifierWithStorageFromRequest(req);
+            sourceTenantIdentifier = this.getTenantStorage(req);
         } catch (TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }

@@ -91,7 +91,7 @@ public class DashboardUserAPI extends WebserverAPI {
             }
 
             DashboardUser user = Dashboard.signUpDashboardUser(
-                    this.getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(req),
+                    this.enforcePublicTenantAndGetPublicTenantStorage(req),
                     main, email, password);
             JsonObject userAsJsonObject = new JsonParser().parse(new Gson().toJson(user)).getAsJsonObject();
 
@@ -147,7 +147,7 @@ public class DashboardUserAPI extends WebserverAPI {
 
         try {
             AppIdentifierWithStorage appIdentifierWithStorage =
-                    this.getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(
+                    this.enforcePublicTenantAndGetPublicTenantStorage(
                     req);
             String userId = InputParser.parseStringOrThrowError(input, "userId", true);
             if (userId != null) {
@@ -216,7 +216,7 @@ public class DashboardUserAPI extends WebserverAPI {
                 // normalize userId
                 userId = Utils.normalizeAndValidateStringParam(userId, "userId");
                 boolean didUserExist = Dashboard.deleteUserWithUserId(
-                        super.getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(req), userId);
+                        super.enforcePublicTenantAndGetPublicTenantStorage(req), userId);
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "OK");
                 response.addProperty("didUserExist", didUserExist);
@@ -232,7 +232,7 @@ public class DashboardUserAPI extends WebserverAPI {
                 email = io.supertokens.utils.Utils.normaliseEmail(email);
 
                 boolean didUserExist = Dashboard.deleteUserWithEmail(
-                        super.getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(req), email);
+                        super.enforcePublicTenantAndGetPublicTenantStorage(req), email);
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "OK");
                 response.addProperty("didUserExist", didUserExist);

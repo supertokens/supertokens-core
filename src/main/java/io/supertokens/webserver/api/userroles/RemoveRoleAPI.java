@@ -18,6 +18,7 @@ package io.supertokens.webserver.api.userroles;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -57,13 +58,13 @@ public class RemoveRoleAPI extends WebserverAPI {
         }
 
         try {
-            boolean didRoleExist = UserRoles.deleteRole(this.getAppIdentifierWithStorage(req), role);
+            boolean didRoleExist = UserRoles.deleteRole(this.enforcePublicTenantAndGetPublicTenantStorage(req), role);
 
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             response.addProperty("didRoleExist", didRoleExist);
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
     }

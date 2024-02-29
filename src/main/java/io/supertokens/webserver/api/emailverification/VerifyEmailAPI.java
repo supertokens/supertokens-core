@@ -17,16 +17,21 @@
 package io.supertokens.webserver.api.emailverification;
 
 import com.google.gson.JsonObject;
+import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
 import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.emailverification.User;
 import io.supertokens.emailverification.exception.EmailVerificationInvalidTokenException;
+import io.supertokens.multitenancy.exception.BadPermissionException;
+import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -67,7 +72,7 @@ public class VerifyEmailAPI extends WebserverAPI {
 
         TenantIdentifierWithStorage tenantIdentifierWithStorage = null;
         try {
-            tenantIdentifierWithStorage = this.getTenantIdentifierWithStorageFromRequest(req);
+            tenantIdentifierWithStorage = this.getTenantStorage(req);
         } catch (TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
@@ -101,7 +106,15 @@ public class VerifyEmailAPI extends WebserverAPI {
         assert email != null;
 
         try {
-            boolean isVerified = EmailVerification.isEmailVerified(this.getAppIdentifierWithStorage(req), userId,
+            AppIdentifierWithStorage appIdentifierWithStorage;
+            try {
+                AppIdentifierWithStorageAndUserIdMapping storageAndUidMapping = getStorageAndUserIdMappingForAppSpecificApi(
+                        req, userId, UserIdType.ANY);
+                appIdentifierWithStorage = storageAndUidMapping.appIdentifierWithStorage;
+            } catch (UnknownUserIdException e) {
+                appIdentifierWithStorage = enforcePublicTenantAndGetPublicTenantStorage(req);
+            }
+            boolean isVerified = EmailVerification.isEmailVerified(appIdentifierWithStorage, userId,
                     email);
 
             JsonObject result = new JsonObject();
@@ -109,7 +122,7 @@ public class VerifyEmailAPI extends WebserverAPI {
             result.addProperty("isVerified", isVerified);
             super.sendJsonResponse(200, result, resp);
 
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
 

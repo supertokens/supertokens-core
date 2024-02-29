@@ -18,6 +18,7 @@ package io.supertokens.webserver.api.useridmapping;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
@@ -94,10 +95,7 @@ public class UserIdMappingAPI extends WebserverAPI {
         }
 
         try {
-            AppIdentifierWithStorageAndUserIdMapping appIdentifierWithStorageAndUserIdMapping =
-                    this.getAppIdentifierWithStorageAndUserIdMappingFromRequest(req, superTokensUserId, UserIdType.SUPERTOKENS);
-
-            UserIdMapping.createUserIdMapping(main, appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage,
+            UserIdMapping.createUserIdMapping(enforcePublicTenantAndGetAllStoragesForApp(req),
                     superTokensUserId, externalUserId, externalUserIdInfo, force, getVersionFromRequest(req).greaterThanOrEqualTo(
                             SemVer.v4_0));
 
@@ -105,7 +103,7 @@ public class UserIdMappingAPI extends WebserverAPI {
             response.addProperty("status", "OK");
             super.sendJsonResponse(200, response, resp);
 
-        } catch (UnknownSuperTokensUserIdException | UnknownUserIdException e) {
+        } catch (UnknownSuperTokensUserIdException e) {
             JsonObject response = new JsonObject();
             response.addProperty("status", "UNKNOWN_SUPERTOKENS_USER_ID_ERROR");
             super.sendJsonResponse(200, response, resp);
@@ -117,7 +115,7 @@ public class UserIdMappingAPI extends WebserverAPI {
             response.addProperty("doesExternalUserIdExist", e.doesExternalUserIdExist);
             super.sendJsonResponse(200, response, resp);
 
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
     }
@@ -164,7 +162,7 @@ public class UserIdMappingAPI extends WebserverAPI {
             // Request from (app1, tenant3) may result in either user1 or user2
 
             AppIdentifierWithStorageAndUserIdMapping appIdentifierWithStorageAndUserIdMapping =
-                    this.getAppIdentifierWithStorageAndUserIdMappingFromRequest(req, userId, userIdType);
+                    this.getStorageAndUserIdMappingForAppSpecificApi(req, userId, userIdType);
 
             if (appIdentifierWithStorageAndUserIdMapping.userIdMapping == null) {
                 JsonObject response = new JsonObject();
@@ -185,7 +183,7 @@ public class UserIdMappingAPI extends WebserverAPI {
             }
             super.sendJsonResponse(200, response, resp);
 
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
 
         } catch (UnknownUserIdException e) {

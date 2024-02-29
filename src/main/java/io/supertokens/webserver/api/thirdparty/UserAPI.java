@@ -19,6 +19,7 @@ package io.supertokens.webserver.api.thirdparty;
 import com.google.gson.JsonObject;
 import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
@@ -76,7 +77,7 @@ public class UserAPI extends WebserverAPI {
                 // Query by userId
                 try {
                     AppIdentifierWithStorageAndUserIdMapping appIdentifierWithStorageAndUserIdMapping =
-                            this.getAppIdentifierWithStorageAndUserIdMappingFromRequest(req, userId, UserIdType.ANY);
+                            this.getStorageAndUserIdMappingForAppSpecificApi(req, userId, UserIdType.ANY);
                     // if a userIdMapping exists, pass the superTokensUserId to the getUserUsingId function
                     if (appIdentifierWithStorageAndUserIdMapping.userIdMapping != null) {
                         userId = appIdentifierWithStorageAndUserIdMapping.userIdMapping.superTokensUserId;
@@ -91,10 +92,10 @@ public class UserAPI extends WebserverAPI {
                     // let the user be null
                 }
             } else {
-                user = ThirdParty.getUser(this.getTenantIdentifierWithStorageFromRequest(req), thirdPartyId,
+                user = ThirdParty.getUser(this.getTenantStorage(req), thirdPartyId,
                         thirdPartyUserId);
                 if (user != null) {
-                    UserIdMapping.populateExternalUserIdForUsers(getTenantIdentifierWithStorageFromRequest(req), new AuthRecipeUserInfo[]{user});
+                    UserIdMapping.populateExternalUserIdForUsers(getTenantStorage(req), new AuthRecipeUserInfo[]{user});
                 }
             }
 
@@ -118,7 +119,7 @@ public class UserAPI extends WebserverAPI {
                 super.sendJsonResponse(200, result, resp);
             }
 
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
 

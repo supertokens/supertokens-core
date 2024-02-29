@@ -20,6 +20,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.Passwordless.FieldUpdate;
 import io.supertokens.passwordless.exceptions.PhoneNumberChangeNotAllowedException;
@@ -77,7 +78,7 @@ public class UserAPI extends WebserverAPI {
             if (userId != null) {
                 try {
                     AppIdentifierWithStorageAndUserIdMapping appIdentifierWithStorageAndUserIdMapping =
-                            this.getAppIdentifierWithStorageAndUserIdMappingFromRequest(req, userId, UserIdType.ANY);
+                            this.getStorageAndUserIdMappingForAppSpecificApi(req, userId, UserIdType.ANY);
                     if (appIdentifierWithStorageAndUserIdMapping.userIdMapping != null) {
                         userId = appIdentifierWithStorageAndUserIdMapping.userIdMapping.superTokensUserId;
                     }
@@ -93,15 +94,15 @@ public class UserAPI extends WebserverAPI {
                 }
             } else if (email != null) {
                 email = Utils.normaliseEmail(email);
-                user = Passwordless.getUserByEmail(this.getTenantIdentifierWithStorageFromRequest(req), email);
+                user = Passwordless.getUserByEmail(this.getTenantStorage(req), email);
                 if (user != null) {
-                    io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(this.getTenantIdentifierWithStorageFromRequest(req), new AuthRecipeUserInfo[]{user});
+                    io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(this.getTenantStorage(req), new AuthRecipeUserInfo[]{user});
                 }
             } else {
-                user = Passwordless.getUserByPhoneNumber(this.getTenantIdentifierWithStorageFromRequest(req),
+                user = Passwordless.getUserByPhoneNumber(this.getTenantStorage(req),
                         phoneNumber);
                 if (user != null) {
-                    io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(this.getTenantIdentifierWithStorageFromRequest(req), new AuthRecipeUserInfo[]{user});
+                    io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(this.getTenantStorage(req), new AuthRecipeUserInfo[]{user});
                 }
             }
 
@@ -125,7 +126,7 @@ public class UserAPI extends WebserverAPI {
                 result.add("user", userJson);
                 super.sendJsonResponse(200, result, resp);
             }
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
     }
@@ -153,7 +154,7 @@ public class UserAPI extends WebserverAPI {
 
         try {
             AppIdentifierWithStorageAndUserIdMapping appIdentifierWithStorageAndUserIdMapping =
-                    this.getAppIdentifierWithStorageAndUserIdMappingFromRequest(req, userId, UserIdType.ANY);
+                    this.getStorageAndUserIdMappingForAppSpecificApi(req, userId, UserIdType.ANY);
             // if a userIdMapping exists, pass the superTokensUserId to the updateUser
             if (appIdentifierWithStorageAndUserIdMapping.userIdMapping != null) {
                 userId = appIdentifierWithStorageAndUserIdMapping.userIdMapping.superTokensUserId;
@@ -165,7 +166,7 @@ public class UserAPI extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         } catch (UnknownUserIdException e) {
             JsonObject result = new JsonObject();

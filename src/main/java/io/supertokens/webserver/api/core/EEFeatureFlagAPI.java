@@ -24,7 +24,6 @@ import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -49,9 +48,9 @@ public class EEFeatureFlagAPI extends WebserverAPI {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         // API is app specific and can be queried only from public tenant
         try {
-            EE_FEATURES[] features = FeatureFlag.getInstance(main, this.getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(req))
+            EE_FEATURES[] features = FeatureFlag.getInstance(main, this.enforcePublicTenantAndGetPublicTenantStorage(req))
                     .getEnabledFeatures();
-            JsonObject stats = FeatureFlag.getInstance(main, this.getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(req))
+            JsonObject stats = FeatureFlag.getInstance(main, this.enforcePublicTenantAndGetPublicTenantStorage(req))
                     .getPaidFeatureStats();
             JsonObject result = new JsonObject();
             JsonArray featuresJson = new JsonArray();

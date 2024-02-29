@@ -26,6 +26,7 @@ import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.session.Session;
@@ -68,17 +69,12 @@ public class SessionRegenerateAPI extends WebserverAPI {
 
         JsonObject userDataInJWT = InputParser.parseJsonObjectOrThrowError(input, "userDataInJWT", true);
 
-        AppIdentifierWithStorage appIdentifierWithStorage = null;
-        try {
-            appIdentifierWithStorage = this.getAppIdentifierWithStorage(req);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new ServletException(e);
-        }
+        AppIdentifier appIdentifier = this.getAppIdentifier(req);
 
         try {
             SessionInformationHolder sessionInfo = getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_21) ?
-                    Session.regenerateToken(this.getAppIdentifierWithStorage(req), main, accessToken, userDataInJWT) :
-                    Session.regenerateTokenBeforeCDI2_21(appIdentifierWithStorage, main, accessToken,
+                    Session.regenerateToken(appIdentifier, main, accessToken, userDataInJWT) :
+                    Session.regenerateTokenBeforeCDI2_21(appIdentifier, main, accessToken,
                             userDataInJWT);
 
             JsonObject result = sessionInfo.toJsonObject();
@@ -98,7 +94,7 @@ public class SessionRegenerateAPI extends WebserverAPI {
                  UnsupportedJWTSigningAlgorithmException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         } catch (UnauthorisedException | TryRefreshTokenException e) {
-            Logging.debug(main, appIdentifierWithStorage.getAsPublicTenantIdentifier(),
+            Logging.debug(main, appIdentifier.getAsPublicTenantIdentifier(),
                     Utils.exceptionStacktraceToString(e));
             JsonObject reply = new JsonObject();
             reply.addProperty("status", "UNAUTHORISED");

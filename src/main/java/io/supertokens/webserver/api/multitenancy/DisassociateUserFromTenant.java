@@ -24,7 +24,9 @@ import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.InputParser;
@@ -67,15 +69,16 @@ public class DisassociateUserFromTenant extends WebserverAPI {
 
         try {
             String externalUserId = null;
-            AppIdentifierWithStorageAndUserIdMapping mappingAndStorage =
-                    getAppIdentifierWithStorageAndUserIdMappingFromRequest(req, userId, UserIdType.ANY);
-            if (mappingAndStorage.userIdMapping != null) {
-                userId = mappingAndStorage.userIdMapping.superTokensUserId;
-                externalUserId = mappingAndStorage.userIdMapping.externalUserId;
+            AppIdentifierWithStorage appIdentifierWithStorage = getTenantStorage(req).toAppIdentifierWithStorage();
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping = UserIdMapping.getUserIdMapping(
+                    appIdentifierWithStorage, userId, UserIdType.ANY);
+            if (mapping != null) {
+                userId = mapping.superTokensUserId;
+                externalUserId = mapping.externalUserId;
             }
 
             boolean wasAssociated = Multitenancy.removeUserIdFromTenant(main,
-                    getTenantIdentifierWithStorageFromRequest(req), userId, externalUserId);
+                    getTenantStorage(req), userId, externalUserId);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
@@ -90,6 +93,5 @@ public class DisassociateUserFromTenant extends WebserverAPI {
         } catch (StorageQueryException | TenantOrAppNotFoundException | FeatureNotEnabledException e) {
             throw new ServletException(e);
         }
-
     }
 }

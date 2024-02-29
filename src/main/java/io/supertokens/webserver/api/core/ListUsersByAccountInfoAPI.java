@@ -23,9 +23,9 @@ import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.useridmapping.UserIdMapping;
-import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -73,11 +73,10 @@ public class ListUsersByAccountInfoAPI extends WebserverAPI {
         }
 
         try {
-            AppIdentifierWithStorage appIdentifierWithStorage = this.getAppIdentifierWithStorage(req);
+            TenantIdentifierWithStorage tenantIdentifierWithStorage = this.getTenantStorage(req);
             AuthRecipeUserInfo[] users = AuthRecipe.getUsersByAccountInfo(
-                    this.getTenantIdentifierWithStorageFromRequest(
-                            req), doUnionOfAccountInfo, email, phoneNumber, thirdPartyId, thirdPartyUserId);
-            UserIdMapping.populateExternalUserIdForUsers(appIdentifierWithStorage, users);
+                    this.getTenantStorage(req), doUnionOfAccountInfo, email, phoneNumber, thirdPartyId, thirdPartyUserId);
+            UserIdMapping.populateExternalUserIdForUsers(tenantIdentifierWithStorage.toAppIdentifierWithStorage(), users);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

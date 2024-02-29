@@ -385,7 +385,8 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         return result;
     }
 
-    public static Storage[] getStoragesForApp(Main main, AppIdentifier appIdentifier) {
+    public static Storage[] getStoragesForApp(Main main, AppIdentifier appIdentifier)
+            throws TenantOrAppNotFoundException {
         Map<String, Storage> userPoolToStorage = new HashMap<>();
 
         Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> resources =
@@ -397,7 +398,11 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                 userPoolToStorage.put(storage.getUserPoolId(), storage);
             }
         }
-        return userPoolToStorage.values().toArray(new Storage[0]);
+        Storage[] storages = userPoolToStorage.values().toArray(new Storage[0]);
+        if (storages.length == 0) {
+            throw new TenantOrAppNotFoundException(appIdentifier);
+        }
+        return storages;
     }
 
     public static TenantIdentifierWithStorageAndUserIdMapping getTenantIdentifierWithStorageAndUserIdMappingForUser(
@@ -432,52 +437,35 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         throw new UnknownUserIdException();
     }
 
-    public static AppIdentifierWithStorageAndUserIdMapping getAppIdentifierWithStorageAndUserIdMappingForUserWithPriorityForTenantStorage(
-            Main main, AppIdentifier appIdentifier, Storage priorityStorage, String userId,
+    public static AppIdentifierWithStorageAndUserIdMapping getAppIdentifierWithStorageAndUserIdMappingForUser(
+            AppIdentifierWithStorages appIdentifierWithStorages, String userId,
             UserIdType userIdType) throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException {
 
-        Storage[] storages = getStoragesForApp(main, appIdentifier);
+        Storage[] storages = appIdentifierWithStorages.getStorages();
 
         if (storages.length == 0) {
-            throw new TenantOrAppNotFoundException(appIdentifier);
+            throw new TenantOrAppNotFoundException(appIdentifierWithStorages);
         }
 
-        // We look for userId in the priorityStorage first just in case multiple storages have the mapping, we
-        // return the mapping from the storage of the tenant from which the request came from.
-        {
-            UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                    appIdentifier.withStorage(priorityStorage),
-                    userId, userIdType);
+        AppIdentifier appIdentifier = appIdentifierWithStorages;
 
-            if (mapping != null) {
-                AppIdentifierWithStorage appIdentifierWithStorage = appIdentifier.withStorage(priorityStorage);
-                return new AppIdentifierWithStorageAndUserIdMapping(appIdentifierWithStorage, mapping);
-            }
-
+        // First look in auth recipes
+        for (Storage storage : storages) {
             if (userIdType != UserIdType.EXTERNAL
-                    && ((AuthRecipeStorage) priorityStorage).doesUserIdExist(appIdentifier, userId)) {
-                AppIdentifierWithStorage appIdentifierWithStorage = appIdentifier.withStorage(priorityStorage);
-                return new AppIdentifierWithStorageAndUserIdMapping(appIdentifierWithStorage, null);
-            }
-            if (userIdType != UserIdType.SUPERTOKENS) {
-                AppIdentifierWithStorage appIdentifierWithStorage = appIdentifier.withStorage(priorityStorage);
-                try {
-                    io.supertokens.useridmapping.UserIdMapping.findNonAuthStoragesWhereUserIdIsUsedOrAssertIfUsed(
-                            appIdentifierWithStorage, userId, true);
-                } catch (ServletException e) {
-                    // this means that the userId is being used for a non auth recipe.
-                    return new AppIdentifierWithStorageAndUserIdMapping(appIdentifierWithStorage, null);
-                }
+                    && ((AuthRecipeStorage) storage).doesUserIdExist(appIdentifier, userId)) {
+                AppIdentifierWithStorage appIdentifierWithStorage = appIdentifier.withStorage(storage);
+
+                UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+                        appIdentifierWithStorages.withStorage(storage),
+                        userId, userIdType);
+
+                return new AppIdentifierWithStorageAndUserIdMapping(appIdentifierWithStorage, mapping);
             }
         }
 
         for (Storage storage : storages) {
-            if (storage == priorityStorage) {
-                continue; // Already checked previously
-            }
-
             UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                    appIdentifier.withStorage(storage),
+                    appIdentifierWithStorages.withStorage(storage),
                     userId, userIdType);
 
             if (mapping != null) {
@@ -485,11 +473,6 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                 return new AppIdentifierWithStorageAndUserIdMapping(appIdentifierWithStorage, mapping);
             }
 
-            if (userIdType != UserIdType.EXTERNAL
-                    && ((AuthRecipeStorage) storage).doesUserIdExist(appIdentifier, userId)) {
-                AppIdentifierWithStorage appIdentifierWithStorage = appIdentifier.withStorage(storage);
-                return new AppIdentifierWithStorageAndUserIdMapping(appIdentifierWithStorage, null);
-            }
             if (userIdType != UserIdType.SUPERTOKENS) {
                 AppIdentifierWithStorage appIdentifierWithStorage = appIdentifier.withStorage(storage);
                 try {

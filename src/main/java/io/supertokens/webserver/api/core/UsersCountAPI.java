@@ -23,6 +23,7 @@ import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorages;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -76,13 +77,13 @@ public class UsersCountAPI extends WebserverAPI {
             long count;
 
             if (includeAllTenants) {
-                AppIdentifierWithStorage appIdentifierWithStorage = getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(req);
+                AppIdentifierWithStorages appIdentifierWithStorages = enforcePublicTenantAndGetAllStoragesForApp(req);
 
-                count = AuthRecipe.getUsersCountAcrossAllTenants(appIdentifierWithStorage,
+                count = AuthRecipe.getUsersCountAcrossAllTenants(appIdentifierWithStorages,
                         recipeIdsEnumBuilder.build().toArray(RECIPE_ID[]::new));
 
             } else {
-                count = AuthRecipe.getUsersCountForTenant(this.getTenantIdentifierWithStorageFromRequest(req),
+                count = AuthRecipe.getUsersCountForTenant(this.getTenantStorage(req),
                         recipeIdsEnumBuilder.build().toArray(RECIPE_ID[]::new));
             }
             JsonObject result = new JsonObject();

@@ -102,18 +102,18 @@ public class SessionRemoveAPI extends WebserverAPI {
                 String[] sessionHandlesRevoked;
                 if (revokeAcrossAllTenants) {
                     sessionHandlesRevoked = Session.revokeAllSessionsForUser(
-                            main, this.getAppIdentifierWithStorage(req), userId, revokeSessionsForLinkedAccounts);
+                            main, this.getTenantStorage(req).toAppIdentifierWithStorage(), userId, revokeSessionsForLinkedAccounts);
                 } else {
                     sessionHandlesRevoked = Session.revokeAllSessionsForUser(
-                            main, this.getTenantIdentifierWithStorageFromRequest(req), userId,
+                            main, this.getTenantStorage(req), userId,
                             revokeSessionsForLinkedAccounts);
                 }
 
-                if (StorageLayer.getStorage(this.getTenantIdentifierWithStorageFromRequest(req), main).getType() ==
+                if (StorageLayer.getStorage(this.getTenantStorage(req), main).getType() ==
                         STORAGE_TYPE.SQL) {
                     try {
                         UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                                this.getAppIdentifierWithStorage(req),
+                                this.getTenantStorage(req).toAppIdentifierWithStorage(),
                                 userId, UserIdType.ANY);
                         if (userIdMapping != null) {
                             ActiveUsers.updateLastActive(this.getPublicTenantStorage(req), main,
@@ -138,7 +138,7 @@ public class SessionRemoveAPI extends WebserverAPI {
         } else {
             try {
                 String[] sessionHandlesRevoked = Session.revokeSessionUsingSessionHandles(main,
-                        this.getAppIdentifierWithStorage(req), sessionHandles);
+                        this.getTenantStorage(req).toAppIdentifierWithStorage(), sessionHandles);
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
                 JsonArray sessionHandlesRevokedJSON = new JsonArray();

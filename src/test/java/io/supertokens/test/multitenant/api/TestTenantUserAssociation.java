@@ -429,7 +429,7 @@ public class TestTenantUserAssociation {
                 "password", process.getProcess());
         String userId = user.get("id").getAsString();
 
-        TestMultitenancyAPIHelper.createUserIdMapping(new TenantIdentifier(null, "a1", "t1"), userId, "externalid",
+        TestMultitenancyAPIHelper.createUserIdMapping(new TenantIdentifier(null, "a1", null), userId, "externalid",
                 process.getProcess());
 
         JsonObject response = TestMultitenancyAPIHelper.disassociateUserFromTenant(
@@ -449,7 +449,7 @@ public class TestTenantUserAssociation {
                 "password", process.getProcess());
         String userId = user.get("id").getAsString();
 
-        TestMultitenancyAPIHelper.createUserIdMapping(new TenantIdentifier(null, "a1", "t1"), userId, "externalid",
+        TestMultitenancyAPIHelper.createUserIdMapping(new TenantIdentifier(null, "a1", null), userId, "externalid",
                 process.getProcess());
 
         JsonObject response = TestMultitenancyAPIHelper.associateUserToTenant(new TenantIdentifier(null, "a1", "t2"),
@@ -475,7 +475,7 @@ public class TestTenantUserAssociation {
                 "password", process.getProcess());
         String userId = user.get("id").getAsString();
 
-        TestMultitenancyAPIHelper.createUserIdMapping(new TenantIdentifier(null, "a1", "t1"), userId, "externalid",
+        TestMultitenancyAPIHelper.createUserIdMapping(new TenantIdentifier(null, "a1", null), userId, "externalid",
                 process.getProcess());
 
         JsonObject response = TestMultitenancyAPIHelper.associateUserToTenant(new TenantIdentifier(null, "a1", "t2"),

@@ -30,10 +30,7 @@ import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.useridmapping.UserIdType;
@@ -88,7 +85,7 @@ public abstract class WebserverAPI extends HttpServlet {
             throws ServletException, TenantOrAppNotFoundException {
         SemVer maxCDIVersion = getLatestCDIVersion();
         String maxCDIVersionStr = Config.getConfig(
-                getAppIdentifierWithStorage(req).getAsPublicTenantIdentifier(), main).getMaxCDIVersion();
+                getAppIdentifier(req).getAsPublicTenantIdentifier(), main).getMaxCDIVersion();
         if (maxCDIVersionStr != null) {
             maxCDIVersion = new SemVer(maxCDIVersionStr);
         }
@@ -235,10 +232,8 @@ public abstract class WebserverAPI extends HttpServlet {
         if (!apiPath.startsWith("/")) {
             apiPath = "/" + apiPath;
         }
-        if (apiPath.equals("/")) {
-            if (path.equals("") || path.equals("/")) {
-                return null;
-            }
+        if (apiPath.equals("/") && (path.equals("") || path.equals("/"))) {
+            return null;
         } else {
             if (path.matches("^/appid-[a-z0-9-]*/[a-z0-9-]+" + apiPath + "/?$")) {
                 String tenantId = path.split("/")[2].toLowerCase();
@@ -258,7 +253,6 @@ public abstract class WebserverAPI extends HttpServlet {
                 return null;
             }
         }
-        return null;
     }
 
     private String getAppId(HttpServletRequest req) {
@@ -308,7 +302,11 @@ public abstract class WebserverAPI extends HttpServlet {
         return new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req), this.getTenantId(req));
     }
 
-    protected TenantIdentifierWithStorage getTenantIdentifierWithStorageFromRequest(HttpServletRequest req)
+    protected AppIdentifier getAppIdentifier(HttpServletRequest req) throws ServletException {
+        return new AppIdentifier(this.getConnectionUriDomain(req), this.getAppId(req));
+    }
+
+    protected TenantIdentifierWithStorage getTenantStorage(HttpServletRequest req)
             throws TenantOrAppNotFoundException, ServletException {
         TenantIdentifier tenantIdentifier = new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req),
                 this.getTenantId(req));
@@ -316,36 +314,36 @@ public abstract class WebserverAPI extends HttpServlet {
         return tenantIdentifier.withStorage(storage);
     }
 
-    protected AppIdentifierWithStorage getAppIdentifierWithStorage(HttpServletRequest req)
-            throws TenantOrAppNotFoundException, ServletException {
-        TenantIdentifier tenantIdentifier = new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req),
-                this.getTenantId(req));
+    protected AppIdentifierWithStorages enforcePublicTenantAndGetAllStoragesForApp(HttpServletRequest req)
+            throws ServletException, BadPermissionException, TenantOrAppNotFoundException {
+        if (getTenantId(req) != null) {
+            throw new BadPermissionException("Only public tenantId can this app specific API");
+        }
 
-        Storage storage = StorageLayer.getStorage(tenantIdentifier, main);
-        Storage[] storages = StorageLayer.getStoragesForApp(main, tenantIdentifier.toAppIdentifier());
-
-        return new AppIdentifierWithStorage(tenantIdentifier.getConnectionUriDomain(), tenantIdentifier.getAppId(),
-                storage, storages);
+        AppIdentifier appIdentifier = getAppIdentifier(req);
+        Storage[] storages = StorageLayer.getStoragesForApp(main, appIdentifier);
+        return new AppIdentifierWithStorages(appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(),
+                storages);
     }
 
-    protected AppIdentifierWithStorage getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(
+    protected AppIdentifierWithStorage enforcePublicTenantAndGetPublicTenantStorage(
             HttpServletRequest req)
             throws TenantOrAppNotFoundException, BadPermissionException, ServletException {
         TenantIdentifier tenantIdentifier = new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req),
                 this.getTenantId(req));
 
-        if (!tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
-            throw new BadPermissionException("Only public tenantId can query across tenants");
+        if (getTenantId(req) != null) {
+            throw new BadPermissionException("Only public tenantId can this app specific API");
         }
 
         Storage storage = StorageLayer.getStorage(tenantIdentifier, main);
-        Storage[] storages = StorageLayer.getStoragesForApp(main, tenantIdentifier.toAppIdentifier());
         return new AppIdentifierWithStorage(tenantIdentifier.getConnectionUriDomain(), tenantIdentifier.getAppId(),
-                storage, storages);
+                storage);
     }
 
     protected AppIdentifierWithStorage getPublicTenantStorage(HttpServletRequest req)
             throws ServletException, TenantOrAppNotFoundException {
+        // This is only used for update user active time
         AppIdentifier appIdentifier = new AppIdentifier(this.getConnectionUriDomain(req), this.getAppId(req));
 
         Storage storage = StorageLayer.getStorage(appIdentifier.getAsPublicTenantIdentifier(), main);
@@ -353,7 +351,7 @@ public abstract class WebserverAPI extends HttpServlet {
         return appIdentifier.withStorage(storage);
     }
 
-    protected TenantIdentifierWithStorageAndUserIdMapping getTenantIdentifierWithStorageAndUserIdMappingFromRequest(
+    protected TenantIdentifierWithStorageAndUserIdMapping getStorageAndUserIdMappingForTenantSpecificApi(
             HttpServletRequest req, String userId, UserIdType userIdType)
             throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException, ServletException {
         TenantIdentifier tenantIdentifier = new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req),
@@ -362,19 +360,20 @@ public abstract class WebserverAPI extends HttpServlet {
                 userIdType);
     }
 
-    protected AppIdentifierWithStorageAndUserIdMapping getAppIdentifierWithStorageAndUserIdMappingFromRequest(
+    protected AppIdentifierWithStorageAndUserIdMapping getStorageAndUserIdMappingForAppSpecificApi(
             HttpServletRequest req, String userId, UserIdType userIdType)
-            throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException, ServletException {
-        // This function uses storage of the tenent from which the request came from as a priorityStorage
+            throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException, ServletException,
+            BadPermissionException {
+        // This function uses storage of the tenant from which the request came from as a priorityStorage
         // while searching for the user across all storages for the app
-        AppIdentifierWithStorage appIdentifierWithStorage = getAppIdentifierWithStorage(req);
-        return StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUserWithPriorityForTenantStorage(main,
-                appIdentifierWithStorage, appIdentifierWithStorage.getStorage(), userId, userIdType);
+        AppIdentifierWithStorages appIdentifierWithStorages = enforcePublicTenantAndGetAllStoragesForApp(req);
+        return StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUser(
+                appIdentifierWithStorages, userId, userIdType);
     }
 
     protected boolean checkIPAccess(HttpServletRequest req, HttpServletResponse resp)
             throws TenantOrAppNotFoundException, ServletException, IOException {
-        CoreConfig config = Config.getConfig(getTenantIdentifierWithStorageFromRequest(req), main);
+        CoreConfig config = Config.getConfig(getTenantStorage(req), main);
         String allow = config.getIpAllowRegex();
         String deny = config.getIpDenyRegex();
         if (allow == null && deny == null) {
@@ -417,7 +416,7 @@ public abstract class WebserverAPI extends HttpServlet {
         TenantIdentifier tenantIdentifier = null;
         try {
             try {
-                tenantIdentifier = getTenantIdentifierWithStorageFromRequest(req);
+                tenantIdentifier = getTenantStorage(req);
             } catch (TenantOrAppNotFoundException e) {
                 // we do this so that the logs that are printed out have the right "Tenant(.." info in them,
                 // otherwise it will assume the base tenant (with "" CUD), which may not be the one querying

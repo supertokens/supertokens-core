@@ -59,7 +59,7 @@ public class CreateOrUpdateTenantOrGetTenantAPI extends BaseCreateOrUpdate {
 
         TenantIdentifier sourceTenantIdentifier;
         try {
-            sourceTenantIdentifier = this.getTenantIdentifierWithStorageFromRequest(req);
+            sourceTenantIdentifier = this.getTenantStorage(req);
         } catch (TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
@@ -74,7 +74,7 @@ public class CreateOrUpdateTenantOrGetTenantAPI extends BaseCreateOrUpdate {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         try {
-            TenantIdentifierWithStorage tenantIdentifier = this.getTenantIdentifierWithStorageFromRequest(req);
+            TenantIdentifierWithStorage tenantIdentifier = this.getTenantStorage(req);
             TenantConfig config = Multitenancy.getTenantInfo(main, tenantIdentifier);
             if (config == null) {
                 throw new TenantOrAppNotFoundException(tenantIdentifier);

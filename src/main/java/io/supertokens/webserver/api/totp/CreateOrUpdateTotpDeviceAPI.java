@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -72,7 +73,7 @@ public class CreateOrUpdateTotpDeviceAPI extends WebserverAPI {
 
                 // Try to find the appIdentifier with right storage based on the userId
                 AppIdentifierWithStorageAndUserIdMapping mappingAndStorage =
-                        getAppIdentifierWithStorageAndUserIdMappingFromRequest(
+                        getStorageAndUserIdMappingForAppSpecificApi(
                                 req, userId, UserIdType.ANY);
 
                 if (mappingAndStorage.userIdMapping != null) {
@@ -80,8 +81,8 @@ public class CreateOrUpdateTotpDeviceAPI extends WebserverAPI {
                 }
                 appIdentifierWithStorage = mappingAndStorage.appIdentifierWithStorage;
             } catch (UnknownUserIdException e) {
-                // if the user is not found, just use the storage of the tenant of interest
-                appIdentifierWithStorage = getAppIdentifierWithStorage(req);
+                // if the user is not found, just use the public tenant storage
+                appIdentifierWithStorage = enforcePublicTenantAndGetPublicTenantStorage(req);
             }
 
             TOTPDevice device = Totp.registerDevice(appIdentifierWithStorage, main, userId, deviceName, skew, period);
@@ -93,7 +94,7 @@ public class CreateOrUpdateTotpDeviceAPI extends WebserverAPI {
             result.addProperty("status", "DEVICE_ALREADY_EXISTS_ERROR");
             super.sendJsonResponse(200, result, resp);
         } catch (StorageQueryException | NoSuchAlgorithmException | FeatureNotEnabledException |
-                TenantOrAppNotFoundException e) {
+                 TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
     }
@@ -127,7 +128,7 @@ public class CreateOrUpdateTotpDeviceAPI extends WebserverAPI {
 
                 // Try to find the appIdentifier with right storage based on the userId
                 AppIdentifierWithStorageAndUserIdMapping mappingAndStorage =
-                        getAppIdentifierWithStorageAndUserIdMappingFromRequest(
+                        getStorageAndUserIdMappingForAppSpecificApi(
                         req, userId, UserIdType.ANY);
 
                 if (mappingAndStorage.userIdMapping != null) {
@@ -135,8 +136,8 @@ public class CreateOrUpdateTotpDeviceAPI extends WebserverAPI {
                 }
                 appIdentifierWithStorage = mappingAndStorage.appIdentifierWithStorage;
             } catch (UnknownUserIdException e) {
-                // if the user is not found, just use the storage of the tenant of interest
-                appIdentifierWithStorage = getAppIdentifierWithStorage(req);
+                // if the user is not found, just use the public storage
+                appIdentifierWithStorage = enforcePublicTenantAndGetPublicTenantStorage(req);
             }
 
             Totp.updateDeviceName(appIdentifierWithStorage, userId, existingDeviceName, newDeviceName);
@@ -152,7 +153,7 @@ public class CreateOrUpdateTotpDeviceAPI extends WebserverAPI {
         } catch (DeviceAlreadyExistsException e) {
             result.addProperty("status", "DEVICE_ALREADY_EXISTS_ERROR");
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
     }

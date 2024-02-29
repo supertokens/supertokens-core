@@ -37,6 +37,7 @@ import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdExce
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorages;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -661,20 +662,20 @@ public class AuthRecipe {
                 tenantIdentifier, includeRecipeIds);
     }
 
-    public static long getUsersCountAcrossAllTenants(AppIdentifierWithStorage appIdentifierWithStorage,
+    public static long getUsersCountAcrossAllTenants(AppIdentifierWithStorages appIdentifierWithStorages,
                                                      RECIPE_ID[] includeRecipeIds)
             throws StorageQueryException,
             TenantOrAppNotFoundException, BadPermissionException {
         long count = 0;
 
-        for (Storage storage : appIdentifierWithStorage.getStorages()) {
+        for (Storage storage : appIdentifierWithStorages.getStorages()) {
             if (storage.getType() != STORAGE_TYPE.SQL) {
                 // we only support SQL for now
                 throw new UnsupportedOperationException("");
             }
 
             count += ((AuthRecipeStorage) storage).getUsersCount(
-                    appIdentifierWithStorage, includeRecipeIds);
+                    appIdentifierWithStorages, includeRecipeIds);
         }
 
         return count;

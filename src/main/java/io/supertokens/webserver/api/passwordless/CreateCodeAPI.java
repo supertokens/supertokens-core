@@ -79,10 +79,10 @@ public class CreateCodeAPI extends WebserverAPI {
 
         try {
             CreateCodeResponse createCodeResponse = Passwordless.createCode(
-                    this.getTenantIdentifierWithStorageFromRequest(req), main, email,
+                    this.getTenantStorage(req), main, email,
                     phoneNumber, deviceId,
                     userInputCode);
-            long passwordlessCodeLifetime = Config.getConfig(this.getTenantIdentifierWithStorageFromRequest(req), main)
+            long passwordlessCodeLifetime = Config.getConfig(this.getTenantStorage(req), main)
                     .getPasswordlessCodeLifetime();
 
             JsonObject result = new JsonObject();

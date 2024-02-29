@@ -52,7 +52,7 @@ public class RevokeAllTokensForUserAPI extends WebserverAPI {
         email = Utils.normaliseEmail(email);
 
         try {
-            EmailVerification.revokeAllTokens(this.getTenantIdentifierWithStorageFromRequest(req), userId, email);
+            EmailVerification.revokeAllTokens(this.getTenantStorage(req), userId, email);
 
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");

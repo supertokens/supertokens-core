@@ -47,7 +47,7 @@ public class TelemetryAPI extends WebserverAPI {
         // API is app specific
         try {
             KeyValueInfo telemetryId = Telemetry.getTelemetryId(main,
-                    this.getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(req));
+                    this.enforcePublicTenantAndGetPublicTenantStorage(req));
 
             JsonObject result = new JsonObject();
             if (telemetryId == null) {

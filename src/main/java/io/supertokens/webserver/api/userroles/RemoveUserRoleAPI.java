@@ -60,7 +60,7 @@ public class RemoveUserRoleAPI extends WebserverAPI {
         }
 
         try {
-            boolean didUserHaveRole = UserRoles.removeUserRole(this.getTenantIdentifierWithStorageFromRequest(req),
+            boolean didUserHaveRole = UserRoles.removeUserRole(this.getTenantStorage(req),
                     userId, role);
 
             JsonObject response = new JsonObject();

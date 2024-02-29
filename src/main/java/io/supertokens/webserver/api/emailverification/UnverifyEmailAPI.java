@@ -17,11 +17,16 @@
 package io.supertokens.webserver.api.emailverification;
 
 import com.google.gson.JsonObject;
+import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
 import io.supertokens.emailverification.EmailVerification;
+import io.supertokens.multitenancy.exception.BadPermissionException;
+import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -52,13 +57,21 @@ public class UnverifyEmailAPI extends WebserverAPI {
         email = Utils.normaliseEmail(email);
 
         try {
-            EmailVerification.unverifyEmail(this.getAppIdentifierWithStorage(req), userId, email);
+            AppIdentifierWithStorage appIdentifierWithStorage;
+            try {
+                AppIdentifierWithStorageAndUserIdMapping storageAndUidMapping = getStorageAndUserIdMappingForAppSpecificApi(
+                        req, userId, UserIdType.ANY);
+                appIdentifierWithStorage = storageAndUidMapping.appIdentifierWithStorage;
+            } catch (UnknownUserIdException e) {
+                appIdentifierWithStorage = enforcePublicTenantAndGetPublicTenantStorage(req);
+            }
+            EmailVerification.unverifyEmail(appIdentifierWithStorage, userId, email);
 
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
 
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
     }

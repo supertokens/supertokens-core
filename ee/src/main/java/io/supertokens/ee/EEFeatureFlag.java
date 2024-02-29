@@ -271,7 +271,7 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         return stats;
     }
 
-    private JsonObject getAccountLinkingStats() throws StorageQueryException {
+    private JsonObject getAccountLinkingStats() throws StorageQueryException, TenantOrAppNotFoundException {
         JsonObject result = new JsonObject();
         Storage[] storages = StorageLayer.getStoragesForApp(main, this.appIdentifier);
         boolean usesAccountLinking = false;
