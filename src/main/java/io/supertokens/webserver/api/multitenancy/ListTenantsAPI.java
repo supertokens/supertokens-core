@@ -23,9 +23,9 @@ import io.supertokens.config.CoreConfig;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -48,22 +48,22 @@ public class ListTenantsAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        TenantIdentifierWithStorage tenantIdentifierWithStorage;
         try {
-            tenantIdentifierWithStorage = this.getTenantStorage(req);
+            TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+            Storage storage = getTenantStorage(req);
 
-            if (!tenantIdentifierWithStorage.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
+            if (!tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
                 throw new BadPermissionException("Only the public tenantId is allowed to list all tenants " +
                         "associated with this app");
             }
 
-            TenantConfig[] tenantConfigs = Multitenancy.getAllTenantsForApp(tenantIdentifierWithStorage.toAppIdentifier(), main);
+            TenantConfig[] tenantConfigs = Multitenancy.getAllTenantsForApp(tenantIdentifier.toAppIdentifier(), main);
             JsonArray tenantsArray = new JsonArray();
 
             boolean shouldProtect = shouldProtectProtectedConfig(req);
             for (TenantConfig tenantConfig : tenantConfigs) {
                 JsonObject tenantConfigJson = tenantConfig.toJson(shouldProtect,
-                        tenantIdentifierWithStorage.getStorage(), CoreConfig.PROTECTED_CONFIGS);
+                        storage, CoreConfig.PROTECTED_CONFIGS);
                 tenantsArray.add(tenantConfigJson);
             }
 

@@ -17,19 +17,18 @@
 package io.supertokens.webserver.api.multitenancy;
 
 import com.google.gson.JsonObject;
-import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.AnotherPrimaryUserWithEmailAlreadyExistsException;
 import io.supertokens.multitenancy.exception.AnotherPrimaryUserWithPhoneNumberAlreadyExistsException;
 import io.supertokens.multitenancy.exception.AnotherPrimaryUserWithThirdPartyInfoAlreadyExistsException;
-import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.passwordless.exception.DuplicatePhoneNumberException;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
@@ -76,15 +75,17 @@ public class AssociateUserToTenantAPI extends WebserverAPI {
         }
 
         try {
-            AppIdentifierWithStorage appIdentifierWithStorage = getTenantStorage(req).toAppIdentifierWithStorage();
+            TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+            Storage storage = getTenantStorage(req);
+
             io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping = UserIdMapping.getUserIdMapping(
-                    appIdentifierWithStorage, userId, UserIdType.ANY);
+                    tenantIdentifier.toAppIdentifier(), storage, userId, UserIdType.ANY);
             if (mapping != null) {
                 userId = mapping.superTokensUserId;
             }
 
             boolean addedToTenant = Multitenancy.addUserIdToTenant(main,
-                    getTenantStorage(req), userId);
+                    tenantIdentifier, storage, userId);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

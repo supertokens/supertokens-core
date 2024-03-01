@@ -57,9 +57,9 @@ public class CreateOrUpdateTenantOrGetTenantAPI extends BaseCreateOrUpdate {
         Boolean passwordlessEnabled = InputParser.parseBooleanOrThrowError(input, "passwordlessEnabled", true);
         JsonObject coreConfig = InputParser.parseJsonObjectOrThrowError(input, "coreConfig", true);
 
-        TenantIdentifier sourceTenantIdentifier;
+        TenantIdentifier sourceTenantIdentifier = getTenantIdentifier(req);
         try {
-            sourceTenantIdentifier = this.getTenantStorage(req);
+            this.getTenantStorage(req); // ensure source tenant exists
         } catch (TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
@@ -74,13 +74,13 @@ public class CreateOrUpdateTenantOrGetTenantAPI extends BaseCreateOrUpdate {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         try {
-            TenantIdentifierWithStorage tenantIdentifier = this.getTenantStorage(req);
+            TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
             TenantConfig config = Multitenancy.getTenantInfo(main, tenantIdentifier);
             if (config == null) {
                 throw new TenantOrAppNotFoundException(tenantIdentifier);
             }
             boolean shouldProtect = shouldProtectProtectedConfig(req);
-            JsonObject result = config.toJson(shouldProtect, tenantIdentifier.getStorage(), CoreConfig.PROTECTED_CONFIGS);
+            JsonObject result = config.toJson(shouldProtect, getTenantStorage(req), CoreConfig.PROTECTED_CONFIGS);
             result.addProperty("status", "OK");
 
             super.sendJsonResponse(200, result, resp);

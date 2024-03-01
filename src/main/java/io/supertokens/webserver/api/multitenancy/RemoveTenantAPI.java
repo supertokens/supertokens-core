@@ -58,7 +58,8 @@ public class RemoveTenantAPI extends WebserverAPI {
         }
 
         try {
-            TenantIdentifier sourceTenantIdentifier = this.getTenantStorage(req);
+            TenantIdentifier sourceTenantIdentifier = this.getTenantIdentifier(req);
+            getTenantStorage(req); // ensure the tenant exists
 
             if (!sourceTenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
                 throw new BadPermissionException("Only the public tenantId is allowed to delete a tenant");

@@ -54,9 +54,9 @@ public class CreateOrUpdateConnectionUriDomainAPI extends BaseCreateOrUpdate {
         Boolean passwordlessEnabled = InputParser.parseBooleanOrThrowError(input, "passwordlessEnabled", true);
         JsonObject coreConfig = InputParser.parseJsonObjectOrThrowError(input, "coreConfig", true);
 
-        TenantIdentifier sourceTenantIdentifier;
+        TenantIdentifier sourceTenantIdentifier = getTenantIdentifier(req);
         try {
-            sourceTenantIdentifier = this.getTenantStorage(req);
+            this.getTenantStorage(req); // ensure source tenant exists
         } catch (TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }

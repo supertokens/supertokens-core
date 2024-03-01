@@ -59,7 +59,8 @@ public class RemoveAppAPI extends WebserverAPI {
         }
 
         try {
-            TenantIdentifier sourceTenantIdentifier = this.getTenantStorage(req);
+            TenantIdentifier sourceTenantIdentifier = this.getTenantIdentifier(req);
+            getTenantStorage(req); // ensure the tenant exists
             if (!sourceTenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)
                     || !sourceTenantIdentifier.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)) {
                 throw new BadPermissionException("Only the public tenantId and public appId is allowed to delete an app");

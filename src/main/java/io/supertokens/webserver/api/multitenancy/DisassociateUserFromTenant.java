@@ -17,14 +17,14 @@
 package io.supertokens.webserver.api.multitenancy;
 
 import com.google.gson.JsonObject;
-import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
@@ -68,17 +68,18 @@ public class DisassociateUserFromTenant extends WebserverAPI {
         }
 
         try {
+            TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+            Storage storage = getTenantStorage(req);
             String externalUserId = null;
-            AppIdentifierWithStorage appIdentifierWithStorage = getTenantStorage(req).toAppIdentifierWithStorage();
             io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping = UserIdMapping.getUserIdMapping(
-                    appIdentifierWithStorage, userId, UserIdType.ANY);
+                    tenantIdentifier.toAppIdentifier(), storage, userId, UserIdType.ANY);
             if (mapping != null) {
                 userId = mapping.superTokensUserId;
                 externalUserId = mapping.externalUserId;
             }
 
             boolean wasAssociated = Multitenancy.removeUserIdFromTenant(main,
-                    getTenantStorage(req), userId, externalUserId);
+                    tenantIdentifier, storage, userId, externalUserId);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

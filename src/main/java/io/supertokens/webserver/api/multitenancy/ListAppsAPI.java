@@ -23,9 +23,9 @@ import io.supertokens.config.CoreConfig;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -52,18 +52,18 @@ public class ListAppsAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        TenantIdentifierWithStorage tenantIdentifierWithStorage;
+        TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
         try {
-            tenantIdentifierWithStorage = this.getTenantStorage(req);
+            Storage storage = this.getTenantStorage(req);
 
-            if (!tenantIdentifierWithStorage.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)
-                    || !tenantIdentifierWithStorage.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)) {
+            if (!tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)
+                    || !tenantIdentifier.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)) {
                 throw new BadPermissionException("Only the public tenantId and public appId is allowed to list " +
                         "all apps associated with this connection uri domain");
             }
 
             TenantConfig[] tenantConfigs = Multitenancy.getAllAppsAndTenantsForConnectionUriDomain(
-                    tenantIdentifierWithStorage.getConnectionUriDomain(), main);
+                    tenantIdentifier.getConnectionUriDomain(), main);
 
             Map<String, List<TenantConfig>> appsToTenants = new HashMap<>();
             for (TenantConfig tenantConfig : tenantConfigs) {
@@ -82,7 +82,7 @@ public class ListAppsAPI extends WebserverAPI {
                 JsonArray tenantsArray = new JsonArray();
                 for (TenantConfig tenantConfig : entry.getValue()) {
                     JsonObject tenantConfigJson = tenantConfig.toJson(shouldProtect,
-                            tenantIdentifierWithStorage.getStorage(), CoreConfig.PROTECTED_CONFIGS);
+                            storage, CoreConfig.PROTECTED_CONFIGS);
                     tenantsArray.add(tenantConfigJson);
                 }
                 appObject.add("tenants", tenantsArray);
