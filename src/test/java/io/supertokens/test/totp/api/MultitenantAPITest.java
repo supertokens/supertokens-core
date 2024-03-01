@@ -273,7 +273,7 @@ public class MultitenantAPITest {
         int userCount = 1;
         for (TenantIdentifier tenant1 : tenants) {
             AuthRecipeUserInfo user = EmailPassword.signUp(
-                    tenant1.withStorage(StorageLayer.getStorage(tenant1, process.getProcess())), process.getProcess(),
+                    tenant1, (StorageLayer.getStorage(tenant1, process.getProcess())), process.getProcess(),
                     "test@example.com", "password1");
             String userId = user.getSupertokensUserId();
 

@@ -689,7 +689,7 @@ public class MultitenantAPITest {
 
         EmailPasswordSQLStorage storage = (EmailPasswordSQLStorage) StorageLayer.getStorage(t2, process.getProcess());
 
-        storage.signUp(t2.withStorage(storage), "userId", email, combinedPasswordHash, timeJoined);
+        storage.signUp(t2, "userId", email, combinedPasswordHash, timeJoined);
 
         successfulSignIn(t2, email, password);
         wrongCredentialsSignIn(t1, email, password);

@@ -31,6 +31,7 @@ import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.exceptions.*;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
@@ -181,12 +182,12 @@ public class UserPaginationTest {
             tenantToUsers.put(tenantIdentifier, new ArrayList<>());
         }
 
-        TenantIdentifierWithStorage tenantIdentifierWithStorage = tenantIdentifier.withStorage(
+        Storage tenantIdentifierWithStorage = (
                 StorageLayer.getStorage(tenantIdentifier, process.getProcess()));
         for (int i = 0; i < numUsers; i++) {
             {
                 AuthRecipeUserInfo user = EmailPassword.signUp(
-                        tenantIdentifierWithStorage, process.getProcess(),
+                        tenantIdentifier, tenantIdentifierWithStorage, process.getProcess(),
                         prefix + "epuser" + i + "@example.com", "password" + i);
                 tenantToUsers.get(tenantIdentifier).add(user.getSupertokensUserId());
                 if (!recipeToUsers.containsKey("emailpassword")) {
@@ -196,13 +197,14 @@ public class UserPaginationTest {
             }
             {
                 Passwordless.CreateCodeResponse codeResponse = Passwordless.createCode(
-                        tenantIdentifierWithStorage,
+                        tenantIdentifier, tenantIdentifierWithStorage,
                         process.getProcess(),
                         prefix + "pluser" + i + "@example.com",
                         null, null,
                         "abcd"
                 );
-                Passwordless.ConsumeCodeResponse response = Passwordless.consumeCode(tenantIdentifierWithStorage,
+                Passwordless.ConsumeCodeResponse response = Passwordless.consumeCode(
+                        tenantIdentifier, tenantIdentifierWithStorage,
                         process.getProcess(), codeResponse.deviceId,
                         codeResponse.deviceIdHash, "abcd", null);
                 tenantToUsers.get(tenantIdentifier).add(response.user.getSupertokensUserId());
@@ -213,10 +215,12 @@ public class UserPaginationTest {
                 recipeToUsers.get("passwordless").add(response.user.getSupertokensUserId());
             }
             {
-                ThirdParty.SignInUpResponse user1 = ThirdParty.signInUp(tenantIdentifierWithStorage,
+                ThirdParty.SignInUpResponse user1 = ThirdParty.signInUp(
+                        tenantIdentifier, tenantIdentifierWithStorage,
                         process.getProcess(), "google", "googleid" + i, prefix + "tpuser" + i + "@example.com");
                 tenantToUsers.get(tenantIdentifier).add(user1.user.getSupertokensUserId());
-                ThirdParty.SignInUpResponse user2 = ThirdParty.signInUp(tenantIdentifierWithStorage,
+                ThirdParty.SignInUpResponse user2 = ThirdParty.signInUp(
+                        tenantIdentifier, tenantIdentifierWithStorage,
                         process.getProcess(), "facebook", "fbid" + i, prefix + "tpuser" + i + "@example.com");
                 tenantToUsers.get(tenantIdentifier).add(user2.user.getSupertokensUserId());
 

@@ -27,8 +27,6 @@ import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.session.Session;
 import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.storageLayer.StorageLayer;
@@ -122,8 +120,6 @@ public class SessionTests {
                 new JsonObject(), new JsonObject());
 
 
-        TenantIdentifierWithStorage baseTenant = TenantIdentifier.BASE_TENANT.withStorage(StorageLayer.getBaseStorage(process.getProcess()));
-
         {
             String[] sessions = getSessionsForUser(process.getProcess(), user1.getSupertokensUserId(),
                     false);
@@ -191,8 +187,6 @@ public class SessionTests {
                     new JsonObject(), new JsonObject());
 
 
-            TenantIdentifierWithStorage baseTenant = TenantIdentifier.BASE_TENANT.withStorage(
-                    StorageLayer.getBaseStorage(process.getProcess()));
             revokeSessionsForUser(process.getProcess(), user1.getSupertokensUserId(), true);
 
             try {
@@ -217,8 +211,6 @@ public class SessionTests {
                     user2.getSupertokensUserId(),
                     new JsonObject(), new JsonObject());
 
-            TenantIdentifierWithStorage baseTenant = TenantIdentifier.BASE_TENANT.withStorage(
-                    StorageLayer.getBaseStorage(process.getProcess()));
             revokeSessionsForUser(process.getProcess(), user2.getSupertokensUserId(), true);
 
             try {
@@ -244,8 +236,6 @@ public class SessionTests {
                     new JsonObject(), new JsonObject());
 
 
-            TenantIdentifierWithStorage baseTenant = TenantIdentifier.BASE_TENANT.withStorage(
-                    StorageLayer.getBaseStorage(process.getProcess()));
             revokeSessionsForUser(process.getProcess(), user1.getSupertokensUserId(), null);
 
             try {
@@ -270,8 +260,6 @@ public class SessionTests {
                     user2.getSupertokensUserId(),
                     new JsonObject(), new JsonObject());
 
-            TenantIdentifierWithStorage baseTenant = TenantIdentifier.BASE_TENANT.withStorage(
-                    StorageLayer.getBaseStorage(process.getProcess()));
             revokeSessionsForUser(process.getProcess(), user2.getSupertokensUserId(), null);
 
             try {
@@ -296,8 +284,6 @@ public class SessionTests {
                     user2.getSupertokensUserId(),
                     new JsonObject(), new JsonObject());
 
-            TenantIdentifierWithStorage baseTenant = TenantIdentifier.BASE_TENANT.withStorage(
-                    StorageLayer.getBaseStorage(process.getProcess()));
             revokeSessionsForUser(process.getProcess(), user1.getSupertokensUserId(), false);
 
             try {
@@ -318,8 +304,6 @@ public class SessionTests {
                     user2.getSupertokensUserId(),
                     new JsonObject(), new JsonObject());
 
-            TenantIdentifierWithStorage baseTenant = TenantIdentifier.BASE_TENANT.withStorage(
-                    StorageLayer.getBaseStorage(process.getProcess()));
             revokeSessionsForUser(process.getProcess(), user2.getSupertokensUserId(), false);
 
             Session.getSession(process.getProcess(), session1.session.handle);

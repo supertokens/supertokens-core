@@ -24,11 +24,12 @@ import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
+import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.usermetadata.sqlStorage.UserMetadataSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
@@ -86,14 +87,14 @@ public class TestWithNonAuthRecipes {
     @Test
     public void testThatUserMetadataIsSavedInTheStorageWhereUserExists() throws Exception {
         TenantIdentifier t0 = new TenantIdentifier(null, null, null);
-        TenantIdentifierWithStorage t0WithStorage = t0.withStorage(StorageLayer.getStorage(t0, process.getProcess()));
+        Storage t0WithStorage = (StorageLayer.getStorage(t0, process.getProcess()));
 
         TenantIdentifier t1 = new TenantIdentifier(null, null, "t1");
-        TenantIdentifierWithStorage t1WithStorage = t1.withStorage(StorageLayer.getStorage(t1, process.getProcess()));
+        Storage t1WithStorage = (StorageLayer.getStorage(t1, process.getProcess()));
 
         // Create users
-        AuthRecipeUserInfo user1 = EmailPassword.signUp(t0WithStorage, process.getProcess(), "test@example.com", "password123");
-        AuthRecipeUserInfo user2 = EmailPassword.signUp(t1WithStorage, process.getProcess(), "test@example.com", "password123");
+        AuthRecipeUserInfo user1 = EmailPassword.signUp(t0, t0WithStorage, process.getProcess(), "test@example.com", "password123");
+        AuthRecipeUserInfo user2 = EmailPassword.signUp(t1, t1WithStorage, process.getProcess(), "test@example.com", "password123");
 
         UserIdMapping.populateExternalUserIdForUsers(t0WithStorage, new AuthRecipeUserInfo[]{user1});
         UserIdMapping.populateExternalUserIdForUsers(t1WithStorage, new AuthRecipeUserInfo[]{user2});
@@ -148,10 +149,8 @@ public class TestWithNonAuthRecipes {
             }
         }
 
-        UserMetadataSQLStorage t0UserMetadataStorage = t0WithStorage.toAppIdentifierWithStorage()
-                .getUserMetadataStorage();
-        UserMetadataSQLStorage t1UserMetadataStorage = t1WithStorage.toAppIdentifierWithStorage()
-                .getUserMetadataStorage();
+        UserMetadataSQLStorage t0UserMetadataStorage = StorageUtils.getUserMetadataStorage(t0WithStorage);
+        UserMetadataSQLStorage t1UserMetadataStorage = StorageUtils.getUserMetadataStorage(t1WithStorage);
 
         // Ensure that the metadata is saved in the correct storage
         assertNotNull(t0UserMetadataStorage.getUserMetadata(t0.toAppIdentifier(), user1.getSupertokensUserId())); // ensure t0 storage does not have user2's metadata
@@ -177,14 +176,14 @@ public class TestWithNonAuthRecipes {
     @Test
     public void testThatUserRolesWorkWithDifferentTenantsOnDifferentStorages() throws Exception {
         TenantIdentifier t0 = new TenantIdentifier(null, null, null);
-        TenantIdentifierWithStorage t0WithStorage = t0.withStorage(StorageLayer.getStorage(t0, process.getProcess()));
+        Storage t0WithStorage = (StorageLayer.getStorage(t0, process.getProcess()));
 
         TenantIdentifier t1 = new TenantIdentifier(null, null, "t1");
-        TenantIdentifierWithStorage t1WithStorage = t1.withStorage(StorageLayer.getStorage(t1, process.getProcess()));
+        Storage t1WithStorage = (StorageLayer.getStorage(t1, process.getProcess()));
 
         // Create users
-        AuthRecipeUserInfo user1 = EmailPassword.signUp(t0WithStorage, process.getProcess(), "test@example.com", "password123");
-        AuthRecipeUserInfo user2 = EmailPassword.signUp(t1WithStorage, process.getProcess(), "test@example.com", "password123");
+        AuthRecipeUserInfo user1 = EmailPassword.signUp(t0, t0WithStorage, process.getProcess(), "test@example.com", "password123");
+        AuthRecipeUserInfo user2 = EmailPassword.signUp(t1, t1WithStorage, process.getProcess(), "test@example.com", "password123");
 
         UserIdMapping.populateExternalUserIdForUsers(t0WithStorage, new AuthRecipeUserInfo[]{user1});
         UserIdMapping.populateExternalUserIdForUsers(t1WithStorage, new AuthRecipeUserInfo[]{user2});

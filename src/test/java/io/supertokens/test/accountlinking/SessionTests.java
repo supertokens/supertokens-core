@@ -29,6 +29,7 @@ import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -282,23 +283,27 @@ public class SessionTests {
 
         createTenants(process.getProcess());
 
-        TenantIdentifierWithStorage t1WithStorage = t1.withStorage(StorageLayer.getStorage(t1, process.getProcess()));
-        TenantIdentifierWithStorage t2WithStorage = t2.withStorage(StorageLayer.getStorage(t2, process.getProcess()));
+        Storage t1WithStorage = (StorageLayer.getStorage(t1, process.getProcess()));
+        Storage t2WithStorage = (StorageLayer.getStorage(t2, process.getProcess()));
 
-        AuthRecipeUserInfo user1 = EmailPassword.signUp(t1WithStorage, process.getProcess(), "test@example.com", "password");
-        AuthRecipeUserInfo  user2 = EmailPassword.signUp(t1WithStorage, process.getProcess(), "test1@example.com", "password");
+        AuthRecipeUserInfo user1 = EmailPassword.signUp(t1, t1WithStorage, process.getProcess(), "test@example.com",
+                "password");
+        AuthRecipeUserInfo  user2 = EmailPassword.signUp(t1, t1WithStorage, process.getProcess(), "test1@example.com",
+                "password");
 
-        AuthRecipe.createPrimaryUser(process.getProcess(), t1WithStorage.toAppIdentifierWithStorage(), user2.getSupertokensUserId());
-        Multitenancy.addUserIdToTenant(process.getProcess(), t2WithStorage, user1.getSupertokensUserId());
+        AuthRecipe.createPrimaryUser(process.getProcess(), t1.toAppIdentifier(),
+                t1WithStorage, user2.getSupertokensUserId());
+        Multitenancy.addUserIdToTenant(process.getProcess(), t2, t2WithStorage, user1.getSupertokensUserId());
 
-        SessionInformationHolder session1 = Session.createNewSession(t2WithStorage, process.getProcess(),
+        SessionInformationHolder session1 = Session.createNewSession(t2, t2WithStorage, process.getProcess(),
                 user1.getSupertokensUserId(), new JsonObject(), new JsonObject());
 
         // Linking user1 to user2 on t1 should revoke the session
-        AuthRecipe.linkAccounts(process.getProcess(), t1WithStorage.toAppIdentifierWithStorage(), user1.getSupertokensUserId(), user2.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.getProcess(), t1.toAppIdentifier(), t1WithStorage,
+                user1.getSupertokensUserId(), user2.getSupertokensUserId());
 
         try {
-            Session.getSession(t2WithStorage, session1.session.handle);
+            Session.getSession(t2, t2WithStorage, session1.session.handle);
             fail();
         } catch (UnauthorisedException e) {
             // ok
@@ -324,23 +329,27 @@ public class SessionTests {
 
         createTenants(process.getProcess());
 
-        TenantIdentifierWithStorage t1WithStorage = t1.withStorage(StorageLayer.getStorage(t1, process.getProcess()));
-        TenantIdentifierWithStorage t2WithStorage = t2.withStorage(StorageLayer.getStorage(t2, process.getProcess()));
+        Storage t1WithStorage = (StorageLayer.getStorage(t1, process.getProcess()));
+        Storage t2WithStorage = (StorageLayer.getStorage(t2, process.getProcess()));
 
-        AuthRecipeUserInfo user1 = EmailPassword.signUp(t1WithStorage, process.getProcess(), "test@example.com", "password");
-        AuthRecipeUserInfo  user2 = EmailPassword.signUp(t1WithStorage, process.getProcess(), "test1@example.com", "password");
+        AuthRecipeUserInfo user1 = EmailPassword.signUp(t1, t1WithStorage, process.getProcess(), "test@example.com", 
+                "password");
+        AuthRecipeUserInfo  user2 = EmailPassword.signUp(t1, t1WithStorage, process.getProcess(), "test1@example.com", 
+                "password");
 
-        AuthRecipe.createPrimaryUser(process.getProcess(), t1WithStorage.toAppIdentifierWithStorage(), user2.getSupertokensUserId());
+        AuthRecipe.createPrimaryUser(process.getProcess(), t1.toAppIdentifier(),
+                t1WithStorage, user2.getSupertokensUserId());
 
-        SessionInformationHolder session1 = Session.createNewSession(t2WithStorage, process.getProcess(),
+        SessionInformationHolder session1 = Session.createNewSession(t2, t2WithStorage, process.getProcess(),
                 user1.getSupertokensUserId(), new JsonObject(), new JsonObject());
 
         // Linking user1 to user2 on t1 should revoke the session
-        AuthRecipe.linkAccounts(process.getProcess(), t1WithStorage.toAppIdentifierWithStorage(), user1.getSupertokensUserId(), user2.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.getProcess(), t1.toAppIdentifier(), t1WithStorage,
+                user1.getSupertokensUserId(), user2.getSupertokensUserId());
 
         try {
             // session gets removed on t2 as well
-            Session.getSession(t2WithStorage, session1.session.handle);
+            Session.getSession(t2, t2WithStorage, session1.session.handle);
             fail();
         } catch (UnauthorisedException e) {
             // ok
@@ -366,22 +375,26 @@ public class SessionTests {
 
         createTenants(process.getProcess());
 
-        TenantIdentifierWithStorage t1WithStorage = t1.withStorage(StorageLayer.getStorage(t1, process.getProcess()));
-        TenantIdentifierWithStorage t2WithStorage = t2.withStorage(StorageLayer.getStorage(t2, process.getProcess()));
+        Storage t1WithStorage = (StorageLayer.getStorage(t1, process.getProcess()));
+        Storage t2WithStorage = (StorageLayer.getStorage(t2, process.getProcess()));
 
-        AuthRecipeUserInfo user1 = EmailPassword.signUp(t1WithStorage, process.getProcess(), "test@example.com", "password");
-        AuthRecipeUserInfo  user2 = EmailPassword.signUp(t1WithStorage, process.getProcess(), "test1@example.com", "password");
+        AuthRecipeUserInfo user1 = EmailPassword.signUp(t1, t1WithStorage, process.getProcess(), "test@example.com", 
+                "password");
+        AuthRecipeUserInfo  user2 = EmailPassword.signUp(t1, t1WithStorage, process.getProcess(), "test1@example.com", 
+                "password");
 
-        AuthRecipe.createPrimaryUser(process.getProcess(), t1WithStorage.toAppIdentifierWithStorage(), user2.getSupertokensUserId());
-        AuthRecipe.linkAccounts(process.getProcess(), t1WithStorage.toAppIdentifierWithStorage(), user1.getSupertokensUserId(), user2.getSupertokensUserId());
+        AuthRecipe.createPrimaryUser(process.getProcess(), t1.toAppIdentifier(), t1WithStorage,
+                user2.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.getProcess(), t1.toAppIdentifier(), t1WithStorage, user1.getSupertokensUserId(),
+                user2.getSupertokensUserId());
 
-        SessionInformationHolder session1 = Session.createNewSession(t2WithStorage, process.getProcess(),
+        SessionInformationHolder session1 = Session.createNewSession(t2, t2WithStorage, process.getProcess(),
                 user1.getSupertokensUserId(), new JsonObject(), new JsonObject());
 
-        AuthRecipe.unlinkAccounts(process.getProcess(), t1WithStorage.toAppIdentifierWithStorage(), user2.getSupertokensUserId());
+        AuthRecipe.unlinkAccounts(process.getProcess(), t1.toAppIdentifier(), t1WithStorage, user2.getSupertokensUserId());
 
         // session must be intact
-        Session.getSession(t2WithStorage, session1.session.handle);
+        Session.getSession(t2, t2WithStorage, session1.session.handle);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -403,16 +416,20 @@ public class SessionTests {
 
         createTenants(process.getProcess());
 
-        TenantIdentifierWithStorage t1WithStorage = t1.withStorage(StorageLayer.getStorage(t1, process.getProcess()));
-        TenantIdentifierWithStorage t2WithStorage = t2.withStorage(StorageLayer.getStorage(t2, process.getProcess()));
+        Storage t1WithStorage = (StorageLayer.getStorage(t1, process.getProcess()));
+        Storage t2WithStorage = (StorageLayer.getStorage(t2, process.getProcess()));
 
-        AuthRecipeUserInfo user1 = EmailPassword.signUp(t1WithStorage, process.getProcess(), "test@example.com", "password");
-        AuthRecipeUserInfo  user2 = EmailPassword.signUp(t1WithStorage, process.getProcess(), "test1@example.com", "password");
+        AuthRecipeUserInfo user1 = EmailPassword.signUp(t1, t1WithStorage, process.getProcess(), "test@example.com",
+                "password");
+        AuthRecipeUserInfo  user2 = EmailPassword.signUp(t1, t1WithStorage, process.getProcess(), "test1@example.com",
+                "password");
 
-        AuthRecipe.createPrimaryUser(process.getProcess(), t1WithStorage.toAppIdentifierWithStorage(), user2.getSupertokensUserId());
-        AuthRecipe.linkAccounts(process.getProcess(), t1WithStorage.toAppIdentifierWithStorage(), user1.getSupertokensUserId(), user2.getSupertokensUserId());
+        AuthRecipe.createPrimaryUser(process.getProcess(), t1.toAppIdentifier(), t1WithStorage,
+                user2.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.getProcess(), t1.toAppIdentifier(), t1WithStorage, user1.getSupertokensUserId(),
+                user2.getSupertokensUserId());
 
-        SessionInformationHolder session1 = Session.createNewSession(t2WithStorage, process.getProcess(),
+        SessionInformationHolder session1 = Session.createNewSession(t2, t2WithStorage, process.getProcess(),
                 user1.getSupertokensUserId(), new JsonObject(), new JsonObject());
 
         // Should still consider the primaryUserId
@@ -448,28 +465,30 @@ public class SessionTests {
                 new JsonObject(), new JsonObject());
 
 
-        TenantIdentifierWithStorage baseTenant = TenantIdentifier.BASE_TENANT.withStorage(StorageLayer.getBaseStorage(process.getProcess()));
+        Storage baseTenant = (StorageLayer.getBaseStorage(process.getProcess()));
 
         {
-            String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(baseTenant, user1.getSupertokensUserId(),
+            String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(TenantIdentifier.BASE_TENANT, baseTenant,
+                    user1.getSupertokensUserId(),
                     false);
             assertEquals(1, sessions.length);
             assertEquals(session1.session.handle, sessions[0]);
         }
         {
-            String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(baseTenant, user2.getSupertokensUserId(),
+            String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(TenantIdentifier.BASE_TENANT, baseTenant,
+                    user2.getSupertokensUserId(),
                     false);
             assertEquals(1, sessions.length);
             assertEquals(session2.session.handle, sessions[0]);
         }
 
         {
-            String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(baseTenant, user1.getSupertokensUserId(),
+            String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(TenantIdentifier.BASE_TENANT, baseTenant, user1.getSupertokensUserId(),
                     true);
             assertEquals(2, sessions.length);
         }
         {
-            String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(baseTenant, user2.getSupertokensUserId(),
+            String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(TenantIdentifier.BASE_TENANT, baseTenant, user2.getSupertokensUserId(),
                     true);
             assertEquals(2, sessions.length);
         }
@@ -507,9 +526,9 @@ public class SessionTests {
                     new JsonObject(), new JsonObject());
 
 
-            TenantIdentifierWithStorage baseTenant = TenantIdentifier.BASE_TENANT.withStorage(
+            Storage baseTenant = (
                     StorageLayer.getBaseStorage(process.getProcess()));
-            Session.revokeAllSessionsForUser(process.getProcess(), baseTenant, user1.getSupertokensUserId(), true);
+            Session.revokeAllSessionsForUser(process.getProcess(), TenantIdentifier.BASE_TENANT, baseTenant, user1.getSupertokensUserId(), true);
 
             try {
                 Session.getSession(process.getProcess(), session1.session.handle);
@@ -533,9 +552,9 @@ public class SessionTests {
                     user2.getSupertokensUserId(),
                     new JsonObject(), new JsonObject());
 
-            TenantIdentifierWithStorage baseTenant = TenantIdentifier.BASE_TENANT.withStorage(
+            Storage baseTenant = (
                     StorageLayer.getBaseStorage(process.getProcess()));
-            Session.revokeAllSessionsForUser(process.getProcess(), baseTenant, user2.getSupertokensUserId(), true);
+            Session.revokeAllSessionsForUser(process.getProcess(), TenantIdentifier.BASE_TENANT, baseTenant, user2.getSupertokensUserId(), true);
 
             try {
                 Session.getSession(process.getProcess(), session1.session.handle);
@@ -559,9 +578,9 @@ public class SessionTests {
                     user2.getSupertokensUserId(),
                     new JsonObject(), new JsonObject());
 
-            TenantIdentifierWithStorage baseTenant = TenantIdentifier.BASE_TENANT.withStorage(
+            Storage baseTenant = (
                     StorageLayer.getBaseStorage(process.getProcess()));
-            Session.revokeAllSessionsForUser(process.getProcess(), baseTenant, user1.getSupertokensUserId(), false);
+            Session.revokeAllSessionsForUser(process.getProcess(), TenantIdentifier.BASE_TENANT, baseTenant, user1.getSupertokensUserId(), false);
 
             try {
                 Session.getSession(process.getProcess(), session1.session.handle);
@@ -581,9 +600,9 @@ public class SessionTests {
                     user2.getSupertokensUserId(),
                     new JsonObject(), new JsonObject());
 
-            TenantIdentifierWithStorage baseTenant = TenantIdentifier.BASE_TENANT.withStorage(
+            Storage baseTenant = (
                     StorageLayer.getBaseStorage(process.getProcess()));
-            Session.revokeAllSessionsForUser(process.getProcess(), baseTenant, user2.getSupertokensUserId(), false);
+            Session.revokeAllSessionsForUser(process.getProcess(), TenantIdentifier.BASE_TENANT, baseTenant, user2.getSupertokensUserId(), false);
 
             Session.getSession(process.getProcess(), session1.session.handle);
 
