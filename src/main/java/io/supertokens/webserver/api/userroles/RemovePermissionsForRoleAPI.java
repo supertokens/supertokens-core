@@ -20,6 +20,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
+import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -81,7 +83,10 @@ public class RemovePermissionsForRoleAPI extends WebserverAPI {
         }
 
         try {
-            UserRoles.deletePermissionsFromRole(this.enforcePublicTenantAndGetPublicTenantStorage(req), role, permissions);
+            AppIdentifier appIdentifier = getAppIdentifier(req);
+            Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
+
+            UserRoles.deletePermissionsFromRole(appIdentifier, storage, role, permissions);
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             super.sendJsonResponse(200, response, resp);

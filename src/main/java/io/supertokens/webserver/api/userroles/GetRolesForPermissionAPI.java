@@ -21,6 +21,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
+import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -60,8 +62,10 @@ public class GetRolesForPermissionAPI extends WebserverAPI {
         }
 
         try {
+            AppIdentifier appIdentifier = getAppIdentifier(req);
+            Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
 
-            String[] roles = UserRoles.getRolesThatHavePermission(this.enforcePublicTenantAndGetPublicTenantStorage(req), permission);
+            String[] roles = UserRoles.getRolesThatHavePermission(appIdentifier, storage, permission);
             JsonArray arr = new JsonArray();
 
             for (String s : roles) {

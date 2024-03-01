@@ -20,6 +20,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
+import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -60,9 +62,10 @@ public class GetUsersForRoleAPI extends WebserverAPI {
         }
 
         try {
-            String[] roleUsers = UserRoles.getUsersForRole(
-                    this.getTenantStorage(req).withStorage(this.getPublicTenantStorage(req).getStorage()),
-                    role);
+            TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+            Storage storage = getTenantStorage(req);
+
+            String[] roleUsers = UserRoles.getUsersForRole(tenantIdentifier, storage, role);
             JsonArray arr = new JsonArray();
 
             for (String s : roleUsers) {

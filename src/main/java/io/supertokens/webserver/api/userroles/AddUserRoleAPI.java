@@ -18,6 +18,8 @@ package io.supertokens.webserver.api.userroles;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -48,7 +50,7 @@ public class AddUserRoleAPI extends WebserverAPI {
 
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        // API is tenant specific, but uses public tenant storage
+        // API is tenant specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
         String role = InputParser.parseStringOrThrowError(input, "role", false);
@@ -60,9 +62,11 @@ public class AddUserRoleAPI extends WebserverAPI {
         }
 
         try {
+            TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+            Storage storage = getTenantStorage(req);
+
             boolean didUserAlreadyHaveRole = !UserRoles.addRoleToUser(
-                    this.getTenantStorage(req).withStorage(this.getPublicTenantStorage(req).getStorage()),
-                    userId, role);
+                    tenantIdentifier, storage, userId, role);
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             response.addProperty("didUserAlreadyHaveRole", didUserAlreadyHaveRole);

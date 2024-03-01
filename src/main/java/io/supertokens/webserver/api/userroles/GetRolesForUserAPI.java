@@ -20,6 +20,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
+import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -48,12 +50,12 @@ public class GetRolesForUserAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        // API is tenant specific, but using the public tenant storage
+        // API is tenant specific
         String userId = InputParser.getQueryParamOrThrowError(req, "userId", false);
         try {
-            String[] userRoles = UserRoles.getRolesForUser(
-                    this.getTenantStorage(req).withStorage(this.getPublicTenantStorage(req).getStorage()),
-                    userId);
+            TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+            Storage storage = getTenantStorage(req);
+            String[] userRoles = UserRoles.getRolesForUser(tenantIdentifier, storage, userId);
             JsonArray arr = new JsonArray();
             for (String s : userRoles) {
                 arr.add(new JsonPrimitive(s));

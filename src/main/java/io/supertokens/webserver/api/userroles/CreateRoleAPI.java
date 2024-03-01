@@ -20,6 +20,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
+import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -81,8 +83,10 @@ public class CreateRoleAPI extends WebserverAPI {
         }
 
         try {
+            AppIdentifier appIdentifier = getAppIdentifier(req);
+            Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
             boolean createdNewRole = UserRoles.createNewRoleOrModifyItsPermissions(
-                    this.enforcePublicTenantAndGetPublicTenantStorage(req), role, permissions);
+                    appIdentifier, storage, role, permissions);
 
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
