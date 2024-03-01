@@ -155,7 +155,7 @@ public class TestAppData {
 
         UserRoles.createNewRoleOrModifyItsPermissions(app.toAppIdentifier(), appWithStorage, "role",
                 new String[]{"permission1", "permission2"});
-        UserRoles.addRoleToUser(app, appWithStorage, epUser.getSupertokensUserId(), "role");
+        UserRoles.addRoleToUser(process.getProcess(), app, appWithStorage, epUser.getSupertokensUserId(), "role");
 
         TOTPDevice totpDevice = Totp.registerDevice(app.toAppIdentifier(), appWithStorage, process.getProcess(),
                 epUser.getSupertokensUserId(), "test", 1, 3);

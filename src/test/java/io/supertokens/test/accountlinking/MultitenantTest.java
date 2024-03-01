@@ -341,7 +341,7 @@ public class MultitenantTest {
                 user1.getSupertokensUserId());
 
         UserRoles.createNewRoleOrModifyItsPermissions(t2.toAppIdentifier(), t2WithStorage, "admin", new String[]{"p1"});
-        UserRoles.addRoleToUser(t2, t2WithStorage, user1.getSupertokensUserId(), "admin");
+        UserRoles.addRoleToUser(process.getProcess(), t2, t2WithStorage, user1.getSupertokensUserId(), "admin");
 
         Multitenancy.deleteTenant(t2, process.getProcess());
 

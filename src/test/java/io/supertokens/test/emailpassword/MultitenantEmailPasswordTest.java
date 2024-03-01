@@ -270,13 +270,13 @@ public class MultitenantEmailPasswordTest {
         AuthRecipeUserInfo user3 = EmailPassword.signUp(t3, t3storage, process.getProcess(), "user3@example.com",
                 "password3");
 
-        Storage storage = StorageLayer.getStorage(process.getProcess());
+        Storage[] storages = StorageLayer.getStoragesForApp(process.getProcess(), new AppIdentifier(null, "a1"));
 
         {
             AuthRecipeUserInfo userInfo = EmailPassword.getUserUsingId(
                     new AppIdentifier(null, "a1"),
                     StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUser(
-                            new AppIdentifier(null, "a1"), new Storage[]{storage},
+                            new AppIdentifier(null, "a1"), storages,
                             user1.getSupertokensUserId(),
                             UserIdType.SUPERTOKENS).storage, user1.getSupertokensUserId());
             assertEquals(user1, userInfo);
@@ -286,7 +286,7 @@ public class MultitenantEmailPasswordTest {
             AuthRecipeUserInfo userInfo = EmailPassword.getUserUsingId(
                     new AppIdentifier(null, "a1"),
                     StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUser(
-                            new AppIdentifier(null, "a1"), new Storage[]{storage},
+                            new AppIdentifier(null, "a1"), storages,
                             user2.getSupertokensUserId(),
                             UserIdType.SUPERTOKENS).storage, user2.getSupertokensUserId());
             assertEquals(user2, userInfo);
@@ -296,7 +296,7 @@ public class MultitenantEmailPasswordTest {
             AuthRecipeUserInfo userInfo = EmailPassword.getUserUsingId(
                     new AppIdentifier(null, "a1"),
                     StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUser(
-                            new AppIdentifier(null, "a1"), new Storage[]{storage},
+                            new AppIdentifier(null, "a1"), storages,
                             user3.getSupertokensUserId(),
                             UserIdType.SUPERTOKENS).storage, user3.getSupertokensUserId());
             assertEquals(user3, userInfo);
@@ -393,26 +393,26 @@ public class MultitenantEmailPasswordTest {
         AuthRecipeUserInfo user3 = EmailPassword.signUp(t3, t3storage, process.getProcess(), "user@example.com",
                 "password3");
 
-        Storage storage = StorageLayer.getStorage(process.getProcess());
+        Storage[] storages = StorageLayer.getStoragesForApp(process.getProcess(), new AppIdentifier(null, "a1"));
 
         EmailPassword.updateUsersEmailOrPassword(
                 new AppIdentifier(null, "a1"),
                 StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUser(
-                        new AppIdentifier(null, "a1"), new Storage[]{storage},
+                        new AppIdentifier(null, "a1"), storages,
                         user1.getSupertokensUserId(),
                         UserIdType.SUPERTOKENS).storage,
                 process.getProcess(), user1.getSupertokensUserId(), null, "newpassword1");
         EmailPassword.updateUsersEmailOrPassword(
                 new AppIdentifier(null, "a1"),
                 StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUser(
-                        new AppIdentifier(null, "a1"), new Storage[]{storage},
+                        new AppIdentifier(null, "a1"), storages,
                         user2.getSupertokensUserId(),
                         UserIdType.SUPERTOKENS).storage,
                 process.getProcess(), user2.getSupertokensUserId(), null, "newpassword2");
         EmailPassword.updateUsersEmailOrPassword(
                 new AppIdentifier(null, "a1"),
                 StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUser(
-                        new AppIdentifier(null, "a1"), new Storage[]{storage},
+                        new AppIdentifier(null, "a1"), storages,
                         user3.getSupertokensUserId(),
                         UserIdType.SUPERTOKENS).storage,
                 process.getProcess(), user3.getSupertokensUserId(), null, "newpassword3");

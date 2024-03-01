@@ -759,7 +759,7 @@ public class Session {
                 continue;
             }
 
-            String[] sessionHandlesRevokedForTenant = revokeSessionUsingSessionHandles(tenantIdentifier, storage,
+            String[] sessionHandlesRevokedForTenant = revokeSessionUsingSessionHandles(tenantIdentifier, tenantStorage,
                     sessionHandlesForTenant);
             revokedSessionHandles.addAll(Arrays.asList(sessionHandlesRevokedForTenant));
         }

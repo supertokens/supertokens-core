@@ -144,6 +144,7 @@ public class HelloAPITest {
                 "http://localhost:3567/hello/hello/", // baseUrl + (hello tenant) + / : works because the hello api doesn't check if that tenant exists
                 "http://localhost:3567/hello/appid-hello/hello", // baseUrl + app + /hello
                 "http://localhost:3567/hello/appid-hello/hello/", // baseUrl + app + /hello
+                "http://localhost:3567/hello/appid-hello/test/hello", // baseUrl + app + tenant + /hello
         };
 
         for (String helloUrl: HELLO_ROUTES) {
@@ -159,11 +160,11 @@ public class HelloAPITest {
                 "http://localhost:3567/hello/appid-hello", // baseUrl + app + /
                 "http://localhost:3567/hello/appid-hello/", // baseUrl + app + /
                 "http://localhost:3567/hello/appid-hello/test", // baseUrl + app + tenant + /
+                "http://localhost:3567/hello/appid-hello/test/", // baseUrl + app + tenant + /
         };
 
         // Not found
         for (String notFoundUrl : NOT_FOUND_ROUTES) {
-            System.out.println(notFoundUrl);
             try {
                 String res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                         notFoundUrl, null, 1000, 1000,
@@ -171,23 +172,6 @@ public class HelloAPITest {
                 fail();
             } catch (HttpResponseException e) {
                 assertEquals(404, e.statusCode);
-            }
-        }
-
-        String[] BAD_PERMISSION_ROUTES = new String[]{
-                "http://localhost:3567/hello/appid-hello/test/hello", // baseUrl + app + tenant + /hello
-                "http://localhost:3567/hello/appid-hello/test/", // baseUrl + app + tenant + /
-        };
-
-        // Bad permission
-        for (String badPermUrl : BAD_PERMISSION_ROUTES) {
-            try {
-                String res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                        badPermUrl, null, 1000, 1000,
-                        null, Utils.getCdiVersionStringLatestForTests(), "");
-                fail();
-            } catch (HttpResponseException e) {
-                assertEquals(403, e.statusCode);
             }
         }
 
@@ -243,6 +227,7 @@ public class HelloAPITest {
                 "http://localhost:3567/hello/hello/", // baseUrl + (hello tenant) + / : works because the hello api doesn't check if that tenant exists
                 "http://localhost:3567/hello/appid-hello/hello", // baseUrl + app + /hello
                 "http://localhost:3567/hello/appid-hello/hello/", // baseUrl + app + /hello
+                "http://localhost:3567/hello/appid-hello/test/hello", // baseUrl + app + tenant + /hello
         };
 
         for (String helloUrl: HELLO_ROUTES) {
@@ -260,6 +245,7 @@ public class HelloAPITest {
                 "http://localhost:3567/hello/appid-hello", // baseUrl + app + /
                 "http://localhost:3567/hello/appid-hello/", // baseUrl + app + /
                 "http://localhost:3567/hello/appid-hello/test", // baseUrl + app + tenant + /
+                "http://localhost:3567/hello/appid-hello/test/", // baseUrl + app + tenant + /
         };
 
         // Not found
@@ -271,23 +257,6 @@ public class HelloAPITest {
                 fail();
             } catch (HttpResponseException e) {
                 assertEquals(404, e.statusCode);
-            }
-        }
-
-        String[] BAD_PERMISSION_ROUTES = new String[]{
-                "http://localhost:3567/hello/appid-hello/test/hello", // baseUrl + app + tenant + /hello
-                "http://localhost:3567/hello/appid-hello/test/", // baseUrl + app + tenant + /
-        };
-
-        // Bad permission
-        for (String badPermUrl : BAD_PERMISSION_ROUTES) {
-            try {
-                String res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                        badPermUrl, null, 1000, 1000,
-                        null, Utils.getCdiVersionStringLatestForTests(), "");
-                fail();
-            } catch (HttpResponseException e) {
-                assertEquals(403, e.statusCode);
             }
         }
 
@@ -342,6 +311,7 @@ public class HelloAPITest {
                 "http://localhost:3567/hello/", // (hello tenant) + / : works because the hello api doesn't check if that tenant exists
                 "http://localhost:3567/appid-hello/hello", // app + /hello
                 "http://localhost:3567/appid-hello/hello/", // app + /hello
+                "http://localhost:3567/appid-hello/test/hello", // app + tenant + /hello
         };
 
         for (String helloUrl: HELLO_ROUTES) {
@@ -358,6 +328,7 @@ public class HelloAPITest {
                 "http://localhost:3567/appid-hello", // app + /
                 "http://localhost:3567/appid-hello/", // app + /
                 "http://localhost:3567/appid-hello/test", // app + tenant + /
+                "http://localhost:3567/appid-hello/test/", // app + tenant + /
         };
 
         // Not found

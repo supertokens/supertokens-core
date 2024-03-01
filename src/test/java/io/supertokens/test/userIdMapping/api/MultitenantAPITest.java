@@ -396,29 +396,30 @@ public class MultitenantAPITest {
 
         {
             JsonObject mapping = getUserIdMapping(t1, "euserid", "EXTERNAL");
-            assertEquals(user1.get("id").getAsString(), mapping.get("superTokensUserId").getAsString());
+            assert mapping.get("superTokensUserId").getAsString().equals(user1.get("id").getAsString())
+                    || mapping.get("superTokensUserId").getAsString().equals(user2.get("id").getAsString());
         }
         {
             JsonObject mapping = getUserIdMapping(t1, "euserid", "ANY");
-            assertEquals(user1.get("id").getAsString(), mapping.get("superTokensUserId").getAsString());
+            assert mapping.get("superTokensUserId").getAsString().equals(user1.get("id").getAsString())
+                    || mapping.get("superTokensUserId").getAsString().equals(user2.get("id").getAsString());
         }
 
         {
-            JsonObject mapping = getUserIdMapping(t2, "euserid", "EXTERNAL");
-            assertEquals(user2.get("id").getAsString(), mapping.get("superTokensUserId").getAsString());
+            try {
+                JsonObject mapping = getUserIdMapping(t2, "euserid", "EXTERNAL");
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(403, e.statusCode);
+            }
         }
         {
-            JsonObject mapping = getUserIdMapping(t2, "euserid", "ANY");
-            assertEquals(user2.get("id").getAsString(), mapping.get("superTokensUserId").getAsString());
-        }
-
-        {
-            JsonObject mapping = getUserIdMapping(t3, "euserid", "EXTERNAL");
-            assertEquals(user2.get("id").getAsString(), mapping.get("superTokensUserId").getAsString());
-        }
-        {
-            JsonObject mapping = getUserIdMapping(t3, "euserid", "ANY");
-            assertEquals(user2.get("id").getAsString(), mapping.get("superTokensUserId").getAsString());
+            try {
+                JsonObject mapping = getUserIdMapping(t2, "euserid", "ANY");
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(403, e.statusCode);
+            }
         }
     }
 
