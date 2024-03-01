@@ -20,6 +20,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.config.Config;
+import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.Passwordless.DeviceWithCodes;
@@ -70,25 +72,29 @@ public class GetCodesAPI extends WebserverAPI {
         }
 
         try {
-            long passwordlessCodeLifetime = Config.getConfig(this.getTenantStorage(req), main)
+            TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+            Storage storage = getTenantStorage(req);
+
+            long passwordlessCodeLifetime = Config.getConfig(tenantIdentifier, main)
                     .getPasswordlessCodeLifetime();
             List<Passwordless.DeviceWithCodes> devicesInfos;
             if (deviceId != null) {
-                DeviceWithCodes deviceWithCodes = Passwordless.getDeviceWithCodesById(this.getTenantStorage(req),
-                        deviceId);
+                DeviceWithCodes deviceWithCodes = Passwordless.getDeviceWithCodesById(
+                        tenantIdentifier, storage, deviceId);
                 devicesInfos = deviceWithCodes == null ? Collections.emptyList()
                         : Collections.singletonList(deviceWithCodes);
             } else if (deviceIdHash != null) {
                 DeviceWithCodes deviceWithCodes = Passwordless.getDeviceWithCodesByIdHash(
-                        this.getTenantStorage(req), deviceIdHash);
+                        tenantIdentifier, storage, deviceIdHash);
                 devicesInfos = deviceWithCodes == null ? Collections.emptyList()
                         : Collections.singletonList(deviceWithCodes);
             } else if (email != null) {
                 email = Utils.normaliseEmail(email);
-                devicesInfos = Passwordless.getDevicesWithCodesByEmail(this.getTenantStorage(req), email);
+                devicesInfos = Passwordless.getDevicesWithCodesByEmail(
+                        tenantIdentifier, storage, email);
             } else {
-                devicesInfos = Passwordless.getDevicesWithCodesByPhoneNumber(this.getTenantStorage(req),
-                        phoneNumber);
+                devicesInfos = Passwordless.getDevicesWithCodesByPhoneNumber(
+                        tenantIdentifier, storage, phoneNumber);
             }
 
             JsonObject result = new JsonObject();

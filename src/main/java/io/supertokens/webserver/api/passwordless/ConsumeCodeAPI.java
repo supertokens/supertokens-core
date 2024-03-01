@@ -28,6 +28,7 @@ import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.InputParser;
@@ -81,7 +82,9 @@ public class ConsumeCodeAPI extends WebserverAPI {
         }
 
         try {
+            TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
             ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(
+                    tenantIdentifier,
                     this.getTenantStorage(req), main,
                     deviceId, deviceIdHash,
                     userInputCode, linkCode,
@@ -89,7 +92,8 @@ public class ConsumeCodeAPI extends WebserverAPI {
                     getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0));
             io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(this.getTenantStorage(req), new AuthRecipeUserInfo[]{consumeCodeResponse.user});
 
-            ActiveUsers.updateLastActive(this.getPublicTenantStorage(req), main, consumeCodeResponse.user.getSupertokensUserId());
+            ActiveUsers.updateLastActive(tenantIdentifier.toAppIdentifier(), this.getPublicTenantStorage(req),
+                    consumeCodeResponse.user.getSupertokensUserId());
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

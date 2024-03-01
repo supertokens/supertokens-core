@@ -17,8 +17,8 @@
 package io.supertokens.webserver.api.passwordless;
 
 import com.google.gson.JsonObject;
-import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
+import io.supertokens.StorageAndUserIdMapping;
 import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.passwordless.Passwordless;
@@ -26,10 +26,13 @@ import io.supertokens.passwordless.Passwordless.FieldUpdate;
 import io.supertokens.passwordless.exceptions.PhoneNumberChangeNotAllowedException;
 import io.supertokens.passwordless.exceptions.UserWithoutContactInfoException;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.passwordless.exception.DuplicatePhoneNumberException;
 import io.supertokens.useridmapping.UserIdType;
@@ -77,32 +80,39 @@ public class UserAPI extends WebserverAPI {
             AuthRecipeUserInfo user;
             if (userId != null) {
                 try {
-                    AppIdentifierWithStorageAndUserIdMapping appIdentifierWithStorageAndUserIdMapping =
+                    AppIdentifier appIdentifier = getAppIdentifier(req);
+                    StorageAndUserIdMapping storageAndUserIdMapping =
                             this.getStorageAndUserIdMappingForAppSpecificApi(req, userId, UserIdType.ANY);
-                    if (appIdentifierWithStorageAndUserIdMapping.userIdMapping != null) {
-                        userId = appIdentifierWithStorageAndUserIdMapping.userIdMapping.superTokensUserId;
+                    if (storageAndUserIdMapping.userIdMapping != null) {
+                        userId = storageAndUserIdMapping.userIdMapping.superTokensUserId;
                     }
-                    user = Passwordless.getUserById(appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage,
-                            userId);
+                    user = Passwordless.getUserById(appIdentifier, storageAndUserIdMapping.storage, userId);
 
                     // if the userIdMapping exists set the userId in the response to the externalUserId
                     if (user != null) {
-                        io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage, new AuthRecipeUserInfo[]{user});
+                        io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(
+                                storageAndUserIdMapping.storage, new AuthRecipeUserInfo[]{user});
                     }
                 } catch (UnknownUserIdException e) {
                     user = null;
                 }
             } else if (email != null) {
+                TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+                Storage storage = getTenantStorage(req);
                 email = Utils.normaliseEmail(email);
-                user = Passwordless.getUserByEmail(this.getTenantStorage(req), email);
+                user = Passwordless.getUserByEmail(tenantIdentifier, storage, email);
                 if (user != null) {
-                    io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(this.getTenantStorage(req), new AuthRecipeUserInfo[]{user});
+                    io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(storage,
+                            new AuthRecipeUserInfo[]{user});
                 }
             } else {
-                user = Passwordless.getUserByPhoneNumber(this.getTenantStorage(req),
-                        phoneNumber);
+                TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+                Storage storage = getTenantStorage(req);
+
+                user = Passwordless.getUserByPhoneNumber(tenantIdentifier, storage, phoneNumber);
                 if (user != null) {
-                    io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(this.getTenantStorage(req), new AuthRecipeUserInfo[]{user});
+                    io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(storage,
+                            new AuthRecipeUserInfo[]{user});
                 }
             }
 
@@ -153,14 +163,15 @@ public class UserAPI extends WebserverAPI {
                 : Utils.normalizeIfPhoneNumber(InputParser.parseStringOrThrowError(input, "phoneNumber", false)));
 
         try {
-            AppIdentifierWithStorageAndUserIdMapping appIdentifierWithStorageAndUserIdMapping =
+            AppIdentifier appIdentifier = getAppIdentifier(req);
+            StorageAndUserIdMapping storageAndUserIdMapping =
                     this.getStorageAndUserIdMappingForAppSpecificApi(req, userId, UserIdType.ANY);
             // if a userIdMapping exists, pass the superTokensUserId to the updateUser
-            if (appIdentifierWithStorageAndUserIdMapping.userIdMapping != null) {
-                userId = appIdentifierWithStorageAndUserIdMapping.userIdMapping.superTokensUserId;
+            if (storageAndUserIdMapping.userIdMapping != null) {
+                userId = storageAndUserIdMapping.userIdMapping.superTokensUserId;
             }
 
-            Passwordless.updateUser(appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage,
+            Passwordless.updateUser(appIdentifier, storageAndUserIdMapping.storage,
                     userId, emailUpdate, phoneNumberUpdate);
 
             JsonObject result = new JsonObject();
