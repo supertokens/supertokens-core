@@ -19,8 +19,11 @@ package io.supertokens.webserver.api.usermetadata;
 import com.google.gson.JsonObject;
 import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
+import io.supertokens.StorageAndUserIdMapping;
 import io.supertokens.multitenancy.exception.BadPermissionException;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
@@ -52,15 +55,17 @@ public class RemoveUserMetadataAPI extends WebserverAPI {
         // API is app specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
+
+        AppIdentifier appIdentifier = getAppIdentifier(req);
         try {
             try {
-                AppIdentifierWithStorageAndUserIdMapping appIdStorageAndMapping =
+                StorageAndUserIdMapping storageAndUserIdMapping =
                         this.getStorageAndUserIdMappingForAppSpecificApi(
                                 req, userId, UserIdType.ANY);
-                UserMetadata.deleteUserMetadata(appIdStorageAndMapping.appIdentifierWithStorage, userId);
+                UserMetadata.deleteUserMetadata(appIdentifier, storageAndUserIdMapping.storage, userId);
             } catch (UnknownUserIdException e) {
-                AppIdentifierWithStorage appIdentifierWithStorage = this.enforcePublicTenantAndGetPublicTenantStorage(req);
-                UserMetadata.deleteUserMetadata(appIdentifierWithStorage, userId);
+                Storage storage = this.enforcePublicTenantAndGetPublicTenantStorage(req);
+                UserMetadata.deleteUserMetadata(appIdentifier, storage, userId);
             }
 
             JsonObject response = new JsonObject();

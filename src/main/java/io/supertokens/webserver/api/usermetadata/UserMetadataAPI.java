@@ -17,11 +17,12 @@
 package io.supertokens.webserver.api.usermetadata;
 
 import com.google.gson.JsonObject;
-import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
+import io.supertokens.StorageAndUserIdMapping;
 import io.supertokens.multitenancy.exception.BadPermissionException;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -52,16 +53,16 @@ public class UserMetadataAPI extends WebserverAPI {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         // API is app specific
         String userId = InputParser.getQueryParamOrThrowError(req, "userId", false);
+        AppIdentifier appIdentifier = getAppIdentifier(req);
         try {
             JsonObject metadata;
             try {
-                AppIdentifierWithStorageAndUserIdMapping appIdStorageAndMapping =
-                        this.getStorageAndUserIdMappingForAppSpecificApi(
-                                req, userId, UserIdType.ANY);
-                metadata = UserMetadata.getUserMetadata(appIdStorageAndMapping.appIdentifierWithStorage, userId);
+                StorageAndUserIdMapping storageAndUserIdMapping = this.getStorageAndUserIdMappingForAppSpecificApi(
+                        req, userId, UserIdType.ANY);
+                metadata = UserMetadata.getUserMetadata(appIdentifier, storageAndUserIdMapping.storage, userId);
             } catch (UnknownUserIdException e) {
-                AppIdentifierWithStorage appIdentifierWithStorage = this.enforcePublicTenantAndGetPublicTenantStorage(req);
-                metadata = UserMetadata.getUserMetadata(appIdentifierWithStorage, userId);
+                Storage storage = this.enforcePublicTenantAndGetPublicTenantStorage(req);
+                metadata = UserMetadata.getUserMetadata(appIdentifier, storage, userId);
             }
 
             JsonObject response = new JsonObject();
@@ -79,18 +80,19 @@ public class UserMetadataAPI extends WebserverAPI {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
         JsonObject update = InputParser.parseJsonObjectOrThrowError(input, "metadataUpdate", false);
+
+        AppIdentifier appIdentifier = getAppIdentifier(req);
         try {
             JsonObject metadata;
 
             try {
-                AppIdentifierWithStorageAndUserIdMapping appIdStorageAndMapping =
-                        this.getStorageAndUserIdMappingForAppSpecificApi(
-                                req, userId, UserIdType.ANY);
-                metadata = UserMetadata.updateUserMetadata(appIdStorageAndMapping.appIdentifierWithStorage, userId,
+                StorageAndUserIdMapping storageAndUserIdMapping = this.getStorageAndUserIdMappingForAppSpecificApi(
+                        req, userId, UserIdType.ANY);
+                metadata = UserMetadata.updateUserMetadata(appIdentifier, storageAndUserIdMapping.storage, userId,
                         update);
             } catch (UnknownUserIdException e) {
-                AppIdentifierWithStorage appIdentifierWithStorage = this.enforcePublicTenantAndGetPublicTenantStorage(req);
-                metadata = UserMetadata.updateUserMetadata(appIdentifierWithStorage, userId, update);
+                Storage storage = this.enforcePublicTenantAndGetPublicTenantStorage(req);
+                metadata = UserMetadata.updateUserMetadata(appIdentifier, storage, userId, update);
             }
 
             JsonObject response = new JsonObject();
