@@ -17,12 +17,13 @@
 package io.supertokens.webserver.api.emailverification;
 
 import com.google.gson.JsonObject;
-import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
+import io.supertokens.StorageAndUserIdMapping;
 import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.multitenancy.exception.BadPermissionException;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -57,15 +58,16 @@ public class UnverifyEmailAPI extends WebserverAPI {
         email = Utils.normaliseEmail(email);
 
         try {
-            AppIdentifierWithStorage appIdentifierWithStorage;
+            AppIdentifier appIdentifier = getAppIdentifier(req);
+            Storage storage;
             try {
-                AppIdentifierWithStorageAndUserIdMapping storageAndUidMapping = getStorageAndUserIdMappingForAppSpecificApi(
+                StorageAndUserIdMapping storageAndUidMapping = getStorageAndUserIdMappingForAppSpecificApi(
                         req, userId, UserIdType.ANY);
-                appIdentifierWithStorage = storageAndUidMapping.appIdentifierWithStorage;
+                storage = storageAndUidMapping.storage;
             } catch (UnknownUserIdException e) {
-                appIdentifierWithStorage = enforcePublicTenantAndGetPublicTenantStorage(req);
+                storage = enforcePublicTenantAndGetPublicTenantStorage(req);
             }
-            EmailVerification.unverifyEmail(appIdentifierWithStorage, userId, email);
+            EmailVerification.unverifyEmail(appIdentifier, storage, userId, email);
 
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
