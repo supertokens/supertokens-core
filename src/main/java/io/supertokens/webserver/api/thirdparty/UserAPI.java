@@ -17,13 +17,16 @@
 package io.supertokens.webserver.api.thirdparty;
 
 import com.google.gson.JsonObject;
-import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
+import io.supertokens.StorageAndUserIdMapping;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.useridmapping.UserIdMapping;
@@ -75,24 +78,28 @@ public class UserAPI extends WebserverAPI {
             AuthRecipeUserInfo user = null;
             if (userId != null) {
                 // Query by userId
+                AppIdentifier appIdentifier = getAppIdentifier(req);
                 try {
-                    AppIdentifierWithStorageAndUserIdMapping appIdentifierWithStorageAndUserIdMapping =
+                    StorageAndUserIdMapping storageAndUserIdMapping =
                             this.getStorageAndUserIdMappingForAppSpecificApi(req, userId, UserIdType.ANY);
                     // if a userIdMapping exists, pass the superTokensUserId to the getUserUsingId function
-                    if (appIdentifierWithStorageAndUserIdMapping.userIdMapping != null) {
-                        userId = appIdentifierWithStorageAndUserIdMapping.userIdMapping.superTokensUserId;
+                    if (storageAndUserIdMapping.userIdMapping != null) {
+                        userId = storageAndUserIdMapping.userIdMapping.superTokensUserId;
                     }
 
-                    user = ThirdParty.getUser(appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage,
+                    user = ThirdParty.getUser(appIdentifier, storageAndUserIdMapping.storage,
                             userId);
                     if (user != null) {
-                        UserIdMapping.populateExternalUserIdForUsers(appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage, new AuthRecipeUserInfo[]{user});
+                        UserIdMapping.populateExternalUserIdForUsers(storageAndUserIdMapping.storage,
+                                new AuthRecipeUserInfo[]{user});
                     }
                 } catch (UnknownUserIdException e) {
                     // let the user be null
                 }
             } else {
-                user = ThirdParty.getUser(this.getTenantStorage(req), thirdPartyId,
+                TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+                Storage storage = getTenantStorage(req);
+                user = ThirdParty.getUser(tenantIdentifier, storage, thirdPartyId,
                         thirdPartyUserId);
                 if (user != null) {
                     UserIdMapping.populateExternalUserIdForUsers(getTenantStorage(req), new AuthRecipeUserInfo[]{user});
