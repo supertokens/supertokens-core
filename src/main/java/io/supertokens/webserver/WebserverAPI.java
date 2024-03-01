@@ -230,8 +230,10 @@ public abstract class WebserverAPI extends HttpServlet {
         if (!apiPath.startsWith("/")) {
             apiPath = "/" + apiPath;
         }
-        if (apiPath.equals("/") && (path.equals("") || path.equals("/"))) {
-            return null;
+        if (apiPath.equals("/")) {
+            if ((path.equals("") || path.equals("/"))) {
+                return null;
+            }
         } else {
             if (path.matches("^/appid-[a-z0-9-]*/[a-z0-9-]+" + apiPath + "/?$")) {
                 String tenantId = path.split("/")[2].toLowerCase();
@@ -251,6 +253,7 @@ public abstract class WebserverAPI extends HttpServlet {
                 return null;
             }
         }
+        return null;
     }
 
     private String getAppId(HttpServletRequest req) {

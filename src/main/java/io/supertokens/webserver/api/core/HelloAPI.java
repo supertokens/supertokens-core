@@ -22,6 +22,7 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.RateLimiter;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -89,8 +90,8 @@ public class HelloAPI extends WebserverAPI {
                 return;
             }
 
-            Storage[] storages = enforcePublicTenantAndGetAllStoragesForApp(req);
             AppIdentifier appIdentifier = getAppIdentifier(req);
+            Storage[] storages = StorageLayer.getStoragesForApp(main, appIdentifier);
 
             for (Storage storage : storages) {
                 // even if the public tenant does not exist, the following function will return a null
@@ -98,7 +99,7 @@ public class HelloAPI extends WebserverAPI {
                 storage.getKeyValue(appIdentifier.getAsPublicTenantIdentifier(), "Test");
             }
             super.sendTextResponse(200, "Hello", resp);
-        } catch (StorageQueryException | BadPermissionException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             // we send 500 status code
             throw new ServletException(e);
         }

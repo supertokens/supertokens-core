@@ -31,13 +31,25 @@ import io.supertokens.storageLayer.StorageLayer;
 import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nullable;
+import java.util.Arrays;
 
 public class UserRoles {
     // add a role to a user and return true, if the role is already mapped to the user return false, but if
     // the role does not exist, throw an UNKNOWN_ROLE_EXCEPTION error
-    public static boolean addRoleToUser(TenantIdentifier tenantIdentifier, Storage storage, String userId,
+    public static boolean addRoleToUser(Main main, TenantIdentifier tenantIdentifier, Storage storage, String userId,
                                         String role)
             throws StorageQueryException, UnknownRoleException, TenantOrAppNotFoundException {
+
+        // Roles are stored in public tenant storage and role to user mapping is stored in the tenant's storage
+        // We do this because it's not straight forward to replicate roles to all storages of an app
+        Storage appStorage = StorageLayer.getStorage(
+                tenantIdentifier.toAppIdentifier().getAsPublicTenantIdentifier(), main);
+
+        String[] roles = getRoles(tenantIdentifier.toAppIdentifier(), appStorage);
+        if (!Arrays.asList(roles).contains(role)) {
+            throw new UnknownRoleException();
+        }
+
         try {
             StorageUtils.getUserRolesStorage(storage).addRoleToUser(tenantIdentifier, userId, role);
             return true;
@@ -53,7 +65,7 @@ public class UserRoles {
         Storage storage = StorageLayer.getStorage(main);
         try {
             return addRoleToUser(
-                    new TenantIdentifier(null, null, null),
+                    main, new TenantIdentifier(null, null, null),
                     storage, userId, role);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);

@@ -23,6 +23,7 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.RateLimiter;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -73,11 +74,11 @@ public class NotFoundOrHelloAPI extends WebserverAPI {
             ServletException {
         // getServletPath returns the path without the base path.
         AppIdentifier appIdentifier = getAppIdentifier(req);
-        Storage[] storages = null;
+        Storage[] storages;
 
         try {
-            enforcePublicTenantAndGetAllStoragesForApp(req); // check if app exists and enforce public tenant
-        } catch (TenantOrAppNotFoundException | BadPermissionException e) {
+            storages = StorageLayer.getStoragesForApp(main, appIdentifier);
+        } catch (TenantOrAppNotFoundException e) {
             // we send 500 status code
             throw new ServletException(e);
         }

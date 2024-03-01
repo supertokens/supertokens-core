@@ -434,6 +434,13 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                 return new StorageAndUserIdMapping(storage, mapping);
             }
 
+            UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+                    tenantIdentifier.toAppIdentifier(), storage,
+                    userId, userIdType);
+            if (mapping != null) {
+                return new StorageAndUserIdMapping(storage, mapping);
+            }
+
             try {
                 io.supertokens.useridmapping.UserIdMapping.findNonAuthStoragesWhereUserIdIsUsedOrAssertIfUsed(
                         tenantIdentifier.toAppIdentifier(), storage, userId, true);
