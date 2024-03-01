@@ -20,10 +20,10 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.authRecipe.AuthRecipe;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.utils.Utils;
@@ -73,10 +73,12 @@ public class ListUsersByAccountInfoAPI extends WebserverAPI {
         }
 
         try {
-            TenantIdentifierWithStorage tenantIdentifierWithStorage = this.getTenantStorage(req);
+            TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+            Storage storage = this.getTenantStorage(req);
             AuthRecipeUserInfo[] users = AuthRecipe.getUsersByAccountInfo(
-                    this.getTenantStorage(req), doUnionOfAccountInfo, email, phoneNumber, thirdPartyId, thirdPartyUserId);
-            UserIdMapping.populateExternalUserIdForUsers(tenantIdentifierWithStorage.toAppIdentifierWithStorage(), users);
+                    tenantIdentifier, storage, doUnionOfAccountInfo, email, phoneNumber, thirdPartyId,
+                    thirdPartyUserId);
+            UserIdMapping.populateExternalUserIdForUsers(storage, users);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

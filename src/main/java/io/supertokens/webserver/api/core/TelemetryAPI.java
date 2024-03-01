@@ -46,8 +46,8 @@ public class TelemetryAPI extends WebserverAPI {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         // API is app specific
         try {
-            KeyValueInfo telemetryId = Telemetry.getTelemetryId(main,
-                    this.enforcePublicTenantAndGetPublicTenantStorage(req));
+            this.enforcePublicTenantAndGetPublicTenantStorage(req); // check if app exists and enforce public tenant
+            KeyValueInfo telemetryId = Telemetry.getTelemetryId(main, getAppIdentifier(req));
 
             JsonObject result = new JsonObject();
             if (telemetryId == null) {

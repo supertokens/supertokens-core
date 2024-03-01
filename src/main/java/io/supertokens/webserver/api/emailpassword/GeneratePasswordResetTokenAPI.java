@@ -18,11 +18,12 @@ package io.supertokens.webserver.api.emailpassword;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
-import io.supertokens.TenantIdentifierWithStorageAndUserIdMapping;
+import io.supertokens.StorageAndUserIdMapping;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
@@ -60,29 +61,30 @@ public class GeneratePasswordResetTokenAPI extends WebserverAPI {
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
 
         // logic according to https://github.com/supertokens/supertokens-core/issues/106
-        TenantIdentifier tenantIdentifier = null;
+        TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+        Storage storage;
         try {
-            tenantIdentifier = getTenantStorage(req);
+            storage = getTenantStorage(req);
         } catch (TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
 
         try {
-            TenantIdentifierWithStorageAndUserIdMapping tenantIdentifierStorageAndMapping =
+            StorageAndUserIdMapping storageAndUserIdMapping =
                     getStorageAndUserIdMappingForTenantSpecificApi(req, userId, UserIdType.ANY);
             // if a userIdMapping exists, pass the superTokensUserId to the generatePasswordResetToken
-            if (tenantIdentifierStorageAndMapping.userIdMapping != null) {
-                userId = tenantIdentifierStorageAndMapping.userIdMapping.superTokensUserId;
+            if (storageAndUserIdMapping.userIdMapping != null) {
+                userId = storageAndUserIdMapping.userIdMapping.superTokensUserId;
             }
 
             String token;
             if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0)) {
                 String email = InputParser.parseStringOrThrowError(input, "email", false);
                 token = EmailPassword.generatePasswordResetToken(
-                        tenantIdentifierStorageAndMapping.tenantIdentifierWithStorage, super.main, userId, email);
+                        tenantIdentifier, storageAndUserIdMapping.storage, super.main, userId, email);
             } else {
                 token = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(
-                        tenantIdentifierStorageAndMapping.tenantIdentifierWithStorage, super.main, userId);
+                        tenantIdentifier, storageAndUserIdMapping.storage, super.main, userId);
             }
 
             JsonObject result = new JsonObject();

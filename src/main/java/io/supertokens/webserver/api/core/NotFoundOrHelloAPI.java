@@ -21,8 +21,7 @@ import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorages;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.utils.RateLimiter;
 import io.supertokens.webserver.WebserverAPI;
@@ -73,10 +72,11 @@ public class NotFoundOrHelloAPI extends WebserverAPI {
     protected void handleRequest(HttpServletRequest req, HttpServletResponse resp) throws IOException,
             ServletException {
         // getServletPath returns the path without the base path.
-        AppIdentifierWithStorages appIdentifierWithStorages = null;
+        AppIdentifier appIdentifier = getAppIdentifier(req);
+        Storage[] storages = null;
 
         try {
-            appIdentifierWithStorages = enforcePublicTenantAndGetAllStoragesForApp(req);
+            enforcePublicTenantAndGetAllStoragesForApp(req); // check if app exists and enforce public tenant
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             // we send 500 status code
             throw new ServletException(e);
@@ -95,10 +95,10 @@ public class NotFoundOrHelloAPI extends WebserverAPI {
                     return;
                 }
 
-                for (Storage storage : appIdentifierWithStorages.getStorages()) {
+                for (Storage storage : storages) {
                     // even if the public tenant does not exist, the following function will return a null
                     // idea here is to test that the storage is working
-                    storage.getKeyValue(appIdentifierWithStorages.getAsPublicTenantIdentifier(), "Test");
+                    storage.getKeyValue(appIdentifier.getAsPublicTenantIdentifier(), "Test");
                 }
                 super.sendTextResponse(200, "Hello", resp);
 
@@ -109,7 +109,8 @@ public class NotFoundOrHelloAPI extends WebserverAPI {
         } else {
             super.sendTextResponse(404, "Not found", resp);
 
-            Logging.error(main, appIdentifierWithStorages.getAsPublicTenantIdentifier(), "Unknown API called: " + req.getRequestURL(), false);
+            Logging.error(main, appIdentifier.getAsPublicTenantIdentifier(), "Unknown API called: " + req.getRequestURL(),
+                    false);
         }
     }
 

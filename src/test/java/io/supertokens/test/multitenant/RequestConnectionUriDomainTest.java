@@ -19,7 +19,6 @@ package io.supertokens.test.multitenant;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.ProcessState;
-import io.supertokens.config.Config;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
@@ -37,7 +36,6 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
-import io.supertokens.test.multitenant.api.TestMultitenancyAPIHelper;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
 import io.supertokens.webserver.Webserver;
 import io.supertokens.webserver.WebserverAPI;
@@ -90,7 +88,7 @@ public class RequestConnectionUriDomainTest {
             @Override
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException,
                     ServletException {
-                super.sendTextResponse(200, getTenantIdentifierFromRequest(req).getConnectionUriDomain(), resp);
+                super.sendTextResponse(200, getTenantIdentifier(req).getConnectionUriDomain(), resp);
             }
         });
 
@@ -162,8 +160,8 @@ public class RequestConnectionUriDomainTest {
             protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException,
                     ServletException {
                 super.sendTextResponse(200,
-                        super.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
-                                super.getTenantIdentifierFromRequest(req).getTenantId(), resp);
+                        super.getTenantIdentifier(req).getConnectionUriDomain() + "," +
+                                super.getTenantIdentifier(req).getTenantId(), resp);
             }
         });
 
@@ -288,8 +286,8 @@ public class RequestConnectionUriDomainTest {
             protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException,
                     ServletException {
                 super.sendTextResponse(200,
-                        super.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
-                                super.getTenantIdentifierFromRequest(req).getTenantId(), resp);
+                        super.getTenantIdentifier(req).getConnectionUriDomain() + "," +
+                                super.getTenantIdentifier(req).getTenantId(), resp);
             }
         });
 

@@ -17,15 +17,16 @@
 package io.supertokens.webserver.api.accountlinking;
 
 import com.google.gson.JsonObject;
-import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
+import io.supertokens.StorageAndUserIdMapping;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.authRecipe.exception.InputUserIdIsNotAPrimaryUserException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
@@ -53,19 +54,19 @@ public class UnlinkAccountAPI extends WebserverAPI {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String inputRecipeUserId = InputParser.parseStringOrThrowError(input, "recipeUserId", false);
 
-        AppIdentifierWithStorage appIdentifierWithStorage = null;
+        AppIdentifier appIdentifier = getAppIdentifier(req);
+        Storage storage = null;
         try {
             String userId = inputRecipeUserId;
-            AppIdentifierWithStorageAndUserIdMapping mappingAndStorage =
+            StorageAndUserIdMapping mappingAndStorage =
                     getStorageAndUserIdMappingForAppSpecificApi(
                             req, inputRecipeUserId, UserIdType.ANY);
             if (mappingAndStorage.userIdMapping != null) {
                 userId = mappingAndStorage.userIdMapping.superTokensUserId;
             }
-            appIdentifierWithStorage = mappingAndStorage.appIdentifierWithStorage;
+            storage = mappingAndStorage.storage;
 
-            boolean wasDeleted = AuthRecipe.unlinkAccounts(main, appIdentifierWithStorage,
-                    userId);
+            boolean wasDeleted = AuthRecipe.unlinkAccounts(main, appIdentifier, storage, userId);
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             response.addProperty("wasRecipeUserDeleted", wasDeleted);

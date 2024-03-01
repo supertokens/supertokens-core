@@ -18,6 +18,7 @@ package io.supertokens.webserver.api.useridmapping;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.StorageAndUserIdMapping;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -25,7 +26,6 @@ import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.useridmapping.exception.UnknownSuperTokensUserIdException;
 import io.supertokens.pluginInterface.useridmapping.exception.UserIdMappingAlreadyExistsException;
-import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.SemVer;
@@ -95,7 +95,8 @@ public class UserIdMappingAPI extends WebserverAPI {
         }
 
         try {
-            UserIdMapping.createUserIdMapping(enforcePublicTenantAndGetAllStoragesForApp(req),
+            UserIdMapping.createUserIdMapping(
+                    getAppIdentifier(req), enforcePublicTenantAndGetAllStoragesForApp(req),
                     superTokensUserId, externalUserId, externalUserIdInfo, force, getVersionFromRequest(req).greaterThanOrEqualTo(
                             SemVer.v4_0));
 
@@ -161,7 +162,7 @@ public class UserIdMappingAPI extends WebserverAPI {
             // Request from (app1, tenant1) will return user1 and request from (app1, tenant2) will return user2
             // Request from (app1, tenant3) may result in either user1 or user2
 
-            AppIdentifierWithStorageAndUserIdMapping appIdentifierWithStorageAndUserIdMapping =
+            StorageAndUserIdMapping appIdentifierWithStorageAndUserIdMapping =
                     this.getStorageAndUserIdMappingForAppSpecificApi(req, userId, userIdType);
 
             if (appIdentifierWithStorageAndUserIdMapping.userIdMapping == null) {

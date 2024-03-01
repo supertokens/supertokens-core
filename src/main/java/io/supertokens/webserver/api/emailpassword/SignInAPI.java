@@ -24,10 +24,11 @@ import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
@@ -65,19 +66,21 @@ public class SignInAPI extends WebserverAPI {
 
         String normalisedEmail = Utils.normaliseEmail(email);
 
-        TenantIdentifierWithStorage tenantIdentifierWithStorage = null;
+        TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+        Storage storage;
         try {
-            tenantIdentifierWithStorage = getTenantStorage(req);
+            storage = getTenantStorage(req);
         } catch (TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
 
         try {
-            AuthRecipeUserInfo user = EmailPassword.signIn(tenantIdentifierWithStorage, super.main, normalisedEmail,
+            AuthRecipeUserInfo user = EmailPassword.signIn(tenantIdentifier, storage, super.main, normalisedEmail,
                     password);
-            io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(tenantIdentifierWithStorage, new AuthRecipeUserInfo[]{user});
+            io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(storage,
+                    new AuthRecipeUserInfo[]{user});
 
-            ActiveUsers.updateLastActive(this.getPublicTenantStorage(req), main,
+            ActiveUsers.updateLastActive(tenantIdentifier.toAppIdentifier(), this.getPublicTenantStorage(req),
                     user.getSupertokensUserId()); // use the internal user id
 
             JsonObject result = new JsonObject();
@@ -100,7 +103,7 @@ public class SignInAPI extends WebserverAPI {
             super.sendJsonResponse(200, result, resp);
 
         } catch (WrongCredentialsException e) {
-            Logging.debug(main, tenantIdentifierWithStorage, Utils.exceptionStacktraceToString(e));
+            Logging.debug(main, tenantIdentifier, Utils.exceptionStacktraceToString(e));
             JsonObject result = new JsonObject();
             result.addProperty("status", "WRONG_CREDENTIALS_ERROR");
             super.sendJsonResponse(200, result, resp);

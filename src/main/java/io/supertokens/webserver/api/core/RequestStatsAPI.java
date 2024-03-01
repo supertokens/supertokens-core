@@ -45,7 +45,8 @@ public class RequestStatsAPI extends WebserverAPI {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         // API is app specific
         try {
-            AppIdentifier appIdentifier = enforcePublicTenantAndGetPublicTenantStorage(req);
+            enforcePublicTenantAndGetPublicTenantStorage(req); // check if app exists and enforce public tenant
+            AppIdentifier appIdentifier = getAppIdentifier(req);
             JsonObject stats = RequestStats.getInstance(main, appIdentifier).getStats();
             stats.addProperty("status", "OK");
             super.sendJsonResponse(200, stats, resp);

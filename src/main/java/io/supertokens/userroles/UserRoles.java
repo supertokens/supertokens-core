@@ -18,10 +18,11 @@ package io.supertokens.userroles;
 
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.userroles.exception.DuplicateUserRoleMappingException;
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
@@ -34,11 +35,11 @@ import javax.annotation.Nullable;
 public class UserRoles {
     // add a role to a user and return true, if the role is already mapped to the user return false, but if
     // the role does not exist, throw an UNKNOWN_ROLE_EXCEPTION error
-    public static boolean addRoleToUser(TenantIdentifierWithStorage tenantIdentifierWithStorage, String userId,
+    public static boolean addRoleToUser(TenantIdentifier tenantIdentifier, Storage storage, String userId,
                                         String role)
             throws StorageQueryException, UnknownRoleException, TenantOrAppNotFoundException {
         try {
-            tenantIdentifierWithStorage.getUserRolesStorage().addRoleToUser(tenantIdentifierWithStorage, userId, role);
+            StorageUtils.getUserRolesStorage(storage).addRoleToUser(tenantIdentifier, userId, role);
             return true;
         } catch (DuplicateUserRoleMappingException e) {
             // user already has role
@@ -52,8 +53,8 @@ public class UserRoles {
         Storage storage = StorageLayer.getStorage(main);
         try {
             return addRoleToUser(
-                    new TenantIdentifierWithStorage(null, null, null, storage),
-                    userId, role);
+                    new TenantIdentifier(null, null, null),
+                    storage, userId, role);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
@@ -62,17 +63,17 @@ public class UserRoles {
     // create a new role if it doesn't exist and add permissions to the role. This will create the role
     // in the user pool associated with the tenant used to query this API, so that this role can then
     // be shared across any tenant in that same user pool.
-    public static boolean createNewRoleOrModifyItsPermissions(AppIdentifierWithStorage appIdentifierWithStorage,
+    public static boolean createNewRoleOrModifyItsPermissions(AppIdentifier appIdentifier, Storage storage,
                                                               String role, String[] permissions)
             throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException {
-        UserRolesSQLStorage storage = appIdentifierWithStorage.getUserRolesStorage();
+        UserRolesSQLStorage userRolesStorage = StorageUtils.getUserRolesStorage(storage);
 
         try {
-            return storage.startTransaction(con -> {
+            return userRolesStorage.startTransaction(con -> {
                 boolean wasANewRoleCreated = false;
                 try {
-                    wasANewRoleCreated = storage.createNewRoleOrDoNothingIfExists_Transaction(
-                            appIdentifierWithStorage, con, role);
+                    wasANewRoleCreated = userRolesStorage.createNewRoleOrDoNothingIfExists_Transaction(
+                            appIdentifier, con, role);
                 } catch (TenantOrAppNotFoundException e) {
                     throw new StorageTransactionLogicException(e);
                 }
@@ -80,14 +81,14 @@ public class UserRoles {
                 if (permissions != null) {
                     for (int i = 0; i < permissions.length; i++) {
                         try {
-                            storage.addPermissionToRoleOrDoNothingIfExists_Transaction(appIdentifierWithStorage,
+                            userRolesStorage.addPermissionToRoleOrDoNothingIfExists_Transaction(appIdentifier,
                                     con, role, permissions[i]);
                         } catch (UnknownRoleException e) {
                             // ignore exception, should not come here since role should always exist in this transaction
                         }
                     }
                 }
-                storage.commitTransaction(con);
+                userRolesStorage.commitTransaction(con);
                 return wasANewRoleCreated;
             });
         } catch (StorageTransactionLogicException e) {
@@ -104,38 +105,38 @@ public class UserRoles {
             throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException {
         Storage storage = StorageLayer.getStorage(main);
         return createNewRoleOrModifyItsPermissions(
-                new AppIdentifierWithStorage(null, null, storage), role,
+                new AppIdentifier(null, null), storage, role,
                 permissions);
     }
 
-    public static boolean doesRoleExist(AppIdentifierWithStorage appIdentifierWithStorage, String role)
+    public static boolean doesRoleExist(AppIdentifier appIdentifier, Storage storage, String role)
             throws StorageQueryException {
-        UserRolesSQLStorage storage = appIdentifierWithStorage.getUserRolesStorage();
-        return storage.doesRoleExist(appIdentifierWithStorage, role);
+        UserRolesSQLStorage userRolesStorage = StorageUtils.getUserRolesStorage(storage);
+        return userRolesStorage.doesRoleExist(appIdentifier, role);
     }
 
     @TestOnly
     public static boolean doesRoleExist(Main main, String role)
             throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
-        return doesRoleExist(new AppIdentifierWithStorage(null, null, storage), role);
+        return doesRoleExist(new AppIdentifier(null, null), storage, role);
     }
 
     // remove a role mapped to a user, if the role doesn't exist throw a UNKNOWN_ROLE_EXCEPTION error
-    public static boolean removeUserRole(TenantIdentifierWithStorage tenantIdentifierWithStorage, String userId,
+    public static boolean removeUserRole(TenantIdentifier tenantIdentifier, Storage storage, String userId,
                                          String role)
             throws StorageQueryException, StorageTransactionLogicException, UnknownRoleException {
 
-        UserRolesSQLStorage storage = tenantIdentifierWithStorage.getUserRolesStorage();
+        UserRolesSQLStorage userRolesStorage = StorageUtils.getUserRolesStorage(storage);
 
         try {
-            return storage.startTransaction(con -> {
+            return userRolesStorage.startTransaction(con -> {
 
-                boolean doesRoleExist = storage.doesRoleExist_Transaction(
-                        tenantIdentifierWithStorage.toAppIdentifier(), con, role);
+                boolean doesRoleExist = userRolesStorage.doesRoleExist_Transaction(
+                        tenantIdentifier.toAppIdentifier(), con, role);
 
                 if (doesRoleExist) {
-                    return storage.deleteRoleForUser_Transaction(tenantIdentifierWithStorage, con, userId, role);
+                    return userRolesStorage.deleteRoleForUser_Transaction(tenantIdentifier, con, userId, role);
                 } else {
                     throw new StorageTransactionLogicException(new UnknownRoleException());
                 }
@@ -153,14 +154,14 @@ public class UserRoles {
             throws StorageQueryException, StorageTransactionLogicException, UnknownRoleException {
         Storage storage = StorageLayer.getStorage(main);
         return removeUserRole(
-                new TenantIdentifierWithStorage(null, null, null, storage),
+                new TenantIdentifier(null, null, null), storage,
                 userId, role);
     }
 
     // retrieve all roles associated with the user
-    public static String[] getRolesForUser(TenantIdentifierWithStorage tenantIdentifierWithStorage, String userId)
+    public static String[] getRolesForUser(TenantIdentifier tenantIdentifier, Storage storage, String userId)
             throws StorageQueryException {
-        return tenantIdentifierWithStorage.getUserRolesStorage().getRolesForUser(tenantIdentifierWithStorage, userId);
+        return StorageUtils.getUserRolesStorage(storage).getRolesForUser(tenantIdentifier, userId);
     }
 
     @TestOnly
@@ -168,18 +169,18 @@ public class UserRoles {
             throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
         return getRolesForUser(
-                new TenantIdentifierWithStorage(null, null, null, storage), userId);
+                new TenantIdentifier(null, null, null), storage, userId);
     }
 
     // retrieve all users who have the input role, if role does not exist then throw UNKNOWN_ROLE_EXCEPTION
-    public static String[] getUsersForRole(TenantIdentifierWithStorage tenantIdentifierWithStorage, String role)
+    public static String[] getUsersForRole(TenantIdentifier tenantIdentifier, Storage storage, String role)
             throws StorageQueryException, UnknownRoleException {
         // Since getUsersForRole does not change any data we do not use a transaction since it would not solve any
         // problem
-        UserRolesSQLStorage storage = tenantIdentifierWithStorage.getUserRolesStorage();
-        boolean doesRoleExist = storage.doesRoleExist(tenantIdentifierWithStorage.toAppIdentifier(), role);
+        UserRolesSQLStorage userRolesStorage = StorageUtils.getUserRolesStorage(storage);
+        boolean doesRoleExist = userRolesStorage.doesRoleExist(tenantIdentifier.toAppIdentifier(), role);
         if (doesRoleExist) {
-            return storage.getUsersForRole(tenantIdentifierWithStorage, role);
+            return userRolesStorage.getUsersForRole(tenantIdentifier, role);
         } else {
             throw new UnknownRoleException();
         }
@@ -190,20 +191,20 @@ public class UserRoles {
             throws StorageQueryException, UnknownRoleException {
         Storage storage = StorageLayer.getStorage(main);
         return getUsersForRole(
-                new TenantIdentifierWithStorage(null, null, null, storage), role);
+                new TenantIdentifier(null, null, null), storage, role);
     }
 
     // retrieve all permissions associated with the role
-    public static String[] getPermissionsForRole(AppIdentifierWithStorage appIdentifierWithStorage, String role)
+    public static String[] getPermissionsForRole(AppIdentifier appIdentifier, Storage storage, String role)
             throws StorageQueryException, UnknownRoleException {
         // Since getPermissionsForRole does not change any data we do not use a transaction since it would not solve any
         // problem
-        UserRolesSQLStorage storage = appIdentifierWithStorage.getUserRolesStorage();
-        boolean doesRoleExist = storage.doesRoleExist(appIdentifierWithStorage, role);
+        UserRolesSQLStorage userRolesStorage = StorageUtils.getUserRolesStorage(storage);
+        boolean doesRoleExist = userRolesStorage.doesRoleExist(appIdentifier, role);
 
         if (doesRoleExist) {
-            return appIdentifierWithStorage.getUserRolesStorage()
-                    .getPermissionsForRole(appIdentifierWithStorage, role);
+            return StorageUtils.getUserRolesStorage(storage)
+                    .getPermissionsForRole(appIdentifier, role);
         } else {
             throw new UnknownRoleException();
         }
@@ -214,30 +215,30 @@ public class UserRoles {
             throws StorageQueryException, UnknownRoleException {
         Storage storage = StorageLayer.getStorage(main);
         return getPermissionsForRole(
-                new AppIdentifierWithStorage(null, null, storage), role);
+                new AppIdentifier(null, null), storage, role);
     }
 
     // delete permissions from a role, if the role doesn't exist throw an UNKNOWN_ROLE_EXCEPTION
-    public static void deletePermissionsFromRole(AppIdentifierWithStorage appIdentifierWithStorage, String role,
+    public static void deletePermissionsFromRole(AppIdentifier appIdentifier, Storage storage, String role,
                                                  @Nullable String[] permissions)
             throws StorageQueryException, StorageTransactionLogicException, UnknownRoleException {
-        UserRolesSQLStorage storage = appIdentifierWithStorage.getUserRolesStorage();
+        UserRolesSQLStorage userRolesStorage = StorageUtils.getUserRolesStorage(storage);
         try {
-            storage.startTransaction(con -> {
-                boolean doesRoleExist = storage.doesRoleExist_Transaction(appIdentifierWithStorage, con, role);
+            userRolesStorage.startTransaction(con -> {
+                boolean doesRoleExist = userRolesStorage.doesRoleExist_Transaction(appIdentifier, con, role);
                 if (doesRoleExist) {
                     if (permissions == null) {
-                        storage.deleteAllPermissionsForRole_Transaction(appIdentifierWithStorage, con, role);
+                        userRolesStorage.deleteAllPermissionsForRole_Transaction(appIdentifier, con, role);
                     } else {
                         for (int i = 0; i < permissions.length; i++) {
-                            storage.deletePermissionForRole_Transaction(appIdentifierWithStorage, con, role,
+                            userRolesStorage.deletePermissionForRole_Transaction(appIdentifier, con, role,
                                     permissions[i]);
                         }
                     }
                 } else {
                     throw new StorageTransactionLogicException(new UnknownRoleException());
                 }
-                storage.commitTransaction(con);
+                userRolesStorage.commitTransaction(con);
                 return null;
             });
         } catch (StorageTransactionLogicException e) {
@@ -253,16 +254,16 @@ public class UserRoles {
                                                  @Nullable String[] permissions)
             throws StorageQueryException, StorageTransactionLogicException, UnknownRoleException {
         Storage storage = StorageLayer.getStorage(main);
-        deletePermissionsFromRole(new AppIdentifierWithStorage(null, null, storage),
+        deletePermissionsFromRole(new AppIdentifier(null, null), storage,
                 role, permissions);
     }
 
     // retrieve roles that have the input permission
-    public static String[] getRolesThatHavePermission(AppIdentifierWithStorage appIdentifierWithStorage,
+    public static String[] getRolesThatHavePermission(AppIdentifier appIdentifier, Storage storage,
                                                       String permission)
             throws StorageQueryException {
-        return appIdentifierWithStorage.getUserRolesStorage().getRolesThatHavePermission(
-                appIdentifierWithStorage, permission);
+        return StorageUtils.getUserRolesStorage(storage).getRolesThatHavePermission(
+                appIdentifier, permission);
     }
 
     @TestOnly
@@ -270,38 +271,38 @@ public class UserRoles {
                                                       String permission) throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
         return getRolesThatHavePermission(
-                new AppIdentifierWithStorage(null, null, storage), permission);
+                new AppIdentifier(null, null), storage, permission);
     }
 
     // delete a role
-    public static boolean deleteRole(AppIdentifierWithStorage appIdentifierWithStorage, String role)
+    public static boolean deleteRole(AppIdentifier appIdentifier, Storage storage, String role)
             throws StorageQueryException {
-        return appIdentifierWithStorage.getUserRolesStorage().deleteRole(appIdentifierWithStorage, role);
+        return StorageUtils.getUserRolesStorage(storage).deleteRole(appIdentifier, role);
     }
 
     @TestOnly
     public static boolean deleteRole(Main main, String role) throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
-        return deleteRole(new AppIdentifierWithStorage(null, null, storage), role);
+        return deleteRole(new AppIdentifier(null, null), storage, role);
     }
 
     // retrieve all roles that have been created
-    public static String[] getRoles(AppIdentifierWithStorage appIdentifierWithStorage)
+    public static String[] getRoles(AppIdentifier appIdentifier, Storage storage)
             throws StorageQueryException {
-        return appIdentifierWithStorage.getUserRolesStorage().getRoles(appIdentifierWithStorage);
+        return StorageUtils.getUserRolesStorage(storage).getRoles(appIdentifier);
     }
 
     @TestOnly
     public static String[] getRoles(Main main) throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
-        return getRoles(new AppIdentifierWithStorage(null, null, storage));
+        return getRoles(new AppIdentifier(null, null), storage);
     }
 
     // delete all roles associated with a user
-    public static int deleteAllRolesForUser(TenantIdentifierWithStorage tenantIdentifierWithStorage, String userId)
+    public static int deleteAllRolesForUser(TenantIdentifier tenantIdentifier, Storage storage, String userId)
             throws StorageQueryException {
-        return tenantIdentifierWithStorage.getUserRolesStorage().deleteAllRolesForUser(
-                tenantIdentifierWithStorage, userId);
+        return StorageUtils.getUserRolesStorage(storage).deleteAllRolesForUser(
+                tenantIdentifier, userId);
     }
 
     @TestOnly
@@ -309,7 +310,7 @@ public class UserRoles {
             throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
         return deleteAllRolesForUser(
-                new TenantIdentifierWithStorage(null, null, null, storage), userId);
+                new TenantIdentifier(null, null, null), storage, userId);
     }
 
 }

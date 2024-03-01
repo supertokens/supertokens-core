@@ -35,8 +35,6 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.dashboard.DashboardUser;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorages;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
@@ -103,18 +101,15 @@ public class Telemetry extends CronTask {
         if (StorageLayer.getBaseStorage(main).getType() == STORAGE_TYPE.SQL) {
             { // Users count across all tenants
                 Storage[] storages = StorageLayer.getStoragesForApp(main, app);
-                AppIdentifierWithStorages appIdentifierWithStorages = new AppIdentifierWithStorages(
-                        app.getConnectionUriDomain(), app.getAppId(), storages
-                );
 
                 json.addProperty("usersCount",
-                        AuthRecipe.getUsersCountAcrossAllTenants(appIdentifierWithStorages, null));
+                        AuthRecipe.getUsersCountAcrossAllTenants(app, storages, null));
             }
 
             { // Dashboard user emails
                 // Dashboard APIs are app specific and are always stored on the public tenant
                 DashboardUser[] dashboardUsers = Dashboard.getAllDashboardUsers(
-                        app.withStorage(StorageLayer.getStorage(app.getAsPublicTenantIdentifier(), main)), main);
+                        app, StorageLayer.getStorage(app.getAsPublicTenantIdentifier(), main), main);
                 JsonArray dashboardUserEmails = new JsonArray();
                 for (DashboardUser user : dashboardUsers) {
                     dashboardUserEmails.add(new JsonPrimitive(user.email));

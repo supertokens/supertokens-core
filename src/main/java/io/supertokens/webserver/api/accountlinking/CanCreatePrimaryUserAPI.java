@@ -17,16 +17,17 @@
 package io.supertokens.webserver.api.accountlinking;
 
 import com.google.gson.JsonObject;
-import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
+import io.supertokens.StorageAndUserIdMapping;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.authRecipe.exception.AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException;
 import io.supertokens.authRecipe.exception.RecipeUserIdAlreadyLinkedWithPrimaryUserIdException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
@@ -54,18 +55,20 @@ public class CanCreatePrimaryUserAPI extends WebserverAPI {
         // API is app specific
         String inputRecipeUserId = InputParser.getQueryParamOrThrowError(req, "recipeUserId", false);
 
-        AppIdentifierWithStorage appIdentifierWithStorage = null;
+        AppIdentifier appIdentifier = this.getAppIdentifier(req);
+        Storage storage = null;
+
         try {
             String userId = inputRecipeUserId;
-            AppIdentifierWithStorageAndUserIdMapping mappingAndStorage =
+            StorageAndUserIdMapping storageAndMapping =
                     getStorageAndUserIdMappingForAppSpecificApi(
                             req, inputRecipeUserId, UserIdType.ANY);
-            if (mappingAndStorage.userIdMapping != null) {
-                userId = mappingAndStorage.userIdMapping.superTokensUserId;
+            storage = storageAndMapping.storage;
+            if (storageAndMapping.userIdMapping != null) {
+                userId = storageAndMapping.userIdMapping.superTokensUserId;
             }
-            appIdentifierWithStorage = mappingAndStorage.appIdentifierWithStorage;
 
-            AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.canCreatePrimaryUser(appIdentifierWithStorage,
+            AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.canCreatePrimaryUser(appIdentifier, storage,
                     userId);
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
@@ -80,7 +83,7 @@ public class CanCreatePrimaryUserAPI extends WebserverAPI {
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "ACCOUNT_INFO_ALREADY_ASSOCIATED_WITH_ANOTHER_PRIMARY_USER_ID_ERROR");
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping result = UserIdMapping.getUserIdMapping(
-                        appIdentifierWithStorage, e.primaryUserId,
+                        appIdentifier, storage, e.primaryUserId,
                         UserIdType.SUPERTOKENS);
                 if (result != null) {
                     response.addProperty("primaryUserId", result.externalUserId);
@@ -97,7 +100,7 @@ public class CanCreatePrimaryUserAPI extends WebserverAPI {
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "RECIPE_USER_ID_ALREADY_LINKED_WITH_PRIMARY_USER_ID_ERROR");
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping result = UserIdMapping.getUserIdMapping(
-                        appIdentifierWithStorage, e.primaryUserId,
+                        appIdentifier, storage, e.primaryUserId,
                         UserIdType.SUPERTOKENS);
                 if (result != null) {
                     response.addProperty("primaryUserId", result.externalUserId);

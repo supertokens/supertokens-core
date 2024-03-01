@@ -17,13 +17,14 @@
 package io.supertokens.webserver.api.core;
 
 import com.google.gson.JsonObject;
-import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
+import io.supertokens.StorageAndUserIdMapping;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
@@ -55,19 +56,21 @@ public class GetUserByIdAPI extends WebserverAPI {
             AuthRecipeUserInfo user = null;
 
             try {
-                AppIdentifierWithStorageAndUserIdMapping appIdentifierWithStorageAndUserIdMapping =
+                AppIdentifier appIdentifier = this.getAppIdentifier(req);
+                StorageAndUserIdMapping storageAndUserIdMapping =
                         this.getStorageAndUserIdMappingForAppSpecificApi(req, userId, UserIdType.ANY);
                 // if a userIdMapping exists, pass the superTokensUserId to the getUserUsingId function
-                if (appIdentifierWithStorageAndUserIdMapping.userIdMapping != null) {
-                    userId = appIdentifierWithStorageAndUserIdMapping.userIdMapping.superTokensUserId;
+                if (storageAndUserIdMapping.userIdMapping != null) {
+                    userId = storageAndUserIdMapping.userIdMapping.superTokensUserId;
                 }
 
-                user = AuthRecipe.getUserById(appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage,
+                user = AuthRecipe.getUserById(appIdentifier, storageAndUserIdMapping.storage,
                         userId);
 
                 // if a userIdMapping exists, set the userId in the response to the externalUserId
                 if (user != null) {
-                    UserIdMapping.populateExternalUserIdForUsers(appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage, new AuthRecipeUserInfo[]{user});
+                    UserIdMapping.populateExternalUserIdForUsers(
+                            storageAndUserIdMapping.storage, new AuthRecipeUserInfo[]{user});
                 }
 
             } catch (UnknownUserIdException e) {

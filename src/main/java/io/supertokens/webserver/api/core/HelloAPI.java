@@ -20,8 +20,7 @@ import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorages;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.utils.RateLimiter;
 import io.supertokens.webserver.WebserverAPI;
@@ -90,12 +89,13 @@ public class HelloAPI extends WebserverAPI {
                 return;
             }
 
-            AppIdentifierWithStorages appIdentifierWithStorages = enforcePublicTenantAndGetAllStoragesForApp(req);
+            Storage[] storages = enforcePublicTenantAndGetAllStoragesForApp(req);
+            AppIdentifier appIdentifier = getAppIdentifier(req);
 
-            for (Storage storage : appIdentifierWithStorages.getStorages()) {
+            for (Storage storage : storages) {
                 // even if the public tenant does not exist, the following function will return a null
                 // idea here is to test that the storage is working
-                storage.getKeyValue(appIdentifierWithStorages.getAsPublicTenantIdentifier(), "Test");
+                storage.getKeyValue(appIdentifier.getAsPublicTenantIdentifier(), "Test");
             }
             super.sendTextResponse(200, "Hello", resp);
         } catch (StorageQueryException | BadPermissionException | TenantOrAppNotFoundException e) {

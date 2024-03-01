@@ -18,12 +18,12 @@ package io.supertokens.webserver.api.useridmapping;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.StorageAndUserIdMapping;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
@@ -85,11 +85,12 @@ public class RemoveUserIdMappingAPI extends WebserverAPI {
         }
 
         try {
-            AppIdentifierWithStorageAndUserIdMapping appIdentifierWithStorageAndUserIdMapping =
+            StorageAndUserIdMapping storageAndUserIdMapping =
                     this.getStorageAndUserIdMappingForAppSpecificApi(req, userId, userIdType);
 
             boolean didMappingExist = UserIdMapping.deleteUserIdMapping(
-                    appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage, userId, userIdType, force);
+                    getAppIdentifier(req),
+                    storageAndUserIdMapping.storage, userId, userIdType, force);
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             response.addProperty("didMappingExist", didMappingExist);
