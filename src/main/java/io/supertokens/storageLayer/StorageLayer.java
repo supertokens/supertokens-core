@@ -405,7 +405,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         return storages;
     }
 
-    public static StorageAndUserIdMapping getTenantIdentifierWithStorageAndUserIdMappingForUser(
+    public static StorageAndUserIdMapping findStorageAndUserIdMappingForUser(
             Main main, TenantIdentifier tenantIdentifier, String userId, UserIdType userIdType)
             throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException {
         Storage storage = getStorage(tenantIdentifier, main);
@@ -457,9 +457,9 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         throw new UnknownUserIdException();
     }
 
-    public static StorageAndUserIdMapping getAppIdentifierWithStorageAndUserIdMappingForUser(
+    public static StorageAndUserIdMapping findStorageAndUserIdMappingForUser(
             AppIdentifier appIdentifier, Storage[] storages, String userId,
-            UserIdType userIdType) throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException {
+            UserIdType userIdType) throws StorageQueryException, UnknownUserIdException {
 
         if (userIdType == UserIdType.SUPERTOKENS) {
             for (Storage storage : storages) {

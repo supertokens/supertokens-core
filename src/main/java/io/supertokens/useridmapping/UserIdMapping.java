@@ -20,7 +20,6 @@ import io.supertokens.Main;
 import io.supertokens.StorageAndUserIdMapping;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
-import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
@@ -29,7 +28,6 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
@@ -86,7 +84,7 @@ public class UserIdMapping {
         // race condition is fixed.
         try { // with external id
             StorageAndUserIdMapping mappingAndStorage =
-                    StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUser(
+                    StorageLayer.findStorageAndUserIdMappingForUser(
                             appIdentifier, storages, externalUserId, UserIdType.EXTERNAL);
 
             if (mappingAndStorage.userIdMapping != null) {
@@ -101,7 +99,7 @@ public class UserIdMapping {
 
         StorageAndUserIdMapping mappingAndStorage;
         try {
-            mappingAndStorage = StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUser(
+            mappingAndStorage = StorageLayer.findStorageAndUserIdMappingForUser(
                     appIdentifier, storages, superTokensUserId, UserIdType.SUPERTOKENS);
         } catch (UnknownUserIdException e) {
             throw new UnknownSuperTokensUserIdException();

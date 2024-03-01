@@ -341,7 +341,7 @@ public abstract class WebserverAPI extends HttpServlet {
             throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException, ServletException {
         TenantIdentifier tenantIdentifier = new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req),
                 this.getTenantId(req));
-        return StorageLayer.getTenantIdentifierWithStorageAndUserIdMappingForUser(main, tenantIdentifier, userId,
+        return StorageLayer.findStorageAndUserIdMappingForUser(main, tenantIdentifier, userId,
                 userIdType);
     }
 
@@ -353,7 +353,7 @@ public abstract class WebserverAPI extends HttpServlet {
         // while searching for the user across all storages for the app
         AppIdentifier appIdentifier = getAppIdentifier(req);
         Storage[] storages = enforcePublicTenantAndGetAllStoragesForApp(req);
-        return StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUser(
+        return StorageLayer.findStorageAndUserIdMappingForUser(
                 appIdentifier, storages, userId, userIdType);
     }
 
