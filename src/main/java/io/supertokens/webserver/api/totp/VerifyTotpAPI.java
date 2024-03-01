@@ -5,12 +5,15 @@ import java.io.IOException;
 import com.google.gson.JsonObject;
 
 import io.supertokens.Main;
+import io.supertokens.StorageAndUserIdMapping;
 import io.supertokens.TenantIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.totp.exception.TotpNotEnabledException;
@@ -56,24 +59,25 @@ public class VerifyTotpAPI extends WebserverAPI {
         JsonObject result = new JsonObject();
 
         try {
-            TenantIdentifierWithStorage tenantIdentifierWithStorage;
+            TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+            Storage storage;
             try {
                 // This step is required only because user_last_active table stores supertokens internal user id.
                 // While sending the usage stats we do a join, so totp tables also must use internal user id.
 
-                TenantIdentifierWithStorageAndUserIdMapping mappingAndStorage = getStorageAndUserIdMappingForTenantSpecificApi(
+                StorageAndUserIdMapping storageAndUserIdMapping = getStorageAndUserIdMappingForTenantSpecificApi(
                         req, userId, UserIdType.ANY);
 
-                if (mappingAndStorage.userIdMapping != null) {
-                    userId = mappingAndStorage.userIdMapping.superTokensUserId;
+                if (storageAndUserIdMapping.userIdMapping != null) {
+                    userId = storageAndUserIdMapping.userIdMapping.superTokensUserId;
                 }
-                tenantIdentifierWithStorage = mappingAndStorage.tenantIdentifierWithStorage;
+                storage = storageAndUserIdMapping.storage;
             } catch (UnknownUserIdException e) {
                 // if the user is not found, just use the storage of the tenant of interest
-                tenantIdentifierWithStorage = getTenantStorage(req);
+                storage = getTenantStorage(req);
             }
 
-            Totp.verifyCode(tenantIdentifierWithStorage, main, userId, totp, allowUnverifiedDevices);
+            Totp.verifyCode(tenantIdentifier, storage, main, userId, totp, allowUnverifiedDevices);
 
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);

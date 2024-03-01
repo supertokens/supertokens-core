@@ -1,14 +1,15 @@
 package io.supertokens.webserver.api.totp;
 
 import com.google.gson.JsonObject;
-import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
+import io.supertokens.StorageAndUserIdMapping;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.totp.TOTPDevice;
 import io.supertokens.pluginInterface.totp.exception.DeviceAlreadyExistsException;
@@ -66,26 +67,26 @@ public class CreateOrUpdateTotpDeviceAPI extends WebserverAPI {
         JsonObject result = new JsonObject();
 
         try {
-            AppIdentifierWithStorage appIdentifierWithStorage;
+            AppIdentifier appIdentifier = getAppIdentifier(req);
+            Storage storage;
             try {
                 // This step is required only because user_last_active table stores supertokens internal user id.
                 // While sending the usage stats we do a join, so totp tables also must use internal user id.
 
                 // Try to find the appIdentifier with right storage based on the userId
-                AppIdentifierWithStorageAndUserIdMapping mappingAndStorage =
-                        getStorageAndUserIdMappingForAppSpecificApi(
-                                req, userId, UserIdType.ANY);
+                StorageAndUserIdMapping storageAndUserIdMapping = getStorageAndUserIdMappingForAppSpecificApi(
+                        req, userId, UserIdType.ANY);
 
-                if (mappingAndStorage.userIdMapping != null) {
-                    userId = mappingAndStorage.userIdMapping.superTokensUserId;
+                if (storageAndUserIdMapping.userIdMapping != null) {
+                    userId = storageAndUserIdMapping.userIdMapping.superTokensUserId;
                 }
-                appIdentifierWithStorage = mappingAndStorage.appIdentifierWithStorage;
+                storage = storageAndUserIdMapping.storage;
             } catch (UnknownUserIdException e) {
                 // if the user is not found, just use the public tenant storage
-                appIdentifierWithStorage = enforcePublicTenantAndGetPublicTenantStorage(req);
+                storage = enforcePublicTenantAndGetPublicTenantStorage(req);
             }
 
-            TOTPDevice device = Totp.registerDevice(appIdentifierWithStorage, main, userId, deviceName, skew, period);
+            TOTPDevice device = Totp.registerDevice(appIdentifier, storage, main, userId, deviceName, skew, period);
 
             result.addProperty("status", "OK");
             result.addProperty("secret", device.secretKey);
@@ -121,26 +122,27 @@ public class CreateOrUpdateTotpDeviceAPI extends WebserverAPI {
         JsonObject result = new JsonObject();
 
         try {
-            AppIdentifierWithStorage appIdentifierWithStorage;
+            AppIdentifier appIdentifier = getAppIdentifier(req);
+            Storage storage;
             try {
                 // This step is required only because user_last_active table stores supertokens internal user id.
                 // While sending the usage stats we do a join, so totp tables also must use internal user id.
 
                 // Try to find the appIdentifier with right storage based on the userId
-                AppIdentifierWithStorageAndUserIdMapping mappingAndStorage =
+                StorageAndUserIdMapping storageAndUserIdMapping =
                         getStorageAndUserIdMappingForAppSpecificApi(
                         req, userId, UserIdType.ANY);
 
-                if (mappingAndStorage.userIdMapping != null) {
-                    userId = mappingAndStorage.userIdMapping.superTokensUserId;
+                if (storageAndUserIdMapping.userIdMapping != null) {
+                    userId = storageAndUserIdMapping.userIdMapping.superTokensUserId;
                 }
-                appIdentifierWithStorage = mappingAndStorage.appIdentifierWithStorage;
+                storage = storageAndUserIdMapping.storage;
             } catch (UnknownUserIdException e) {
                 // if the user is not found, just use the public storage
-                appIdentifierWithStorage = enforcePublicTenantAndGetPublicTenantStorage(req);
+                storage = enforcePublicTenantAndGetPublicTenantStorage(req);
             }
 
-            Totp.updateDeviceName(appIdentifierWithStorage, userId, existingDeviceName, newDeviceName);
+            Totp.updateDeviceName(appIdentifier, storage, userId, existingDeviceName, newDeviceName);
 
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
