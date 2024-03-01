@@ -333,14 +333,6 @@ public abstract class WebserverAPI extends HttpServlet {
         return StorageLayer.getStorage(tenantIdentifier, main);
     }
 
-    protected Storage getPublicTenantStorage(HttpServletRequest req)
-            throws ServletException, TenantOrAppNotFoundException {
-        // This is only used for update user active time
-        AppIdentifier appIdentifier = new AppIdentifier(this.getConnectionUriDomain(req), this.getAppId(req));
-
-        return StorageLayer.getStorage(appIdentifier.getAsPublicTenantIdentifier(), main);
-    }
-
     protected StorageAndUserIdMapping getStorageAndUserIdMappingForTenantSpecificApi(
             HttpServletRequest req, String userId, UserIdType userIdType)
             throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException, ServletException {

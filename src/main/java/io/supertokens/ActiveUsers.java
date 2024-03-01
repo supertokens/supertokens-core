@@ -12,8 +12,9 @@ import org.jetbrains.annotations.TestOnly;
 
 public class ActiveUsers {
 
-    public static void updateLastActive(AppIdentifier appIdentifier, Storage storage, String userId)
+    public static void updateLastActive(AppIdentifier appIdentifier, Main main, String userId)
             throws TenantOrAppNotFoundException {
+        Storage storage = StorageLayer.getStorage(appIdentifier.getAsPublicTenantIdentifier(), main);
         try {
             StorageUtils.getActiveUsersStorage(storage).updateLastActive(appIdentifier, userId);
         } catch (StorageQueryException ignored) {
@@ -24,7 +25,7 @@ public class ActiveUsers {
     public static void updateLastActive(Main main, String userId) {
         try {
             ActiveUsers.updateLastActive(new AppIdentifier(null, null),
-                    StorageLayer.getStorage(main), userId);
+                    main, userId);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }

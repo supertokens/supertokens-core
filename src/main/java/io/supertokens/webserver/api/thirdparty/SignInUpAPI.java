@@ -83,7 +83,7 @@ public class SignInUpAPI extends WebserverAPI {
                         thirdPartyId, thirdPartyUserId, email, isEmailVerified);
                 UserIdMapping.populateExternalUserIdForUsers(this.getTenantStorage(req), new AuthRecipeUserInfo[]{response.user});
 
-                ActiveUsers.updateLastActive(tenantIdentifier.toAppIdentifier(), getPublicTenantStorage(req),
+                ActiveUsers.updateLastActive(tenantIdentifier.toAppIdentifier(), main,
                         response.user.getSupertokensUserId());
 
                 JsonObject result = new JsonObject();
@@ -144,7 +144,7 @@ public class SignInUpAPI extends WebserverAPI {
                         email, isEmailVerified);
                 UserIdMapping.populateExternalUserIdForUsers(storage, new AuthRecipeUserInfo[]{response.user});
 
-                ActiveUsers.updateLastActive(tenantIdentifier.toAppIdentifier(), this.getPublicTenantStorage(req),
+                ActiveUsers.updateLastActive(tenantIdentifier.toAppIdentifier(), main,
                         response.user.getSupertokensUserId());
 
                 JsonObject result = new JsonObject();

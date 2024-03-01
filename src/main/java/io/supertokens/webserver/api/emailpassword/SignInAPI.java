@@ -80,7 +80,7 @@ public class SignInAPI extends WebserverAPI {
             io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(storage,
                     new AuthRecipeUserInfo[]{user});
 
-            ActiveUsers.updateLastActive(tenantIdentifier.toAppIdentifier(), this.getPublicTenantStorage(req),
+            ActiveUsers.updateLastActive(tenantIdentifier.toAppIdentifier(), main,
                     user.getSupertokensUserId()); // use the internal user id
 
             JsonObject result = new JsonObject();
