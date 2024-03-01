@@ -23,7 +23,10 @@ import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.session.Session;
@@ -99,27 +102,27 @@ public class SessionRemoveAPI extends WebserverAPI {
 
         if (userId != null) {
             try {
+                TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+                Storage storage = getTenantStorage(req);
+
                 String[] sessionHandlesRevoked;
                 if (revokeAcrossAllTenants) {
                     sessionHandlesRevoked = Session.revokeAllSessionsForUser(
-                            main, this.getTenantStorage(req).toAppIdentifierWithStorage(), userId, revokeSessionsForLinkedAccounts);
+                            main, tenantIdentifier.toAppIdentifier(), storage, userId, revokeSessionsForLinkedAccounts);
                 } else {
                     sessionHandlesRevoked = Session.revokeAllSessionsForUser(
-                            main, this.getTenantStorage(req), userId,
-                            revokeSessionsForLinkedAccounts);
+                            main, tenantIdentifier, storage, userId, revokeSessionsForLinkedAccounts);
                 }
 
-                if (StorageLayer.getStorage(this.getTenantStorage(req), main).getType() ==
-                        STORAGE_TYPE.SQL) {
+                if (storage.getType() == STORAGE_TYPE.SQL) {
                     try {
                         UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                                this.getTenantStorage(req).toAppIdentifierWithStorage(),
-                                userId, UserIdType.ANY);
+                                tenantIdentifier.toAppIdentifier(), storage, userId, UserIdType.ANY);
                         if (userIdMapping != null) {
-                            ActiveUsers.updateLastActive(this.getPublicTenantStorage(req), main,
+                            ActiveUsers.updateLastActive(tenantIdentifier.toAppIdentifier(), main,
                                     userIdMapping.superTokensUserId);
                         } else {
-                            ActiveUsers.updateLastActive(this.getPublicTenantStorage(req), main, userId);
+                            ActiveUsers.updateLastActive(tenantIdentifier.toAppIdentifier(), main, userId);
                         }
                     } catch (StorageQueryException ignored) {
                     }
@@ -137,8 +140,11 @@ public class SessionRemoveAPI extends WebserverAPI {
             }
         } else {
             try {
+                AppIdentifier appIdentifier = getAppIdentifier(req);
+                Storage storage = getTenantStorage(req);
+
                 String[] sessionHandlesRevoked = Session.revokeSessionUsingSessionHandles(main,
-                        this.getTenantStorage(req).toAppIdentifierWithStorage(), sessionHandles);
+                        appIdentifier, storage, sessionHandles);
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
                 JsonArray sessionHandlesRevokedJSON = new JsonArray();

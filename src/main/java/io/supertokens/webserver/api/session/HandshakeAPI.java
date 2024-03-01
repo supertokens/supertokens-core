@@ -23,6 +23,7 @@ import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
@@ -60,14 +61,15 @@ public class HandshakeAPI extends WebserverAPI {
             Utils.addLegacySigningKeyInfos(this.getAppIdentifier(req), main, result,
                     super.getVersionFromRequest(req).betweenInclusive(SemVer.v2_9, SemVer.v2_21));
 
+            TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
             result.addProperty("accessTokenBlacklistingEnabled",
-                    Config.getConfig(this.getTenantStorage(req), main)
+                    Config.getConfig(tenantIdentifier, main)
                             .getAccessTokenBlacklisting());
             result.addProperty("accessTokenValidity",
-                    Config.getConfig(this.getTenantStorage(req), main)
+                    Config.getConfig(tenantIdentifier, main)
                             .getAccessTokenValidity());
             result.addProperty("refreshTokenValidity",
-                    Config.getConfig(this.getTenantStorage(req), main)
+                    Config.getConfig(tenantIdentifier, main)
                             .getRefreshTokenValidity());
             super.sendJsonResponse(200, result, resp);
         } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException | UnsupportedJWTSigningAlgorithmException e) {

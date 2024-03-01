@@ -21,7 +21,10 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.session.Session;
 import io.supertokens.webserver.InputParser;
@@ -67,12 +70,15 @@ public class SessionUserAPI extends WebserverAPI {
 
         try {
             String[] sessionHandles;
+            TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+            Storage storage = getTenantStorage(req);
+
             if (fetchAcrossAllTenants) {
                 sessionHandles = Session.getAllNonExpiredSessionHandlesForUser(
-                        main, this.getTenantStorage(req).toAppIdentifierWithStorage(), userId, fetchSessionsForAllLinkedAccounts);
+                        main, tenantIdentifier.toAppIdentifier(), storage, userId, fetchSessionsForAllLinkedAccounts);
             } else {
                 sessionHandles = Session.getAllNonExpiredSessionHandlesForUser(
-                        this.getTenantStorage(req), userId, fetchSessionsForAllLinkedAccounts);
+                        tenantIdentifier, storage, userId, fetchSessionsForAllLinkedAccounts);
             }
 
             JsonObject result = new JsonObject();
