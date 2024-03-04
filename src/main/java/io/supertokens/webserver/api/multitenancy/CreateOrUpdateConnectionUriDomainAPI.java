@@ -56,7 +56,7 @@ public class CreateOrUpdateConnectionUriDomainAPI extends BaseCreateOrUpdate {
 
         TenantIdentifier sourceTenantIdentifier;
         try {
-            sourceTenantIdentifier = ensureTenantExistsAndGetTenantIdentifier(req);
+            sourceTenantIdentifier = getTenantIdentifier(req);
         } catch (TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }

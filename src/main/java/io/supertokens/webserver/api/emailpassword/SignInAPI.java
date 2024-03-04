@@ -66,9 +66,10 @@ public class SignInAPI extends WebserverAPI {
 
         String normalisedEmail = Utils.normaliseEmail(email);
 
-        TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+        TenantIdentifier tenantIdentifier;
         Storage storage;
         try {
+            tenantIdentifier = getTenantIdentifier(req);
             storage = getTenantStorage(req);
         } catch (TenantOrAppNotFoundException e) {
             throw new ServletException(e);

@@ -58,9 +58,16 @@ public class ConsumeResetPasswordAPI extends WebserverAPI {
         String token = InputParser.parseStringOrThrowError(input, "token", false);
         assert token != null;
 
+        TenantIdentifier tenantIdentifier = null;
+        Storage storage = null;
         try {
-            TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
-            Storage storage = getTenantStorage(req);
+            tenantIdentifier = getTenantIdentifier(req);
+            storage = getTenantStorage(req);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new ServletException(e);
+        }
+
+        try {
             EmailPassword.ConsumeResetPasswordTokenResult result = EmailPassword.consumeResetPasswordToken(
                     tenantIdentifier, storage, token);
 
@@ -80,7 +87,7 @@ public class ConsumeResetPasswordAPI extends WebserverAPI {
             super.sendJsonResponse(200, resultJson, resp);
 
         } catch (ResetPasswordInvalidTokenException e) {
-            Logging.debug(main, getTenantIdentifier(req), Utils.exceptionStacktraceToString(e));
+            Logging.debug(main, tenantIdentifier, Utils.exceptionStacktraceToString(e));
             JsonObject result = new JsonObject();
             result.addProperty("status", "RESET_PASSWORD_INVALID_TOKEN_ERROR");
             super.sendJsonResponse(200, result, resp);

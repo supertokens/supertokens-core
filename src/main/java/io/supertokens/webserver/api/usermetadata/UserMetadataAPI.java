@@ -20,7 +20,6 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.StorageAndUserIdMapping;
 import io.supertokens.multitenancy.exception.BadPermissionException;
-import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -53,8 +52,9 @@ public class UserMetadataAPI extends WebserverAPI {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         // API is app specific
         String userId = InputParser.getQueryParamOrThrowError(req, "userId", false);
-        AppIdentifier appIdentifier = getAppIdentifier(req);
+
         try {
+            AppIdentifier appIdentifier = getAppIdentifier(req);
             JsonObject metadata;
             try {
                 StorageAndUserIdMapping storageAndUserIdMapping = this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
@@ -80,8 +80,8 @@ public class UserMetadataAPI extends WebserverAPI {
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
         JsonObject update = InputParser.parseJsonObjectOrThrowError(input, "metadataUpdate", false);
 
-        AppIdentifier appIdentifier = getAppIdentifier(req);
         try {
+            AppIdentifier appIdentifier = getAppIdentifier(req);
             JsonObject metadata;
 
             try {

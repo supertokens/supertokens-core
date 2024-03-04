@@ -5,11 +5,9 @@ import java.io.IOException;
 import com.google.gson.JsonObject;
 
 import io.supertokens.Main;
-import io.supertokens.StorageAndUserIdMapping;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
-import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
@@ -18,7 +16,6 @@ import io.supertokens.pluginInterface.totp.exception.TotpNotEnabledException;
 import io.supertokens.totp.Totp;
 import io.supertokens.totp.exceptions.InvalidTotpException;
 import io.supertokens.totp.exceptions.LimitReachedException;
-import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -58,18 +55,7 @@ public class VerifyTotpAPI extends WebserverAPI {
 
         try {
             TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
-            Storage storage;
-            try {
-                // This step is required only because user_last_active table stores supertokens internal user id.
-                // While sending the usage stats we do a join, so totp tables also must use internal user id.
-
-                StorageAndUserIdMapping storageAndUserIdMapping = getStorageAndUserIdMappingForTenantSpecificApi(
-                        req, userId, UserIdType.ANY);
-                storage = storageAndUserIdMapping.storage;
-            } catch (UnknownUserIdException e) {
-                // if the user is not found, just use the storage of the tenant of interest
-                storage = getTenantStorage(req);
-            }
+            Storage storage = getTenantStorage(req);
 
             Totp.verifyCode(tenantIdentifier, storage, main, userId, totp, allowUnverifiedDevices);
 

@@ -20,7 +20,6 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.StorageAndUserIdMapping;
 import io.supertokens.multitenancy.exception.BadPermissionException;
-import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -54,8 +53,9 @@ public class RemoveUserMetadataAPI extends WebserverAPI {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
 
-        AppIdentifier appIdentifier = getAppIdentifier(req);
         try {
+            AppIdentifier appIdentifier = getAppIdentifier(req);
+
             try {
                 StorageAndUserIdMapping storageAndUserIdMapping =
                         this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(

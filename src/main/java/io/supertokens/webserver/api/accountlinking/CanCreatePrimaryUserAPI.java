@@ -55,7 +55,12 @@ public class CanCreatePrimaryUserAPI extends WebserverAPI {
         // API is app specific
         String inputRecipeUserId = InputParser.getQueryParamOrThrowError(req, "recipeUserId", false);
 
-        AppIdentifier appIdentifier = this.getAppIdentifier(req);
+        AppIdentifier appIdentifier = null;
+        try {
+            appIdentifier = this.getAppIdentifier(req);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new ServletException(e);
+        }
         Storage storage = null;
 
         try {

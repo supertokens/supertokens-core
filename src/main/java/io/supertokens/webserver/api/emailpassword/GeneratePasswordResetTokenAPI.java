@@ -61,10 +61,9 @@ public class GeneratePasswordResetTokenAPI extends WebserverAPI {
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
 
         // logic according to https://github.com/supertokens/supertokens-core/issues/106
-        TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
-        Storage storage;
+        TenantIdentifier  tenantIdentifier;
         try {
-            storage = getTenantStorage(req);
+            tenantIdentifier = getTenantIdentifier(req);
         } catch (TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }

@@ -68,7 +68,12 @@ public class SessionRegenerateAPI extends WebserverAPI {
 
         JsonObject userDataInJWT = InputParser.parseJsonObjectOrThrowError(input, "userDataInJWT", true);
 
-        AppIdentifier appIdentifier = this.getAppIdentifier(req);
+        AppIdentifier appIdentifier = null;
+        try {
+            appIdentifier = this.getAppIdentifier(req);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new ServletException(e);
+        }
 
         try {
             SessionInformationHolder sessionInfo = getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_21) ?

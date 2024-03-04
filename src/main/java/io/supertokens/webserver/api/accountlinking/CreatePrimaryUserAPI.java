@@ -57,7 +57,12 @@ public class CreatePrimaryUserAPI extends WebserverAPI {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String inputRecipeUserId = InputParser.parseStringOrThrowError(input, "recipeUserId", false);
 
-        AppIdentifier appIdentifier = this.getAppIdentifier(req);
+        AppIdentifier appIdentifier = null;
+        try {
+            appIdentifier = this.getAppIdentifier(req);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new ServletException(e);
+        }
         Storage storage = null;
 
         try {

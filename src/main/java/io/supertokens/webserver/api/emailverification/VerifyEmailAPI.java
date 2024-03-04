@@ -71,9 +71,10 @@ public class VerifyEmailAPI extends WebserverAPI {
             throw new ServletException(new BadRequestException("Unsupported method for email verification"));
         }
 
-        TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+        TenantIdentifier tenantIdentifier;
         Storage storage;
         try {
+            tenantIdentifier = getTenantIdentifier(req);
             storage = this.getTenantStorage(req);
         } catch (TenantOrAppNotFoundException e) {
             throw new ServletException(e);

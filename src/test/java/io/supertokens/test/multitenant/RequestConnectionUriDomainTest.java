@@ -88,7 +88,11 @@ public class RequestConnectionUriDomainTest {
             @Override
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException,
                     ServletException {
-                super.sendTextResponse(200, getTenantIdentifier(req).getConnectionUriDomain(), resp);
+                try {
+                    super.sendTextResponse(200, getTenantIdentifier(req).getConnectionUriDomain(), resp);
+                } catch (TenantOrAppNotFoundException e) {
+                    throw new ServletException(e);
+                }
             }
         });
 
@@ -159,9 +163,13 @@ public class RequestConnectionUriDomainTest {
             @Override
             protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException,
                     ServletException {
-                super.sendTextResponse(200,
-                        super.getTenantIdentifier(req).getConnectionUriDomain() + "," +
-                                super.getTenantIdentifier(req).getTenantId(), resp);
+                try {
+                    super.sendTextResponse(200,
+                            super.getTenantIdentifier(req).getConnectionUriDomain() + "," +
+                                    super.getTenantIdentifier(req).getTenantId(), resp);
+                } catch (TenantOrAppNotFoundException e) {
+                    throw new ServletException(e);
+                }
             }
         });
 
@@ -285,9 +293,13 @@ public class RequestConnectionUriDomainTest {
             @Override
             protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException,
                     ServletException {
-                super.sendTextResponse(200,
-                        super.getTenantIdentifier(req).getConnectionUriDomain() + "," +
-                                super.getTenantIdentifier(req).getTenantId(), resp);
+                try {
+                    super.sendTextResponse(200,
+                            super.getTenantIdentifier(req).getConnectionUriDomain() + "," +
+                                    super.getTenantIdentifier(req).getTenantId(), resp);
+                } catch (TenantOrAppNotFoundException e) {
+                    throw new ServletException(e);
+                }
             }
         });
 

@@ -75,9 +75,10 @@ public class UsersAPI extends WebserverAPI {
             }
         }
 
-        TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+        TenantIdentifier tenantIdentifier = null;
         Storage storage = null;
         try {
+            tenantIdentifier = getTenantIdentifier(req);
             storage = this.getTenantStorage(req);
         } catch (TenantOrAppNotFoundException e) {
             throw new ServletException(e);

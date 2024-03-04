@@ -70,10 +70,17 @@ public class RefreshSessionAPI extends WebserverAPI {
         assert enableAntiCsrf != null;
         assert refreshToken != null;
 
-        AppIdentifier appIdentifier = this.getAppIdentifier(req);
 
         SemVer version = super.getVersionFromRequest(req);
+        TenantIdentifier tenantIdentifierForLogging = null;
         try {
+            tenantIdentifierForLogging = getTenantIdentifier(req);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new ServletException(e);
+        }
+
+        try {
+            AppIdentifier appIdentifier = this.getAppIdentifier(req);
             AccessToken.VERSION accessTokenVersion = AccessToken.getAccessTokenVersionForCDI(version);
 
             SessionInformationHolder sessionInfo = Session.refreshSession(appIdentifier, main,
@@ -114,14 +121,14 @@ public class RefreshSessionAPI extends WebserverAPI {
                  UnsupportedJWTSigningAlgorithmException e) {
             throw new ServletException(e);
         } catch (AccessTokenPayloadError | UnauthorisedException e) {
-            Logging.debug(main, getTenantIdentifier(req),
+            Logging.debug(main, tenantIdentifierForLogging,
                     Utils.exceptionStacktraceToString(e));
             JsonObject reply = new JsonObject();
             reply.addProperty("status", "UNAUTHORISED");
             reply.addProperty("message", e.getMessage());
             super.sendJsonResponse(200, reply, resp);
         } catch (TokenTheftDetectedException e) {
-            Logging.debug(main, getTenantIdentifier(req),
+            Logging.debug(main, tenantIdentifierForLogging,
                     Utils.exceptionStacktraceToString(e));
             JsonObject reply = new JsonObject();
             reply.addProperty("status", "TOKEN_THEFT_DETECTED");

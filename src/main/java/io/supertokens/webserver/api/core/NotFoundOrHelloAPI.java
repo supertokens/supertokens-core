@@ -17,7 +17,6 @@
 package io.supertokens.webserver.api.core;
 
 import io.supertokens.Main;
-import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -73,10 +72,11 @@ public class NotFoundOrHelloAPI extends WebserverAPI {
     protected void handleRequest(HttpServletRequest req, HttpServletResponse resp) throws IOException,
             ServletException {
         // getServletPath returns the path without the base path.
-        AppIdentifier appIdentifier = getAppIdentifier(req);
+        AppIdentifier appIdentifier;
         Storage[] storages;
 
         try {
+            appIdentifier = getAppIdentifier(req);
             storages = StorageLayer.getStoragesForApp(main, appIdentifier);
         } catch (TenantOrAppNotFoundException e) {
             // we send 500 status code
@@ -86,7 +86,7 @@ public class NotFoundOrHelloAPI extends WebserverAPI {
         if (req.getServletPath().equals("/")) {
             // API is app specific
             try {
-                RateLimiter rateLimiter = RateLimiter.getInstance(getAppIdentifier(req), super.main, 200);
+                RateLimiter rateLimiter = RateLimiter.getInstance(appIdentifier, super.main, 200);
                 if (!rateLimiter.checkRequest()) {
                     if (Main.isTesting) {
                         super.sendTextResponse(200, "RateLimitedHello", resp);

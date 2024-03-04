@@ -58,7 +58,12 @@ public class CanLinkAccountsAPI extends WebserverAPI {
         String inputRecipeUserId = InputParser.getQueryParamOrThrowError(req, "recipeUserId", false);
         String inputPrimaryUserId = InputParser.getQueryParamOrThrowError(req, "primaryUserId", false);
 
-        AppIdentifier appIdentifier = this.getAppIdentifier(req);
+        AppIdentifier appIdentifier = null;
+        try {
+            appIdentifier = this.getAppIdentifier(req);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new ServletException(e);
+        }
         Storage primaryUserIdStorage = null;
         Storage recipeUserIdStorage = null;
         try {

@@ -60,7 +60,12 @@ public class LinkAccountsAPI extends WebserverAPI {
         String inputRecipeUserId = InputParser.parseStringOrThrowError(input, "recipeUserId", false);
         String inputPrimaryUserId = InputParser.parseStringOrThrowError(input, "primaryUserId", false);
 
-        AppIdentifier appIdentifier = getAppIdentifier(req);
+        AppIdentifier appIdentifier = null;
+        try {
+            appIdentifier = getAppIdentifier(req);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new ServletException(e);
+        }
         Storage primaryUserIdStorage = null;
         Storage recipeUserIdStorage = null;
         try {

@@ -17,7 +17,6 @@
 package io.supertokens.webserver.api.core;
 
 import io.supertokens.Main;
-import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;

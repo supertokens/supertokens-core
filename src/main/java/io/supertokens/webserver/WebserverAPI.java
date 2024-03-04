@@ -34,7 +34,6 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.SemVer;
-import io.supertokens.webserver.api.useridmapping.UserIdMappingAPI;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
@@ -84,7 +83,7 @@ public abstract class WebserverAPI extends HttpServlet {
             throws ServletException, TenantOrAppNotFoundException {
         SemVer maxCDIVersion = getLatestCDIVersion();
         String maxCDIVersionStr = Config.getConfig(
-                getAppIdentifier(req).getAsPublicTenantIdentifier(), main).getMaxCDIVersion();
+                getAppIdentifierWithoutVerifying(req).getAsPublicTenantIdentifier(), main).getMaxCDIVersion();
         if (maxCDIVersionStr != null) {
             maxCDIVersion = new SemVer(maxCDIVersionStr);
         }
@@ -299,18 +298,25 @@ public abstract class WebserverAPI extends HttpServlet {
         return null;
     }
 
-    protected TenantIdentifier getTenantIdentifier(HttpServletRequest req) throws ServletException {
+    private TenantIdentifier getTenantIdentifierWithoutVerifying(HttpServletRequest req) throws ServletException {
         return new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req), this.getTenantId(req));
     }
 
-    protected TenantIdentifier ensureTenantExistsAndGetTenantIdentifier(HttpServletRequest req)
+    protected TenantIdentifier getTenantIdentifier(HttpServletRequest req)
             throws ServletException, TenantOrAppNotFoundException {
-        getTenantStorage(req);
+        getTenantStorage(req); // ensure the tenant exists
         return new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req), this.getTenantId(req));
     }
 
-    protected AppIdentifier getAppIdentifier(HttpServletRequest req) throws ServletException {
+    private AppIdentifier getAppIdentifierWithoutVerifying(HttpServletRequest req) throws ServletException {
         return new AppIdentifier(this.getConnectionUriDomain(req), this.getAppId(req));
+    }
+
+    protected AppIdentifier getAppIdentifier(HttpServletRequest req)
+            throws ServletException, TenantOrAppNotFoundException {
+        AppIdentifier appIdentifier = getAppIdentifierWithoutVerifying(req);
+        StorageLayer.getStorage(appIdentifier.getAsPublicTenantIdentifier(), main); // ensure the app exists
+        return appIdentifier;
     }
 
     protected Storage getTenantStorage(HttpServletRequest req)
@@ -326,7 +332,7 @@ public abstract class WebserverAPI extends HttpServlet {
             throw new BadPermissionException("Only public tenantId can call this app specific API");
         }
 
-        AppIdentifier appIdentifier = getAppIdentifier(req);
+        AppIdentifier appIdentifier = getAppIdentifierWithoutVerifying(req);
         return StorageLayer.getStoragesForApp(main, appIdentifier);
     }
 
@@ -358,7 +364,7 @@ public abstract class WebserverAPI extends HttpServlet {
             BadPermissionException {
         // This function uses storage of the tenant from which the request came from as a priorityStorage
         // while searching for the user across all storages for the app
-        AppIdentifier appIdentifier = getAppIdentifier(req);
+        AppIdentifier appIdentifier = getAppIdentifierWithoutVerifying(req);
         Storage[] storages = enforcePublicTenantAndGetAllStoragesForApp(req);
         try {
             return StorageLayer.findStorageAndUserIdMappingForUser(
@@ -374,7 +380,7 @@ public abstract class WebserverAPI extends HttpServlet {
 
     protected boolean checkIPAccess(HttpServletRequest req, HttpServletResponse resp)
             throws TenantOrAppNotFoundException, ServletException, IOException {
-        CoreConfig config = Config.getConfig(getTenantIdentifier(req), main);
+        CoreConfig config = Config.getConfig(getTenantIdentifierWithoutVerifying(req), main);
         String allow = config.getIpAllowRegex();
         String deny = config.getIpDenyRegex();
         if (allow == null && deny == null) {
@@ -416,7 +422,7 @@ public abstract class WebserverAPI extends HttpServlet {
 
         TenantIdentifier tenantIdentifier = null;
         try {
-            tenantIdentifier = getTenantIdentifier(req);
+            tenantIdentifier = getTenantIdentifierWithoutVerifying(req);
 
             if (!this.checkIPAccess(req, resp)) {
                 // IP access denied and the filter has already sent the response

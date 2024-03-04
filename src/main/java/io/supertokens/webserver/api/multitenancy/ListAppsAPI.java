@@ -52,8 +52,8 @@ public class ListAppsAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
         try {
+            TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
             Storage storage = this.getTenantStorage(req);
 
             if (!tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)
