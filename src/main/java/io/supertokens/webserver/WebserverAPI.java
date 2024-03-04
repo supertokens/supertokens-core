@@ -302,6 +302,12 @@ public abstract class WebserverAPI extends HttpServlet {
         return new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req), this.getTenantId(req));
     }
 
+    protected TenantIdentifier ensureTenantExistsAndGetTenantIdentifier(HttpServletRequest req)
+            throws ServletException, TenantOrAppNotFoundException {
+        getTenantStorage(req);
+        return new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req), this.getTenantId(req));
+    }
+
     protected AppIdentifier getAppIdentifier(HttpServletRequest req) throws ServletException {
         return new AppIdentifier(this.getConnectionUriDomain(req), this.getAppId(req));
     }

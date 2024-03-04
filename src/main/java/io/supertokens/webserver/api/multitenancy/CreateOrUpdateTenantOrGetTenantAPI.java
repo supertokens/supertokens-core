@@ -57,9 +57,9 @@ public class CreateOrUpdateTenantOrGetTenantAPI extends BaseCreateOrUpdate {
         Boolean passwordlessEnabled = InputParser.parseBooleanOrThrowError(input, "passwordlessEnabled", true);
         JsonObject coreConfig = InputParser.parseJsonObjectOrThrowError(input, "coreConfig", true);
 
-        TenantIdentifier sourceTenantIdentifier = getTenantIdentifier(req);
+        TenantIdentifier sourceTenantIdentifier;
         try {
-            this.getTenantStorage(req); // ensure source tenant exists
+            sourceTenantIdentifier = ensureTenantExistsAndGetTenantIdentifier(req);
         } catch (TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
