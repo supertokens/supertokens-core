@@ -378,6 +378,20 @@ public abstract class WebserverAPI extends HttpServlet {
         }
     }
 
+    protected StorageAndUserIdMapping getStorageAndUserIdMappingForAppSpecificApiWithoutEnforcingPublicTenant(
+            HttpServletRequest req, String userId, UserIdType userIdType)
+            throws StorageQueryException, TenantOrAppNotFoundException, ServletException,
+            BadPermissionException {
+        AppIdentifier appIdentifier = getAppIdentifierWithoutVerifying(req);
+        Storage[] storages = StorageLayer.getStoragesForApp(main, appIdentifier);
+        try {
+            return StorageLayer.findStorageAndUserIdMappingForUser(
+                    appIdentifier, storages, userId, userIdType);
+        } catch (UnknownUserIdException e) {
+            return new StorageAndUserIdMapping(getTenantStorage(req), null);
+        }
+    }
+
     protected boolean checkIPAccess(HttpServletRequest req, HttpServletResponse resp)
             throws TenantOrAppNotFoundException, ServletException, IOException {
         CoreConfig config = Config.getConfig(getTenantIdentifierWithoutVerifying(req), main);

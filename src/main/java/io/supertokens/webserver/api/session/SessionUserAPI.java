@@ -20,6 +20,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
+import io.supertokens.StorageAndUserIdMapping;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
@@ -28,6 +29,7 @@ import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.session.Session;
+import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -51,7 +53,7 @@ public class SessionUserAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        // API is app specific if fetchAcrossAllTenants is set to true, tenant specific otherwise
+        // API is tenant specific, but ignores tenantId if fetchAcrossAllTenants is true
         String userId = InputParser.getQueryParamOrThrowError(req, "userId", false);
         assert userId != null;
 
@@ -74,9 +76,12 @@ public class SessionUserAPI extends WebserverAPI {
 
             if (fetchAcrossAllTenants) {
                 AppIdentifier appIdentifier = getAppIdentifier(req);
-                Storage[] storages = enforcePublicTenantAndGetAllStoragesForApp(req);
+                StorageAndUserIdMapping storageAndUserIdMapping =
+                        getStorageAndUserIdMappingForAppSpecificApiWithoutEnforcingPublicTenant(req, userId,
+                                UserIdType.ANY);
                 sessionHandles = Session.getAllNonExpiredSessionHandlesForUser(
-                        main, appIdentifier, storages, userId, fetchSessionsForAllLinkedAccounts);
+                        main, appIdentifier, storageAndUserIdMapping.storage, userId,
+                        fetchSessionsForAllLinkedAccounts);
             } else {
                 TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
                 Storage storage = getTenantStorage(req);

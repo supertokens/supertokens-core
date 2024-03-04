@@ -103,7 +103,7 @@ public class UserAPI extends WebserverAPI {
                 user = ThirdParty.getUser(tenantIdentifier, storage, thirdPartyId,
                         thirdPartyUserId);
                 if (user != null) {
-                    UserIdMapping.populateExternalUserIdForUsers(getTenantStorage(req), new AuthRecipeUserInfo[]{user});
+                    UserIdMapping.populateExternalUserIdForUsers(storage, new AuthRecipeUserInfo[]{user});
                 }
             }
 

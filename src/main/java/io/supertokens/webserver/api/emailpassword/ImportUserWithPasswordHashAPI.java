@@ -96,11 +96,11 @@ public class ImportUserWithPasswordHashAPI extends WebserverAPI {
 
         try {
             TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
-            Storage storage = this.getTenantStorage(req);
+            Storage storage = getTenantStorage(req);
             EmailPassword.ImportUserResponse importUserResponse = EmailPassword.importUserWithPasswordHash(
                     tenantIdentifier, storage, main, email,
                     passwordHash, passwordHashingAlgorithm);
-            UserIdMapping.populateExternalUserIdForUsers(getTenantStorage(req), new AuthRecipeUserInfo[]{importUserResponse.user});
+            UserIdMapping.populateExternalUserIdForUsers(storage, new AuthRecipeUserInfo[]{importUserResponse.user});
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             JsonObject userJson =

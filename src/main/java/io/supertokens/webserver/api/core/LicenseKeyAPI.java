@@ -51,8 +51,8 @@ public class LicenseKeyAPI extends WebserverAPI {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String licenseKey = InputParser.parseStringOrThrowError(input, "licenseKey", true);
         try {
-            this.enforcePublicTenantAndGetPublicTenantStorage(req); // to check if app exists and enforce public tenant
             AppIdentifier appIdentifier = this.getAppIdentifier(req);
+            this.enforcePublicTenantAndGetPublicTenantStorage(req); // enforce public tenant
             boolean success = false;
             if (licenseKey != null) {
                 success = FeatureFlag.getInstance(main, appIdentifier)
@@ -77,7 +77,7 @@ public class LicenseKeyAPI extends WebserverAPI {
     protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         // API is app specific and can be queried only from public tenant
         try {
-            this.enforcePublicTenantAndGetPublicTenantStorage(req); // to check if app exists and enforce public tenant
+            this.enforcePublicTenantAndGetPublicTenantStorage(req); // enforce public tenant
             FeatureFlag.getInstance(main, getAppIdentifier(req))
                     .removeLicenseKeyAndSyncFeatures();
             JsonObject result = new JsonObject();
@@ -92,7 +92,7 @@ public class LicenseKeyAPI extends WebserverAPI {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         // API is app specific and can be queried only from public tenant
         try {
-            this.enforcePublicTenantAndGetPublicTenantStorage(req); // to check if app exists and enforce public tenant
+            this.enforcePublicTenantAndGetPublicTenantStorage(req); // enforce public tenant
             String licenseKey = FeatureFlag.getInstance(main, getAppIdentifier(req))
                     .getLicenseKey();
             JsonObject result = new JsonObject();

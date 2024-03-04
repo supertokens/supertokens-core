@@ -61,9 +61,7 @@ public class SessionRemoveAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        // API is app specific when `userId` is passed and `revokeAcrossAllTenants` is set to true
-        // API is app specific when revoking using `sessionHandles`
-        // API is tenant specific in all other cases (when `userId` is passed and `revokeAcrossAllTenants` is set to false)
+        // API is tenant specific, but ignores tenantId from the request if revoking from all tenants
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
         String userId = InputParser.parseStringOrThrowError(input, "userId", true);
@@ -116,20 +114,14 @@ public class SessionRemoveAPI extends WebserverAPI {
 
                 if (revokeAcrossAllTenants) {
                     AppIdentifier appIdentifier = getAppIdentifier(req);
-                    Storage[] storages = enforcePublicTenantAndGetAllStoragesForApp(req);
+                    StorageAndUserIdMapping storageAndUserIdMapping = getStorageAndUserIdMappingForAppSpecificApiWithoutEnforcingPublicTenant(
+                            req, userId, UserIdType.ANY);
 
                     sessionHandlesRevoked = Session.revokeAllSessionsForUser(
-                            main, appIdentifier, storages, userId, revokeSessionsForLinkedAccounts);
+                            main, appIdentifier, storageAndUserIdMapping.storage, userId, revokeSessionsForLinkedAccounts);
                 } else {
-                    StorageAndUserIdMapping storageAndUserIdMapping;
-                    try {
-                        storageAndUserIdMapping = getStorageAndUserIdMappingForTenantSpecificApi(
-                                req, userId, UserIdType.ANY);
-                        storage = storageAndUserIdMapping.storage;
-                    } catch (UnknownUserIdException e) {
-                        storage = getTenantStorage(req);
-                    }
                     TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+                    storage = getTenantStorage(req);
 
                     sessionHandlesRevoked = Session.revokeAllSessionsForUser(
                             main, tenantIdentifier, storage, userId, revokeSessionsForLinkedAccounts);
@@ -162,9 +154,7 @@ public class SessionRemoveAPI extends WebserverAPI {
             }
         } else {
             try {
-                enforcePublicTenantAndGetPublicTenantStorage(req); // enforce public tenant
                 AppIdentifier appIdentifier = getAppIdentifier(req);
-
                 Map<String, List<String>> sessionHandlesByTenantId = new HashMap<>();
 
                 for (String sessionHandle : sessionHandles) {
@@ -178,9 +168,10 @@ public class SessionRemoveAPI extends WebserverAPI {
                 for (Map.Entry<String, List<String>> entry : sessionHandlesByTenantId.entrySet()) {
                     String tenantId = entry.getKey();
                     List<String> sessionHandlesForTenant = entry.getValue();
-                    Storage storage =
-                            StorageLayer.getStorage(new TenantIdentifier(
-                                    appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(), tenantId), main);
+                    Storage storage = StorageLayer.getStorage(
+                            new TenantIdentifier(
+                                    appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(), tenantId),
+                            main);
 
                     String[] sessionHandlesRevoked = Session.revokeSessionUsingSessionHandles(main,
                             appIdentifier, storage, sessionHandlesForTenant.toArray(new String[0]));
@@ -195,7 +186,7 @@ public class SessionRemoveAPI extends WebserverAPI {
                 }
                 result.add("sessionHandlesRevoked", sessionHandlesRevokedJSON);
                 super.sendJsonResponse(200, result, resp);
-            } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
+            } catch (StorageQueryException | TenantOrAppNotFoundException e) {
                 throw new ServletException(e);
             }
         }

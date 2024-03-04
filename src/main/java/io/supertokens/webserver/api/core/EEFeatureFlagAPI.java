@@ -49,8 +49,8 @@ public class EEFeatureFlagAPI extends WebserverAPI {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         // API is app specific and can be queried only from public tenant
         try {
-            this.enforcePublicTenantAndGetPublicTenantStorage(req); // to check if app exists and enforce public tenant
             AppIdentifier appIdentifier = this.getAppIdentifier(req);
+            this.enforcePublicTenantAndGetPublicTenantStorage(req); // enforce public tenant
             EE_FEATURES[] features = FeatureFlag.getInstance(main, appIdentifier)
                     .getEnabledFeatures();
             JsonObject stats = FeatureFlag.getInstance(main, appIdentifier)
