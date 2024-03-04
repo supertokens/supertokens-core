@@ -288,12 +288,21 @@ public class UserRoles {
     public static boolean deleteRole(Main main, AppIdentifier appIdentifier, String role)
             throws StorageQueryException, TenantOrAppNotFoundException {
 
+        Storage appStorage = StorageLayer.getStorage(appIdentifier.getAsPublicTenantIdentifier(), main);
         Storage[] storages = StorageLayer.getStoragesForApp(main, appIdentifier);
         boolean deletedRole = false;
         for (Storage storage : storages) {
+            if (storage.getUserPoolId().equals(appStorage.getUserPoolId())) {
+                continue; // we want to delete this in the end
+            }
             UserRolesSQLStorage userRolesStorage = StorageUtils.getUserRolesStorage(storage);
             deletedRole = userRolesStorage.deleteRole(appIdentifier, role) || deletedRole;
         }
+
+        // Delete the role from the public tenant storage in the end so that the user
+        // never sees a role for user that has been deleted while the deletion is in progress
+        UserRolesSQLStorage userRolesStorage = StorageUtils.getUserRolesStorage(appStorage);
+        deletedRole = userRolesStorage.deleteRole(appIdentifier, role) || deletedRole;
 
         return deletedRole;
     }

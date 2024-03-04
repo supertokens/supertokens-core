@@ -186,7 +186,6 @@ public class SessionTests {
                     user2.getSupertokensUserId(),
                     new JsonObject(), new JsonObject());
 
-
             revokeSessionsForUser(process.getProcess(), user1.getSupertokensUserId(), true);
 
             try {
