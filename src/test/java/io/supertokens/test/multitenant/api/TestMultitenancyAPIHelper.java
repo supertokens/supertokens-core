@@ -20,6 +20,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
@@ -516,5 +517,42 @@ public class TestMultitenancyAPIHelper {
                 WebserverAPI.getLatestCDIVersion().get(), "userroles");
         assertEquals(2, response.entrySet().size());
         assertEquals("OK", response.get("status").getAsString());
+    }
+
+    public static void verifyEmail(TenantIdentifier tenantIdentifier, String userId, String email, Main main)
+            throws HttpResponseException, IOException {
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("userId", userId);
+        requestBody.addProperty("email", email);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier,"/recipe/user/email/verify/token"),
+                requestBody, 1000, 1000, null,
+                WebserverAPI.getLatestCDIVersion().get(), "emailverification");
+
+        assertEquals(response.entrySet().size(), 2);
+        assertEquals(response.get("status").getAsString(), "OK");
+
+        JsonObject verifyResponseBody = new JsonObject();
+        verifyResponseBody.addProperty("method", "token");
+        verifyResponseBody.addProperty("token", response.get("token").getAsString());
+
+        JsonObject response2 = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user/email/verify"), verifyResponseBody, 1000, 1000, null,
+                WebserverAPI.getLatestCDIVersion().get(), "emailverification");
+
+        assertEquals(response2.entrySet().size(), 3);
+        assertEquals(response2.get("status").getAsString(), "OK");
+    }
+
+    public static void unverifyEmail(TenantIdentifier tenantIdentifier, String userId, String email, Main main)
+            throws HttpResponseException, IOException {
+        JsonObject body = new JsonObject();
+        body.addProperty("userId", userId);
+        body.addProperty("email", email);
+
+        HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier,"/recipe/user/email/verify/remove"), body, 1000, 1000, null,
+                WebserverAPI.getLatestCDIVersion().get(), RECIPE_ID.EMAIL_VERIFICATION.toString());
     }
 }
