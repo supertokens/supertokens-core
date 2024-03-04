@@ -425,9 +425,9 @@ public class CreatePrimaryUserTest {
                         new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[0]), new PasswordlessConfig(true),
                         new JsonObject()));
 
-        Storage tenantIdentifierWithStorage = (StorageLayer.getStorage(process.main));
+        Storage storage = (StorageLayer.getStorage(process.main));
         AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(new TenantIdentifier(null, null, "t1"),
-                tenantIdentifierWithStorage, process.getProcess(),
+                storage, process.getProcess(),
                 "test@example.com",
                 "pass1234");
 
@@ -438,7 +438,7 @@ public class CreatePrimaryUserTest {
                 "test@example.com");
 
         Multitenancy.addUserIdToTenant(process.main, new TenantIdentifier(null, null, "t1"),
-                tenantIdentifierWithStorage,
+                storage,
                 signInUpResponse.user.getSupertokensUserId());
 
         try {
@@ -473,9 +473,9 @@ public class CreatePrimaryUserTest {
                         new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[0]), new PasswordlessConfig(true),
                         new JsonObject()));
 
-        Storage tenantIdentifierWithStorage = (StorageLayer.getStorage(process.main));
+        Storage storage = (StorageLayer.getStorage(process.main));
         AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(new TenantIdentifier(null, null, "t1"),
-                tenantIdentifierWithStorage, process.getProcess(),
+                storage, process.getProcess(),
                 "test@example.com",
                 "pass1234");
 

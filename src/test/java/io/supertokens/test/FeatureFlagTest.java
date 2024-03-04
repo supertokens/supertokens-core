@@ -357,17 +357,17 @@ public class FeatureFlagTest {
                     )
             );
 
-            Storage tenantIdentifierWithStorage = (
+            Storage storage = (
                     StorageLayer.getStorage(tenantIdentifier, process.getProcess()));
             if (i % 3 == 0) {
                 // Create a user
                 EmailPassword.signUp(
-                        tenantIdentifier, tenantIdentifierWithStorage, process.getProcess(), "user@example.com",
+                        tenantIdentifier, storage, process.getProcess(), "user@example.com",
                         "password");
             } else if (i % 3 == 1) {
                 // Create a session
                 Session.createNewSession(
-                        tenantIdentifier, tenantIdentifierWithStorage, process.getProcess(), "userid", new JsonObject(),
+                        tenantIdentifier, storage, process.getProcess(), "userid", new JsonObject(),
                         new JsonObject());
             } else {
                 // Create an enterprise provider
@@ -476,17 +476,17 @@ public class FeatureFlagTest {
                     )
             );
 
-            Storage tenantIdentifierWithStorage = (
+            Storage storage = (
                     StorageLayer.getStorage(tenantIdentifier, process.getProcess()));
             if (i % 3 == 0) {
                 // Create a user
                 EmailPassword.signUp(
-                        tenantIdentifier, tenantIdentifierWithStorage, process.getProcess(), "user@example.com",
+                        tenantIdentifier, storage, process.getProcess(), "user@example.com",
                         "password");
             } else if (i % 3 == 1) {
                 // Create a session
                 Session.createNewSession(
-                        tenantIdentifier, tenantIdentifierWithStorage, process.getProcess(), "userid", new JsonObject(),
+                        tenantIdentifier, storage, process.getProcess(), "userid", new JsonObject(),
                         new JsonObject());
             } else {
                 // Create an enterprise provider
@@ -605,17 +605,17 @@ public class FeatureFlagTest {
                     )
             );
 
-            Storage tenantIdentifierWithStorage = (
+            Storage storage = (
                     StorageLayer.getStorage(tenantIdentifier, process.getProcess()));
             if (i % 3 == 0) {
                 // Create a user
                 EmailPassword.signUp(
-                        tenantIdentifier, tenantIdentifierWithStorage, process.getProcess(), "user@example.com",
+                        tenantIdentifier, storage, process.getProcess(), "user@example.com",
                         "password");
             } else if (i % 3 == 1) {
                 // Create a session
                 Session.createNewSession(
-                        tenantIdentifier, tenantIdentifierWithStorage, process.getProcess(), "userid", new JsonObject(),
+                        tenantIdentifier, storage, process.getProcess(), "userid", new JsonObject(),
                         new JsonObject());
             } else {
                 // Create an enterprise provider

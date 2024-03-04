@@ -74,12 +74,8 @@ public class CreateOrUpdateTotpDeviceAPI extends WebserverAPI {
                 // While sending the usage stats we do a join, so totp tables also must use internal user id.
 
                 // Try to find the appIdentifier with right storage based on the userId
-                StorageAndUserIdMapping storageAndUserIdMapping = getStorageAndUserIdMappingForAppSpecificApi(
+                StorageAndUserIdMapping storageAndUserIdMapping = enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
                         req, userId, UserIdType.ANY);
-
-                if (storageAndUserIdMapping.userIdMapping != null) {
-                    userId = storageAndUserIdMapping.userIdMapping.superTokensUserId;
-                }
                 storage = storageAndUserIdMapping.storage;
             } catch (UnknownUserIdException e) {
                 // if the user is not found, just use the public tenant storage
@@ -130,13 +126,10 @@ public class CreateOrUpdateTotpDeviceAPI extends WebserverAPI {
 
                 // Try to find the appIdentifier with right storage based on the userId
                 StorageAndUserIdMapping storageAndUserIdMapping =
-                        getStorageAndUserIdMappingForAppSpecificApi(
+                        enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
                         req, userId, UserIdType.ANY);
-
-                if (storageAndUserIdMapping.userIdMapping != null) {
-                    userId = storageAndUserIdMapping.userIdMapping.superTokensUserId;
-                }
                 storage = storageAndUserIdMapping.storage;
+
             } catch (UnknownUserIdException e) {
                 // if the user is not found, just use the public storage
                 storage = enforcePublicTenantAndGetPublicTenantStorage(req);

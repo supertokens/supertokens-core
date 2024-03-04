@@ -282,12 +282,12 @@ public class TestTenantIdIsNotPresentForOlderCDI {
             tenantToUsers.put(tenantIdentifier, new ArrayList<>());
         }
 
-        Storage tenantIdentifierWithStorage = (
+        Storage storage = (
                 StorageLayer.getStorage(tenantIdentifier, process.getProcess()));
         for (int i = 0; i < numUsers; i++) {
             {
                 AuthRecipeUserInfo user = EmailPassword.signUp(
-                        tenantIdentifier, tenantIdentifierWithStorage, process.getProcess(),
+                        tenantIdentifier, storage, process.getProcess(),
                         prefix + "epuser" + i + "@example.com", "password" + i);
                 tenantToUsers.get(tenantIdentifier).add(user.getSupertokensUserId());
                 if (!recipeToUsers.containsKey("emailpassword")) {
@@ -298,14 +298,14 @@ public class TestTenantIdIsNotPresentForOlderCDI {
             {
                 Passwordless.CreateCodeResponse codeResponse = Passwordless.createCode(
                         tenantIdentifier,
-                        tenantIdentifierWithStorage,
+                        storage,
                         process.getProcess(),
                         prefix + "pluser" + i + "@example.com",
                         null, null,
                         "abcd"
                 );
                 Passwordless.ConsumeCodeResponse response = Passwordless.consumeCode(
-                        tenantIdentifier, tenantIdentifierWithStorage,
+                        tenantIdentifier, storage,
                         process.getProcess(), codeResponse.deviceId,
                         codeResponse.deviceIdHash, "abcd", null);
                 tenantToUsers.get(tenantIdentifier).add(response.user.getSupertokensUserId());
@@ -317,11 +317,11 @@ public class TestTenantIdIsNotPresentForOlderCDI {
             }
             {
                 ThirdParty.SignInUpResponse user1 = ThirdParty.signInUp(
-                        tenantIdentifier, tenantIdentifierWithStorage,
+                        tenantIdentifier, storage,
                         process.getProcess(), "google", "googleid" + i, prefix + "tpuser" + i + "@example.com");
                 tenantToUsers.get(tenantIdentifier).add(user1.user.getSupertokensUserId());
                 ThirdParty.SignInUpResponse user2 = ThirdParty.signInUp(
-                        tenantIdentifier, tenantIdentifierWithStorage,
+                        tenantIdentifier, storage,
                         process.getProcess(), "facebook", "fbid" + i, prefix + "tpuser" + i + "@example.com");
                 tenantToUsers.get(tenantIdentifier).add(user2.user.getSupertokensUserId());
 

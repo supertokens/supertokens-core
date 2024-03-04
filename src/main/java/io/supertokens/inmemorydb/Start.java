@@ -1861,7 +1861,7 @@ public class Start
 
     @Override
     public void addRoleToUser(TenantIdentifier tenantIdentifier, String userId, String role)
-            throws StorageQueryException, UnknownRoleException, DuplicateUserRoleMappingException,
+            throws StorageQueryException, DuplicateUserRoleMappingException,
             TenantOrAppNotFoundException {
         try {
             UserRolesQueries.addRoleToUser(this, tenantIdentifier, userId, role);
@@ -1870,13 +1870,6 @@ public class Start
                 SQLiteConfig config = Config.getConfig(this);
                 String serverErrorMessage = e.getMessage();
 
-                if (isForeignKeyConstraintError(
-                        serverErrorMessage,
-                        config.getRolesTable(),
-                        new String[]{"app_id", "role"},
-                        new Object[]{tenantIdentifier.getAppId(), role})) {
-                    throw new UnknownRoleException();
-                }
                 if (isPrimaryKeyError(serverErrorMessage, config.getUserRolesTable(),
                         new String[]{"app_id", "tenant_id", "user_id", "role"})) {
                     throw new DuplicateUserRoleMappingException();

@@ -31,29 +31,15 @@ public class ActiveUsers {
         }
     }
 
-    public static int countUsersActiveSince(AppIdentifier appIdentifier, Storage storage, long time)
+    public static int countUsersActiveSince(Main main, AppIdentifier appIdentifier, long time)
             throws StorageQueryException, TenantOrAppNotFoundException {
+        Storage storage = StorageLayer.getStorage(appIdentifier.getAsPublicTenantIdentifier(), main);
         return StorageUtils.getActiveUsersStorage(storage).countUsersActiveSince(appIdentifier, time);
     }
 
     @TestOnly
     public static int countUsersActiveSince(Main main, long time)
             throws StorageQueryException, TenantOrAppNotFoundException {
-        return countUsersActiveSince(new AppIdentifier(null, null),
-                StorageLayer.getStorage(main), time);
-    }
-
-    public static void removeActiveUser(AppIdentifier appIdentifier, Storage storage, String userId)
-            throws StorageQueryException {
-        try {
-            ((AuthRecipeSQLStorage) StorageUtils.getActiveUsersStorage(storage)).startTransaction(con -> {
-                StorageUtils.getActiveUsersStorage(storage).deleteUserActive_Transaction(con, appIdentifier, userId);
-                ((AuthRecipeSQLStorage) StorageUtils.getActiveUsersStorage(storage)).commitTransaction(con);
-                return null;
-            });
-
-        } catch (StorageTransactionLogicException e) {
-            throw new StorageQueryException(e.actualException);
-        }
+        return countUsersActiveSince(main, new AppIdentifier(null, null), time);
     }
 }

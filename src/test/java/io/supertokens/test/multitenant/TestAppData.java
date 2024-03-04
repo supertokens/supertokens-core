@@ -116,62 +116,62 @@ public class TestAppData {
                 new JsonObject()
         ), false);
 
-        Storage appWithStorage = (
+        Storage appStorage = (
                 StorageLayer.getStorage(app, process.getProcess()));
 
-        String[] allTableNames = appWithStorage.getAllTablesInTheDatabase();
+        String[] allTableNames = appStorage.getAllTablesInTheDatabase();
         allTableNames = removeStrings(allTableNames, tablesToIgnore);
         Arrays.sort(allTableNames);
 
         // Add all recipe data
-        AuthRecipeUserInfo epUser = EmailPassword.signUp(app, appWithStorage, process.getProcess(), "test@example.com",
+        AuthRecipeUserInfo epUser = EmailPassword.signUp(app, appStorage, process.getProcess(), "test@example.com",
                 "password");
-        EmailPassword.generatePasswordResetTokenBeforeCdi4_0(app, appWithStorage, process.getProcess(),
+        EmailPassword.generatePasswordResetTokenBeforeCdi4_0(app, appStorage, process.getProcess(),
                 epUser.getSupertokensUserId());
 
-        ThirdParty.SignInUpResponse tpUser = ThirdParty.signInUp(app, appWithStorage, process.getProcess(), "google",
+        ThirdParty.SignInUpResponse tpUser = ThirdParty.signInUp(app, appStorage, process.getProcess(), "google",
                 "googleid", "test@example.com");
 
-        Passwordless.CreateCodeResponse code = Passwordless.createCode(app, appWithStorage, process.getProcess(),
+        Passwordless.CreateCodeResponse code = Passwordless.createCode(app, appStorage, process.getProcess(),
                 "test@example.com", null, null, null);
-        Passwordless.ConsumeCodeResponse plUser = Passwordless.consumeCode(app, appWithStorage, process.getProcess(),
+        Passwordless.ConsumeCodeResponse plUser = Passwordless.consumeCode(app, appStorage, process.getProcess(),
                 code.deviceId, code.deviceIdHash, code.userInputCode, null);
-        Passwordless.createCode(app, appWithStorage, process.getProcess(), "test@example.com", null, null, null);
+        Passwordless.createCode(app, appStorage, process.getProcess(), "test@example.com", null, null, null);
 
-        Dashboard.signUpDashboardUser(app.toAppIdentifier(), appWithStorage, process.getProcess(),
+        Dashboard.signUpDashboardUser(app.toAppIdentifier(), appStorage, process.getProcess(),
                 "user@example.com", "password");
-        Dashboard.signInDashboardUser(app.toAppIdentifier(), appWithStorage, process.getProcess(),
+        Dashboard.signInDashboardUser(app.toAppIdentifier(), appStorage, process.getProcess(),
                 "user@example.com", "password");
 
-        String evToken = EmailVerification.generateEmailVerificationToken(app, appWithStorage, process.getProcess(),
+        String evToken = EmailVerification.generateEmailVerificationToken(app, appStorage, process.getProcess(),
                 epUser.getSupertokensUserId(), epUser.loginMethods[0].email);
-        EmailVerification.verifyEmail(app, appWithStorage, evToken);
-        EmailVerification.generateEmailVerificationToken(app, appWithStorage, process.getProcess(),
+        EmailVerification.verifyEmail(app, appStorage, evToken);
+        EmailVerification.generateEmailVerificationToken(app, appStorage, process.getProcess(),
                 tpUser.user.getSupertokensUserId(),
                 tpUser.user.loginMethods[0].email);
 
-        Session.createNewSession(app, appWithStorage, process.getProcess(), epUser.getSupertokensUserId(),
+        Session.createNewSession(app, appStorage, process.getProcess(), epUser.getSupertokensUserId(),
                 new JsonObject(), new JsonObject());
 
-        UserRoles.createNewRoleOrModifyItsPermissions(app.toAppIdentifier(), appWithStorage, "role",
+        UserRoles.createNewRoleOrModifyItsPermissions(app.toAppIdentifier(), appStorage, "role",
                 new String[]{"permission1", "permission2"});
-        UserRoles.addRoleToUser(process.getProcess(), app, appWithStorage, epUser.getSupertokensUserId(), "role");
+        UserRoles.addRoleToUser(process.getProcess(), app, appStorage, epUser.getSupertokensUserId(), "role");
 
-        TOTPDevice totpDevice = Totp.registerDevice(app.toAppIdentifier(), appWithStorage, process.getProcess(),
+        TOTPDevice totpDevice = Totp.registerDevice(app.toAppIdentifier(), appStorage, process.getProcess(),
                 epUser.getSupertokensUserId(), "test", 1, 3);
-        Totp.verifyCode(app, appWithStorage, process.getProcess(), epUser.getSupertokensUserId(),
+        Totp.verifyCode(app, appStorage, process.getProcess(), epUser.getSupertokensUserId(),
                 generateTotpCode(process.getProcess(), totpDevice, 0), true);
 
         ActiveUsers.updateLastActive(app.toAppIdentifier(), process.getProcess(),
                 epUser.getSupertokensUserId());
 
-        UserMetadata.updateUserMetadata(app.toAppIdentifier(), appWithStorage,
+        UserMetadata.updateUserMetadata(app.toAppIdentifier(), appStorage,
                 epUser.getSupertokensUserId(), new JsonObject());
 
-        UserIdMapping.createUserIdMapping(process.getProcess(), app.toAppIdentifier(), appWithStorage,
+        UserIdMapping.createUserIdMapping(process.getProcess(), app.toAppIdentifier(), appStorage,
                 plUser.user.getSupertokensUserId(), "externalid", null, false);
 
-        String[] tablesThatHaveData = appWithStorage
+        String[] tablesThatHaveData = appStorage
                 .getAllTablesInTheDatabaseThatHasDataForAppId(app.getAppId());
         tablesThatHaveData = removeStrings(tablesThatHaveData, tablesToIgnore);
         Arrays.sort(tablesThatHaveData);
@@ -182,7 +182,7 @@ public class TestAppData {
         Multitenancy.deleteApp(app.toAppIdentifier(), process.getProcess());
 
         // Check no data is remaining in any of the tables
-        tablesThatHaveData = appWithStorage.getAllTablesInTheDatabaseThatHasDataForAppId(app.getAppId());
+        tablesThatHaveData = appStorage.getAllTablesInTheDatabaseThatHasDataForAppId(app.getAppId());
         tablesThatHaveData = removeStrings(tablesThatHaveData, tablesToIgnore);
         assertEquals(0, tablesThatHaveData.length);
 

@@ -52,14 +52,9 @@ public class ConfigAPI extends WebserverAPI {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         String pid = InputParser.getQueryParamOrThrowError(req, "pid", false);
 
-        try {
-            TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
-            getTenantStorage(req); // to check if tenant exists
-            if (!tenantIdentifier.equals(new TenantIdentifier(null, null, null))) {
-                throw new ServletException(new BadPermissionException("you can call this only from the base connection uri domain, public app and tenant"));
-            }
-        } catch (TenantOrAppNotFoundException e) {
-            throw new ServletException(e);
+        TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+        if (!tenantIdentifier.equals(new TenantIdentifier(null, null, null))) {
+            throw new ServletException(new BadPermissionException("you can call this only from the base connection uri domain, public app and tenant"));
         }
 
         if ((ProcessHandle.current().pid() + "").equals(pid)) {

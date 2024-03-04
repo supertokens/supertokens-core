@@ -59,7 +59,7 @@ public class UnlinkAccountAPI extends WebserverAPI {
         try {
             String userId = inputRecipeUserId;
             StorageAndUserIdMapping mappingAndStorage =
-                    getStorageAndUserIdMappingForAppSpecificApi(
+                    enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
                             req, inputRecipeUserId, UserIdType.ANY);
             if (mappingAndStorage.userIdMapping != null) {
                 userId = mappingAndStorage.userIdMapping.superTokensUserId;

@@ -61,9 +61,9 @@ public class RemoveRoleAPI extends WebserverAPI {
 
         try {
             AppIdentifier appIdentifier = getAppIdentifier(req);
-            Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
+            enforcePublicTenantAndGetPublicTenantStorage(req); // enforce this API is called from public tenant
 
-            boolean didRoleExist = UserRoles.deleteRole(appIdentifier, storage, role);
+            boolean didRoleExist = UserRoles.deleteRole(main, appIdentifier, role);
 
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");

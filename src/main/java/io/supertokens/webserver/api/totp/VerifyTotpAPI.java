@@ -65,10 +65,6 @@ public class VerifyTotpAPI extends WebserverAPI {
 
                 StorageAndUserIdMapping storageAndUserIdMapping = getStorageAndUserIdMappingForTenantSpecificApi(
                         req, userId, UserIdType.ANY);
-
-                if (storageAndUserIdMapping.userIdMapping != null) {
-                    userId = storageAndUserIdMapping.userIdMapping.superTokensUserId;
-                }
                 storage = storageAndUserIdMapping.storage;
             } catch (UnknownUserIdException e) {
                 // if the user is not found, just use the storage of the tenant of interest

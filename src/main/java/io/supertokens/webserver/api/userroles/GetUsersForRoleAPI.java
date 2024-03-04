@@ -51,7 +51,7 @@ public class GetUsersForRoleAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        // API is tenant specific, but uses public tenant storage
+        // API is tenant specific
         String role = InputParser.getQueryParamOrThrowError(req, "role", false);
 
         // normalize roles

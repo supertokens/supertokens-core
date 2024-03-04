@@ -82,7 +82,7 @@ public class UserAPI extends WebserverAPI {
                 try {
                     AppIdentifier appIdentifier = getAppIdentifier(req);
                     StorageAndUserIdMapping storageAndUserIdMapping =
-                            this.getStorageAndUserIdMappingForAppSpecificApi(req, userId, UserIdType.ANY);
+                            this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(req, userId, UserIdType.ANY);
                     if (storageAndUserIdMapping.userIdMapping != null) {
                         userId = storageAndUserIdMapping.userIdMapping.superTokensUserId;
                     }
@@ -165,7 +165,7 @@ public class UserAPI extends WebserverAPI {
         try {
             AppIdentifier appIdentifier = getAppIdentifier(req);
             StorageAndUserIdMapping storageAndUserIdMapping =
-                    this.getStorageAndUserIdMappingForAppSpecificApi(req, userId, UserIdType.ANY);
+                    this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(req, userId, UserIdType.ANY);
             // if a userIdMapping exists, pass the superTokensUserId to the updateUser
             if (storageAndUserIdMapping.userIdMapping != null) {
                 userId = storageAndUserIdMapping.userIdMapping.superTokensUserId;

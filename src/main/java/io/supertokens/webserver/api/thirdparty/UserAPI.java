@@ -81,7 +81,7 @@ public class UserAPI extends WebserverAPI {
                 AppIdentifier appIdentifier = getAppIdentifier(req);
                 try {
                     StorageAndUserIdMapping storageAndUserIdMapping =
-                            this.getStorageAndUserIdMappingForAppSpecificApi(req, userId, UserIdType.ANY);
+                            this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(req, userId, UserIdType.ANY);
                     // if a userIdMapping exists, pass the superTokensUserId to the getUserUsingId function
                     if (storageAndUserIdMapping.userIdMapping != null) {
                         userId = storageAndUserIdMapping.userIdMapping.superTokensUserId;

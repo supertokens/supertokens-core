@@ -80,7 +80,10 @@ public class HelloAPI extends WebserverAPI {
         // API is app specific
 
         try {
-            RateLimiter rateLimiter = RateLimiter.getInstance(getAppIdentifier(req), super.main, 200);
+            AppIdentifier appIdentifier = getAppIdentifier(req);
+            Storage[] storages = StorageLayer.getStoragesForApp(main, appIdentifier); // throws tenantOrAppNotFoundException
+
+            RateLimiter rateLimiter = RateLimiter.getInstance(appIdentifier, super.main, 200);
             if (!rateLimiter.checkRequest()) {
                 if (Main.isTesting) {
                     super.sendTextResponse(200, "RateLimitedHello", resp);
@@ -89,9 +92,6 @@ public class HelloAPI extends WebserverAPI {
                 }
                 return;
             }
-
-            AppIdentifier appIdentifier = getAppIdentifier(req);
-            Storage[] storages = StorageLayer.getStoragesForApp(main, appIdentifier);
 
             for (Storage storage : storages) {
                 // even if the public tenant does not exist, the following function will return a null

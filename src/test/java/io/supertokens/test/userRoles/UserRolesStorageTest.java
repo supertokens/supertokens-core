@@ -470,8 +470,9 @@ public class UserRolesStorageTest {
 
         Exception error = null;
         try {
-
-            storage.addRoleToUser(new TenantIdentifier(null, null, null), "userId", "unknownRole");
+            UserRoles.addRoleToUser(
+                    process.getProcess(), new TenantIdentifier(null, null, null),
+                    StorageLayer.getBaseStorage(process.getProcess()),  "userId", "unknownRole");
         } catch (Exception e) {
             error = e;
         }

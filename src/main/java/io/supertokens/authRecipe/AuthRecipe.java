@@ -252,7 +252,7 @@ public class AuthRecipe {
             TenantIdentifier tenantIdentifier = new TenantIdentifier(
                     appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(),
                     tenantId);
-            // we do not bother with getting the tenantIdentifierWithStorage here because
+            // we do not bother with getting the storage for each tenant here because
             // we get the tenants from the user itself, and the user can only be shared across
             // tenants of the same storage - therefore, the storage will be the same.
 
@@ -656,7 +656,7 @@ public class AuthRecipe {
                 tenantIdentifier, includeRecipeIds);
     }
 
-    public static long getUsersCountAcrossAllTenants(AppIdentifier appIdentappIdentifierfierWithStorages,
+    public static long getUsersCountAcrossAllTenants(AppIdentifier appIdentifier,
                                                      Storage[] storages,
                                                      RECIPE_ID[] includeRecipeIds)
             throws StorageQueryException,
@@ -665,7 +665,7 @@ public class AuthRecipe {
 
         for (Storage storage : storages) {
             count += StorageUtils.getAuthRecipeStorage(storage).getUsersCount(
-                    appIdentappIdentifierfierWithStorages, includeRecipeIds);
+                    appIdentifier, includeRecipeIds);
         }
 
         return count;

@@ -114,14 +114,14 @@ public class RefreshSessionAPI extends WebserverAPI {
                  UnsupportedJWTSigningAlgorithmException e) {
             throw new ServletException(e);
         } catch (AccessTokenPayloadError | UnauthorisedException e) {
-            Logging.debug(main, appIdentifier.getAsPublicTenantIdentifier(),
+            Logging.debug(main, getTenantIdentifier(req),
                     Utils.exceptionStacktraceToString(e));
             JsonObject reply = new JsonObject();
             reply.addProperty("status", "UNAUTHORISED");
             reply.addProperty("message", e.getMessage());
             super.sendJsonResponse(200, reply, resp);
         } catch (TokenTheftDetectedException e) {
-            Logging.debug(main, appIdentifier.getAsPublicTenantIdentifier(),
+            Logging.debug(main, getTenantIdentifier(req),
                     Utils.exceptionStacktraceToString(e));
             JsonObject reply = new JsonObject();
             reply.addProperty("status", "TOKEN_THEFT_DETECTED");

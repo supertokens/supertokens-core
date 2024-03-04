@@ -58,7 +58,7 @@ public class RemoveUserMetadataAPI extends WebserverAPI {
         try {
             try {
                 StorageAndUserIdMapping storageAndUserIdMapping =
-                        this.getStorageAndUserIdMappingForAppSpecificApi(
+                        this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
                                 req, userId, UserIdType.ANY);
                 UserMetadata.deleteUserMetadata(appIdentifier, storageAndUserIdMapping.storage, userId);
             } catch (UnknownUserIdException e) {

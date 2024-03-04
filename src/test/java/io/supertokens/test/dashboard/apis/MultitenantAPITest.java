@@ -170,9 +170,9 @@ public class MultitenantAPITest {
         String email = "test@example.com";
         String password = "testPass123";
 
-        Storage appIdentifierWithStorage = (
+        Storage appIdentifierStorage = (
                 StorageLayer.getStorage(t1, process.getProcess()));
-        Dashboard.signUpDashboardUser(t1.toAppIdentifier(), appIdentifierWithStorage, process.getProcess(), email,
+        Dashboard.signUpDashboardUser(t1.toAppIdentifier(), appIdentifierStorage, process.getProcess(), email,
                 password);
 
         // create a session

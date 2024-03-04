@@ -231,7 +231,7 @@ public abstract class WebserverAPI extends HttpServlet {
             apiPath = "/" + apiPath;
         }
         if (apiPath.equals("/")) {
-            if ((path.equals("") || path.equals("/"))) {
+            if (path.equals("") || path.equals("/")) {
                 return null;
             }
         } else {
@@ -316,7 +316,7 @@ public abstract class WebserverAPI extends HttpServlet {
     protected Storage[] enforcePublicTenantAndGetAllStoragesForApp(HttpServletRequest req)
             throws ServletException, BadPermissionException, TenantOrAppNotFoundException {
         if (getTenantId(req) != null) {
-            throw new BadPermissionException("Only public tenantId can this app specific API");
+            throw new BadPermissionException("Only public tenantId can call this app specific API");
         }
 
         AppIdentifier appIdentifier = getAppIdentifier(req);
@@ -330,7 +330,7 @@ public abstract class WebserverAPI extends HttpServlet {
                 this.getTenantId(req));
 
         if (getTenantId(req) != null) {
-            throw new BadPermissionException("Only public tenantId can this app specific API");
+            throw new BadPermissionException("Only public tenantId can call this app specific API");
         }
 
         return StorageLayer.getStorage(tenantIdentifier, main);
@@ -345,7 +345,7 @@ public abstract class WebserverAPI extends HttpServlet {
                 userIdType);
     }
 
-    protected StorageAndUserIdMapping getStorageAndUserIdMappingForAppSpecificApi(
+    protected StorageAndUserIdMapping enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
             HttpServletRequest req, String userId, UserIdType userIdType)
             throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException, ServletException,
             BadPermissionException {

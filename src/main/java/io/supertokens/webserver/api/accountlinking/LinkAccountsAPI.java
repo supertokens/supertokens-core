@@ -67,7 +67,7 @@ public class LinkAccountsAPI extends WebserverAPI {
             String recipeUserId = inputRecipeUserId;
             {
                 StorageAndUserIdMapping mappingAndStorage =
-                        getStorageAndUserIdMappingForAppSpecificApi(
+                        enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
                                 req, inputRecipeUserId, UserIdType.ANY);
                 if (mappingAndStorage.userIdMapping != null) {
                     recipeUserId = mappingAndStorage.userIdMapping.superTokensUserId;
@@ -77,7 +77,7 @@ public class LinkAccountsAPI extends WebserverAPI {
             String primaryUserId = inputPrimaryUserId;
             {
                 StorageAndUserIdMapping mappingAndStorage =
-                        getStorageAndUserIdMappingForAppSpecificApi(
+                        enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
                                 req, inputPrimaryUserId, UserIdType.ANY);
                 if (mappingAndStorage.userIdMapping != null) {
                     primaryUserId = mappingAndStorage.userIdMapping.superTokensUserId;

@@ -87,17 +87,17 @@ public class TestWithNonAuthRecipes {
     @Test
     public void testThatUserMetadataIsSavedInTheStorageWhereUserExists() throws Exception {
         TenantIdentifier t0 = new TenantIdentifier(null, null, null);
-        Storage t0WithStorage = (StorageLayer.getStorage(t0, process.getProcess()));
+        Storage t0Storage = (StorageLayer.getStorage(t0, process.getProcess()));
 
         TenantIdentifier t1 = new TenantIdentifier(null, null, "t1");
-        Storage t1WithStorage = (StorageLayer.getStorage(t1, process.getProcess()));
+        Storage t1Storage = (StorageLayer.getStorage(t1, process.getProcess()));
 
         // Create users
-        AuthRecipeUserInfo user1 = EmailPassword.signUp(t0, t0WithStorage, process.getProcess(), "test@example.com", "password123");
-        AuthRecipeUserInfo user2 = EmailPassword.signUp(t1, t1WithStorage, process.getProcess(), "test@example.com", "password123");
+        AuthRecipeUserInfo user1 = EmailPassword.signUp(t0, t0Storage, process.getProcess(), "test@example.com", "password123");
+        AuthRecipeUserInfo user2 = EmailPassword.signUp(t1, t1Storage, process.getProcess(), "test@example.com", "password123");
 
-        UserIdMapping.populateExternalUserIdForUsers(t0WithStorage, new AuthRecipeUserInfo[]{user1});
-        UserIdMapping.populateExternalUserIdForUsers(t1WithStorage, new AuthRecipeUserInfo[]{user2});
+        UserIdMapping.populateExternalUserIdForUsers(t0Storage, new AuthRecipeUserInfo[]{user1});
+        UserIdMapping.populateExternalUserIdForUsers(t1Storage, new AuthRecipeUserInfo[]{user2});
 
         // Check that get user by ID works fine
         JsonObject jsonUser1 = TestMultitenancyAPIHelper.getUserById(t0, user1.getSupertokensUserId(), process.getProcess());
@@ -149,8 +149,8 @@ public class TestWithNonAuthRecipes {
             }
         }
 
-        UserMetadataSQLStorage t0UserMetadataStorage = StorageUtils.getUserMetadataStorage(t0WithStorage);
-        UserMetadataSQLStorage t1UserMetadataStorage = StorageUtils.getUserMetadataStorage(t1WithStorage);
+        UserMetadataSQLStorage t0UserMetadataStorage = StorageUtils.getUserMetadataStorage(t0Storage);
+        UserMetadataSQLStorage t1UserMetadataStorage = StorageUtils.getUserMetadataStorage(t1Storage);
 
         // Ensure that the metadata is saved in the correct storage
         assertNotNull(t0UserMetadataStorage.getUserMetadata(t0.toAppIdentifier(), user1.getSupertokensUserId())); // ensure t0 storage does not have user2's metadata
@@ -176,17 +176,17 @@ public class TestWithNonAuthRecipes {
     @Test
     public void testThatUserRolesWorkWithDifferentTenantsOnDifferentStorages() throws Exception {
         TenantIdentifier t0 = new TenantIdentifier(null, null, null);
-        Storage t0WithStorage = (StorageLayer.getStorage(t0, process.getProcess()));
+        Storage t0Storage = (StorageLayer.getStorage(t0, process.getProcess()));
 
         TenantIdentifier t1 = new TenantIdentifier(null, null, "t1");
-        Storage t1WithStorage = (StorageLayer.getStorage(t1, process.getProcess()));
+        Storage t1Storage = (StorageLayer.getStorage(t1, process.getProcess()));
 
         // Create users
-        AuthRecipeUserInfo user1 = EmailPassword.signUp(t0, t0WithStorage, process.getProcess(), "test@example.com", "password123");
-        AuthRecipeUserInfo user2 = EmailPassword.signUp(t1, t1WithStorage, process.getProcess(), "test@example.com", "password123");
+        AuthRecipeUserInfo user1 = EmailPassword.signUp(t0, t0Storage, process.getProcess(), "test@example.com", "password123");
+        AuthRecipeUserInfo user2 = EmailPassword.signUp(t1, t1Storage, process.getProcess(), "test@example.com", "password123");
 
-        UserIdMapping.populateExternalUserIdForUsers(t0WithStorage, new AuthRecipeUserInfo[]{user1});
-        UserIdMapping.populateExternalUserIdForUsers(t1WithStorage, new AuthRecipeUserInfo[]{user2});
+        UserIdMapping.populateExternalUserIdForUsers(t0Storage, new AuthRecipeUserInfo[]{user1});
+        UserIdMapping.populateExternalUserIdForUsers(t1Storage, new AuthRecipeUserInfo[]{user2});
 
 
     }

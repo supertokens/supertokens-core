@@ -185,27 +185,27 @@ public class MultitenantTest {
         t1 = new TenantIdentifier(null, "a1", null);
         t2 = new TenantIdentifier(null, "a1", "t1");
 
-        Storage t1WithStorage = (StorageLayer.getStorage(t1, process.getProcess()));
-        Storage t2WithStorage = (StorageLayer.getStorage(t2, process.getProcess()));
+        Storage t1Storage = (StorageLayer.getStorage(t1, process.getProcess()));
+        Storage t2Storage = (StorageLayer.getStorage(t2, process.getProcess()));
 
-        AuthRecipeUserInfo user1 = EmailPassword.signUp(t1, t1WithStorage, process.getProcess(), "test@example.com",
+        AuthRecipeUserInfo user1 = EmailPassword.signUp(t1, t1Storage, process.getProcess(), "test@example.com",
                 "password");
-        Passwordless.CreateCodeResponse user2Code = Passwordless.createCode(t1, t1WithStorage, process.getProcess(),
+        Passwordless.CreateCodeResponse user2Code = Passwordless.createCode(t1, t1Storage, process.getProcess(),
                 "test@example.com", null, null, null);
-        AuthRecipeUserInfo user2 = Passwordless.consumeCode(t1, t1WithStorage, process.getProcess(), user2Code.deviceId,
+        AuthRecipeUserInfo user2 = Passwordless.consumeCode(t1, t1Storage, process.getProcess(), user2Code.deviceId,
                 user2Code.deviceIdHash, user2Code.userInputCode, null).user;
 
-        AuthRecipe.createPrimaryUser(process.getProcess(), t1.toAppIdentifier(), t1WithStorage,
+        AuthRecipe.createPrimaryUser(process.getProcess(), t1.toAppIdentifier(), t1Storage,
                 user1.getSupertokensUserId());
-        AuthRecipe.linkAccounts(process.getProcess(), t1.toAppIdentifier(), t1WithStorage, user2.getSupertokensUserId(),
+        AuthRecipe.linkAccounts(process.getProcess(), t1.toAppIdentifier(), t1Storage, user2.getSupertokensUserId(),
                 user1.getSupertokensUserId());
 
-        Multitenancy.addUserIdToTenant(process.getProcess(), t2, t2WithStorage, user1.getSupertokensUserId());
+        Multitenancy.addUserIdToTenant(process.getProcess(), t2, t2Storage, user1.getSupertokensUserId());
 
         {   // user2 should not be shared in tenant2
-            Passwordless.CreateCodeResponse user3Code = Passwordless.createCode(t2, t2WithStorage, process.getProcess(),
+            Passwordless.CreateCodeResponse user3Code = Passwordless.createCode(t2, t2Storage, process.getProcess(),
                     "test@example.com", null, null, null);
-            Passwordless.ConsumeCodeResponse res = Passwordless.consumeCode(t2, t2WithStorage, process.getProcess(),
+            Passwordless.ConsumeCodeResponse res = Passwordless.consumeCode(t2, t2Storage, process.getProcess(),
                     user3Code.deviceId, user3Code.deviceIdHash, user3Code.userInputCode, null);
             assertTrue(res.createdNewUser);
         }
@@ -233,23 +233,23 @@ public class MultitenantTest {
         t1 = new TenantIdentifier(null, "a1", null);
         t2 = new TenantIdentifier(null, "a1", "t1");
 
-        Storage t1WithStorage = (StorageLayer.getStorage(t1, process.getProcess()));
-        Storage t2WithStorage = (StorageLayer.getStorage(t2, process.getProcess()));
+        Storage t1Storage = (StorageLayer.getStorage(t1, process.getProcess()));
+        Storage t2Storage = (StorageLayer.getStorage(t2, process.getProcess()));
 
-        AuthRecipeUserInfo user1 = EmailPassword.signUp(t1, t1WithStorage, process.getProcess(), "test@example.com",
+        AuthRecipeUserInfo user1 = EmailPassword.signUp(t1, t1Storage, process.getProcess(), "test@example.com",
                 "password");
-        AuthRecipeUserInfo user2 = ThirdParty.signInUp(t1, t1WithStorage, process.getProcess(), "google", "googleid1",
+        AuthRecipeUserInfo user2 = ThirdParty.signInUp(t1, t1Storage, process.getProcess(), "google", "googleid1",
                 "test@example.com").user;
 
-        AuthRecipe.createPrimaryUser(process.getProcess(), t1.toAppIdentifier(), t1WithStorage,
+        AuthRecipe.createPrimaryUser(process.getProcess(), t1.toAppIdentifier(), t1Storage,
                 user1.getSupertokensUserId());
-        AuthRecipe.linkAccounts(process.getProcess(), t1.toAppIdentifier(), t1WithStorage, user2.getSupertokensUserId(),
+        AuthRecipe.linkAccounts(process.getProcess(), t1.toAppIdentifier(), t1Storage, user2.getSupertokensUserId(),
                 user1.getSupertokensUserId());
 
-        Multitenancy.addUserIdToTenant(process.getProcess(), t2, t2WithStorage, user1.getSupertokensUserId());
+        Multitenancy.addUserIdToTenant(process.getProcess(), t2, t2Storage, user1.getSupertokensUserId());
 
         {   // user2 should not be shared in tenant2
-            ThirdParty.SignInUpResponse res = ThirdParty.signInUp(t2, t2WithStorage, process.getProcess(), "google",
+            ThirdParty.SignInUpResponse res = ThirdParty.signInUp(t2, t2Storage, process.getProcess(), "google",
                     "googleid1", "test@example.com");
             assertTrue(res.createdNewUser);
         }
@@ -277,28 +277,28 @@ public class MultitenantTest {
         t1 = new TenantIdentifier(null, "a1", null);
         t2 = new TenantIdentifier(null, "a1", "t1");
 
-        Storage t1WithStorage = (StorageLayer.getStorage(t1, process.getProcess()));
-        Storage t2WithStorage = (StorageLayer.getStorage(t2, process.getProcess()));
+        Storage t1Storage = (StorageLayer.getStorage(t1, process.getProcess()));
+        Storage t2Storage = (StorageLayer.getStorage(t2, process.getProcess()));
 
-        AuthRecipeUserInfo user1 = EmailPassword.signUp(t2, t2WithStorage, process.getProcess(), "test@example.com",
+        AuthRecipeUserInfo user1 = EmailPassword.signUp(t2, t2Storage, process.getProcess(), "test@example.com",
                 "password");
-        AuthRecipeUserInfo user2 = ThirdParty.signInUp(t2, t2WithStorage, process.getProcess(), "google", "googleid1",
+        AuthRecipeUserInfo user2 = ThirdParty.signInUp(t2, t2Storage, process.getProcess(), "google", "googleid1",
                 "test@example.com").user;
 
-        AuthRecipe.createPrimaryUser(process.getProcess(), t2.toAppIdentifier(), t2WithStorage,
+        AuthRecipe.createPrimaryUser(process.getProcess(), t2.toAppIdentifier(), t2Storage,
                 user1.getSupertokensUserId());
-        AuthRecipe.linkAccounts(process.getProcess(), t2.toAppIdentifier(), t2WithStorage, user2.getSupertokensUserId(),
+        AuthRecipe.linkAccounts(process.getProcess(), t2.toAppIdentifier(), t2Storage, user2.getSupertokensUserId(),
                 user1.getSupertokensUserId());
 
         Multitenancy.deleteTenant(t2, process.getProcess());
 
-        AuthRecipeUserInfo getUser1 = AuthRecipe.getUserById(t1.toAppIdentifier(), t1WithStorage,
+        AuthRecipeUserInfo getUser1 = AuthRecipe.getUserById(t1.toAppIdentifier(), t1Storage,
                 user1.getSupertokensUserId());
         for (LoginMethod lm : getUser1.loginMethods) {
             assertEquals(0, lm.tenantIds.size());
         }
 
-        AuthRecipeUserInfo getUser2 = AuthRecipe.getUserById(t1.toAppIdentifier(), t1WithStorage,
+        AuthRecipeUserInfo getUser2 = AuthRecipe.getUserById(t1.toAppIdentifier(), t1Storage,
                 user2.getSupertokensUserId());
         for (LoginMethod lm : getUser2.loginMethods) {
             assertEquals(0, lm.tenantIds.size());
@@ -327,44 +327,44 @@ public class MultitenantTest {
         t1 = new TenantIdentifier(null, "a1", null);
         t2 = new TenantIdentifier(null, "a1", "t1");
 
-        Storage t1WithStorage = (StorageLayer.getStorage(t1, process.getProcess()));
-        Storage t2WithStorage = (StorageLayer.getStorage(t2, process.getProcess()));
+        Storage t1Storage = (StorageLayer.getStorage(t1, process.getProcess()));
+        Storage t2Storage = (StorageLayer.getStorage(t2, process.getProcess()));
 
-        AuthRecipeUserInfo user1 = EmailPassword.signUp(t2, t2WithStorage, process.getProcess(), "test@example.com",
+        AuthRecipeUserInfo user1 = EmailPassword.signUp(t2, t2Storage, process.getProcess(), "test@example.com",
                 "password");
-        AuthRecipeUserInfo user2 = ThirdParty.signInUp(t2, t2WithStorage, process.getProcess(), "google", "googleid1",
+        AuthRecipeUserInfo user2 = ThirdParty.signInUp(t2, t2Storage, process.getProcess(), "google", "googleid1",
                 "test@example.com").user;
 
-        AuthRecipe.createPrimaryUser(process.getProcess(), t2.toAppIdentifier(), t2WithStorage,
+        AuthRecipe.createPrimaryUser(process.getProcess(), t2.toAppIdentifier(), t2Storage,
                 user1.getSupertokensUserId());
-        AuthRecipe.linkAccounts(process.getProcess(), t2.toAppIdentifier(), t2WithStorage, user2.getSupertokensUserId(),
+        AuthRecipe.linkAccounts(process.getProcess(), t2.toAppIdentifier(), t2Storage, user2.getSupertokensUserId(),
                 user1.getSupertokensUserId());
 
-        UserRoles.createNewRoleOrModifyItsPermissions(t2.toAppIdentifier(), t2WithStorage, "admin", new String[]{"p1"});
-        UserRoles.addRoleToUser(process.getProcess(), t2, t2WithStorage, user1.getSupertokensUserId(), "admin");
+        UserRoles.createNewRoleOrModifyItsPermissions(t2.toAppIdentifier(), t2Storage, "admin", new String[]{"p1"});
+        UserRoles.addRoleToUser(process.getProcess(), t2, t2Storage, user1.getSupertokensUserId(), "admin");
 
         Multitenancy.deleteTenant(t2, process.getProcess());
 
         createTenants(process.getProcess()); // create the tenant again
 
-        Multitenancy.addUserIdToTenant(process.getProcess(), t2, t2WithStorage, user1.getSupertokensUserId()); // add
+        Multitenancy.addUserIdToTenant(process.getProcess(), t2, t2Storage, user1.getSupertokensUserId()); // add
         // the user to the tenant again
-        Multitenancy.addUserIdToTenant(process.getProcess(), t2, t2WithStorage, user2.getSupertokensUserId()); // add
+        Multitenancy.addUserIdToTenant(process.getProcess(), t2, t2Storage, user2.getSupertokensUserId()); // add
         // the user to the tenant again
 
-        AuthRecipeUserInfo getUser1 = AuthRecipe.getUserById(t1.toAppIdentifier(), t1WithStorage,
+        AuthRecipeUserInfo getUser1 = AuthRecipe.getUserById(t1.toAppIdentifier(), t1Storage,
                 user1.getSupertokensUserId());
         for (LoginMethod lm : getUser1.loginMethods) {
             assertEquals(1, lm.tenantIds.size());
         }
 
-        AuthRecipeUserInfo getUser2 = AuthRecipe.getUserById(t1.toAppIdentifier(), t1WithStorage,
+        AuthRecipeUserInfo getUser2 = AuthRecipe.getUserById(t1.toAppIdentifier(), t1Storage,
                 user2.getSupertokensUserId());
         for (LoginMethod lm : getUser2.loginMethods) {
             assertEquals(1, lm.tenantIds.size());
         }
 
-        String[] roles = UserRoles.getRolesForUser(t2, t2WithStorage, user1.getSupertokensUserId());
+        String[] roles = UserRoles.getRolesForUser(t2, t2Storage, user1.getSupertokensUserId());
         assertEquals(0, roles.length); // must be deleted with tenant
 
         process.kill();
@@ -714,8 +714,8 @@ public class MultitenantTest {
                         new TestCaseStep() {
                             @Override
                             public void execute(Main main) throws Exception {
-                                Storage t1WithStorage = (StorageLayer.getStorage(t1, main));
-                                AuthRecipeUserInfo user = AuthRecipe.getUserById(t1.toAppIdentifier(), t1WithStorage,
+                                Storage t1Storage = (StorageLayer.getStorage(t1, main));
+                                AuthRecipeUserInfo user = AuthRecipe.getUserById(t1.toAppIdentifier(), t1Storage,
                                         TestCase.users.get(0).getSupertokensUserId());
                                 assertEquals(2, user.loginMethods.length);
                                 assertTrue(user.loginMethods[0].tenantIds.contains(t2.getTenantId()));
@@ -756,16 +756,16 @@ public class MultitenantTest {
                         new TestCaseStep() {
                             @Override
                             public void execute(Main main) throws Exception {
-                                Storage t1WithStorage = (StorageLayer.getStorage(t1, main));
-                                AuthRecipe.deleteUser(t1.toAppIdentifier(), t1WithStorage,
+                                Storage t1Storage = (StorageLayer.getStorage(t1, main));
+                                AuthRecipe.deleteUser(t1.toAppIdentifier(), t1Storage,
                                         TestCase.users.get(1).getSupertokensUserId());
                             }
                         },
                         new TestCaseStep() {
                             @Override
                             public void execute(Main main) throws Exception {
-                                Storage t1WithStorage = (StorageLayer.getStorage(t1, main));
-                                AuthRecipeUserInfo user = AuthRecipe.getUserById(t1.toAppIdentifier(), t1WithStorage,
+                                Storage t1Storage = (StorageLayer.getStorage(t1, main));
+                                AuthRecipeUserInfo user = AuthRecipe.getUserById(t1.toAppIdentifier(), t1Storage,
                                         TestCase.users.get(0).getSupertokensUserId());
                                 assertNull(user);
                             }
@@ -928,8 +928,8 @@ public class MultitenantTest {
 
         @Override
         public void execute(Main main) throws Exception {
-            Storage tenantIdentifierWithStorage = (StorageLayer.getStorage(tenantIdentifier, main));
-            AuthRecipeUserInfo user = EmailPassword.signUp(tenantIdentifier, tenantIdentifierWithStorage, main, email,
+            Storage storage = (StorageLayer.getStorage(tenantIdentifier, main));
+            AuthRecipeUserInfo user = EmailPassword.signUp(tenantIdentifier, storage, main, email,
                     "password");
             TestCase.addUser(user);
         }
@@ -946,11 +946,11 @@ public class MultitenantTest {
 
         @Override
         public void execute(Main main) throws Exception {
-            Storage tenantIdentifierWithStorage = (StorageLayer.getStorage(tenantIdentifier, main));
+            Storage storage = (StorageLayer.getStorage(tenantIdentifier, main));
             Passwordless.CreateCodeResponse code = Passwordless.createCode(tenantIdentifier,
-                    tenantIdentifierWithStorage, main,
+                    storage, main,
                     email, null, null, null);
-            AuthRecipeUserInfo user = Passwordless.consumeCode(tenantIdentifier, tenantIdentifierWithStorage, main,
+            AuthRecipeUserInfo user = Passwordless.consumeCode(tenantIdentifier, storage, main,
                     code.deviceId,
                     code.deviceIdHash, code.userInputCode, null).user;
             TestCase.addUser(user);
@@ -968,11 +968,11 @@ public class MultitenantTest {
 
         @Override
         public void execute(Main main) throws Exception {
-            Storage tenantIdentifierWithStorage = (StorageLayer.getStorage(tenantIdentifier, main));
+            Storage storage = (StorageLayer.getStorage(tenantIdentifier, main));
             Passwordless.CreateCodeResponse code = Passwordless.createCode(tenantIdentifier,
-                    tenantIdentifierWithStorage, main,
+                    storage, main,
                     null, phoneNumber, null, null);
-            AuthRecipeUserInfo user = Passwordless.consumeCode(tenantIdentifier, tenantIdentifierWithStorage, main,
+            AuthRecipeUserInfo user = Passwordless.consumeCode(tenantIdentifier, storage, main,
                     code.deviceId,
                     code.deviceIdHash, code.userInputCode, null).user;
             TestCase.addUser(user);
@@ -994,8 +994,8 @@ public class MultitenantTest {
 
         @Override
         public void execute(Main main) throws Exception {
-            Storage tenantIdentifierWithStorage = (StorageLayer.getStorage(tenantIdentifier, main));
-            AuthRecipeUserInfo user = ThirdParty.signInUp(tenantIdentifier, tenantIdentifierWithStorage, main,
+            Storage storage = (StorageLayer.getStorage(tenantIdentifier, main));
+            AuthRecipeUserInfo user = ThirdParty.signInUp(tenantIdentifier, storage, main,
                     thirdPartyId,
                     thirdPartyUserId, email).user;
             TestCase.addUser(user);
@@ -1013,8 +1013,8 @@ public class MultitenantTest {
 
         @Override
         public void execute(Main main) throws Exception {
-            Storage tenantIdentifierWithStorage = (StorageLayer.getStorage(tenantIdentifier, main));
-            AuthRecipe.createPrimaryUser(main, tenantIdentifier.toAppIdentifier(), tenantIdentifierWithStorage,
+            Storage storage = (StorageLayer.getStorage(tenantIdentifier, main));
+            AuthRecipe.createPrimaryUser(main, tenantIdentifier.toAppIdentifier(), storage,
                     TestCase.users.get(userIndex).getSupertokensUserId());
         }
     }
@@ -1032,8 +1032,8 @@ public class MultitenantTest {
 
         @Override
         public void execute(Main main) throws Exception {
-            Storage tenantIdentifierWithStorage = (StorageLayer.getStorage(tenantIdentifier, main));
-            AuthRecipe.linkAccounts(main, tenantIdentifier.toAppIdentifier(), tenantIdentifierWithStorage,
+            Storage storage = (StorageLayer.getStorage(tenantIdentifier, main));
+            AuthRecipe.linkAccounts(main, tenantIdentifier.toAppIdentifier(), storage,
                     TestCase.users.get(recipeUserIndex).getSupertokensUserId(), TestCase.users.get(primaryUserIndex).getSupertokensUserId());
         }
     }
@@ -1049,8 +1049,8 @@ public class MultitenantTest {
 
         @Override
         public void execute(Main main) throws Exception {
-            Storage tenantIdentifierWithStorage = (StorageLayer.getStorage(tenantIdentifier, main));
-            Multitenancy.addUserIdToTenant(main, tenantIdentifier, tenantIdentifierWithStorage,
+            Storage storage = (StorageLayer.getStorage(tenantIdentifier, main));
+            Multitenancy.addUserIdToTenant(main, tenantIdentifier, storage,
                     TestCase.users.get(userIndex).getSupertokensUserId());
         }
     }
@@ -1068,8 +1068,8 @@ public class MultitenantTest {
 
         @Override
         public void execute(Main main) throws Exception {
-            Storage tenantIdentifierWithStorage = (StorageLayer.getStorage(tenantIdentifier, main));
-            EmailPassword.updateUsersEmailOrPassword(tenantIdentifier.toAppIdentifier(), tenantIdentifierWithStorage,
+            Storage storage = (StorageLayer.getStorage(tenantIdentifier, main));
+            EmailPassword.updateUsersEmailOrPassword(tenantIdentifier.toAppIdentifier(), storage,
                     main, TestCase.users.get(userIndex).getSupertokensUserId(), email, null);
         }
     }
@@ -1087,8 +1087,8 @@ public class MultitenantTest {
 
         @Override
         public void execute(Main main) throws Exception {
-            Storage tenantIdentifierWithStorage = (StorageLayer.getStorage(tenantIdentifier, main));
-            Passwordless.updateUser(tenantIdentifier.toAppIdentifier(), tenantIdentifierWithStorage,
+            Storage storage = (StorageLayer.getStorage(tenantIdentifier, main));
+            Passwordless.updateUser(tenantIdentifier.toAppIdentifier(), storage,
                     TestCase.users.get(userIndex).getSupertokensUserId(), new Passwordless.FieldUpdate(email), null);
         }
     }
@@ -1106,8 +1106,8 @@ public class MultitenantTest {
 
         @Override
         public void execute(Main main) throws Exception {
-            Storage tenantIdentifierWithStorage = (StorageLayer.getStorage(tenantIdentifier, main));
-            Passwordless.updateUser(tenantIdentifier.toAppIdentifier(), tenantIdentifierWithStorage,
+            Storage storage = (StorageLayer.getStorage(tenantIdentifier, main));
+            Passwordless.updateUser(tenantIdentifier.toAppIdentifier(), storage,
                     TestCase.users.get(userIndex).getSupertokensUserId(), null, new Passwordless.FieldUpdate(phoneNumber));
         }
     }
@@ -1123,8 +1123,8 @@ public class MultitenantTest {
 
         @Override
         public void execute(Main main) throws Exception {
-            Storage tenantIdentifierWithStorage = (StorageLayer.getStorage(tenantIdentifier, main));
-            AuthRecipe.unlinkAccounts(main, tenantIdentifier.toAppIdentifier(), tenantIdentifierWithStorage,
+            Storage storage = (StorageLayer.getStorage(tenantIdentifier, main));
+            AuthRecipe.unlinkAccounts(main, tenantIdentifier.toAppIdentifier(), storage,
                     TestCase.users.get(userIndex).getSupertokensUserId());
         }
     }
@@ -1140,8 +1140,8 @@ public class MultitenantTest {
 
         @Override
         public void execute(Main main) throws Exception {
-            Storage tenantIdentifierWithStorage = (StorageLayer.getStorage(tenantIdentifier, main));
-            EmailPassword.signIn(tenantIdentifier, tenantIdentifierWithStorage, main,
+            Storage storage = (StorageLayer.getStorage(tenantIdentifier, main));
+            EmailPassword.signIn(tenantIdentifier, storage, main,
                     TestCase.users.get(userIndex).loginMethods[0].email, "password");
         }
     }
@@ -1157,8 +1157,8 @@ public class MultitenantTest {
 
         @Override
         public void execute(Main main) throws Exception {
-            Storage tenantIdentifierWithStorage = (StorageLayer.getStorage(tenantIdentifier, main));
-            Multitenancy.removeUserIdFromTenant(main, tenantIdentifier, tenantIdentifierWithStorage,
+            Storage storage = (StorageLayer.getStorage(tenantIdentifier, main));
+            Multitenancy.removeUserIdFromTenant(main, tenantIdentifier, storage,
                     TestCase.users.get(userIndex).getSupertokensUserId(), null);
         }
     }

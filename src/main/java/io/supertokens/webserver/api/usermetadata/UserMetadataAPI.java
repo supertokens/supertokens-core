@@ -57,7 +57,7 @@ public class UserMetadataAPI extends WebserverAPI {
         try {
             JsonObject metadata;
             try {
-                StorageAndUserIdMapping storageAndUserIdMapping = this.getStorageAndUserIdMappingForAppSpecificApi(
+                StorageAndUserIdMapping storageAndUserIdMapping = this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
                         req, userId, UserIdType.ANY);
                 metadata = UserMetadata.getUserMetadata(appIdentifier, storageAndUserIdMapping.storage, userId);
             } catch (UnknownUserIdException e) {
@@ -86,7 +86,7 @@ public class UserMetadataAPI extends WebserverAPI {
             JsonObject metadata;
 
             try {
-                StorageAndUserIdMapping storageAndUserIdMapping = this.getStorageAndUserIdMappingForAppSpecificApi(
+                StorageAndUserIdMapping storageAndUserIdMapping = this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
                         req, userId, UserIdType.ANY);
                 metadata = UserMetadata.updateUserMetadata(appIdentifier, storageAndUserIdMapping.storage, userId,
                         update);

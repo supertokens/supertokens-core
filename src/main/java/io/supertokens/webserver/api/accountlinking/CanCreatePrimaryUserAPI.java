@@ -61,7 +61,7 @@ public class CanCreatePrimaryUserAPI extends WebserverAPI {
         try {
             String userId = inputRecipeUserId;
             StorageAndUserIdMapping storageAndMapping =
-                    getStorageAndUserIdMappingForAppSpecificApi(
+                    enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
                             req, inputRecipeUserId, UserIdType.ANY);
             storage = storageAndMapping.storage;
             if (storageAndMapping.userIdMapping != null) {

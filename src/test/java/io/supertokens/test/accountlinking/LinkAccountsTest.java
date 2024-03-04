@@ -468,10 +468,10 @@ public class LinkAccountsTest {
                         new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[0]), new PasswordlessConfig(true),
                         new JsonObject()));
 
-        Storage tenantIdentifierWithStorage = (StorageLayer.getStorage(process.main));
+        Storage storage = (StorageLayer.getStorage(process.main));
 
         AuthRecipeUserInfo user =
-                EmailPassword.signUp(new TenantIdentifier(null, null, "t1"), tenantIdentifierWithStorage,
+                EmailPassword.signUp(new TenantIdentifier(null, null, "t1"), storage,
                 process.getProcess(),
                 "test@example.com", "password");
         assert (!user.isPrimaryUser);
@@ -480,7 +480,7 @@ public class LinkAccountsTest {
         Thread.sleep(50);
 
         ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(
-                new TenantIdentifier(null, null, "t1"), tenantIdentifierWithStorage,
+                new TenantIdentifier(null, null, "t1"), storage,
                 process.getProcess(), "google",
                 "user-google",
                 "test@example.com");
@@ -523,10 +523,10 @@ public class LinkAccountsTest {
                         new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[0]), new PasswordlessConfig(true),
                         new JsonObject()));
 
-        Storage tenantIdentifierWithStorage = (StorageLayer.getStorage(process.main));
+        Storage storage = (StorageLayer.getStorage(process.main));
 
         AuthRecipeUserInfo user = EmailPassword.signUp(new TenantIdentifier(null, null, "t1"),
-                tenantIdentifierWithStorage, process.getProcess(),
+                storage, process.getProcess(),
                 "test@example.com", "password");
         assert (!user.isPrimaryUser);
         AuthRecipe.createPrimaryUser(process.main, user.getSupertokensUserId());

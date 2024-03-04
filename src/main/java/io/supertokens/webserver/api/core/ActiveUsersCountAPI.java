@@ -52,9 +52,8 @@ public class ActiveUsersCountAPI extends WebserverAPI {
         }
 
         try {
-            int count = ActiveUsers.countUsersActiveSince(
-                    this.getAppIdentifier(req),
-                    this.enforcePublicTenantAndGetPublicTenantStorage(req), sinceTimestamp);
+            enforcePublicTenantAndGetPublicTenantStorage(req); // to enforce this API is called from public tenant
+            int count = ActiveUsers.countUsersActiveSince(main, this.getAppIdentifier(req), sinceTimestamp);
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             result.addProperty("count", count);

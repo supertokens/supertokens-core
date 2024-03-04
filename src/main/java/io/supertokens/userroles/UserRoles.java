@@ -44,9 +44,7 @@ public class UserRoles {
         // We do this because it's not straight forward to replicate roles to all storages of an app
         Storage appStorage = StorageLayer.getStorage(
                 tenantIdentifier.toAppIdentifier().getAsPublicTenantIdentifier(), main);
-
-        String[] roles = getRoles(tenantIdentifier.toAppIdentifier(), appStorage);
-        if (!Arrays.asList(roles).contains(role)) {
+        if (!doesRoleExist(tenantIdentifier.toAppIdentifier(), appStorage, role)) {
             throw new UnknownRoleException();
         }
 
@@ -287,15 +285,23 @@ public class UserRoles {
     }
 
     // delete a role
-    public static boolean deleteRole(AppIdentifier appIdentifier, Storage storage, String role)
-            throws StorageQueryException {
-        return StorageUtils.getUserRolesStorage(storage).deleteRole(appIdentifier, role);
+    public static boolean deleteRole(Main main, AppIdentifier appIdentifier, String role)
+            throws StorageQueryException, TenantOrAppNotFoundException {
+
+        Storage[] storages = StorageLayer.getStoragesForApp(main, appIdentifier);
+        boolean deletedRole = false;
+        for (Storage storage : storages) {
+            UserRolesSQLStorage userRolesStorage = StorageUtils.getUserRolesStorage(storage);
+            deletedRole = userRolesStorage.deleteRole(appIdentifier, role) || deletedRole;
+        }
+
+        return deletedRole;
     }
 
     @TestOnly
-    public static boolean deleteRole(Main main, String role) throws StorageQueryException {
-        Storage storage = StorageLayer.getStorage(main);
-        return deleteRole(new AppIdentifier(null, null), storage, role);
+    public static boolean deleteRole(Main main, String role) throws StorageQueryException,
+            TenantOrAppNotFoundException {
+        return deleteRole(main, new AppIdentifier(null, null), role);
     }
 
     // retrieve all roles that have been created

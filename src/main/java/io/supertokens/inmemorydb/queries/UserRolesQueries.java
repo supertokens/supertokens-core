@@ -74,8 +74,6 @@ public class UserRolesQueries {
                 + "user_id VARCHAR(128) NOT NULL,"
                 + "role VARCHAR(255) NOT NULL,"
                 + "PRIMARY KEY(app_id, tenant_id, user_id, role),"
-                + "FOREIGN KEY(app_id, role) REFERENCES " + Config.getConfig(start).getRolesTable()
-                + " (app_id, role) ON DELETE CASCADE,"
                 + "FOREIGN KEY(app_id, tenant_id) REFERENCES " + Config.getConfig(start).getTenantsTable()
                 + " (app_id, tenant_id) ON DELETE CASCADE"
                 + ");";
