@@ -34,6 +34,7 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.SemVer;
+import io.supertokens.webserver.api.useridmapping.UserIdMappingAPI;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
@@ -352,15 +353,23 @@ public abstract class WebserverAPI extends HttpServlet {
     }
 
     protected StorageAndUserIdMapping enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
-            HttpServletRequest req, String userId, UserIdType userIdType)
+            HttpServletRequest req, String userId, UserIdType userIdType, boolean isCallFromAuthRecipeAPI)
             throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException, ServletException,
             BadPermissionException {
         // This function uses storage of the tenant from which the request came from as a priorityStorage
         // while searching for the user across all storages for the app
         AppIdentifier appIdentifier = getAppIdentifier(req);
         Storage[] storages = enforcePublicTenantAndGetAllStoragesForApp(req);
-        return StorageLayer.findStorageAndUserIdMappingForUser(
-                appIdentifier, storages, userId, userIdType);
+        try {
+            return StorageLayer.findStorageAndUserIdMappingForUser(
+                    appIdentifier, storages, userId, userIdType);
+        } catch (UnknownUserIdException e) {
+            if (isCallFromAuthRecipeAPI) {
+                throw e;
+            }
+
+            return new StorageAndUserIdMapping(enforcePublicTenantAndGetPublicTenantStorage(req), null);
+        }
     }
 
     protected boolean checkIPAccess(HttpServletRequest req, HttpServletResponse resp)

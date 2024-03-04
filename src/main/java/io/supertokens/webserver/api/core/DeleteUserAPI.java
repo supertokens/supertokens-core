@@ -60,7 +60,8 @@ public class DeleteUserAPI extends WebserverAPI {
 
         try {
             StorageAndUserIdMapping storageAndUserIdMapping =
-                    this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(req, userId, UserIdType.ANY);
+                    this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
+                            req, userId, UserIdType.ANY, true);
 
             AuthRecipe.deleteUser(getAppIdentifier(req), storageAndUserIdMapping.storage, userId,
                     removeAllLinkedAccounts,

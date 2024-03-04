@@ -59,11 +59,10 @@ public class RemoveUserMetadataAPI extends WebserverAPI {
             try {
                 StorageAndUserIdMapping storageAndUserIdMapping =
                         this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
-                                req, userId, UserIdType.ANY);
+                                req, userId, UserIdType.ANY, false);
                 UserMetadata.deleteUserMetadata(appIdentifier, storageAndUserIdMapping.storage, userId);
             } catch (UnknownUserIdException e) {
-                Storage storage = this.enforcePublicTenantAndGetPublicTenantStorage(req);
-                UserMetadata.deleteUserMetadata(appIdentifier, storage, userId);
+                throw new IllegalStateException("should never happen");
             }
 
             JsonObject response = new JsonObject();

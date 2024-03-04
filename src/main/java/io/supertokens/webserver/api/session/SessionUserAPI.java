@@ -20,6 +20,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -50,7 +51,7 @@ public class SessionUserAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        // API is tenant specific, also finds across all tenants in the app if fetchAcrossAllTenants is set to true
+        // API is app specific if fetchAcrossAllTenants is set to true, tenant specific otherwise
         String userId = InputParser.getQueryParamOrThrowError(req, "userId", false);
         assert userId != null;
 
@@ -70,13 +71,15 @@ public class SessionUserAPI extends WebserverAPI {
 
         try {
             String[] sessionHandles;
-            TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
-            Storage storage = getTenantStorage(req);
 
             if (fetchAcrossAllTenants) {
+                AppIdentifier appIdentifier = getAppIdentifier(req);
+                Storage[] storages = enforcePublicTenantAndGetAllStoragesForApp(req);
                 sessionHandles = Session.getAllNonExpiredSessionHandlesForUser(
-                        main, tenantIdentifier.toAppIdentifier(), storage, userId, fetchSessionsForAllLinkedAccounts);
+                        main, appIdentifier, storages, userId, fetchSessionsForAllLinkedAccounts);
             } else {
+                TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+                Storage storage = getTenantStorage(req);
                 sessionHandles = Session.getAllNonExpiredSessionHandlesForUser(
                         tenantIdentifier, storage, userId, fetchSessionsForAllLinkedAccounts);
             }
@@ -90,7 +93,7 @@ public class SessionUserAPI extends WebserverAPI {
             result.add("sessionHandles", arr);
             super.sendJsonResponse(200, result, resp);
 
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
     }

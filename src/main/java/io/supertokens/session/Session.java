@@ -824,6 +824,20 @@ public class Session {
         return revokeSessionUsingSessionHandles(main, appIdentifier, storage, sessionHandles);
     }
 
+    public static String[] revokeAllSessionsForUser(Main main, AppIdentifier appIdentifier,
+                                                    Storage[] storages, String userId,
+                                                    boolean revokeSessionsForLinkedAccounts)
+            throws StorageQueryException {
+        List<String> revokedSessionHandles = new ArrayList<>();
+        for (Storage storage : storages) {
+            String[] sessionHandles = getAllNonExpiredSessionHandlesForUser(main, appIdentifier, storage, userId,
+                    revokeSessionsForLinkedAccounts);
+            return revokeSessionUsingSessionHandles(main, appIdentifier, storage, sessionHandles);
+        }
+
+        return revokedSessionHandles.toArray(new String[0]);
+    }
+
     public static String[] revokeAllSessionsForUser(Main main, TenantIdentifier tenantIdentifier, Storage storage,
                                                     String userId, boolean revokeSessionsForLinkedAccounts)
             throws StorageQueryException {
@@ -877,6 +891,49 @@ public class Session {
                 }
             }
         }
+
+        return sessionHandles.toArray(new String[0]);
+    }
+
+    public static String[] getAllNonExpiredSessionHandlesForUser(
+            Main main, AppIdentifier appIdentifier, Storage[] storages, String userId,
+            boolean fetchSessionsForAllLinkedAccounts)
+            throws StorageQueryException {
+        TenantConfig[] tenants = Multitenancy.getAllTenantsForApp(
+                appIdentifier, main);
+
+        List<String> sessionHandles = new ArrayList<>();
+
+        for (Storage storage : storages) {
+            Set<String> userIds = new HashSet<>();
+            userIds.add(userId);
+            if (fetchSessionsForAllLinkedAccounts) {
+                if (storage.getType().equals(STORAGE_TYPE.SQL)) {
+                    AuthRecipeUserInfo primaryUser = ((AuthRecipeStorage) storage)
+                            .getPrimaryUserById(appIdentifier, userId);
+                    if (primaryUser != null) {
+                        for (LoginMethod lM : primaryUser.loginMethods) {
+                            userIds.add(lM.getSupertokensUserId());
+                        }
+                    }
+                }
+            }
+
+            for (String currUserId : userIds) {
+                for (TenantConfig tenant : tenants) {
+                    try {
+                        sessionHandles.addAll(Arrays.asList(getAllNonExpiredSessionHandlesForUser(
+                                tenant.tenantIdentifier, StorageLayer.getStorage(tenant.tenantIdentifier, main),
+                                currUserId, false)));
+
+                    } catch (TenantOrAppNotFoundException e) {
+                        // this might happen when a tenant was deleted after the tenant list was fetched
+                        // it is okay to exclude that tenant in the results here
+                    }
+                }
+            }
+        }
+
 
         return sessionHandles.toArray(new String[0]);
     }

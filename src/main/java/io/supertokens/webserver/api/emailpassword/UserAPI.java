@@ -84,7 +84,8 @@ public class UserAPI extends WebserverAPI {
                 if (userId != null) {
                     // Query by userId
                     StorageAndUserIdMapping storageAndUserIdMapping =
-                            this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(req, userId, UserIdType.ANY);
+                            this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(req, userId,
+                                    UserIdType.ANY, true);
                     // if a userIdMapping exists, pass the superTokensUserId to the getUserUsingId function
                     if (storageAndUserIdMapping.userIdMapping != null) {
                         userId = storageAndUserIdMapping.userIdMapping.superTokensUserId;
@@ -166,7 +167,8 @@ public class UserAPI extends WebserverAPI {
 
         try {
             StorageAndUserIdMapping storageAndUserIdMapping =
-                    this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(req, userId, UserIdType.ANY);
+                    this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(req, userId,
+                            UserIdType.ANY, true);
             // if a userIdMapping exists, pass the superTokensUserId to the updateUsersEmailOrPassword
             if (storageAndUserIdMapping.userIdMapping != null) {
                 userId = storageAndUserIdMapping.userIdMapping.superTokensUserId;

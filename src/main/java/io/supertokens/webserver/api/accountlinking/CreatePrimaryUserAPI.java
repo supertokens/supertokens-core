@@ -64,7 +64,7 @@ public class CreatePrimaryUserAPI extends WebserverAPI {
             String userId = inputRecipeUserId;
             StorageAndUserIdMapping mappingAndStorage =
                     enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
-                            req, inputRecipeUserId, UserIdType.ANY);
+                            req, inputRecipeUserId, UserIdType.ANY, true);
             storage = mappingAndStorage.storage;
             if (mappingAndStorage.userIdMapping != null) {
                 userId = mappingAndStorage.userIdMapping.superTokensUserId;

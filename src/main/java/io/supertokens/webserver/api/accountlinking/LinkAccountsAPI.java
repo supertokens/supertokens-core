@@ -68,7 +68,7 @@ public class LinkAccountsAPI extends WebserverAPI {
             {
                 StorageAndUserIdMapping mappingAndStorage =
                         enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
-                                req, inputRecipeUserId, UserIdType.ANY);
+                                req, inputRecipeUserId, UserIdType.ANY, true);
                 if (mappingAndStorage.userIdMapping != null) {
                     recipeUserId = mappingAndStorage.userIdMapping.superTokensUserId;
                 }
@@ -78,7 +78,7 @@ public class LinkAccountsAPI extends WebserverAPI {
             {
                 StorageAndUserIdMapping mappingAndStorage =
                         enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
-                                req, inputPrimaryUserId, UserIdType.ANY);
+                                req, inputPrimaryUserId, UserIdType.ANY, true);
                 if (mappingAndStorage.userIdMapping != null) {
                     primaryUserId = mappingAndStorage.userIdMapping.superTokensUserId;
                 }

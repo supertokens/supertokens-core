@@ -115,20 +115,13 @@ public class SessionRemoveAPI extends WebserverAPI {
                 String[] sessionHandlesRevoked;
 
                 if (revokeAcrossAllTenants) {
-                    StorageAndUserIdMapping storageAndUserIdMapping = null;
-                    try {
-                        storageAndUserIdMapping = enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
-                                req, userId, UserIdType.ANY);
-                        storage = storageAndUserIdMapping.storage;
-                    } catch (UnknownUserIdException e) {
-                        storage = getTenantStorage(req);
-                    }
                     AppIdentifier appIdentifier = getAppIdentifier(req);
+                    Storage[] storages = enforcePublicTenantAndGetAllStoragesForApp(req);
 
                     sessionHandlesRevoked = Session.revokeAllSessionsForUser(
-                            main, appIdentifier, storage, userId, revokeSessionsForLinkedAccounts);
+                            main, appIdentifier, storages, userId, revokeSessionsForLinkedAccounts);
                 } else {
-                    StorageAndUserIdMapping storageAndUserIdMapping = null;
+                    StorageAndUserIdMapping storageAndUserIdMapping;
                     try {
                         storageAndUserIdMapping = getStorageAndUserIdMappingForTenantSpecificApi(
                                 req, userId, UserIdType.ANY);

@@ -95,7 +95,8 @@ public class UpdateExternalUserIdInfoAPI extends WebserverAPI {
 
         try {
             StorageAndUserIdMapping storageAndUserIdMapping =
-                    this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(req, userId, userIdType);
+                    this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(req, userId, userIdType,
+                            true);
 
             if (UserIdMapping.updateOrDeleteExternalUserIdInfo(
                     getAppIdentifier(req),

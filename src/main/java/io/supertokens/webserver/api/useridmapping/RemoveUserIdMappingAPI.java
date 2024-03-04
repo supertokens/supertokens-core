@@ -86,7 +86,8 @@ public class RemoveUserIdMappingAPI extends WebserverAPI {
 
         try {
             StorageAndUserIdMapping storageAndUserIdMapping =
-                    this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(req, userId, userIdType);
+                    this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(req, userId, userIdType,
+                            true);
 
             boolean didMappingExist = UserIdMapping.deleteUserIdMapping(
                     getAppIdentifier(req),

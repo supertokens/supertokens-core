@@ -58,11 +58,10 @@ public class UserMetadataAPI extends WebserverAPI {
             JsonObject metadata;
             try {
                 StorageAndUserIdMapping storageAndUserIdMapping = this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
-                        req, userId, UserIdType.ANY);
+                        req, userId, UserIdType.ANY, false);
                 metadata = UserMetadata.getUserMetadata(appIdentifier, storageAndUserIdMapping.storage, userId);
             } catch (UnknownUserIdException e) {
-                Storage storage = this.enforcePublicTenantAndGetPublicTenantStorage(req);
-                metadata = UserMetadata.getUserMetadata(appIdentifier, storage, userId);
+                throw new IllegalStateException("should never happen");
             }
 
             JsonObject response = new JsonObject();
@@ -87,12 +86,11 @@ public class UserMetadataAPI extends WebserverAPI {
 
             try {
                 StorageAndUserIdMapping storageAndUserIdMapping = this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
-                        req, userId, UserIdType.ANY);
+                        req, userId, UserIdType.ANY, false);
                 metadata = UserMetadata.updateUserMetadata(appIdentifier, storageAndUserIdMapping.storage, userId,
                         update);
             } catch (UnknownUserIdException e) {
-                Storage storage = this.enforcePublicTenantAndGetPublicTenantStorage(req);
-                metadata = UserMetadata.updateUserMetadata(appIdentifier, storage, userId, update);
+                throw new IllegalStateException("should never happen");
             }
 
             JsonObject response = new JsonObject();

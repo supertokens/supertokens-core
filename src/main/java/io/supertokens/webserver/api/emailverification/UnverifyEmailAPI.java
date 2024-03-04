@@ -62,10 +62,10 @@ public class UnverifyEmailAPI extends WebserverAPI {
             Storage storage;
             try {
                 StorageAndUserIdMapping storageAndUidMapping = enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
-                        req, userId, UserIdType.ANY);
+                        req, userId, UserIdType.ANY, false);
                 storage = storageAndUidMapping.storage;
             } catch (UnknownUserIdException e) {
-                storage = enforcePublicTenantAndGetPublicTenantStorage(req);
+                throw new IllegalStateException("should never happen");
             }
             EmailVerification.unverifyEmail(appIdentifier, storage, userId, email);
 

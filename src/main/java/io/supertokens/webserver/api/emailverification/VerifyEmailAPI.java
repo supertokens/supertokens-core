@@ -112,10 +112,10 @@ public class VerifyEmailAPI extends WebserverAPI {
             Storage storage;
             try {
                 StorageAndUserIdMapping storageAndUserIdMapping = enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
-                        req, userId, UserIdType.ANY);
+                        req, userId, UserIdType.ANY, false);
                 storage = storageAndUserIdMapping.storage;
             } catch (UnknownUserIdException e) {
-                storage = enforcePublicTenantAndGetPublicTenantStorage(req);
+                throw new IllegalStateException("should never happen");
             }
             boolean isVerified = EmailVerification.isEmailVerified(appIdentifier, storage, userId, email);
 

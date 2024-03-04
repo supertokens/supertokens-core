@@ -75,11 +75,10 @@ public class CreateOrUpdateTotpDeviceAPI extends WebserverAPI {
 
                 // Try to find the appIdentifier with right storage based on the userId
                 StorageAndUserIdMapping storageAndUserIdMapping = enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
-                        req, userId, UserIdType.ANY);
+                        req, userId, UserIdType.ANY, false);
                 storage = storageAndUserIdMapping.storage;
             } catch (UnknownUserIdException e) {
-                // if the user is not found, just use the public tenant storage
-                storage = enforcePublicTenantAndGetPublicTenantStorage(req);
+                throw new IllegalStateException("should never happen");
             }
 
             TOTPDevice device = Totp.registerDevice(appIdentifier, storage, main, userId, deviceName, skew, period);
@@ -127,12 +126,11 @@ public class CreateOrUpdateTotpDeviceAPI extends WebserverAPI {
                 // Try to find the appIdentifier with right storage based on the userId
                 StorageAndUserIdMapping storageAndUserIdMapping =
                         enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
-                        req, userId, UserIdType.ANY);
+                        req, userId, UserIdType.ANY, false);
                 storage = storageAndUserIdMapping.storage;
 
             } catch (UnknownUserIdException e) {
-                // if the user is not found, just use the public storage
-                storage = enforcePublicTenantAndGetPublicTenantStorage(req);
+                throw new IllegalStateException("should never happen");
             }
 
             Totp.updateDeviceName(appIdentifier, storage, userId, existingDeviceName, newDeviceName);

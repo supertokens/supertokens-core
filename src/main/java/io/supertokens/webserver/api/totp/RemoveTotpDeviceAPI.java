@@ -61,12 +61,10 @@ public class RemoveTotpDeviceAPI extends WebserverAPI {
 
                 // Try to find the appIdentifier with right storage based on the userId
                 StorageAndUserIdMapping storageAndUserIdMapping = enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
-                        req, userId, UserIdType.ANY);
-
+                        req, userId, UserIdType.ANY, false);
                 storage = storageAndUserIdMapping.storage;
             } catch (UnknownUserIdException e) {
-                // if the user is not found, just use the storage of the tenant of interest
-                storage = enforcePublicTenantAndGetPublicTenantStorage(req);
+                throw new IllegalStateException("should never happen");
             }
 
             Totp.removeDevice(appIdentifier, storage, userId, deviceName);
