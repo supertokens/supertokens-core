@@ -174,7 +174,7 @@ public class TestWithNonAuthRecipes {
     }
 
     @Test
-    public void testThatUserRolesWorkWithDifferentTenantsOnDifferentStorages() throws Exception {
+    public void testThatRoleIsStoredInPublicTenantAndUserRoleMappingInTheUserTenantStorage() throws Exception {
         TenantIdentifier t0 = new TenantIdentifier(null, null, null);
         Storage t0Storage = (StorageLayer.getStorage(t0, process.getProcess()));
 
@@ -188,6 +188,51 @@ public class TestWithNonAuthRecipes {
         UserIdMapping.populateExternalUserIdForUsers(t0Storage, new AuthRecipeUserInfo[]{user1});
         UserIdMapping.populateExternalUserIdForUsers(t1Storage, new AuthRecipeUserInfo[]{user2});
 
+        TestMultitenancyAPIHelper.createRole(t0, "role1", process.getProcess());
 
+        try {
+            TestMultitenancyAPIHelper.createRole(t1, "role2", process.getProcess());
+            fail();
+        } catch (HttpResponseException e) {
+            assertEquals(403, e.statusCode);
+        }
+        TestMultitenancyAPIHelper.createRole(t0, "role2", process.getProcess());
+
+        TestMultitenancyAPIHelper.addRoleToUser(t0, user1.getSupertokensUserId(), "role1", process.getProcess());
+        TestMultitenancyAPIHelper.addRoleToUser(t1, user2.getSupertokensUserId(), "role2", process.getProcess());
+
+        {
+            JsonObject user1Roles = TestMultitenancyAPIHelper.getUserRoles(t0, user1.getSupertokensUserId(), process.getProcess());
+            assertEquals(1, user1Roles.get("roles").getAsJsonArray().size());
+            user1Roles = TestMultitenancyAPIHelper.getUserRoles(t1, user1.getSupertokensUserId(), process.getProcess());
+            assertEquals(0, user1Roles.get("roles").getAsJsonArray().size());
+
+            JsonObject user2Roles = TestMultitenancyAPIHelper.getUserRoles(t0, user2.getSupertokensUserId(), process.getProcess());
+            assertEquals(0, user2Roles.get("roles").getAsJsonArray().size());
+            user2Roles = TestMultitenancyAPIHelper.getUserRoles(t1, user2.getSupertokensUserId(), process.getProcess());
+            assertEquals(1, user2Roles.get("roles").getAsJsonArray().size());
+        }
+
+        try {
+            TestMultitenancyAPIHelper.deleteRole(t1, "role1", process.getProcess());
+            fail();
+        } catch (HttpResponseException e) {
+            assertEquals(403, e.statusCode);
+        }
+
+        TestMultitenancyAPIHelper.deleteRole(t0, "role1", process.getProcess());
+        TestMultitenancyAPIHelper.deleteRole(t0, "role2", process.getProcess());
+
+        {
+            JsonObject user1Roles = TestMultitenancyAPIHelper.getUserRoles(t0, user1.getSupertokensUserId(), process.getProcess());
+            assertEquals(0, user1Roles.get("roles").getAsJsonArray().size());
+            user1Roles = TestMultitenancyAPIHelper.getUserRoles(t1, user1.getSupertokensUserId(), process.getProcess());
+            assertEquals(0, user1Roles.get("roles").getAsJsonArray().size());
+
+            JsonObject user2Roles = TestMultitenancyAPIHelper.getUserRoles(t0, user2.getSupertokensUserId(), process.getProcess());
+            assertEquals(0, user2Roles.get("roles").getAsJsonArray().size());
+            user2Roles = TestMultitenancyAPIHelper.getUserRoles(t1, user2.getSupertokensUserId(), process.getProcess());
+            assertEquals(0, user2Roles.get("roles").getAsJsonArray().size());
+        }
     }
 }

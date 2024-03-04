@@ -470,4 +470,51 @@ public class TestMultitenancyAPIHelper {
 
         return resp;
     }
+
+    public static void createRole(TenantIdentifier tenantIdentifier, String role, Main main)
+            throws HttpResponseException, IOException {
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("role", role);
+        JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/role"),
+                requestBody, 1000, 1000, null, WebserverAPI.getLatestCDIVersion().get(),
+                "userroles");
+        assertEquals("OK", response.get("status").getAsString());
+    }
+
+    public static void addRoleToUser(TenantIdentifier tenantIdentifier, String userId, String role, Main main)
+            throws HttpResponseException, IOException {
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("role", role);
+        requestBody.addProperty("userId", userId);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier,"/recipe/user/role"), requestBody, 1000, 1000, null,
+                WebserverAPI.getLatestCDIVersion().get(), "userroles");
+
+        assertEquals(2, response.entrySet().size());
+        assertEquals("OK", response.get("status").getAsString());
+    }
+
+    public static JsonObject getUserRoles(TenantIdentifier tenantIdentifier, String userId, Main main)
+            throws HttpResponseException, IOException {
+        HashMap<String, String> QUERY_PARAMS = new HashMap<>();
+        QUERY_PARAMS.put("userId", userId);
+        JsonObject response = HttpRequestForTesting.sendGETRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier,"/recipe/user/roles"), QUERY_PARAMS, 1000, 1000, null,
+                WebserverAPI.getLatestCDIVersion().get(), "userroles");
+        return response;
+    }
+
+    public static void deleteRole(TenantIdentifier tenantIdentifier, String role, Main main)
+            throws HttpResponseException, IOException {
+        JsonObject request = new JsonObject();
+        request.addProperty("role", role);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier,"/recipe/role/remove"), request, 1000, 1000, null,
+                WebserverAPI.getLatestCDIVersion().get(), "userroles");
+        assertEquals(2, response.entrySet().size());
+        assertEquals("OK", response.get("status").getAsString());
+    }
 }
