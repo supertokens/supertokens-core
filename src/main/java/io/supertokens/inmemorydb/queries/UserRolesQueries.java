@@ -343,7 +343,7 @@ public class UserRolesQueries {
 
     public static boolean deleteAllUserRoleAssociationsForRole(Start start, AppIdentifier appIdentifier, String role)
             throws SQLException, StorageQueryException {
-        String QUERY = "DELETE FROM " + getConfig(start).getRolesTable()
+        String QUERY = "DELETE FROM " + getConfig(start).getUserRolesTable()
                 + " WHERE app_id = ? AND role = ? ;";
         return update(start, QUERY, pst -> {
             pst.setString(1, appIdentifier.getAppId());
