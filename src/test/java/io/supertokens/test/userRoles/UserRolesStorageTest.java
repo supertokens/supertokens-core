@@ -18,6 +18,7 @@ package io.supertokens.test.userRoles;
 
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
@@ -118,9 +119,15 @@ public class UserRolesStorageTest {
             }
             // delete the role
             try {
-                boolean wasRoleDeleted = storage.deleteRole(new AppIdentifier(null, null), role);
+                UserRolesSQLStorage userRolesStorage = StorageUtils.getUserRolesStorage(storage);
+                boolean wasRoleDeleted = userRolesStorage.startTransaction(con -> {
+                    boolean wasDeleted = storage.deleteAllUserRoleAssociationsForRole_Transaction(con, new AppIdentifier(null, null), role);
+                    wasDeleted = storage.deleteRole_Transaction(con, new AppIdentifier(null, null), role) || wasDeleted;
+                    return wasDeleted;
+                });
                 r2_success.set(wasRoleDeleted);
-            } catch (StorageQueryException e) {
+            } catch (StorageQueryException | StorageTransactionLogicException e) {
+                throw new RuntimeException(e);
                 // should not come here
             }
         };
@@ -225,10 +232,16 @@ public class UserRolesStorageTest {
             }
             // delete the newly created role
             try {
-                storage.deleteRole(new AppIdentifier(null, null), role);
+                UserRolesSQLStorage userRolesStorage = StorageUtils.getUserRolesStorage(storage);
+                boolean wasRoleDeleted = userRolesStorage.startTransaction(con -> {
+                    boolean wasDeleted = storage.deleteAllUserRoleAssociationsForRole_Transaction(con, new AppIdentifier(null, null), role);
+                    wasDeleted = storage.deleteRole_Transaction(con, new AppIdentifier(null, null), role) || wasDeleted;
+                    return wasDeleted;
+                });
                 r2_success.set(true);
-            } catch (StorageQueryException e) {
+            } catch (StorageQueryException | StorageTransactionLogicException e) {
                 // should not come here
+                throw new RuntimeException(e);
             }
         };
 
@@ -826,7 +839,12 @@ public class UserRolesStorageTest {
             UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
 
             // delete role
-            boolean didRoleExist = storage.deleteRole(new AppIdentifier(null, null), role);
+            UserRolesSQLStorage userRolesStorage = StorageUtils.getUserRolesStorage(storage);
+            boolean didRoleExist = userRolesStorage.startTransaction(con -> {
+                boolean wasDeleted = storage.deleteAllUserRoleAssociationsForRole_Transaction(con, new AppIdentifier(null, null), role);
+                wasDeleted = storage.deleteRole_Transaction(con, new AppIdentifier(null, null), role) || wasDeleted;
+                return wasDeleted;
+            });
             assertTrue(didRoleExist);
 
             // check that role doesnt exist
@@ -835,7 +853,12 @@ public class UserRolesStorageTest {
         {
             // delete a role which doesnt exist
 
-            boolean didRoleExist = storage.deleteRole(new AppIdentifier(null, null), role);
+            UserRolesSQLStorage userRolesStorage = StorageUtils.getUserRolesStorage(storage);
+            boolean didRoleExist = userRolesStorage.startTransaction(con -> {
+                boolean wasDeleted = storage.deleteAllUserRoleAssociationsForRole_Transaction(con, new AppIdentifier(null, null), role);
+                wasDeleted = storage.deleteRole_Transaction(con, new AppIdentifier(null, null), role) || wasDeleted;
+                return wasDeleted;
+            });
             assertFalse(didRoleExist);
         }
 

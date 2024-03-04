@@ -292,17 +292,36 @@ public class UserRoles {
         Storage[] storages = StorageLayer.getStoragesForApp(main, appIdentifier);
         boolean deletedRole = false;
         for (Storage storage : storages) {
-            if (storage.getUserPoolId().equals(appStorage.getUserPoolId())) {
-                continue; // we want to delete this in the end
-            }
             UserRolesSQLStorage userRolesStorage = StorageUtils.getUserRolesStorage(storage);
-            deletedRole = userRolesStorage.deleteRole(appIdentifier, role) || deletedRole;
+
+            try {
+                deletedRole = userRolesStorage.startTransaction(con -> {
+                    return userRolesStorage.deleteAllUserRoleAssociationsForRole_Transaction(con, appIdentifier, role);
+                }) || deletedRole;
+            } catch (StorageTransactionLogicException e) {
+                if (e.actualException instanceof StorageQueryException) {
+                    throw (StorageQueryException) e.actualException;
+                }
+                throw new IllegalStateException(e);
+            }
         }
 
         // Delete the role from the public tenant storage in the end so that the user
         // never sees a role for user that has been deleted while the deletion is in progress
         UserRolesSQLStorage userRolesStorage = StorageUtils.getUserRolesStorage(appStorage);
-        deletedRole = userRolesStorage.deleteRole(appIdentifier, role) || deletedRole;
+        try {
+            deletedRole = userRolesStorage.startTransaction(con -> {
+                boolean deleted = false;
+                deleted = userRolesStorage.deleteAllUserRoleAssociationsForRole_Transaction(con, appIdentifier, role) || deleted;
+                deleted = userRolesStorage.deleteRole_Transaction(con, appIdentifier, role) || deleted;
+                return deleted;
+            }) || deletedRole;
+        } catch (StorageTransactionLogicException e) {
+            if (e.actualException instanceof StorageQueryException) {
+                throw (StorageQueryException) e.actualException;
+            }
+            throw new IllegalStateException(e);
+        }
 
         return deletedRole;
     }
