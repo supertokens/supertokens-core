@@ -1937,20 +1937,19 @@ public class Start
     }
 
     @Override
-    public boolean deleteRole_Transaction(TransactionConnection con, AppIdentifier appIdentifier, String role) throws StorageQueryException {
+    public boolean deleteRole(AppIdentifier appIdentifier, String role) throws StorageQueryException {
         try {
-            return UserRolesQueries.deleteRole_Transaction(this, (Connection) con.getConnection(), appIdentifier, role);
+            return UserRolesQueries.deleteRole(this, appIdentifier, role);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
     }
 
     @Override
-    public boolean deleteAllUserRoleAssociationsForRole_Transaction(TransactionConnection con,
-                                                                    AppIdentifier appIdentifier, String role)
+    public boolean deleteAllUserRoleAssociationsForRole(AppIdentifier appIdentifier, String role)
             throws StorageQueryException {
         try {
-            return UserRolesQueries.deleteAllUserRoleAssociationsForRole_Transaction(this, (Connection) con.getConnection(), appIdentifier, role);
+            return UserRolesQueries.deleteAllUserRoleAssociationsForRole(this, appIdentifier, role);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }

@@ -119,15 +119,10 @@ public class UserRolesStorageTest {
             }
             // delete the role
             try {
-                UserRolesSQLStorage userRolesStorage = StorageUtils.getUserRolesStorage(storage);
-                boolean wasRoleDeleted = userRolesStorage.startTransaction(con -> {
-                    boolean wasDeleted = storage.deleteAllUserRoleAssociationsForRole_Transaction(con, new AppIdentifier(null, null), role);
-                    wasDeleted = storage.deleteRole_Transaction(con, new AppIdentifier(null, null), role) || wasDeleted;
-                    return wasDeleted;
-                });
+                boolean wasRoleDeleted = storage.deleteAllUserRoleAssociationsForRole(new AppIdentifier(null, null), role);
+                wasRoleDeleted = storage.deleteRole(new AppIdentifier(null, null), role) || wasRoleDeleted;
                 r2_success.set(wasRoleDeleted);
-            } catch (StorageQueryException | StorageTransactionLogicException e) {
-                throw new RuntimeException(e);
+            } catch (StorageQueryException e) {
                 // should not come here
             }
         };
@@ -232,16 +227,11 @@ public class UserRolesStorageTest {
             }
             // delete the newly created role
             try {
-                UserRolesSQLStorage userRolesStorage = StorageUtils.getUserRolesStorage(storage);
-                boolean wasRoleDeleted = userRolesStorage.startTransaction(con -> {
-                    boolean wasDeleted = storage.deleteAllUserRoleAssociationsForRole_Transaction(con, new AppIdentifier(null, null), role);
-                    wasDeleted = storage.deleteRole_Transaction(con, new AppIdentifier(null, null), role) || wasDeleted;
-                    return wasDeleted;
-                });
+                boolean wasRoleDeleted = storage.deleteAllUserRoleAssociationsForRole(new AppIdentifier(null, null), role);
+                wasRoleDeleted = storage.deleteRole(new AppIdentifier(null, null), role) || wasRoleDeleted;
                 r2_success.set(true);
-            } catch (StorageQueryException | StorageTransactionLogicException e) {
+            } catch (StorageQueryException e) {
                 // should not come here
-                throw new RuntimeException(e);
             }
         };
 
@@ -839,12 +829,8 @@ public class UserRolesStorageTest {
             UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
 
             // delete role
-            UserRolesSQLStorage userRolesStorage = StorageUtils.getUserRolesStorage(storage);
-            boolean didRoleExist = userRolesStorage.startTransaction(con -> {
-                boolean wasDeleted = storage.deleteAllUserRoleAssociationsForRole_Transaction(con, new AppIdentifier(null, null), role);
-                wasDeleted = storage.deleteRole_Transaction(con, new AppIdentifier(null, null), role) || wasDeleted;
-                return wasDeleted;
-            });
+            boolean didRoleExist = storage.deleteAllUserRoleAssociationsForRole(new AppIdentifier(null, null), role);
+            assertTrue(didRoleExist = storage.deleteRole(new AppIdentifier(null, null), role) || didRoleExist);
             assertTrue(didRoleExist);
 
             // check that role doesnt exist
@@ -852,13 +838,8 @@ public class UserRolesStorageTest {
         }
         {
             // delete a role which doesnt exist
-
-            UserRolesSQLStorage userRolesStorage = StorageUtils.getUserRolesStorage(storage);
-            boolean didRoleExist = userRolesStorage.startTransaction(con -> {
-                boolean wasDeleted = storage.deleteAllUserRoleAssociationsForRole_Transaction(con, new AppIdentifier(null, null), role);
-                wasDeleted = storage.deleteRole_Transaction(con, new AppIdentifier(null, null), role) || wasDeleted;
-                return wasDeleted;
-            });
+            boolean didRoleExist = storage.deleteAllUserRoleAssociationsForRole(new AppIdentifier(null, null), role);
+            didRoleExist = storage.deleteRole(new AppIdentifier(null, null), role) || didRoleExist;
             assertFalse(didRoleExist);
         }
 
