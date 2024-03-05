@@ -86,16 +86,14 @@ public class SessionUserAPI extends WebserverAPI {
                 AppIdentifier appIdentifier = getAppIdentifier(req);
                 Storage[] storages = StorageLayer.getStoragesForApp(main, appIdentifier);
                 Storage storage;
-
                 try {
                     StorageAndUserIdMapping storageAndUserIdMapping =
                             StorageLayer.findStorageAndUserIdMappingForUser(
-                                    appIdentifier, storages, userId, UserIdType.ANY);
+                            appIdentifier, storages, userId, UserIdType.ANY);
                     storage = storageAndUserIdMapping.storage;
                 } catch (UnknownUserIdException e) {
                     storage = getTenantStorage(req);
                 }
-
                 sessionHandles = Session.getAllNonExpiredSessionHandlesForUser(
                         main, appIdentifier, storage, userId,
                         fetchSessionsForAllLinkedAccounts);
