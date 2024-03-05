@@ -121,15 +121,11 @@ public class SessionRemoveAPI extends WebserverAPI {
                     AppIdentifier appIdentifier = getAppIdentifier(req);
                     Storage[] storages = StorageLayer.getStoragesForApp(main, appIdentifier);
 
-                    if (StorageLayer.getBaseStorage(main).getType() == STORAGE_TYPE.SQL) {
-                        try {
-                            StorageAndUserIdMapping storageAndUserIdMapping = StorageLayer.findStorageAndUserIdMappingForUser(
-                                    appIdentifier, storages, userId, UserIdType.ANY);
-                            storage = storageAndUserIdMapping.storage;
-                        } catch (UnknownUserIdException e) {
-                            storage = getTenantStorage(req);
-                        }
-                    } else {
+                    try {
+                        StorageAndUserIdMapping storageAndUserIdMapping = StorageLayer.findStorageAndUserIdMappingForUser(
+                                appIdentifier, storages, userId, UserIdType.ANY);
+                        storage = storageAndUserIdMapping.storage;
+                    } catch (UnknownUserIdException e) {
                         storage = getTenantStorage(req);
                     }
 

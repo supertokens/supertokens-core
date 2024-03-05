@@ -24,6 +24,7 @@ import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.LOG_LEVEL;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
@@ -460,6 +461,14 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     public static StorageAndUserIdMapping findStorageAndUserIdMappingForUser(
             AppIdentifier appIdentifier, Storage[] storages, String userId,
             UserIdType userIdType) throws StorageQueryException, UnknownUserIdException {
+
+        if (storages.length == 0) {
+            throw new IllegalStateException("should never come here");
+        }
+
+        if (storages[0].getType() != STORAGE_TYPE.SQL) {
+            return new StorageAndUserIdMapping(storages[0], null);
+        }
 
         if (userIdType == UserIdType.SUPERTOKENS) {
             for (Storage storage : storages) {

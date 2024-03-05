@@ -87,16 +87,12 @@ public class SessionUserAPI extends WebserverAPI {
                 Storage[] storages = StorageLayer.getStoragesForApp(main, appIdentifier);
                 Storage storage;
 
-                if (StorageLayer.getBaseStorage(main).getType() == STORAGE_TYPE.SQL) {
-                    try {
-                        StorageAndUserIdMapping storageAndUserIdMapping =
-                                StorageLayer.findStorageAndUserIdMappingForUser(
-                                        appIdentifier, storages, userId, UserIdType.ANY);
-                        storage = storageAndUserIdMapping.storage;
-                    } catch (UnknownUserIdException e) {
-                        storage = getTenantStorage(req);
-                    }
-                } else {
+                try {
+                    StorageAndUserIdMapping storageAndUserIdMapping =
+                            StorageLayer.findStorageAndUserIdMappingForUser(
+                                    appIdentifier, storages, userId, UserIdType.ANY);
+                    storage = storageAndUserIdMapping.storage;
+                } catch (UnknownUserIdException e) {
                     storage = getTenantStorage(req);
                 }
 
