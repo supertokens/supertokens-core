@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [8.0.0] - 2024-03-04
+
+### Breaking changes
+
+- The following app specific APIs return a 403 when they are called with a tenant ID other than the `public` one. For example, if the path is `/users/count/active`,  and you call it with `/tenant1/users/count/active`, it will return a 403. But if you call it with `/public/users/count/active`, or just `/users/count/active`, it will work.
+  - GET `/recipe/accountlinking/user/primary/check`
+  - GET `/recipe/accountlinking/user/link/check`
+  - POST `/recipe/accountlinking/user/primary`
+  - POST `/recipe/accountlinking/user/link`
+  - POST `/recipe/accountlinking/user/unlink`
+  - GET `/users/count/active`
+  - POST `/user/remove`
+  - GET `/ee/featureflag`
+  - GET `/user/id`
+  - PUT `/ee/license`
+  - DELETE `/ee/license`
+  - GET `/ee/license`
+  - GET `/requests/stats`
+  - GET `/recipe/user` when querying by `userId`
+  - GET `/recipe/jwt/jwks`
+  - POST `/recipe/jwt`
+
+### Fixes
+
+- Fixes issue with non-auth recipe related storage handling
+
 ## [7.0.18] - 2024-02-19
 
 - Fixes vulnerabilities in dependencies

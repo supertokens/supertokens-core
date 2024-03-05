@@ -18,10 +18,16 @@ package io.supertokens.webserver.api.emailverification;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.StorageAndUserIdMapping;
 import io.supertokens.emailverification.EmailVerification;
+import io.supertokens.multitenancy.exception.BadPermissionException;
+import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -52,13 +58,22 @@ public class UnverifyEmailAPI extends WebserverAPI {
         email = Utils.normaliseEmail(email);
 
         try {
-            EmailVerification.unverifyEmail(this.getAppIdentifierWithStorage(req), userId, email);
+            AppIdentifier appIdentifier = getAppIdentifier(req);
+            Storage storage;
+            try {
+                StorageAndUserIdMapping storageAndUidMapping = enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
+                        req, userId, UserIdType.ANY, false);
+                storage = storageAndUidMapping.storage;
+            } catch (UnknownUserIdException e) {
+                throw new IllegalStateException("should never happen");
+            }
+            EmailVerification.unverifyEmail(appIdentifier, storage, userId, email);
 
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
 
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
     }

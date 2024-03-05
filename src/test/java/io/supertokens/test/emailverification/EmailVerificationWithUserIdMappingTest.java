@@ -144,6 +144,38 @@ public class EmailVerificationWithUserIdMappingTest {
         AuthRecipeUserInfo userInfo = AuthRecipe.getUserById(process.getProcess(), user.getSupertokensUserId());
         assertTrue(userInfo.loginMethods[0].verified);
 
+        assertTrue(EmailVerification.isEmailVerified(process.getProcess(), "euid", "test@example.com"));
+        assertFalse(EmailVerification.isEmailVerified(process.getProcess(), user.getSupertokensUserId(), "test@example.com"));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testUserIdMappingCreationAfterEmailVerificationForPasswordlessUserWithOlderCDIBehaviour() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        Passwordless.CreateCodeResponse code = Passwordless.createCode(process.getProcess(), "test@example.com", null,
+                null, null);
+        AuthRecipeUserInfo user = Passwordless.consumeCode(process.getProcess(), code.deviceId, code.deviceIdHash,
+                code.userInputCode, null, true).user;
+
+        // create mapping
+        // this should not be allowed
+        try {
+            UserIdMapping.createUserIdMapping(process.getProcess(), user.getSupertokensUserId(), "euid", null, false, false);
+            fail();
+        } catch (Exception e) {
+            assert e.getMessage().contains("UserId is already in use in EmailVerification recipe");
+        }
+
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }

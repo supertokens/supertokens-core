@@ -20,6 +20,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
@@ -433,5 +434,125 @@ public class TestMultitenancyAPIHelper {
                 1000, 1000, null,
                 SemVer.v3_0.get(), "useridmapping");
         assertEquals("OK", response.get("status").getAsString());
+    }
+
+    public static JsonObject getUserById(TenantIdentifier tenantIdentifier, String userId, Main main)
+            throws HttpResponseException, IOException {
+        Map<String, String> params = new HashMap<>();
+        params.put("userId", userId);
+        JsonObject response = HttpRequestForTesting.sendGETRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/user/id"),
+                params, 1000, 1000, null,
+                WebserverAPI.getLatestCDIVersion().get(), "");
+        return response;
+    }
+
+    public static JsonObject updateUserMetadata(TenantIdentifier tenantIdentifier, String userId, JsonObject metadata,
+                                        Main main)
+            throws HttpResponseException, IOException {
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("userId", userId);
+        requestBody.add("metadataUpdate", metadata);
+        JsonObject resp = HttpRequestForTesting.sendJsonPUTRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user/metadata"),
+                requestBody, 1000, 1000, null,
+                WebserverAPI.getLatestCDIVersion().get(), "usermetadata");
+        return resp;
+    }
+
+    public static JsonObject removeMetadata(TenantIdentifier tenantIdentifier, String userId, Main main)
+            throws HttpResponseException, IOException {
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("userId", userId);
+        JsonObject resp = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user/metadata/remove"),
+                requestBody, 1000, 1000, null,
+                WebserverAPI.getLatestCDIVersion().get(), "usermetadata");
+
+        return resp;
+    }
+
+    public static void createRole(TenantIdentifier tenantIdentifier, String role, Main main)
+            throws HttpResponseException, IOException {
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("role", role);
+        JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/role"),
+                requestBody, 1000, 1000, null, WebserverAPI.getLatestCDIVersion().get(),
+                "userroles");
+        assertEquals("OK", response.get("status").getAsString());
+    }
+
+    public static void addRoleToUser(TenantIdentifier tenantIdentifier, String userId, String role, Main main)
+            throws HttpResponseException, IOException {
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("role", role);
+        requestBody.addProperty("userId", userId);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier,"/recipe/user/role"), requestBody, 1000, 1000, null,
+                WebserverAPI.getLatestCDIVersion().get(), "userroles");
+
+        assertEquals(2, response.entrySet().size());
+        assertEquals("OK", response.get("status").getAsString());
+    }
+
+    public static JsonObject getUserRoles(TenantIdentifier tenantIdentifier, String userId, Main main)
+            throws HttpResponseException, IOException {
+        HashMap<String, String> QUERY_PARAMS = new HashMap<>();
+        QUERY_PARAMS.put("userId", userId);
+        JsonObject response = HttpRequestForTesting.sendGETRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier,"/recipe/user/roles"), QUERY_PARAMS, 1000, 1000, null,
+                WebserverAPI.getLatestCDIVersion().get(), "userroles");
+        return response;
+    }
+
+    public static void deleteRole(TenantIdentifier tenantIdentifier, String role, Main main)
+            throws HttpResponseException, IOException {
+        JsonObject request = new JsonObject();
+        request.addProperty("role", role);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier,"/recipe/role/remove"), request, 1000, 1000, null,
+                WebserverAPI.getLatestCDIVersion().get(), "userroles");
+        assertEquals(2, response.entrySet().size());
+        assertEquals("OK", response.get("status").getAsString());
+    }
+
+    public static void verifyEmail(TenantIdentifier tenantIdentifier, String userId, String email, Main main)
+            throws HttpResponseException, IOException {
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("userId", userId);
+        requestBody.addProperty("email", email);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier,"/recipe/user/email/verify/token"),
+                requestBody, 1000, 1000, null,
+                WebserverAPI.getLatestCDIVersion().get(), "emailverification");
+
+        assertEquals(response.entrySet().size(), 2);
+        assertEquals(response.get("status").getAsString(), "OK");
+
+        JsonObject verifyResponseBody = new JsonObject();
+        verifyResponseBody.addProperty("method", "token");
+        verifyResponseBody.addProperty("token", response.get("token").getAsString());
+
+        JsonObject response2 = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user/email/verify"), verifyResponseBody, 1000, 1000, null,
+                WebserverAPI.getLatestCDIVersion().get(), "emailverification");
+
+        assertEquals(response2.entrySet().size(), 3);
+        assertEquals(response2.get("status").getAsString(), "OK");
+    }
+
+    public static void unverifyEmail(TenantIdentifier tenantIdentifier, String userId, String email, Main main)
+            throws HttpResponseException, IOException {
+        JsonObject body = new JsonObject();
+        body.addProperty("userId", userId);
+        body.addProperty("email", email);
+
+        HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier,"/recipe/user/email/verify/remove"), body, 1000, 1000, null,
+                WebserverAPI.getLatestCDIVersion().get(), RECIPE_ID.EMAIL_VERIFICATION.toString());
     }
 }

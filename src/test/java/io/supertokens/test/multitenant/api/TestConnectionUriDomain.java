@@ -382,7 +382,8 @@ public class TestConnectionUriDomain {
                 protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException,
                         ServletException {
                     try {
-                        super.sendTextResponse(200, this.getAppIdentifierWithStorage(req).getConnectionUriDomain(), resp);
+                        getTenantStorage(req);
+                        super.sendTextResponse(200, this.getTenantIdentifier(req).getConnectionUriDomain(), resp);
                     } catch (TenantOrAppNotFoundException e) {
                         throw new ServletException(e);
                     }

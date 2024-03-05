@@ -29,6 +29,8 @@ import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
@@ -85,14 +87,12 @@ public class EmailPasswordTest {
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             try {
-                new TenantIdentifierWithStorage(null, null, null,
-                        StorageLayer.getStorage(process.getProcess())).getEmailPasswordStorage();
+                StorageUtils.getEmailPasswordStorage(StorageLayer.getStorage(process.getProcess()));
                 throw new Exception("Should not come here");
             } catch (UnsupportedOperationException e) {
             }
         } else {
-            new TenantIdentifierWithStorage(null, null, null,
-                    StorageLayer.getStorage(process.getProcess())).getEmailPasswordStorage();
+            StorageUtils.getEmailPasswordStorage(StorageLayer.getStorage(process.getProcess()));
         }
 
         process.kill();
@@ -938,9 +938,9 @@ public class EmailPasswordTest {
                         new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[0]), new PasswordlessConfig(true),
                         new JsonObject()));
 
-        TenantIdentifierWithStorage tenantIdentifierWithStorage = new TenantIdentifierWithStorage(null, null, "t1",
-                StorageLayer.getStorage(process.main));
-        AuthRecipeUserInfo user0 = EmailPassword.signUp(tenantIdentifierWithStorage, process.getProcess(),
+        Storage storage = (StorageLayer.getStorage(process.main));
+        AuthRecipeUserInfo user0 = EmailPassword.signUp(
+                new TenantIdentifier(null, null, "t1"), storage, process.getProcess(),
                 "someemail1@gmail.com",
                 "pass1234");
 
@@ -975,9 +975,9 @@ public class EmailPasswordTest {
                         new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[0]), new PasswordlessConfig(true),
                         new JsonObject()));
 
-        TenantIdentifierWithStorage tenantIdentifierWithStorage = new TenantIdentifierWithStorage(null, null, "t1",
-                StorageLayer.getStorage(process.main));
-        AuthRecipeUserInfo user0 = EmailPassword.signUp(tenantIdentifierWithStorage, process.getProcess(),
+        Storage storage = (StorageLayer.getStorage(process.main));
+        AuthRecipeUserInfo user0 = EmailPassword.signUp(
+                new TenantIdentifier(null, null, "t1"), storage, process.getProcess(),
                 "someemail1@gmail.com",
                 "pass1234");
 
@@ -986,7 +986,8 @@ public class EmailPasswordTest {
         AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "someemail@gmail.com", "somePass");
         AuthRecipe.createPrimaryUser(process.main, user.getSupertokensUserId());
 
-        Multitenancy.addUserIdToTenant(process.main, tenantIdentifierWithStorage, user.getSupertokensUserId());
+        Multitenancy.addUserIdToTenant(process.main,
+                new TenantIdentifier(null, null, "t1"), storage, user.getSupertokensUserId());
 
         try {
             EmailPassword.updateUsersEmailOrPassword(process.main, user.getSupertokensUserId(), "someemail1@gmail.com", null);

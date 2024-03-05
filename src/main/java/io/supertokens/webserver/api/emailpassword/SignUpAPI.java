@@ -23,11 +23,11 @@ import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
@@ -69,18 +69,21 @@ public class SignUpAPI extends WebserverAPI {
             throw new ServletException(new WebserverAPI.BadRequestException("Password cannot be an empty string"));
         }
 
-        TenantIdentifier tenantIdentifier = null;
+        TenantIdentifier tenantIdentifier;
+        Storage storage;
         try {
-            tenantIdentifier = getTenantIdentifierWithStorageFromRequest(req);
+            tenantIdentifier = getTenantIdentifier(req);
+            storage = getTenantStorage(req);
         } catch (TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
 
         try {
-            TenantIdentifierWithStorage tenant = this.getTenantIdentifierWithStorageFromRequest(req);
-            AuthRecipeUserInfo user = EmailPassword.signUp(tenant, super.main, normalisedEmail, password);
+            AuthRecipeUserInfo user = EmailPassword.signUp(tenantIdentifier, storage, super.main, normalisedEmail,
+                    password);
 
-            ActiveUsers.updateLastActive(this.getPublicTenantStorage(req), main, user.getSupertokensUserId());
+            ActiveUsers.updateLastActive(tenantIdentifier.toAppIdentifier(), main,
+                    user.getSupertokensUserId());
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

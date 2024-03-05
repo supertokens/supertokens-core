@@ -18,13 +18,14 @@ package io.supertokens.webserver.api.useridmapping;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.StorageAndUserIdMapping;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.useridmapping.exception.UnknownSuperTokensUserIdException;
 import io.supertokens.pluginInterface.useridmapping.exception.UserIdMappingAlreadyExistsException;
-import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.SemVer;
@@ -94,10 +95,8 @@ public class UserIdMappingAPI extends WebserverAPI {
         }
 
         try {
-            AppIdentifierWithStorageAndUserIdMapping appIdentifierWithStorageAndUserIdMapping =
-                    this.getAppIdentifierWithStorageAndUserIdMappingFromRequest(req, superTokensUserId, UserIdType.SUPERTOKENS);
-
-            UserIdMapping.createUserIdMapping(main, appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage,
+            UserIdMapping.createUserIdMapping(
+                    getAppIdentifier(req), enforcePublicTenantAndGetAllStoragesForApp(req),
                     superTokensUserId, externalUserId, externalUserIdInfo, force, getVersionFromRequest(req).greaterThanOrEqualTo(
                             SemVer.v4_0));
 
@@ -105,7 +104,7 @@ public class UserIdMappingAPI extends WebserverAPI {
             response.addProperty("status", "OK");
             super.sendJsonResponse(200, response, resp);
 
-        } catch (UnknownSuperTokensUserIdException | UnknownUserIdException e) {
+        } catch (UnknownSuperTokensUserIdException e) {
             JsonObject response = new JsonObject();
             response.addProperty("status", "UNKNOWN_SUPERTOKENS_USER_ID_ERROR");
             super.sendJsonResponse(200, response, resp);
@@ -117,7 +116,7 @@ public class UserIdMappingAPI extends WebserverAPI {
             response.addProperty("doesExternalUserIdExist", e.doesExternalUserIdExist);
             super.sendJsonResponse(200, response, resp);
 
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
     }
@@ -163,10 +162,10 @@ public class UserIdMappingAPI extends WebserverAPI {
             // Request from (app1, tenant1) will return user1 and request from (app1, tenant2) will return user2
             // Request from (app1, tenant3) may result in either user1 or user2
 
-            AppIdentifierWithStorageAndUserIdMapping appIdentifierWithStorageAndUserIdMapping =
-                    this.getAppIdentifierWithStorageAndUserIdMappingFromRequest(req, userId, userIdType);
+            StorageAndUserIdMapping storageAndUserIdMapping =
+                    this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(req, userId, userIdType, true);
 
-            if (appIdentifierWithStorageAndUserIdMapping.userIdMapping == null) {
+            if (storageAndUserIdMapping.userIdMapping == null) {
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "UNKNOWN_MAPPING_ERROR");
                 super.sendJsonResponse(200, response, resp);
@@ -176,16 +175,16 @@ public class UserIdMappingAPI extends WebserverAPI {
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             response.addProperty("superTokensUserId",
-                    appIdentifierWithStorageAndUserIdMapping.userIdMapping.superTokensUserId);
+                    storageAndUserIdMapping.userIdMapping.superTokensUserId);
             response.addProperty("externalUserId",
-                    appIdentifierWithStorageAndUserIdMapping.userIdMapping.externalUserId);
-            if (appIdentifierWithStorageAndUserIdMapping.userIdMapping.externalUserIdInfo != null) {
+                    storageAndUserIdMapping.userIdMapping.externalUserId);
+            if (storageAndUserIdMapping.userIdMapping.externalUserIdInfo != null) {
                 response.addProperty("externalUserIdInfo",
-                        appIdentifierWithStorageAndUserIdMapping.userIdMapping.externalUserIdInfo);
+                        storageAndUserIdMapping.userIdMapping.externalUserIdInfo);
             }
             super.sendJsonResponse(200, response, resp);
 
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
 
         } catch (UnknownUserIdException e) {

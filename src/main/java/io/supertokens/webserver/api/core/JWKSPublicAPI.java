@@ -61,7 +61,7 @@ public class JWKSPublicAPI extends WebserverAPI {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         try {
-            List<JsonObject> jwks = SigningKeys.getInstance(this.getAppIdentifierWithStorage(req), main).getJWKS();
+            List<JsonObject> jwks = SigningKeys.getInstance(this.getAppIdentifier(req), main).getJWKS();
             JsonObject reply = new JsonObject();
             JsonArray jwksJsonArray = new JsonParser().parse(new Gson().toJson(jwks)).getAsJsonArray();
             reply.add("keys", jwksJsonArray);

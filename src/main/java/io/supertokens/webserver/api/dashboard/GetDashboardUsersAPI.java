@@ -51,7 +51,8 @@ public class GetDashboardUsersAPI extends WebserverAPI {
 
             JsonArray arr = new com.google.gson.JsonParser().parse(new Gson().toJson(
                             Dashboard.getAllDashboardUsers(
-                                    super.getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(req), main)))
+                                    getAppIdentifier(req),
+                                    enforcePublicTenantAndGetPublicTenantStorage(req), main)))
                     .getAsJsonArray();
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");

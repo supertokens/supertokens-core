@@ -271,12 +271,12 @@ public class MultitenantAPITest {
         user3.addProperty("externalUserId", "euserid3");
 
 
-        for (TenantIdentifier createTenant: new TenantIdentifier[]{t1, t2, t3}) {
+        for (TenantIdentifier createTenant: new TenantIdentifier[]{t1}) {
             successfulCreateUserIdMapping(createTenant, user1.get("id").getAsString(), "euserid1");
             successfulCreateUserIdMapping(createTenant, user2.get("id").getAsString(), "euserid2");
             successfulCreateUserIdMapping(createTenant, user3.get("id").getAsString(), "euserid3");
 
-            for (TenantIdentifier queryTenant : new TenantIdentifier[]{t1, t2, t3}) {
+            for (TenantIdentifier queryTenant : new TenantIdentifier[]{t1}) {
                 for (JsonObject user : new JsonObject[]{user1, user2, user3}) {
                     {
                         JsonObject mapping = getUserIdMapping(queryTenant, user.get("id").getAsString(), "SUPERTOKENS");
@@ -328,8 +328,8 @@ public class MultitenantAPITest {
 
                 String externalUserId = "euserid" + (testcase++);
 
-                successfulCreateUserIdMapping(tx, user1.get("id").getAsString(), externalUserId);
-                mappingAlreadyExistsWithCreateUserIdMapping(ty, user2.get("id").getAsString(), externalUserId);
+                successfulCreateUserIdMapping(t1, user1.get("id").getAsString(), externalUserId);
+                mappingAlreadyExistsWithCreateUserIdMapping(t1, user2.get("id").getAsString(), externalUserId);
             }
         }
     }
@@ -348,39 +348,35 @@ public class MultitenantAPITest {
             String externalUserId = "euserid" + userCount;
             user.addProperty("externalUserId", externalUserId);
 
-            for (TenantIdentifier tx : tenants) {
-                for (TenantIdentifier ty : tenants) {
-                    {
-                        successfulCreateUserIdMapping(tx, user.get("id").getAsString(), externalUserId);
-                        getUserIdMapping(ty, user.get("id").getAsString(), "SUPERTOKENS");
-                        successfulRemoveUserIdMapping(ty, user.get("id").getAsString(), "SUPERTOKENS");
-                        getUnknownUserIdMapping(ty, user.get("id").getAsString(), "SUPERTOKENS");
-                    }
-                    {
-                        successfulCreateUserIdMapping(tx, user.get("id").getAsString(), externalUserId);
-                        getUserIdMapping(ty, user.get("id").getAsString(), "ANY");
-                        successfulRemoveUserIdMapping(ty, user.get("id").getAsString(), "ANY");
-                        getUnknownUserIdMapping(ty, user.get("id").getAsString(), "ANY");
-                    }
-                    {
-                        successfulCreateUserIdMapping(tx, user.get("id").getAsString(), externalUserId);
-                        getUserIdMapping(ty, user.get("externalUserId").getAsString(), "EXTERNAL");
-                        successfulRemoveUserIdMapping(ty, user.get("externalUserId").getAsString(), "EXTERNAL");
-                        getUnknownUserIdMapping(ty, user.get("externalUserId").getAsString(), "EXTERNAL");
-                    }
-                    {
-                        successfulCreateUserIdMapping(tx, user.get("id").getAsString(), externalUserId);
-                        getUserIdMapping(ty, user.get("externalUserId").getAsString(), "ANY");
-                        successfulRemoveUserIdMapping(ty, user.get("externalUserId").getAsString(), "ANY");
-                        getUnknownUserIdMapping(ty, user.get("externalUserId").getAsString(), "ANY");
-                    }
-                }
+            {
+                successfulCreateUserIdMapping(t1, user.get("id").getAsString(), externalUserId);
+                getUserIdMapping(t1, user.get("id").getAsString(), "SUPERTOKENS");
+                successfulRemoveUserIdMapping(t1, user.get("id").getAsString(), "SUPERTOKENS");
+                getUnknownUserIdMapping(t1, user.get("id").getAsString(), "SUPERTOKENS");
+            }
+            {
+                successfulCreateUserIdMapping(t1, user.get("id").getAsString(), externalUserId);
+                getUserIdMapping(t1, user.get("id").getAsString(), "ANY");
+                successfulRemoveUserIdMapping(t1, user.get("id").getAsString(), "ANY");
+                getUnknownUserIdMapping(t1, user.get("id").getAsString(), "ANY");
+            }
+            {
+                successfulCreateUserIdMapping(t1, user.get("id").getAsString(), externalUserId);
+                getUserIdMapping(t1, user.get("externalUserId").getAsString(), "EXTERNAL");
+                successfulRemoveUserIdMapping(t1, user.get("externalUserId").getAsString(), "EXTERNAL");
+                getUnknownUserIdMapping(t1, user.get("externalUserId").getAsString(), "EXTERNAL");
+            }
+            {
+                successfulCreateUserIdMapping(t1, user.get("id").getAsString(), externalUserId);
+                getUserIdMapping(t1, user.get("externalUserId").getAsString(), "ANY");
+                successfulRemoveUserIdMapping(t1, user.get("externalUserId").getAsString(), "ANY");
+                getUnknownUserIdMapping(t1, user.get("externalUserId").getAsString(), "ANY");
             }
         }
     }
 
     @Test
-    public void testSameExternalIdAcrossUserPoolPrioritizesTenantOfInterest() throws Exception {
+    public void testSameExternalIdAcrossUserPoolJustReturnsOneOfThem() throws Exception {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
@@ -400,29 +396,30 @@ public class MultitenantAPITest {
 
         {
             JsonObject mapping = getUserIdMapping(t1, "euserid", "EXTERNAL");
-            assertEquals(user1.get("id").getAsString(), mapping.get("superTokensUserId").getAsString());
+            assert mapping.get("superTokensUserId").getAsString().equals(user1.get("id").getAsString())
+                    || mapping.get("superTokensUserId").getAsString().equals(user2.get("id").getAsString());
         }
         {
             JsonObject mapping = getUserIdMapping(t1, "euserid", "ANY");
-            assertEquals(user1.get("id").getAsString(), mapping.get("superTokensUserId").getAsString());
+            assert mapping.get("superTokensUserId").getAsString().equals(user1.get("id").getAsString())
+                    || mapping.get("superTokensUserId").getAsString().equals(user2.get("id").getAsString());
         }
 
         {
-            JsonObject mapping = getUserIdMapping(t2, "euserid", "EXTERNAL");
-            assertEquals(user2.get("id").getAsString(), mapping.get("superTokensUserId").getAsString());
+            try {
+                JsonObject mapping = getUserIdMapping(t2, "euserid", "EXTERNAL");
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(403, e.statusCode);
+            }
         }
         {
-            JsonObject mapping = getUserIdMapping(t2, "euserid", "ANY");
-            assertEquals(user2.get("id").getAsString(), mapping.get("superTokensUserId").getAsString());
-        }
-
-        {
-            JsonObject mapping = getUserIdMapping(t3, "euserid", "EXTERNAL");
-            assertEquals(user2.get("id").getAsString(), mapping.get("superTokensUserId").getAsString());
-        }
-        {
-            JsonObject mapping = getUserIdMapping(t3, "euserid", "ANY");
-            assertEquals(user2.get("id").getAsString(), mapping.get("superTokensUserId").getAsString());
+            try {
+                JsonObject mapping = getUserIdMapping(t2, "euserid", "ANY");
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(403, e.statusCode);
+            }
         }
     }
 

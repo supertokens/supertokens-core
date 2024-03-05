@@ -59,7 +59,7 @@ public class CreateOrUpdateTenantOrGetTenantAPI extends BaseCreateOrUpdate {
 
         TenantIdentifier sourceTenantIdentifier;
         try {
-            sourceTenantIdentifier = this.getTenantIdentifierWithStorageFromRequest(req);
+            sourceTenantIdentifier = getTenantIdentifier(req);
         } catch (TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
@@ -74,13 +74,13 @@ public class CreateOrUpdateTenantOrGetTenantAPI extends BaseCreateOrUpdate {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         try {
-            TenantIdentifierWithStorage tenantIdentifier = this.getTenantIdentifierWithStorageFromRequest(req);
+            TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
             TenantConfig config = Multitenancy.getTenantInfo(main, tenantIdentifier);
             if (config == null) {
                 throw new TenantOrAppNotFoundException(tenantIdentifier);
             }
             boolean shouldProtect = shouldProtectProtectedConfig(req);
-            JsonObject result = config.toJson(shouldProtect, tenantIdentifier.getStorage(), CoreConfig.PROTECTED_CONFIGS);
+            JsonObject result = config.toJson(shouldProtect, getTenantStorage(req), CoreConfig.PROTECTED_CONFIGS);
             result.addProperty("status", "OK");
 
             super.sendJsonResponse(200, result, resp);

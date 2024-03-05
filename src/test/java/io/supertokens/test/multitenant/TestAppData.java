@@ -29,6 +29,7 @@ import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
@@ -115,56 +116,62 @@ public class TestAppData {
                 new JsonObject()
         ), false);
 
-        TenantIdentifierWithStorage appWithStorage = app.withStorage(
+        Storage appStorage = (
                 StorageLayer.getStorage(app, process.getProcess()));
 
-        String[] allTableNames = appWithStorage.getStorage().getAllTablesInTheDatabase();
+        String[] allTableNames = appStorage.getAllTablesInTheDatabase();
         allTableNames = removeStrings(allTableNames, tablesToIgnore);
         Arrays.sort(allTableNames);
 
         // Add all recipe data
-        AuthRecipeUserInfo epUser = EmailPassword.signUp(appWithStorage, process.getProcess(), "test@example.com", "password");
-        EmailPassword.generatePasswordResetTokenBeforeCdi4_0(appWithStorage, process.getProcess(), epUser.getSupertokensUserId());
+        AuthRecipeUserInfo epUser = EmailPassword.signUp(app, appStorage, process.getProcess(), "test@example.com",
+                "password");
+        EmailPassword.generatePasswordResetTokenBeforeCdi4_0(app, appStorage, process.getProcess(),
+                epUser.getSupertokensUserId());
 
-        ThirdParty.SignInUpResponse tpUser = ThirdParty.signInUp(appWithStorage, process.getProcess(), "google",
+        ThirdParty.SignInUpResponse tpUser = ThirdParty.signInUp(app, appStorage, process.getProcess(), "google",
                 "googleid", "test@example.com");
 
-        Passwordless.CreateCodeResponse code = Passwordless.createCode(appWithStorage, process.getProcess(),
+        Passwordless.CreateCodeResponse code = Passwordless.createCode(app, appStorage, process.getProcess(),
                 "test@example.com", null, null, null);
-        Passwordless.ConsumeCodeResponse plUser = Passwordless.consumeCode(appWithStorage, process.getProcess(),
+        Passwordless.ConsumeCodeResponse plUser = Passwordless.consumeCode(app, appStorage, process.getProcess(),
                 code.deviceId, code.deviceIdHash, code.userInputCode, null);
-        Passwordless.createCode(appWithStorage, process.getProcess(), "test@example.com", null, null, null);
+        Passwordless.createCode(app, appStorage, process.getProcess(), "test@example.com", null, null, null);
 
-        Dashboard.signUpDashboardUser(appWithStorage.toAppIdentifierWithStorage(), process.getProcess(),
+        Dashboard.signUpDashboardUser(app.toAppIdentifier(), appStorage, process.getProcess(),
                 "user@example.com", "password");
-        Dashboard.signInDashboardUser(appWithStorage.toAppIdentifierWithStorage(), process.getProcess(),
+        Dashboard.signInDashboardUser(app.toAppIdentifier(), appStorage, process.getProcess(),
                 "user@example.com", "password");
 
-        String evToken = EmailVerification.generateEmailVerificationToken(appWithStorage, process.getProcess(),
+        String evToken = EmailVerification.generateEmailVerificationToken(app, appStorage, process.getProcess(),
                 epUser.getSupertokensUserId(), epUser.loginMethods[0].email);
-        EmailVerification.verifyEmail(appWithStorage, evToken);
-        EmailVerification.generateEmailVerificationToken(appWithStorage, process.getProcess(), tpUser.user.getSupertokensUserId(),
+        EmailVerification.verifyEmail(app, appStorage, evToken);
+        EmailVerification.generateEmailVerificationToken(app, appStorage, process.getProcess(),
+                tpUser.user.getSupertokensUserId(),
                 tpUser.user.loginMethods[0].email);
 
-        Session.createNewSession(appWithStorage, process.getProcess(), epUser.getSupertokensUserId(), new JsonObject(), new JsonObject());
+        Session.createNewSession(app, appStorage, process.getProcess(), epUser.getSupertokensUserId(),
+                new JsonObject(), new JsonObject());
 
-        UserRoles.createNewRoleOrModifyItsPermissions(appWithStorage.toAppIdentifierWithStorage(), "role",
+        UserRoles.createNewRoleOrModifyItsPermissions(app.toAppIdentifier(), appStorage, "role",
                 new String[]{"permission1", "permission2"});
-        UserRoles.addRoleToUser(appWithStorage, epUser.getSupertokensUserId(), "role");
+        UserRoles.addRoleToUser(process.getProcess(), app, appStorage, epUser.getSupertokensUserId(), "role");
 
-        TOTPDevice totpDevice = Totp.registerDevice(appWithStorage.toAppIdentifierWithStorage(), process.getProcess(),
+        TOTPDevice totpDevice = Totp.registerDevice(app.toAppIdentifier(), appStorage, process.getProcess(),
                 epUser.getSupertokensUserId(), "test", 1, 3);
-        Totp.verifyCode(appWithStorage, process.getProcess(), epUser.getSupertokensUserId(),
+        Totp.verifyCode(app, appStorage, process.getProcess(), epUser.getSupertokensUserId(),
                 generateTotpCode(process.getProcess(), totpDevice, 0), true);
 
-        ActiveUsers.updateLastActive(appWithStorage.toAppIdentifierWithStorage(), process.getProcess(), epUser.getSupertokensUserId());
+        ActiveUsers.updateLastActive(app.toAppIdentifier(), process.getProcess(),
+                epUser.getSupertokensUserId());
 
-        UserMetadata.updateUserMetadata(appWithStorage.toAppIdentifierWithStorage(), epUser.getSupertokensUserId(), new JsonObject());
+        UserMetadata.updateUserMetadata(app.toAppIdentifier(), appStorage,
+                epUser.getSupertokensUserId(), new JsonObject());
 
-        UserIdMapping.createUserIdMapping(process.getProcess(), appWithStorage.toAppIdentifierWithStorage(),
+        UserIdMapping.createUserIdMapping(process.getProcess(), app.toAppIdentifier(), appStorage,
                 plUser.user.getSupertokensUserId(), "externalid", null, false);
 
-        String[] tablesThatHaveData = appWithStorage.getStorage()
+        String[] tablesThatHaveData = appStorage
                 .getAllTablesInTheDatabaseThatHasDataForAppId(app.getAppId());
         tablesThatHaveData = removeStrings(tablesThatHaveData, tablesToIgnore);
         Arrays.sort(tablesThatHaveData);
@@ -175,7 +182,7 @@ public class TestAppData {
         Multitenancy.deleteApp(app.toAppIdentifier(), process.getProcess());
 
         // Check no data is remaining in any of the tables
-        tablesThatHaveData = appWithStorage.getStorage().getAllTablesInTheDatabaseThatHasDataForAppId(app.getAppId());
+        tablesThatHaveData = appStorage.getAllTablesInTheDatabaseThatHasDataForAppId(app.getAppId());
         tablesThatHaveData = removeStrings(tablesThatHaveData, tablesToIgnore);
         assertEquals(0, tablesThatHaveData.length);
 
