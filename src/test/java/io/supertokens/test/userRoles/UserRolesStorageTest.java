@@ -119,8 +119,7 @@ public class UserRolesStorageTest {
             }
             // delete the role
             try {
-                boolean wasRoleDeleted = storage.deleteAllUserRoleAssociationsForRole(new AppIdentifier(null, null), role);
-                wasRoleDeleted = storage.deleteRole(new AppIdentifier(null, null), role) || wasRoleDeleted;
+                boolean wasRoleDeleted = storage.deleteRole(new AppIdentifier(null, null), role);
                 r2_success.set(wasRoleDeleted);
             } catch (StorageQueryException e) {
                 // should not come here

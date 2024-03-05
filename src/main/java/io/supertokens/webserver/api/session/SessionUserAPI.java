@@ -24,11 +24,13 @@ import io.supertokens.StorageAndUserIdMapping;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.session.Session;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -75,10 +77,17 @@ public class SessionUserAPI extends WebserverAPI {
             String[] sessionHandles;
 
             if (fetchAcrossAllTenants) {
+                // when fetchAcrossAllTenants is true, and given that the backend SDK might pass tenant id
+                // we do not want to enfore public tenant here but behave as if this is an app specific API
                 AppIdentifier appIdentifier = getAppIdentifier(req);
-                StorageAndUserIdMapping storageAndUserIdMapping =
-                        getStorageAndUserIdMappingForAppSpecificApiWithoutEnforcingPublicTenant(req, userId,
-                                UserIdType.ANY);
+                Storage[] storages = StorageLayer.getStoragesForApp(main, appIdentifier);
+                StorageAndUserIdMapping storageAndUserIdMapping = null;
+                try {
+                    storageAndUserIdMapping = StorageLayer.findStorageAndUserIdMappingForUser(
+                            appIdentifier, storages, userId, UserIdType.ANY);
+                } catch (UnknownUserIdException e) {
+                    storageAndUserIdMapping = new StorageAndUserIdMapping(getTenantStorage(req), null);
+                }
                 sessionHandles = Session.getAllNonExpiredSessionHandlesForUser(
                         main, appIdentifier, storageAndUserIdMapping.storage, userId,
                         fetchSessionsForAllLinkedAccounts);
@@ -98,7 +107,7 @@ public class SessionUserAPI extends WebserverAPI {
             result.add("sessionHandles", arr);
             super.sendJsonResponse(200, result, resp);
 
-        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

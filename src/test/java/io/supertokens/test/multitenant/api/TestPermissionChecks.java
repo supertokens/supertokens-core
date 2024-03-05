@@ -1022,32 +1022,32 @@ public class TestPermissionChecks {
                 new TestCase(
                         new TenantIdentifier(null, null, "t1"),
                         new TenantIdentifier(null, null, "t2"),
-                        "Only the public tenantId is allowed to delete a tenant"
+                        "Only public tenantId can call this app specific API"
                 ),
                 new TestCase(
                         new TenantIdentifier(null, null, "t1"),
                         new TenantIdentifier(null, null, "t1"),
-                        "Only the public tenantId is allowed to delete a tenant"
+                        "Only public tenantId can call this app specific API"
                 ),
                 new TestCase(
                         new TenantIdentifier(null, "a1", "t1"),
                         new TenantIdentifier(null, "a1", "t2"),
-                        "Only the public tenantId is allowed to delete a tenant"
+                        "Only public tenantId can call this app specific API"
                 ),
                 new TestCase(
                         new TenantIdentifier(null, "a1", "t1"),
                         new TenantIdentifier(null, "a1", "t1"),
-                        "Only the public tenantId is allowed to delete a tenant"
+                        "Only public tenantId can call this app specific API"
                 ),
                 new TestCase(
                         new TenantIdentifier("127.0.0.1", "a1", "t1"),
                         new TenantIdentifier("127.0.0.1", "a1", "t2"),
-                        "Only the public tenantId is allowed to delete a tenant"
+                        "Only public tenantId can call this app specific API"
                 ),
                 new TestCase(
                         new TenantIdentifier("127.0.0.1", "a1", "t1"),
                         new TenantIdentifier("127.0.0.1", "a1", "t1"),
-                        "Only the public tenantId is allowed to delete a tenant"
+                        "Only public tenantId can call this app specific API"
                 ),
                 new TestCase(
                         new TenantIdentifier(null, null, null),

@@ -113,10 +113,18 @@ public class SessionRemoveAPI extends WebserverAPI {
                 String[] sessionHandlesRevoked;
 
                 if (revokeAcrossAllTenants) {
+                    // when revokeAcrossAllTenants is true, and given that the backend SDK might pass tenant id
+                    // we do not want to enfore public tenant here but behave as if this is an app specific API
                     AppIdentifier appIdentifier = getAppIdentifier(req);
-                    StorageAndUserIdMapping storageAndUserIdMapping = getStorageAndUserIdMappingForAppSpecificApiWithoutEnforcingPublicTenant(
-                            req, userId, UserIdType.ANY);
-
+                    Storage[] storages = StorageLayer.getStoragesForApp(main, appIdentifier);
+                    StorageAndUserIdMapping storageAndUserIdMapping = null;
+                    try {
+                        storageAndUserIdMapping = StorageLayer.findStorageAndUserIdMappingForUser(
+                                appIdentifier, storages, userId, UserIdType.ANY);
+                    } catch (UnknownUserIdException e) {
+                        storageAndUserIdMapping = new StorageAndUserIdMapping(getTenantStorage(req), null);
+                    }
+                    storage = storageAndUserIdMapping.storage;
                     sessionHandlesRevoked = Session.revokeAllSessionsForUser(
                             main, appIdentifier, storageAndUserIdMapping.storage, userId, revokeSessionsForLinkedAccounts);
                 } else {
@@ -149,7 +157,7 @@ public class SessionRemoveAPI extends WebserverAPI {
                 }
                 result.add("sessionHandlesRevoked", sessionHandlesRevokedJSON);
                 super.sendJsonResponse(200, result, resp);
-            } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
+            } catch (StorageQueryException | TenantOrAppNotFoundException e) {
                 throw new ServletException(e);
             }
         } else {
