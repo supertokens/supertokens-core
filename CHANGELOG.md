@@ -9,7 +9,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Breaking changes
 
-- The following app specific APIs return a 403 when not called using `public` tenant
+- The following app specific APIs return a 403 when they are called with a tenant ID other than the `public` one. For example, if the path is `/users/count/active`,  and you call it with `/tenant1/users/count/active`, it will return a 403. But if you call it with `/public/users/count/active`, or just `/users/count/active`, it will work.
   - GET `/recipe/accountlinking/user/primary/check`
   - GET `/recipe/accountlinking/user/link/check`
   - POST `/recipe/accountlinking/user/primary`
