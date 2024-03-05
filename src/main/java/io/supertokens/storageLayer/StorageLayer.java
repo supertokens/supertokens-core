@@ -467,6 +467,8 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
 
         if (storages[0].getType() != STORAGE_TYPE.SQL) {
+            // for non sql plugin, there will be only one storage as multitenancy is not supported
+            assert storages.length == 1;
             return new StorageAndUserIdMapping(storages[0], null);
         }
 
