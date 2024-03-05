@@ -31,6 +31,22 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Fixes issue with non-auth recipe related storage handling
 
+### Migration
+
+For Postgresql:
+```sql
+ALTER TABLE user_roles DROP CONSTRAINT IF EXISTS user_roles_role_fkey;
+```
+
+For MySQL:
+```sql
+ALTER TABLE user_roles DROP FOREIGN KEY user_roles_ibfk_1;
+ALTER TABLE user_roles DROP FOREIGN KEY user_roles_ibfk_2;
+ALTER TABLE user_roles
+  ADD FOREIGN KEY (app_id, tenant_id)
+    REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE;
+```
+
 ## [7.0.18] - 2024-02-19
 
 - Fixes vulnerabilities in dependencies
