@@ -23,6 +23,7 @@ import io.supertokens.Main;
 import io.supertokens.StorageAndUserIdMapping;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -85,14 +86,20 @@ public class SessionUserAPI extends WebserverAPI {
                 AppIdentifier appIdentifier = getAppIdentifier(req);
                 Storage[] storages = StorageLayer.getStoragesForApp(main, appIdentifier);
                 Storage storage;
-                try {
-                    StorageAndUserIdMapping storageAndUserIdMapping =
-                            StorageLayer.findStorageAndUserIdMappingForUser(
-                            appIdentifier, storages, userId, UserIdType.ANY);
-                    storage = storageAndUserIdMapping.storage;
-                } catch (UnknownUserIdException e) {
+
+                if (StorageLayer.getBaseStorage(main).getType() == STORAGE_TYPE.SQL) {
+                    try {
+                        StorageAndUserIdMapping storageAndUserIdMapping =
+                                StorageLayer.findStorageAndUserIdMappingForUser(
+                                        appIdentifier, storages, userId, UserIdType.ANY);
+                        storage = storageAndUserIdMapping.storage;
+                    } catch (UnknownUserIdException e) {
+                        storage = getTenantStorage(req);
+                    }
+                } else {
                     storage = getTenantStorage(req);
                 }
+
                 sessionHandles = Session.getAllNonExpiredSessionHandlesForUser(
                         main, appIdentifier, storage, userId,
                         fetchSessionsForAllLinkedAccounts);

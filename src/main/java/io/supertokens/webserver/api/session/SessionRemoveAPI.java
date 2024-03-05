@@ -120,13 +120,19 @@ public class SessionRemoveAPI extends WebserverAPI {
                     // exist, we use the storage for the tenantId passed in the request.
                     AppIdentifier appIdentifier = getAppIdentifier(req);
                     Storage[] storages = StorageLayer.getStoragesForApp(main, appIdentifier);
-                    try {
-                        StorageAndUserIdMapping storageAndUserIdMapping = StorageLayer.findStorageAndUserIdMappingForUser(
-                                appIdentifier, storages, userId, UserIdType.ANY);
-                        storage = storageAndUserIdMapping.storage;
-                    } catch (UnknownUserIdException e) {
+
+                    if (StorageLayer.getBaseStorage(main).getType() == STORAGE_TYPE.SQL) {
+                        try {
+                            StorageAndUserIdMapping storageAndUserIdMapping = StorageLayer.findStorageAndUserIdMappingForUser(
+                                    appIdentifier, storages, userId, UserIdType.ANY);
+                            storage = storageAndUserIdMapping.storage;
+                        } catch (UnknownUserIdException e) {
+                            storage = getTenantStorage(req);
+                        }
+                    } else {
                         storage = getTenantStorage(req);
                     }
+
                     sessionHandlesRevoked = Session.revokeAllSessionsForUser(
                             main, appIdentifier, storage, userId, revokeSessionsForLinkedAccounts);
                 } else {

@@ -24,6 +24,7 @@ import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
@@ -76,6 +77,14 @@ public class TestWithNonAuthRecipes {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getBaseStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         JsonObject config = new JsonObject();
         StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
         TestMultitenancyAPIHelper.createTenant(process.getProcess(), TenantIdentifier.BASE_TENANT, "t1", true, true,
@@ -87,6 +96,14 @@ public class TestWithNonAuthRecipes {
 
     @Test
     public void testThatUserMetadataIsSavedInTheStorageWhereUserExists() throws Exception {
+        if (StorageLayer.getBaseStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         TenantIdentifier t0 = new TenantIdentifier(null, null, null);
         Storage t0Storage = (StorageLayer.getStorage(t0, process.getProcess()));
 
@@ -176,6 +193,14 @@ public class TestWithNonAuthRecipes {
 
     @Test
     public void testThatRoleIsStoredInPublicTenantAndUserRoleMappingInTheUserTenantStorage() throws Exception {
+        if (StorageLayer.getBaseStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         TenantIdentifier t0 = new TenantIdentifier(null, null, null);
         Storage t0Storage = (StorageLayer.getStorage(t0, process.getProcess()));
 
@@ -266,6 +291,14 @@ public class TestWithNonAuthRecipes {
 
     @Test
     public void testEmailVerificationWithUsersOnDifferentTenantStorages() throws Exception {
+        if (StorageLayer.getBaseStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
         TenantIdentifier t0 = new TenantIdentifier(null, null, null);
         Storage t0Storage = (StorageLayer.getStorage(t0, process.getProcess()));
 
