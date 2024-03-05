@@ -114,19 +114,21 @@ public class SessionRemoveAPI extends WebserverAPI {
 
                 if (revokeAcrossAllTenants) {
                     // when revokeAcrossAllTenants is true, and given that the backend SDK might pass tenant id
-                    // we do not want to enfore public tenant here but behave as if this is an app specific API
+                    // we do not want to enforce public tenant here but behave as if this is an app specific API
+                    // So instead of calling enforcePublicTenantAndGetAllStoragesForApp, we simply do all the logic
+                    // here to fetch the storages and find the storage where `userId` exists. If user id does not
+                    // exist, we use the storage for the tenantId passed in the request.
                     AppIdentifier appIdentifier = getAppIdentifier(req);
                     Storage[] storages = StorageLayer.getStoragesForApp(main, appIdentifier);
-                    StorageAndUserIdMapping storageAndUserIdMapping = null;
                     try {
-                        storageAndUserIdMapping = StorageLayer.findStorageAndUserIdMappingForUser(
+                        StorageAndUserIdMapping storageAndUserIdMapping = StorageLayer.findStorageAndUserIdMappingForUser(
                                 appIdentifier, storages, userId, UserIdType.ANY);
+                        storage = storageAndUserIdMapping.storage;
                     } catch (UnknownUserIdException e) {
-                        storageAndUserIdMapping = new StorageAndUserIdMapping(getTenantStorage(req), null);
+                        storage = getTenantStorage(req);
                     }
-                    storage = storageAndUserIdMapping.storage;
                     sessionHandlesRevoked = Session.revokeAllSessionsForUser(
-                            main, appIdentifier, storageAndUserIdMapping.storage, userId, revokeSessionsForLinkedAccounts);
+                            main, appIdentifier, storage, userId, revokeSessionsForLinkedAccounts);
                 } else {
                     TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
                     storage = getTenantStorage(req);
