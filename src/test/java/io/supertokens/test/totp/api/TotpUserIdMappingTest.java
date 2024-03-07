@@ -77,7 +77,7 @@ public class TotpUserIdMappingTest {
                 "totp");
         assert res1.get("status").getAsString().equals("OK");
         String d1Secret = res1.get("secret").getAsString();
-        TOTPDevice device1 = new TOTPDevice(externalUserId, "deviceName", d1Secret, 30, 1, false, System.currentTimeMillis());
+        TOTPDevice device1 = new TOTPDevice(externalUserId, "d1", d1Secret, 30, 0, false, System.currentTimeMillis());
 
         body.addProperty("deviceName", "d2");
 
@@ -93,7 +93,7 @@ public class TotpUserIdMappingTest {
                 "totp");
         assert res2.get("status").getAsString().equals("OK");
         String d2Secret = res2.get("secret").getAsString();
-        TOTPDevice device2 = new TOTPDevice(externalUserId, "deviceName", d2Secret, 30, 1, false, System.currentTimeMillis());
+        TOTPDevice device2 = new TOTPDevice(externalUserId, "d2", d2Secret, 30, 0, false, System.currentTimeMillis());
 
         // Verify d1 but not d2:
         JsonObject verifyD1Input = new JsonObject();

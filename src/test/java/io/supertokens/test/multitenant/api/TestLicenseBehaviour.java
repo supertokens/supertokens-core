@@ -99,7 +99,7 @@ public class TestLicenseBehaviour {
         // Sign up and get user info
         JsonObject userInfo = TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", "t1"),
                 "user@example.com", "password", process.getProcess());
-        JsonObject userInfo2 = TestMultitenancyAPIHelper.getEpUserById(new TenantIdentifier(null, "a1", "t1"),
+        JsonObject userInfo2 = TestMultitenancyAPIHelper.getEpUserById(new TenantIdentifier(null, "a1", null),
                 userInfo.get("id").getAsString(), process.getProcess());
         assertEquals(userInfo, userInfo2);
     }

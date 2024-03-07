@@ -19,16 +19,17 @@ package io.supertokens.webserver.api.passwordless;
 import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
-import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.Passwordless.ConsumeCodeResponse;
 import io.supertokens.passwordless.exceptions.*;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.InputParser;
@@ -89,25 +90,24 @@ public class ConsumeCodeAPI extends WebserverAPI {
         }
 
         try {
+            TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+            Storage storage = this.getTenantStorage(req);
             ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(
-                    this.getTenantIdentifierWithStorageFromRequest(req), main,
+                    tenantIdentifier,
+                    storage, main,
                     deviceId, deviceIdHash,
                     userInputCode, linkCode,
                     // From CDI version 4.0 onwards, the email verification will be set
                     getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0),
                     createRecipeUserIfNotExists);
 
-            io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(this.getTenantIdentifierWithStorageFromRequest(req), new AuthRecipeUserInfo[]{consumeCodeResponse.user});
-
-            ActiveUsers.updateLastActive(this.getPublicTenantStorage(req), main, consumeCodeResponse.user.getSupertokensUserId());
-
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
 
             if (consumeCodeResponse.user != null) {
-                io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(this.getTenantIdentifierWithStorageFromRequest(req), new AuthRecipeUserInfo[]{consumeCodeResponse.user});
+                io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(storage, new AuthRecipeUserInfo[]{consumeCodeResponse.user});
 
-                ActiveUsers.updateLastActive(this.getPublicTenantStorage(req), main, consumeCodeResponse.user.getSupertokensUserId());
+                ActiveUsers.updateLastActive(this.getAppIdentifier(req), main, consumeCodeResponse.user.getSupertokensUserId());
 
                 JsonObject userJson = getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0) ? consumeCodeResponse.user.toJson() :
                         consumeCodeResponse.user.toJsonWithoutAccountLinking();

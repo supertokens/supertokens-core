@@ -27,11 +27,11 @@ import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.session.SessionInfo;
 import io.supertokens.session.Session;
@@ -85,7 +85,10 @@ public class SessionAPI extends WebserverAPI {
         assert userDataInDatabase != null;
 
         try {
-            boolean useStaticSigningKey = !Config.getConfig(this.getTenantIdentifierWithStorageFromRequest(req), main)
+            TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+            Storage storage = getTenantStorage(req);
+
+            boolean useStaticSigningKey = !Config.getConfig(tenantIdentifier, main)
                     .getAccessTokenSigningKeyDynamic();
             if (version.greaterThanOrEqualTo(SemVer.v2_21)) {
                 Boolean useDynamicSigningKey = InputParser.parseBooleanOrThrowError(input, "useDynamicSigningKey",
@@ -98,22 +101,21 @@ public class SessionAPI extends WebserverAPI {
             AccessToken.VERSION accessTokenVersion = AccessToken.getAccessTokenVersionForCDI(version);
 
             SessionInformationHolder sessionInfo = Session.createNewSession(
-                    this.getTenantIdentifierWithStorageFromRequest(req), main, userId, userDataInJWT,
+                    tenantIdentifier, storage, main, userId, userDataInJWT,
                     userDataInDatabase, enableAntiCsrf, accessTokenVersion,
                     useStaticSigningKey);
 
-            if (StorageLayer.getStorage(this.getTenantIdentifierWithStorageFromRequest(req), main).getType() ==
-                    STORAGE_TYPE.SQL) {
+            if (storage.getType() == STORAGE_TYPE.SQL) {
                 try {
                     io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping =
                             io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                                    this.getAppIdentifierWithStorage(req),
+                                    tenantIdentifier.toAppIdentifier(), storage,
                                     sessionInfo.session.userId, UserIdType.ANY);
                     if (userIdMapping != null) {
-                        ActiveUsers.updateLastActive(this.getPublicTenantStorage(req), main,
+                        ActiveUsers.updateLastActive(tenantIdentifier.toAppIdentifier(), main,
                                 userIdMapping.superTokensUserId);
                     } else {
-                        ActiveUsers.updateLastActive(this.getPublicTenantStorage(req), main,
+                        ActiveUsers.updateLastActive(tenantIdentifier.toAppIdentifier(), main,
                                 sessionInfo.session.userId);
                     }
                 } catch (StorageQueryException ignored) {
@@ -134,7 +136,7 @@ public class SessionAPI extends WebserverAPI {
             if (super.getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_21)) {
                 result.remove("idRefreshToken");
             } else {
-                Utils.addLegacySigningKeyInfos(this.getAppIdentifierWithStorage(req), main, result,
+                Utils.addLegacySigningKeyInfos(tenantIdentifier.toAppIdentifier(), main, result,
                         super.getVersionFromRequest(req).betweenInclusive(SemVer.v2_9, SemVer.v2_21));
             }
 
@@ -155,18 +157,19 @@ public class SessionAPI extends WebserverAPI {
         String sessionHandle = InputParser.getQueryParamOrThrowError(req, "sessionHandle", false);
         assert sessionHandle != null;
 
-        TenantIdentifierWithStorage tenantIdentifierWithStorage = null;
+        TenantIdentifier tenantIdentifier;
+        Storage storage;
         try {
-            AppIdentifierWithStorage appIdentifier = getAppIdentifierWithStorage(req);
-            TenantIdentifier tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
+            AppIdentifier appIdentifier = getAppIdentifier(req);
+            tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
                     appIdentifier.getAppId(), Session.getTenantIdFromSessionHandle(sessionHandle));
-            tenantIdentifierWithStorage = tenantIdentifier.withStorage(StorageLayer.getStorage(tenantIdentifier, main));
+            storage = StorageLayer.getStorage(tenantIdentifier, main);
         } catch (TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
 
         try {
-            SessionInfo sessionInfo = Session.getSession(tenantIdentifierWithStorage, sessionHandle);
+            SessionInfo sessionInfo = Session.getSession(tenantIdentifier, storage, sessionHandle);
 
             JsonObject result = new Gson().toJsonTree(sessionInfo).getAsJsonObject();
             result.add("userDataInJWT", Utils.toJsonTreeWithNulls(sessionInfo.userDataInJWT));
@@ -175,7 +178,7 @@ public class SessionAPI extends WebserverAPI {
             result.addProperty("status", "OK");
 
             if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v3_0)) {
-                result.addProperty("tenantId", tenantIdentifierWithStorage.getTenantId());
+                result.addProperty("tenantId", tenantIdentifier.getTenantId());
             }
             if (getVersionFromRequest(req).lesserThan(SemVer.v4_0)) {
                 result.remove("recipeUserId");
@@ -186,7 +189,7 @@ public class SessionAPI extends WebserverAPI {
         } catch (StorageQueryException e) {
             throw new ServletException(e);
         } catch (UnauthorisedException e) {
-            Logging.debug(main, tenantIdentifierWithStorage, Utils.exceptionStacktraceToString(e));
+            Logging.debug(main, tenantIdentifier, Utils.exceptionStacktraceToString(e));
             JsonObject reply = new JsonObject();
             reply.addProperty("status", "UNAUTHORISED");
             reply.addProperty("message", e.getMessage());

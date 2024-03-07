@@ -252,7 +252,7 @@ public class MultitenantAPITest {
         JsonObject user2 = signInUp(t2, "google", "google-user-id", "user@gmail.com");
         JsonObject user3 = signInUp(t3, "google", "google-user-id", "user@gmail.com");
 
-        for (TenantIdentifier tenant : new TenantIdentifier[]{t1, t2, t3}) {
+        for (TenantIdentifier tenant : new TenantIdentifier[]{t1}) { // Only public tenant can get user by id
             assertEquals(user1, getUserUsingId(tenant, user1.get("id").getAsString()));
             assertEquals(user2, getUserUsingId(tenant, user2.get("id").getAsString()));
             assertEquals(user3, getUserUsingId(tenant, user3.get("id").getAsString()));
