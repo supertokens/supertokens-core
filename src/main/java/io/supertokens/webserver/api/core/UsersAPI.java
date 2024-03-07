@@ -25,10 +25,11 @@ import io.supertokens.authRecipe.UserPaginationContainer;
 import io.supertokens.authRecipe.UserPaginationToken;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.dashboard.DashboardSearchTags;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.utils.SemVer;
@@ -41,7 +42,6 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.stream.Stream;
 
 public class UsersAPI extends WebserverAPI {
@@ -75,9 +75,11 @@ public class UsersAPI extends WebserverAPI {
             }
         }
 
-        TenantIdentifierWithStorage tenantIdentifierWithStorage = null;
+        TenantIdentifier tenantIdentifier = null;
+        Storage storage = null;
         try {
-            tenantIdentifierWithStorage = this.getTenantIdentifierWithStorageFromRequest(req);
+            tenantIdentifier = getTenantIdentifier(req);
+            storage = this.getTenantStorage(req);
         } catch (TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
@@ -164,11 +166,11 @@ public class UsersAPI extends WebserverAPI {
         }
 
         try {
-            UserPaginationContainer users = AuthRecipe.getUsers(tenantIdentifierWithStorage,
+            UserPaginationContainer users = AuthRecipe.getUsers(tenantIdentifier, storage,
                     limit, timeJoinedOrder, paginationToken,
                     recipeIdsEnumBuilder.build().toArray(RECIPE_ID[]::new), searchTags);
 
-            UserIdMapping.populateExternalUserIdForUsers(tenantIdentifierWithStorage, users.users);
+            UserIdMapping.populateExternalUserIdForUsers(storage, users.users);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
@@ -199,7 +201,7 @@ public class UsersAPI extends WebserverAPI {
             }
             super.sendJsonResponse(200, result, resp);
         } catch (UserPaginationToken.InvalidTokenException e) {
-            Logging.debug(main, tenantIdentifierWithStorage, Utils.exceptionStacktraceToString(e));
+            Logging.debug(main, tenantIdentifier, Utils.exceptionStacktraceToString(e));
             throw new ServletException(new BadRequestException("invalid pagination token"));
         } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);

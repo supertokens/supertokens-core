@@ -273,7 +273,8 @@ public class TestTenant {
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException,
                     ServletException {
                 try {
-                    super.sendTextResponse(200, this.getTenantIdentifierWithStorageFromRequest(req).getTenantId(), resp);
+                    getTenantStorage(req);
+                    super.sendTextResponse(200, this.getTenantIdentifier(req).getTenantId(), resp);
                 } catch (TenantOrAppNotFoundException e) {
                     throw new ServletException(e);
                 }

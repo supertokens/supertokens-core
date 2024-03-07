@@ -1,19 +1,22 @@
 package io.supertokens;
 
+import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import org.jetbrains.annotations.TestOnly;
 
 public class ActiveUsers {
 
-    public static void updateLastActive(AppIdentifierWithStorage appIdentifierWithStorage, Main main, String userId)
+    public static void updateLastActive(AppIdentifier appIdentifier, Main main, String userId)
             throws TenantOrAppNotFoundException {
+        Storage storage = StorageLayer.getStorage(appIdentifier.getAsPublicTenantIdentifier(), main);
         try {
-            appIdentifierWithStorage.getActiveUsersStorage().updateLastActive(appIdentifierWithStorage, userId);
+            StorageUtils.getActiveUsersStorage(storage).updateLastActive(appIdentifier, userId);
         } catch (StorageQueryException ignored) {
         }
     }
@@ -21,36 +24,22 @@ public class ActiveUsers {
     @TestOnly
     public static void updateLastActive(Main main, String userId) {
         try {
-            ActiveUsers.updateLastActive(new AppIdentifierWithStorage(null, null, StorageLayer.getStorage(main)), main,
-                    userId);
+            ActiveUsers.updateLastActive(new AppIdentifier(null, null),
+                    main, userId);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
     }
 
-    public static int countUsersActiveSince(AppIdentifierWithStorage appIdentifierWithStorage, Main main, long time)
+    public static int countUsersActiveSince(Main main, AppIdentifier appIdentifier, long time)
             throws StorageQueryException, TenantOrAppNotFoundException {
-        return appIdentifierWithStorage.getActiveUsersStorage().countUsersActiveSince(appIdentifierWithStorage, time);
+        Storage storage = StorageLayer.getStorage(appIdentifier.getAsPublicTenantIdentifier(), main);
+        return StorageUtils.getActiveUsersStorage(storage).countUsersActiveSince(appIdentifier, time);
     }
 
     @TestOnly
     public static int countUsersActiveSince(Main main, long time)
             throws StorageQueryException, TenantOrAppNotFoundException {
-        return countUsersActiveSince(new AppIdentifierWithStorage(null, null, StorageLayer.getStorage(main)), main,
-                time);
-    }
-
-    public static void removeActiveUser(AppIdentifierWithStorage appIdentifierWithStorage, String userId)
-            throws StorageQueryException {
-        try {
-            ((AuthRecipeSQLStorage) appIdentifierWithStorage.getActiveUsersStorage()).startTransaction(con -> {
-                appIdentifierWithStorage.getActiveUsersStorage().deleteUserActive_Transaction(con, appIdentifierWithStorage, userId);
-                ((AuthRecipeSQLStorage) appIdentifierWithStorage.getActiveUsersStorage()).commitTransaction(con);
-                return null;
-            });
-
-        } catch (StorageTransactionLogicException e) {
-            throw new StorageQueryException(e.actualException);
-        }
+        return countUsersActiveSince(main, new AppIdentifier(null, null), time);
     }
 }

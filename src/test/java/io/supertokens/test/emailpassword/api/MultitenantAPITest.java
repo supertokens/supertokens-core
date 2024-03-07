@@ -389,9 +389,7 @@ public class MultitenantAPITest {
         JsonObject user3 = signUp(t3, "user@example.com", "password3");
 
         for (JsonObject user : new JsonObject[]{user1, user2, user3}) {
-            for (TenantIdentifier t : new TenantIdentifier[]{t1, t2, t3}) {
-                assertEquals(user, getUserUsingId(t, user.getAsJsonPrimitive("id").getAsString()));
-            }
+            assertEquals(user, getUserUsingId(t1, user.getAsJsonPrimitive("id").getAsString()));
         }
     }
 
@@ -431,16 +429,14 @@ public class MultitenantAPITest {
             JsonObject user = users[i];
             TenantIdentifier userTenant = tenants[i];
 
-            for (TenantIdentifier tenant : tenants) {
-                String newPassword = generateRandomString(16);
-                updatePassword(tenant, user.getAsJsonPrimitive("id").getAsString(), newPassword);
+            String newPassword = generateRandomString(16);
+            updatePassword(t1, user.getAsJsonPrimitive("id").getAsString(), newPassword);
 
-                for (TenantIdentifier loginTenant : tenants) {
-                    if (loginTenant.equals(userTenant)) {
-                        assertEquals(user, successfulSignIn(loginTenant, "user@example.com", newPassword));
-                    } else {
-                        wrongCredentialsSignIn(loginTenant, "user@example.com", newPassword);
-                    }
+            for (TenantIdentifier loginTenant : tenants) {
+                if (loginTenant.equals(userTenant)) {
+                    assertEquals(user, successfulSignIn(loginTenant, "user@example.com", newPassword));
+                } else {
+                    wrongCredentialsSignIn(loginTenant, "user@example.com", newPassword);
                 }
             }
         }
@@ -465,18 +461,16 @@ public class MultitenantAPITest {
             JsonObject user = users[i];
             TenantIdentifier userTenant = tenants[i];
 
-            for (TenantIdentifier tenant : tenants) {
-                String newEmail = (generateRandomString(16) + "@example.com").toLowerCase();
-                updateEmail(tenant, user.getAsJsonPrimitive("id").getAsString(), newEmail);
-                user.remove("email");
-                user.addProperty("email", newEmail);
+            String newEmail = (generateRandomString(16) + "@example.com").toLowerCase();
+            updateEmail(t1, user.getAsJsonPrimitive("id").getAsString(), newEmail);
+            user.remove("email");
+            user.addProperty("email", newEmail);
 
-                for (TenantIdentifier loginTenant : tenants) {
-                    if (loginTenant.equals(userTenant)) {
-                        assertEquals(user, successfulSignIn(loginTenant, newEmail, "password"));
-                    } else {
-                        wrongCredentialsSignIn(loginTenant, newEmail, "password");
-                    }
+            for (TenantIdentifier loginTenant : tenants) {
+                if (loginTenant.equals(userTenant)) {
+                    assertEquals(user, successfulSignIn(loginTenant, newEmail, "password"));
+                } else {
+                    wrongCredentialsSignIn(loginTenant, newEmail, "password");
                 }
             }
         }
@@ -501,20 +495,18 @@ public class MultitenantAPITest {
             JsonObject user = users[i];
             TenantIdentifier userTenant = tenants[i];
 
-            for (TenantIdentifier tenant : tenants) {
-                String newPassword = generateRandomString(16);
-                String newEmail = (generateRandomString(16) + "@example.com").toLowerCase();
-                updateEmailAndPassword(tenant, user.getAsJsonPrimitive("id").getAsString(), newEmail, newPassword);
+            String newPassword = generateRandomString(16);
+            String newEmail = (generateRandomString(16) + "@example.com").toLowerCase();
+            updateEmailAndPassword(t1, user.getAsJsonPrimitive("id").getAsString(), newEmail, newPassword);
 
-                user.remove("email");
-                user.addProperty("email", newEmail);
+            user.remove("email");
+            user.addProperty("email", newEmail);
 
-                for (TenantIdentifier loginTenant : tenants) {
-                    if (loginTenant.equals(userTenant)) {
-                        assertEquals(user, successfulSignIn(loginTenant, newEmail, newPassword));
-                    } else {
-                        wrongCredentialsSignIn(loginTenant, newEmail, newPassword);
-                    }
+            for (TenantIdentifier loginTenant : tenants) {
+                if (loginTenant.equals(userTenant)) {
+                    assertEquals(user, successfulSignIn(loginTenant, newEmail, newPassword));
+                } else {
+                    wrongCredentialsSignIn(loginTenant, newEmail, newPassword);
                 }
             }
         }
@@ -692,7 +684,7 @@ public class MultitenantAPITest {
 
         EmailPasswordSQLStorage storage = (EmailPasswordSQLStorage) StorageLayer.getStorage(t2, process.getProcess());
 
-        storage.signUp(t2.withStorage(storage), "userId", email, combinedPasswordHash, timeJoined);
+        storage.signUp(t2, "userId", email, combinedPasswordHash, timeJoined);
 
         successfulSignIn(t2, email, password);
         wrongCredentialsSignIn(t1, email, password);

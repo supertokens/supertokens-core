@@ -217,8 +217,6 @@ public class MultitenantAPITest {
 
         verifyEmail(t1, "userid", "test@example.com");
         assertTrue(isEmailVerified(t1, "userid", "test@example.com"));
-        assertFalse(isEmailVerified(t2, "userid", "test@example.com"));
-        assertFalse(isEmailVerified(t3, "userid", "test@example.com"));
     }
 
     @Test
@@ -228,7 +226,6 @@ public class MultitenantAPITest {
         }
 
         verifyEmail(t2, "userid", "test@example.com");
-        assertTrue(isEmailVerified(t2, "userid", "test@example.com"));
-        assertTrue(isEmailVerified(t3, "userid", "test@example.com"));
+        assertTrue(isEmailVerified(t1, "userid", "test@example.com"));
     }
 }

@@ -26,6 +26,7 @@ import io.supertokens.passwordless.exceptions.Base64EncodingException;
 import io.supertokens.passwordless.exceptions.RestartFlowException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.passwordless.exception.DuplicateLinkCodeHashException;
 import io.supertokens.utils.Utils;
@@ -78,11 +79,13 @@ public class CreateCodeAPI extends WebserverAPI {
         }
 
         try {
+            TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
             CreateCodeResponse createCodeResponse = Passwordless.createCode(
-                    this.getTenantIdentifierWithStorageFromRequest(req), main, email,
+                    tenantIdentifier,
+                    this.getTenantStorage(req), main, email,
                     phoneNumber, deviceId,
                     userInputCode);
-            long passwordlessCodeLifetime = Config.getConfig(this.getTenantIdentifierWithStorageFromRequest(req), main)
+            long passwordlessCodeLifetime = Config.getConfig(tenantIdentifier, main)
                     .getPasswordlessCodeLifetime();
 
             JsonObject result = new JsonObject();

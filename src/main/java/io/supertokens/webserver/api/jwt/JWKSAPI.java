@@ -22,6 +22,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -54,13 +55,16 @@ public class JWKSAPI extends WebserverAPI {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         // API is app specific
         try {
-            List<JsonObject> jwks = SigningKeys.getInstance(this.getAppIdentifierWithStorage(req), main).getJWKS();
+            enforcePublicTenantAndGetPublicTenantStorage(req);
+            List<JsonObject> jwks = SigningKeys.getInstance(getAppIdentifier(req), main).getJWKS();
             JsonObject reply = new JsonObject();
             JsonArray jwksJsonArray = new JsonParser().parse(new Gson().toJson(jwks)).getAsJsonArray();
             reply.add("keys", jwksJsonArray);
             reply.addProperty("status", "OK");
             super.sendJsonResponse(200, reply, resp);
-        } catch (StorageQueryException | UnsupportedJWTSigningAlgorithmException | StorageTransactionLogicException | NoSuchAlgorithmException | InvalidKeySpecException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | UnsupportedJWTSigningAlgorithmException | StorageTransactionLogicException |
+                 NoSuchAlgorithmException | InvalidKeySpecException | TenantOrAppNotFoundException |
+                 BadPermissionException e) {
             throw new ServletException(e);
         }
     }

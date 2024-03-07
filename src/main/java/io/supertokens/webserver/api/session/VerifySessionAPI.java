@@ -67,11 +67,9 @@ public class VerifySessionAPI extends WebserverAPI {
         Boolean enableAntiCsrf = InputParser.parseBooleanOrThrowError(input, "enableAntiCsrf", false);
         assert enableAntiCsrf != null;
 
-        AppIdentifier appIdentifier;
+        AppIdentifier appIdentifier = null;
         try {
-            // We actually don't use the storage because tenantId is obtained from the accessToken,
-            // and appropriate storage is obtained later
-            appIdentifier = this.getAppIdentifierWithStorage(req);
+            appIdentifier = this.getAppIdentifier(req);
         } catch (TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
@@ -135,7 +133,7 @@ public class VerifySessionAPI extends WebserverAPI {
                     reply.addProperty("jwtSigningPublicKeyExpiryTime",
                             SigningKeys.getInstance(appIdentifier, main).getDynamicSigningKeyExpiryTime());
 
-                    Utils.addLegacySigningKeyInfos(this.getAppIdentifierWithStorage(req), main, reply,
+                    Utils.addLegacySigningKeyInfos(appIdentifier, main, reply,
                             super.getVersionFromRequest(req).betweenInclusive(SemVer.v2_9, SemVer.v2_21));
                 }
 

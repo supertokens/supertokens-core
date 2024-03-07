@@ -27,12 +27,12 @@ import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.exceptions.*;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.passwordless.exception.DuplicateLinkCodeHashException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -114,9 +114,10 @@ public class GetUserByAccountInfoTest {
         AuthRecipeUserInfo user3 = createPasswordlessUserWithEmail(process.getProcess(), "test3@example.com");
         AuthRecipeUserInfo user4 = createPasswordlessUserWithPhone(process.getProcess(), "+919876543210");
 
-        TenantIdentifierWithStorage tenantIdentifierWithStorage = TenantIdentifier.BASE_TENANT.withStorage(StorageLayer.getBaseStorage(process.getProcess()));
+        Storage storage = (StorageLayer.getBaseStorage(process.getProcess()));
 
-        AuthRecipeUserInfo userToTest = AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false,
+        AuthRecipeUserInfo userToTest = AuthRecipe.getUsersByAccountInfo(TenantIdentifier.BASE_TENANT,
+                storage, false,
                 "test1@example.com", null, null, null)[0];
         assertNotNull(userToTest.getSupertokensUserId());
         assertFalse(userToTest.isPrimaryUser);
@@ -128,19 +129,30 @@ public class GetUserByAccountInfoTest {
         assert(userToTest.loginMethods[0].timeJoined > 0);
 
         // test for result
-        assertEquals(user1, AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false, "test1@example.com", null, null, null)[0]);
-        assertEquals(user2, AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false, null, null, "google", "userid1")[0]);
-        assertEquals(user2, AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false, "test2@example.com", null, "google", "userid1")[0]);
-        assertEquals(user3, AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false, "test3@example.com", null, null, null)[0]);
-        assertEquals(user4, AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false, null, "+919876543210", null, null)[0]);
+        assertEquals(user1, AuthRecipe.getUsersByAccountInfo(TenantIdentifier.BASE_TENANT, storage
+                , false, "test1@example.com", null, null, null)[0]);
+        assertEquals(user2, AuthRecipe.getUsersByAccountInfo(TenantIdentifier.BASE_TENANT, storage
+                , false, null, null, "google", "userid1")[0]);
+        assertEquals(user2, AuthRecipe.getUsersByAccountInfo(TenantIdentifier.BASE_TENANT, storage
+                , false, "test2@example.com", null, "google", "userid1")[0]);
+        assertEquals(user3, AuthRecipe.getUsersByAccountInfo(TenantIdentifier.BASE_TENANT, storage
+                , false, "test3@example.com", null, null, null)[0]);
+        assertEquals(user4, AuthRecipe.getUsersByAccountInfo(TenantIdentifier.BASE_TENANT, storage
+                , false, null, "+919876543210", null, null)[0]);
 
         // test for no result
-        assertEquals(0, AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false, "test1@example.com", "+919876543210", null, null).length);
-        assertEquals(0, AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false, "test2@example.com", "+919876543210", null, null).length);
-        assertEquals(0, AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false, "test3@example.com", "+919876543210", null, null).length);
-        assertEquals(0, AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false, null, "+919876543210", "google", "userid1").length);
-        assertEquals(0, AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false, "test1@gmail.com", null, "google", "userid1").length);
-        assertEquals(0, AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false, "test3@gmail.com", null, "google", "userid1").length);
+        assertEquals(0, AuthRecipe.getUsersByAccountInfo(TenantIdentifier.BASE_TENANT, storage,
+                false, "test1@example.com", "+919876543210", null, null).length);
+        assertEquals(0, AuthRecipe.getUsersByAccountInfo(TenantIdentifier.BASE_TENANT, storage,
+                false, "test2@example.com", "+919876543210", null, null).length);
+        assertEquals(0, AuthRecipe.getUsersByAccountInfo(TenantIdentifier.BASE_TENANT, storage,
+                false, "test3@example.com", "+919876543210", null, null).length);
+        assertEquals(0, AuthRecipe.getUsersByAccountInfo(TenantIdentifier.BASE_TENANT, storage,
+                false, null, "+919876543210", "google", "userid1").length);
+        assertEquals(0, AuthRecipe.getUsersByAccountInfo(TenantIdentifier.BASE_TENANT, storage,
+                false, "test1@gmail.com", null, "google", "userid1").length);
+        assertEquals(0, AuthRecipe.getUsersByAccountInfo(TenantIdentifier.BASE_TENANT, storage,
+                false, "test3@gmail.com", null, "google", "userid1").length);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -165,27 +177,31 @@ public class GetUserByAccountInfoTest {
         AuthRecipeUserInfo user3 = createPasswordlessUserWithEmail(process.getProcess(), "test3@example.com");
         AuthRecipeUserInfo user4 = createPasswordlessUserWithPhone(process.getProcess(), "+919876543210");
 
-        TenantIdentifierWithStorage tenantIdentifierWithStorage = TenantIdentifier.BASE_TENANT.withStorage(StorageLayer.getBaseStorage(process.getProcess()));
+        Storage storage = (StorageLayer.getBaseStorage(process.getProcess()));
         {
-            AuthRecipeUserInfo[] users = AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, true, "test1@example.com", "+919876543210", null, null);
+            AuthRecipeUserInfo[] users = AuthRecipe.getUsersByAccountInfo(TenantIdentifier.BASE_TENANT,
+                    storage, true, "test1@example.com", "+919876543210", null, null);
             assertEquals(2, users.length);
             assertTrue(Arrays.asList(users).contains(user1));
             assertTrue(Arrays.asList(users).contains(user4));
         }
         {
-            AuthRecipeUserInfo[] users = AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, true, "test1@example.com", null, "google", "userid1");
+            AuthRecipeUserInfo[] users = AuthRecipe.getUsersByAccountInfo(TenantIdentifier.BASE_TENANT,
+                    storage, true, "test1@example.com", null, "google", "userid1");
             assertEquals(2, users.length);
             assertTrue(Arrays.asList(users).contains(user1));
             assertTrue(Arrays.asList(users).contains(user2));
         }
         {
-            AuthRecipeUserInfo[] users = AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, true, null, "+919876543210", "google", "userid1");
+            AuthRecipeUserInfo[] users = AuthRecipe.getUsersByAccountInfo(TenantIdentifier.BASE_TENANT,
+                    storage, true, null, "+919876543210", "google", "userid1");
             assertEquals(2, users.length);
             assertTrue(Arrays.asList(users).contains(user4));
             assertTrue(Arrays.asList(users).contains(user2));
         }
         {
-            AuthRecipeUserInfo[] users = AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, true, "test1@example.com", "+919876543210", "google", "userid1");
+            AuthRecipeUserInfo[] users = AuthRecipe.getUsersByAccountInfo(TenantIdentifier.BASE_TENANT,
+                    storage, true, "test1@example.com", "+919876543210", "google", "userid1");
             assertEquals(3, users.length);
             assertTrue(Arrays.asList(users).contains(user1));
             assertTrue(Arrays.asList(users).contains(user2));
@@ -210,11 +226,15 @@ public class GetUserByAccountInfoTest {
             return;
         }
 
-        TenantIdentifierWithStorage tenantIdentifierWithStorage = TenantIdentifier.BASE_TENANT.withStorage(StorageLayer.getBaseStorage(process.getProcess()));
-        assertEquals(0, AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false, "test1@example.com", null, null, null).length);
-        assertEquals(0, AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false, null, null, "google", "userid1").length);
-        assertEquals(0, AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false, "test3@example.com", null, null, null).length);
-        assertEquals(0, AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false, null, "+919876543210", null, null).length);
+        Storage storage = (StorageLayer.getBaseStorage(process.getProcess()));
+        assertEquals(0, AuthRecipe.getUsersByAccountInfo(TenantIdentifier.BASE_TENANT, storage,
+                false, "test1@example.com", null, null, null).length);
+        assertEquals(0, AuthRecipe.getUsersByAccountInfo(TenantIdentifier.BASE_TENANT, storage,
+                false, null, null, "google", "userid1").length);
+        assertEquals(0, AuthRecipe.getUsersByAccountInfo(TenantIdentifier.BASE_TENANT, storage,
+                false, "test3@example.com", null, null, null).length);
+        assertEquals(0, AuthRecipe.getUsersByAccountInfo(TenantIdentifier.BASE_TENANT, storage,
+                false, null, "+919876543210", null, null).length);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -241,20 +261,25 @@ public class GetUserByAccountInfoTest {
         AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId()).user;
         AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), primaryUser.getSupertokensUserId());
 
-        TenantIdentifierWithStorage tenantIdentifierWithStorage = TenantIdentifier.BASE_TENANT.withStorage(
+        Storage storage = (
                 StorageLayer.getBaseStorage(process.getProcess()));
 
         primaryUser = AuthRecipe.getUserById(process.getProcess(), user1.getSupertokensUserId());
 
-        assertEquals(primaryUser, AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false,
+        assertEquals(primaryUser, AuthRecipe.getUsersByAccountInfo(TenantIdentifier.BASE_TENANT,
+                storage, false,
                 "test1@example.com", null, null, null)[0]);
-        assertEquals(primaryUser, AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false,
+        assertEquals(primaryUser, AuthRecipe.getUsersByAccountInfo(TenantIdentifier.BASE_TENANT,
+                storage, false,
                 "test2@example.com", null, null, null)[0]);
-        assertEquals(primaryUser, AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false,
+        assertEquals(primaryUser, AuthRecipe.getUsersByAccountInfo(TenantIdentifier.BASE_TENANT,
+                storage, false,
                 null, null, "google", "userid1")[0]);
-        assertEquals(primaryUser, AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false,
+        assertEquals(primaryUser, AuthRecipe.getUsersByAccountInfo(TenantIdentifier.BASE_TENANT,
+                storage, false,
                 "test1@example.com", null, "google", "userid1")[0]);
-        assertEquals(primaryUser, AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false,
+        assertEquals(primaryUser, AuthRecipe.getUsersByAccountInfo(TenantIdentifier.BASE_TENANT,
+                storage, false,
                 "test2@example.com", null, "google", "userid1")[0]);
 
         process.kill();
@@ -282,14 +307,16 @@ public class GetUserByAccountInfoTest {
         AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId()).user;
         AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), primaryUser.getSupertokensUserId());
 
-        TenantIdentifierWithStorage tenantIdentifierWithStorage = TenantIdentifier.BASE_TENANT.withStorage(
+        Storage storage = (
                 StorageLayer.getBaseStorage(process.getProcess()));
 
         primaryUser = AuthRecipe.getUserById(process.getProcess(), user1.getSupertokensUserId());
 
-        assertEquals(primaryUser, AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false,
+        assertEquals(primaryUser, AuthRecipe.getUsersByAccountInfo(TenantIdentifier.BASE_TENANT,
+                storage, false,
                 "test1@example.com", null, null, null)[0]);
-        assertEquals(primaryUser, AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false,
+        assertEquals(primaryUser, AuthRecipe.getUsersByAccountInfo(TenantIdentifier.BASE_TENANT,
+                storage, false,
                 "test2@example.com", null, null, null)[0]);
 
         process.kill();
@@ -317,14 +344,16 @@ public class GetUserByAccountInfoTest {
         AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId()).user;
         AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), primaryUser.getSupertokensUserId());
 
-        TenantIdentifierWithStorage tenantIdentifierWithStorage = TenantIdentifier.BASE_TENANT.withStorage(
+        Storage storage = (
                 StorageLayer.getBaseStorage(process.getProcess()));
 
         primaryUser = AuthRecipe.getUserById(process.getProcess(), user1.getSupertokensUserId());
 
-        assertEquals(primaryUser, AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false,
+        assertEquals(primaryUser, AuthRecipe.getUsersByAccountInfo(TenantIdentifier.BASE_TENANT,
+                storage, false,
                 "test1@example.com", null, null, null)[0]);
-        assertEquals(primaryUser, AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false,
+        assertEquals(primaryUser, AuthRecipe.getUsersByAccountInfo(TenantIdentifier.BASE_TENANT,
+                storage, false,
                 "test2@example.com", null, null, null)[0]);
 
         process.kill();
@@ -352,16 +381,19 @@ public class GetUserByAccountInfoTest {
         AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId()).user;
         AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), primaryUser.getSupertokensUserId());
 
-        TenantIdentifierWithStorage tenantIdentifierWithStorage = TenantIdentifier.BASE_TENANT.withStorage(
+        Storage storage = (
                 StorageLayer.getBaseStorage(process.getProcess()));
 
         primaryUser = AuthRecipe.getUserById(process.getProcess(), user1.getSupertokensUserId());
 
-        assertEquals(primaryUser, AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false,
+        assertEquals(primaryUser, AuthRecipe.getUsersByAccountInfo(TenantIdentifier.BASE_TENANT,
+                storage, false,
                 "test1@example.com", null, null, null)[0]);
-        assertEquals(primaryUser, AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false,
+        assertEquals(primaryUser, AuthRecipe.getUsersByAccountInfo(TenantIdentifier.BASE_TENANT,
+                storage, false,
                 null, "+919876543210", null, null)[0]);
-        assertEquals(primaryUser, AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false,
+        assertEquals(primaryUser, AuthRecipe.getUsersByAccountInfo(TenantIdentifier.BASE_TENANT,
+                storage, false,
                 "test1@example.com", "+919876543210", null, null)[0]);
 
         process.kill();
@@ -389,20 +421,25 @@ public class GetUserByAccountInfoTest {
         AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId()).user;
         AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), primaryUser.getSupertokensUserId());
 
-        TenantIdentifierWithStorage tenantIdentifierWithStorage = TenantIdentifier.BASE_TENANT.withStorage(
+        Storage storage = (
                 StorageLayer.getBaseStorage(process.getProcess()));
 
         primaryUser = AuthRecipe.getUserById(process.getProcess(), user1.getSupertokensUserId());
 
-        assertEquals(primaryUser, AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false,
+        assertEquals(primaryUser, AuthRecipe.getUsersByAccountInfo(TenantIdentifier.BASE_TENANT,
+                storage, false,
                 "test1@example.com", null, null, null)[0]);
-        assertEquals(primaryUser, AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false,
+        assertEquals(primaryUser, AuthRecipe.getUsersByAccountInfo(TenantIdentifier.BASE_TENANT,
+                storage, false,
                 "test2@example.com", null, null, null)[0]);
-        assertEquals(primaryUser, AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false,
+        assertEquals(primaryUser, AuthRecipe.getUsersByAccountInfo(TenantIdentifier.BASE_TENANT,
+                storage, false,
                 null, null, "google", "userid1")[0]);
-        assertEquals(primaryUser, AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false,
+        assertEquals(primaryUser, AuthRecipe.getUsersByAccountInfo(TenantIdentifier.BASE_TENANT,
+                storage, false,
                 "test1@example.com", null, "google", "userid1")[0]);
-        assertEquals(primaryUser, AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false,
+        assertEquals(primaryUser, AuthRecipe.getUsersByAccountInfo(TenantIdentifier.BASE_TENANT,
+                storage, false,
                 "test2@example.com", null, "google", "userid1")[0]);
 
         process.kill();
@@ -436,20 +473,23 @@ public class GetUserByAccountInfoTest {
         AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), primaryUser.getSupertokensUserId());
         AuthRecipe.linkAccounts(process.getProcess(), user3.getSupertokensUserId(), primaryUser.getSupertokensUserId());
 
-        TenantIdentifierWithStorage tenantIdentifierWithStorage = TenantIdentifier.BASE_TENANT.withStorage(
+        Storage storage = (
                 StorageLayer.getBaseStorage(process.getProcess()));
         {
-            AuthRecipeUserInfo[] users = AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false,
+            AuthRecipeUserInfo[] users = AuthRecipe.getUsersByAccountInfo(TenantIdentifier.BASE_TENANT,
+                    storage, false,
                     "test5@example.com", null, null, null);
             assertEquals(0, users.length);
         }
         {
-            AuthRecipeUserInfo[] users = AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false,
+            AuthRecipeUserInfo[] users = AuthRecipe.getUsersByAccountInfo(TenantIdentifier.BASE_TENANT,
+                    storage, false,
                     null, null, "google", "userid5");
             assertEquals(0, users.length);
         }
         {
-            AuthRecipeUserInfo[] users = AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false,
+            AuthRecipeUserInfo[] users = AuthRecipe.getUsersByAccountInfo(TenantIdentifier.BASE_TENANT,
+                    storage, false,
                     null, "+9876", null, null);
             assertEquals(0, users.length);
         }
@@ -491,11 +531,12 @@ public class GetUserByAccountInfoTest {
 
         AuthRecipe.createPrimaryUser(process.getProcess(), user4.getSupertokensUserId());
 
-        TenantIdentifierWithStorage tenantIdentifierWithStorage = TenantIdentifier.BASE_TENANT.withStorage(
+        Storage storage = (
                 StorageLayer.getBaseStorage(process.getProcess()));
 
         {
-            AuthRecipeUserInfo[] users = AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, true, "test1@example.com", null,
+            AuthRecipeUserInfo[] users = AuthRecipe.getUsersByAccountInfo(TenantIdentifier.BASE_TENANT,
+                    storage, true, "test1@example.com", null,
                     null, null);
 
             assertEquals(3, users.length);
@@ -504,7 +545,8 @@ public class GetUserByAccountInfoTest {
 
         }
         {
-            AuthRecipeUserInfo[] users = AuthRecipe.getUsersByAccountInfo(tenantIdentifierWithStorage, false, "test1@example.com", null,
+            AuthRecipeUserInfo[] users = AuthRecipe.getUsersByAccountInfo(TenantIdentifier.BASE_TENANT,
+                    storage, false, "test1@example.com", null,
                     null, null);
 
             assertEquals(3, users.length);

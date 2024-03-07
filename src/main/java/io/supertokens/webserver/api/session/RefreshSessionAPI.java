@@ -26,9 +26,11 @@ import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.session.Session;
@@ -72,34 +74,33 @@ public class RefreshSessionAPI extends WebserverAPI {
         assert enableAntiCsrf != null;
         assert refreshToken != null;
 
-        AppIdentifierWithStorage appIdentifierWithStorage = null;
+        TenantIdentifier tenantIdentifierForLogging = null;
         try {
-            appIdentifierWithStorage = this.getAppIdentifierWithStorage(req);
+            tenantIdentifierForLogging = getTenantIdentifier(req);
         } catch (TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
 
         try {
+            AppIdentifier appIdentifier = this.getAppIdentifier(req);
             AccessToken.VERSION accessTokenVersion = AccessToken.getAccessTokenVersionForCDI(version);
 
-            SessionInformationHolder sessionInfo = Session.refreshSession(appIdentifierWithStorage, main,
+            SessionInformationHolder sessionInfo = Session.refreshSession(appIdentifier, main,
                     refreshToken, antiCsrfToken,
                     enableAntiCsrf, accessTokenVersion,
-                    useDynamicSigningKey == null ? null : Boolean.FALSE.equals(useDynamicSigningKey)
-            );
+                    useDynamicSigningKey == null ? null : Boolean.FALSE.equals(useDynamicSigningKey));
+            TenantIdentifier tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
+                    appIdentifier.getAppId(), sessionInfo.session.tenantId);
+            Storage storage = StorageLayer.getStorage(tenantIdentifier, main);
 
-            if (StorageLayer.getStorage(this.getTenantIdentifierWithStorageFromRequest(req), main).getType() ==
-                    STORAGE_TYPE.SQL) {
+            if (storage.getType() == STORAGE_TYPE.SQL) {
                 try {
                     UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                            this.getAppIdentifierWithStorage(req),
-                            sessionInfo.session.userId, UserIdType.ANY);
+                            appIdentifier, storage, sessionInfo.session.userId, UserIdType.ANY);
                     if (userIdMapping != null) {
-                        ActiveUsers.updateLastActive(this.getPublicTenantStorage(req), main,
-                                userIdMapping.superTokensUserId);
+                        ActiveUsers.updateLastActive(appIdentifier, main, userIdMapping.superTokensUserId);
                     } else {
-                        ActiveUsers.updateLastActive(this.getPublicTenantStorage(req), main,
-                                sessionInfo.session.userId);
+                        ActiveUsers.updateLastActive(appIdentifier, main, sessionInfo.session.userId);
                     }
                 } catch (StorageQueryException ignored) {
                 }
@@ -123,14 +124,14 @@ public class RefreshSessionAPI extends WebserverAPI {
                  UnsupportedJWTSigningAlgorithmException e) {
             throw new ServletException(e);
         } catch (AccessTokenPayloadError | UnauthorisedException e) {
-            Logging.debug(main, appIdentifierWithStorage.getAsPublicTenantIdentifier(),
+            Logging.debug(main, tenantIdentifierForLogging,
                     Utils.exceptionStacktraceToString(e));
             JsonObject reply = new JsonObject();
             reply.addProperty("status", "UNAUTHORISED");
             reply.addProperty("message", e.getMessage());
             super.sendJsonResponse(200, reply, resp);
         } catch (TokenTheftDetectedException e) {
-            Logging.debug(main, appIdentifierWithStorage.getAsPublicTenantIdentifier(),
+            Logging.debug(main, tenantIdentifierForLogging,
                     Utils.exceptionStacktraceToString(e));
             JsonObject reply = new JsonObject();
             reply.addProperty("status", "TOKEN_THEFT_DETECTED");

@@ -17,19 +17,21 @@
 package io.supertokens.webserver.api.emailpassword;
 
 import com.google.gson.JsonObject;
-import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
+import io.supertokens.StorageAndUserIdMapping;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
@@ -76,35 +78,38 @@ public class UserAPI extends WebserverAPI {
         try {
             // API is app specific for get by UserId
             AuthRecipeUserInfo user = null;
+            AppIdentifier appIdentifier = getAppIdentifier(req);
 
             try {
                 if (userId != null) {
                     // Query by userId
-                    AppIdentifierWithStorageAndUserIdMapping appIdentifierWithStorageAndUserIdMapping =
-                            this.getAppIdentifierWithStorageAndUserIdMappingFromRequest(req, userId, UserIdType.ANY);
+                    StorageAndUserIdMapping storageAndUserIdMapping =
+                            this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(req, userId,
+                                    UserIdType.ANY, true);
                     // if a userIdMapping exists, pass the superTokensUserId to the getUserUsingId function
-                    if (appIdentifierWithStorageAndUserIdMapping.userIdMapping != null) {
-                        userId = appIdentifierWithStorageAndUserIdMapping.userIdMapping.superTokensUserId;
+                    if (storageAndUserIdMapping.userIdMapping != null) {
+                        userId = storageAndUserIdMapping.userIdMapping.superTokensUserId;
                     }
 
                     user = EmailPassword.getUserUsingId(
-                            appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage, userId);
+                            appIdentifier,
+                            storageAndUserIdMapping.storage, userId);
                             if (user != null) {
-                                UserIdMapping.populateExternalUserIdForUsers(appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage, new AuthRecipeUserInfo[]{user});
+                                UserIdMapping.populateExternalUserIdForUsers(storageAndUserIdMapping.storage,
+                                        new AuthRecipeUserInfo[]{user});
                             }
 
                 } else {
                     // API is tenant specific for get by Email
                     // Query by email
                     String normalisedEmail = Utils.normaliseEmail(email);
-                    TenantIdentifierWithStorage tenantIdentifierWithStorage =
-                            this.getTenantIdentifierWithStorageFromRequest(
-                                    req);
-                    user = EmailPassword.getUserUsingEmail(tenantIdentifierWithStorage, normalisedEmail);
+                    TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+                    Storage storage = this.getTenantStorage(req);
+                    user = EmailPassword.getUserUsingEmail(tenantIdentifier, storage, normalisedEmail);
 
                     // if a userIdMapping exists, set the userId in the response to the externalUserId
                     if (user != null) {
-                        UserIdMapping.populateExternalUserIdForUsers(tenantIdentifierWithStorage, new AuthRecipeUserInfo[]{user});
+                        UserIdMapping.populateExternalUserIdForUsers(storage, new AuthRecipeUserInfo[]{user});
                     }
                 }
             } catch (UnknownUserIdException e) {
@@ -131,7 +136,7 @@ public class UserAPI extends WebserverAPI {
                 super.sendJsonResponse(200, result, resp);
             }
 
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
 
@@ -160,28 +165,31 @@ public class UserAPI extends WebserverAPI {
         email = Utils.normaliseEmail(email);
         AppIdentifier appIdentifier = null;
         try {
-            appIdentifier = this.getAppIdentifierWithStorage(req);
+            appIdentifier = this.getAppIdentifier(req);
         } catch (TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
 
         try {
-            AppIdentifierWithStorageAndUserIdMapping appIdentifierWithStorageAndUserIdMapping =
-                    this.getAppIdentifierWithStorageAndUserIdMappingFromRequest(req, userId, UserIdType.ANY);
+            StorageAndUserIdMapping storageAndUserIdMapping =
+                    this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(req, userId,
+                            UserIdType.ANY, true);
             // if a userIdMapping exists, pass the superTokensUserId to the updateUsersEmailOrPassword
-            if (appIdentifierWithStorageAndUserIdMapping.userIdMapping != null) {
-                userId = appIdentifierWithStorageAndUserIdMapping.userIdMapping.superTokensUserId;
+            if (storageAndUserIdMapping.userIdMapping != null) {
+                userId = storageAndUserIdMapping.userIdMapping.superTokensUserId;
             }
 
             EmailPassword.updateUsersEmailOrPassword(
-                    appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage,
+                    appIdentifier,
+                    storageAndUserIdMapping.storage,
                     main, userId, email, password);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
 
-        } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException |
+                 BadPermissionException e) {
             throw new ServletException(e);
 
         } catch (UnknownUserIdException e) {

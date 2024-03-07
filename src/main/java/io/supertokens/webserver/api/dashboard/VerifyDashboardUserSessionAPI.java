@@ -22,8 +22,9 @@ import io.supertokens.dashboard.Dashboard;
 import io.supertokens.dashboard.exceptions.UserSuspendedException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.InputParser;
@@ -61,10 +62,11 @@ public class VerifyDashboardUserSessionAPI extends WebserverAPI {
         try {
             JsonObject invalidSessionResp = new JsonObject();
             invalidSessionResp.addProperty("status", "INVALID_SESSION_ERROR");
-            AppIdentifierWithStorage identifierWithStorage = super.getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(req);
+            AppIdentifier appIdentifier = getAppIdentifier(req);
+            Storage storage = super.enforcePublicTenantAndGetPublicTenantStorage(req);
 
-            if (Dashboard.isValidUserSession(identifierWithStorage, main, sessionId)) {
-                String email = Dashboard.getEmailFromSessionId(identifierWithStorage, main, sessionId);
+            if (Dashboard.isValidUserSession(appIdentifier, storage, main, sessionId)) {
+                String email = Dashboard.getEmailFromSessionId(appIdentifier, storage, sessionId);
 
                 if (email == null) {
                     super.sendJsonResponse(200, invalidSessionResp, resp);

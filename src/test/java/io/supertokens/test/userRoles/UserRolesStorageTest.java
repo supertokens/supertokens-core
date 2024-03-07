@@ -18,6 +18,7 @@ package io.supertokens.test.userRoles;
 
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
@@ -225,7 +226,8 @@ public class UserRolesStorageTest {
             }
             // delete the newly created role
             try {
-                storage.deleteRole(new AppIdentifier(null, null), role);
+                boolean wasRoleDeleted = storage.deleteAllUserRoleAssociationsForRole(new AppIdentifier(null, null), role);
+                wasRoleDeleted = storage.deleteRole(new AppIdentifier(null, null), role) || wasRoleDeleted;
                 r2_success.set(true);
             } catch (StorageQueryException e) {
                 // should not come here
@@ -470,8 +472,9 @@ public class UserRolesStorageTest {
 
         Exception error = null;
         try {
-
-            storage.addRoleToUser(new TenantIdentifier(null, null, null), "userId", "unknownRole");
+            UserRoles.addRoleToUser(
+                    process.getProcess(), new TenantIdentifier(null, null, null),
+                    StorageLayer.getBaseStorage(process.getProcess()),  "userId", "unknownRole");
         } catch (Exception e) {
             error = e;
         }
@@ -825,7 +828,8 @@ public class UserRolesStorageTest {
             UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
 
             // delete role
-            boolean didRoleExist = storage.deleteRole(new AppIdentifier(null, null), role);
+            boolean didRoleExist = storage.deleteAllUserRoleAssociationsForRole(new AppIdentifier(null, null), role);
+            assertTrue(didRoleExist = storage.deleteRole(new AppIdentifier(null, null), role) || didRoleExist);
             assertTrue(didRoleExist);
 
             // check that role doesnt exist
@@ -833,8 +837,8 @@ public class UserRolesStorageTest {
         }
         {
             // delete a role which doesnt exist
-
-            boolean didRoleExist = storage.deleteRole(new AppIdentifier(null, null), role);
+            boolean didRoleExist = storage.deleteAllUserRoleAssociationsForRole(new AppIdentifier(null, null), role);
+            didRoleExist = storage.deleteRole(new AppIdentifier(null, null), role) || didRoleExist;
             assertFalse(didRoleExist);
         }
 

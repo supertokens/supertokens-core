@@ -58,7 +58,7 @@ public class RemoveConnectionUriDomainAPI extends WebserverAPI {
         }
 
         try {
-            TenantIdentifier sourceTenantIdentifier = this.getTenantIdentifierWithStorageFromRequest(req);
+            TenantIdentifier sourceTenantIdentifier = this.getTenantIdentifier(req);
             if (!sourceTenantIdentifier.equals(new TenantIdentifier(null, null, null))) {
                 throw new BadPermissionException(
                         "Only the public tenantId, public appId and default connectionUriDomain is allowed to delete a connectionUriDomain");

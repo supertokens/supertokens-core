@@ -58,11 +58,9 @@ public class RemoveTenantAPI extends WebserverAPI {
         }
 
         try {
-            TenantIdentifier sourceTenantIdentifier = this.getTenantIdentifierWithStorageFromRequest(req);
+            TenantIdentifier sourceTenantIdentifier = this.getTenantIdentifier(req);
 
-            if (!sourceTenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
-                throw new BadPermissionException("Only the public tenantId is allowed to delete a tenant");
-            }
+            enforcePublicTenantAndGetPublicTenantStorage(req); // Enforce public tenant
 
             boolean didExist = Multitenancy.deleteTenant(new TenantIdentifier(sourceTenantIdentifier.getConnectionUriDomain(), sourceTenantIdentifier.getAppId(), tenantId), main);
 
