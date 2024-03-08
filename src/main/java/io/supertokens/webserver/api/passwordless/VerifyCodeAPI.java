@@ -21,17 +21,14 @@ import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.passwordless.Passwordless;
-import io.supertokens.passwordless.Passwordless.ConsumeCodeResponse;
 import io.supertokens.passwordless.exceptions.*;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
-import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -41,19 +38,18 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.util.Objects;
 
-public class ConsumeCodeAPI extends WebserverAPI {
+public class VerifyCodeAPI extends WebserverAPI {
 
     private static final long serialVersionUID = -4641988458637882374L;
 
-    public ConsumeCodeAPI(Main main) {
+    public VerifyCodeAPI(Main main) {
         super(main, RECIPE_ID.PASSWORDLESS.toString());
     }
 
     @Override
     public String getPath() {
-        return "/recipe/signinup/code/consume";
+        return "/recipe/signinup/code/verify";
     }
 
     @Override
@@ -85,39 +81,39 @@ public class ConsumeCodeAPI extends WebserverAPI {
         try {
             TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
             Storage storage = this.getTenantStorage(req);
-            ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(
+            Passwordless.VerifyCodeResponse verifyCodeResponse = Passwordless.verifyCode(
                     tenantIdentifier,
                     storage, main,
                     deviceId, deviceIdHash,
-                    userInputCode, linkCode,
-                    // From CDI version 4.0 onwards, the email verification will be set
-                    getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0));
-            io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(storage, new AuthRecipeUserInfo[]{consumeCodeResponse.user});
+                    userInputCode, linkCode);
 
-            ActiveUsers.updateLastActive(tenantIdentifier.toAppIdentifier(), main,
-                    consumeCodeResponse.user.getSupertokensUserId());
+            if (verifyCodeResponse.user != null) {
+                io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(storage, new AuthRecipeUserInfo[]{verifyCodeResponse.user});
+                ActiveUsers.updateLastActive(tenantIdentifier.toAppIdentifier(), main,
+                        verifyCodeResponse.user.getSupertokensUserId());
+            }
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
-            JsonObject userJson =
-                    getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0) ? consumeCodeResponse.user.toJson() :
-                            consumeCodeResponse.user.toJsonWithoutAccountLinking();
 
-            if (getVersionFromRequest(req).lesserThan(SemVer.v3_0)) {
-                userJson.remove("tenantIds");
+            JsonObject jsonDevice = new JsonObject();
+            jsonDevice.addProperty("preAuthSessionId", verifyCodeResponse.consumedDevice.deviceIdHash);
+            jsonDevice.addProperty("failedCodeInputAttemptCount", verifyCodeResponse.consumedDevice.failedAttempts);
+
+            if (verifyCodeResponse.consumedDevice.email != null) {
+                jsonDevice.addProperty("email", verifyCodeResponse.consumedDevice.email);
             }
 
-            result.addProperty("createdNewUser", consumeCodeResponse.createdNewUser);
-            result.add("user", userJson);
-            if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0)) {
-                for (LoginMethod loginMethod : consumeCodeResponse.user.loginMethods) {
-                    if (loginMethod.recipeId.equals(RECIPE_ID.PASSWORDLESS)
-                            && (consumeCodeResponse.email == null || Objects.equals(loginMethod.email, consumeCodeResponse.email))
-                            && (consumeCodeResponse.phoneNumber == null || Objects.equals(loginMethod.phoneNumber, consumeCodeResponse.phoneNumber))) {
-                        result.addProperty("recipeUserId", loginMethod.getSupertokensOrExternalUserId());
-                        break;
-                    }
-                }
+            if (verifyCodeResponse.consumedDevice.phoneNumber != null) {
+                jsonDevice.addProperty("phoneNumber", verifyCodeResponse.consumedDevice.phoneNumber);
+            }
+
+            result.add("consumedDevice", jsonDevice);
+
+            if (verifyCodeResponse.user != null) {
+                JsonObject userJson = verifyCodeResponse.user.toJson();
+                result.add("user", userJson);
+                result.addProperty("recipeUserId", verifyCodeResponse.loginMethod.getSupertokensOrExternalUserId());
             }
 
             super.sendJsonResponse(200, result, resp);

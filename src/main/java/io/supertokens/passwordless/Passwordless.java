@@ -252,7 +252,7 @@ public class Passwordless {
             Storage storage = StorageLayer.getStorage(main);
             return consumeCode(
                     new TenantIdentifier(null, null, null), storage,
-                    main, deviceId, deviceIdHashFromUser, userInputCode, linkCode, false, true);
+                    main, deviceId, deviceIdHashFromUser, userInputCode, linkCode, false);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
         }
@@ -269,7 +269,7 @@ public class Passwordless {
             Storage storage = StorageLayer.getStorage(main);
             return consumeCode(
                     new TenantIdentifier(null, null, null), storage,
-                    main, deviceId, deviceIdHashFromUser, userInputCode, linkCode, setEmailVerified, true);
+                    main, deviceId, deviceIdHashFromUser, userInputCode, linkCode, setEmailVerified);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
         }
@@ -284,12 +284,12 @@ public class Passwordless {
             StorageQueryException, NoSuchAlgorithmException, InvalidKeyException, IOException, Base64EncodingException,
             TenantOrAppNotFoundException, BadPermissionException {
         return consumeCode(tenantIdentifier, storage, main, deviceId, deviceIdHashFromUser, userInputCode, linkCode,
-                false, true);
+                false);
     }
 
-    public static ConsumeCodeResponse consumeCode(TenantIdentifier tenantIdentifier, Storage storage, Main main,
-                                                  String deviceId, String deviceIdHashFromUser,
-                                                  String userInputCode, String linkCode, boolean setEmailVerified, boolean createRecipeUserIfNotExists)
+    public static VerifyCodeResponse verifyCode(TenantIdentifier tenantIdentifier, Storage storage, Main main,
+                                                String deviceId, String deviceIdHashFromUser,
+                                                String userInputCode, String linkCode)
             throws RestartFlowException, ExpiredUserInputCodeException,
             IncorrectUserInputCodeException, DeviceIdHashMismatchException, StorageTransactionLogicException,
             StorageQueryException, NoSuchAlgorithmException, InvalidKeyException, IOException, Base64EncodingException,
@@ -440,58 +440,84 @@ public class Passwordless {
             }
         }
 
+        if (user != null) {
+            // We do not need this cleanup if we are creating the user, since it uses the email/phoneNumber of the
+            // device, which has already been cleaned up
+            if (loginMethod.email != null && !loginMethod.email.equals(consumedDevice.email)) {
+                removeCodesByEmail(tenantIdentifier, storage, loginMethod.email);
+            }
+            if (loginMethod.phoneNumber != null && !loginMethod.phoneNumber.equals(consumedDevice.phoneNumber)) {
+                removeCodesByPhoneNumber(tenantIdentifier, storage, loginMethod.phoneNumber);
+            }
+        }
+
+        return new VerifyCodeResponse(consumedDevice, user, loginMethod);
+    }
+
+    public static ConsumeCodeResponse consumeCode(TenantIdentifier tenantIdentifier, Storage storage, Main main,
+                                                  String deviceId, String deviceIdHashFromUser,
+                                                  String userInputCode, String linkCode, boolean setEmailVerified)
+            throws RestartFlowException, ExpiredUserInputCodeException,
+            IncorrectUserInputCodeException, DeviceIdHashMismatchException, StorageTransactionLogicException,
+            StorageQueryException, NoSuchAlgorithmException, InvalidKeyException, IOException, Base64EncodingException,
+            TenantOrAppNotFoundException, BadPermissionException {
+
+        PasswordlessSQLStorage passwordlessStorage = StorageUtils.getPasswordlessStorage(storage);
+
+        VerifyCodeResponse verifyCodeResponse = verifyCode(tenantIdentifier, storage, main, deviceId, deviceIdHashFromUser,
+                userInputCode, linkCode);
+        PasswordlessDevice consumedDevice = verifyCodeResponse.consumedDevice;
+        AuthRecipeUserInfo user = verifyCodeResponse.user;
+        LoginMethod loginMethod = verifyCodeResponse.loginMethod;
+
         if (user == null) {
-            if (createRecipeUserIfNotExists) {
-                while (true) {
-                    try {
-                        String userId = Utils.getUUID();
-                        long timeJoined = System.currentTimeMillis();
-                        user = passwordlessStorage.createUser(tenantIdentifier, userId, consumedDevice.email,
-                                consumedDevice.phoneNumber, timeJoined);
+            while (true) {
+                try {
+                    String userId = Utils.getUUID();
+                    long timeJoined = System.currentTimeMillis();
+                    user = passwordlessStorage.createUser(tenantIdentifier, userId, consumedDevice.email,
+                            consumedDevice.phoneNumber, timeJoined);
 
-                        // Set email as verified, if using email
-                        if (setEmailVerified && consumedDevice.email != null) {
-                            try {
-                                AuthRecipeUserInfo finalUser = user;
-                                EmailVerificationSQLStorage evStorage =
-                                        StorageUtils.getEmailVerificationStorage(storage);
-                                evStorage.startTransaction(con -> {
-                                    try {
-                                        evStorage.updateIsEmailVerified_Transaction(tenantIdentifier.toAppIdentifier(), con,
-                                                        finalUser.getSupertokensUserId(), consumedDevice.email, true);
-                                        evStorage.commitTransaction(con);
+                    // Set email as verified, if using email
+                    if (setEmailVerified && consumedDevice.email != null) {
+                        try {
+                            AuthRecipeUserInfo finalUser = user;
+                            EmailVerificationSQLStorage evStorage =
+                                    StorageUtils.getEmailVerificationStorage(storage);
+                            evStorage.startTransaction(con -> {
+                                try {
+                                    evStorage.updateIsEmailVerified_Transaction(tenantIdentifier.toAppIdentifier(), con,
+                                                    finalUser.getSupertokensUserId(), consumedDevice.email, true);
+                                    evStorage.commitTransaction(con);
 
-                                        return null;
-                                    } catch (TenantOrAppNotFoundException e) {
-                                        throw new StorageTransactionLogicException(e);
-                                    }
-                                });
-                                user.loginMethods[0].setVerified(); // newly created user has only one loginMethod
-                            } catch (StorageTransactionLogicException e) {
-                                if (e.actualException instanceof TenantOrAppNotFoundException) {
-                                    throw (TenantOrAppNotFoundException) e.actualException;
+                                    return null;
+                                } catch (TenantOrAppNotFoundException e) {
+                                    throw new StorageTransactionLogicException(e);
                                 }
-                                throw new StorageQueryException(e);
+                            });
+                            user.loginMethods[0].setVerified(); // newly created user has only one loginMethod
+                        } catch (StorageTransactionLogicException e) {
+                            if (e.actualException instanceof TenantOrAppNotFoundException) {
+                                throw (TenantOrAppNotFoundException) e.actualException;
                             }
+                            throw new StorageQueryException(e);
                         }
-
-                        return new ConsumeCodeResponse(true, user, consumedDevice.email, consumedDevice.phoneNumber, consumedDevice);
-                    } catch (DuplicateEmailException | DuplicatePhoneNumberException e) {
-                        // Getting these would mean that between getting the user and trying creating it:
-                        // 1. the user managed to do a full create+consume flow
-                        // 2. the users email or phoneNumber was updated to the new one (including device cleanup)
-                        // These should be almost impossibly rare, so it's safe to just ask the user to restart.
-                        // Also, both would make the current login fail if done before the transaction
-                        // by cleaning up the device/code this consume would've used.
-                        throw new RestartFlowException();
-                    } catch (DuplicateUserIdException e) {
-                        // We can retry..
                     }
+
+                    return new ConsumeCodeResponse(true, user, consumedDevice.email, consumedDevice.phoneNumber, consumedDevice);
+                } catch (DuplicateEmailException | DuplicatePhoneNumberException e) {
+                    // Getting these would mean that between getting the user and trying creating it:
+                    // 1. the user managed to do a full create+consume flow
+                    // 2. the users email or phoneNumber was updated to the new one (including device cleanup)
+                    // These should be almost impossibly rare, so it's safe to just ask the user to restart.
+                    // Also, both would make the current login fail if done before the transaction
+                    // by cleaning up the device/code this consume would've used.
+                    throw new RestartFlowException();
+                } catch (DuplicateUserIdException e) {
+                    // We can retry..
                 }
             }
         } else {
-            // We do not need this cleanup if we are creating the user, since it uses the email/phoneNumber of the
-            // device, which has already been cleaned up
             if (setEmailVerified && consumedDevice.email != null) {
                 // Set email verification
                 try {
@@ -516,13 +542,6 @@ public class Passwordless {
                     }
                     throw new StorageQueryException(e);
                 }
-            }
-
-            if (loginMethod.email != null && !loginMethod.email.equals(consumedDevice.email)) {
-                removeCodesByEmail(tenantIdentifier, storage, loginMethod.email);
-            }
-            if (loginMethod.phoneNumber != null && !loginMethod.phoneNumber.equals(consumedDevice.phoneNumber)) {
-                removeCodesByPhoneNumber(tenantIdentifier, storage, loginMethod.phoneNumber);
             }
         }
         return new ConsumeCodeResponse(false, user, consumedDevice.email, consumedDevice.phoneNumber, consumedDevice);
@@ -860,6 +879,21 @@ public class Passwordless {
             this.userInputCode = userInputCode;
             this.linkCode = linkCode;
             this.timeCreated = timeCreated;
+        }
+    }
+
+    public static class VerifyCodeResponse {
+        public PasswordlessDevice consumedDevice;
+
+        @Nullable
+        public AuthRecipeUserInfo user;
+        @Nullable
+        public LoginMethod loginMethod;
+
+        public VerifyCodeResponse(PasswordlessDevice consumedDevice, AuthRecipeUserInfo user, LoginMethod loginMethod) {
+            this.consumedDevice = consumedDevice;
+            this.user = user;
+            this.loginMethod = loginMethod;
         }
     }
 

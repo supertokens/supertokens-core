@@ -187,6 +187,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new DeleteCodesAPI(main));
         addAPI(new DeleteCodeAPI(main));
         addAPI(new CreateCodeAPI(main));
+        addAPI(new VerifyCodeAPI(main));
         addAPI(new ConsumeCodeAPI(main));
         addAPI(new TelemetryAPI(main));
         addAPI(new UsersCountAPI(main));

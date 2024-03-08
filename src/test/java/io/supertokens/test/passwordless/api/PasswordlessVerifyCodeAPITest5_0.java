@@ -38,7 +38,7 @@ import org.junit.rules.TestRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-public class PasswordlessConsumeCodeAPITest5_0 {
+public class PasswordlessVerifyCodeAPITest5_0 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
@@ -73,7 +73,7 @@ public class PasswordlessConsumeCodeAPITest5_0 {
                 JsonObject consumeCodeRequestBody = new JsonObject();
 
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                        "http://localhost:3567/recipe/signinup/code/verify", consumeCodeRequestBody, 1000, 1000, null,
                         SemVer.v5_0.get(), "passwordless");
             } catch (HttpResponseException ex) {
                 error = ex;
@@ -93,7 +93,7 @@ public class PasswordlessConsumeCodeAPITest5_0 {
                 consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
 
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                        "http://localhost:3567/recipe/signinup/code/verify", consumeCodeRequestBody, 1000, 1000, null,
                         SemVer.v5_0.get(), "passwordless");
             } catch (HttpResponseException ex) {
                 error = ex;
@@ -116,7 +116,7 @@ public class PasswordlessConsumeCodeAPITest5_0 {
                 consumeCodeRequestBody.addProperty("userInputCode", createResp.userInputCode);
 
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                        "http://localhost:3567/recipe/signinup/code/verify", consumeCodeRequestBody, 1000, 1000, null,
                         SemVer.v5_0.get(), "passwordless");
             } catch (HttpResponseException ex) {
                 error = ex;
@@ -138,7 +138,7 @@ public class PasswordlessConsumeCodeAPITest5_0 {
                 consumeCodeRequestBody.addProperty("userInputCode", createResp.userInputCode);
 
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                        "http://localhost:3567/recipe/signinup/code/verify", consumeCodeRequestBody, 1000, 1000, null,
                         SemVer.v5_0.get(), "passwordless");
             } catch (HttpResponseException ex) {
                 error = ex;
@@ -158,7 +158,7 @@ public class PasswordlessConsumeCodeAPITest5_0 {
                 consumeCodeRequestBody.addProperty("userInputCode", createResp.userInputCode);
 
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                        "http://localhost:3567/recipe/signinup/code/verify", consumeCodeRequestBody, 1000, 1000, null,
                         SemVer.v5_0.get(), "passwordless");
             } catch (HttpResponseException ex) {
                 error = ex;
@@ -178,7 +178,7 @@ public class PasswordlessConsumeCodeAPITest5_0 {
                 consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
 
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                        "http://localhost:3567/recipe/signinup/code/verify", consumeCodeRequestBody, 1000, 1000, null,
                         SemVer.v5_0.get(), "passwordless");
             } catch (HttpResponseException ex) {
                 error = ex;
@@ -200,7 +200,7 @@ public class PasswordlessConsumeCodeAPITest5_0 {
                 consumeCodeRequestBody.addProperty("userInputCode", createResp.userInputCode);
 
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                        "http://localhost:3567/recipe/signinup/code/verify", consumeCodeRequestBody, 1000, 1000, null,
                         SemVer.v5_0.get(), "passwordless");
             } catch (HttpResponseException ex) {
                 error = ex;
@@ -220,7 +220,7 @@ public class PasswordlessConsumeCodeAPITest5_0 {
                 consumeCodeRequestBody.addProperty("linkCode", createResp.linkCode);
 
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                        "http://localhost:3567/recipe/signinup/code/verify", consumeCodeRequestBody, 1000, 1000, null,
                         SemVer.v5_0.get(), "passwordless");
             } catch (HttpResponseException ex) {
                 error = ex;
@@ -243,7 +243,7 @@ public class PasswordlessConsumeCodeAPITest5_0 {
                 consumeCodeRequestBody.addProperty("linkCode", createResp.linkCode + "==#");
 
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                        "http://localhost:3567/recipe/signinup/code/verify", consumeCodeRequestBody, 1000, 1000, null,
                         SemVer.v5_0.get(), "passwordless");
             } catch (HttpResponseException ex) {
                 error = ex;
@@ -266,7 +266,7 @@ public class PasswordlessConsumeCodeAPITest5_0 {
                 consumeCodeRequestBody.addProperty("deviceId", createResp.deviceId + "==#");
 
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                        "http://localhost:3567/recipe/signinup/code/verify", consumeCodeRequestBody, 1000, 1000, null,
                         SemVer.v5_0.get(), "passwordless");
             } catch (HttpResponseException ex) {
                 error = ex;
@@ -307,13 +307,13 @@ public class PasswordlessConsumeCodeAPITest5_0 {
         consumeCodeRequestBody.addProperty("linkCode", createResp.linkCode);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                "http://localhost:3567/recipe/signinup/code/verify", consumeCodeRequestBody, 1000, 1000, null,
                 SemVer.v5_0.get(), "passwordless");
 
         checkResponse(response, true, email, null);
 
         int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
-        assert (activeUsers == 1);
+        assert (activeUsers == 0);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -342,7 +342,7 @@ public class PasswordlessConsumeCodeAPITest5_0 {
         consumeCodeRequestBody.addProperty("linkCode", createResp.linkCode);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                "http://localhost:3567/recipe/signinup/code/verify", consumeCodeRequestBody, 1000, 1000, null,
                 SemVer.v5_0.get(), "passwordless");
 
         assertEquals("RESTART_FLOW_ERROR", response.get("status").getAsString());
@@ -376,13 +376,13 @@ public class PasswordlessConsumeCodeAPITest5_0 {
         consumeCodeRequestBody.addProperty("userInputCode", createResp.userInputCode);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                "http://localhost:3567/recipe/signinup/code/verify", consumeCodeRequestBody, 1000, 1000, null,
                 SemVer.v5_0.get(), "passwordless");
 
         checkResponse(response, true, email, null);
 
         int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
-        assert (activeUsers == 1);
+        assert (activeUsers == 0);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -412,7 +412,7 @@ public class PasswordlessConsumeCodeAPITest5_0 {
         consumeCodeRequestBody.addProperty("userInputCode", createResp.userInputCode);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                "http://localhost:3567/recipe/signinup/code/verify", consumeCodeRequestBody, 1000, 1000, null,
                 SemVer.v5_0.get(), "passwordless");
 
         assertEquals("EXPIRED_USER_INPUT_CODE_ERROR", response.get("status").getAsString());
@@ -447,7 +447,7 @@ public class PasswordlessConsumeCodeAPITest5_0 {
 
         {
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                    "http://localhost:3567/recipe/signinup/code/verify", consumeCodeRequestBody, 1000, 1000, null,
                     SemVer.v5_0.get(), "passwordless");
 
             assertEquals("INCORRECT_USER_INPUT_CODE_ERROR", response.get("status").getAsString());
@@ -455,7 +455,7 @@ public class PasswordlessConsumeCodeAPITest5_0 {
 
         {
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                    "http://localhost:3567/recipe/signinup/code/verify", consumeCodeRequestBody, 1000, 1000, null,
                     SemVer.v5_0.get(), "passwordless");
 
             assertEquals("RESTART_FLOW_ERROR", response.get("status").getAsString());
@@ -487,7 +487,7 @@ public class PasswordlessConsumeCodeAPITest5_0 {
         consumeCodeRequestBody.addProperty("createRecipeUserIfNotExists", false);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                "http://localhost:3567/recipe/signinup/code/verify", consumeCodeRequestBody, 1000, 1000, null,
                 SemVer.v5_0.get(), "passwordless");
 
         assertEquals(2, response.entrySet().size());
@@ -506,7 +506,7 @@ public class PasswordlessConsumeCodeAPITest5_0 {
     }
 
     @Test
-    public void testConsumeCodeWithoutCreatingUsersReturnsUserIfItAlreadyExists() throws Exception {
+    public void testVerifyCodeReturnsUserIfItAlreadyExists() throws Exception {
         String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -532,7 +532,7 @@ public class PasswordlessConsumeCodeAPITest5_0 {
         consumeCodeRequestBody.addProperty("createRecipeUserIfNotExists", false);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                "http://localhost:3567/recipe/signinup/code/verify", consumeCodeRequestBody, 1000, 1000, null,
                 SemVer.v5_0.get(), "passwordless");
 
         checkResponse(response, false, email, null);
@@ -565,7 +565,7 @@ public class PasswordlessConsumeCodeAPITest5_0 {
                 JsonObject consumeCodeRequestBody = new JsonObject();
 
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                        "http://localhost:3567/recipe/signinup/code/verify", consumeCodeRequestBody, 1000, 1000, null,
                         SemVer.v5_0.get(), "passwordless");
             } catch (HttpResponseException ex) {
                 error = ex;
@@ -586,7 +586,7 @@ public class PasswordlessConsumeCodeAPITest5_0 {
                 consumeCodeRequestBody.addProperty("createRecipeUserIfNotExists", false);
 
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                        "http://localhost:3567/recipe/signinup/code/verify", consumeCodeRequestBody, 1000, 1000, null,
                         SemVer.v5_0.get(), "passwordless");
             } catch (HttpResponseException ex) {
                 error = ex;
@@ -610,7 +610,7 @@ public class PasswordlessConsumeCodeAPITest5_0 {
                 consumeCodeRequestBody.addProperty("createRecipeUserIfNotExists", false);
 
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                        "http://localhost:3567/recipe/signinup/code/verify", consumeCodeRequestBody, 1000, 1000, null,
                         SemVer.v5_0.get(), "passwordless");
             } catch (HttpResponseException ex) {
                 error = ex;
@@ -633,7 +633,7 @@ public class PasswordlessConsumeCodeAPITest5_0 {
                 consumeCodeRequestBody.addProperty("createRecipeUserIfNotExists", false);
 
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                        "http://localhost:3567/recipe/signinup/code/verify", consumeCodeRequestBody, 1000, 1000, null,
                         SemVer.v5_0.get(), "passwordless");
             } catch (HttpResponseException ex) {
                 error = ex;
@@ -654,7 +654,7 @@ public class PasswordlessConsumeCodeAPITest5_0 {
                 consumeCodeRequestBody.addProperty("createRecipeUserIfNotExists", false);
 
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                        "http://localhost:3567/recipe/signinup/code/verify", consumeCodeRequestBody, 1000, 1000, null,
                         SemVer.v5_0.get(), "passwordless");
             } catch (HttpResponseException ex) {
                 error = ex;
@@ -675,7 +675,7 @@ public class PasswordlessConsumeCodeAPITest5_0 {
                 consumeCodeRequestBody.addProperty("createRecipeUserIfNotExists", false);
 
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                        "http://localhost:3567/recipe/signinup/code/verify", consumeCodeRequestBody, 1000, 1000, null,
                         SemVer.v5_0.get(), "passwordless");
             } catch (HttpResponseException ex) {
                 error = ex;
@@ -698,7 +698,7 @@ public class PasswordlessConsumeCodeAPITest5_0 {
                 consumeCodeRequestBody.addProperty("createRecipeUserIfNotExists", false);
 
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                        "http://localhost:3567/recipe/signinup/code/verify", consumeCodeRequestBody, 1000, 1000, null,
                         SemVer.v5_0.get(), "passwordless");
             } catch (HttpResponseException ex) {
                 error = ex;
@@ -719,7 +719,7 @@ public class PasswordlessConsumeCodeAPITest5_0 {
                 consumeCodeRequestBody.addProperty("createRecipeUserIfNotExists", false);
 
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                        "http://localhost:3567/recipe/signinup/code/verify", consumeCodeRequestBody, 1000, 1000, null,
                         SemVer.v5_0.get(), "passwordless");
             } catch (HttpResponseException ex) {
                 error = ex;
@@ -743,7 +743,7 @@ public class PasswordlessConsumeCodeAPITest5_0 {
                 consumeCodeRequestBody.addProperty("createRecipeUserIfNotExists", false);
 
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                        "http://localhost:3567/recipe/signinup/code/verify", consumeCodeRequestBody, 1000, 1000, null,
                         SemVer.v5_0.get(), "passwordless");
             } catch (HttpResponseException ex) {
                 error = ex;
@@ -767,7 +767,7 @@ public class PasswordlessConsumeCodeAPITest5_0 {
                 consumeCodeRequestBody.addProperty("createRecipeUserIfNotExists", false);
 
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                        "http://localhost:3567/recipe/signinup/code/verify", consumeCodeRequestBody, 1000, 1000, null,
                         SemVer.v5_0.get(), "passwordless");
             } catch (HttpResponseException ex) {
                 error = ex;
@@ -808,13 +808,13 @@ public class PasswordlessConsumeCodeAPITest5_0 {
         consumeCodeRequestBody.addProperty("linkCode", createResp.linkCode);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                "http://localhost:3567/recipe/signinup/code/verify", consumeCodeRequestBody, 1000, 1000, null,
                 SemVer.v5_0.get(), "passwordless");
 
         checkResponse(response, true, email, null);
 
         int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
-        assert (activeUsers == 1);
+        assert (activeUsers == 0);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -844,7 +844,7 @@ public class PasswordlessConsumeCodeAPITest5_0 {
         consumeCodeRequestBody.addProperty("createRecipeUserIfNotExists", false);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                "http://localhost:3567/recipe/signinup/code/verify", consumeCodeRequestBody, 1000, 1000, null,
                 SemVer.v5_0.get(), "passwordless");
 
         assertEquals("RESTART_FLOW_ERROR", response.get("status").getAsString());
@@ -881,7 +881,7 @@ public class PasswordlessConsumeCodeAPITest5_0 {
         consumeCodeRequestBody.addProperty("createRecipeUserIfNotExists", false);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                "http://localhost:3567/recipe/signinup/code/verify", consumeCodeRequestBody, 1000, 1000, null,
                 SemVer.v5_0.get(), "passwordless");
 
         assertEquals("EXPIRED_USER_INPUT_CODE_ERROR", response.get("status").getAsString());
@@ -917,7 +917,7 @@ public class PasswordlessConsumeCodeAPITest5_0 {
 
         {
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                    "http://localhost:3567/recipe/signinup/code/verify", consumeCodeRequestBody, 1000, 1000, null,
                     SemVer.v5_0.get(), "passwordless");
 
             assertEquals("INCORRECT_USER_INPUT_CODE_ERROR", response.get("status").getAsString());
@@ -925,7 +925,7 @@ public class PasswordlessConsumeCodeAPITest5_0 {
 
         {
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                    "http://localhost:3567/recipe/signinup/code/verify", consumeCodeRequestBody, 1000, 1000, null,
                     SemVer.v5_0.get(), "passwordless");
 
             assertEquals("RESTART_FLOW_ERROR", response.get("status").getAsString());
@@ -934,62 +934,31 @@ public class PasswordlessConsumeCodeAPITest5_0 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    @Test
-    public void testLinkCodeWithCreateUserSetToTrue() throws Exception {
-        String[] args = { "../" };
-
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            return;
-        }
-
-        long startTs = System.currentTimeMillis();
-
-        String email = "test@example.com";
-        CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), email, null, null, null);
-
-        JsonObject consumeCodeRequestBody = new JsonObject();
-        consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
-        consumeCodeRequestBody.addProperty("linkCode", createResp.linkCode);
-        consumeCodeRequestBody.addProperty("createRecipeUserIfNotExists", true);
-
-        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
-                SemVer.v5_0.get(), "passwordless");
-
-        checkResponse(response, true, email, null);
-
-        int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
-        assert (activeUsers == 1);
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-    }
-
     private void checkResponse(JsonObject response, Boolean isNewUser, String email, String phoneNumber) {
         assertEquals("OK", response.get("status").getAsString());
-        assertEquals(isNewUser, response.get("createdNewUser").getAsBoolean());
-        assert (response.has("user"));
 
-        assertEquals(5, response.entrySet().size());
-
-        JsonObject userJson = response.getAsJsonObject("user");
-        if (email == null) {
-            assert (!userJson.has("email"));
+        if (isNewUser) {
+            assertEquals(2, response.entrySet().size());
         } else {
-            assertEquals(email, userJson.get("emails").getAsJsonArray().get(0).getAsString());
-        }
+            assertEquals(4, response.entrySet().size());
 
-        if (phoneNumber == null) {
-            assert (!userJson.has("phoneNumber"));
-        } else if (phoneNumber != null) {
-            assertEquals(phoneNumber, userJson.get("phoneNumbers").getAsJsonArray().get(0).getAsString());
-        }
+            assert (response.has("user"));
+            JsonObject userJson = response.getAsJsonObject("user");
+            if (email == null) {
+                assert (!userJson.has("email"));
+            } else {
+                assertEquals(email, userJson.get("emails").getAsJsonArray().get(0).getAsString());
+            }
 
-        assertEquals(8, userJson.entrySet().size());
-        assertEquals(response.get("recipeUserId").getAsString(), userJson.get("id").getAsString());
+            if (phoneNumber == null) {
+                assert (!userJson.has("phoneNumber"));
+            } else if (phoneNumber != null) {
+                assertEquals(phoneNumber, userJson.get("phoneNumbers").getAsJsonArray().get(0).getAsString());
+            }
+
+            assertEquals(8, userJson.entrySet().size());
+            assertEquals(response.get("recipeUserId").getAsString(), userJson.get("id").getAsString());
+        }
 
         JsonObject consumedDevice = response.getAsJsonObject("consumedDevice");
         if (email != null) {
