@@ -17,14 +17,12 @@
 package io.supertokens.webserver.api.passwordless;
 
 import com.google.gson.JsonObject;
-import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.exceptions.*;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
-import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
@@ -81,11 +79,11 @@ public class CheckCodeAPI extends WebserverAPI {
         try {
             TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
             Storage storage = this.getTenantStorage(req);
-            Passwordless.verifyCode(
+            Passwordless.checkCodeAndReturnDevice(
                     tenantIdentifier,
                     storage, main,
                     deviceId, deviceIdHash,
-                    userInputCode, linkCode);
+                    userInputCode, linkCode, false);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

@@ -287,9 +287,9 @@ public class Passwordless {
                 false);
     }
 
-    public static PasswordlessDevice verifyCode(TenantIdentifier tenantIdentifier, Storage storage, Main main,
-                                                String deviceId, String deviceIdHashFromUser,
-                                                String userInputCode, String linkCode)
+    public static PasswordlessDevice checkCodeAndReturnDevice(TenantIdentifier tenantIdentifier, Storage storage, Main main,
+                                                              String deviceId, String deviceIdHashFromUser,
+                                                              String userInputCode, String linkCode, boolean deleteCodeOnSuccess)
             throws RestartFlowException, ExpiredUserInputCodeException,
             IncorrectUserInputCodeException, DeviceIdHashMismatchException, StorageTransactionLogicException,
             StorageQueryException, NoSuchAlgorithmException, InvalidKeyException, IOException, Base64EncodingException,
@@ -385,12 +385,14 @@ public class Passwordless {
                     throw new StorageTransactionLogicException(new RestartFlowException());
                 }
 
-                if (device.email != null) {
-                    passwordlessStorage.deleteDevicesByEmail_Transaction(tenantIdentifier, con,
-                            device.email);
-                } else if (device.phoneNumber != null) {
-                    passwordlessStorage.deleteDevicesByPhoneNumber_Transaction(tenantIdentifier, con,
-                            device.phoneNumber);
+                if (deleteCodeOnSuccess) {
+                    if (device.email != null) {
+                        passwordlessStorage.deleteDevicesByEmail_Transaction(tenantIdentifier, con,
+                                device.email);
+                    } else if (device.phoneNumber != null) {
+                        passwordlessStorage.deleteDevicesByPhoneNumber_Transaction(tenantIdentifier, con,
+                                device.phoneNumber);
+                    }
                 }
 
                 passwordlessStorage.commitTransaction(con);
@@ -420,8 +422,8 @@ public class Passwordless {
 
         PasswordlessSQLStorage passwordlessStorage = StorageUtils.getPasswordlessStorage(storage);
 
-        PasswordlessDevice consumedDevice = verifyCode(tenantIdentifier, storage, main, deviceId, deviceIdHashFromUser,
-                userInputCode, linkCode);
+        PasswordlessDevice consumedDevice = checkCodeAndReturnDevice(tenantIdentifier, storage, main, deviceId, deviceIdHashFromUser,
+                userInputCode, linkCode, true);
 
         // Getting here means that we successfully consumed the code
         AuthRecipeUserInfo user = null;

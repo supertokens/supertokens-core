@@ -389,6 +389,47 @@ public class PasswordlessCheckCodeAPITest5_0 {
     }
 
     @Test
+    public void testUserInputCodeDoesNotDeleteTheCode() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        long startTs = System.currentTimeMillis();
+
+        String email = "test@example.com";
+        CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), email, null, null, null);
+
+        JsonObject consumeCodeRequestBody = new JsonObject();
+        consumeCodeRequestBody.addProperty("deviceId", createResp.deviceId);
+        consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
+        consumeCodeRequestBody.addProperty("userInputCode", createResp.userInputCode);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/signinup/code/check", consumeCodeRequestBody, 1000, 1000, null,
+                SemVer.v5_0.get(), "passwordless");
+
+        checkResponse(response);
+
+        // should be able to call again, if the code is not deleted
+        response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/signinup/code/check", consumeCodeRequestBody, 1000, 1000, null,
+                SemVer.v5_0.get(), "passwordless");
+
+        checkResponse(response);
+
+        int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
+        assert (activeUsers == 0);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
     public void testExpiredUserInputCode() throws Exception {
         String[] args = { "../" };
 
