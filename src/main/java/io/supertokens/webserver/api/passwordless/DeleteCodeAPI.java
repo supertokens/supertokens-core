@@ -71,7 +71,7 @@ public class DeleteCodeAPI extends WebserverAPI {
             if (codeId != null) {
                 Passwordless.removeCode(getTenantIdentifier(req), getTenantStorage(req), codeId);
             } else {
-                Passwordless.removeCodeByDeviceIdHash(getTenantIdentifier(req), getTenantStorage(req),
+                Passwordless.removeDevice(getTenantIdentifier(req), getTenantStorage(req),
                         deviceIdHash);
             }
 

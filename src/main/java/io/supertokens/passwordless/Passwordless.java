@@ -581,8 +581,8 @@ public class Passwordless {
         });
     }
 
-    public static void removeCodeByDeviceIdHash(TenantIdentifier tenantIdentifier, Storage storage,
-                                                String deviceIdHash)
+    public static void removeDevice(TenantIdentifier tenantIdentifier, Storage storage,
+                                    String deviceIdHash)
             throws StorageQueryException, StorageTransactionLogicException {
         PasswordlessSQLStorage passwordlessStorage = StorageUtils.getPasswordlessStorage(storage);
 
