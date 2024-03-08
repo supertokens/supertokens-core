@@ -287,7 +287,7 @@ public class Passwordless {
                 false);
     }
 
-    public static VerifyCodeResponse verifyCode(TenantIdentifier tenantIdentifier, Storage storage, Main main,
+    public static PasswordlessDevice verifyCode(TenantIdentifier tenantIdentifier, Storage storage, Main main,
                                                 String deviceId, String deviceIdHashFromUser,
                                                 String userInputCode, String linkCode)
             throws RestartFlowException, ExpiredUserInputCodeException,
@@ -339,9 +339,8 @@ public class Passwordless {
             throw new DeviceIdHashMismatchException();
         }
 
-        PasswordlessDevice consumedDevice;
         try {
-            consumedDevice = passwordlessStorage.startTransaction(con -> {
+            return passwordlessStorage.startTransaction(con -> {
                 PasswordlessDevice device = passwordlessStorage.getDevice_Transaction(tenantIdentifier, con,
                         deviceIdHash.encode());
                 if (device == null) {
@@ -409,6 +408,20 @@ public class Passwordless {
             }
             throw e;
         }
+    }
+
+    public static ConsumeCodeResponse consumeCode(TenantIdentifier tenantIdentifier, Storage storage, Main main,
+                                                  String deviceId, String deviceIdHashFromUser,
+                                                  String userInputCode, String linkCode, boolean setEmailVerified)
+            throws RestartFlowException, ExpiredUserInputCodeException,
+            IncorrectUserInputCodeException, DeviceIdHashMismatchException, StorageTransactionLogicException,
+            StorageQueryException, NoSuchAlgorithmException, InvalidKeyException, IOException, Base64EncodingException,
+            TenantOrAppNotFoundException, BadPermissionException {
+
+        PasswordlessSQLStorage passwordlessStorage = StorageUtils.getPasswordlessStorage(storage);
+
+        PasswordlessDevice consumedDevice = verifyCode(tenantIdentifier, storage, main, deviceId, deviceIdHashFromUser,
+                userInputCode, linkCode);
 
         // Getting here means that we successfully consumed the code
         AuthRecipeUserInfo user = null;
@@ -439,36 +452,6 @@ public class Passwordless {
                 }
             }
         }
-
-        if (user != null) {
-            // We do not need this cleanup if we are creating the user, since it uses the email/phoneNumber of the
-            // device, which has already been cleaned up
-            if (loginMethod.email != null && !loginMethod.email.equals(consumedDevice.email)) {
-                removeCodesByEmail(tenantIdentifier, storage, loginMethod.email);
-            }
-            if (loginMethod.phoneNumber != null && !loginMethod.phoneNumber.equals(consumedDevice.phoneNumber)) {
-                removeCodesByPhoneNumber(tenantIdentifier, storage, loginMethod.phoneNumber);
-            }
-        }
-
-        return new VerifyCodeResponse(consumedDevice, user, loginMethod);
-    }
-
-    public static ConsumeCodeResponse consumeCode(TenantIdentifier tenantIdentifier, Storage storage, Main main,
-                                                  String deviceId, String deviceIdHashFromUser,
-                                                  String userInputCode, String linkCode, boolean setEmailVerified)
-            throws RestartFlowException, ExpiredUserInputCodeException,
-            IncorrectUserInputCodeException, DeviceIdHashMismatchException, StorageTransactionLogicException,
-            StorageQueryException, NoSuchAlgorithmException, InvalidKeyException, IOException, Base64EncodingException,
-            TenantOrAppNotFoundException, BadPermissionException {
-
-        PasswordlessSQLStorage passwordlessStorage = StorageUtils.getPasswordlessStorage(storage);
-
-        VerifyCodeResponse verifyCodeResponse = verifyCode(tenantIdentifier, storage, main, deviceId, deviceIdHashFromUser,
-                userInputCode, linkCode);
-        PasswordlessDevice consumedDevice = verifyCodeResponse.consumedDevice;
-        AuthRecipeUserInfo user = verifyCodeResponse.user;
-        LoginMethod loginMethod = verifyCodeResponse.loginMethod;
 
         if (user == null) {
             while (true) {
@@ -543,6 +526,15 @@ public class Passwordless {
                     throw new StorageQueryException(e);
                 }
             }
+
+            // We do not need this cleanup if we are creating the user, since it uses the email/phoneNumber of the
+            // device, which has already been cleaned up
+            if (loginMethod.email != null && !loginMethod.email.equals(consumedDevice.email)) {
+                removeCodesByEmail(tenantIdentifier, storage, loginMethod.email);
+            }
+            if (loginMethod.phoneNumber != null && !loginMethod.phoneNumber.equals(consumedDevice.phoneNumber)) {
+                removeCodesByPhoneNumber(tenantIdentifier, storage, loginMethod.phoneNumber);
+            }
         }
         return new ConsumeCodeResponse(false, user, consumedDevice.email, consumedDevice.phoneNumber, consumedDevice);
     }
@@ -584,6 +576,18 @@ public class Passwordless {
                 // Otherwise we can just delete the code
                 passwordlessStorage.deleteCode_Transaction(tenantIdentifier, con, codeId);
             }
+            passwordlessStorage.commitTransaction(con);
+            return null;
+        });
+    }
+
+    public static void removeCodeByDeviceIdHash(TenantIdentifier tenantIdentifier, Storage storage,
+                                                String deviceIdHash)
+            throws StorageQueryException, StorageTransactionLogicException {
+        PasswordlessSQLStorage passwordlessStorage = StorageUtils.getPasswordlessStorage(storage);
+
+        passwordlessStorage.startTransaction(con -> {
+            passwordlessStorage.deleteDevice_Transaction(tenantIdentifier, con, deviceIdHash);
             passwordlessStorage.commitTransaction(con);
             return null;
         });
@@ -879,21 +883,6 @@ public class Passwordless {
             this.userInputCode = userInputCode;
             this.linkCode = linkCode;
             this.timeCreated = timeCreated;
-        }
-    }
-
-    public static class VerifyCodeResponse {
-        public PasswordlessDevice consumedDevice;
-
-        @Nullable
-        public AuthRecipeUserInfo user;
-        @Nullable
-        public LoginMethod loginMethod;
-
-        public VerifyCodeResponse(PasswordlessDevice consumedDevice, AuthRecipeUserInfo user, LoginMethod loginMethod) {
-            this.consumedDevice = consumedDevice;
-            this.user = user;
-            this.loginMethod = loginMethod;
         }
     }
 

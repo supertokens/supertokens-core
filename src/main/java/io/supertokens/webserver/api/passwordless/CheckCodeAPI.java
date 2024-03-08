@@ -39,17 +39,17 @@ import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 
-public class VerifyCodeAPI extends WebserverAPI {
+public class CheckCodeAPI extends WebserverAPI {
 
     private static final long serialVersionUID = -4641988458637882374L;
 
-    public VerifyCodeAPI(Main main) {
+    public CheckCodeAPI(Main main) {
         super(main, RECIPE_ID.PASSWORDLESS.toString());
     }
 
     @Override
     public String getPath() {
-        return "/recipe/signinup/code/verify";
+        return "/recipe/signinup/code/check";
     }
 
     @Override
@@ -81,40 +81,14 @@ public class VerifyCodeAPI extends WebserverAPI {
         try {
             TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
             Storage storage = this.getTenantStorage(req);
-            Passwordless.VerifyCodeResponse verifyCodeResponse = Passwordless.verifyCode(
+            Passwordless.verifyCode(
                     tenantIdentifier,
                     storage, main,
                     deviceId, deviceIdHash,
                     userInputCode, linkCode);
 
-            if (verifyCodeResponse.user != null) {
-                io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(storage, new AuthRecipeUserInfo[]{verifyCodeResponse.user});
-                ActiveUsers.updateLastActive(tenantIdentifier.toAppIdentifier(), main,
-                        verifyCodeResponse.user.getSupertokensUserId());
-            }
-
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
-
-            JsonObject jsonDevice = new JsonObject();
-            jsonDevice.addProperty("preAuthSessionId", verifyCodeResponse.consumedDevice.deviceIdHash);
-            jsonDevice.addProperty("failedCodeInputAttemptCount", verifyCodeResponse.consumedDevice.failedAttempts);
-
-            if (verifyCodeResponse.consumedDevice.email != null) {
-                jsonDevice.addProperty("email", verifyCodeResponse.consumedDevice.email);
-            }
-
-            if (verifyCodeResponse.consumedDevice.phoneNumber != null) {
-                jsonDevice.addProperty("phoneNumber", verifyCodeResponse.consumedDevice.phoneNumber);
-            }
-
-            result.add("consumedDevice", jsonDevice);
-
-            if (verifyCodeResponse.user != null) {
-                JsonObject userJson = verifyCodeResponse.user.toJson();
-                result.add("user", userJson);
-                result.addProperty("recipeUserId", verifyCodeResponse.loginMethod.getSupertokensOrExternalUserId());
-            }
 
             super.sendJsonResponse(200, result, resp);
         } catch (RestartFlowException ex) {
