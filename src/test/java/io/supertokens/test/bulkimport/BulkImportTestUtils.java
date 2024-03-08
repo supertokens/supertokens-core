@@ -26,6 +26,7 @@ import com.google.gson.JsonParser;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser.LoginMethod;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser.TotpDevice;
+import io.supertokens.pluginInterface.bulkimport.BulkImportUser.UserRole;
 
 public class BulkImportTestUtils {
     public static List<BulkImportUser> generateBulkImportUser(int numberOfUsers) {
@@ -39,15 +40,18 @@ public class BulkImportTestUtils {
 
             JsonObject userMetadata = parser.parse("{\"key1\":\"value1\",\"key2\":{\"key3\":\"value3\"}}").getAsJsonObject();
 
-            List<String> userRoles = new ArrayList<>();
+            List<UserRole> userRoles = new ArrayList<>();
+            userRoles.add(new UserRole("role1", List.of("public")));
+            userRoles.add(new UserRole("role2", List.of("public")));
 
             List<TotpDevice> totpDevices = new ArrayList<>();
             totpDevices.add(new TotpDevice("secretKey", 30, 1, "deviceName"));
 
             List<LoginMethod> loginMethods = new ArrayList<>();
-            loginMethods.add(new LoginMethod("public", "emailpassword", true, true, 0, email, "$2a", "BCRYPT", null, null, null));
-            loginMethods.add(new LoginMethod("public", "thirdparty", true, false, 0,  email,  null, null, "thirdPartyId", "thirdPartyUserId", null));
-            loginMethods.add(new LoginMethod("public", "passwordless", true, false, 0, email, null, null, null, null, "+911234567890"));
+            long currentTimeMillis =  System.currentTimeMillis();
+            loginMethods.add(new LoginMethod(List.of("public", "t1"), "emailpassword", true, true, currentTimeMillis, email, "$2a", "BCRYPT", null, null, null));
+            loginMethods.add(new LoginMethod(List.of("public", "t1"), "thirdparty", true, false, currentTimeMillis,  email,  null, null, "thirdPartyId", "thirdPartyUserId", null));
+            loginMethods.add(new LoginMethod(List.of("public", "t1"), "passwordless", true, false, currentTimeMillis, email, null, null, null, null, "+911234567890"));
             users.add(new BulkImportUser(id, externalId, userMetadata, userRoles, totpDevices, loginMethods));
         }
         return users;

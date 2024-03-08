@@ -44,6 +44,7 @@ import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.WebserverAPI;
@@ -184,43 +185,70 @@ public class EmailPassword {
                 tenantIdentifierWithStorage.toAppIdentifier(), main,
                 passwordHash, hashingAlgorithm);
 
+        EmailPasswordSQLStorage storage = tenantIdentifierWithStorage.getEmailPasswordStorage();
+
+        ImportUserResponse response = null;
+        try {
+            long timeJoined = System.currentTimeMillis();
+            response = createUserWithPasswordHash(null, tenantIdentifierWithStorage, email, passwordHash, timeJoined);
+        } catch (DuplicateEmailException e) {
+            AuthRecipeUserInfo[] allUsers = storage.listPrimaryUsersByEmail(tenantIdentifierWithStorage, email);
+            AuthRecipeUserInfo userInfoToBeUpdated = null;
+            LoginMethod loginMethod = null;
+            for (AuthRecipeUserInfo currUser : allUsers) {
+                for (LoginMethod currLM : currUser.loginMethods) {
+                    if (currLM.email.equals(email) && currLM.recipeId == RECIPE_ID.EMAIL_PASSWORD && currLM.tenantIds.contains(tenantIdentifierWithStorage.getTenantId())) {
+                        userInfoToBeUpdated = currUser;
+                        loginMethod = currLM;
+                        break;
+                    }
+                }
+            }
+
+            if (userInfoToBeUpdated != null) {
+                LoginMethod finalLoginMethod = loginMethod;
+                storage.startTransaction(con -> {
+                    storage.updateUsersPassword_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con,
+                            finalLoginMethod.getSupertokensUserId(), passwordHash);
+                    return null;
+                });
+                response = new ImportUserResponse(true, userInfoToBeUpdated);
+            }
+        }
+
+        return response;
+    }
+
+    private static ImportUserResponse createUserWithPasswordHash(TransactionConnection con,
+            TenantIdentifierWithStorage tenantIdentifierWithStorage,
+            @Nonnull String email,
+            @Nonnull String passwordHash, @Nullable long timeJoined)
+            throws StorageQueryException, DuplicateEmailException, TenantOrAppNotFoundException {
+        EmailPasswordSQLStorage storage = tenantIdentifierWithStorage.getEmailPasswordStorage();
+
         while (true) {
             String userId = Utils.getUUID();
-            long timeJoined = System.currentTimeMillis();
-
-            EmailPasswordSQLStorage storage = tenantIdentifierWithStorage.getEmailPasswordStorage();
-
             try {
-                AuthRecipeUserInfo userInfo = storage.signUp(tenantIdentifierWithStorage, userId, email, passwordHash,
-                        timeJoined);
+                AuthRecipeUserInfo userInfo = null;
+                if (con == null) {
+                    userInfo = storage.signUp(tenantIdentifierWithStorage, userId, email, passwordHash, timeJoined);
+                } else {
+                    userInfo = storage.bulkImport_signUp_Transaction(con, tenantIdentifierWithStorage, userId, email,
+                            passwordHash, timeJoined);
+                }
                 return new ImportUserResponse(false, userInfo);
             } catch (DuplicateUserIdException e) {
                 // we retry with a new userId
-            } catch (DuplicateEmailException e) {
-                AuthRecipeUserInfo[] allUsers = storage.listPrimaryUsersByEmail(tenantIdentifierWithStorage, email);
-                AuthRecipeUserInfo userInfoToBeUpdated = null;
-                LoginMethod loginMethod = null;
-                for (AuthRecipeUserInfo currUser : allUsers) {
-                    for (LoginMethod currLM : currUser.loginMethods) {
-                        if (currLM.email.equals(email) && currLM.recipeId == RECIPE_ID.EMAIL_PASSWORD && currLM.tenantIds.contains(tenantIdentifierWithStorage.getTenantId())) {
-                            userInfoToBeUpdated = currUser;
-                            loginMethod = currLM;
-                            break;
-                        }
-                    }
-                }
-
-                if (userInfoToBeUpdated != null) {
-                    LoginMethod finalLoginMethod = loginMethod;
-                    storage.startTransaction(con -> {
-                        storage.updateUsersPassword_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con,
-                                finalLoginMethod.getSupertokensUserId(), passwordHash);
-                        return null;
-                    });
-                    return new ImportUserResponse(true, userInfoToBeUpdated);
-                }
             }
         }
+    }
+
+    public static ImportUserResponse bulkImport_createUserWithPasswordHash_Transaction(TransactionConnection con,
+            TenantIdentifierWithStorage tenantIdentifierWithStorage,
+            @Nonnull String email,
+            @Nonnull String passwordHash, @Nullable long timeJoined)
+            throws StorageQueryException, DuplicateEmailException, TenantOrAppNotFoundException {
+        return createUserWithPasswordHash(con, tenantIdentifierWithStorage, email, passwordHash, timeJoined);
     }
 
     @TestOnly

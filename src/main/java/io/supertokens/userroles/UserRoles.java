@@ -23,6 +23,7 @@ import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicExceptio
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
 import io.supertokens.pluginInterface.userroles.exception.DuplicateUserRoleMappingException;
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
@@ -39,6 +40,18 @@ public class UserRoles {
             throws StorageQueryException, UnknownRoleException, TenantOrAppNotFoundException {
         try {
             tenantIdentifierWithStorage.getUserRolesStorage().addRoleToUser(tenantIdentifierWithStorage, userId, role);
+            return true;
+        } catch (DuplicateUserRoleMappingException e) {
+            // user already has role
+            return false;
+        }
+    }
+
+    public static boolean bulkImport_addRoleToUser_Transaction(TransactionConnection con, TenantIdentifierWithStorage tenantIdentifierWithStorage, String userId,
+                                        String role)
+            throws StorageQueryException, UnknownRoleException, TenantOrAppNotFoundException {
+        try {
+            tenantIdentifierWithStorage.getUserRolesStorage().bulkImport_addRoleToUser_Transaction(con, tenantIdentifierWithStorage, userId, role);
             return true;
         } catch (DuplicateUserRoleMappingException e) {
             // user already has role

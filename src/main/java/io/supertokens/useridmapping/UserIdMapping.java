@@ -65,6 +65,26 @@ public class UserIdMapping {
             throws UnknownSuperTokensUserIdException,
             UserIdMappingAlreadyExistsException, StorageQueryException, ServletException,
             TenantOrAppNotFoundException {
+        createUserIdMappingInternal(null, main, appIdentifierWithStorage, superTokensUserId, externalUserId,
+                externalUserIdInfo, force, makeExceptionForEmailVerification);
+    }
+
+    public static void bulkImport_createUserIdMapping_Transaction(Main main, TransactionConnection con, AppIdentifierWithStorage appIdentifierWithStorage,
+                                           String superTokensUserId, String externalUserId,
+                                           String externalUserIdInfo, boolean force, boolean makeExceptionForEmailVerification)
+            throws UnknownSuperTokensUserIdException,
+            UserIdMappingAlreadyExistsException, StorageQueryException, ServletException,
+            TenantOrAppNotFoundException {
+        createUserIdMappingInternal(con, main, appIdentifierWithStorage, superTokensUserId, externalUserId,
+                externalUserIdInfo, force, makeExceptionForEmailVerification);
+    }
+
+    private static void createUserIdMappingInternal(TransactionConnection con, Main main, AppIdentifierWithStorage appIdentifierWithStorage,
+                                           String superTokensUserId, String externalUserId,
+                                           String externalUserIdInfo, boolean force, boolean makeExceptionForEmailVerification)
+            throws UnknownSuperTokensUserIdException,
+            UserIdMappingAlreadyExistsException, StorageQueryException, ServletException,
+            TenantOrAppNotFoundException {
 
         // We first need to check if the external user id exists across all app storages because we do not want
         // 2 users from different user pool but same app to point to same external user id.
@@ -127,14 +147,20 @@ public class UserIdMapping {
             } else {
                 findNonAuthStoragesWhereUserIdIsUsedOrAssertIfUsed(appIdentifierWithStorage, superTokensUserId, true);
             }
-
-
         }
 
-        appIdentifierWithStorage.getUserIdMappingStorage()
-                .createUserIdMapping(appIdentifierWithStorage, superTokensUserId,
-                        externalUserId, externalUserIdInfo);
+        if (con == null) {
+            appIdentifierWithStorage.getUserIdMappingStorage()
+                    .createUserIdMapping(appIdentifierWithStorage, superTokensUserId,
+                            externalUserId, externalUserIdInfo);
+        } else {
+            appIdentifierWithStorage.getUserIdMappingStorage()
+                    .bulkImport_createUserIdMapping_Transaction(con, appIdentifierWithStorage, superTokensUserId,
+                            externalUserId, externalUserIdInfo);
+        }
+
     }
+
     @TestOnly
     public static void createUserIdMapping(Main main,
                                            String superTokensUserId, String externalUserId,

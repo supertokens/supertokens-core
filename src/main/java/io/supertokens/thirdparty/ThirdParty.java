@@ -29,6 +29,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateUserIdException;
 import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
@@ -205,22 +206,11 @@ public class ThirdParty {
         while (true) {
             // loop for sign in + sign up
 
-            while (true) {
-                // loop for sign up
-                String userId = Utils.getUUID();
-                long timeJoined = System.currentTimeMillis();
-
-                try {
-                    AuthRecipeUserInfo createdUser = storage.signUp(tenantIdentifierWithStorage, userId, email,
-                            new LoginMethod.ThirdParty(thirdPartyId, thirdPartyUserId), timeJoined);
-
-                    return new SignInUpResponse(true, createdUser);
-                } catch (DuplicateUserIdException e) {
-                    // we try again..
-                } catch (DuplicateThirdPartyUserException e) {
-                    // we try to sign in
-                    break;
-                }
+            long timeJoined = System.currentTimeMillis();
+            try {
+                return createThirdPartyUser(null, tenantIdentifierWithStorage, thirdPartyId, thirdPartyUserId, email, timeJoined);
+            } catch (DuplicateThirdPartyUserException e) {
+                // The user already exists, we will try to update the email if needed below
             }
 
             // we try to get user and update their email
@@ -339,6 +329,37 @@ public class ThirdParty {
             AuthRecipeUserInfo user = getUser(tenantIdentifierWithStorage, thirdPartyId, thirdPartyUserId);
             return new SignInUpResponse(false, user);
         }
+    }
+
+    private static SignInUpResponse createThirdPartyUser(TransactionConnection con, TenantIdentifierWithStorage tenantIdentifierWithStorage,
+            String thirdPartyId, String thirdPartyUserId, String email, long timeJoined)
+            throws StorageQueryException, TenantOrAppNotFoundException, DuplicateThirdPartyUserException {
+        ThirdPartySQLStorage storage = tenantIdentifierWithStorage.getThirdPartyStorage();
+        while (true) {
+            // loop for sign up
+            String userId = Utils.getUUID();
+
+            try {
+                AuthRecipeUserInfo createdUser;
+                if (con == null) {
+                    createdUser = storage.signUp(tenantIdentifierWithStorage, userId, email,
+                            new LoginMethod.ThirdParty(thirdPartyId, thirdPartyUserId), timeJoined);
+                } else {
+                    createdUser = storage.bulkImport_signUp_Transaction(con, tenantIdentifierWithStorage, userId, email,
+                            new LoginMethod.ThirdParty(thirdPartyId, thirdPartyUserId), timeJoined);
+                }
+
+                return new SignInUpResponse(true, createdUser);
+            } catch (DuplicateUserIdException e) {
+                // we try again..
+            }
+        }
+    }
+
+    public static SignInUpResponse bulkImport_createThirdPartyUser_Transaction(TransactionConnection con, TenantIdentifierWithStorage tenantIdentifierWithStorage,
+            String thirdPartyId, String thirdPartyUserId, String email, long timeJoined)
+            throws StorageQueryException, TenantOrAppNotFoundException, DuplicateThirdPartyUserException {
+        return createThirdPartyUser(con, tenantIdentifierWithStorage, thirdPartyId, thirdPartyUserId, email, timeJoined);
     }
 
     @Deprecated

@@ -165,7 +165,7 @@ public class BulkImportTest {
             String[] userIds = users.stream().map(user -> user.id).toArray(String[]::new);
 
             storage.startTransaction(con -> {
-                storage.updateBulkImportUserStatus_Transaction(appIdentifierWithStorage, con, userIds, BULK_IMPORT_USER_STATUS.PROCESSING);
+                storage.updateBulkImportUserStatus_Transaction(appIdentifierWithStorage, con, userIds, BULK_IMPORT_USER_STATUS.PROCESSING, null);
                 storage.commitTransaction(con);
                 return null;
             });
@@ -183,7 +183,7 @@ public class BulkImportTest {
             String[] userIds = users.stream().map(user -> user.id).toArray(String[]::new);
 
             storage.startTransaction(con -> {
-                storage.updateBulkImportUserStatus_Transaction(appIdentifierWithStorage, con, userIds, BULK_IMPORT_USER_STATUS.FAILED);
+                storage.updateBulkImportUserStatus_Transaction(appIdentifierWithStorage, con, userIds, BULK_IMPORT_USER_STATUS.FAILED, null);
                 storage.commitTransaction(con);
                 return null;
             });

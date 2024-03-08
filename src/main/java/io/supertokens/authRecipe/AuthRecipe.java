@@ -336,41 +336,84 @@ public class AuthRecipe {
             AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
             RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException, InputUserIdIsNotAPrimaryUserException,
             UnknownUserIdException, TenantOrAppNotFoundException, FeatureNotEnabledException {
-
-        if (Arrays.stream(FeatureFlag.getInstance(main, appIdentifierWithStorage).getEnabledFeatures())
-                .noneMatch(t -> (t == EE_FEATURES.ACCOUNT_LINKING || t == EE_FEATURES.MFA))) {
-            throw new FeatureNotEnabledException(
-                    "Account linking feature is not enabled for this app. Please contact support to enable it.");
-        }
-
         AuthRecipeSQLStorage storage = (AuthRecipeSQLStorage) appIdentifierWithStorage.getAuthRecipeStorage();
         try {
-            LinkAccountsResult result = storage.startTransaction(con -> {
-
-                try {
-                    CanLinkAccountsResult canLinkAccounts = canLinkAccountsHelper(con, appIdentifierWithStorage,
-                            _recipeUserId, _primaryUserId);
-
-                    if (canLinkAccounts.alreadyLinked) {
-                        return new LinkAccountsResult(getUserById(appIdentifierWithStorage, canLinkAccounts.primaryUserId), true);
-                    }
-                    // now we can link accounts in the db.
-                    storage.linkAccounts_Transaction(appIdentifierWithStorage, con, canLinkAccounts.recipeUserId,
-                            canLinkAccounts.primaryUserId);
-
-                    storage.commitTransaction(con);
-
-                    return new LinkAccountsResult(getUserById(appIdentifierWithStorage, canLinkAccounts.primaryUserId), false);
-                } catch (UnknownUserIdException | InputUserIdIsNotAPrimaryUserException |
-                         RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException |
-                         AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException e) {
-                    throw new StorageTransactionLogicException(e);
-                }
+            return storage.startTransaction(con -> {
+                return linkAccountsInternal(main, con, appIdentifierWithStorage, _recipeUserId, _primaryUserId);
             });
+        } catch (StorageTransactionLogicException e) {
+            return handleLinkAccountsExceptions(e);
+        }
+    }
+
+    public static LinkAccountsResult bulkImport_linkAccounts_Transaction(Main main, TransactionConnection con,
+            AppIdentifierWithStorage appIdentifierWithStorage,
+            String _recipeUserId, String _primaryUserId)
+            throws StorageQueryException,
+            AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
+            RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException, InputUserIdIsNotAPrimaryUserException,
+            UnknownUserIdException, TenantOrAppNotFoundException, FeatureNotEnabledException {
+        try {
+            return linkAccountsInternal(main, con, appIdentifierWithStorage, _recipeUserId, _primaryUserId);
+        } catch (StorageTransactionLogicException e) {
+            return handleLinkAccountsExceptions(e);
+        }
+    }
+
+    private static LinkAccountsResult handleLinkAccountsExceptions(StorageTransactionLogicException e)
+            throws StorageQueryException,
+            AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
+            RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException,
+            InputUserIdIsNotAPrimaryUserException, UnknownUserIdException, TenantOrAppNotFoundException,
+            FeatureNotEnabledException {
+        if (e.actualException instanceof UnknownUserIdException) {
+            throw (UnknownUserIdException) e.actualException;
+        } else if (e.actualException instanceof InputUserIdIsNotAPrimaryUserException) {
+            throw (InputUserIdIsNotAPrimaryUserException) e.actualException;
+        } else if (e.actualException instanceof RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException) {
+            throw (RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException) e.actualException;
+        } else if (e.actualException instanceof AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException) {
+            throw (AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException) e.actualException;
+        } else if (e.actualException instanceof TenantOrAppNotFoundException) {
+            throw (TenantOrAppNotFoundException) e.actualException;
+        } else if (e.actualException instanceof FeatureNotEnabledException) {
+            throw (FeatureNotEnabledException) e.actualException;
+        }
+        throw new StorageQueryException(e);
+    }
+
+    private static LinkAccountsResult linkAccountsInternal(Main main, TransactionConnection con,
+            AppIdentifierWithStorage appIdentifierWithStorage,
+            String _recipeUserId, String _primaryUserId)
+            throws StorageTransactionLogicException {
+
+        try {
+            if (Arrays.stream(FeatureFlag.getInstance(main, appIdentifierWithStorage).getEnabledFeatures())
+                    .noneMatch(t -> (t == EE_FEATURES.ACCOUNT_LINKING || t == EE_FEATURES.MFA))) {
+                throw new FeatureNotEnabledException(
+                        "Account linking feature is not enabled for this app. Please contact support to enable it.");
+            }
+
+            AuthRecipeSQLStorage storage = (AuthRecipeSQLStorage) appIdentifierWithStorage.getAuthRecipeStorage();
+
+            CanLinkAccountsResult canLinkAccounts = canLinkAccountsHelper(con, appIdentifierWithStorage,
+                    _recipeUserId, _primaryUserId);
+
+            if (canLinkAccounts.alreadyLinked) {
+                return new LinkAccountsResult(getUserById(appIdentifierWithStorage, canLinkAccounts.primaryUserId),
+                        true);
+            }
+            // now we can link accounts in the db.
+            storage.linkAccounts_Transaction(appIdentifierWithStorage, con, canLinkAccounts.recipeUserId,
+                    canLinkAccounts.primaryUserId);
+
+
+            LinkAccountsResult result = new LinkAccountsResult(
+                    getUserById(appIdentifierWithStorage, canLinkAccounts.primaryUserId), false);
 
             if (!result.wasAlreadyLinked) {
-                io.supertokens.pluginInterface.useridmapping.UserIdMapping mappingResult =
-                        io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+                io.supertokens.pluginInterface.useridmapping.UserIdMapping mappingResult = io.supertokens.useridmapping.UserIdMapping
+                        .getUserIdMapping(
                                 appIdentifierWithStorage,
                                 _recipeUserId, UserIdType.SUPERTOKENS);
                 // finally, we revoke all sessions of the recipeUser Id cause their user ID has changed.
@@ -379,17 +422,11 @@ public class AuthRecipe {
             }
 
             return result;
-        } catch (StorageTransactionLogicException e) {
-            if (e.actualException instanceof UnknownUserIdException) {
-                throw (UnknownUserIdException) e.actualException;
-            } else if (e.actualException instanceof InputUserIdIsNotAPrimaryUserException) {
-                throw (InputUserIdIsNotAPrimaryUserException) e.actualException;
-            } else if (e.actualException instanceof RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException) {
-                throw (RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException) e.actualException;
-            } else if (e.actualException instanceof AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException) {
-                throw (AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException) e.actualException;
-            }
-            throw new StorageQueryException(e);
+        } catch (FeatureNotEnabledException | TenantOrAppNotFoundException | StorageQueryException
+                | UnknownUserIdException | InputUserIdIsNotAPrimaryUserException
+                | RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException
+                | AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException e) {
+            throw new StorageTransactionLogicException(e);
         }
     }
 
@@ -543,43 +580,76 @@ public class AuthRecipe {
             RecipeUserIdAlreadyLinkedWithPrimaryUserIdException, UnknownUserIdException, TenantOrAppNotFoundException,
             FeatureNotEnabledException {
 
-        if (Arrays.stream(FeatureFlag.getInstance(main, appIdentifierWithStorage).getEnabledFeatures())
-                .noneMatch(t -> (t == EE_FEATURES.ACCOUNT_LINKING || t == EE_FEATURES.MFA))) {
-            throw new FeatureNotEnabledException(
-                    "Account linking feature is not enabled for this app. Please contact support to enable it.");
-        }
-
         AuthRecipeSQLStorage storage = (AuthRecipeSQLStorage) appIdentifierWithStorage.getAuthRecipeStorage();
         try {
             return storage.startTransaction(con -> {
-
-                try {
-                    CreatePrimaryUserResult result = canCreatePrimaryUserHelper(con, appIdentifierWithStorage,
-                            recipeUserId);
-                    if (result.wasAlreadyAPrimaryUser) {
-                        return result;
-                    }
-                    storage.makePrimaryUser_Transaction(appIdentifierWithStorage, con, result.user.getSupertokensUserId());
-
-                    storage.commitTransaction(con);
-
-                    result.user.isPrimaryUser = true;
-
-                    return result;
-                } catch (UnknownUserIdException | RecipeUserIdAlreadyLinkedWithPrimaryUserIdException |
-                         AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException e) {
-                    throw new StorageTransactionLogicException(e);
-                }
+                return createPrimaryUserInternal(main, con, appIdentifierWithStorage, recipeUserId);
             });
         } catch (StorageTransactionLogicException e) {
-            if (e.actualException instanceof UnknownUserIdException) {
-                throw (UnknownUserIdException) e.actualException;
-            } else if (e.actualException instanceof RecipeUserIdAlreadyLinkedWithPrimaryUserIdException) {
-                throw (RecipeUserIdAlreadyLinkedWithPrimaryUserIdException) e.actualException;
-            } else if (e.actualException instanceof AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException) {
-                throw (AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException) e.actualException;
+            return handleCreatePrimaryUserExceptions(e);
+        }
+    }
+
+    public static CreatePrimaryUserResult bulkImport_createPrimaryUser_Transaction(Main main, TransactionConnection con,
+            AppIdentifierWithStorage appIdentifierWithStorage,
+            String recipeUserId)
+            throws StorageQueryException, AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
+            RecipeUserIdAlreadyLinkedWithPrimaryUserIdException, UnknownUserIdException, TenantOrAppNotFoundException,
+            FeatureNotEnabledException {
+        try {
+            return createPrimaryUserInternal(main, con, appIdentifierWithStorage, recipeUserId);
+        } catch (StorageTransactionLogicException e) {
+            return handleCreatePrimaryUserExceptions(e);
+        }
+    }
+
+    public static CreatePrimaryUserResult handleCreatePrimaryUserExceptions(StorageTransactionLogicException e)
+            throws StorageQueryException, AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
+            RecipeUserIdAlreadyLinkedWithPrimaryUserIdException, UnknownUserIdException, TenantOrAppNotFoundException,
+            FeatureNotEnabledException {
+        if (e.actualException instanceof UnknownUserIdException) {
+            throw (UnknownUserIdException) e.actualException;
+        } else if (e.actualException instanceof RecipeUserIdAlreadyLinkedWithPrimaryUserIdException) {
+            throw (RecipeUserIdAlreadyLinkedWithPrimaryUserIdException) e.actualException;
+        } else if (e.actualException instanceof AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException) {
+            throw (AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException) e.actualException;
+        } else if (e.actualException instanceof TenantOrAppNotFoundException) {
+            throw (TenantOrAppNotFoundException) e.actualException;
+        } else if (e.actualException instanceof FeatureNotEnabledException) {
+            throw (FeatureNotEnabledException) e.actualException;
+        }
+        throw new StorageQueryException(e);
+    }
+
+    public static CreatePrimaryUserResult createPrimaryUserInternal(Main main, TransactionConnection con,
+            AppIdentifierWithStorage appIdentifierWithStorage,
+            String recipeUserId)
+            throws StorageTransactionLogicException {
+        try {
+            if (Arrays.stream(FeatureFlag.getInstance(main, appIdentifierWithStorage).getEnabledFeatures())
+                    .noneMatch(t -> (t == EE_FEATURES.ACCOUNT_LINKING || t == EE_FEATURES.MFA))) {
+                throw new FeatureNotEnabledException(
+                        "Account linking feature is not enabled for this app. Please contact support to enable it.");
             }
-            throw new StorageQueryException(e);
+
+            AuthRecipeSQLStorage storage = (AuthRecipeSQLStorage) appIdentifierWithStorage.getAuthRecipeStorage();
+
+            CreatePrimaryUserResult result = canCreatePrimaryUserHelper(con, appIdentifierWithStorage,
+                    recipeUserId);
+            if (result.wasAlreadyAPrimaryUser) {
+                return result;
+            }
+            storage.makePrimaryUser_Transaction(appIdentifierWithStorage, con, result.user.getSupertokensUserId());
+
+
+            result.user.isPrimaryUser = true;
+
+            return result;
+
+        } catch (TenantOrAppNotFoundException | FeatureNotEnabledException | StorageQueryException
+                | UnknownUserIdException | RecipeUserIdAlreadyLinkedWithPrimaryUserIdException
+                | AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException e) {
+            throw new StorageTransactionLogicException(e);
         }
     }
 

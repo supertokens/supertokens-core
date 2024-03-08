@@ -22,9 +22,8 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
 import io.supertokens.pluginInterface.usermetadata.sqlStorage.UserMetadataSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.MetadataUtils;
@@ -55,19 +54,12 @@ public class UserMetadata {
 
         try {
             return storage.startTransaction((con) -> {
-                JsonObject originalMetadata = storage.getUserMetadata_Transaction(appIdentifierWithStorage, con,
-                        userId);
-
-                JsonObject updatedMetadata = originalMetadata == null ? new JsonObject() : originalMetadata;
-                MetadataUtils.shallowMergeMetadataUpdate(updatedMetadata, metadataUpdate);
-
                 try {
-                    storage.setUserMetadata_Transaction(appIdentifierWithStorage, con, userId, updatedMetadata);
-                } catch (TenantOrAppNotFoundException e) {
+                    return updateUserMetadataInternal(con, appIdentifierWithStorage, userId, metadataUpdate);
+                } 
+                catch (TenantOrAppNotFoundException e) {
                     throw new StorageTransactionLogicException(e);
                 }
-
-                return updatedMetadata;
             });
         } catch (StorageTransactionLogicException e) {
             if (e.actualException instanceof TenantOrAppNotFoundException) {
@@ -75,6 +67,28 @@ public class UserMetadata {
             }
             throw e;
         }
+    }
+
+    public static JsonObject bulkImport_updateUserMetadata_Transaction(TransactionConnection con, AppIdentifierWithStorage appIdentifierWithStorage,
+                                                @Nonnull String userId, @Nonnull JsonObject metadataUpdate)
+            throws StorageQueryException, TenantOrAppNotFoundException {
+        return updateUserMetadataInternal(con, appIdentifierWithStorage, userId, metadataUpdate);
+    }
+
+    public static JsonObject updateUserMetadataInternal(TransactionConnection con, AppIdentifierWithStorage appIdentifierWithStorage,
+                                                @Nonnull String userId, @Nonnull JsonObject metadataUpdate)
+            throws StorageQueryException, TenantOrAppNotFoundException {
+        UserMetadataSQLStorage storage = appIdentifierWithStorage.getUserMetadataStorage();
+
+        JsonObject originalMetadata = storage.getUserMetadata_Transaction(appIdentifierWithStorage, con,
+        userId);
+
+        JsonObject updatedMetadata = originalMetadata == null ? new JsonObject() : originalMetadata;
+        MetadataUtils.shallowMergeMetadataUpdate(updatedMetadata, metadataUpdate);
+
+        storage.setUserMetadata_Transaction(appIdentifierWithStorage, con, userId, updatedMetadata);
+
+        return updatedMetadata;
     }
 
     @TestOnly

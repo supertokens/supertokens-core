@@ -18,7 +18,9 @@ package io.supertokens.webserver.api.bulkimport;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -139,11 +141,12 @@ public class BulkImportAPI extends WebserverAPI {
         }
 
         JsonArray errorsJson = new JsonArray();
-        ArrayList<BulkImportUser> usersToAdd = new ArrayList<>();
+        Set<String> allExternalUserIds = new HashSet<>();
+        List<BulkImportUser> usersToAdd = new ArrayList<>();
 
         for (int i = 0; i < users.size(); i++) {
             try {
-                BulkImportUser user = BulkImportUserUtils.createBulkImportUserFromJSON(main, appIdentifierWithStorage, users.get(i).getAsJsonObject(), Utils.getUUID(), allUserRoles);
+                BulkImportUser user = BulkImportUserUtils.createBulkImportUserFromJSON(main, appIdentifierWithStorage, users.get(i).getAsJsonObject(), Utils.getUUID(), allUserRoles, allExternalUserIds);
                 usersToAdd.add(user);
             } catch (io.supertokens.bulkimport.exceptions.InvalidBulkImportDataException e) {
                 JsonObject errorObj = new JsonObject();

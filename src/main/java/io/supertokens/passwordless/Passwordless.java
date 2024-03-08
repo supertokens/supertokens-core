@@ -41,6 +41,7 @@ import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
 import io.supertokens.pluginInterface.passwordless.PasswordlessDevice;
 import io.supertokens.pluginInterface.passwordless.exception.*;
 import io.supertokens.pluginInterface.passwordless.sqlStorage.PasswordlessSQLStorage;
+import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
 import org.jetbrains.annotations.TestOnly;
@@ -440,52 +441,34 @@ public class Passwordless {
 
         if (user == null) {
             if (createRecipeUserIfNotExists) {
-                while (true) {
+                long timeJoined = System.currentTimeMillis();
+                user = createPasswordlessUser(null, tenantIdentifierWithStorage, consumedDevice.email, consumedDevice.phoneNumber, timeJoined);
+                // Set email as verified, if using email
+                if (setEmailVerified && consumedDevice.email != null) {
                     try {
-                        String userId = Utils.getUUID();
-                        long timeJoined = System.currentTimeMillis();
-                        user = passwordlessStorage.createUser(tenantIdentifierWithStorage, userId, consumedDevice.email,
-                                consumedDevice.phoneNumber, timeJoined);
-
-                        // Set email as verified, if using email
-                        if (setEmailVerified && consumedDevice.email != null) {
+                        AuthRecipeUserInfo finalUser = user;
+                        tenantIdentifierWithStorage.getEmailVerificationStorage().startTransaction(con -> {
                             try {
-                                AuthRecipeUserInfo finalUser = user;
-                                tenantIdentifierWithStorage.getEmailVerificationStorage().startTransaction(con -> {
-                                    try {
-                                        tenantIdentifierWithStorage.getEmailVerificationStorage()
-                                                .updateIsEmailVerified_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con,
-                                                        finalUser.getSupertokensUserId(), consumedDevice.email, true);
-                                        tenantIdentifierWithStorage.getEmailVerificationStorage()
-                                                .commitTransaction(con);
+                                tenantIdentifierWithStorage.getEmailVerificationStorage()
+                                        .updateIsEmailVerified_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con,
+                                                finalUser.getSupertokensUserId(), consumedDevice.email, true);
+                                tenantIdentifierWithStorage.getEmailVerificationStorage()
+                                        .commitTransaction(con);
 
-                                        return null;
-                                    } catch (TenantOrAppNotFoundException e) {
-                                        throw new StorageTransactionLogicException(e);
-                                    }
-                                });
-                                user.loginMethods[0].setVerified(); // newly created user has only one loginMethod
-                            } catch (StorageTransactionLogicException e) {
-                                if (e.actualException instanceof TenantOrAppNotFoundException) {
-                                    throw (TenantOrAppNotFoundException) e.actualException;
-                                }
-                                throw new StorageQueryException(e);
+                                return null;
+                            } catch (TenantOrAppNotFoundException e) {
+                                throw new StorageTransactionLogicException(e);
                             }
+                        });
+                        user.loginMethods[0].setVerified(); // newly created user has only one loginMethod
+                    } catch (StorageTransactionLogicException e) {
+                        if (e.actualException instanceof TenantOrAppNotFoundException) {
+                            throw (TenantOrAppNotFoundException) e.actualException;
                         }
-
-                        return new ConsumeCodeResponse(true, user, consumedDevice.email, consumedDevice.phoneNumber, consumedDevice);
-                    } catch (DuplicateEmailException | DuplicatePhoneNumberException e) {
-                        // Getting these would mean that between getting the user and trying creating it:
-                        // 1. the user managed to do a full create+consume flow
-                        // 2. the users email or phoneNumber was updated to the new one (including device cleanup)
-                        // These should be almost impossibly rare, so it's safe to just ask the user to restart.
-                        // Also, both would make the current login fail if done before the transaction
-                        // by cleaning up the device/code this consume would've used.
-                        throw new RestartFlowException();
-                    } catch (DuplicateUserIdException e) {
-                        // We can retry..
+                        throw new StorageQueryException(e);
                     }
                 }
+                return new ConsumeCodeResponse(true, user, consumedDevice.email, consumedDevice.phoneNumber, consumedDevice);
             }
         } else {
             // We do not need this cleanup if we are creating the user, since it uses the email/phoneNumber of the
@@ -524,6 +507,40 @@ public class Passwordless {
             }
         }
         return new ConsumeCodeResponse(false, user, consumedDevice.email, consumedDevice.phoneNumber, consumedDevice);
+    }
+
+
+    private static AuthRecipeUserInfo createPasswordlessUser(TransactionConnection con, TenantIdentifierWithStorage tenantIdentifierWithStorage, String email, String phoneNumber, long timeJoined)
+            throws TenantOrAppNotFoundException, StorageQueryException, RestartFlowException {
+        PasswordlessSQLStorage passwordlessStorage = tenantIdentifierWithStorage.getPasswordlessStorage();
+
+        while (true) {
+            try {
+                String userId = Utils.getUUID();
+                if (con == null) {
+                    return passwordlessStorage.createUser(tenantIdentifierWithStorage, userId, email,
+                            phoneNumber, timeJoined);
+                } else {
+                    return passwordlessStorage.bulkImport_createUser_Transaction(con, tenantIdentifierWithStorage, 
+                            userId, email, phoneNumber, timeJoined);
+                }
+            } catch (DuplicateEmailException | DuplicatePhoneNumberException e) {
+                // Getting these would mean that between getting the user and trying creating it:
+                // 1. the user managed to do a full create+consume flow
+                // 2. the users email or phoneNumber was updated to the new one (including device cleanup)
+                // These should be almost impossibly rare, so it's safe to just ask the user to restart.
+                // Also, both would make the current login fail if done before the transaction
+                // by cleaning up the device/code this consume would've used.
+                throw new RestartFlowException();
+            } catch (DuplicateUserIdException e) {
+                // We can retry..
+            }
+        }
+    }
+
+    public static AuthRecipeUserInfo bulkImport_createPasswordlessUser_Transaction(TransactionConnection con, TenantIdentifierWithStorage tenantIdentifierWithStorage, String email, String phoneNumber, long timeJoined)
+            throws TenantOrAppNotFoundException, StorageQueryException, RestartFlowException {
+        return createPasswordlessUser(con, tenantIdentifierWithStorage, email, phoneNumber, timeJoined);
     }
 
     @TestOnly
