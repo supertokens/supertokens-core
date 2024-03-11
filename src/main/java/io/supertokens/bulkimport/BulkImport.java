@@ -17,9 +17,12 @@
 package io.supertokens.bulkimport;
 
 import io.supertokens.pluginInterface.bulkimport.BulkImportStorage.BULK_IMPORT_USER_STATUS;
+import io.supertokens.pluginInterface.bulkimport.sqlStorage.BulkImportSQLStorage;
+import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.utils.Utils;
 
@@ -36,11 +39,11 @@ public class BulkImport {
     public static final int GET_USERS_DEFAULT_LIMIT = 100;
     public static final int DELETE_USERS_LIMIT = 500;
 
-    public static void addUsers(AppIdentifierWithStorage appIdentifierWithStorage, List<BulkImportUser> users)
+    public static void addUsers(AppIdentifier appIdentifier, Storage storage, List<BulkImportUser> users)
             throws StorageQueryException, TenantOrAppNotFoundException {
         while (true) {
             try {
-                appIdentifierWithStorage.getBulkImportStorage().addBulkImportUsers(appIdentifierWithStorage, users);
+                StorageUtils.getBulkImportStorage(storage).addBulkImportUsers(appIdentifier, users);
                 break;
             } catch (io.supertokens.pluginInterface.bulkimport.exceptions.DuplicateUserIdException ignored) {
                 // We re-generate the user id for every user and retry
@@ -51,18 +54,20 @@ public class BulkImport {
         }
     }
 
-    public static BulkImportUserPaginationContainer getUsers(AppIdentifierWithStorage appIdentifierWithStorage,
+    public static BulkImportUserPaginationContainer getUsers(AppIdentifier appIdentifier, Storage storage,
             @Nonnull Integer limit, @Nullable BULK_IMPORT_USER_STATUS status, @Nullable String paginationToken)
             throws StorageQueryException, BulkImportUserPaginationToken.InvalidTokenException {
         List<BulkImportUser> users;
 
+        BulkImportSQLStorage bulkImportStorage = StorageUtils.getBulkImportStorage(storage);
+
         if (paginationToken == null) {
-            users = appIdentifierWithStorage.getBulkImportStorage()
-                    .getBulkImportUsers(appIdentifierWithStorage, limit + 1, status, null, null);
+            users = bulkImportStorage
+                    .getBulkImportUsers(appIdentifier, limit + 1, status, null, null);
         } else {
             BulkImportUserPaginationToken tokenInfo = BulkImportUserPaginationToken.extractTokenInfo(paginationToken);
-            users = appIdentifierWithStorage.getBulkImportStorage()
-                    .getBulkImportUsers(appIdentifierWithStorage, limit + 1, status, tokenInfo.bulkImportUserId, tokenInfo.createdAt);
+            users = bulkImportStorage
+                    .getBulkImportUsers(appIdentifier, limit + 1, status, tokenInfo.bulkImportUserId, tokenInfo.createdAt);
         }
 
         String nextPaginationToken = null;
@@ -77,7 +82,7 @@ public class BulkImport {
         return new BulkImportUserPaginationContainer(resultUsers, nextPaginationToken);
     }
 
-    public static List<String> deleteUsers(AppIdentifierWithStorage appIdentifierWithStorage, String[] userIds) throws StorageQueryException {
-        return appIdentifierWithStorage.getBulkImportStorage().deleteBulkImportUsers(appIdentifierWithStorage, userIds);
+    public static List<String> deleteUsers(AppIdentifier appIdentifier, Storage storage, String[] userIds) throws StorageQueryException {
+        return StorageUtils.getBulkImportStorage(storage).deleteBulkImportUsers(appIdentifier, userIds);
     }
 }

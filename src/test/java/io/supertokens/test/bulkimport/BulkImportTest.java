@@ -38,7 +38,6 @@ import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
 import io.supertokens.pluginInterface.bulkimport.BulkImportStorage.BULK_IMPORT_USER_STATUS;
 import io.supertokens.pluginInterface.bulkimport.sqlStorage.BulkImportSQLStorage;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -73,7 +72,7 @@ public class BulkImportTest {
         List<BulkImportUser> users = generateBulkImportUser(10);
 
         BulkImportStorage storage = (BulkImportStorage) StorageLayer.getStorage(process.main);
-        BulkImport.addUsers(new AppIdentifierWithStorage(null, null, storage), users);
+        BulkImport.addUsers(new AppIdentifier(null, null), storage, users);
 
         List<BulkImportUser> addedUsers = storage.getBulkImportUsers(new AppIdentifier(null, null), null, BULK_IMPORT_USER_STATUS.NEW, null, null);
 
@@ -112,10 +111,10 @@ public class BulkImportTest {
         List<String> initialIds = users.stream().map(user -> user.id).collect(Collectors.toList());
 
         BulkImportStorage storage = (BulkImportStorage) StorageLayer.getStorage(process.main);
-        AppIdentifierWithStorage appIdentifierWithStorage = new AppIdentifierWithStorage(null, null, storage);
-        BulkImport.addUsers(appIdentifierWithStorage, users);
+        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+        BulkImport.addUsers(appIdentifier, storage, users);
 
-        List<BulkImportUser> addedUsers = storage.getBulkImportUsers(appIdentifierWithStorage, null, BULK_IMPORT_USER_STATUS.NEW, null, null);
+        List<BulkImportUser> addedUsers = storage.getBulkImportUsers(appIdentifier, null, BULK_IMPORT_USER_STATUS.NEW, null, null);
 
         // Verify that the other properties are same but ids changed
         for (BulkImportUser user : users) {
@@ -145,50 +144,50 @@ public class BulkImportTest {
         }
         
         BulkImportSQLStorage storage = (BulkImportSQLStorage) StorageLayer.getStorage(process.main);
-        AppIdentifierWithStorage appIdentifierWithStorage = new AppIdentifierWithStorage(null, null, storage);
+        AppIdentifier appIdentifier = new AppIdentifier(null, null);
 
         // Test with status = 'NEW'
         {
             List<BulkImportUser> users = generateBulkImportUser(10);
-            BulkImport.addUsers(appIdentifierWithStorage, users);
+            BulkImport.addUsers(appIdentifier, storage, users);
 
-            List<BulkImportUser> addedUsers = storage.getBulkImportUsers(appIdentifierWithStorage, null, BULK_IMPORT_USER_STATUS.NEW, null, null);
+            List<BulkImportUser> addedUsers = storage.getBulkImportUsers(appIdentifier, null, BULK_IMPORT_USER_STATUS.NEW, null, null);
             assertEquals(10, addedUsers.size());
         }
 
         // Test with status = 'PROCESSING'
         {
             List<BulkImportUser> users = generateBulkImportUser(10);
-            BulkImport.addUsers(appIdentifierWithStorage, users);
+            BulkImport.addUsers(appIdentifier, storage, users);
 
             // Update the users status to PROCESSING
             String[] userIds = users.stream().map(user -> user.id).toArray(String[]::new);
 
             storage.startTransaction(con -> {
-                storage.updateBulkImportUserStatus_Transaction(appIdentifierWithStorage, con, userIds, BULK_IMPORT_USER_STATUS.PROCESSING);
+                storage.updateBulkImportUserStatus_Transaction(appIdentifier, con, userIds, BULK_IMPORT_USER_STATUS.PROCESSING);
                 storage.commitTransaction(con);
                 return null;
             });
 
-            List<BulkImportUser> addedUsers = storage.getBulkImportUsers(appIdentifierWithStorage, null, BULK_IMPORT_USER_STATUS.PROCESSING, null, null);
+            List<BulkImportUser> addedUsers = storage.getBulkImportUsers(appIdentifier, null, BULK_IMPORT_USER_STATUS.PROCESSING, null, null);
             assertEquals(10, addedUsers.size());
         }
 
         // Test with status = 'FAILED'
         {
             List<BulkImportUser> users = generateBulkImportUser(10);
-            BulkImport.addUsers(appIdentifierWithStorage, users);
+            BulkImport.addUsers(appIdentifier, storage, users);
 
             // Update the users status to FAILED
             String[] userIds = users.stream().map(user -> user.id).toArray(String[]::new);
 
             storage.startTransaction(con -> {
-                storage.updateBulkImportUserStatus_Transaction(appIdentifierWithStorage, con, userIds, BULK_IMPORT_USER_STATUS.FAILED);
+                storage.updateBulkImportUserStatus_Transaction(appIdentifier, con, userIds, BULK_IMPORT_USER_STATUS.FAILED);
                 storage.commitTransaction(con);
                 return null;
             });
 
-            List<BulkImportUser> addedUsers = storage.getBulkImportUsers(appIdentifierWithStorage, null, BULK_IMPORT_USER_STATUS.FAILED, null, null);
+            List<BulkImportUser> addedUsers = storage.getBulkImportUsers(appIdentifier, null, BULK_IMPORT_USER_STATUS.FAILED, null, null);
             assertEquals(10, addedUsers.size());
         }
 
@@ -215,7 +214,7 @@ public class BulkImportTest {
             int batchSize = 100;
             for (int i = 0; i < numberOfUsers; i += batchSize) {
                 List<BulkImportUser> users = generateBulkImportUser(batchSize);
-                BulkImport.addUsers(new AppIdentifierWithStorage(null, null, storage), users);
+                BulkImport.addUsers(new AppIdentifier(null, null), storage, users);
                 // Adding a delay between each batch to ensure the createdAt different
                 Thread.sleep(1000);
             }
@@ -242,7 +241,7 @@ public class BulkImportTest {
             int indexIntoUsers = 0;
             String paginationToken = null;
             do {
-                BulkImportUserPaginationContainer users = BulkImport.getUsers(new AppIdentifierWithStorage(null, null, storage), limit, null, paginationToken);
+                BulkImportUserPaginationContainer users = BulkImport.getUsers(new AppIdentifier(null, null), storage, limit, null, paginationToken);
 
                 for (BulkImportUser actualUser : users.users) {
                     BulkImportUser expectedUser = sortedUsers.get(indexIntoUsers);

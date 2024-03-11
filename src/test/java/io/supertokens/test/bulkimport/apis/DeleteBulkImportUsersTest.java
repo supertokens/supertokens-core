@@ -39,7 +39,7 @@ import io.supertokens.bulkimport.BulkImport;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.bulkimport.BulkImportStorage;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -139,12 +139,12 @@ public class DeleteBulkImportUsersTest {
             return;
         }
 
+        AppIdentifier appIdentifier = new AppIdentifier(null, null);
         BulkImportStorage storage = (BulkImportStorage) StorageLayer.getStorage(process.main);
-        AppIdentifierWithStorage appIdentifierWithStorage = new AppIdentifierWithStorage(null, null, storage);
 
         // Insert users
         List<BulkImportUser> users = generateBulkImportUser(5);
-        BulkImport.addUsers(appIdentifierWithStorage, users);
+        BulkImport.addUsers(appIdentifier, storage, users);
 
         String invalidId = io.supertokens.utils.Utils.getUUID();
         JsonObject request = new JsonObject();

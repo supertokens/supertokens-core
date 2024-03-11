@@ -32,9 +32,11 @@ import io.supertokens.bulkimport.BulkImportUserUtils;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.bulkimport.BulkImportStorage.BULK_IMPORT_USER_STATUS;
+import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
@@ -79,16 +81,18 @@ public class BulkImportAPI extends WebserverAPI {
             }
         }
 
-        AppIdentifierWithStorage appIdentifierWithStorage = null;
+        AppIdentifier appIdentifier = null;
+        Storage storage = null;
 
         try {
-            appIdentifierWithStorage = getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(req);
+            appIdentifier = getAppIdentifier(req);
+            storage = enforcePublicTenantAndGetPublicTenantStorage(req);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
 
         try {
-            BulkImportUserPaginationContainer users = BulkImport.getUsers(appIdentifierWithStorage, limit, status, paginationToken);
+            BulkImportUserPaginationContainer users = BulkImport.getUsers(appIdentifier, storage, limit, status, paginationToken);
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
 
@@ -122,10 +126,13 @@ public class BulkImportAPI extends WebserverAPI {
             errorResponseJson.addProperty("error", errorMsg);
             throw new ServletException(new WebserverAPI.BadRequestException(errorResponseJson.toString()));
         }
+    
+        AppIdentifier appIdentifier = null;
+        Storage storage = null;
 
-        AppIdentifierWithStorage appIdentifierWithStorage;
         try {
-            appIdentifierWithStorage = getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(req);
+            appIdentifier = getAppIdentifier(req);
+            storage = enforcePublicTenantAndGetPublicTenantStorage(req);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
@@ -133,7 +140,7 @@ public class BulkImportAPI extends WebserverAPI {
         String[] allUserRoles = null;
 
         try {
-            allUserRoles = appIdentifierWithStorage.getUserRolesStorage().getRoles(appIdentifierWithStorage);
+            allUserRoles = StorageUtils.getUserRolesStorage(storage).getRoles(appIdentifier);
         } catch (StorageQueryException e) {
             throw new ServletException(e);
         }
@@ -143,7 +150,7 @@ public class BulkImportAPI extends WebserverAPI {
 
         for (int i = 0; i < users.size(); i++) {
             try {
-                BulkImportUser user = BulkImportUserUtils.createBulkImportUserFromJSON(main, appIdentifierWithStorage, users.get(i).getAsJsonObject(), Utils.getUUID(), allUserRoles);
+                BulkImportUser user = BulkImportUserUtils.createBulkImportUserFromJSON(main, appIdentifier, users.get(i).getAsJsonObject(), Utils.getUUID(), allUserRoles);
                 usersToAdd.add(user);
             } catch (io.supertokens.bulkimport.exceptions.InvalidBulkImportDataException e) {
                 JsonObject errorObj = new JsonObject();
@@ -169,7 +176,7 @@ public class BulkImportAPI extends WebserverAPI {
         }
 
         try {
-            BulkImport.addUsers(appIdentifierWithStorage, usersToAdd);
+            BulkImport.addUsers(appIdentifier, storage, usersToAdd);
         } catch (TenantOrAppNotFoundException | StorageQueryException e) {
             throw new ServletException(e);
         }
@@ -203,15 +210,18 @@ public class BulkImportAPI extends WebserverAPI {
             userIds[i] = userId;
         }
 
-        AppIdentifierWithStorage appIdentifierWithStorage;
+        AppIdentifier appIdentifier = null;
+        Storage storage = null;
+
         try {
-            appIdentifierWithStorage = getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(req);
+            appIdentifier = getAppIdentifier(req);
+            storage = enforcePublicTenantAndGetPublicTenantStorage(req);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
 
         try {
-            List<String> deletedIds = BulkImport.deleteUsers(appIdentifierWithStorage, userIds);
+            List<String> deletedIds = BulkImport.deleteUsers(appIdentifier, storage, userIds);
 
             JsonArray deletedIdsJson = new JsonArray();
             JsonArray invalidIds = new JsonArray();
