@@ -17,20 +17,20 @@
 package io.supertokens.webserver.api.accountlinking;
 
 import com.google.gson.JsonObject;
-import io.supertokens.ActiveUsers;
-import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
+import io.supertokens.StorageAndUserIdMapping;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.authRecipe.exception.AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException;
 import io.supertokens.authRecipe.exception.InputUserIdIsNotAPrimaryUserException;
 import io.supertokens.authRecipe.exception.RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
-import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
@@ -41,8 +41,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 public class LinkAccountsAPI extends WebserverAPI {
 
@@ -62,52 +60,59 @@ public class LinkAccountsAPI extends WebserverAPI {
         String inputRecipeUserId = InputParser.parseStringOrThrowError(input, "recipeUserId", false);
         String inputPrimaryUserId = InputParser.parseStringOrThrowError(input, "primaryUserId", false);
 
-        AppIdentifierWithStorage primaryUserIdAppIdentifierWithStorage = null;
-        AppIdentifierWithStorage recipeUserIdAppIdentifierWithStorage = null;
+        AppIdentifier appIdentifier = null;
+        try {
+            appIdentifier = getAppIdentifier(req);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new ServletException(e);
+        }
+        Storage primaryUserIdStorage = null;
+        Storage recipeUserIdStorage = null;
         try {
             String recipeUserId = inputRecipeUserId;
             {
-                AppIdentifierWithStorageAndUserIdMapping mappingAndStorage =
-                        getAppIdentifierWithStorageAndUserIdMappingFromRequest(
-                                req, inputRecipeUserId, UserIdType.ANY);
+                StorageAndUserIdMapping mappingAndStorage =
+                        enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
+                                req, inputRecipeUserId, UserIdType.ANY, true);
                 if (mappingAndStorage.userIdMapping != null) {
                     recipeUserId = mappingAndStorage.userIdMapping.superTokensUserId;
                 }
-                recipeUserIdAppIdentifierWithStorage = mappingAndStorage.appIdentifierWithStorage;
+                recipeUserIdStorage = mappingAndStorage.storage;
             }
             String primaryUserId = inputPrimaryUserId;
             {
-                AppIdentifierWithStorageAndUserIdMapping mappingAndStorage =
-                        getAppIdentifierWithStorageAndUserIdMappingFromRequest(
-                                req, inputPrimaryUserId, UserIdType.ANY);
+                StorageAndUserIdMapping mappingAndStorage =
+                        enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
+                                req, inputPrimaryUserId, UserIdType.ANY, true);
                 if (mappingAndStorage.userIdMapping != null) {
                     primaryUserId = mappingAndStorage.userIdMapping.superTokensUserId;
                 }
-                primaryUserIdAppIdentifierWithStorage = mappingAndStorage.appIdentifierWithStorage;
+                primaryUserIdStorage = mappingAndStorage.storage;
             }
 
             // we do a check based on user pool ID and not instance reference checks cause the user
             // could be in the same db, but their storage layers may just have different
-            if (!primaryUserIdAppIdentifierWithStorage.getStorage().getUserPoolId().equals(
-                    recipeUserIdAppIdentifierWithStorage.getStorage().getUserPoolId())) {
+            if (!primaryUserIdStorage.getUserPoolId().equals(
+                    recipeUserIdStorage.getUserPoolId())) {
                 throw new ServletException(
                         new BadRequestException(
                                 "Cannot link users that are parts of different databases. Different pool IDs: " +
-                                        primaryUserIdAppIdentifierWithStorage.getStorage().getUserPoolId() + " AND " +
-                                        recipeUserIdAppIdentifierWithStorage.getStorage().getUserPoolId()));
+                                        primaryUserIdStorage.getUserPoolId() + " AND " +
+                                        recipeUserIdStorage.getUserPoolId()));
             }
 
             AuthRecipe.LinkAccountsResult linkAccountsResult = AuthRecipe.linkAccounts(main,
-                    primaryUserIdAppIdentifierWithStorage,
+                    appIdentifier, primaryUserIdStorage,
                     recipeUserId, primaryUserId);
 
-            UserIdMapping.populateExternalUserIdForUsers(primaryUserIdAppIdentifierWithStorage, new AuthRecipeUserInfo[]{linkAccountsResult.user});
+            UserIdMapping.populateExternalUserIdForUsers(primaryUserIdStorage, new AuthRecipeUserInfo[]{linkAccountsResult.user});
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             response.addProperty("accountsAlreadyLinked", linkAccountsResult.wasAlreadyLinked);
             response.add("user", linkAccountsResult.user.toJson());
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | TenantOrAppNotFoundException | FeatureNotEnabledException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | FeatureNotEnabledException |
+                 BadPermissionException e) {
             throw new ServletException(e);
         } catch (UnknownUserIdException e) {
             throw new ServletException(new BadRequestException("Unknown user ID provided"));
@@ -116,7 +121,7 @@ public class LinkAccountsAPI extends WebserverAPI {
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "ACCOUNT_INFO_ALREADY_ASSOCIATED_WITH_ANOTHER_PRIMARY_USER_ID_ERROR");
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping result = UserIdMapping.getUserIdMapping(
-                        primaryUserIdAppIdentifierWithStorage, e.primaryUserId,
+                        appIdentifier, primaryUserIdStorage, e.primaryUserId,
                         UserIdType.SUPERTOKENS);
                 if (result != null) {
                     response.addProperty("primaryUserId", result.externalUserId);
@@ -132,7 +137,7 @@ public class LinkAccountsAPI extends WebserverAPI {
             try {
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "RECIPE_USER_ID_ALREADY_LINKED_WITH_ANOTHER_PRIMARY_USER_ID_ERROR");
-                UserIdMapping.populateExternalUserIdForUsers(recipeUserIdAppIdentifierWithStorage, new AuthRecipeUserInfo[]{e.recipeUser});
+                UserIdMapping.populateExternalUserIdForUsers(recipeUserIdStorage, new AuthRecipeUserInfo[]{e.recipeUser});
                 response.addProperty("primaryUserId", e.recipeUser.getSupertokensOrExternalUserId());
                 response.addProperty("description", e.getMessage());
                 response.add("user", e.recipeUser.toJson());

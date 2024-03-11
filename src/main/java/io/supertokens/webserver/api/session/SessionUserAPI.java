@@ -20,10 +20,18 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
+import io.supertokens.StorageAndUserIdMapping;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.session.Session;
+import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -47,7 +55,7 @@ public class SessionUserAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        // API is tenant specific, also finds across all tenants in the app if fetchAcrossAllTenants is set to true
+        // API is tenant specific, but ignores tenantId if fetchAcrossAllTenants is true
         String userId = InputParser.getQueryParamOrThrowError(req, "userId", false);
         assert userId != null;
 
@@ -67,12 +75,32 @@ public class SessionUserAPI extends WebserverAPI {
 
         try {
             String[] sessionHandles;
+
             if (fetchAcrossAllTenants) {
+                // when fetchAcrossAllTenants is true, and given that the backend SDK might pass tenant id
+                // we do not want to enforce public tenant here but behave as if this is an app specific API
+                // So instead of calling enforcePublicTenantAndGetAllStoragesForApp, we simply do all the logic
+                // here to fetch the storages and find the storage where `userId` exists. If user id does not
+                // exist, we use the storage for the tenantId passed in the request.
+                AppIdentifier appIdentifier = getAppIdentifier(req);
+                Storage[] storages = StorageLayer.getStoragesForApp(main, appIdentifier);
+                Storage storage;
+                try {
+                    StorageAndUserIdMapping storageAndUserIdMapping =
+                            StorageLayer.findStorageAndUserIdMappingForUser(
+                            appIdentifier, storages, userId, UserIdType.ANY);
+                    storage = storageAndUserIdMapping.storage;
+                } catch (UnknownUserIdException e) {
+                    storage = getTenantStorage(req);
+                }
                 sessionHandles = Session.getAllNonExpiredSessionHandlesForUser(
-                        main, this.getAppIdentifierWithStorage(req), userId, fetchSessionsForAllLinkedAccounts);
+                        main, appIdentifier, storage, userId,
+                        fetchSessionsForAllLinkedAccounts);
             } else {
+                TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+                Storage storage = getTenantStorage(req);
                 sessionHandles = Session.getAllNonExpiredSessionHandlesForUser(
-                        this.getTenantIdentifierWithStorageFromRequest(req), userId, fetchSessionsForAllLinkedAccounts);
+                        tenantIdentifier, storage, userId, fetchSessionsForAllLinkedAccounts);
             }
 
             JsonObject result = new JsonObject();

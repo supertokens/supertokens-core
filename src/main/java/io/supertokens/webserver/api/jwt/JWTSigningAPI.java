@@ -20,6 +20,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.jwt.JWTSigningFunctions;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -78,7 +79,8 @@ public class JWTSigningAPI extends WebserverAPI {
         }
 
         try {
-            String jwt = JWTSigningFunctions.createJWTToken(this.getAppIdentifierWithStorage(req), main,
+            this.enforcePublicTenantAndGetPublicTenantStorage(req);
+            String jwt = JWTSigningFunctions.createJWTToken(getAppIdentifier(req), main,
                     algorithm.toUpperCase(), payload, jwksDomain,
                     validity, useDynamicKey);
             JsonObject reply = new JsonObject();
@@ -89,7 +91,8 @@ public class JWTSigningAPI extends WebserverAPI {
             JsonObject reply = new JsonObject();
             reply.addProperty("status", UNSUPPORTED_ALGORITHM_ERROR_STATUS);
             super.sendJsonResponse(200, reply, resp);
-        } catch (StorageQueryException | StorageTransactionLogicException | NoSuchAlgorithmException | InvalidKeySpecException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | NoSuchAlgorithmException |
+                 InvalidKeySpecException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
     }

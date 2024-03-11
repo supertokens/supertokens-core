@@ -22,9 +22,10 @@ import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.exceptions.ResetPasswordInvalidTokenException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
@@ -57,19 +58,21 @@ public class ConsumeResetPasswordAPI extends WebserverAPI {
         String token = InputParser.parseStringOrThrowError(input, "token", false);
         assert token != null;
 
-        TenantIdentifierWithStorage tenantIdentifierWithStorage = null;
+        TenantIdentifier tenantIdentifier = null;
+        Storage storage = null;
         try {
-            tenantIdentifierWithStorage = getTenantIdentifierWithStorageFromRequest(req);
+            tenantIdentifier = getTenantIdentifier(req);
+            storage = getTenantStorage(req);
         } catch (TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
 
         try {
             EmailPassword.ConsumeResetPasswordTokenResult result = EmailPassword.consumeResetPasswordToken(
-                    tenantIdentifierWithStorage, token);
+                    tenantIdentifier, storage, token);
 
             io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping.getUserIdMapping(
-                    tenantIdentifierWithStorage.toAppIdentifierWithStorage(), result.userId, UserIdType.SUPERTOKENS);
+                    tenantIdentifier.toAppIdentifier(), storage, result.userId, UserIdType.SUPERTOKENS);
 
             // if userIdMapping exists, pass the externalUserId to the response
             if (userIdMapping != null) {
@@ -84,7 +87,7 @@ public class ConsumeResetPasswordAPI extends WebserverAPI {
             super.sendJsonResponse(200, resultJson, resp);
 
         } catch (ResetPasswordInvalidTokenException e) {
-            Logging.debug(main, tenantIdentifierWithStorage, Utils.exceptionStacktraceToString(e));
+            Logging.debug(main, tenantIdentifier, Utils.exceptionStacktraceToString(e));
             JsonObject result = new JsonObject();
             result.addProperty("status", "RESET_PASSWORD_INVALID_TOKEN_ERROR");
             super.sendJsonResponse(200, result, resp);

@@ -25,6 +25,7 @@ import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.ActiveUsersStorage;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.nonAuthRecipe.NonAuthRecipeStorage;
@@ -116,11 +117,11 @@ public class AppTenantUserTest {
                         null, null, new JsonObject()
                 ), false);
 
-                TenantIdentifierWithStorage tWithStorage = t.withStorage(
+                Storage tStorage = (
                         StorageLayer.getStorage(t, process.getProcess()));
 
 
-                AuthRecipeUserInfo user = EmailPassword.signUp(tWithStorage, process.getProcess(), "test@example.com",
+                AuthRecipeUserInfo user = EmailPassword.signUp(t, tStorage, process.getProcess(), "test@example.com",
                         "password");
                 String userId = user.getSupertokensUserId();
 
@@ -129,7 +130,7 @@ public class AppTenantUserTest {
 
                 try {
                     UserIdMapping.findNonAuthStoragesWhereUserIdIsUsedOrAssertIfUsed(
-                            tWithStorage.toAppIdentifierWithStorage(), userId, true);
+                            t.toAppIdentifier(), tStorage, userId, true);
                     fail(className);
                 } catch (Exception ignored) {
                     assertTrue(ignored.getMessage().contains("UserId is already in use"));
@@ -156,7 +157,7 @@ public class AppTenantUserTest {
                         null, null, new JsonObject()
                 ), false);
 
-                UserIdMapping.findNonAuthStoragesWhereUserIdIsUsedOrAssertIfUsed(tWithStorage.toAppIdentifierWithStorage(),
+                UserIdMapping.findNonAuthStoragesWhereUserIdIsUsedOrAssertIfUsed(t.toAppIdentifier(), tStorage,
                         userId, true);
             }
         }
@@ -213,9 +214,9 @@ public class AppTenantUserTest {
                 null, null, new JsonObject()
         ), false);
 
-        TenantIdentifierWithStorage appWithStorage = app.withStorage(
+        Storage appStorage = (
                 StorageLayer.getStorage(app, process.getProcess()));
-        TenantIdentifierWithStorage tenantWithStorage = tenant.withStorage(
+        Storage tenantStorage = (
                 StorageLayer.getStorage(tenant, process.getProcess()));
 
         for (String className : classNames) {
@@ -223,29 +224,29 @@ public class AppTenantUserTest {
                 continue;
             }
 
-            AuthRecipeUserInfo user = EmailPassword.signUp(appWithStorage, process.getProcess(), "test@example.com", "password");
+            AuthRecipeUserInfo user = EmailPassword.signUp(app, appStorage, process.getProcess(), "test@example.com", "password");
             String userId = user.getSupertokensUserId();
 
-            Multitenancy.addUserIdToTenant(process.getProcess(), tenantWithStorage, userId);
+            Multitenancy.addUserIdToTenant(process.getProcess(), tenant, tenantStorage, userId);
 
             // create entry in nonAuth table
-            tenantWithStorage.getStorage().addInfoToNonAuthRecipesBasedOnUserId(tenant, className, userId);
+            tenantStorage.addInfoToNonAuthRecipesBasedOnUserId(tenant, className, userId);
 
             try {
                 UserIdMapping.findNonAuthStoragesWhereUserIdIsUsedOrAssertIfUsed(
-                        tenantWithStorage.toAppIdentifierWithStorage(), userId, true);
+                        tenant.toAppIdentifier(), tenantStorage, userId, true);
                 fail(className);
             } catch (Exception ignored) {
                 assertTrue(ignored.getMessage().contains("UserId is already in use"));
             }
 
             // Disassociate user
-            Multitenancy.removeUserIdFromTenant(process.getProcess(), tenantWithStorage, userId, null);
+            Multitenancy.removeUserIdFromTenant(process.getProcess(), tenant, tenantStorage, userId, null);
 
-            assertFalse(AuthRecipe.deleteNonAuthRecipeUser(tenantWithStorage,
+            assertFalse(AuthRecipe.deleteNonAuthRecipeUser(tenant, tenantStorage,
                     userId)); // Nothing deleted indicates that the non auth recipe user data was deleted already
 
-            AuthRecipe.deleteUser(appWithStorage.toAppIdentifierWithStorage(), userId);
+            AuthRecipe.deleteUser(app.toAppIdentifier(), appStorage, userId);
         }
 
         process.kill();
@@ -286,20 +287,20 @@ public class AppTenantUserTest {
                 null, null, new JsonObject()
         ), false);
 
-        TenantIdentifierWithStorage appWithStorage = app.withStorage(
+        Storage appStorage = (
                 StorageLayer.getStorage(app, process.getProcess()));
-        TenantIdentifierWithStorage tenantWithStorage = tenant.withStorage(
+        Storage tenantStorage = (
                 StorageLayer.getStorage(tenant, process.getProcess()));
 
-        AuthRecipeUserInfo user = EmailPassword.signUp(tenantWithStorage, process.getProcess(), "test@example.com", "password");
+        AuthRecipeUserInfo user = EmailPassword.signUp(tenant, tenantStorage, process.getProcess(), "test@example.com", "password");
         String userId = user.getSupertokensUserId();
 
         Multitenancy.deleteTenant(tenant, process.getProcess());
 
-        Multitenancy.addUserIdToTenant(process.getProcess(), appWithStorage,
+        Multitenancy.addUserIdToTenant(process.getProcess(), app, appStorage,
                 userId); // user id must be intact to do this
 
-        AuthRecipeUserInfo appUser = EmailPassword.getUserUsingId(appWithStorage.toAppIdentifierWithStorage(), userId);
+        AuthRecipeUserInfo appUser = EmailPassword.getUserUsingId(app.toAppIdentifier(), appStorage, userId);
 
         assertNotNull(appUser);
         assertEquals(userId, appUser.getSupertokensUserId());

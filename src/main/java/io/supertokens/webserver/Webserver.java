@@ -24,7 +24,6 @@ import io.supertokens.config.Config;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.api.accountlinking.*;
 import io.supertokens.webserver.api.bulkimport.BulkImportAPI;
@@ -145,7 +144,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
             tomcat.start();
         } catch (LifecycleException e) {
             // reusing same port OR not right permissions given.
-            Logging.error(main, TenantIdentifierWithStorage.BASE_TENANT, null, false, e);
+            Logging.error(main, TenantIdentifier.BASE_TENANT, null, false, e);
             throw new QuitProgramException(
                     "Error while starting webserver. Possible reasons:\n- Another instance of SuperTokens is already "
                             + "running on the same port. If you want to run another instance, please pass a new config "
@@ -189,6 +188,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new DeleteCodesAPI(main));
         addAPI(new DeleteCodeAPI(main));
         addAPI(new CreateCodeAPI(main));
+        addAPI(new CheckCodeAPI(main));
         addAPI(new ConsumeCodeAPI(main));
         addAPI(new TelemetryAPI(main));
         addAPI(new UsersCountAPI(main));

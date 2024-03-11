@@ -23,6 +23,7 @@ import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -50,10 +51,29 @@ public class DeleteCodeAPI extends WebserverAPI {
         // Logic based on: https://app.code2flow.com/DDhe9U1rsFsQ
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
-        String codeId = InputParser.parseStringOrThrowError(input, "codeId", false);
+        String codeId = InputParser.parseStringOrThrowError(
+                input, "codeId", getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_0));
+        String deviceIdHash = null;
+        if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_0)) {
+            deviceIdHash = InputParser.parseStringOrThrowError(input, "preAuthSessionId", true);
+        }
+
+        if (codeId == null && deviceIdHash == null) {
+            throw new ServletException(new BadRequestException("Please provide either 'codeId' or 'preAuthSessionId'"));
+        }
+
+        if (codeId != null && deviceIdHash != null) {
+            throw new ServletException(new BadRequestException("Please provide only one of 'codeId' or " +
+                    "'preAuthSessionId'"));
+        }
 
         try {
-            Passwordless.removeCode(this.getTenantIdentifierWithStorageFromRequest(req), codeId);
+            if (codeId != null) {
+                Passwordless.removeCode(getTenantIdentifier(req), getTenantStorage(req), codeId);
+            } else {
+                Passwordless.removeDevice(getTenantIdentifier(req), getTenantStorage(req),
+                        deviceIdHash);
+            }
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

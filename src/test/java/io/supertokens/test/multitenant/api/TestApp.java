@@ -20,6 +20,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
+import io.supertokens.config.CoreConfigTestContent;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
@@ -324,7 +325,8 @@ public class TestApp {
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException,
                     ServletException {
                 try {
-                    super.sendTextResponse(200, this.getAppIdentifierWithStorage(req).getAppId(), resp);
+                    getTenantStorage(req);
+                    super.sendTextResponse(200, this.getTenantIdentifier(req).getAppId(), resp);
                 } catch (TenantOrAppNotFoundException e) {
                     throw new ServletException(e);
                 }
@@ -510,10 +512,6 @@ public class TestApp {
 
     @Test
     public void testFirstFactorsArray() throws Exception {
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            return;
-        }
-
         JsonObject config = new JsonObject();
         StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
 
@@ -734,6 +732,78 @@ public class TestApp {
         } catch (HttpResponseException e) {
             assertEquals(400, e.statusCode);
             assertEquals("Http error. Status Code: 400. Message: requiredSecondaryFactors input should not contain duplicate values", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testInvalidTypedValueInCoreConfigWhileCreatingApp() throws Exception {
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
+        String[] properties = new String[]{
+                "access_token_validity", // long
+                "access_token_validity", // long
+                "access_token_validity", // long
+                "access_token_validity", // long
+                "disable_telemetry", // boolean
+                "postgresql_connection_pool_size", // int
+                "mysql_connection_pool_size", // int
+        };
+        Object[] values = new Object[]{
+                "abcd", // access_token_validity
+                "",
+                "null",
+                null,
+                "abcd", // disable_telemetry
+                "abcd", // postgresql_connection_pool_size
+                "abcd", // mysql_connection_pool_size
+        };
+
+        String[] expectedErrorMessages = new String[]{
+                "Http error. Status Code: 400. Message: Invalid core config: 'access_token_validity' must be of type long", // access_token_validity
+                "Http error. Status Code: 400. Message: Invalid core config: 'access_token_validity' must be of type long", // access_token_validity
+                "Http error. Status Code: 400. Message: Invalid core config: 'access_token_validity' must be of type long", // access_token_validity
+                null,
+                "Http error. Status Code: 400. Message: Invalid core config: 'disable_telemetry' must be of type boolean", // disable_telemetry
+                "Http error. Status Code: 400. Message: Invalid core config: 'postgresql_connection_pool_size' must be of type int", // postgresql_connection_pool_size
+                "Http error. Status Code: 400. Message: Invalid core config: 'mysql_connection_pool_size' must be of type int", // mysql_connection_pool_size
+        };
+
+        System.out.println(StorageLayer.getStorage(process.getProcess()).getClass().getCanonicalName());
+
+        for (int i = 0; i < properties.length; i++) {
+            try {
+                System.out.println("Test case " + i);
+                JsonObject config = new JsonObject();
+                if (values[i] == null) {
+                    config.add(properties[i], null);
+                }
+                else if (values[i] instanceof String) {
+                    config.addProperty(properties[i], (String) values[i]);
+                } else if (values[i] instanceof Boolean) {
+                    config.addProperty(properties[i], (Boolean) values[i]);
+                } else if (values[i] instanceof Number) {
+                    config.addProperty(properties[i], (Number) values[i]);
+                } else {
+                    throw new RuntimeException("Invalid type");
+                }
+                StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
+
+                JsonObject response = TestMultitenancyAPIHelper.createApp(
+                        process.getProcess(),
+                        new TenantIdentifier(null, null, null),
+                        "a1", null, null, null,
+                        config);
+                if (expectedErrorMessages[i] != null) {
+                    fail();
+                }
+            } catch (HttpResponseException e) {
+                assertEquals(400, e.statusCode);
+                if (!e.getMessage().contains("Invalid config key")) {
+                    assertEquals(expectedErrorMessages[i], e.getMessage());
+                }
+            }
         }
     }
 
@@ -1032,6 +1102,32 @@ public class TestApp {
                 assertEquals("Http error. Status Code: 400. Message: Invalid core config: requiredSecondaryFactors should not contain 'thirdparty' because thirdParty is disabled for the tenant.", e.getMessage());
             }
         }
+    }
 
+    public void testInvalidCoreConfig() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+        CoreConfigTestContent.getInstance(process.getProcess()).setKeyValue(CoreConfigTestContent.VALIDITY_TESTING,
+                true);
+
+        {
+            JsonObject config = new JsonObject();
+            config.addProperty("access_token_validity", 3600);
+            config.addProperty("refresh_token_validity", 3);
+            StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
+
+            try {
+                JsonObject response = TestMultitenancyAPIHelper.createApp(
+                        process.getProcess(),
+                        new TenantIdentifier(null, null, null),
+                        "a1", null, null, null,
+                        config);
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(400, e.statusCode);
+                assertEquals("Http error. Status Code: 400. Message: Invalid core config: 'refresh_token_validity' must be strictly greater than 'access_token_validity'.", e.getMessage());
+            }
+        }
     }
 }

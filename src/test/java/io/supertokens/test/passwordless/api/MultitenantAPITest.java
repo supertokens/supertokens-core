@@ -475,11 +475,9 @@ public class MultitenantAPITest {
             JsonObject user2 = signInUpEmailUsingLinkCode(t2, "user1@example.com");
             JsonObject user3 = signInUpEmailUsingLinkCode(t3, "user1@example.com");
 
-            for (TenantIdentifier tenant : new TenantIdentifier[]{t1, t2, t3}) {
-                assertEquals(user1, getUserUsingId(tenant, user1.get("id").getAsString()));
-                assertEquals(user2, getUserUsingId(tenant, user2.get("id").getAsString()));
-                assertEquals(user3, getUserUsingId(tenant, user3.get("id").getAsString()));
-            }
+            assertEquals(user1, getUserUsingId(t1, user1.get("id").getAsString()));
+            assertEquals(user2, getUserUsingId(t1, user2.get("id").getAsString()));
+            assertEquals(user3, getUserUsingId(t1, user3.get("id").getAsString()));
         }
 
         {
@@ -487,11 +485,9 @@ public class MultitenantAPITest {
             JsonObject user2 = signInUpNumberUsingUserInputCode(t2, "+442071838750");
             JsonObject user3 = signInUpNumberUsingUserInputCode(t3, "+442071838750");
 
-            for (TenantIdentifier tenant : new TenantIdentifier[]{t1, t2, t3}) {
-                assertEquals(user1, getUserUsingId(tenant, user1.get("id").getAsString()));
-                assertEquals(user2, getUserUsingId(tenant, user2.get("id").getAsString()));
-                assertEquals(user3, getUserUsingId(tenant, user3.get("id").getAsString()));
-            }
+            assertEquals(user1, getUserUsingId(t1, user1.get("id").getAsString()));
+            assertEquals(user2, getUserUsingId(t1, user2.get("id").getAsString()));
+            assertEquals(user3, getUserUsingId(t1, user3.get("id").getAsString()));
         }
     }
 
@@ -542,14 +538,12 @@ public class MultitenantAPITest {
             JsonObject user = users[i];
             TenantIdentifier userTenant = tenants[i];
 
-            for (TenantIdentifier tenant : tenants) {
-                String newEmail = (generateRandomString(16) + "@example.com").toLowerCase();
-                updateEmail(tenant, user.getAsJsonPrimitive("id").getAsString(), newEmail);
-                user.remove("email");
-                user.addProperty("email", newEmail);
+            String newEmail = (generateRandomString(16) + "@example.com").toLowerCase();
+            updateEmail(t1, user.getAsJsonPrimitive("id").getAsString(), newEmail);
+            user.remove("email");
+            user.addProperty("email", newEmail);
 
-                assertEquals(user, signInUpEmailUsingLinkCode(userTenant, newEmail));
-            }
+            assertEquals(user, signInUpEmailUsingLinkCode(userTenant, newEmail));
         }
     }
 
@@ -570,15 +564,13 @@ public class MultitenantAPITest {
             JsonObject user = users[i];
             TenantIdentifier userTenant = tenants[i];
 
-            for (TenantIdentifier tenant : tenants) {
-                String newPhoneNumber = generateRandomNumber(8);
-                updatePhoneNumber(tenant, user.getAsJsonPrimitive("id").getAsString(), newPhoneNumber);
-                user.remove("phoneNumber");
-                // We need to normalize the phone number before adding it to the user object, as the update API performs normalization.
-                user.addProperty("phoneNumber", io.supertokens.utils.Utils.normalizeIfPhoneNumber(newPhoneNumber));
+            String newPhoneNumber = generateRandomNumber(8);
+            updatePhoneNumber(t1, user.getAsJsonPrimitive("id").getAsString(), newPhoneNumber);
+            user.remove("phoneNumber");
+            // We need to normalize the phone number before adding it to the user object, as the update API performs normalization.
+            user.addProperty("phoneNumber", io.supertokens.utils.Utils.normalizeIfPhoneNumber(newPhoneNumber));
 
-                assertEquals(user, signInUpNumberUsingUserInputCode(userTenant, newPhoneNumber));
-            }
+            assertEquals(user, signInUpNumberUsingUserInputCode(userTenant, newPhoneNumber));
         }
     }
 }

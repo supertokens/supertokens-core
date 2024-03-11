@@ -18,11 +18,12 @@ package io.supertokens.webserver.api.useridmapping;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.StorageAndUserIdMapping;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
@@ -93,11 +94,13 @@ public class UpdateExternalUserIdInfoAPI extends WebserverAPI {
         }
 
         try {
-            AppIdentifierWithStorageAndUserIdMapping appIdentifierWithStorageAndUserIdMapping =
-                    this.getAppIdentifierWithStorageAndUserIdMappingFromRequest(req, userId, userIdType);
+            StorageAndUserIdMapping storageAndUserIdMapping =
+                    this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(req, userId, userIdType,
+                            true);
 
             if (UserIdMapping.updateOrDeleteExternalUserIdInfo(
-                    appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage, userId, userIdType, externalUserIdInfo)) {
+                    getAppIdentifier(req),
+                    storageAndUserIdMapping.storage, userId, userIdType, externalUserIdInfo)) {
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "OK");
                 super.sendJsonResponse(200, response, resp);
@@ -108,7 +111,7 @@ public class UpdateExternalUserIdInfoAPI extends WebserverAPI {
             response.addProperty("status", "UNKNOWN_MAPPING_ERROR");
             super.sendJsonResponse(200, response, resp);
 
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
 
         } catch (UnknownUserIdException e) {

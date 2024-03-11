@@ -22,10 +22,10 @@ import io.supertokens.exceptions.AccessTokenPayloadError;
 import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.session.Session;
 import io.supertokens.session.accessToken.AccessToken;
@@ -59,17 +59,18 @@ public class SessionDataAPI extends WebserverAPI {
         String sessionHandle = InputParser.getQueryParamOrThrowError(req, "sessionHandle", false);
         assert sessionHandle != null;
 
-        TenantIdentifierWithStorage tenantIdentifierWithStorage = null;
+        TenantIdentifier tenantIdentifier;
+        Storage storage;
         try {
-            AppIdentifierWithStorage appIdentifier = getAppIdentifierWithStorage(req);
-            TenantIdentifier tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(), Session.getTenantIdFromSessionHandle(sessionHandle));
-            tenantIdentifierWithStorage = tenantIdentifier.withStorage(StorageLayer.getStorage(tenantIdentifier, main));
+            AppIdentifier appIdentifier = getAppIdentifier(req);
+            tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(), Session.getTenantIdFromSessionHandle(sessionHandle));
+            storage = StorageLayer.getStorage(tenantIdentifier, main);
         } catch (TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
 
         try {
-            JsonObject userDataInDatabase = Session.getSessionData(tenantIdentifierWithStorage, sessionHandle);
+            JsonObject userDataInDatabase = Session.getSessionData(tenantIdentifier, storage, sessionHandle);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
@@ -79,7 +80,7 @@ public class SessionDataAPI extends WebserverAPI {
         } catch (StorageQueryException e) {
             throw new ServletException(e);
         } catch (UnauthorisedException e) {
-            Logging.debug(main, tenantIdentifierWithStorage, Utils.exceptionStacktraceToString(e));
+            Logging.debug(main, tenantIdentifier, Utils.exceptionStacktraceToString(e));
             JsonObject reply = new JsonObject();
             reply.addProperty("status", "UNAUTHORISED");
             reply.addProperty("message", e.getMessage());
@@ -96,11 +97,12 @@ public class SessionDataAPI extends WebserverAPI {
         JsonObject userDataInDatabase = InputParser.parseJsonObjectOrThrowError(input, "userDataInDatabase", false);
         assert userDataInDatabase != null;
 
-        TenantIdentifierWithStorage tenantIdentifierWithStorage = null;
+        TenantIdentifier tenantIdentifier;
+        Storage storage;
         try {
-            AppIdentifierWithStorage appIdentifier = getAppIdentifierWithStorage(req);
-            TenantIdentifier tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(), Session.getTenantIdFromSessionHandle(sessionHandle));
-            tenantIdentifierWithStorage = tenantIdentifier.withStorage(StorageLayer.getStorage(tenantIdentifier, main));
+            AppIdentifier appIdentifier = getAppIdentifier(req);
+            tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(), Session.getTenantIdFromSessionHandle(sessionHandle));
+            storage = StorageLayer.getStorage(tenantIdentifier, main);
         } catch (TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
@@ -110,10 +112,10 @@ public class SessionDataAPI extends WebserverAPI {
             // which is always null here
             if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_21)) {
                 AccessToken.VERSION version = AccessToken.getAccessTokenVersionForCDI(getVersionFromRequest(req));
-                Session.updateSession(tenantIdentifierWithStorage, sessionHandle,
+                Session.updateSession(tenantIdentifier, storage, sessionHandle,
                         userDataInDatabase, null, version);
             } else {
-                Session.updateSessionBeforeCDI2_21(tenantIdentifierWithStorage, sessionHandle,
+                Session.updateSessionBeforeCDI2_21(tenantIdentifier, storage, sessionHandle,
                         userDataInDatabase, null);
             }
 
@@ -126,7 +128,7 @@ public class SessionDataAPI extends WebserverAPI {
         } catch (AccessTokenPayloadError e) {
             throw new ServletException(new BadRequestException(e.getMessage()));
         } catch (UnauthorisedException e) {
-            Logging.debug(main, tenantIdentifierWithStorage, Utils.exceptionStacktraceToString(e));
+            Logging.debug(main, tenantIdentifier, Utils.exceptionStacktraceToString(e));
             JsonObject reply = new JsonObject();
             reply.addProperty("status", "UNAUTHORISED");
             reply.addProperty("message", e.getMessage());

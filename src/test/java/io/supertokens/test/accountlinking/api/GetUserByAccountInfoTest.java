@@ -32,8 +32,6 @@ import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.passwordless.exception.DuplicateLinkCodeHashException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -224,7 +222,6 @@ public class GetUserByAccountInfoTest {
         JsonObject user3json = getUserById(process.getProcess(), user3.getSupertokensUserId());
         JsonObject user4json = getUserById(process.getProcess(), user4.getSupertokensUserId());
 
-        TenantIdentifierWithStorage tenantIdentifierWithStorage = TenantIdentifier.BASE_TENANT.withStorage(StorageLayer.getBaseStorage(process.getProcess()));
         {
             JsonArray users = getUsersByAccountInfo(process.getProcess(), true, "test1@example.com", "+919876543210", null, null);
             assertEquals(2, users.size());
@@ -269,7 +266,6 @@ public class GetUserByAccountInfoTest {
             return;
         }
 
-        TenantIdentifierWithStorage tenantIdentifierWithStorage = TenantIdentifier.BASE_TENANT.withStorage(StorageLayer.getBaseStorage(process.getProcess()));
         assertEquals(0, getUsersByAccountInfo(process.getProcess(), false, "test1@example.com", null, null, null).size());
         assertEquals(0, getUsersByAccountInfo(process.getProcess(), false, null, null, "google", "userid1").size());
         assertEquals(0, getUsersByAccountInfo(process.getProcess(), false, "test3@example.com", null, null, null).size());
@@ -299,9 +295,6 @@ public class GetUserByAccountInfoTest {
 
         AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId()).user;
         AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), primaryUser.getSupertokensUserId());
-
-        TenantIdentifierWithStorage tenantIdentifierWithStorage = TenantIdentifier.BASE_TENANT.withStorage(
-                StorageLayer.getBaseStorage(process.getProcess()));
 
         JsonObject primaryUserJson = getUserById(process.getProcess(), user1.getSupertokensUserId());
 
@@ -373,9 +366,6 @@ public class GetUserByAccountInfoTest {
         AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId()).user;
         AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), primaryUser.getSupertokensUserId());
 
-        TenantIdentifierWithStorage tenantIdentifierWithStorage = TenantIdentifier.BASE_TENANT.withStorage(
-                StorageLayer.getBaseStorage(process.getProcess()));
-
         JsonObject primaryUserJson = getUserById(process.getProcess(), user1.getSupertokensUserId());
 
         assertEquals(primaryUserJson, getUsersByAccountInfo(process.getProcess(), false,
@@ -407,9 +397,6 @@ public class GetUserByAccountInfoTest {
 
         AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId()).user;
         AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), primaryUser.getSupertokensUserId());
-
-        TenantIdentifierWithStorage tenantIdentifierWithStorage = TenantIdentifier.BASE_TENANT.withStorage(
-                StorageLayer.getBaseStorage(process.getProcess()));
 
         JsonObject primaryUserJson = getUserById(process.getProcess(), user1.getSupertokensUserId());
 
@@ -444,9 +431,6 @@ public class GetUserByAccountInfoTest {
 
         AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId()).user;
         AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), primaryUser.getSupertokensUserId());
-
-        TenantIdentifierWithStorage tenantIdentifierWithStorage = TenantIdentifier.BASE_TENANT.withStorage(
-                StorageLayer.getBaseStorage(process.getProcess()));
 
         JsonObject primaryUserJson = getUserById(process.getProcess(), user1.getSupertokensUserId());
 

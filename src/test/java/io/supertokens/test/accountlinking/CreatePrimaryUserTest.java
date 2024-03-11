@@ -29,6 +29,7 @@ import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.multitenancy.*;
@@ -137,7 +138,7 @@ public class CreatePrimaryUserTest {
 
         try {
             AuthRecipe.createPrimaryUser(process.main,
-                    new AppIdentifierWithStorage(null, null, StorageLayer.getStorage(process.main)), "");
+                    new AppIdentifier(null, null), StorageLayer.getStorage(process.main), "");
             assert (false);
         } catch (FeatureNotEnabledException e) {
             assert (e.getMessage()
@@ -424,9 +425,9 @@ public class CreatePrimaryUserTest {
                         new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[0]), new PasswordlessConfig(true),
                         null, null, new JsonObject()));
 
-        TenantIdentifierWithStorage tenantIdentifierWithStorage = new TenantIdentifierWithStorage(null, null, "t1",
-                StorageLayer.getStorage(process.main));
-        AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(tenantIdentifierWithStorage, process.getProcess(),
+        Storage storage = (StorageLayer.getStorage(process.main));
+        AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(new TenantIdentifier(null, null, "t1"),
+                storage, process.getProcess(),
                 "test@example.com",
                 "pass1234");
 
@@ -436,7 +437,9 @@ public class CreatePrimaryUserTest {
         ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, "google", "user-google",
                 "test@example.com");
 
-        Multitenancy.addUserIdToTenant(process.main, tenantIdentifierWithStorage, signInUpResponse.user.getSupertokensUserId());
+        Multitenancy.addUserIdToTenant(process.main, new TenantIdentifier(null, null, "t1"),
+                storage,
+                signInUpResponse.user.getSupertokensUserId());
 
         try {
             AuthRecipe.createPrimaryUser(process.main, signInUpResponse.user.getSupertokensUserId());
@@ -470,9 +473,9 @@ public class CreatePrimaryUserTest {
                         new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[0]), new PasswordlessConfig(true),
                         null, null, new JsonObject()));
 
-        TenantIdentifierWithStorage tenantIdentifierWithStorage = new TenantIdentifierWithStorage(null, null, "t1",
-                StorageLayer.getStorage(process.main));
-        AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(tenantIdentifierWithStorage, process.getProcess(),
+        Storage storage = (StorageLayer.getStorage(process.main));
+        AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(new TenantIdentifier(null, null, "t1"),
+                storage, process.getProcess(),
                 "test@example.com",
                 "pass1234");
 

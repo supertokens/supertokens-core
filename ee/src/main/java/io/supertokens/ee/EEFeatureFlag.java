@@ -267,8 +267,7 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         return stats;
     }
 
-    private JsonObject getAccountLinkingStats() throws StorageQueryException {
-        // TODO: Active users are present only on public tenant and MFA users may be present on different storages
+    private JsonObject getAccountLinkingStats() throws StorageQueryException, TenantOrAppNotFoundException {
         JsonObject result = new JsonObject();
         Storage[] storages = StorageLayer.getStoragesForApp(main, this.appIdentifier);
         boolean usesAccountLinking = false;
