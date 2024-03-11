@@ -529,8 +529,8 @@ public class Passwordless {
                 }
             }
 
-            // We do not need this cleanup if we are creating the user, since it uses the email/phoneNumber of the
-            // device, which has already been cleaned up
+            // We do need the cleanup here, however, we do not need this cleanup in the `if` block above
+            // since it uses the email/phoneNumber of the device, which has already been cleaned up
             if (loginMethod.email != null && !loginMethod.email.equals(consumedDevice.email)) {
                 removeCodesByEmail(tenantIdentifier, storage, loginMethod.email);
             }
