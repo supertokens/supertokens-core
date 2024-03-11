@@ -83,7 +83,7 @@ public class LicenseKeyAPI extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | HttpResponseException | BadPermissionException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | HttpResponseException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
     }
@@ -99,7 +99,7 @@ public class LicenseKeyAPI extends WebserverAPI {
             result.addProperty("licenseKey", licenseKey);
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
+        } catch (StorageQueryException | BadPermissionException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         } catch (NoLicenseKeyFoundException e) {
             JsonObject result = new JsonObject();
