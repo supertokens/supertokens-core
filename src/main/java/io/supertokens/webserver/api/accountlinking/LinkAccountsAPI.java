@@ -72,7 +72,7 @@ public class LinkAccountsAPI extends WebserverAPI {
             String recipeUserId = inputRecipeUserId;
             {
                 StorageAndUserIdMapping mappingAndStorage =
-                        enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
+                        getStorageAndUserIdMappingForAppSpecificApi(
                                 req, inputRecipeUserId, UserIdType.ANY, true);
                 if (mappingAndStorage.userIdMapping != null) {
                     recipeUserId = mappingAndStorage.userIdMapping.superTokensUserId;
@@ -82,7 +82,7 @@ public class LinkAccountsAPI extends WebserverAPI {
             String primaryUserId = inputPrimaryUserId;
             {
                 StorageAndUserIdMapping mappingAndStorage =
-                        enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
+                        getStorageAndUserIdMappingForAppSpecificApi(
                                 req, inputPrimaryUserId, UserIdType.ANY, true);
                 if (mappingAndStorage.userIdMapping != null) {
                     primaryUserId = mappingAndStorage.userIdMapping.superTokensUserId;
@@ -111,8 +111,7 @@ public class LinkAccountsAPI extends WebserverAPI {
             response.addProperty("accountsAlreadyLinked", linkAccountsResult.wasAlreadyLinked);
             response.add("user", linkAccountsResult.user.toJson());
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | TenantOrAppNotFoundException | FeatureNotEnabledException |
-                 BadPermissionException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | FeatureNotEnabledException e) {
             throw new ServletException(e);
         } catch (UnknownUserIdException e) {
             throw new ServletException(new BadRequestException("Unknown user ID provided"));

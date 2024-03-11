@@ -81,7 +81,7 @@ public class UserAPI extends WebserverAPI {
                 AppIdentifier appIdentifier = getAppIdentifier(req);
                 try {
                     StorageAndUserIdMapping storageAndUserIdMapping =
-                            this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(req, userId,
+                            this.getStorageAndUserIdMappingForAppSpecificApi(req, userId,
                                     UserIdType.ANY, true);
                     // if a userIdMapping exists, pass the superTokensUserId to the getUserUsingId function
                     if (storageAndUserIdMapping.userIdMapping != null) {
@@ -127,7 +127,7 @@ public class UserAPI extends WebserverAPI {
                 super.sendJsonResponse(200, result, resp);
             }
 
-        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
 

@@ -84,7 +84,7 @@ public class UserAPI extends WebserverAPI {
                 if (userId != null) {
                     // Query by userId
                     StorageAndUserIdMapping storageAndUserIdMapping =
-                            this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(req, userId,
+                            this.getStorageAndUserIdMappingForAppSpecificApi(req, userId,
                                     UserIdType.ANY, true);
                     // if a userIdMapping exists, pass the superTokensUserId to the getUserUsingId function
                     if (storageAndUserIdMapping.userIdMapping != null) {
@@ -136,7 +136,7 @@ public class UserAPI extends WebserverAPI {
                 super.sendJsonResponse(200, result, resp);
             }
 
-        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
 
@@ -172,7 +172,7 @@ public class UserAPI extends WebserverAPI {
 
         try {
             StorageAndUserIdMapping storageAndUserIdMapping =
-                    this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(req, userId,
+                    this.getStorageAndUserIdMappingForAppSpecificApi(req, userId,
                             UserIdType.ANY, true);
             // if a userIdMapping exists, pass the superTokensUserId to the updateUsersEmailOrPassword
             if (storageAndUserIdMapping.userIdMapping != null) {
@@ -188,8 +188,7 @@ public class UserAPI extends WebserverAPI {
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
 
-        } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException |
-                 BadPermissionException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
 
         } catch (UnknownUserIdException e) {

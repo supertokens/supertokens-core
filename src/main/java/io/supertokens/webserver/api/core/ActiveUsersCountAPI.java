@@ -52,13 +52,12 @@ public class ActiveUsersCountAPI extends WebserverAPI {
         }
 
         try {
-            enforcePublicTenantAndGetPublicTenantStorage(req); // to enforce this API is called from public tenant
             int count = ActiveUsers.countUsersActiveSince(main, this.getAppIdentifier(req), sinceTimestamp);
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             result.addProperty("count", count);
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

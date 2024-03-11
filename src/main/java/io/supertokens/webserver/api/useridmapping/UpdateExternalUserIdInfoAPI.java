@@ -95,7 +95,7 @@ public class UpdateExternalUserIdInfoAPI extends WebserverAPI {
 
         try {
             StorageAndUserIdMapping storageAndUserIdMapping =
-                    this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(req, userId, userIdType,
+                    this.getStorageAndUserIdMappingForAppSpecificApi(req, userId, userIdType,
                             true);
 
             if (UserIdMapping.updateOrDeleteExternalUserIdInfo(
@@ -111,7 +111,7 @@ public class UpdateExternalUserIdInfoAPI extends WebserverAPI {
             response.addProperty("status", "UNKNOWN_MAPPING_ERROR");
             super.sendJsonResponse(200, response, resp);
 
-        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
 
         } catch (UnknownUserIdException e) {

@@ -60,7 +60,6 @@ public class RemoveRoleAPI extends WebserverAPI {
 
         try {
             AppIdentifier appIdentifier = getAppIdentifier(req);
-            enforcePublicTenantAndGetPublicTenantStorage(req); // enforce this API is called from public tenant
 
             boolean didRoleExist = UserRoles.deleteRole(main, appIdentifier, role);
 
@@ -68,7 +67,7 @@ public class RemoveRoleAPI extends WebserverAPI {
             response.addProperty("status", "OK");
             response.addProperty("didRoleExist", didRoleExist);
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

@@ -57,7 +57,7 @@ public class UserMetadataAPI extends WebserverAPI {
             AppIdentifier appIdentifier = getAppIdentifier(req);
             JsonObject metadata;
             try {
-                StorageAndUserIdMapping storageAndUserIdMapping = this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
+                StorageAndUserIdMapping storageAndUserIdMapping = this.getStorageAndUserIdMappingForAppSpecificApi(
                         req, userId, UserIdType.ANY, false);
                 metadata = UserMetadata.getUserMetadata(appIdentifier, storageAndUserIdMapping.storage, userId);
             } catch (UnknownUserIdException e) {
@@ -68,7 +68,7 @@ public class UserMetadataAPI extends WebserverAPI {
             response.add("metadata", metadata);
             response.addProperty("status", "OK");
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }
@@ -85,7 +85,7 @@ public class UserMetadataAPI extends WebserverAPI {
             JsonObject metadata;
 
             try {
-                StorageAndUserIdMapping storageAndUserIdMapping = this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
+                StorageAndUserIdMapping storageAndUserIdMapping = this.getStorageAndUserIdMappingForAppSpecificApi(
                         req, userId, UserIdType.ANY, false);
                 metadata = UserMetadata.updateUserMetadata(appIdentifier, storageAndUserIdMapping.storage, userId,
                         update);
@@ -97,7 +97,7 @@ public class UserMetadataAPI extends WebserverAPI {
             response.add("metadata", metadata);
             response.addProperty("status", "OK");
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException | BadPermissionException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

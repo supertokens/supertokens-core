@@ -55,7 +55,6 @@ public class JWKSAPI extends WebserverAPI {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         // API is app specific
         try {
-            enforcePublicTenantAndGetPublicTenantStorage(req);
             List<JsonObject> jwks = SigningKeys.getInstance(getAppIdentifier(req), main).getJWKS();
             JsonObject reply = new JsonObject();
             JsonArray jwksJsonArray = new JsonParser().parse(new Gson().toJson(jwks)).getAsJsonArray();
@@ -63,8 +62,7 @@ public class JWKSAPI extends WebserverAPI {
             reply.addProperty("status", "OK");
             super.sendJsonResponse(200, reply, resp);
         } catch (StorageQueryException | UnsupportedJWTSigningAlgorithmException | StorageTransactionLogicException |
-                 NoSuchAlgorithmException | InvalidKeySpecException | TenantOrAppNotFoundException |
-                 BadPermissionException e) {
+                 NoSuchAlgorithmException | InvalidKeySpecException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

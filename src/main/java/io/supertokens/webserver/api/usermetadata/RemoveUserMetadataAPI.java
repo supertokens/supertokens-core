@@ -58,7 +58,7 @@ public class RemoveUserMetadataAPI extends WebserverAPI {
 
             try {
                 StorageAndUserIdMapping storageAndUserIdMapping =
-                        this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
+                        this.getStorageAndUserIdMappingForAppSpecificApi(
                                 req, userId, UserIdType.ANY, false);
                 UserMetadata.deleteUserMetadata(appIdentifier, storageAndUserIdMapping.storage, userId);
             } catch (UnknownUserIdException e) {
@@ -68,7 +68,7 @@ public class RemoveUserMetadataAPI extends WebserverAPI {
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

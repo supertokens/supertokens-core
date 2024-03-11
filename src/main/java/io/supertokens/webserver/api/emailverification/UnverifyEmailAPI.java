@@ -61,7 +61,7 @@ public class UnverifyEmailAPI extends WebserverAPI {
             AppIdentifier appIdentifier = getAppIdentifier(req);
             Storage storage;
             try {
-                StorageAndUserIdMapping storageAndUidMapping = enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
+                StorageAndUserIdMapping storageAndUidMapping = getStorageAndUserIdMappingForAppSpecificApi(
                         req, userId, UserIdType.ANY, false);
                 storage = storageAndUidMapping.storage;
             } catch (UnknownUserIdException e) {
@@ -73,7 +73,7 @@ public class UnverifyEmailAPI extends WebserverAPI {
             response.addProperty("status", "OK");
 
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

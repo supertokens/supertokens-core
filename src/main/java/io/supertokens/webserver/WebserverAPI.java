@@ -362,8 +362,6 @@ public abstract class WebserverAPI extends HttpServlet {
             HttpServletRequest req, String userId, UserIdType userIdType, boolean isCallFromAuthRecipeAPI)
             throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException, ServletException,
             BadPermissionException {
-        // This function uses storage of the tenant from which the request came from as a priorityStorage
-        // while searching for the user across all storages for the app
         AppIdentifier appIdentifier = getAppIdentifierWithoutVerifying(req);
         Storage[] storages = enforcePublicTenantAndGetAllStoragesForApp(req);
         try {
@@ -375,6 +373,23 @@ public abstract class WebserverAPI extends HttpServlet {
             }
 
             return new StorageAndUserIdMapping(enforcePublicTenantAndGetPublicTenantStorage(req), null);
+        }
+    }
+
+    protected StorageAndUserIdMapping getStorageAndUserIdMappingForAppSpecificApi(
+            HttpServletRequest req, String userId, UserIdType userIdType, boolean isCallFromAuthRecipeAPI)
+            throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException, ServletException {
+        AppIdentifier appIdentifier = getAppIdentifierWithoutVerifying(req);
+        Storage[] storages = StorageLayer.getStoragesForApp(main, appIdentifier);
+        try {
+            return StorageLayer.findStorageAndUserIdMappingForUser(
+                    appIdentifier, storages, userId, userIdType);
+        } catch (UnknownUserIdException e) {
+            if (isCallFromAuthRecipeAPI) {
+                throw e;
+            }
+
+            return new StorageAndUserIdMapping(getTenantStorage(req), null);
         }
     }
 
