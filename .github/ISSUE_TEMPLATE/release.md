@@ -112,6 +112,9 @@ labels:
       nano ~/try-supertokens/start_container.sh (update version tag)
       ~/try-supertokens/start_container.sh
       ```
+    - [ ] Run tests against node sdk (all compatible versions)
+    - [ ] Run tests against python sdk (all compatible versions)
+    - [ ] Run tests against golang sdk (all compatible versions)
     - [ ] Update SaaS config
     - [ ] Update to tables checked for user count / or to know if a deployment is being used or not
     - [ ] Update logic for deleting all data in dev env if a new table was added and if the data should be removed from it too
