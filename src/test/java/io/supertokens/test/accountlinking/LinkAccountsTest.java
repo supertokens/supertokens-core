@@ -17,6 +17,7 @@
 package io.supertokens.test.accountlinking;
 
 import com.google.gson.JsonObject;
+import io.supertokens.ActiveUsers;
 import io.supertokens.ProcessState;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.authRecipe.exception.AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException;
@@ -44,6 +45,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 
@@ -603,6 +605,88 @@ public class LinkAccountsTest {
         assert (refetchUser.tenantIds.size() == 1);
         assert (refetchUser.isPrimaryUser);
         assert (refetchUser.getSupertokensUserId().equals(user.getSupertokensUserId()));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void linkAccountMergesLastActiveTimes() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
+        assert (!user.isPrimaryUser);
+        ActiveUsers.updateLastActive(process.main, user.getSupertokensUserId());
+        Thread.sleep(50);
+
+        AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "password");
+        assert (!user2.isPrimaryUser);
+        long secondUserTime = System.currentTimeMillis();
+        ActiveUsers.updateLastActive(process.main, user2.getSupertokensUserId());
+
+        assertEquals(ActiveUsers.countUsersActiveSince(process.main, 0), 2);
+        long createPrimaryTime = System.currentTimeMillis();
+        AuthRecipe.createPrimaryUser(process.main, user.getSupertokensUserId());
+        Thread.sleep(50);
+
+        assertEquals(ActiveUsers.countUsersActiveSince(process.main, 0), 2);
+
+        AuthRecipe.linkAccounts(process.main, user2.getSupertokensUserId(), user.getSupertokensUserId());
+
+        assertEquals(ActiveUsers.countUsersActiveSince(process.main, 0), 1);
+        assertEquals(ActiveUsers.countUsersActiveSince(process.main, secondUserTime), 1);
+        assertEquals(ActiveUsers.countUsersActiveSince(process.main, createPrimaryTime), 0);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void linkAccountMergesLastActiveTimes_PrimaryFirst() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
+        assert (!user.isPrimaryUser);
+        ActiveUsers.updateLastActive(process.main, user.getSupertokensUserId());
+        Thread.sleep(50);
+
+        AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "password");
+        assert (!user2.isPrimaryUser);
+        long secondUserTime = System.currentTimeMillis();
+        ActiveUsers.updateLastActive(process.main, user2.getSupertokensUserId());
+
+        assertEquals(ActiveUsers.countUsersActiveSince(process.main, 0), 2);
+        long createPrimaryTime = System.currentTimeMillis();
+        AuthRecipe.createPrimaryUser(process.main, user2.getSupertokensUserId());
+        Thread.sleep(50);
+
+        assertEquals(ActiveUsers.countUsersActiveSince(process.main, 0), 2);
+
+        AuthRecipe.linkAccounts(process.main, user.getSupertokensUserId(), user2.getSupertokensUserId());
+
+        assertEquals(ActiveUsers.countUsersActiveSince(process.main, 0), 1);
+        assertEquals(ActiveUsers.countUsersActiveSince(process.main, secondUserTime), 1);
+        assertEquals(ActiveUsers.countUsersActiveSince(process.main, createPrimaryTime), 0);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

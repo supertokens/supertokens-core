@@ -1217,6 +1217,28 @@ public class Start
     }
 
     @Override
+    public long getLastActiveByUserId_Transaction(TransactionConnection con, AppIdentifier appIdentifier, String userId)
+            throws StorageQueryException {
+        try {
+            Connection sqlCon = (Connection) con.getConnection();
+            return ActiveUsersQueries.getLastActiveByUserId_Transaction(sqlCon, this, appIdentifier, userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void setUserActive_Transaction(TransactionConnection con, AppIdentifier appIdentifier, String userId, long timestamp)
+            throws StorageQueryException {
+        try {
+            Connection sqlCon = (Connection) con.getConnection();
+            ActiveUsersQueries.setUserActive_Transaction(sqlCon, this, appIdentifier, userId, timestamp);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
     public void deleteUserActive_Transaction(TransactionConnection con, AppIdentifier appIdentifier, String userId)
             throws StorageQueryException {
         try {

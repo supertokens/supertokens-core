@@ -16,6 +16,7 @@
 
 package io.supertokens.authRecipe;
 
+import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.authRecipe.exception.AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException;
 import io.supertokens.authRecipe.exception.InputUserIdIsNotAPrimaryUserException;
@@ -25,10 +26,7 @@ import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
-import io.supertokens.pluginInterface.RECIPE_ID;
-import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.Storage;
-import io.supertokens.pluginInterface.StorageUtils;
+import io.supertokens.pluginInterface.*;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
@@ -338,6 +336,7 @@ public class AuthRecipe {
         }
 
         AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
+        ActiveUsersSQLStorage activeUsersStorage = (ActiveUsersSQLStorage) StorageUtils.getActiveUsersStorage(storage);
         try {
             LinkAccountsResult result = authRecipeStorage.startTransaction(con -> {
 
@@ -348,9 +347,18 @@ public class AuthRecipe {
                     if (canLinkAccounts.alreadyLinked) {
                         return new LinkAccountsResult(getUserById(appIdentifier, authRecipeStorage, canLinkAccounts.primaryUserId), true);
                     }
+
                     // now we can link accounts in the db.
                     authRecipeStorage.linkAccounts_Transaction(appIdentifier, con, canLinkAccounts.recipeUserId,
                             canLinkAccounts.primaryUserId);
+
+                    long recipeUserLastActive = activeUsersStorage.getLastActiveByUserId_Transaction(con, appIdentifier, canLinkAccounts.recipeUserId);
+                    long primaryUserLastActive = activeUsersStorage.getLastActiveByUserId_Transaction(con, appIdentifier, canLinkAccounts.primaryUserId);
+
+                    if (primaryUserLastActive < recipeUserLastActive) {
+                        activeUsersStorage.setUserActive_Transaction(con, appIdentifier, canLinkAccounts.primaryUserId, recipeUserLastActive);
+                    }
+                    activeUsersStorage.deleteUserActive_Transaction(con, appIdentifier, canLinkAccounts.recipeUserId);
 
                     authRecipeStorage.commitTransaction(con);
 
