@@ -247,17 +247,11 @@ public class MultitenantAPITest {
         }
 
         int userCount = 1;
-        createDevice(t1, "user");
-        createDeviceAlreadyExists(t1, "user");
 
-        TenantIdentifier[] tenants = new TenantIdentifier[]{t2, t3};
-        for (TenantIdentifier tenant1 : tenants) {
-            try {
-                createDevice(tenant1, "user" + userCount);
-                fail();
-            } catch (HttpResponseException e) {
-                assertEquals(403, e.statusCode);
-            }
+        TenantIdentifier[] tenants = new TenantIdentifier[]{t1, t2, t3};
+        for (TenantIdentifier tenantId : tenants) {
+            createDevice(tenantId, "user"+userCount);
+            createDeviceAlreadyExists(tenantId, "user"+userCount);
 
             userCount++;
         }

@@ -328,10 +328,6 @@ public abstract class WebserverAPI extends HttpServlet {
 
     protected Storage[] enforcePublicTenantAndGetAllStoragesForApp(HttpServletRequest req)
             throws ServletException, BadPermissionException, TenantOrAppNotFoundException {
-        if (getTenantId(req) != null) {
-            throw new BadPermissionException("Only public tenantId can call this app specific API");
-        }
-
         AppIdentifier appIdentifier = getAppIdentifierWithoutVerifying(req);
         return StorageLayer.getStoragesForApp(main, appIdentifier);
     }
@@ -339,14 +335,9 @@ public abstract class WebserverAPI extends HttpServlet {
     protected Storage enforcePublicTenantAndGetPublicTenantStorage(
             HttpServletRequest req)
             throws TenantOrAppNotFoundException, BadPermissionException, ServletException {
-        TenantIdentifier tenantIdentifier = new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req),
-                this.getTenantId(req));
+        AppIdentifier appIdentifier = getAppIdentifierWithoutVerifying(req);
 
-        if (getTenantId(req) != null) {
-            throw new BadPermissionException("Only public tenantId can call this app specific API");
-        }
-
-        return StorageLayer.getStorage(tenantIdentifier, main);
+        return StorageLayer.getStorage(appIdentifier.getAsPublicTenantIdentifier(), main);
     }
 
     protected StorageAndUserIdMapping getStorageAndUserIdMappingForTenantSpecificApi(
@@ -362,8 +353,6 @@ public abstract class WebserverAPI extends HttpServlet {
             HttpServletRequest req, String userId, UserIdType userIdType, boolean isCallFromAuthRecipeAPI)
             throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException, ServletException,
             BadPermissionException {
-        // This function uses storage of the tenant from which the request came from as a priorityStorage
-        // while searching for the user across all storages for the app
         AppIdentifier appIdentifier = getAppIdentifierWithoutVerifying(req);
         Storage[] storages = enforcePublicTenantAndGetAllStoragesForApp(req);
         try {
