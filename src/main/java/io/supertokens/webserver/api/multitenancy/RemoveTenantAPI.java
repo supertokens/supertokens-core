@@ -53,6 +53,8 @@ public class RemoveTenantAPI extends WebserverAPI {
         String tenantId = InputParser.parseStringOrThrowError(input, "tenantId", false);
         tenantId = Utils.normalizeAndValidateTenantId(tenantId);
 
+
+
         if (tenantId.equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
             throw new ServletException(new BadPermissionException("Cannot delete public tenant, use remove app API instead"));
         }
@@ -60,7 +62,9 @@ public class RemoveTenantAPI extends WebserverAPI {
         try {
             TenantIdentifier sourceTenantIdentifier = this.getTenantIdentifier(req);
 
-            enforcePublicTenantAndGetPublicTenantStorage(req); // Enforce public tenant
+            if (!sourceTenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
+                throw new BadPermissionException("Only the public tenantId is allowed to delete a tenant");
+            }
 
             boolean didExist = Multitenancy.deleteTenant(new TenantIdentifier(sourceTenantIdentifier.getConnectionUriDomain(), sourceTenantIdentifier.getAppId(), tenantId), main);
 
@@ -69,8 +73,8 @@ public class RemoveTenantAPI extends WebserverAPI {
             result.addProperty("didExist", didExist);
             super.sendJsonResponse(200, result, resp);
 
-        } catch (TenantOrAppNotFoundException | CannotDeleteNullTenantException | StorageQueryException
-                 | BadPermissionException e) {
+        } catch (TenantOrAppNotFoundException | CannotDeleteNullTenantException | StorageQueryException |
+                 BadPermissionException e) {
             throw new ServletException(e);
         }
 

@@ -46,12 +46,12 @@ public class RequestStatsAPI extends WebserverAPI {
         // API is app specific
         try {
             AppIdentifier appIdentifier = getAppIdentifier(req);
-            enforcePublicTenantAndGetPublicTenantStorage(req); // enforce public tenant
+            getPublicTenantStorageForApp(req); // enforce public tenant
             JsonObject stats = RequestStats.getInstance(main, appIdentifier).getStats();
             stats.addProperty("status", "OK");
             super.sendJsonResponse(200, stats, resp);
 
-        } catch (BadPermissionException | TenantOrAppNotFoundException e) {
+        } catch (TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

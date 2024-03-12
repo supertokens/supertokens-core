@@ -326,27 +326,18 @@ public abstract class WebserverAPI extends HttpServlet {
         return StorageLayer.getStorage(tenantIdentifier, main);
     }
 
-    protected Storage[] enforcePublicTenantAndGetAllStoragesForApp(HttpServletRequest req)
-            throws ServletException, BadPermissionException, TenantOrAppNotFoundException {
-        if (getTenantId(req) != null) {
-            throw new BadPermissionException("Only public tenantId can call this app specific API");
-        }
-
+    protected Storage[] getAllStoragesForApp(HttpServletRequest req)
+            throws ServletException, TenantOrAppNotFoundException {
         AppIdentifier appIdentifier = getAppIdentifierWithoutVerifying(req);
         return StorageLayer.getStoragesForApp(main, appIdentifier);
     }
 
-    protected Storage enforcePublicTenantAndGetPublicTenantStorage(
+    protected Storage getPublicTenantStorageForApp(
             HttpServletRequest req)
-            throws TenantOrAppNotFoundException, BadPermissionException, ServletException {
-        TenantIdentifier tenantIdentifier = new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req),
-                this.getTenantId(req));
+            throws TenantOrAppNotFoundException, ServletException {
+        AppIdentifier appIdentifier = getAppIdentifierWithoutVerifying(req);
 
-        if (getTenantId(req) != null) {
-            throw new BadPermissionException("Only public tenantId can call this app specific API");
-        }
-
-        return StorageLayer.getStorage(tenantIdentifier, main);
+        return StorageLayer.getStorage(appIdentifier.getAsPublicTenantIdentifier(), main);
     }
 
     protected StorageAndUserIdMapping getStorageAndUserIdMappingForTenantSpecificApi(
@@ -356,24 +347,6 @@ public abstract class WebserverAPI extends HttpServlet {
                 this.getTenantId(req));
         return StorageLayer.findStorageAndUserIdMappingForUser(main, tenantIdentifier, userId,
                 userIdType);
-    }
-
-    protected StorageAndUserIdMapping enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
-            HttpServletRequest req, String userId, UserIdType userIdType, boolean isCallFromAuthRecipeAPI)
-            throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException, ServletException,
-            BadPermissionException {
-        AppIdentifier appIdentifier = getAppIdentifierWithoutVerifying(req);
-        Storage[] storages = enforcePublicTenantAndGetAllStoragesForApp(req);
-        try {
-            return StorageLayer.findStorageAndUserIdMappingForUser(
-                    appIdentifier, storages, userId, userIdType);
-        } catch (UnknownUserIdException e) {
-            if (isCallFromAuthRecipeAPI) {
-                throw e;
-            }
-
-            return new StorageAndUserIdMapping(enforcePublicTenantAndGetPublicTenantStorage(req), null);
-        }
     }
 
     protected StorageAndUserIdMapping getStorageAndUserIdMappingForAppSpecificApi(
@@ -389,7 +362,8 @@ public abstract class WebserverAPI extends HttpServlet {
                 throw e;
             }
 
-            return new StorageAndUserIdMapping(getTenantStorage(req), null);
+            return new StorageAndUserIdMapping(
+                    StorageLayer.getStorage(appIdentifier.getAsPublicTenantIdentifier(), main), null);
         }
     }
 

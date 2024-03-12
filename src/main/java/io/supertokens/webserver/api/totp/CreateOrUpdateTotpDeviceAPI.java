@@ -125,7 +125,7 @@ public class CreateOrUpdateTotpDeviceAPI extends WebserverAPI {
 
                 // Try to find the appIdentifier with right storage based on the userId
                 StorageAndUserIdMapping storageAndUserIdMapping =
-                        enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
+                        getStorageAndUserIdMappingForAppSpecificApi(
                         req, userId, UserIdType.ANY, false);
                 storage = storageAndUserIdMapping.storage;
 
@@ -146,7 +146,7 @@ public class CreateOrUpdateTotpDeviceAPI extends WebserverAPI {
         } catch (DeviceAlreadyExistsException e) {
             result.addProperty("status", "DEVICE_ALREADY_EXISTS_ERROR");
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

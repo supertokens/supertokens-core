@@ -54,11 +54,11 @@ public class RevokeSessionAPI extends WebserverAPI {
         try {
             Dashboard.revokeSessionWithSessionId(
                     getAppIdentifier(req),
-                    enforcePublicTenantAndGetPublicTenantStorage(req), sessionId);
+                    getPublicTenantStorageForApp(req), sessionId);
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

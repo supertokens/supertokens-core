@@ -62,7 +62,7 @@ public class DashboardSignInAPI extends WebserverAPI {
         try {
             String sessionId = Dashboard.signInDashboardUser(
                     getAppIdentifier(req),
-                    enforcePublicTenantAndGetPublicTenantStorage(req), main, email, password);
+                    getPublicTenantStorageForApp(req), main, email, password);
             if (sessionId == null) {
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "INVALID_CREDENTIALS_ERROR");
@@ -81,7 +81,7 @@ public class DashboardSignInAPI extends WebserverAPI {
                     "User is currently suspended, please sign in with another account, or reactivate the SuperTokens " +
                             "core license key");
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
 

@@ -164,7 +164,7 @@ public class UserIdMappingAPI extends WebserverAPI {
             // Request from (app1, tenant3) may result in either user1 or user2
 
             StorageAndUserIdMapping storageAndUserIdMapping =
-                    this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(req, userId, userIdType, true);
+                    this.getStorageAndUserIdMappingForAppSpecificApi(req, userId, userIdType, true);
 
             if (storageAndUserIdMapping.userIdMapping == null) {
                 JsonObject response = new JsonObject();
@@ -185,7 +185,7 @@ public class UserIdMappingAPI extends WebserverAPI {
             }
             super.sendJsonResponse(200, response, resp);
 
-        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
 
         } catch (UnknownUserIdException e) {

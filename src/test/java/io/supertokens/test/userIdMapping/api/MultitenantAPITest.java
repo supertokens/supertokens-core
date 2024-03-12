@@ -406,20 +406,14 @@ public class MultitenantAPITest {
         }
 
         {
-            try {
-                JsonObject mapping = getUserIdMapping(t2, "euserid", "EXTERNAL");
-                fail();
-            } catch (HttpResponseException e) {
-                assertEquals(403, e.statusCode);
-            }
+            JsonObject mapping = getUserIdMapping(t2, "euserid", "EXTERNAL");
+            assert mapping.get("superTokensUserId").getAsString().equals(user1.get("id").getAsString())
+                    || mapping.get("superTokensUserId").getAsString().equals(user2.get("id").getAsString());
         }
         {
-            try {
-                JsonObject mapping = getUserIdMapping(t2, "euserid", "ANY");
-                fail();
-            } catch (HttpResponseException e) {
-                assertEquals(403, e.statusCode);
-            }
+            JsonObject mapping = getUserIdMapping(t2, "euserid", "ANY");
+            assert mapping.get("superTokensUserId").getAsString().equals(user1.get("id").getAsString())
+                    || mapping.get("superTokensUserId").getAsString().equals(user2.get("id").getAsString());
         }
     }
 
