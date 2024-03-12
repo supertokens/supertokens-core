@@ -86,7 +86,7 @@ public class RemoveUserIdMappingAPI extends WebserverAPI {
 
         try {
             StorageAndUserIdMapping storageAndUserIdMapping =
-                    this.getStorageAndUserIdMappingForAppSpecificApi(req, userId, userIdType,
+                    this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(req, userId, userIdType,
                             true);
 
             boolean didMappingExist = UserIdMapping.deleteUserIdMapping(
@@ -97,7 +97,7 @@ public class RemoveUserIdMappingAPI extends WebserverAPI {
             response.addProperty("didMappingExist", didMappingExist);
             super.sendJsonResponse(200, response, resp);
 
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
 
         } catch (UnknownUserIdException e) {

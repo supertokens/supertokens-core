@@ -26,7 +26,6 @@ import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.useridmapping.exception.UnknownSuperTokensUserIdException;
 import io.supertokens.pluginInterface.useridmapping.exception.UserIdMappingAlreadyExistsException;
-import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.SemVer;
@@ -97,7 +96,7 @@ public class UserIdMappingAPI extends WebserverAPI {
 
         try {
             UserIdMapping.createUserIdMapping(
-                    getAppIdentifier(req), StorageLayer.getStoragesForApp(main, getAppIdentifier(req)),
+                    getAppIdentifier(req), enforcePublicTenantAndGetAllStoragesForApp(req),
                     superTokensUserId, externalUserId, externalUserIdInfo, force, getVersionFromRequest(req).greaterThanOrEqualTo(
                             SemVer.v4_0));
 
@@ -117,7 +116,7 @@ public class UserIdMappingAPI extends WebserverAPI {
             response.addProperty("doesExternalUserIdExist", e.doesExternalUserIdExist);
             super.sendJsonResponse(200, response, resp);
 
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
     }
@@ -164,7 +163,7 @@ public class UserIdMappingAPI extends WebserverAPI {
             // Request from (app1, tenant3) may result in either user1 or user2
 
             StorageAndUserIdMapping storageAndUserIdMapping =
-                    this.getStorageAndUserIdMappingForAppSpecificApi(req, userId, userIdType, true);
+                    this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(req, userId, userIdType, true);
 
             if (storageAndUserIdMapping.userIdMapping == null) {
                 JsonObject response = new JsonObject();
@@ -185,7 +184,7 @@ public class UserIdMappingAPI extends WebserverAPI {
             }
             super.sendJsonResponse(200, response, resp);
 
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
 
         } catch (UnknownUserIdException e) {

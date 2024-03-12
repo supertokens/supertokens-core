@@ -26,7 +26,6 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.userroles.UserRoles;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -85,7 +84,7 @@ public class CreateRoleAPI extends WebserverAPI {
 
         try {
             AppIdentifier appIdentifier = getAppIdentifier(req);
-            Storage storage = StorageLayer.getStorage(appIdentifier.getAsPublicTenantIdentifier(), main);
+            Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
             boolean createdNewRole = UserRoles.createNewRoleOrModifyItsPermissions(
                     appIdentifier, storage, role, permissions);
 
@@ -94,7 +93,8 @@ public class CreateRoleAPI extends WebserverAPI {
             response.addProperty("createdNewRole", createdNewRole);
             super.sendJsonResponse(200, response, resp);
 
-        } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException |
+                 BadPermissionException e) {
             throw new ServletException(e);
         }
     }

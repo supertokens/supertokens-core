@@ -60,13 +60,14 @@ public class DeleteUserAPI extends WebserverAPI {
 
         try {
             StorageAndUserIdMapping storageAndUserIdMapping =
-                    this.getStorageAndUserIdMappingForAppSpecificApi(
+                    this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
                             req, userId, UserIdType.ANY, true);
 
             AuthRecipe.deleteUser(getAppIdentifier(req), storageAndUserIdMapping.storage, userId,
                     removeAllLinkedAccounts,
                     storageAndUserIdMapping.userIdMapping);
-        } catch (StorageQueryException | TenantOrAppNotFoundException | StorageTransactionLogicException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | StorageTransactionLogicException |
+                 BadPermissionException e) {
             throw new ServletException(e);
         } catch (UnknownUserIdException e) {
             // Do nothing

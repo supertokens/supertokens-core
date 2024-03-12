@@ -54,7 +54,7 @@ public class GetTotpDevicesAPI extends WebserverAPI {
                 // While sending the usage stats we do a join, so totp tables also must use internal user id.
 
                 // Try to find the appIdentifier with right storage based on the userId
-                StorageAndUserIdMapping storageAndUserIdMapping = getStorageAndUserIdMappingForAppSpecificApi(
+                StorageAndUserIdMapping storageAndUserIdMapping = enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
                         req, userId, UserIdType.ANY, false);
                 storage = storageAndUserIdMapping.storage;
             } catch (UnknownUserIdException e) {
@@ -80,7 +80,7 @@ public class GetTotpDevicesAPI extends WebserverAPI {
         } catch (TotpNotEnabledException e) {
             result.addProperty("status", "TOTP_NOT_ENABLED_ERROR");
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
     }

@@ -20,6 +20,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.StorageAndUserIdMapping;
 import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.Passwordless.FieldUpdate;
 import io.supertokens.passwordless.exceptions.PhoneNumberChangeNotAllowedException;
@@ -81,7 +82,7 @@ public class UserAPI extends WebserverAPI {
                 try {
                     AppIdentifier appIdentifier = getAppIdentifier(req);
                     StorageAndUserIdMapping storageAndUserIdMapping =
-                            this.getStorageAndUserIdMappingForAppSpecificApi(req, userId,
+                            this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(req, userId,
                                     UserIdType.ANY, true);
                     if (storageAndUserIdMapping.userIdMapping != null) {
                         userId = storageAndUserIdMapping.userIdMapping.superTokensUserId;
@@ -136,7 +137,7 @@ public class UserAPI extends WebserverAPI {
                 result.add("user", userJson);
                 super.sendJsonResponse(200, result, resp);
             }
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
     }
@@ -165,7 +166,7 @@ public class UserAPI extends WebserverAPI {
         try {
             AppIdentifier appIdentifier = getAppIdentifier(req);
             StorageAndUserIdMapping storageAndUserIdMapping =
-                    this.getStorageAndUserIdMappingForAppSpecificApi(req, userId,
+                    this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(req, userId,
                             UserIdType.ANY, true);
             // if a userIdMapping exists, pass the superTokensUserId to the updateUser
             if (storageAndUserIdMapping.userIdMapping != null) {
@@ -178,7 +179,7 @@ public class UserAPI extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         } catch (UnknownUserIdException e) {
             JsonObject result = new JsonObject();

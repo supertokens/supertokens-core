@@ -70,7 +70,7 @@ public class CanLinkAccountsAPI extends WebserverAPI {
             String recipeUserId = inputRecipeUserId;
             {
                 StorageAndUserIdMapping mappingAndStorage =
-                        getStorageAndUserIdMappingForAppSpecificApi(
+                        enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
                                 req, inputRecipeUserId, UserIdType.ANY, true);
                 if (mappingAndStorage.userIdMapping != null) {
                     recipeUserId = mappingAndStorage.userIdMapping.superTokensUserId;
@@ -80,7 +80,7 @@ public class CanLinkAccountsAPI extends WebserverAPI {
             String primaryUserId = inputPrimaryUserId;
             {
                 StorageAndUserIdMapping mappingAndStorage =
-                        getStorageAndUserIdMappingForAppSpecificApi(
+                        enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
                                 req, inputPrimaryUserId, UserIdType.ANY, true);
                 if (mappingAndStorage.userIdMapping != null) {
                     primaryUserId = mappingAndStorage.userIdMapping.superTokensUserId;
@@ -105,7 +105,7 @@ public class CanLinkAccountsAPI extends WebserverAPI {
             response.addProperty("status", "OK");
             response.addProperty("accountsAlreadyLinked", result.alreadyLinked);
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         } catch (UnknownUserIdException e) {
             throw new ServletException(new BadRequestException("Unknown user ID provided"));

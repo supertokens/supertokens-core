@@ -93,7 +93,7 @@ public class DashboardUserAPI extends WebserverAPI {
 
             DashboardUser user = Dashboard.signUpDashboardUser(
                     getAppIdentifier(req),
-                    getPublicTenantStorageForApp(req),
+                    enforcePublicTenantAndGetPublicTenantStorage(req),
                     main, email, password);
             JsonObject userAsJsonObject = new JsonParser().parse(new Gson().toJson(user)).getAsJsonObject();
 
@@ -106,7 +106,8 @@ public class DashboardUserAPI extends WebserverAPI {
             JsonObject response = new JsonObject();
             response.addProperty("status", "EMAIL_ALREADY_EXISTS_ERROR");
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | FeatureNotEnabledException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | FeatureNotEnabledException | TenantOrAppNotFoundException |
+                 BadPermissionException e) {
             throw new ServletException(e);
         }
     }
@@ -148,7 +149,7 @@ public class DashboardUserAPI extends WebserverAPI {
 
         try {
             AppIdentifier appIdentifier = getAppIdentifier(req);
-            Storage storage = getPublicTenantStorageForApp(req);
+            Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
             String userId = InputParser.parseStringOrThrowError(input, "userId", true);
             if (userId != null) {
                 // normalize userId
@@ -199,7 +200,7 @@ public class DashboardUserAPI extends WebserverAPI {
             response.addProperty("status", "UNKNOWN_USER_ERROR");
             super.sendJsonResponse(200, response, resp);
             return;
-        } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
         // Both email and userId are null
@@ -217,7 +218,7 @@ public class DashboardUserAPI extends WebserverAPI {
                 userId = Utils.normalizeAndValidateStringParam(userId, "userId");
                 boolean didUserExist = Dashboard.deleteUserWithUserId(
                         getAppIdentifier(req),
-                        getPublicTenantStorageForApp(req), userId);
+                        enforcePublicTenantAndGetPublicTenantStorage(req), userId);
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "OK");
                 response.addProperty("didUserExist", didUserExist);
@@ -234,7 +235,7 @@ public class DashboardUserAPI extends WebserverAPI {
 
                 boolean didUserExist = Dashboard.deleteUserWithEmail(
                         getAppIdentifier(req),
-                        getPublicTenantStorageForApp(req), email);
+                        enforcePublicTenantAndGetPublicTenantStorage(req), email);
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "OK");
                 response.addProperty("didUserExist", didUserExist);
@@ -242,7 +243,7 @@ public class DashboardUserAPI extends WebserverAPI {
                 return;
             }
 
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
 

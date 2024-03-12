@@ -26,7 +26,6 @@ import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.userroles.UserRoles;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -54,7 +53,7 @@ public class GetRolesAPI extends WebserverAPI {
         // API is app specific
         try {
             AppIdentifier appIdentifier = getAppIdentifier(req);
-            Storage storage = StorageLayer.getStorage(appIdentifier.getAsPublicTenantIdentifier(), main);
+            Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
 
             String[] roles = UserRoles.getRoles(appIdentifier, storage);
             JsonArray arr = new JsonArray();
@@ -68,7 +67,7 @@ public class GetRolesAPI extends WebserverAPI {
             response.addProperty("status", "OK");
             super.sendJsonResponse(200, response, resp);
 
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
     }

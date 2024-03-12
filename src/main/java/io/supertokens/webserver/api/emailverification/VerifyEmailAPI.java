@@ -112,7 +112,7 @@ public class VerifyEmailAPI extends WebserverAPI {
             AppIdentifier appIdentifier = getAppIdentifier(req);
             Storage storage;
             try {
-                StorageAndUserIdMapping storageAndUserIdMapping = getStorageAndUserIdMappingForAppSpecificApi(
+                StorageAndUserIdMapping storageAndUserIdMapping = enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
                         req, userId, UserIdType.ANY, false);
                 storage = storageAndUserIdMapping.storage;
             } catch (UnknownUserIdException e) {
@@ -125,7 +125,7 @@ public class VerifyEmailAPI extends WebserverAPI {
             result.addProperty("isVerified", isVerified);
             super.sendJsonResponse(200, result, resp);
 
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
 

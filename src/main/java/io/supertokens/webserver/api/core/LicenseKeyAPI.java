@@ -52,6 +52,7 @@ public class LicenseKeyAPI extends WebserverAPI {
         String licenseKey = InputParser.parseStringOrThrowError(input, "licenseKey", true);
         try {
             AppIdentifier appIdentifier = this.getAppIdentifier(req);
+            this.enforcePublicTenantAndGetPublicTenantStorage(req); // enforce public tenant
             boolean success = false;
             if (licenseKey != null) {
                 success = FeatureFlag.getInstance(main, appIdentifier)
@@ -63,7 +64,7 @@ public class LicenseKeyAPI extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", success ? "OK" : "MISSING_EE_FOLDER_ERROR");
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | HttpResponseException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | HttpResponseException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         } catch (InvalidLicenseKeyException e) {
             JsonObject result = new JsonObject();
@@ -76,13 +77,13 @@ public class LicenseKeyAPI extends WebserverAPI {
     protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         // API is app specific and can be queried only from public tenant
         try {
-            this.getPublicTenantStorageForApp(req); // enforce public tenant
+            this.enforcePublicTenantAndGetPublicTenantStorage(req); // enforce public tenant
             FeatureFlag.getInstance(main, getAppIdentifier(req))
                     .removeLicenseKeyAndSyncFeatures();
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | HttpResponseException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | HttpResponseException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
     }
@@ -91,14 +92,14 @@ public class LicenseKeyAPI extends WebserverAPI {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         // API is app specific and can be queried only from public tenant
         try {
-            this.getPublicTenantStorageForApp(req); // enforce public tenant
+            this.enforcePublicTenantAndGetPublicTenantStorage(req); // enforce public tenant
             String licenseKey = FeatureFlag.getInstance(main, getAppIdentifier(req))
                     .getLicenseKey();
             JsonObject result = new JsonObject();
             result.addProperty("licenseKey", licenseKey);
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | BadPermissionException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         } catch (NoLicenseKeyFoundException e) {
             JsonObject result = new JsonObject();

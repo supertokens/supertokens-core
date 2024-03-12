@@ -63,7 +63,7 @@ public class VerifyDashboardUserSessionAPI extends WebserverAPI {
             JsonObject invalidSessionResp = new JsonObject();
             invalidSessionResp.addProperty("status", "INVALID_SESSION_ERROR");
             AppIdentifier appIdentifier = getAppIdentifier(req);
-            Storage storage = super.getPublicTenantStorageForApp(req);
+            Storage storage = super.enforcePublicTenantAndGetPublicTenantStorage(req);
 
             if (Dashboard.isValidUserSession(appIdentifier, storage, main, sessionId)) {
                 String email = Dashboard.getEmailFromSessionId(appIdentifier, storage, sessionId);
@@ -93,7 +93,7 @@ public class VerifyDashboardUserSessionAPI extends WebserverAPI {
             response.addProperty("message",
                     "User is suspended.");
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
 

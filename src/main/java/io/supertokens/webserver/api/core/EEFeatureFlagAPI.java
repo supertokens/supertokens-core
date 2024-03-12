@@ -50,6 +50,7 @@ public class EEFeatureFlagAPI extends WebserverAPI {
         // API is app specific and can be queried only from public tenant
         try {
             AppIdentifier appIdentifier = this.getAppIdentifier(req);
+            this.enforcePublicTenantAndGetPublicTenantStorage(req); // enforce public tenant
             EE_FEATURES[] features = FeatureFlag.getInstance(main, appIdentifier)
                     .getEnabledFeatures();
             JsonObject stats = FeatureFlag.getInstance(main, appIdentifier)
@@ -63,7 +64,7 @@ public class EEFeatureFlagAPI extends WebserverAPI {
             result.add("usageStats", stats);
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | BadPermissionException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

@@ -57,13 +57,13 @@ public class GetDashboardSessionsForUserAPI extends WebserverAPI {
             JsonArray arr = new com.google.gson.JsonParser().parse(new Gson().toJson(
                     Dashboard.getAllDashboardSessionsForUser(
                             getAppIdentifier(req),
-                            getPublicTenantStorageForApp(req),
+                            enforcePublicTenantAndGetPublicTenantStorage(req),
                             userId))).getAsJsonArray();
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             response.add("sessions", arr);
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
     }

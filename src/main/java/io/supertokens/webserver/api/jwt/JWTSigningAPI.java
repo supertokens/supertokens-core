@@ -79,6 +79,7 @@ public class JWTSigningAPI extends WebserverAPI {
         }
 
         try {
+            this.enforcePublicTenantAndGetPublicTenantStorage(req);
             String jwt = JWTSigningFunctions.createJWTToken(getAppIdentifier(req), main,
                     algorithm.toUpperCase(), payload, jwksDomain,
                     validity, useDynamicKey);
@@ -91,7 +92,7 @@ public class JWTSigningAPI extends WebserverAPI {
             reply.addProperty("status", UNSUPPORTED_ALGORITHM_ERROR_STATUS);
             super.sendJsonResponse(200, reply, resp);
         } catch (StorageQueryException | StorageTransactionLogicException | NoSuchAlgorithmException |
-                 InvalidKeySpecException | TenantOrAppNotFoundException e) {
+                 InvalidKeySpecException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
     }

@@ -326,15 +326,15 @@ public abstract class WebserverAPI extends HttpServlet {
         return StorageLayer.getStorage(tenantIdentifier, main);
     }
 
-    protected Storage[] getAllStoragesForApp(HttpServletRequest req)
-            throws ServletException, TenantOrAppNotFoundException {
+    protected Storage[] enforcePublicTenantAndGetAllStoragesForApp(HttpServletRequest req)
+            throws ServletException, BadPermissionException, TenantOrAppNotFoundException {
         AppIdentifier appIdentifier = getAppIdentifierWithoutVerifying(req);
         return StorageLayer.getStoragesForApp(main, appIdentifier);
     }
 
-    protected Storage getPublicTenantStorageForApp(
+    protected Storage enforcePublicTenantAndGetPublicTenantStorage(
             HttpServletRequest req)
-            throws TenantOrAppNotFoundException, ServletException {
+            throws TenantOrAppNotFoundException, BadPermissionException, ServletException {
         AppIdentifier appIdentifier = getAppIdentifierWithoutVerifying(req);
 
         return StorageLayer.getStorage(appIdentifier.getAsPublicTenantIdentifier(), main);
@@ -349,11 +349,12 @@ public abstract class WebserverAPI extends HttpServlet {
                 userIdType);
     }
 
-    protected StorageAndUserIdMapping getStorageAndUserIdMappingForAppSpecificApi(
+    protected StorageAndUserIdMapping enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
             HttpServletRequest req, String userId, UserIdType userIdType, boolean isCallFromAuthRecipeAPI)
-            throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException, ServletException {
+            throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException, ServletException,
+            BadPermissionException {
         AppIdentifier appIdentifier = getAppIdentifierWithoutVerifying(req);
-        Storage[] storages = StorageLayer.getStoragesForApp(main, appIdentifier);
+        Storage[] storages = enforcePublicTenantAndGetAllStoragesForApp(req);
         try {
             return StorageLayer.findStorageAndUserIdMappingForUser(
                     appIdentifier, storages, userId, userIdType);
@@ -362,8 +363,7 @@ public abstract class WebserverAPI extends HttpServlet {
                 throw e;
             }
 
-            return new StorageAndUserIdMapping(
-                    StorageLayer.getStorage(appIdentifier.getAsPublicTenantIdentifier(), main), null);
+            return new StorageAndUserIdMapping(enforcePublicTenantAndGetPublicTenantStorage(req), null);
         }
     }
 

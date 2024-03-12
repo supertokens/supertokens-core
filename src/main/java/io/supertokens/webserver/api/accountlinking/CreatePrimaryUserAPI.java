@@ -68,7 +68,7 @@ public class CreatePrimaryUserAPI extends WebserverAPI {
         try {
             String userId = inputRecipeUserId;
             StorageAndUserIdMapping mappingAndStorage =
-                    getStorageAndUserIdMappingForAppSpecificApi(
+                    enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
                             req, inputRecipeUserId, UserIdType.ANY, true);
             storage = mappingAndStorage.storage;
             if (mappingAndStorage.userIdMapping != null) {
@@ -87,7 +87,8 @@ public class CreatePrimaryUserAPI extends WebserverAPI {
             }
             response.add("user", result.user.toJson());
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | TenantOrAppNotFoundException | FeatureNotEnabledException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | FeatureNotEnabledException |
+                 BadPermissionException e) {
             throw new ServletException(e);
         } catch (UnknownUserIdException e) {
             throw new ServletException(new BadRequestException("Unknown user ID provided"));

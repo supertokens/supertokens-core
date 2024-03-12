@@ -64,7 +64,7 @@ public class UnlinkAccountAPI extends WebserverAPI {
         try {
             String userId = inputRecipeUserId;
             StorageAndUserIdMapping mappingAndStorage =
-                    getStorageAndUserIdMappingForAppSpecificApi(
+                    enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
                             req, inputRecipeUserId, UserIdType.ANY, true);
             if (mappingAndStorage.userIdMapping != null) {
                 userId = mappingAndStorage.userIdMapping.superTokensUserId;
@@ -77,7 +77,7 @@ public class UnlinkAccountAPI extends WebserverAPI {
             response.addProperty("wasRecipeUserDeleted", wasDeleted);
             response.addProperty("wasLinked", true);
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         } catch (UnknownUserIdException e) {
             throw new ServletException(new BadRequestException("Unknown user ID provided"));
