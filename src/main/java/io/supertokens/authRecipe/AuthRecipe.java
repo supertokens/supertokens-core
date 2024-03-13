@@ -126,7 +126,7 @@ public class AuthRecipe {
 
     public static AuthRecipeUserInfo getUserById(AppIdentifier appIdentifier, Storage storage, String userId)
             throws StorageQueryException {
-        return  StorageUtils.getAuthRecipeStorage(storage).getPrimaryUserById(appIdentifier, userId);
+        return StorageUtils.getAuthRecipeStorage(storage).getPrimaryUserById(appIdentifier, userId);
     }
 
     public static class CreatePrimaryUserResult {
@@ -325,14 +325,14 @@ public class AuthRecipe {
     }
 
     public static LinkAccountsResult linkAccounts(Main main, AppIdentifier appIdentifier,
-                                       Storage storage, String _recipeUserId, String _primaryUserId)
+                                                  Storage storage, String _recipeUserId, String _primaryUserId)
             throws StorageQueryException,
             AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
             RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException, InputUserIdIsNotAPrimaryUserException,
             UnknownUserIdException, TenantOrAppNotFoundException, FeatureNotEnabledException {
 
         if (Arrays.stream(FeatureFlag.getInstance(main, appIdentifier).getEnabledFeatures())
-                .noneMatch(t -> (t == EE_FEATURES.ACCOUNT_LINKING || t == EE_FEATURES.MFA))) {
+                .noneMatch(t -> t == EE_FEATURES.ACCOUNT_LINKING || t == EE_FEATURES.MFA)) {
             throw new FeatureNotEnabledException(
                     "Account linking feature is not enabled for this app. Please contact support to enable it.");
         }
@@ -537,7 +537,7 @@ public class AuthRecipe {
             FeatureNotEnabledException {
 
         if (Arrays.stream(FeatureFlag.getInstance(main, appIdentifier).getEnabledFeatures())
-                .noneMatch(t -> (t == EE_FEATURES.ACCOUNT_LINKING || t == EE_FEATURES.MFA))) {
+                .noneMatch(t -> t == EE_FEATURES.ACCOUNT_LINKING || t == EE_FEATURES.MFA)) {
             throw new FeatureNotEnabledException(
                     "Account linking feature is not enabled for this app. Please contact support to enable it.");
         }
@@ -911,7 +911,7 @@ public class AuthRecipe {
     }
 
     private static void deleteNonAuthRecipeUser(TransactionConnection con, AppIdentifier appIdentifier,
-            Storage storage, String userId)
+                                                Storage storage, String userId)
             throws StorageQueryException {
         StorageUtils.getUserMetadataStorage(storage)
                 .deleteUserMetadata_Transaction(con, appIdentifier, userId);
@@ -921,6 +921,7 @@ public class AuthRecipe {
                 .deleteEmailVerificationUserInfo_Transaction(con, appIdentifier, userId);
         StorageUtils.getUserRolesStorage(storage)
                 .deleteAllRolesForUser_Transaction(con, appIdentifier, userId);
+
         // FIXME
         // StorageUtils.getActiveUsersStorage(storage)
         //         .deleteUserActive_Transaction(con, appIdentifier, userId);
@@ -964,8 +965,6 @@ public class AuthRecipe {
 
         didExist = StorageUtils.getTOTPStorage(storage)
                 .removeUser(tenantIdentifier, userId);
-        finalDidExist = finalDidExist || didExist;
-
         finalDidExist = finalDidExist || didExist;
 
         return finalDidExist;

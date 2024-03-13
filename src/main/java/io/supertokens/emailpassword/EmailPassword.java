@@ -95,7 +95,7 @@ public class EmailPassword {
     }
 
     public static AuthRecipeUserInfo signUp(TenantIdentifier tenantIdentifier, Storage storage, Main main,
-                                            @Nonnull String email, @Nonnull String password)
+                                  @Nonnull String email, @Nonnull String password)
             throws DuplicateEmailException, StorageQueryException, TenantOrAppNotFoundException,
             BadPermissionException {
 

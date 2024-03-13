@@ -250,7 +250,6 @@ public class MultitenantAPITest {
             return;
         }
 
-        TenantIdentifier[] tenants = new TenantIdentifier[]{t1, t2, t3};
         int userCount = 1;
 
         createDevice(t1, "user" + userCount);

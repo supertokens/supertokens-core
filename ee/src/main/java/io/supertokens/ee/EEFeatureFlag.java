@@ -194,8 +194,9 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         return false;
     }
 
-    private JsonObject getMFAStats() throws StorageQueryException, TenantOrAppNotFoundException{
-        // TODO: Active users are present only on public tenant and MFA users may be present on different storages
+    private JsonObject getMFAStats() throws StorageQueryException, TenantOrAppNotFoundException {
+        // TODO: Active users are present only on public tenant and MFA users may be
+        // present on different storages
         JsonObject result = new JsonObject();
         Storage[] storages = StorageLayer.getStoragesForApp(main, this.appIdentifier);
 
@@ -205,17 +206,20 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         long now = System.currentTimeMillis();
 
         for (Storage storage : storages) {
-            totalUserCountWithMoreThanOneLoginMethod += ((AuthRecipeStorage)storage).getUsersCountWithMoreThanOneLoginMethodOrTOTPEnabled(this.appIdentifier);
+            totalUserCountWithMoreThanOneLoginMethod += ((AuthRecipeStorage) storage)
+                    .getUsersCountWithMoreThanOneLoginMethodOrTOTPEnabled(this.appIdentifier);
 
             for (int i = 1; i <= 31; i++) {
                 long timestamp = now - (i * 24 * 60 * 60 * 1000L);
 
                 // `maus[i-1]` since i starts from 1
-                maus[i-1] += ((ActiveUsersStorage)storage).countUsersThatHaveMoreThanOneLoginMethodOrTOTPEnabledAndActiveSince(appIdentifier, timestamp);
+                maus[i - 1] += ((ActiveUsersStorage) storage)
+                        .countUsersThatHaveMoreThanOneLoginMethodOrTOTPEnabledAndActiveSince(appIdentifier, timestamp);
             }
         }
 
-        result.addProperty("totalUserCountWithMoreThanOneLoginMethodOrTOTPEnabled", totalUserCountWithMoreThanOneLoginMethod);
+        result.addProperty("totalUserCountWithMoreThanOneLoginMethodOrTOTPEnabled",
+                totalUserCountWithMoreThanOneLoginMethod);
         result.add("mauWithMoreThanOneLoginMethodOrTOTPEnabled", new Gson().toJsonTree(maus));
         return result;
     }
