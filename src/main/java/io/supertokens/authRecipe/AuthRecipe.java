@@ -332,7 +332,7 @@ public class AuthRecipe {
             UnknownUserIdException, TenantOrAppNotFoundException, FeatureNotEnabledException {
 
         if (Arrays.stream(FeatureFlag.getInstance(main, appIdentifier).getEnabledFeatures())
-                .noneMatch(t -> t == EE_FEATURES.ACCOUNT_LINKING)) {
+                .noneMatch(t -> t == EE_FEATURES.ACCOUNT_LINKING || t == EE_FEATURES.MFA)) {
             throw new FeatureNotEnabledException(
                     "Account linking feature is not enabled for this app. Please contact support to enable it.");
         }
@@ -537,7 +537,7 @@ public class AuthRecipe {
             FeatureNotEnabledException {
 
         if (Arrays.stream(FeatureFlag.getInstance(main, appIdentifier).getEnabledFeatures())
-                .noneMatch(t -> t == EE_FEATURES.ACCOUNT_LINKING)) {
+                .noneMatch(t -> t == EE_FEATURES.ACCOUNT_LINKING || t == EE_FEATURES.MFA)) {
             throw new FeatureNotEnabledException(
                     "Account linking feature is not enabled for this app. Please contact support to enable it.");
         }
