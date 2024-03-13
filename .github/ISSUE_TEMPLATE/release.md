@@ -49,10 +49,12 @@ labels:
  - [ ] [supertokens-flutter:X.Y](https://github.com/supertokens/supertokens-flutter/X.Y)
     - [ ] check FDI list   
  - [ ] [supertokens-dashboard](https://github.com/supertokens/dashboard)
+ - [ ]  Test day with team. Get people in the team to read the docs and implement something with the new feature.
 
 ### Others
 
 -  [ ] Example apps in create-supertokens-app CLI
+-  [ ] Create new example app in create-supertokens-app CLI?
  - [ ] Examples apps in supertokens-auth-react
  - [ ] Examples apps in supertokens-web-js
  - [ ] Examples apps in supertokens-react-native
@@ -112,6 +114,9 @@ labels:
       nano ~/try-supertokens/start_container.sh (update version tag)
       ~/try-supertokens/start_container.sh
       ```
+    - [ ] Run tests against node sdk (all compatible versions)
+    - [ ] Run tests against python sdk (all compatible versions)
+    - [ ] Run tests against golang sdk (all compatible versions)
     - [ ] Update SaaS config
     - [ ] Update to tables checked for user count / or to know if a deployment is being used or not
     - [ ] Update logic for deleting all data in dev env if a new table was added and if the data should be removed from it too
