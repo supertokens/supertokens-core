@@ -16,7 +16,6 @@
 
 package io.supertokens.authRecipe;
 
-import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.authRecipe.exception.AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException;
 import io.supertokens.authRecipe.exception.InputUserIdIsNotAPrimaryUserException;
@@ -47,7 +46,6 @@ import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nullable;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 
 /*This files contains functions that are common for all auth recipes*/
 
@@ -337,6 +335,7 @@ public class AuthRecipe {
 
         AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
         try {
+
             LinkAccountsResult result = authRecipeStorage.startTransaction(con -> {
                 try {
                     CanLinkAccountsResult canLinkAccounts = canLinkAccountsHelper(con, appIdentifier,
@@ -345,7 +344,6 @@ public class AuthRecipe {
                     if (canLinkAccounts.alreadyLinked) {
                         return new LinkAccountsResult(getUserById(appIdentifier, authRecipeStorage, canLinkAccounts.primaryUserId), true);
                     }
-
                     // now we can link accounts in the db.
                     authRecipeStorage.linkAccounts_Transaction(appIdentifier, con, canLinkAccounts.recipeUserId,
                             canLinkAccounts.primaryUserId);
