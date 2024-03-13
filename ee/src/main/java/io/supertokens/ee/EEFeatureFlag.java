@@ -245,17 +245,25 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
                 hasUsersOrSessions = hasUsersOrSessions || ((SessionSQLStorage) storage).getNumberOfSessions(tenantConfig.tenantIdentifier) > 0;
                 tenantStat.addProperty("usersCount", usersCount);
                 tenantStat.addProperty("hasUsersOrSessions", hasUsersOrSessions);
-                JsonArray firstFactors = new JsonArray();
-                for (String firstFactor : tenantConfig.firstFactors) {
-                    firstFactors.add(new JsonPrimitive(firstFactor));
+                if (tenantConfig.firstFactors != null) {
+                    JsonArray firstFactors = new JsonArray();
+                    for (String firstFactor : tenantConfig.firstFactors) {
+                        firstFactors.add(new JsonPrimitive(firstFactor));
+                    }
+                    tenantStat.add("firstFactors", firstFactors);
+                } else {
+                    tenantStat.add("firstFactors", new JsonNull());
                 }
-                tenantStat.add("firstFactors", firstFactors);
-                JsonArray requiredSecondaryFactors = new JsonArray();
-                for (String requiredSecondaryFactor : tenantConfig.requiredSecondaryFactors) {
-                    requiredSecondaryFactors.add(new JsonPrimitive(requiredSecondaryFactor));
-                }
-                tenantStat.add("requiredSecondaryFactors", requiredSecondaryFactors);
 
+                if (tenantConfig.requiredSecondaryFactors != null) {
+                    JsonArray requiredSecondaryFactors = new JsonArray();
+                    for (String requiredSecondaryFactor : tenantConfig.requiredSecondaryFactors) {
+                        requiredSecondaryFactors.add(new JsonPrimitive(requiredSecondaryFactor));
+                    }
+                    tenantStat.add("requiredSecondaryFactors", requiredSecondaryFactors);
+                } else {
+                    tenantStat.add("requiredSecondaryFactors", new JsonNull());
+                }
 
                 try {
                     tenantStat.addProperty("userPoolId", Utils.hashSHA256(storage.getUserPoolId()));

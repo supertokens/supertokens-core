@@ -90,21 +90,19 @@ public class CheckCodeAPI extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
 
-            if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_0)) {
-                JsonObject jsonDevice = new JsonObject();
-                jsonDevice.addProperty("preAuthSessionId", consumedDevice.deviceIdHash);
-                jsonDevice.addProperty("failedCodeInputAttemptCount", consumedDevice.failedAttempts);
+            JsonObject jsonDevice = new JsonObject();
+            jsonDevice.addProperty("preAuthSessionId", consumedDevice.deviceIdHash);
+            jsonDevice.addProperty("failedCodeInputAttemptCount", consumedDevice.failedAttempts);
 
-                if (consumedDevice.email != null) {
-                    jsonDevice.addProperty("email", consumedDevice.email);
-                }
-
-                if (consumedDevice.phoneNumber != null) {
-                    jsonDevice.addProperty("phoneNumber", consumedDevice.phoneNumber);
-                }
-
-                result.add("consumedDevice", jsonDevice);
+            if (consumedDevice.email != null) {
+                jsonDevice.addProperty("email", consumedDevice.email);
             }
+
+            if (consumedDevice.phoneNumber != null) {
+                jsonDevice.addProperty("phoneNumber", consumedDevice.phoneNumber);
+            }
+
+            result.add("consumedDevice", jsonDevice);
 
             super.sendJsonResponse(200, result, resp);
         } catch (RestartFlowException ex) {
