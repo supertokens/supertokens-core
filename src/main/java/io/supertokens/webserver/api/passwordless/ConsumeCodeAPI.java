@@ -92,7 +92,9 @@ public class ConsumeCodeAPI extends WebserverAPI {
                     userInputCode, linkCode,
                     // From CDI version 4.0 onwards, the email verification will be set
                     getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0));
-            io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(storage, new AuthRecipeUserInfo[]{consumeCodeResponse.user});
+            io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(
+                    tenantIdentifier.toAppIdentifier(), storage,
+                    new AuthRecipeUserInfo[]{consumeCodeResponse.user});
 
             ActiveUsers.updateLastActive(tenantIdentifier.toAppIdentifier(), main,
                     consumeCodeResponse.user.getSupertokensUserId());

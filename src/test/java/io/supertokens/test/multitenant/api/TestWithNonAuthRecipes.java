@@ -114,8 +114,8 @@ public class TestWithNonAuthRecipes {
         AuthRecipeUserInfo user1 = EmailPassword.signUp(t0, t0Storage, process.getProcess(), "test@example.com", "password123");
         AuthRecipeUserInfo user2 = EmailPassword.signUp(t1, t1Storage, process.getProcess(), "test@example.com", "password123");
 
-        UserIdMapping.populateExternalUserIdForUsers(t0Storage, new AuthRecipeUserInfo[]{user1});
-        UserIdMapping.populateExternalUserIdForUsers(t1Storage, new AuthRecipeUserInfo[]{user2});
+        UserIdMapping.populateExternalUserIdForUsers(t0.toAppIdentifier(), t0Storage, new AuthRecipeUserInfo[]{user1});
+        UserIdMapping.populateExternalUserIdForUsers(t0.toAppIdentifier(), t1Storage, new AuthRecipeUserInfo[]{user2});
 
         // Check that get user by ID works fine
         JsonObject jsonUser1 = TestMultitenancyAPIHelper.getUserById(t0, user1.getSupertokensUserId(), process.getProcess());
@@ -211,8 +211,8 @@ public class TestWithNonAuthRecipes {
         AuthRecipeUserInfo user1 = EmailPassword.signUp(t0, t0Storage, process.getProcess(), "test@example.com", "password123");
         AuthRecipeUserInfo user2 = EmailPassword.signUp(t1, t1Storage, process.getProcess(), "test@example.com", "password123");
 
-        UserIdMapping.populateExternalUserIdForUsers(t0Storage, new AuthRecipeUserInfo[]{user1});
-        UserIdMapping.populateExternalUserIdForUsers(t1Storage, new AuthRecipeUserInfo[]{user2});
+        UserIdMapping.populateExternalUserIdForUsers(t0.toAppIdentifier(), t0Storage, new AuthRecipeUserInfo[]{user1});
+        UserIdMapping.populateExternalUserIdForUsers(t1.toAppIdentifier(), t1Storage, new AuthRecipeUserInfo[]{user2});
 
         {
             // Check that get user by ID works fine
@@ -309,8 +309,8 @@ public class TestWithNonAuthRecipes {
         AuthRecipeUserInfo user1 = EmailPassword.signUp(t0, t0Storage, process.getProcess(), "test@example.com", "password123");
         AuthRecipeUserInfo user2 = EmailPassword.signUp(t1, t1Storage, process.getProcess(), "test@example.com", "password123");
 
-        UserIdMapping.populateExternalUserIdForUsers(t0Storage, new AuthRecipeUserInfo[]{user1});
-        UserIdMapping.populateExternalUserIdForUsers(t1Storage, new AuthRecipeUserInfo[]{user2});
+        UserIdMapping.populateExternalUserIdForUsers(t0.toAppIdentifier(), t0Storage, new AuthRecipeUserInfo[]{user1});
+        UserIdMapping.populateExternalUserIdForUsers(t1.toAppIdentifier(), t1Storage, new AuthRecipeUserInfo[]{user2});
 
         // Check that get user by ID works fine
         JsonObject jsonUser1 = TestMultitenancyAPIHelper.getUserById(t0, user1.getSupertokensUserId(), process.getProcess());
