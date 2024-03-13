@@ -329,8 +329,11 @@ public abstract class WebserverAPI extends HttpServlet {
 
     protected Storage[] enforcePublicTenantAndGetAllStoragesForApp(HttpServletRequest req)
             throws ServletException, BadPermissionException, TenantOrAppNotFoundException {
-        if (getTenantId(req) != null) {
-            throw new BadPermissionException("Only public tenantId can call this app specific API");
+
+        if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_0)) {
+            if (getTenantId(req) != null) {
+                throw new BadPermissionException("Only public tenantId can call this app specific API");
+            }
         }
 
         AppIdentifier appIdentifier = getAppIdentifierWithoutVerifying(req);
@@ -340,14 +343,14 @@ public abstract class WebserverAPI extends HttpServlet {
     protected Storage enforcePublicTenantAndGetPublicTenantStorage(
             HttpServletRequest req)
             throws TenantOrAppNotFoundException, BadPermissionException, ServletException {
-        TenantIdentifier tenantIdentifier = new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req),
-                this.getTenantId(req));
-
-        if (getTenantId(req) != null) {
-            throw new BadPermissionException("Only public tenantId can call this app specific API");
+        if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_0)) {
+            if (getTenantId(req) != null) {
+                throw new BadPermissionException("Only public tenantId can call this app specific API");
+            }
         }
 
-        return StorageLayer.getStorage(tenantIdentifier, main);
+        AppIdentifier appIdentifier = getAppIdentifier(req);
+        return StorageLayer.getStorage(appIdentifier.getAsPublicTenantIdentifier(), main);
     }
 
     protected StorageAndUserIdMapping getStorageAndUserIdMappingForTenantSpecificApi(
