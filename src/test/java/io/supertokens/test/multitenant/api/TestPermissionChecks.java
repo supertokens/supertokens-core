@@ -218,15 +218,15 @@ public class TestPermissionChecks {
         TestCase[] testCases = new TestCase[]{
                 new TestCase(
                         new TenantIdentifier("127.0.0.1", "a1", "t1"), null,
-                        "Only public tenantId can call this app specific API"
+                        "Only the public tenantId is allowed to list all tenants associated with this app"
                 ),
                 new TestCase(
                         new TenantIdentifier("127.0.0.1", null, "t1"), null,
-                        "Only public tenantId can call this app specific API"
+                        "Only the public tenantId is allowed to list all tenants associated with this app"
                 ),
                 new TestCase(
                         new TenantIdentifier(null, null, "t1"), null,
-                        "Only public tenantId can call this app specific API"
+                        "Only the public tenantId is allowed to list all tenants associated with this app"
                 ),
                 new TestCase(
                         new TenantIdentifier(null, null, null), null, null
@@ -1022,32 +1022,32 @@ public class TestPermissionChecks {
                 new TestCase(
                         new TenantIdentifier(null, null, "t1"),
                         new TenantIdentifier(null, null, "t2"),
-                        "Only public tenantId can call this app specific API"
+                        "Only the public tenantId is allowed to delete a tenant"
                 ),
                 new TestCase(
                         new TenantIdentifier(null, null, "t1"),
                         new TenantIdentifier(null, null, "t1"),
-                        "Only public tenantId can call this app specific API"
+                        "Only the public tenantId is allowed to delete a tenant"
                 ),
                 new TestCase(
                         new TenantIdentifier(null, "a1", "t1"),
                         new TenantIdentifier(null, "a1", "t2"),
-                        "Only public tenantId can call this app specific API"
+                        "Only the public tenantId is allowed to delete a tenant"
                 ),
                 new TestCase(
                         new TenantIdentifier(null, "a1", "t1"),
                         new TenantIdentifier(null, "a1", "t1"),
-                        "Only public tenantId can call this app specific API"
+                        "Only the public tenantId is allowed to delete a tenant"
                 ),
                 new TestCase(
                         new TenantIdentifier("127.0.0.1", "a1", "t1"),
                         new TenantIdentifier("127.0.0.1", "a1", "t2"),
-                        "Only public tenantId can call this app specific API"
+                        "Only the public tenantId is allowed to delete a tenant"
                 ),
                 new TestCase(
                         new TenantIdentifier("127.0.0.1", "a1", "t1"),
                         new TenantIdentifier("127.0.0.1", "a1", "t1"),
-                        "Only public tenantId can call this app specific API"
+                        "Only the public tenantId is allowed to delete a tenant"
                 ),
                 new TestCase(
                         new TenantIdentifier(null, null, null),

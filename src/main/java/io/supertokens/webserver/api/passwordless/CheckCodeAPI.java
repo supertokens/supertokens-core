@@ -27,6 +27,8 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.passwordless.PasswordlessDevice;
+import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -79,7 +81,7 @@ public class CheckCodeAPI extends WebserverAPI {
         try {
             TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
             Storage storage = this.getTenantStorage(req);
-            Passwordless.checkCodeAndReturnDevice(
+            PasswordlessDevice consumedDevice = Passwordless.checkCodeAndReturnDevice(
                     tenantIdentifier,
                     storage, main,
                     deviceId, deviceIdHash,
@@ -87,6 +89,20 @@ public class CheckCodeAPI extends WebserverAPI {
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
+
+            JsonObject jsonDevice = new JsonObject();
+            jsonDevice.addProperty("preAuthSessionId", consumedDevice.deviceIdHash);
+            jsonDevice.addProperty("failedCodeInputAttemptCount", consumedDevice.failedAttempts);
+
+            if (consumedDevice.email != null) {
+                jsonDevice.addProperty("email", consumedDevice.email);
+            }
+
+            if (consumedDevice.phoneNumber != null) {
+                jsonDevice.addProperty("phoneNumber", consumedDevice.phoneNumber);
+            }
+
+            result.add("consumedDevice", jsonDevice);
 
             super.sendJsonResponse(200, result, resp);
         } catch (RestartFlowException ex) {

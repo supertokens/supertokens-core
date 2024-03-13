@@ -164,6 +164,11 @@ public class MultitenantAPITest {
 
     private JsonObject createDevice(TenantIdentifier tenantIdentifier, String userId)
             throws HttpResponseException, IOException {
+        return createDevice(tenantIdentifier, userId, SemVer.v3_0);
+    }
+
+    private JsonObject createDevice(TenantIdentifier tenantIdentifier, String userId, SemVer version)
+            throws HttpResponseException, IOException {
         JsonObject body = new JsonObject();
         body.addProperty("userId", userId);
         body.addProperty("deviceName", "d1");
@@ -178,7 +183,7 @@ public class MultitenantAPITest {
                 1000,
                 1000,
                 null,
-                SemVer.v3_0.get(),
+                version.get(),
                 "totp");
         assertEquals("OK", res.get("status").getAsString());
         return res;
@@ -197,8 +202,8 @@ public class MultitenantAPITest {
                 "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/totp/device"),
                 body,
-                1000,
-                1000,
+                1000000,
+                1000000,
                 null,
                 SemVer.v3_0.get(),
                 "totp");
@@ -245,7 +250,23 @@ public class MultitenantAPITest {
     }
 
     @Test
-    public void testCreateDeviceWorksFromPublicTenantOnly() throws Exception {
+    public void testCreateDeviceWorksFromAllTenants() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        int userCount = 1;
+
+        TenantIdentifier[] tenants = new TenantIdentifier[]{t1, t2, t3};
+        for (TenantIdentifier tenantId : tenants) {
+            createDevice(tenantId, "user"+userCount);
+
+            userCount++;
+        }
+    }
+
+    @Test
+    public void testCreateDeviceWorksFromPublicTenantOnly_v5() throws Exception {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
@@ -261,7 +282,7 @@ public class MultitenantAPITest {
         userCount++;
 
         try {
-            createDevice(t2, "user" + userCount);
+            createDevice(t2, "user" + userCount, SemVer.v5_0);
             fail();
         } catch (HttpResponseException e) {
             assertEquals(403, e.statusCode);

@@ -2178,10 +2178,11 @@ public class Start
     }
 
     @Override
-    public HashMap<String, String> getUserIdMappingForSuperTokensIds(ArrayList<String> userIds)
+    public HashMap<String, String> getUserIdMappingForSuperTokensIds(AppIdentifier appIdentifier,
+                                                                     ArrayList<String> userIds)
             throws StorageQueryException {
         try {
-            return UserIdMappingQueries.getUserIdMappingWithUserIds(this, userIds);
+            return UserIdMappingQueries.getUserIdMappingWithUserIds(this, appIdentifier, userIds);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
