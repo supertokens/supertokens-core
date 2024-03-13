@@ -918,9 +918,8 @@ public class AuthRecipe {
         StorageUtils.getUserRolesStorage(storage)
                 .deleteAllRolesForUser_Transaction(con, appIdentifier, userId);
 
-        // FIXME
-        // StorageUtils.getActiveUsersStorage(storage)
-        //         .deleteUserActive_Transaction(con, appIdentifier, userId);
+        StorageUtils.getActiveUsersStorage(storage)
+                .deleteUserActive_Transaction(con, appIdentifier, userId);
         StorageUtils.getTOTPStorage(storage)
                 .removeUser_Transaction(con, appIdentifier, userId);
     }
