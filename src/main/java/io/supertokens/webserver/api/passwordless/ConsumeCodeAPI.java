@@ -122,6 +122,22 @@ public class ConsumeCodeAPI extends WebserverAPI {
                 }
             }
 
+            if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_0)) {
+                JsonObject jsonDevice = new JsonObject();
+                jsonDevice.addProperty("preAuthSessionId", consumeCodeResponse.consumedDevice.deviceIdHash);
+                jsonDevice.addProperty("failedCodeInputAttemptCount", consumeCodeResponse.consumedDevice.failedAttempts);
+
+                if (consumeCodeResponse.consumedDevice.email != null) {
+                    jsonDevice.addProperty("email", consumeCodeResponse.consumedDevice.email);
+                }
+
+                if (consumeCodeResponse.consumedDevice.phoneNumber != null) {
+                    jsonDevice.addProperty("phoneNumber", consumeCodeResponse.consumedDevice.phoneNumber);
+                }
+
+                result.add("consumedDevice", jsonDevice);
+            }
+
             super.sendJsonResponse(200, result, resp);
         } catch (RestartFlowException ex) {
             JsonObject result = new JsonObject();
