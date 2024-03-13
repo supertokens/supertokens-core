@@ -645,7 +645,7 @@ public class LinkAccountsTest {
 
         assertEquals(ActiveUsers.countUsersActiveSince(process.main, 0), 1);
         assertEquals(ActiveUsers.countUsersActiveSince(process.main, secondUserTime), 1);
-        assertEquals(ActiveUsers.countUsersActiveSince(process.main, createPrimaryTime), 0);
+        assertEquals(ActiveUsers.countUsersActiveSince(process.main, createPrimaryTime), 1); // 1 since we update user last active while linking
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -686,7 +686,7 @@ public class LinkAccountsTest {
 
         assertEquals(ActiveUsers.countUsersActiveSince(process.main, 0), 1);
         assertEquals(ActiveUsers.countUsersActiveSince(process.main, secondUserTime), 1);
-        assertEquals(ActiveUsers.countUsersActiveSince(process.main, createPrimaryTime), 0);
+        assertEquals(ActiveUsers.countUsersActiveSince(process.main, createPrimaryTime), 1); // 1 since we update user last active while linking
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

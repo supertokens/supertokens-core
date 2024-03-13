@@ -27,7 +27,6 @@ import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.*;
-import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
@@ -48,6 +47,7 @@ import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nullable;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 /*This files contains functions that are common for all auth recipes*/
 
@@ -336,8 +336,9 @@ public class AuthRecipe {
         }
 
         AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
-        ActiveUsersSQLStorage activeUsersStorage = (ActiveUsersSQLStorage) StorageUtils.getActiveUsersStorage(storage);
         try {
+            AtomicReference<String> primaryUserId = new AtomicReference<>();
+            AtomicReference<String> recipeUserId = new AtomicReference<>();
             LinkAccountsResult result = authRecipeStorage.startTransaction(con -> {
 
                 try {
@@ -352,15 +353,11 @@ public class AuthRecipe {
                     authRecipeStorage.linkAccounts_Transaction(appIdentifier, con, canLinkAccounts.recipeUserId,
                             canLinkAccounts.primaryUserId);
 
-                    long recipeUserLastActive = activeUsersStorage.getLastActiveByUserId_Transaction(con, appIdentifier, canLinkAccounts.recipeUserId);
-                    long primaryUserLastActive = activeUsersStorage.getLastActiveByUserId_Transaction(con, appIdentifier, canLinkAccounts.primaryUserId);
-
-                    if (primaryUserLastActive < recipeUserLastActive) {
-                        activeUsersStorage.setUserActive_Transaction(con, appIdentifier, canLinkAccounts.primaryUserId, recipeUserLastActive);
-                    }
-                    activeUsersStorage.deleteUserActive_Transaction(con, appIdentifier, canLinkAccounts.recipeUserId);
-
                     authRecipeStorage.commitTransaction(con);
+
+                    // for update last active operation later
+                    primaryUserId.set(canLinkAccounts.primaryUserId);
+                    recipeUserId.set(canLinkAccounts.recipeUserId);
 
                     return new LinkAccountsResult(getUserById(appIdentifier, authRecipeStorage, canLinkAccounts.primaryUserId), false);
                 } catch (UnknownUserIdException | InputUserIdIsNotAPrimaryUserException |
@@ -369,6 +366,15 @@ public class AuthRecipe {
                     throw new StorageTransactionLogicException(e);
                 }
             });
+
+            if (!result.wasAlreadyLinked) {
+                try {
+                    ActiveUsers.updateLastActiveAfterLinking(
+                            main, appIdentifier, primaryUserId.get(), recipeUserId.get());
+                } catch (Exception e) {
+                    // ignore
+                }
+            }
 
             if (!result.wasAlreadyLinked) {
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping mappingResult =
