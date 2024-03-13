@@ -337,10 +337,7 @@ public class AuthRecipe {
 
         AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
         try {
-            AtomicReference<String> primaryUserId = new AtomicReference<>();
-            AtomicReference<String> recipeUserId = new AtomicReference<>();
             LinkAccountsResult result = authRecipeStorage.startTransaction(con -> {
-
                 try {
                     CanLinkAccountsResult canLinkAccounts = canLinkAccountsHelper(con, appIdentifier,
                             authRecipeStorage, _recipeUserId, _primaryUserId);
@@ -355,10 +352,6 @@ public class AuthRecipe {
 
                     authRecipeStorage.commitTransaction(con);
 
-                    // for update last active operation later
-                    primaryUserId.set(canLinkAccounts.primaryUserId);
-                    recipeUserId.set(canLinkAccounts.recipeUserId);
-
                     return new LinkAccountsResult(getUserById(appIdentifier, authRecipeStorage, canLinkAccounts.primaryUserId), false);
                 } catch (UnknownUserIdException | InputUserIdIsNotAPrimaryUserException |
                          RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException |
@@ -366,15 +359,6 @@ public class AuthRecipe {
                     throw new StorageTransactionLogicException(e);
                 }
             });
-
-            if (!result.wasAlreadyLinked) {
-                try {
-                    ActiveUsers.updateLastActiveAfterLinking(
-                            main, appIdentifier, primaryUserId.get(), recipeUserId.get());
-                } catch (Exception e) {
-                    // ignore
-                }
-            }
 
             if (!result.wasAlreadyLinked) {
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping mappingResult =

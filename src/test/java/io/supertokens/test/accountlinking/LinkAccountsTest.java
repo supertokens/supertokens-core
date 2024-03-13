@@ -38,7 +38,9 @@ import io.supertokens.session.Session;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.thirdparty.ThirdParty;
+import io.supertokens.webserver.WebserverAPI;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -641,7 +643,17 @@ public class LinkAccountsTest {
 
         assertEquals(ActiveUsers.countUsersActiveSince(process.main, 0), 2);
 
-        AuthRecipe.linkAccounts(process.main, user2.getSupertokensUserId(), user.getSupertokensUserId());
+        {
+            JsonObject params = new JsonObject();
+            params.addProperty("recipeUserId", user2.getSupertokensUserId());
+            params.addProperty("primaryUserId", user.getSupertokensUserId());
+
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/accountlinking/user/link", params, 1000, 1000, null,
+                    WebserverAPI.getLatestCDIVersion().get(), "");
+            assertEquals(3, response.entrySet().size());
+            assertEquals("OK", response.get("status").getAsString());
+        }
 
         assertEquals(ActiveUsers.countUsersActiveSince(process.main, 0), 1);
         assertEquals(ActiveUsers.countUsersActiveSince(process.main, secondUserTime), 1);
@@ -682,7 +694,17 @@ public class LinkAccountsTest {
 
         assertEquals(ActiveUsers.countUsersActiveSince(process.main, 0), 2);
 
-        AuthRecipe.linkAccounts(process.main, user.getSupertokensUserId(), user2.getSupertokensUserId());
+        {
+            JsonObject params = new JsonObject();
+            params.addProperty("recipeUserId", user.getSupertokensUserId());
+            params.addProperty("primaryUserId", user2.getSupertokensUserId());
+
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/accountlinking/user/link", params, 1000, 1000, null,
+                    WebserverAPI.getLatestCDIVersion().get(), "");
+            assertEquals(3, response.entrySet().size());
+            assertEquals("OK", response.get("status").getAsString());
+        }
 
         assertEquals(ActiveUsers.countUsersActiveSince(process.main, 0), 1);
         assertEquals(ActiveUsers.countUsersActiveSince(process.main, secondUserTime), 1);
