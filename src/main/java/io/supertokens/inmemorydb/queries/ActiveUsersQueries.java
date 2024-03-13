@@ -78,22 +78,6 @@ public class ActiveUsersQueries {
         });
     }
 
-    public static Long getLastActiveByUserId_Transaction(Connection con, Start start, AppIdentifier appIdentifier, String userId)
-            throws StorageQueryException, SQLException {
-        String QUERY = "SELECT last_active_time FROM " + Config.getConfig(start).getUserLastActiveTable()
-                + " WHERE app_id = ? AND user_id = ?";
-
-        return execute(con, QUERY, pst -> {
-            pst.setString(1, appIdentifier.getAppId());
-            pst.setString(2, userId);
-        }, res -> {
-            if (res.next()) {
-                return res.getLong("last_active_time");
-            }
-            return null;
-        });
-    }
-
     public static void deleteUserActive_Transaction(Connection con, Start start, AppIdentifier appIdentifier,
                                                     String userId)
             throws StorageQueryException, SQLException {
@@ -106,21 +90,6 @@ public class ActiveUsersQueries {
         });
     }
 
-    public static void setUserActive_Transaction(Connection con, Start start, AppIdentifier appIdentifier,
-                                                    String userId, long timestamp)
-            throws StorageQueryException, SQLException {
-        String QUERY = "INSERT INTO " + Config.getConfig(start).getUserLastActiveTable()
-                +
-                "(app_id, user_id, last_active_time) VALUES(?, ?, ?) ON CONFLICT(app_id, user_id) DO UPDATE SET " +
-                "last_active_time = ?";
-
-        update(con, QUERY, pst -> {
-            pst.setString(1, appIdentifier.getAppId());
-            pst.setString(2, userId);
-            pst.setLong(3, timestamp);
-            pst.setLong(4, timestamp);
-        });
-    }
     public static int countUsersThatHaveMoreThanOneLoginMethodOrTOTPEnabledAndActiveSince(Start start, AppIdentifier appIdentifier, long sinceTime)
             throws SQLException, StorageQueryException {
         // TODO: Active users are present only on public tenant and MFA users may be present on different storages
