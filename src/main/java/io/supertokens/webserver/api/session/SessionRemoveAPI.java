@@ -21,9 +21,15 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
+import io.supertokens.StorageAndUserIdMapping;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.session.Session;
@@ -36,6 +42,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class SessionRemoveAPI extends WebserverAPI {
     private static final long serialVersionUID = -2082970815993229316L;
@@ -51,7 +61,7 @@ public class SessionRemoveAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        // API is tenant specific. also operates on all tenants in an app if `revokeAcrossAllTenants` is set to true
+        // API is tenant specific, but ignores tenantId from the request if revoking from all tenants
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
         String userId = InputParser.parseStringOrThrowError(input, "userId", true);
@@ -98,28 +108,45 @@ public class SessionRemoveAPI extends WebserverAPI {
         }
 
         if (userId != null) {
+            Storage storage = null;
             try {
                 String[] sessionHandlesRevoked;
+
                 if (revokeAcrossAllTenants) {
+                    // when revokeAcrossAllTenants is true, and given that the backend SDK might pass tenant id
+                    // we do not want to enforce public tenant here but behave as if this is an app specific API
+                    // So instead of calling enforcePublicTenantAndGetAllStoragesForApp, we simply do all the logic
+                    // here to fetch the storages and find the storage where `userId` exists. If user id does not
+                    // exist, we use the storage for the tenantId passed in the request.
+                    AppIdentifier appIdentifier = getAppIdentifier(req);
+                    Storage[] storages = StorageLayer.getStoragesForApp(main, appIdentifier);
+                    try {
+                        StorageAndUserIdMapping storageAndUserIdMapping = StorageLayer.findStorageAndUserIdMappingForUser(
+                                appIdentifier, storages, userId, UserIdType.ANY);
+                        storage = storageAndUserIdMapping.storage;
+                    } catch (UnknownUserIdException e) {
+                        storage = getTenantStorage(req);
+                    }
                     sessionHandlesRevoked = Session.revokeAllSessionsForUser(
-                            main, this.getAppIdentifierWithStorage(req), userId, revokeSessionsForLinkedAccounts);
+                            main, appIdentifier, storage, userId, revokeSessionsForLinkedAccounts);
                 } else {
+                    TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+                    storage = getTenantStorage(req);
+
                     sessionHandlesRevoked = Session.revokeAllSessionsForUser(
-                            main, this.getTenantIdentifierWithStorageFromRequest(req), userId,
-                            revokeSessionsForLinkedAccounts);
+                            main, tenantIdentifier, storage, userId, revokeSessionsForLinkedAccounts);
                 }
 
-                if (StorageLayer.getStorage(this.getTenantIdentifierWithStorageFromRequest(req), main).getType() ==
-                        STORAGE_TYPE.SQL) {
+                if (storage.getType() == STORAGE_TYPE.SQL) {
                     try {
+                        AppIdentifier appIdentifier = getAppIdentifier(req);
                         UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                                this.getAppIdentifierWithStorage(req),
-                                userId, UserIdType.ANY);
+                                appIdentifier, storage, userId, UserIdType.ANY);
                         if (userIdMapping != null) {
-                            ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main,
+                            ActiveUsers.updateLastActive(appIdentifier, main,
                                     userIdMapping.superTokensUserId);
                         } else {
-                            ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main, userId);
+                            ActiveUsers.updateLastActive(appIdentifier, main, userId);
                         }
                     } catch (StorageQueryException ignored) {
                     }
@@ -137,12 +164,34 @@ public class SessionRemoveAPI extends WebserverAPI {
             }
         } else {
             try {
-                String[] sessionHandlesRevoked = Session.revokeSessionUsingSessionHandles(main,
-                        this.getAppIdentifierWithStorage(req), sessionHandles);
+                AppIdentifier appIdentifier = getAppIdentifier(req);
+                Map<String, List<String>> sessionHandlesByTenantId = new HashMap<>();
+
+                for (String sessionHandle : sessionHandles) {
+                    String tenantId = Session.getTenantIdFromSessionHandle(sessionHandle);
+                    if (!sessionHandlesByTenantId.containsKey(tenantId)) {
+                        sessionHandlesByTenantId.put(tenantId, new ArrayList<>());
+                    }
+                    sessionHandlesByTenantId.get(tenantId).add(sessionHandle);
+                }
+                List<String> allSessionHandlesRevoked = new ArrayList<>();
+                for (Map.Entry<String, List<String>> entry : sessionHandlesByTenantId.entrySet()) {
+                    String tenantId = entry.getKey();
+                    List<String> sessionHandlesForTenant = entry.getValue();
+                    Storage storage = StorageLayer.getStorage(
+                            new TenantIdentifier(
+                                    appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(), tenantId),
+                            main);
+
+                    String[] sessionHandlesRevoked = Session.revokeSessionUsingSessionHandles(main,
+                            appIdentifier, storage, sessionHandlesForTenant.toArray(new String[0]));
+                    allSessionHandlesRevoked.addAll(List.of(sessionHandlesRevoked));
+                }
+
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
                 JsonArray sessionHandlesRevokedJSON = new JsonArray();
-                for (String sessionHandle : sessionHandlesRevoked) {
+                for (String sessionHandle : allSessionHandlesRevoked) {
                     sessionHandlesRevokedJSON.add(new JsonPrimitive(sessionHandle));
                 }
                 result.add("sessionHandlesRevoked", sessionHandlesRevokedJSON);

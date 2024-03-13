@@ -20,7 +20,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.ProcessState;
 import io.supertokens.ProcessState.PROCESS_STATE;
-import io.supertokens.config.Config;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
@@ -51,7 +50,6 @@ import org.junit.rules.TestRule;
 import org.mockito.Mockito;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 
 import static org.junit.Assert.*;
@@ -138,9 +136,13 @@ public class PathRouterTest extends Mockito {
                 @Override
                 protected void doGet(HttpServletRequest req, HttpServletResponse resp)
                         throws IOException, ServletException {
-                    super.sendTextResponse(200,
-                            this.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
-                                    this.getTenantIdentifierFromRequest(req).getTenantId(), resp);
+                    try {
+                        super.sendTextResponse(200,
+                                this.getTenantIdentifier(req).getConnectionUriDomain() + "," +
+                                        this.getTenantIdentifier(req).getTenantId(), resp);
+                    } catch (TenantOrAppNotFoundException e) {
+                        throw new ServletException(e);
+                    }
                 }
             });
         }
@@ -309,9 +311,13 @@ public class PathRouterTest extends Mockito {
                 @Override
                 protected void doGet(HttpServletRequest req, HttpServletResponse resp)
                         throws IOException, ServletException {
-                    super.sendTextResponse(200,
-                            this.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
-                                    this.getTenantIdentifierFromRequest(req).getTenantId(), resp);
+                    try {
+                        super.sendTextResponse(200,
+                                this.getTenantIdentifier(req).getConnectionUriDomain() + "," +
+                                        this.getTenantIdentifier(req).getTenantId(), resp);
+                    } catch (TenantOrAppNotFoundException e) {
+                        throw new ServletException(e);
+                    }
                 }
             });
         }
@@ -481,9 +487,13 @@ public class PathRouterTest extends Mockito {
                 @Override
                 protected void doGet(HttpServletRequest req, HttpServletResponse resp)
                         throws IOException, ServletException {
-                    super.sendTextResponse(200,
-                            this.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
-                                    this.getTenantIdentifierFromRequest(req).getTenantId(), resp);
+                    try {
+                        super.sendTextResponse(200,
+                                this.getTenantIdentifier(req).getConnectionUriDomain() + "," +
+                                        this.getTenantIdentifier(req).getTenantId(), resp);
+                    } catch (TenantOrAppNotFoundException e) {
+                        throw new ServletException(e);
+                    }
                 }
             });
         }
@@ -664,9 +674,13 @@ public class PathRouterTest extends Mockito {
                 @Override
                 protected void doGet(HttpServletRequest req, HttpServletResponse resp)
                         throws IOException, ServletException {
-                    super.sendTextResponse(200,
-                            this.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
-                                    this.getTenantIdentifierFromRequest(req).getTenantId(), resp);
+                    try {
+                        super.sendTextResponse(200,
+                                this.getTenantIdentifier(req).getConnectionUriDomain() + "," +
+                                        this.getTenantIdentifier(req).getTenantId(), resp);
+                    } catch (TenantOrAppNotFoundException e) {
+                        throw new ServletException(e);
+                    }
                 }
             });
         }
@@ -847,9 +861,13 @@ public class PathRouterTest extends Mockito {
                 @Override
                 protected void doGet(HttpServletRequest req, HttpServletResponse resp)
                         throws IOException, ServletException {
-                    super.sendTextResponse(200,
-                            this.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
-                                    this.getTenantIdentifierFromRequest(req).getTenantId(), resp);
+                    try {
+                        super.sendTextResponse(200,
+                                this.getTenantIdentifier(req).getConnectionUriDomain() + "," +
+                                        this.getTenantIdentifier(req).getTenantId(), resp);
+                    } catch (TenantOrAppNotFoundException e) {
+                        throw new ServletException(e);
+                    }
                 }
             });
         }
@@ -1012,11 +1030,15 @@ public class PathRouterTest extends Mockito {
                     @Override
                     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
                             throws IOException, ServletException {
-                        super.sendTextResponse(200,
-                                this.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
-                                        this.getTenantIdentifierFromRequest(req).getTenantId() +
-                                        ",",
-                                resp);
+                        try {
+                            super.sendTextResponse(200,
+                                    this.getTenantIdentifier(req).getConnectionUriDomain() + "," +
+                                            this.getTenantIdentifier(req).getTenantId() +
+                                            ",",
+                                    resp);
+                        } catch (TenantOrAppNotFoundException e) {
+                            throw new ServletException(e);
+                        }
                     }
                 }, new WebserverAPI(process.getProcess(), "r1") {
 
@@ -1035,11 +1057,15 @@ public class PathRouterTest extends Mockito {
                     @Override
                     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
                             throws IOException, ServletException {
-                        super.sendTextResponse(200,
-                                this.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
-                                        this.getTenantIdentifierFromRequest(req).getTenantId() +
-                                        ",r1",
-                                resp);
+                        try {
+                            super.sendTextResponse(200,
+                                    this.getTenantIdentifier(req).getConnectionUriDomain() + "," +
+                                            this.getTenantIdentifier(req).getTenantId() +
+                                            ",r1",
+                                    resp);
+                        } catch (TenantOrAppNotFoundException e) {
+                            throw new ServletException(e);
+                        }
                     }
                 }));
 
@@ -1060,9 +1086,13 @@ public class PathRouterTest extends Mockito {
             @Override
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException,
                     ServletException {
-                super.sendTextResponse(200,
-                        this.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
-                                this.getTenantIdentifierFromRequest(req).getTenantId(), resp);
+                try {
+                    super.sendTextResponse(200,
+                            this.getTenantIdentifier(req).getConnectionUriDomain() + "," +
+                                    this.getTenantIdentifier(req).getTenantId(), resp);
+                } catch (TenantOrAppNotFoundException e) {
+                    throw new ServletException(e);
+                }
             }
         });
 
@@ -1130,11 +1160,15 @@ public class PathRouterTest extends Mockito {
                     @Override
                     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
                             throws IOException, ServletException {
-                        super.sendTextResponse(200,
-                                this.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
-                                        this.getTenantIdentifierFromRequest(req).getTenantId() +
-                                        ",",
-                                resp);
+                        try {
+                            super.sendTextResponse(200,
+                                    this.getTenantIdentifier(req).getConnectionUriDomain() + "," +
+                                            this.getTenantIdentifier(req).getTenantId() +
+                                            ",",
+                                    resp);
+                        } catch (TenantOrAppNotFoundException e) {
+                            throw new ServletException(e);
+                        }
                     }
                 }));
 
@@ -1156,9 +1190,13 @@ public class PathRouterTest extends Mockito {
                 @Override
                 protected void doGet(HttpServletRequest req, HttpServletResponse resp)
                         throws IOException, ServletException {
-                    super.sendTextResponse(200,
-                            this.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
-                                    this.getTenantIdentifierFromRequest(req).getTenantId(), resp);
+                    try {
+                        super.sendTextResponse(200,
+                                this.getTenantIdentifier(req).getConnectionUriDomain() + "," +
+                                        this.getTenantIdentifier(req).getTenantId(), resp);
+                    } catch (TenantOrAppNotFoundException e) {
+                        throw new ServletException(e);
+                    }
                 }
             });
             fail();
@@ -1195,10 +1233,14 @@ public class PathRouterTest extends Mockito {
                         @Override
                         protected void doGet(HttpServletRequest req, HttpServletResponse resp)
                                 throws IOException, ServletException {
-                            super.sendTextResponse(200,
-                                    this.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
-                                            this.getTenantIdentifierFromRequest(req).getTenantId() + ",",
-                                    resp);
+                            try {
+                                super.sendTextResponse(200,
+                                        this.getTenantIdentifier(req).getConnectionUriDomain() + "," +
+                                                this.getTenantIdentifier(req).getTenantId() + ",",
+                                        resp);
+                            } catch (TenantOrAppNotFoundException e) {
+                                throw new ServletException(e);
+                            }
                         }
                     }, new WebserverAPI(process.getProcess(), "r1") {
 
@@ -1217,10 +1259,14 @@ public class PathRouterTest extends Mockito {
                         @Override
                         protected void doGet(HttpServletRequest req, HttpServletResponse resp)
                                 throws IOException, ServletException {
-                            super.sendTextResponse(200,
-                                    this.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
-                                            this.getTenantIdentifierFromRequest(req).getTenantId() + ",r1",
-                                    resp);
+                            try {
+                                super.sendTextResponse(200,
+                                        this.getTenantIdentifier(req).getConnectionUriDomain() + "," +
+                                                this.getTenantIdentifier(req).getTenantId() + ",r1",
+                                        resp);
+                            } catch (TenantOrAppNotFoundException e) {
+                                throw new ServletException(e);
+                            }
                         }
                     }));
             fail();
@@ -1247,10 +1293,14 @@ public class PathRouterTest extends Mockito {
                         @Override
                         protected void doGet(HttpServletRequest req, HttpServletResponse resp)
                                 throws IOException, ServletException {
-                            super.sendTextResponse(200,
-                                    this.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
-                                            this.getTenantIdentifierFromRequest(req).getTenantId() + ",",
-                                    resp);
+                            try {
+                                super.sendTextResponse(200,
+                                        this.getTenantIdentifier(req).getConnectionUriDomain() + "," +
+                                                this.getTenantIdentifier(req).getTenantId() + ",",
+                                        resp);
+                            } catch (TenantOrAppNotFoundException e) {
+                                throw new ServletException(e);
+                            }
                         }
                     }, new WebserverAPI(process.getProcess(), "r1") {
 
@@ -1269,10 +1319,14 @@ public class PathRouterTest extends Mockito {
                         @Override
                         protected void doGet(HttpServletRequest req, HttpServletResponse resp)
                                 throws IOException, ServletException {
-                            super.sendTextResponse(200,
-                                    this.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
-                                            this.getTenantIdentifierFromRequest(req).getTenantId() + ",r1",
-                                    resp);
+                            try {
+                                super.sendTextResponse(200,
+                                        this.getTenantIdentifier(req).getConnectionUriDomain() + "," +
+                                                this.getTenantIdentifier(req).getTenantId() + ",r1",
+                                        resp);
+                            } catch (TenantOrAppNotFoundException e) {
+                                throw new ServletException(e);
+                            }
                         }
                     }));
             fail();
@@ -1360,8 +1414,12 @@ public class PathRouterTest extends Mockito {
             @Override
             protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException,
                     ServletException {
-                super.sendTextResponse(200, super.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
-                        this.getTenantIdentifierFromRequest(req).getTenantId(), resp);
+                try {
+                    super.sendTextResponse(200, super.getTenantIdentifier(req).getConnectionUriDomain() + "," +
+                            this.getTenantIdentifier(req).getTenantId(), resp);
+                } catch (TenantOrAppNotFoundException e) {
+                    throw new ServletException(e);
+                }
             }
         });
 
@@ -1473,9 +1531,13 @@ public class PathRouterTest extends Mockito {
             @Override
             protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException,
                     ServletException {
-                super.sendTextResponse(200, super.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
-                                this.getTenantIdentifierFromRequest(req).getTenantId(),
-                        resp);
+                try {
+                    super.sendTextResponse(200, super.getTenantIdentifier(req).getConnectionUriDomain() + "," +
+                                    this.getTenantIdentifier(req).getTenantId(),
+                            resp);
+                } catch (TenantOrAppNotFoundException e) {
+                    throw new ServletException(e);
+                }
             }
         });
 
@@ -1589,9 +1651,13 @@ public class PathRouterTest extends Mockito {
             @Override
             protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException,
                     ServletException {
-                super.sendTextResponse(200, super.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
-                                this.getTenantIdentifierFromRequest(req).getTenantId(),
-                        resp);
+                try {
+                    super.sendTextResponse(200, super.getTenantIdentifier(req).getConnectionUriDomain() + "," +
+                                    this.getTenantIdentifier(req).getTenantId(),
+                            resp);
+                } catch (TenantOrAppNotFoundException e) {
+                    throw new ServletException(e);
+                }
             }
         });
 
@@ -1728,10 +1794,14 @@ public class PathRouterTest extends Mockito {
                 @Override
                 protected void doGet(HttpServletRequest req, HttpServletResponse resp)
                         throws IOException, ServletException {
-                    super.sendTextResponse(200,
-                            this.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
-                                    this.getTenantIdentifierFromRequest(req).getAppId() + "," +
-                                    this.getTenantIdentifierFromRequest(req).getTenantId(), resp);
+                    try {
+                        super.sendTextResponse(200,
+                                this.getTenantIdentifier(req).getConnectionUriDomain() + "," +
+                                        this.getTenantIdentifier(req).getAppId() + "," +
+                                        this.getTenantIdentifier(req).getTenantId(), resp);
+                    } catch (TenantOrAppNotFoundException e) {
+                        throw new ServletException(e);
+                    }
                 }
             });
         }
@@ -2029,10 +2099,14 @@ public class PathRouterTest extends Mockito {
                 @Override
                 protected void doGet(HttpServletRequest req, HttpServletResponse resp)
                         throws IOException, ServletException {
-                    super.sendTextResponse(200,
-                            this.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
-                                    this.getTenantIdentifierFromRequest(req).getAppId() + "," +
-                                    this.getTenantIdentifierFromRequest(req).getTenantId(), resp);
+                    try {
+                        super.sendTextResponse(200,
+                                this.getTenantIdentifier(req).getConnectionUriDomain() + "," +
+                                        this.getTenantIdentifier(req).getAppId() + "," +
+                                        this.getTenantIdentifier(req).getTenantId(), resp);
+                    } catch (TenantOrAppNotFoundException e) {
+                        throw new ServletException(e);
+                    }
                 }
             });
         }
@@ -2314,10 +2388,14 @@ public class PathRouterTest extends Mockito {
                 @Override
                 protected void doGet(HttpServletRequest req, HttpServletResponse resp)
                         throws IOException, ServletException {
-                    super.sendTextResponse(200,
-                            this.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
-                                    this.getTenantIdentifierFromRequest(req).getAppId() + "," +
-                                    this.getTenantIdentifierFromRequest(req).getTenantId(), resp);
+                    try {
+                        super.sendTextResponse(200,
+                                this.getTenantIdentifier(req).getConnectionUriDomain() + "," +
+                                        this.getTenantIdentifier(req).getAppId() + "," +
+                                        this.getTenantIdentifier(req).getTenantId(), resp);
+                    } catch (TenantOrAppNotFoundException e) {
+                        throw new ServletException(e);
+                    }
                 }
             });
         }
@@ -2561,10 +2639,14 @@ public class PathRouterTest extends Mockito {
             @Override
             protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException,
                     ServletException {
-                super.sendTextResponse(200, super.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
-                                this.getTenantIdentifierFromRequest(req).getAppId() + "," +
-                                this.getTenantIdentifierFromRequest(req).getTenantId(),
-                        resp);
+                try {
+                    super.sendTextResponse(200, super.getTenantIdentifier(req).getConnectionUriDomain() + "," +
+                                    this.getTenantIdentifier(req).getAppId() + "," +
+                                    this.getTenantIdentifier(req).getTenantId(),
+                            resp);
+                } catch (TenantOrAppNotFoundException e) {
+                    throw new ServletException(e);
+                }
             }
         });
 
@@ -2710,10 +2792,14 @@ public class PathRouterTest extends Mockito {
             @Override
             protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException,
                     ServletException {
-                super.sendTextResponse(200, super.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
-                                this.getTenantIdentifierFromRequest(req).getAppId() + "," +
-                                this.getTenantIdentifierFromRequest(req).getTenantId(),
-                        resp);
+                try {
+                    super.sendTextResponse(200, super.getTenantIdentifier(req).getConnectionUriDomain() + "," +
+                                    this.getTenantIdentifier(req).getAppId() + "," +
+                                    this.getTenantIdentifier(req).getTenantId(),
+                            resp);
+                } catch (TenantOrAppNotFoundException e) {
+                    throw new ServletException(e);
+                }
             }
         });
 
@@ -2857,10 +2943,14 @@ public class PathRouterTest extends Mockito {
             @Override
             protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException,
                     ServletException {
-                super.sendTextResponse(200, super.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
-                                this.getTenantIdentifierFromRequest(req).getAppId() + "," +
-                                this.getTenantIdentifierFromRequest(req).getTenantId(),
-                        resp);
+                try {
+                    super.sendTextResponse(200, super.getTenantIdentifier(req).getConnectionUriDomain() + "," +
+                                    this.getTenantIdentifier(req).getAppId() + "," +
+                                    this.getTenantIdentifier(req).getTenantId(),
+                            resp);
+                } catch (TenantOrAppNotFoundException e) {
+                    throw new ServletException(e);
+                }
             }
         });
 

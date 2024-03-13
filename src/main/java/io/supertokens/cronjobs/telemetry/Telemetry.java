@@ -16,18 +16,23 @@
 
 package io.supertokens.cronjobs.telemetry;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
+import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.config.Config;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
+import io.supertokens.dashboard.Dashboard;
 import io.supertokens.httpRequest.HttpRequest;
 import io.supertokens.httpRequest.HttpRequestMocking;
 import io.supertokens.pluginInterface.ActiveUsersStorage;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.dashboard.DashboardUser;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
@@ -90,14 +95,51 @@ public class Telemetry extends CronTask {
         json.addProperty("telemetryId", telemetryId.value);
         json.addProperty("superTokensVersion", coreVersion);
 
-        if (StorageLayer.getBaseStorage(main).getType() == STORAGE_TYPE.SQL) {
-            ActiveUsersStorage activeUsersStorage = (ActiveUsersStorage) StorageLayer.getStorage(app.getAsPublicTenantIdentifier(), main);
-            json.addProperty("mau", activeUsersStorage.countUsersActiveSince(app, System.currentTimeMillis() - 30 * 24 * 3600 * 1000L));
-        } else {
-            json.addProperty("mau", -1);
-        }
         json.addProperty("appId", app.getAppId());
         json.addProperty("connectionUriDomain", app.getConnectionUriDomain());
+
+        if (StorageLayer.getBaseStorage(main).getType() == STORAGE_TYPE.SQL) {
+            { // Users count across all tenants
+                Storage[] storages = StorageLayer.getStoragesForApp(main, app);
+
+                json.addProperty("usersCount",
+                        AuthRecipe.getUsersCountAcrossAllTenants(app, storages, null));
+            }
+
+            { // Dashboard user emails
+                // Dashboard APIs are app specific and are always stored on the public tenant
+                DashboardUser[] dashboardUsers = Dashboard.getAllDashboardUsers(
+                        app, StorageLayer.getStorage(app.getAsPublicTenantIdentifier(), main), main);
+                JsonArray dashboardUserEmails = new JsonArray();
+                for (DashboardUser user : dashboardUsers) {
+                    dashboardUserEmails.add(new JsonPrimitive(user.email));
+                }
+
+                json.add("dashboardUserEmails", dashboardUserEmails);
+            }
+
+            { // MAUs
+                // Active users are always tracked on the public tenant, so we use the public tenant's storage
+                ActiveUsersStorage activeUsersStorage = (ActiveUsersStorage) StorageLayer.getStorage(
+                        app.getAsPublicTenantIdentifier(), main);
+
+                JsonArray mauArr = new JsonArray();
+
+                long now = System.currentTimeMillis();
+
+                for (int i = 1; i <= 31; i++) {
+                    long timestamp = now - (i * 24 * 60 * 60 * 1000L);
+                    int mau = activeUsersStorage.countUsersActiveSince(app, timestamp);
+                    mauArr.add(new JsonPrimitive(mau));
+                }
+
+                json.add("maus", mauArr);
+            }
+        } else {
+            json.addProperty("usersCount", -1);
+            json.add("dashboardUserEmails", new JsonArray());
+            json.add("maus", new JsonArray());
+        }
 
         String url = "https://api.supertokens.io/0/st/telemetry";
 
@@ -105,7 +147,7 @@ public class Telemetry extends CronTask {
         // wants
         // to use this)
         if (!Main.isTesting || HttpRequestMocking.getInstance(main).getMockURL(REQUEST_ID, url) != null) {
-            HttpRequest.sendJsonPOSTRequest(main, REQUEST_ID, url, json, 10000, 10000, 4);
+            HttpRequest.sendJsonPOSTRequest(main, REQUEST_ID, url, json, 10000, 10000, 5);
             ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.SENT_TELEMETRY, null);
         }
     }

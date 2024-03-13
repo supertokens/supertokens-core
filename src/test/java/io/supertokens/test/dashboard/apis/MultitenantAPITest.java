@@ -26,6 +26,7 @@ import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
@@ -169,9 +170,10 @@ public class MultitenantAPITest {
         String email = "test@example.com";
         String password = "testPass123";
 
-        AppIdentifierWithStorage appIdentifierWithStorage = t1.toAppIdentifier().withStorage(
+        Storage appIdentifierStorage = (
                 StorageLayer.getStorage(t1, process.getProcess()));
-        Dashboard.signUpDashboardUser(appIdentifierWithStorage, process.getProcess(), email, password);
+        Dashboard.signUpDashboardUser(t1.toAppIdentifier(), appIdentifierStorage, process.getProcess(), email,
+                password);
 
         // create a session
         String sessionId;

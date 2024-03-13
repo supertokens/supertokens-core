@@ -74,8 +74,6 @@ public class UserRolesQueries {
                 + "user_id VARCHAR(128) NOT NULL,"
                 + "role VARCHAR(255) NOT NULL,"
                 + "PRIMARY KEY(app_id, tenant_id, user_id, role),"
-                + "FOREIGN KEY(app_id, role) REFERENCES " + Config.getConfig(start).getRolesTable()
-                + " (app_id, role) ON DELETE CASCADE,"
                 + "FOREIGN KEY(app_id, tenant_id) REFERENCES " + Config.getConfig(start).getTenantsTable()
                 + " (app_id, tenant_id) ON DELETE CASCADE"
                 + ");";
@@ -113,8 +111,9 @@ public class UserRolesQueries {
         });
     }
 
-    public static boolean deleteRole(Start start, AppIdentifier appIdentifier, String role) throws SQLException, StorageQueryException {
-        
+    public static boolean deleteRole(Start start, AppIdentifier appIdentifier,
+                                                 String role) throws SQLException, StorageQueryException {
+
         try {
             return start.startTransaction(con -> {
                 // Row lock must be taken to delete the role, otherwise the table may be locked for delete
@@ -340,5 +339,15 @@ public class UserRolesQueries {
             pst.setString(1, appIdentifier.getAppId());
             pst.setString(2, userId);
         });
+    }
+
+    public static boolean deleteAllUserRoleAssociationsForRole(Start start, AppIdentifier appIdentifier, String role)
+            throws SQLException, StorageQueryException {
+        String QUERY = "DELETE FROM " + getConfig(start).getUserRolesTable()
+                + " WHERE app_id = ? AND role = ? ;";
+        return update(start, QUERY, pst -> {
+            pst.setString(1, appIdentifier.getAppId());
+            pst.setString(2, role);
+        }) >= 1;
     }
 }

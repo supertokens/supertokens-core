@@ -53,13 +53,16 @@ public class RemoveTenantAPI extends WebserverAPI {
         String tenantId = InputParser.parseStringOrThrowError(input, "tenantId", false);
         tenantId = Utils.normalizeAndValidateTenantId(tenantId);
 
+
+
         if (tenantId.equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
             throw new ServletException(new BadPermissionException("Cannot delete public tenant, use remove app API instead"));
         }
 
         try {
-            TenantIdentifier sourceTenantIdentifier = this.getTenantIdentifierWithStorageFromRequest(req);
+            TenantIdentifier sourceTenantIdentifier = this.getTenantIdentifier(req);
 
+            enforcePublicTenantAndGetPublicTenantStorage(req); // Enforce public tenant
             if (!sourceTenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
                 throw new BadPermissionException("Only the public tenantId is allowed to delete a tenant");
             }

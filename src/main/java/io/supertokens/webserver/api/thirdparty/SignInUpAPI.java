@@ -22,13 +22,14 @@ import io.supertokens.Main;
 import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.useridmapping.UserIdMapping;
-import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
@@ -75,13 +76,15 @@ public class SignInUpAPI extends WebserverAPI {
             email = Utils.normaliseEmail(email);
 
             try {
+                TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+                Storage storage = getTenantStorage(req);
                 ThirdParty.SignInUpResponse response = ThirdParty.signInUp2_7(
-                        this.getTenantIdentifierWithStorageFromRequest(req), super.main,
-                        thirdPartyId,
-                        thirdPartyUserId, email, isEmailVerified);
-                UserIdMapping.populateExternalUserIdForUsers(this.getTenantIdentifierWithStorageFromRequest(req), new AuthRecipeUserInfo[]{response.user});
+                        tenantIdentifier, storage,
+                        thirdPartyId, thirdPartyUserId, email, isEmailVerified);
+                UserIdMapping.populateExternalUserIdForUsers(storage, new AuthRecipeUserInfo[]{response.user});
 
-                ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main, response.user.getSupertokensUserId());
+                ActiveUsers.updateLastActive(tenantIdentifier.toAppIdentifier(), main,
+                        response.user.getSupertokensUserId());
 
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
@@ -134,12 +137,15 @@ public class SignInUpAPI extends WebserverAPI {
             email = Utils.normaliseEmail(email);
 
             try {
+                TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+                Storage storage = getTenantStorage(req);
                 ThirdParty.SignInUpResponse response = ThirdParty.signInUp(
-                        this.getTenantIdentifierWithStorageFromRequest(req), super.main, thirdPartyId, thirdPartyUserId,
+                        tenantIdentifier, storage, super.main, thirdPartyId, thirdPartyUserId,
                         email, isEmailVerified);
-                UserIdMapping.populateExternalUserIdForUsers(this.getTenantIdentifierWithStorageFromRequest(req), new AuthRecipeUserInfo[]{response.user});
+                UserIdMapping.populateExternalUserIdForUsers(storage, new AuthRecipeUserInfo[]{response.user});
 
-                ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main, response.user.getSupertokensUserId());
+                ActiveUsers.updateLastActive(tenantIdentifier.toAppIdentifier(), main,
+                        response.user.getSupertokensUserId());
 
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");

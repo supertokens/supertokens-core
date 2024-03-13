@@ -457,7 +457,7 @@ public class CreatePrimaryUserAPITest {
         );
 
         AuthRecipeUserInfo user = EmailPassword.signUp(
-                tenantIdentifier.withStorage(StorageLayer.getStorage(tenantIdentifier, process.main)),
+                tenantIdentifier, StorageLayer.getStorage(tenantIdentifier, process.main),
                 process.getProcess(), "test@example.com", "abcd1234");
 
         JsonObject userObj;
@@ -497,7 +497,8 @@ public class CreatePrimaryUserAPITest {
         }
 
         AuthRecipe.createPrimaryUser(process.main,
-                tenantIdentifier.toAppIdentifier().withStorage(StorageLayer.getStorage(tenantIdentifier, process.main)),
+                tenantIdentifier.toAppIdentifier(), (StorageLayer.getStorage(tenantIdentifier,
+                process.main)),
                 user.getSupertokensUserId());
 
         {

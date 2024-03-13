@@ -17,8 +17,8 @@
 package io.supertokens.webserver.api.multitenancy;
 
 import com.google.gson.JsonObject;
-import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
+import io.supertokens.StorageAndUserIdMapping;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.AnotherPrimaryUserWithEmailAlreadyExistsException;
@@ -28,6 +28,7 @@ import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.passwordless.exception.DuplicatePhoneNumberException;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
@@ -73,14 +74,16 @@ public class AssociateUserToTenantAPI extends WebserverAPI {
         }
 
         try {
-            AppIdentifierWithStorageAndUserIdMapping mappingAndStorage =
-                    getAppIdentifierWithStorageAndUserIdMappingFromRequest(req, userId, UserIdType.ANY);
-            if (mappingAndStorage.userIdMapping != null) {
-                userId = mappingAndStorage.userIdMapping.superTokensUserId;
+            TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+
+            StorageAndUserIdMapping storageAndUserIdMapping = getStorageAndUserIdMappingForTenantSpecificApi(
+                    req, userId, UserIdType.ANY);
+            if (storageAndUserIdMapping.userIdMapping != null) {
+                userId = storageAndUserIdMapping.userIdMapping.superTokensUserId;
             }
 
             boolean addedToTenant = Multitenancy.addUserIdToTenant(main,
-                    getTenantIdentifierWithStorageFromRequest(req), userId);
+                    tenantIdentifier, storageAndUserIdMapping.storage, userId);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

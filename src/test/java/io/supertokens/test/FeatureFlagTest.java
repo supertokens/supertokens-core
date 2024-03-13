@@ -21,10 +21,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.ProcessState;
-import io.supertokens.cronjobs.CronTask;
-import io.supertokens.cronjobs.CronTaskTest;
-import io.supertokens.cronjobs.Cronjobs;
-import io.supertokens.cronjobs.syncCoreConfigWithDb.SyncCoreConfigWithDb;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
@@ -32,9 +28,8 @@ import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.featureflag.exceptions.NoLicenseKeyFoundException;
 import io.supertokens.multitenancy.Multitenancy;
-import io.supertokens.multitenancy.MultitenancyHelper;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -97,7 +92,7 @@ public class FeatureFlagTest {
 
         JsonObject stats = FeatureFlag.getInstance(process.getProcess()).getPaidFeatureStats();
         Assert.assertEquals(stats.entrySet().size(), 1);
-        Assert.assertEquals(stats.get("maus").getAsJsonArray().size(), 30);
+        Assert.assertEquals(stats.get("maus").getAsJsonArray().size(), 31);
         Assert.assertEquals(stats.get("maus").getAsJsonArray().get(0).getAsInt(), 0);
         Assert.assertEquals(stats.get("maus").getAsJsonArray().get(29).getAsInt(), 0);
 
@@ -192,7 +187,7 @@ public class FeatureFlagTest {
                 assert features.size() == 1;
             }
             assert features.contains(new JsonPrimitive("totp"));
-            assert maus.size() == 30;
+            assert maus.size() == 31;
             assert maus.get(0).getAsInt() == 0;
             assert maus.get(29).getAsInt() == 0;
 
@@ -200,7 +195,7 @@ public class FeatureFlagTest {
             JsonArray totpMaus = totpStats.get("maus").getAsJsonArray();
             int totalTotpUsers = totpStats.get("total_users").getAsInt();
 
-            assert totpMaus.size() == 30;
+            assert totpMaus.size() == 31;
             assert totpMaus.get(0).getAsInt() == 0;
             assert totpMaus.get(29).getAsInt() == 0;
 
@@ -251,7 +246,7 @@ public class FeatureFlagTest {
             }
 
             assert features.contains(new JsonPrimitive("totp"));
-            assert maus.size() == 30;
+            assert maus.size() == 31;
             assert maus.get(0).getAsInt() == 2; // 2 users have signed up
             assert maus.get(29).getAsInt() == 2;
 
@@ -259,7 +254,7 @@ public class FeatureFlagTest {
             JsonArray totpMaus = totpStats.get("maus").getAsJsonArray();
             int totalTotpUsers = totpStats.get("total_users").getAsInt();
 
-            assert totpMaus.size() == 30;
+            assert totpMaus.size() == 31;
             assert totpMaus.get(0).getAsInt() == 1; // only 1 user has TOTP enabled
             assert totpMaus.get(29).getAsInt() == 1;
 
@@ -362,15 +357,17 @@ public class FeatureFlagTest {
                     )
             );
 
-            TenantIdentifierWithStorage tenantIdentifierWithStorage = tenantIdentifier.withStorage(
+            Storage storage = (
                     StorageLayer.getStorage(tenantIdentifier, process.getProcess()));
             if (i % 3 == 0) {
                 // Create a user
                 EmailPassword.signUp(
-                        tenantIdentifierWithStorage, process.getProcess(), "user@example.com", "password");
+                        tenantIdentifier, storage, process.getProcess(), "user@example.com",
+                        "password");
             } else if (i % 3 == 1) {
                 // Create a session
-                Session.createNewSession(tenantIdentifierWithStorage, process.getProcess(), "userid", new JsonObject(),
+                Session.createNewSession(
+                        tenantIdentifier, storage, process.getProcess(), "userid", new JsonObject(),
                         new JsonObject());
             } else {
                 // Create an enterprise provider
@@ -479,15 +476,17 @@ public class FeatureFlagTest {
                     )
             );
 
-            TenantIdentifierWithStorage tenantIdentifierWithStorage = tenantIdentifier.withStorage(
+            Storage storage = (
                     StorageLayer.getStorage(tenantIdentifier, process.getProcess()));
             if (i % 3 == 0) {
                 // Create a user
                 EmailPassword.signUp(
-                        tenantIdentifierWithStorage, process.getProcess(), "user@example.com", "password");
+                        tenantIdentifier, storage, process.getProcess(), "user@example.com",
+                        "password");
             } else if (i % 3 == 1) {
                 // Create a session
-                Session.createNewSession(tenantIdentifierWithStorage, process.getProcess(), "userid", new JsonObject(),
+                Session.createNewSession(
+                        tenantIdentifier, storage, process.getProcess(), "userid", new JsonObject(),
                         new JsonObject());
             } else {
                 // Create an enterprise provider
@@ -606,15 +605,17 @@ public class FeatureFlagTest {
                     )
             );
 
-            TenantIdentifierWithStorage tenantIdentifierWithStorage = tenantIdentifier.withStorage(
+            Storage storage = (
                     StorageLayer.getStorage(tenantIdentifier, process.getProcess()));
             if (i % 3 == 0) {
                 // Create a user
                 EmailPassword.signUp(
-                        tenantIdentifierWithStorage, process.getProcess(), "user@example.com", "password");
+                        tenantIdentifier, storage, process.getProcess(), "user@example.com",
+                        "password");
             } else if (i % 3 == 1) {
                 // Create a session
-                Session.createNewSession(tenantIdentifierWithStorage, process.getProcess(), "userid", new JsonObject(),
+                Session.createNewSession(
+                        tenantIdentifier, storage, process.getProcess(), "userid", new JsonObject(),
                         new JsonObject());
             } else {
                 // Create an enterprise provider

@@ -70,7 +70,7 @@ public class CreateOrUpdateThirdPartyConfigAPI extends WebserverAPI {
         }
 
         try {
-            TenantIdentifierWithStorage tenantIdentifier = this.getTenantIdentifierWithStorageFromRequest(req);
+            TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
 
             if (!tenantIdentifier.equals(TenantIdentifier.BASE_TENANT)) {
                 if (Arrays.stream(FeatureFlag.getInstance(main, new AppIdentifier(null, null)).getEnabledFeatures())

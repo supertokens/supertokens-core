@@ -22,9 +22,11 @@ import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
+import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerificationSQLStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.*;
@@ -58,13 +60,13 @@ public class ThirdParty {
     // as seen below. But then, in newer versions, we stopped doing that cause of
     // https://github.com/supertokens/supertokens-core/issues/295, so we changed the API spec.
     @Deprecated
-    public static SignInUpResponse signInUp2_7(TenantIdentifierWithStorage tenantIdentifierWithStorage, Main main,
+    public static SignInUpResponse signInUp2_7(TenantIdentifier tenantIdentifier, Storage storage,
                                                String thirdPartyId, String thirdPartyUserId, String email,
                                                boolean isEmailVerified)
             throws StorageQueryException, TenantOrAppNotFoundException {
         SignInUpResponse response = null;
         try {
-            response = signInUpHelper(tenantIdentifierWithStorage, main, thirdPartyId, thirdPartyUserId,
+            response = signInUpHelper(tenantIdentifier, storage, thirdPartyId, thirdPartyUserId,
                     email);
         } catch (EmailChangeNotAllowedException e) {
             throw new RuntimeException(e);
@@ -73,16 +75,16 @@ public class ThirdParty {
         if (isEmailVerified) {
             try {
                 SignInUpResponse finalResponse = response;
-                tenantIdentifierWithStorage.getEmailVerificationStorage().startTransaction(con -> {
+                EmailVerificationSQLStorage evStorage = StorageUtils.getEmailVerificationStorage(storage);
+
+                evStorage.startTransaction(con -> {
                     try {
                         // this assert is there cause this function should only be used for older CDIs in which
                         // account linking was not available. So loginMethod length will always be 1.
                         assert (finalResponse.user.loginMethods.length == 1);
-                        tenantIdentifierWithStorage.getEmailVerificationStorage()
-                                .updateIsEmailVerified_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con,
+                        evStorage.updateIsEmailVerified_Transaction(tenantIdentifier.toAppIdentifier(), con,
                                         finalResponse.user.getSupertokensUserId(), finalResponse.user.loginMethods[0].email, true);
-                        tenantIdentifierWithStorage.getEmailVerificationStorage()
-                                .commitTransaction(con);
+                        evStorage.commitTransaction(con);
                         return null;
                     } catch (TenantOrAppNotFoundException e) {
                         throw new StorageTransactionLogicException(e);
@@ -106,7 +108,7 @@ public class ThirdParty {
         try {
             Storage storage = StorageLayer.getStorage(main);
             return signInUp2_7(
-                    new TenantIdentifierWithStorage(null, null, null, storage), main,
+                    new TenantIdentifier(null, null, null), storage,
                     thirdPartyId, thirdPartyUserId, email, isEmailVerified);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
@@ -119,7 +121,7 @@ public class ThirdParty {
         try {
             Storage storage = StorageLayer.getStorage(main);
             return signInUp(
-                    new TenantIdentifierWithStorage(null, null, null, storage), main,
+                    new TenantIdentifier(null, null, null), storage, main,
                     thirdPartyId, thirdPartyUserId, email, false);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
@@ -132,7 +134,7 @@ public class ThirdParty {
         try {
             Storage storage = StorageLayer.getStorage(main);
             return signInUp(
-                    new TenantIdentifierWithStorage(null, null, null, storage), main,
+                    new TenantIdentifier(null, null, null), storage, main,
                     thirdPartyId, thirdPartyUserId, email, isEmailVerified);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
@@ -140,42 +142,41 @@ public class ThirdParty {
     }
 
     @TestOnly
-    public static SignInUpResponse signInUp(TenantIdentifierWithStorage tenantIdentifierWithStorage, Main main,
+    public static SignInUpResponse signInUp(TenantIdentifier tenantIdentifier, Storage storage, Main main,
                                             String thirdPartyId,
                                             String thirdPartyUserId, String email)
             throws StorageQueryException, TenantOrAppNotFoundException, BadPermissionException,
             EmailChangeNotAllowedException {
-        return signInUp(tenantIdentifierWithStorage, main, thirdPartyId, thirdPartyUserId, email, false);
+        return signInUp(tenantIdentifier, storage, main, thirdPartyId, thirdPartyUserId, email, false);
     }
 
-    public static SignInUpResponse signInUp(TenantIdentifierWithStorage tenantIdentifierWithStorage, Main main,
+    public static SignInUpResponse signInUp(TenantIdentifier tenantIdentifier, Storage storage, Main main,
                                             String thirdPartyId,
                                             String thirdPartyUserId, String email, boolean isEmailVerified)
             throws StorageQueryException, TenantOrAppNotFoundException, BadPermissionException,
             EmailChangeNotAllowedException {
 
-        TenantConfig config = Multitenancy.getTenantInfo(main, tenantIdentifierWithStorage);
+        TenantConfig config = Multitenancy.getTenantInfo(main, tenantIdentifier);
         if (config == null) {
-            throw new TenantOrAppNotFoundException(tenantIdentifierWithStorage);
+            throw new TenantOrAppNotFoundException(tenantIdentifier);
         }
         if (!config.thirdPartyConfig.enabled) {
             throw new BadPermissionException("Third Party login not enabled for tenant");
         }
 
-        SignInUpResponse response = signInUpHelper(tenantIdentifierWithStorage, main, thirdPartyId, thirdPartyUserId,
+        SignInUpResponse response = signInUpHelper(tenantIdentifier, storage, thirdPartyId, thirdPartyUserId,
                 email);
 
         if (isEmailVerified) {
             for (LoginMethod lM : response.user.loginMethods) {
                 if (lM.thirdParty != null && lM.thirdParty.id.equals(thirdPartyId) && lM.thirdParty.userId.equals(thirdPartyUserId)) {
                     try {
-                        tenantIdentifierWithStorage.getEmailVerificationStorage().startTransaction(con -> {
+                        EmailVerificationSQLStorage evStorage = StorageUtils.getEmailVerificationStorage(storage);
+                        evStorage.startTransaction(con -> {
                             try {
-                                tenantIdentifierWithStorage.getEmailVerificationStorage()
-                                        .updateIsEmailVerified_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con,
+                                evStorage.updateIsEmailVerified_Transaction(tenantIdentifier.toAppIdentifier(), con,
                                                 lM.getSupertokensUserId(), lM.email, true);
-                                tenantIdentifierWithStorage.getEmailVerificationStorage()
-                                        .commitTransaction(con);
+                                evStorage.commitTransaction(con);
 
                                 return null;
                             } catch (TenantOrAppNotFoundException e) {
@@ -197,11 +198,11 @@ public class ThirdParty {
         return response;
     }
 
-    private static SignInUpResponse signInUpHelper(TenantIdentifierWithStorage tenantIdentifierWithStorage,
-                                                   Main main, String thirdPartyId, String thirdPartyUserId,
+    private static SignInUpResponse signInUpHelper(TenantIdentifier tenantIdentifier, Storage storage,
+                                                   String thirdPartyId, String thirdPartyUserId,
                                                    String email) throws StorageQueryException,
             TenantOrAppNotFoundException, EmailChangeNotAllowedException {
-        ThirdPartySQLStorage storage = tenantIdentifierWithStorage.getThirdPartyStorage();
+        ThirdPartySQLStorage tpStorage = StorageUtils.getThirdPartyStorage(storage);
         while (true) {
             // loop for sign in + sign up
 
@@ -211,7 +212,7 @@ public class ThirdParty {
                 long timeJoined = System.currentTimeMillis();
 
                 try {
-                    AuthRecipeUserInfo createdUser = storage.signUp(tenantIdentifierWithStorage, userId, email,
+                    AuthRecipeUserInfo createdUser = tpStorage.signUp(tenantIdentifier, userId, email,
                             new LoginMethod.ThirdParty(thirdPartyId, thirdPartyUserId), timeJoined);
 
                     return new SignInUpResponse(true, createdUser);
@@ -224,9 +225,8 @@ public class ThirdParty {
             }
 
             // we try to get user and update their email
-            AppIdentifier appIdentifier = tenantIdentifierWithStorage.toAppIdentifier();
-            AuthRecipeSQLStorage authRecipeStorage =
-                    (AuthRecipeSQLStorage) tenantIdentifierWithStorage.getAuthRecipeStorage();
+            AppIdentifier appIdentifier = tenantIdentifier.toAppIdentifier();
+            AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
 
             { // Try without transaction, because in most cases we might not need to update the email
                 AuthRecipeUserInfo userFromDb = null;
@@ -235,7 +235,7 @@ public class ThirdParty {
                         appIdentifier,
                         thirdPartyId, thirdPartyUserId);
                 for (AuthRecipeUserInfo user : usersFromDb) {
-                    if (user.tenantIds.contains(tenantIdentifierWithStorage.getTenantId())) {
+                    if (user.tenantIds.contains(tenantIdentifier.getTenantId())) {
                         if (userFromDb != null) {
                             throw new IllegalStateException("Should never happen");
                         }
@@ -265,7 +265,7 @@ public class ThirdParty {
                     // Email needs updating, so repeat everything in a transaction
                     try {
 
-                        storage.startTransaction(con -> {
+                        tpStorage.startTransaction(con -> {
                             AuthRecipeUserInfo userFromDb1 = null;
 
                             AuthRecipeUserInfo[] usersFromDb1 = authRecipeStorage.listPrimaryUsersByThirdPartyInfo_Transaction(
@@ -273,7 +273,7 @@ public class ThirdParty {
                                     con,
                                     thirdPartyId, thirdPartyUserId);
                             for (AuthRecipeUserInfo user : usersFromDb1) {
-                                if (user.tenantIds.contains(tenantIdentifierWithStorage.getTenantId())) {
+                                if (user.tenantIds.contains(tenantIdentifier.getTenantId())) {
                                     if (userFromDb1 != null) {
                                         throw new IllegalStateException("Should never happen");
                                     }
@@ -282,7 +282,7 @@ public class ThirdParty {
                             }
 
                             if (userFromDb1 == null) {
-                                storage.commitTransaction(con);
+                                tpStorage.commitTransaction(con);
                                 return null;
                             }
 
@@ -320,11 +320,11 @@ public class ThirdParty {
                                         }
                                     }
                                 }
-                                storage.updateUserEmail_Transaction(appIdentifier, con,
+                                tpStorage.updateUserEmail_Transaction(appIdentifier, con,
                                         thirdPartyId, thirdPartyUserId, email);
                             }
 
-                            storage.commitTransaction(con);
+                            tpStorage.commitTransaction(con);
                             return null;
                         });
                     } catch (StorageTransactionLogicException e) {
@@ -336,16 +336,16 @@ public class ThirdParty {
                 }
             }
 
-            AuthRecipeUserInfo user = getUser(tenantIdentifierWithStorage, thirdPartyId, thirdPartyUserId);
+            AuthRecipeUserInfo user = getUser(tenantIdentifier, storage, thirdPartyId, thirdPartyUserId);
             return new SignInUpResponse(false, user);
         }
     }
 
     @Deprecated
-    public static AuthRecipeUserInfo getUser(AppIdentifierWithStorage appIdentifierWithStorage, String userId)
+    public static AuthRecipeUserInfo getUser(AppIdentifier appIdentifier, Storage storage, String userId)
             throws StorageQueryException {
-        AuthRecipeUserInfo result = appIdentifierWithStorage.getAuthRecipeStorage()
-                .getPrimaryUserById(appIdentifierWithStorage, userId);
+        AuthRecipeUserInfo result = StorageUtils.getAuthRecipeStorage(storage)
+                .getPrimaryUserById(appIdentifier, userId);
         if (result == null) {
             return null;
         }
@@ -362,15 +362,15 @@ public class ThirdParty {
     @TestOnly
     public static AuthRecipeUserInfo getUser(Main main, String userId) throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
-        return getUser(new AppIdentifierWithStorage(null, null, storage), userId);
+        return getUser(new AppIdentifier(null, null), storage, userId);
     }
 
-    public static AuthRecipeUserInfo getUser(TenantIdentifierWithStorage tenantIdentifierWithStorage,
+    public static AuthRecipeUserInfo getUser(TenantIdentifier tenantIdentifier, Storage storage,
                                              String thirdPartyId,
                                              String thirdPartyUserId)
             throws StorageQueryException {
-        return tenantIdentifierWithStorage.getThirdPartyStorage()
-                .getPrimaryUserByThirdPartyInfo(tenantIdentifierWithStorage, thirdPartyId, thirdPartyUserId);
+        return StorageUtils.getThirdPartyStorage(storage)
+                .getPrimaryUserByThirdPartyInfo(tenantIdentifier, thirdPartyId, thirdPartyUserId);
     }
 
     @TestOnly
@@ -378,16 +378,16 @@ public class ThirdParty {
             throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
         return getUser(
-                new TenantIdentifierWithStorage(null, null, null, storage),
+                new TenantIdentifier(null, null, null), storage,
                 thirdPartyId, thirdPartyUserId);
     }
 
     @Deprecated
-    public static AuthRecipeUserInfo[] getUsersByEmail(TenantIdentifierWithStorage tenantIdentifierWithStorage,
+    public static AuthRecipeUserInfo[] getUsersByEmail(TenantIdentifier tenantIdentifier, Storage storage,
                                                        @Nonnull String email)
             throws StorageQueryException {
-        AuthRecipeUserInfo[] users = tenantIdentifierWithStorage.getThirdPartyStorage()
-                .listPrimaryUsersByEmail(tenantIdentifierWithStorage, email);
+        AuthRecipeUserInfo[] users = StorageUtils.getThirdPartyStorage(storage)
+                .listPrimaryUsersByEmail(tenantIdentifier, email);
         List<AuthRecipeUserInfo> result = new ArrayList<>();
         for (AuthRecipeUserInfo user : users) {
             for (LoginMethod lM : user.loginMethods) {

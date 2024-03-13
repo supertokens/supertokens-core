@@ -18,6 +18,7 @@ package io.supertokens.test.totp.api;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
+import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
@@ -25,6 +26,7 @@ import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
@@ -45,8 +47,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 public class MultitenantAPITest {
     TestingProcessManager.TestingProcess process;
@@ -104,7 +105,7 @@ public class MultitenantAPITest {
                     new TenantIdentifier(null, null, null),
                     new TenantConfig(
                             tenantIdentifier,
-                            new EmailPasswordConfig(false),
+                            new EmailPasswordConfig(true),
                             new ThirdPartyConfig(false, null),
                             new PasswordlessConfig(true),
                             config
@@ -124,7 +125,7 @@ public class MultitenantAPITest {
                     new TenantIdentifier(null, "a1", null),
                     new TenantConfig(
                             tenantIdentifier,
-                            new EmailPasswordConfig(false),
+                            new EmailPasswordConfig(true),
                             new ThirdPartyConfig(false, null),
                             new PasswordlessConfig(true),
                             config
@@ -144,7 +145,7 @@ public class MultitenantAPITest {
                     new TenantIdentifier(null, "a1", null),
                     new TenantConfig(
                             tenantIdentifier,
-                            new EmailPasswordConfig(false),
+                            new EmailPasswordConfig(true),
                             new ThirdPartyConfig(false, null),
                             new PasswordlessConfig(true),
                             config
@@ -240,19 +241,17 @@ public class MultitenantAPITest {
     }
 
     @Test
-    public void testDevicesWorkAppWide() throws Exception {
+    public void testCreateDeviceWorksFromPublicTenantOnly() throws Exception {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 
-        TenantIdentifier[] tenants = new TenantIdentifier[]{t1, t2, t3};
         int userCount = 1;
-        for (TenantIdentifier tenant1 : tenants) {
-            createDevice(tenant1, "user" + userCount);
 
-            for (TenantIdentifier tenant2 : tenants) {
-                createDeviceAlreadyExists(tenant2, "user1");
-            }
+        TenantIdentifier[] tenants = new TenantIdentifier[]{t1, t2, t3};
+        for (TenantIdentifier tenantId : tenants) {
+            createDevice(tenantId, "user"+userCount);
+            createDeviceAlreadyExists(tenantId, "user"+userCount);
 
             userCount++;
         }
@@ -267,16 +266,21 @@ public class MultitenantAPITest {
         TenantIdentifier[] tenants = new TenantIdentifier[]{t2, t3};
         int userCount = 1;
         for (TenantIdentifier tenant1 : tenants) {
-            JsonObject deviceResponse = createDevice(tenant1, "user" + userCount);
+            AuthRecipeUserInfo user = EmailPassword.signUp(
+                    tenant1, (StorageLayer.getStorage(tenant1, process.getProcess())), process.getProcess(),
+                    "test@example.com", "password1");
+            String userId = user.getSupertokensUserId();
+
+            JsonObject deviceResponse = createDevice(t1, userId);
             String secretKey = deviceResponse.get("secret").getAsString();
-            TOTPDevice device = new TOTPDevice("user" + userCount, "d1", secretKey, 2, 1, true);
+            TOTPDevice device = new TOTPDevice(userId, "d1", secretKey, 2, 1, true);
             String validTotp = TOTPRecipeTest.generateTotpCode(process.getProcess(), device);
-            verifyDevice(tenant1, "user" + userCount, validTotp);
+            verifyDevice(tenant1, userId, validTotp);
 
             Thread.sleep(2500); // Wait for a new TOTP
             String validTotp2 = TOTPRecipeTest.generateTotpCode(process.getProcess(), device);
             for (TenantIdentifier tenant2 : tenants) {
-                validateTotp(tenant2, "user" + userCount, validTotp2);
+                validateTotp(tenant2, userId, validTotp2);
             }
 
             userCount++;

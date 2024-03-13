@@ -17,13 +17,14 @@
 package io.supertokens.webserver.api.multitenancy;
 
 import com.google.gson.JsonObject;
-import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
+import io.supertokens.StorageAndUserIdMapping;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.SemVer;
@@ -66,16 +67,18 @@ public class DisassociateUserFromTenant extends WebserverAPI {
         }
 
         try {
+            TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
             String externalUserId = null;
-            AppIdentifierWithStorageAndUserIdMapping mappingAndStorage =
-                    getAppIdentifierWithStorageAndUserIdMappingFromRequest(req, userId, UserIdType.ANY);
-            if (mappingAndStorage.userIdMapping != null) {
-                userId = mappingAndStorage.userIdMapping.superTokensUserId;
-                externalUserId = mappingAndStorage.userIdMapping.externalUserId;
+
+            StorageAndUserIdMapping storageAndUserIdMapping = getStorageAndUserIdMappingForTenantSpecificApi(
+                    req, userId, UserIdType.ANY);
+            if (storageAndUserIdMapping.userIdMapping != null) {
+                userId = storageAndUserIdMapping.userIdMapping.superTokensUserId;
+                externalUserId = storageAndUserIdMapping.userIdMapping.externalUserId;
             }
 
             boolean wasAssociated = Multitenancy.removeUserIdFromTenant(main,
-                    getTenantIdentifierWithStorageFromRequest(req), userId, externalUserId);
+                    tenantIdentifier, storageAndUserIdMapping.storage, userId, externalUserId);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
@@ -90,6 +93,5 @@ public class DisassociateUserFromTenant extends WebserverAPI {
         } catch (StorageQueryException | TenantOrAppNotFoundException | FeatureNotEnabledException e) {
             throw new ServletException(e);
         }
-
     }
 }

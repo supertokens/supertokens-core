@@ -9,6 +9,58 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Add a new core API for fetching all the core properties
 
+## [8.0.1] - 2024-03-11
+
+- Making this version backward compatible. Breaking changes in `8.0.0` can now be ignored.
+
+## [8.0.0] - 2024-03-04
+
+### Breaking changes
+
+- The following app specific APIs return a 403 when they are called with a tenant ID other than the `public` one. For example, if the path is `/users/count/active`,  and you call it with `/tenant1/users/count/active`, it will return a 403. But if you call it with `/public/users/count/active`, or just `/users/count/active`, it will work.
+  - GET `/recipe/accountlinking/user/primary/check`
+  - GET `/recipe/accountlinking/user/link/check`
+  - POST `/recipe/accountlinking/user/primary`
+  - POST `/recipe/accountlinking/user/link`
+  - POST `/recipe/accountlinking/user/unlink`
+  - GET `/users/count/active`
+  - POST `/user/remove`
+  - GET `/ee/featureflag`
+  - GET `/user/id`
+  - PUT `/ee/license`
+  - DELETE `/ee/license`
+  - GET `/ee/license`
+  - GET `/requests/stats`
+  - GET `/recipe/user` when querying by `userId`
+  - GET `/recipe/jwt/jwks`
+  - POST `/recipe/jwt`
+
+### Fixes
+
+- Fixes issue with non-auth recipe related storage handling
+
+### Migration
+
+For Postgresql:
+```sql
+ALTER TABLE user_roles DROP CONSTRAINT IF EXISTS user_roles_role_fkey;
+```
+
+For MySQL:
+```sql
+ALTER TABLE user_roles DROP FOREIGN KEY user_roles_ibfk_1;
+ALTER TABLE user_roles DROP FOREIGN KEY user_roles_ibfk_2;
+ALTER TABLE user_roles
+  ADD FOREIGN KEY (app_id, tenant_id)
+    REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE;
+```
+
+## [7.0.18] - 2024-02-19
+
+- Fixes vulnerabilities in dependencies
+- Updates telemetry payload
+- Fixes Active User tracking to use the right storage
+
 ## [7.0.17] - 2024-02-06
 
 - Fixes issue where error logs were printed to StdOut instead of StdErr.

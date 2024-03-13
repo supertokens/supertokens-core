@@ -17,9 +17,8 @@
 package io.supertokens.webserver;
 
 import com.google.gson.JsonElement;
-import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
-import io.supertokens.TenantIdentifierWithStorageAndUserIdMapping;
+import io.supertokens.StorageAndUserIdMapping;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.exceptions.QuitProgramException;
@@ -30,9 +29,7 @@ import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.useridmapping.UserIdType;
@@ -45,7 +42,6 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.catalina.filters.RemoteAddrFilter;
-import org.jetbrains.annotations.TestOnly;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -87,7 +83,7 @@ public abstract class WebserverAPI extends HttpServlet {
             throws ServletException, TenantOrAppNotFoundException {
         SemVer maxCDIVersion = getLatestCDIVersion();
         String maxCDIVersionStr = Config.getConfig(
-                getAppIdentifierWithStorage(req).getAsPublicTenantIdentifier(), main).getMaxCDIVersion();
+                getAppIdentifierWithoutVerifying(req).getAsPublicTenantIdentifier(), main).getMaxCDIVersion();
         if (maxCDIVersionStr != null) {
             maxCDIVersion = new SemVer(maxCDIVersionStr);
         }
@@ -302,69 +298,78 @@ public abstract class WebserverAPI extends HttpServlet {
         return null;
     }
 
-    @TestOnly
-    protected TenantIdentifier getTenantIdentifierFromRequest(HttpServletRequest req) throws ServletException {
+    private TenantIdentifier getTenantIdentifierWithoutVerifying(HttpServletRequest req) throws ServletException {
         return new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req), this.getTenantId(req));
     }
 
-    protected TenantIdentifierWithStorage getTenantIdentifierWithStorageFromRequest(HttpServletRequest req)
+    protected TenantIdentifier getTenantIdentifier(HttpServletRequest req)
+            throws ServletException, TenantOrAppNotFoundException {
+        getTenantStorage(req); // ensure the tenant exists
+        return new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req), this.getTenantId(req));
+    }
+
+    private AppIdentifier getAppIdentifierWithoutVerifying(HttpServletRequest req) throws ServletException {
+        return new AppIdentifier(this.getConnectionUriDomain(req), this.getAppId(req));
+    }
+
+    protected AppIdentifier getAppIdentifier(HttpServletRequest req)
+            throws ServletException, TenantOrAppNotFoundException {
+        AppIdentifier appIdentifier = getAppIdentifierWithoutVerifying(req);
+        StorageLayer.getStorage(appIdentifier.getAsPublicTenantIdentifier(), main); // ensure the app exists
+        return appIdentifier;
+    }
+
+    protected Storage getTenantStorage(HttpServletRequest req)
             throws TenantOrAppNotFoundException, ServletException {
         TenantIdentifier tenantIdentifier = new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req),
                 this.getTenantId(req));
-        Storage storage = StorageLayer.getStorage(tenantIdentifier, main);
-        return tenantIdentifier.withStorage(storage);
+        return StorageLayer.getStorage(tenantIdentifier, main);
     }
 
-    protected AppIdentifierWithStorage getAppIdentifierWithStorage(HttpServletRequest req)
-            throws TenantOrAppNotFoundException, ServletException {
-        TenantIdentifier tenantIdentifier = new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req),
-                this.getTenantId(req));
-
-        Storage storage = StorageLayer.getStorage(tenantIdentifier, main);
-        Storage[] storages = StorageLayer.getStoragesForApp(main, tenantIdentifier.toAppIdentifier());
-
-        return new AppIdentifierWithStorage(tenantIdentifier.getConnectionUriDomain(), tenantIdentifier.getAppId(),
-                storage, storages);
+    protected Storage[] enforcePublicTenantAndGetAllStoragesForApp(HttpServletRequest req)
+            throws ServletException, BadPermissionException, TenantOrAppNotFoundException {
+        AppIdentifier appIdentifier = getAppIdentifierWithoutVerifying(req);
+        return StorageLayer.getStoragesForApp(main, appIdentifier);
     }
 
-    protected AppIdentifierWithStorage getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(
+    protected Storage enforcePublicTenantAndGetPublicTenantStorage(
             HttpServletRequest req)
             throws TenantOrAppNotFoundException, BadPermissionException, ServletException {
-        TenantIdentifier tenantIdentifier = new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req),
-                this.getTenantId(req));
+        AppIdentifier appIdentifier = getAppIdentifierWithoutVerifying(req);
 
-        if (!tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
-            throw new BadPermissionException("Only public tenantId can query across tenants");
-        }
-
-        Storage storage = StorageLayer.getStorage(tenantIdentifier, main);
-        Storage[] storages = StorageLayer.getStoragesForApp(main, tenantIdentifier.toAppIdentifier());
-        return new AppIdentifierWithStorage(tenantIdentifier.getConnectionUriDomain(), tenantIdentifier.getAppId(),
-                storage, storages);
+        return StorageLayer.getStorage(appIdentifier.getAsPublicTenantIdentifier(), main);
     }
 
-    protected TenantIdentifierWithStorageAndUserIdMapping getTenantIdentifierWithStorageAndUserIdMappingFromRequest(
+    protected StorageAndUserIdMapping getStorageAndUserIdMappingForTenantSpecificApi(
             HttpServletRequest req, String userId, UserIdType userIdType)
             throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException, ServletException {
         TenantIdentifier tenantIdentifier = new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req),
                 this.getTenantId(req));
-        return StorageLayer.getTenantIdentifierWithStorageAndUserIdMappingForUser(main, tenantIdentifier, userId,
+        return StorageLayer.findStorageAndUserIdMappingForUser(main, tenantIdentifier, userId,
                 userIdType);
     }
 
-    protected AppIdentifierWithStorageAndUserIdMapping getAppIdentifierWithStorageAndUserIdMappingFromRequest(
-            HttpServletRequest req, String userId, UserIdType userIdType)
-            throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException, ServletException {
-        // This function uses storage of the tenent from which the request came from as a priorityStorage
-        // while searching for the user across all storages for the app
-        AppIdentifierWithStorage appIdentifierWithStorage = getAppIdentifierWithStorage(req);
-        return StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUserWithPriorityForTenantStorage(main,
-                appIdentifierWithStorage, appIdentifierWithStorage.getStorage(), userId, userIdType);
+    protected StorageAndUserIdMapping enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
+            HttpServletRequest req, String userId, UserIdType userIdType, boolean isCallFromAuthRecipeAPI)
+            throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException, ServletException,
+            BadPermissionException {
+        AppIdentifier appIdentifier = getAppIdentifierWithoutVerifying(req);
+        Storage[] storages = enforcePublicTenantAndGetAllStoragesForApp(req);
+        try {
+            return StorageLayer.findStorageAndUserIdMappingForUser(
+                    appIdentifier, storages, userId, userIdType);
+        } catch (UnknownUserIdException e) {
+            if (isCallFromAuthRecipeAPI) {
+                throw e;
+            }
+
+            return new StorageAndUserIdMapping(enforcePublicTenantAndGetPublicTenantStorage(req), null);
+        }
     }
 
     protected boolean checkIPAccess(HttpServletRequest req, HttpServletResponse resp)
             throws TenantOrAppNotFoundException, ServletException, IOException {
-        CoreConfig config = Config.getConfig(getTenantIdentifierWithStorageFromRequest(req), main);
+        CoreConfig config = Config.getConfig(getTenantIdentifierWithoutVerifying(req), main);
         String allow = config.getIpAllowRegex();
         String deny = config.getIpDenyRegex();
         if (allow == null && deny == null) {
@@ -406,16 +411,7 @@ public abstract class WebserverAPI extends HttpServlet {
 
         TenantIdentifier tenantIdentifier = null;
         try {
-            try {
-                tenantIdentifier = getTenantIdentifierWithStorageFromRequest(req);
-            } catch (TenantOrAppNotFoundException e) {
-                // we do this so that the logs that are printed out have the right "Tenant(.." info in them,
-                // otherwise it will assume the base tenant (with "" CUD), which may not be the one querying
-                // this API right now.
-                tenantIdentifier = new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req),
-                        this.getTenantId(req));
-                throw e;
-            }
+            tenantIdentifier = getTenantIdentifierWithoutVerifying(req);
 
             if (!this.checkIPAccess(req, resp)) {
                 // IP access denied and the filter has already sent the response

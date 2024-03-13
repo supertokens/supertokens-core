@@ -28,6 +28,8 @@ import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.exception.*;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
@@ -387,7 +389,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         return didExist;
     }
 
-    public static boolean addUserIdToTenant(Main main, TenantIdentifierWithStorage tenantIdentifierWithStorage,
+    public static boolean addUserIdToTenant(Main main, TenantIdentifier tenantIdentifier, Storage storage,
                                             String userId)
             throws TenantOrAppNotFoundException, UnknownUserIdException, StorageQueryException,
             FeatureNotEnabledException, DuplicateEmailException, DuplicatePhoneNumberException,
@@ -399,11 +401,11 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             throw new FeatureNotEnabledException(EE_FEATURES.MULTI_TENANCY);
         }
 
-        AuthRecipeSQLStorage storage = (AuthRecipeSQLStorage) tenantIdentifierWithStorage.getAuthRecipeStorage();
+        AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
         try {
-            return storage.startTransaction(con -> {
-                String tenantId = tenantIdentifierWithStorage.getTenantId();
-                AuthRecipeUserInfo userToAssociate = storage.getPrimaryUserById_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con, userId);
+            return authRecipeStorage.startTransaction(con -> {
+                String tenantId = tenantIdentifier.getTenantId();
+                AuthRecipeUserInfo userToAssociate = authRecipeStorage.getPrimaryUserById_Transaction(tenantIdentifier.toAppIdentifier(), con, userId);
 
                 if (userToAssociate != null && userToAssociate.isPrimaryUser) {
                     Set<String> emails = new HashSet<>();
@@ -424,7 +426,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                     }
 
                     for (String email : emails) {
-                        AuthRecipeUserInfo[] usersWithSameEmail = storage.listPrimaryUsersByEmail_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con, email);
+                        AuthRecipeUserInfo[] usersWithSameEmail = authRecipeStorage.listPrimaryUsersByEmail_Transaction(tenantIdentifier.toAppIdentifier(), con, email);
                         for (AuthRecipeUserInfo userWithSameEmail : usersWithSameEmail) {
                             if (userWithSameEmail.getSupertokensUserId().equals(userToAssociate.getSupertokensUserId())) {
                                 continue; // it's the same user, no need to check anything
@@ -445,7 +447,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                     }
 
                     for (String phoneNumber : phoneNumbers) {
-                        AuthRecipeUserInfo[] usersWithSamePhoneNumber = storage.listPrimaryUsersByPhoneNumber_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con, phoneNumber);
+                        AuthRecipeUserInfo[] usersWithSamePhoneNumber = authRecipeStorage.listPrimaryUsersByPhoneNumber_Transaction(tenantIdentifier.toAppIdentifier(), con, phoneNumber);
                         for (AuthRecipeUserInfo userWithSamePhoneNumber : usersWithSamePhoneNumber) {
                             if (userWithSamePhoneNumber.getSupertokensUserId().equals(userToAssociate.getSupertokensUserId())) {
                                 continue; // it's the same user, no need to check anything
@@ -466,7 +468,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                     }
 
                     for (LoginMethod.ThirdParty tp : thirdParties) {
-                        AuthRecipeUserInfo[] usersWithSameThirdPartyInfo = storage.listPrimaryUsersByThirdPartyInfo_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con, tp.id, tp.userId);
+                        AuthRecipeUserInfo[] usersWithSameThirdPartyInfo = authRecipeStorage.listPrimaryUsersByThirdPartyInfo_Transaction(tenantIdentifier.toAppIdentifier(), con, tp.id, tp.userId);
                         for (AuthRecipeUserInfo userWithSameThirdPartyInfo : usersWithSameThirdPartyInfo) {
                             if (userWithSameThirdPartyInfo.getSupertokensUserId().equals(userToAssociate.getSupertokensUserId())) {
                                 continue; // it's the same user, no need to check anything
@@ -492,8 +494,8 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                 // associate it. This happens only in CDI 3.0 where we allow disassociation from all tenants
                 // This will not happen in CDI >= 4.0 because we will not allow disassociation from all tenants
                 try {
-                    boolean result = ((MultitenancySQLStorage) storage).addUserIdToTenant_Transaction(tenantIdentifierWithStorage, con, userId);
-                    storage.commitTransaction(con);
+                    boolean result = ((MultitenancySQLStorage) storage).addUserIdToTenant_Transaction(tenantIdentifier, con, userId);
+                    authRecipeStorage.commitTransaction(con);
                     return result;
                 } catch (TenantOrAppNotFoundException | UnknownUserIdException | DuplicatePhoneNumberException |
                          DuplicateThirdPartyUserException | DuplicateEmailException e) {
@@ -522,7 +524,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public static boolean removeUserIdFromTenant(Main main, TenantIdentifierWithStorage tenantIdentifierWithStorage,
+    public static boolean removeUserIdFromTenant(Main main, TenantIdentifier tenantIdentifier, Storage storage,
                                                  String userId, String externalUserId)
             throws FeatureNotEnabledException, TenantOrAppNotFoundException, StorageQueryException,
             UnknownUserIdException {
@@ -532,12 +534,12 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         }
 
         boolean finalDidExist = false;
-        boolean didExist = AuthRecipe.deleteNonAuthRecipeUser(tenantIdentifierWithStorage,
+        boolean didExist = AuthRecipe.deleteNonAuthRecipeUser(tenantIdentifier, storage,
                 externalUserId == null ? userId : externalUserId);
         finalDidExist = finalDidExist || didExist;
 
-        didExist = tenantIdentifierWithStorage.getMultitenancyStorageWithTargetStorage()
-                .removeUserIdFromTenant(tenantIdentifierWithStorage, userId);
+        didExist = StorageUtils.getMultitenancyStorage(storage)
+                .removeUserIdFromTenant(tenantIdentifier, userId);
         finalDidExist = finalDidExist || didExist;
 
         return finalDidExist;
