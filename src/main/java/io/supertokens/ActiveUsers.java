@@ -1,8 +1,8 @@
 package io.supertokens;
 
+import io.supertokens.pluginInterface.ActiveUsersSQLStorage;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
-import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
@@ -35,6 +35,20 @@ public class ActiveUsers {
             throws StorageQueryException, TenantOrAppNotFoundException {
         Storage storage = StorageLayer.getStorage(appIdentifier.getAsPublicTenantIdentifier(), main);
         return StorageUtils.getActiveUsersStorage(storage).countUsersActiveSince(appIdentifier, time);
+    }
+
+    public static void updateLastActiveAfterLinking(Main main, AppIdentifier appIdentifier, String primaryUserId,
+                                                    String recipeUserId)
+            throws StorageQueryException, TenantOrAppNotFoundException, StorageTransactionLogicException {
+        ActiveUsersSQLStorage activeUsersStorage =
+                (ActiveUsersSQLStorage) StorageUtils.getActiveUsersStorage(StorageLayer.getStorage(appIdentifier.getAsPublicTenantIdentifier(), main));
+
+        activeUsersStorage.startTransaction(con -> {
+            activeUsersStorage.deleteUserActive_Transaction(con, appIdentifier, recipeUserId);
+            return null;
+        });
+
+        updateLastActive(appIdentifier, main, primaryUserId);
     }
 
     @TestOnly

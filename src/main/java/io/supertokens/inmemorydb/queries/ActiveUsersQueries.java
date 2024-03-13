@@ -78,26 +78,6 @@ public class ActiveUsersQueries {
         });
     }
 
-    public static Long getLastActiveByUserId(Start start, AppIdentifier appIdentifier, String userId)
-            throws StorageQueryException {
-        String QUERY = "SELECT last_active_time FROM " + Config.getConfig(start).getUserLastActiveTable()
-                + " WHERE app_id = ? AND user_id = ?";
-
-        try {
-            return execute(start, QUERY, pst -> {
-                pst.setString(1, appIdentifier.getAppId());
-                pst.setString(2, userId);
-            }, res -> {
-                if (res.next()) {
-                    return res.getLong("last_active_time");
-                }
-                return null;
-            });
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
     public static void deleteUserActive_Transaction(Connection con, Start start, AppIdentifier appIdentifier,
                                                     String userId)
             throws StorageQueryException, SQLException {

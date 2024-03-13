@@ -25,11 +25,7 @@ import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
-import io.supertokens.pluginInterface.RECIPE_ID;
-import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.Storage;
-import io.supertokens.pluginInterface.StorageUtils;
-import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
+import io.supertokens.pluginInterface.*;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
@@ -339,8 +335,8 @@ public class AuthRecipe {
 
         AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
         try {
-            LinkAccountsResult result = authRecipeStorage.startTransaction(con -> {
 
+            LinkAccountsResult result = authRecipeStorage.startTransaction(con -> {
                 try {
                     CanLinkAccountsResult canLinkAccounts = canLinkAccountsHelper(con, appIdentifier,
                             authRecipeStorage, _recipeUserId, _primaryUserId);
