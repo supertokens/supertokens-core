@@ -35,8 +35,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 public class PasswordlessCheckCodeAPITest5_0 {
     @Rule
@@ -310,7 +309,7 @@ public class PasswordlessCheckCodeAPITest5_0 {
                 "http://localhost:3567/recipe/signinup/code/check", consumeCodeRequestBody, 1000, 1000, null,
                 SemVer.v5_0.get(), "passwordless");
 
-        checkResponse(response);
+        checkResponse(response, email, null);
 
         int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
         assert (activeUsers == 0);
@@ -379,7 +378,7 @@ public class PasswordlessCheckCodeAPITest5_0 {
                 "http://localhost:3567/recipe/signinup/code/check", consumeCodeRequestBody, 1000, 1000, null,
                 SemVer.v5_0.get(), "passwordless");
 
-        checkResponse(response);
+        checkResponse(response, email, null);
 
         int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
         assert (activeUsers == 0);
@@ -413,14 +412,14 @@ public class PasswordlessCheckCodeAPITest5_0 {
                 "http://localhost:3567/recipe/signinup/code/check", consumeCodeRequestBody, 1000, 1000, null,
                 SemVer.v5_0.get(), "passwordless");
 
-        checkResponse(response);
+        checkResponse(response, email, null);
 
         // should be able to call again, if the code is not deleted
         response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/signinup/code/check", consumeCodeRequestBody, 1000, 1000, null,
                 SemVer.v5_0.get(), "passwordless");
 
-        checkResponse(response);
+        checkResponse(response, email, null);
 
         int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
         assert (activeUsers == 0);
@@ -531,8 +530,7 @@ public class PasswordlessCheckCodeAPITest5_0 {
                 "http://localhost:3567/recipe/signinup/code/check", consumeCodeRequestBody, 1000, 1000, null,
                 SemVer.v5_0.get(), "passwordless");
 
-        assertEquals(1, response.entrySet().size());
-        assertEquals("OK", response.get("status").getAsString());
+        checkResponse(response, email, null);
 
         int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
         assert (activeUsers == 0);
@@ -573,7 +571,7 @@ public class PasswordlessCheckCodeAPITest5_0 {
                 "http://localhost:3567/recipe/signinup/code/check", consumeCodeRequestBody, 1000, 1000, null,
                 SemVer.v5_0.get(), "passwordless");
 
-        checkResponse(response);
+        checkResponse(response, email, null);
 
         int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
         assert (activeUsers == 0);
@@ -849,7 +847,7 @@ public class PasswordlessCheckCodeAPITest5_0 {
                 "http://localhost:3567/recipe/signinup/code/check", consumeCodeRequestBody, 1000, 1000, null,
                 SemVer.v5_0.get(), "passwordless");
 
-        checkResponse(response);
+        checkResponse(response, email, null);
 
         int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
         assert (activeUsers == 0);
@@ -972,9 +970,22 @@ public class PasswordlessCheckCodeAPITest5_0 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    private void checkResponse(JsonObject response) {
+    private void checkResponse(JsonObject response, String email, String phoneNumber) {
         assertEquals("OK", response.get("status").getAsString());
 
-        assertEquals(1, response.entrySet().size());
+        assertEquals(2, response.entrySet().size());
+        assertTrue(response.has("consumedDevice"));
+
+        JsonObject consumedDevice = response.get("consumedDevice").getAsJsonObject();
+        assertEquals(3, consumedDevice.entrySet().size());
+        assertTrue(consumedDevice.has("preAuthSessionId"));
+        assertTrue(consumedDevice.has("failedCodeInputAttemptCount"));
+
+        if (email != null) {
+            assertEquals(email, consumedDevice.get("email").getAsString());
+        } else {
+            assertTrue(consumedDevice.get("phoneNumber").isJsonNull());
+        }
+
     }
 }
