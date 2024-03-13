@@ -251,8 +251,6 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
                         firstFactors.add(new JsonPrimitive(firstFactor));
                     }
                     tenantStat.add("firstFactors", firstFactors);
-                } else {
-                    tenantStat.add("firstFactors", new JsonNull());
                 }
 
                 if (tenantConfig.requiredSecondaryFactors != null) {
@@ -261,8 +259,6 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
                         requiredSecondaryFactors.add(new JsonPrimitive(requiredSecondaryFactor));
                     }
                     tenantStat.add("requiredSecondaryFactors", requiredSecondaryFactors);
-                } else {
-                    tenantStat.add("requiredSecondaryFactors", new JsonNull());
                 }
 
                 try {
