@@ -67,7 +67,7 @@ public class AppTenantUserTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
-                        EE_FEATURES.MULTI_TENANCY, EE_FEATURES.TOTP});
+                        EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA});
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -106,7 +106,7 @@ public class AppTenantUserTest {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 ), false);
 
                 Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
@@ -114,7 +114,7 @@ public class AppTenantUserTest {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 ), false);
 
                 Storage tStorage = (
@@ -146,7 +146,7 @@ public class AppTenantUserTest {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 ), false);
 
                 Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
@@ -154,7 +154,7 @@ public class AppTenantUserTest {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        new JsonObject()
+                        null, null, new JsonObject()
                 ), false);
 
                 UserIdMapping.findNonAuthStoragesWhereUserIdIsUsedOrAssertIfUsed(t.toAppIdentifier(), tStorage,
@@ -172,7 +172,7 @@ public class AppTenantUserTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
-                        EE_FEATURES.MULTI_TENANCY, EE_FEATURES.TOTP});
+                        EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA});
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -203,7 +203,7 @@ public class AppTenantUserTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new JsonObject()
+                null, null, new JsonObject()
         ), false);
 
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
@@ -211,7 +211,7 @@ public class AppTenantUserTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new JsonObject()
+                null, null, new JsonObject()
         ), false);
 
         Storage appStorage = (
@@ -259,7 +259,7 @@ public class AppTenantUserTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
-                        EE_FEATURES.MULTI_TENANCY, EE_FEATURES.TOTP});
+                        EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA});
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -276,7 +276,7 @@ public class AppTenantUserTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new JsonObject()
+                null, null, new JsonObject()
         ), false);
 
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
@@ -284,7 +284,7 @@ public class AppTenantUserTest {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new JsonObject()
+                null, null, new JsonObject()
         ), false);
 
         Storage appStorage = (

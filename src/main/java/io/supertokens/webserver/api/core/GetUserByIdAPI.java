@@ -71,7 +71,7 @@ public class GetUserByIdAPI extends WebserverAPI {
                 // if a userIdMapping exists, set the userId in the response to the externalUserId
                 if (user != null) {
                     UserIdMapping.populateExternalUserIdForUsers(
-                            storageAndUserIdMapping.storage, new AuthRecipeUserInfo[]{user});
+                            appIdentifier, storageAndUserIdMapping.storage, new AuthRecipeUserInfo[]{user});
                 }
 
             } catch (UnknownUserIdException e) {

@@ -52,7 +52,6 @@ public class ListTenantsAPI extends WebserverAPI {
             TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
             Storage storage = getTenantStorage(req);
 
-            enforcePublicTenantAndGetPublicTenantStorage(req); // enforce that this API is called using public tenant
             if (!tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
                 throw new BadPermissionException("Only the public tenantId is allowed to list all tenants " +
                         "associated with this app");

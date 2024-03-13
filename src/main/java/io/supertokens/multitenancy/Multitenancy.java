@@ -149,6 +149,51 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         // Verify that the keys in the coreConfig is valid
         validateConfigJsonForInvalidKeys(main, targetTenantConfig.coreConfig);
 
+        // Validate firstFactors and requiredSecondaryFactors
+        {
+            Set<String> disallowedFactors = new HashSet<>();
+            Map<String, String> factorIdToRecipeName = new HashMap<>();
+            if (!targetTenantConfig.emailPasswordConfig.enabled) {
+                disallowedFactors.add("emailpassword");
+
+                factorIdToRecipeName.put("emailpassword", "emailPassword");
+            }
+            if (!targetTenantConfig.passwordlessConfig.enabled) {
+                disallowedFactors.add("otp-email");
+                disallowedFactors.add("otp-phone");
+                disallowedFactors.add("link-email");
+                disallowedFactors.add("link-phone");
+
+                factorIdToRecipeName.put("otp-email", "passwordless");
+                factorIdToRecipeName.put("otp-phone", "passwordless");
+                factorIdToRecipeName.put("link-email", "passwordless");
+                factorIdToRecipeName.put("link-phone", "passwordless");
+            }
+            if (!targetTenantConfig.thirdPartyConfig.enabled) {
+                disallowedFactors.add("thirdparty");
+
+                factorIdToRecipeName.put("thirdparty", "thirdParty");
+            }
+
+            if (targetTenantConfig.firstFactors != null) {
+                for (String factor : targetTenantConfig.firstFactors) {
+                    if (disallowedFactors.contains(factor)) {
+                        throw new InvalidConfigException("firstFactors should not contain '" + factor
+                                + "' because " + factorIdToRecipeName.get(factor) + " is disabled for the tenant.");
+                    }
+                }
+            }
+
+            if (targetTenantConfig.requiredSecondaryFactors != null) {
+                for (String factor : targetTenantConfig.requiredSecondaryFactors) {
+                    if (disallowedFactors.contains(factor)) {
+                        throw new InvalidConfigException("requiredSecondaryFactors should not contain '" + factor
+                                + "' because " + factorIdToRecipeName.get(factor) + " is disabled for the tenant.");
+                    }
+                }
+            }
+        }
+
         // we check if the core config provided is correct
         {
             if (shouldPreventProtecterdConfigUpdate) {

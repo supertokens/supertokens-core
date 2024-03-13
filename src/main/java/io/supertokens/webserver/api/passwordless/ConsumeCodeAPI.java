@@ -92,7 +92,9 @@ public class ConsumeCodeAPI extends WebserverAPI {
                     userInputCode, linkCode,
                     // From CDI version 4.0 onwards, the email verification will be set
                     getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0));
-            io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(storage, new AuthRecipeUserInfo[]{consumeCodeResponse.user});
+            io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(
+                    tenantIdentifier.toAppIdentifier(), storage,
+                    new AuthRecipeUserInfo[]{consumeCodeResponse.user});
 
             ActiveUsers.updateLastActive(tenantIdentifier.toAppIdentifier(), main,
                     consumeCodeResponse.user.getSupertokensUserId());
@@ -118,6 +120,22 @@ public class ConsumeCodeAPI extends WebserverAPI {
                         break;
                     }
                 }
+            }
+
+            if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_0)) {
+                JsonObject jsonDevice = new JsonObject();
+                jsonDevice.addProperty("preAuthSessionId", consumeCodeResponse.consumedDevice.deviceIdHash);
+                jsonDevice.addProperty("failedCodeInputAttemptCount", consumeCodeResponse.consumedDevice.failedAttempts);
+
+                if (consumeCodeResponse.consumedDevice.email != null) {
+                    jsonDevice.addProperty("email", consumeCodeResponse.consumedDevice.email);
+                }
+
+                if (consumeCodeResponse.consumedDevice.phoneNumber != null) {
+                    jsonDevice.addProperty("phoneNumber", consumeCodeResponse.consumedDevice.phoneNumber);
+                }
+
+                result.add("consumedDevice", jsonDevice);
             }
 
             super.sendJsonResponse(200, result, resp);

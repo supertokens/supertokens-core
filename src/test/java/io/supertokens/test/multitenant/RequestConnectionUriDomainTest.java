@@ -147,11 +147,11 @@ public class RequestConnectionUriDomainTest {
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(new TenantIdentifier("localhost", null, null), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        tenantConfig), false);
+                null, null, tenantConfig), false);
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(new TenantIdentifier("127.0.0.1", null, null), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        tenant2Config), false);
+                null, null, tenant2Config), false);
 
         Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
 
@@ -255,7 +255,7 @@ public class RequestConnectionUriDomainTest {
                 new TenantConfig(new TenantIdentifier("localhost", null, null), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        tenantConfig),
+                        null, null, tenantConfig),
                 false
         );
         Multitenancy.addNewOrUpdateAppOrTenant(
@@ -263,7 +263,7 @@ public class RequestConnectionUriDomainTest {
                 new TenantConfig(new TenantIdentifier("localhost", null, "t1"), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        tenantConfig),
+                        null, null, tenantConfig),
                 false
         );
         Multitenancy.addNewOrUpdateAppOrTenant(
@@ -271,7 +271,7 @@ public class RequestConnectionUriDomainTest {
                 new TenantConfig(new TenantIdentifier("127.0.0.1", null, null), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        tenant2Config),
+                        null, null, tenant2Config),
                 false
         );
         Multitenancy.addNewOrUpdateAppOrTenant(
@@ -279,7 +279,7 @@ public class RequestConnectionUriDomainTest {
                 new TenantConfig(new TenantIdentifier("127.0.0.1", null, "t1"), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        tenant2Config),
+                        null, null, tenant2Config),
                 false
         );
 

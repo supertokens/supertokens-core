@@ -13,7 +13,6 @@ import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.totp.TOTPDevice;
 import io.supertokens.pluginInterface.totp.exception.DeviceAlreadyExistsException;
-import io.supertokens.pluginInterface.totp.exception.TotpNotEnabledException;
 import io.supertokens.pluginInterface.totp.exception.UnknownDeviceException;
 import io.supertokens.totp.Totp;
 import io.supertokens.useridmapping.UserIdType;
@@ -44,7 +43,7 @@ public class CreateOrUpdateTotpDeviceAPI extends WebserverAPI {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
-        String deviceName = InputParser.parseStringOrThrowError(input, "deviceName", false);
+        String deviceName = InputParser.parseStringOrThrowError(input, "deviceName", true);
         Integer skew = InputParser.parseIntOrThrowError(input, "skew", false);
         Integer period = InputParser.parseIntOrThrowError(input, "period", false);
 
@@ -54,7 +53,8 @@ public class CreateOrUpdateTotpDeviceAPI extends WebserverAPI {
         if (userId.isEmpty()) {
             throw new ServletException(new BadRequestException("userId cannot be empty"));
         }
-        if (deviceName.isEmpty()) {
+        if (deviceName != null && deviceName.isEmpty()) {
+            // Only Null or valid device name are allowed
             throw new ServletException(new BadRequestException("deviceName cannot be empty"));
         }
         if (skew < 0) {
@@ -84,6 +84,7 @@ public class CreateOrUpdateTotpDeviceAPI extends WebserverAPI {
             TOTPDevice device = Totp.registerDevice(appIdentifier, storage, main, userId, deviceName, skew, period);
 
             result.addProperty("status", "OK");
+            result.addProperty("deviceName", device.deviceName);
             result.addProperty("secret", device.secretKey);
             super.sendJsonResponse(200, result, resp);
         } catch (DeviceAlreadyExistsException e) {
@@ -136,9 +137,6 @@ public class CreateOrUpdateTotpDeviceAPI extends WebserverAPI {
             Totp.updateDeviceName(appIdentifier, storage, userId, existingDeviceName, newDeviceName);
 
             result.addProperty("status", "OK");
-            super.sendJsonResponse(200, result, resp);
-        } catch (TotpNotEnabledException e) {
-            result.addProperty("status", "TOTP_NOT_ENABLED_ERROR");
             super.sendJsonResponse(200, result, resp);
         } catch (UnknownDeviceException e) {
             result.addProperty("status", "UNKNOWN_DEVICE_ERROR");

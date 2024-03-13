@@ -20,6 +20,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
@@ -100,6 +101,7 @@ public class SignUpAPI extends WebserverAPI {
             if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0)) {
                 result.addProperty("recipeUserId", user.getSupertokensOrExternalUserId());
             }
+
             super.sendJsonResponse(200, result, resp);
         } catch (DuplicateEmailException e) {
             Logging.debug(main, tenantIdentifier, Utils.exceptionStacktraceToString(e));
