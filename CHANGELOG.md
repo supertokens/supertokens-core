@@ -42,79 +42,81 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Migration
 
-    <details>
+Make sure the core is already upgraded to version 8.0.0 before migrating
 
-    <summary>If using PostgreSQL</summary>
+<details>
 
-    ```sql
-    CREATE TABLE IF NOT EXISTS tenant_first_factors (
-      connection_uri_domain VARCHAR(256) DEFAULT '',
-      app_id VARCHAR(64) DEFAULT 'public',
-      tenant_id VARCHAR(64) DEFAULT 'public',
-      factor_id VARCHAR(128),
-      CONSTRAINT tenant_first_factors_pkey
-        PRIMARY KEY (connection_uri_domain, app_id, tenant_id, factor_id),
-      CONSTRAINT tenant_first_factors_tenant_id_fkey
-        FOREIGN KEY (connection_uri_domain, app_id, tenant_id)
-        REFERENCES tenant_configs (connection_uri_domain, app_id, tenant_id) ON DELETE CASCADE
-    );
+<summary>If using PostgreSQL</summary>
 
-    CREATE INDEX IF NOT EXISTS tenant_first_factors_tenant_id_index ON
-      tenant_first_factors (connection_uri_domain, app_id, tenant_id);
+```sql
+CREATE TABLE IF NOT EXISTS tenant_first_factors (
+  connection_uri_domain VARCHAR(256) DEFAULT '',
+  app_id VARCHAR(64) DEFAULT 'public',
+  tenant_id VARCHAR(64) DEFAULT 'public',
+  factor_id VARCHAR(128),
+  CONSTRAINT tenant_first_factors_pkey
+    PRIMARY KEY (connection_uri_domain, app_id, tenant_id, factor_id),
+  CONSTRAINT tenant_first_factors_tenant_id_fkey
+    FOREIGN KEY (connection_uri_domain, app_id, tenant_id)
+    REFERENCES tenant_configs (connection_uri_domain, app_id, tenant_id) ON DELETE CASCADE
+);
 
-    CREATE TABLE IF NOT EXISTS tenant_required_secondary_factors (
-      connection_uri_domain VARCHAR(256) DEFAULT '',
-      app_id VARCHAR(64) DEFAULT 'public',
-      tenant_id VARCHAR(64) DEFAULT 'public',
-      factor_id VARCHAR(128),
-      CONSTRAINT tenant_required_secondary_factors_pkey
-        PRIMARY KEY (connection_uri_domain, app_id, tenant_id, factor_id),
-      CONSTRAINT tenant_required_secondary_factors_tenant_id_fkey
-        FOREIGN KEY (connection_uri_domain, app_id, tenant_id)
-        REFERENCES tenant_configs (connection_uri_domain, app_id, tenant_id) ON DELETE CASCADE
-    );
+CREATE INDEX IF NOT EXISTS tenant_first_factors_tenant_id_index ON
+  tenant_first_factors (connection_uri_domain, app_id, tenant_id);
 
-    CREATE INDEX IF NOT EXISTS tenant_default_required_factor_ids_tenant_id_index ON 
-      tenant_required_secondary_factors (connection_uri_domain, app_id, tenant_id);
+CREATE TABLE IF NOT EXISTS tenant_required_secondary_factors (
+  connection_uri_domain VARCHAR(256) DEFAULT '',
+  app_id VARCHAR(64) DEFAULT 'public',
+  tenant_id VARCHAR(64) DEFAULT 'public',
+  factor_id VARCHAR(128),
+  CONSTRAINT tenant_required_secondary_factors_pkey
+    PRIMARY KEY (connection_uri_domain, app_id, tenant_id, factor_id),
+  CONSTRAINT tenant_required_secondary_factors_tenant_id_fkey
+    FOREIGN KEY (connection_uri_domain, app_id, tenant_id)
+    REFERENCES tenant_configs (connection_uri_domain, app_id, tenant_id) ON DELETE CASCADE
+);
 
-    ALTER TABLE totp_user_devices ADD COLUMN IF NOT EXISTS created_at BIGINT default 0;
-    ALTER TABLE totp_user_devices 
-      ALTER COLUMN created_at DROP DEFAULT;
-    ```
+CREATE INDEX IF NOT EXISTS tenant_default_required_factor_ids_tenant_id_index ON 
+  tenant_required_secondary_factors (connection_uri_domain, app_id, tenant_id);
 
-    </details>
+ALTER TABLE totp_user_devices ADD COLUMN IF NOT EXISTS created_at BIGINT default 0;
+ALTER TABLE totp_user_devices 
+  ALTER COLUMN created_at DROP DEFAULT;
+```
 
-    <details>
+</details>
 
-    <summary>If using MySQL</summary>
+<details>
 
-    ```sql
-    CREATE TABLE IF NOT EXISTS tenant_first_factors (
-      connection_uri_domain VARCHAR(256) DEFAULT '',
-      app_id VARCHAR(64) DEFAULT 'public',
-      tenant_id VARCHAR(64) DEFAULT 'public',
-      factor_id VARCHAR(128),
-      PRIMARY KEY (connection_uri_domain, app_id, tenant_id, factor_id),
-      FOREIGN KEY (connection_uri_domain, app_id, tenant_id)
-        REFERENCES tenant_configs (connection_uri_domain, app_id, tenant_id) ON DELETE CASCADE
-    );
+<summary>If using MySQL</summary>
 
-    CREATE TABLE IF NOT EXISTS tenant_required_secondary_factors (
-      connection_uri_domain VARCHAR(256) DEFAULT '',
-      app_id VARCHAR(64) DEFAULT 'public',
-      tenant_id VARCHAR(64) DEFAULT 'public',
-      factor_id VARCHAR(128),
-      PRIMARY KEY (connection_uri_domain, app_id, tenant_id, factor_id),
-      FOREIGN KEY (connection_uri_domain, app_id, tenant_id)
-        REFERENCES tenant_configs (connection_uri_domain, app_id, tenant_id) ON DELETE CASCADE
-    );
+```sql
+CREATE TABLE IF NOT EXISTS tenant_first_factors (
+  connection_uri_domain VARCHAR(256) DEFAULT '',
+  app_id VARCHAR(64) DEFAULT 'public',
+  tenant_id VARCHAR(64) DEFAULT 'public',
+  factor_id VARCHAR(128),
+  PRIMARY KEY (connection_uri_domain, app_id, tenant_id, factor_id),
+  FOREIGN KEY (connection_uri_domain, app_id, tenant_id)
+    REFERENCES tenant_configs (connection_uri_domain, app_id, tenant_id) ON DELETE CASCADE
+);
 
-    ALTER TABLE totp_user_devices ADD COLUMN created_at BIGINT UNSIGNED default 0;
-    ALTER TABLE totp_user_devices 
-      ALTER COLUMN created_at DROP DEFAULT;
-    ```
+CREATE TABLE IF NOT EXISTS tenant_required_secondary_factors (
+  connection_uri_domain VARCHAR(256) DEFAULT '',
+  app_id VARCHAR(64) DEFAULT 'public',
+  tenant_id VARCHAR(64) DEFAULT 'public',
+  factor_id VARCHAR(128),
+  PRIMARY KEY (connection_uri_domain, app_id, tenant_id, factor_id),
+  FOREIGN KEY (connection_uri_domain, app_id, tenant_id)
+    REFERENCES tenant_configs (connection_uri_domain, app_id, tenant_id) ON DELETE CASCADE
+);
 
-    </details>
+ALTER TABLE totp_user_devices ADD COLUMN created_at BIGINT UNSIGNED default 0;
+ALTER TABLE totp_user_devices 
+  ALTER COLUMN created_at DROP DEFAULT;
+```
+
+</details>
 
 ## [8.0.1] - 2024-03-11
 
