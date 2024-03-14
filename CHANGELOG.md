@@ -12,6 +12,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Supports CDI version `5.0`
 - MFA stats in `EEFeatureFlag`
 - Adds `ImportTotpDeviceAPI`
+- Adds `CheckCodeAPI`
 
 ### Changes
 
@@ -27,9 +28,17 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `VerifyTotpDeviceAPI` changes
   - Adds `currentNumberOfFailedAttempts` and `maxNumberOfFailedAttempts` in response when status is
     `INVALID_TOTP_ERROR` or `LIMIT_REACHED_ERROR`
+- Adds `consumedDevice` in the success response of the `ConsumeCodeAPI`
+- Adds `preAuthSessionId` input to `DeleteCodeAPI` to be able to delete codes for a device
 - Adds a new required `useDynamicSigningKey` into the request body of `RefreshSessionAPI`
-  - This enables smooth switching between `useDynamicAccessTokenSigningKey` settings by allowing refresh calls to 
-    change the signing key type of a session
+  - This enables smooth switching between `useDynamicAccessTokenSigningKey` settings by allowing refresh calls to change the signing key type of a session
+- Adds optional `firstFactors` and `requiredSecondaryFactors` to the create or update connectionUriDomain, app and tenant APIs
+- Updates Last active while linking accounts
+- Marks fake email in email password sign up as verified
+- Fixes slow down in useridmapping queries
+- Adds core version in the logs
+- Fixes issue with session creation when using external user id on a linked account
+- Enforces the API call from public tenant for the APIs that are app specific
 
 ### Migration
 
