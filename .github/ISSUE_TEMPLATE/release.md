@@ -12,12 +12,16 @@ labels:
  - [supertokens-core:X.Y](https://github.com/supertokens/supertokens-core/tree/X.Y)
      - [ ] core
         - [ ] check CDI, plugin interface list
+        - [ ] Add migration script for psql / mysql
+        - [ ] Make sure no memory leak 
      - [ ] plugin-interface
         - [ ] check plugin interface list
      - [ ] mysql-plugin
          - [ ] check plugin interface list
+         - [ ] Add migration script for mysql
      - [ ] postgresql-plugin
          - [ ] check plugin interface list
+         - [ ] Add migration script for psql
      - [ ] mongodb-plugin
          - [ ] check plugin interface list
  - [ ] [supertokens-node:X.Y](https://github.com/supertokens/supertokens-node/tree/X.Y)
