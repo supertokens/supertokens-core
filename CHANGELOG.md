@@ -44,9 +44,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 Make sure the core is already upgraded to version 8.0.0 before migrating
 
-<details>
-
-<summary>If using PostgreSQL</summary>
+If using PostgreSQL
 
 ```sql
 ALTER TABLE totp_user_devices ADD COLUMN IF NOT EXISTS created_at BIGINT default 0;
@@ -54,19 +52,13 @@ ALTER TABLE totp_user_devices
   ALTER COLUMN created_at DROP DEFAULT;
 ```
 
-</details>
-
-<details>
-
-<summary>If using MySQL</summary>
+If using MySQL
 
 ```sql
 ALTER TABLE totp_user_devices ADD COLUMN created_at BIGINT UNSIGNED default 0;
 ALTER TABLE totp_user_devices 
   ALTER COLUMN created_at DROP DEFAULT;
 ```
-
-</details>
 
 ## [8.0.1] - 2024-03-11
 
