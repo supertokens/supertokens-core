@@ -156,9 +156,9 @@ public class ActiveUserTest {
                     WebserverAPI.getLatestCDIVersion().get(), "");
         }
 
-        // we don't remove the active user for the recipe user, so it should still be 2
+        // we remove the active user for the recipe user, so it should be 1
         userCount = ActiveUsers.countUsersActiveSince(process.getProcess(), System.currentTimeMillis() - 10000);
-        assertEquals(2, userCount);
+        assertEquals(1, userCount);
 
         // Sign in to the accounts once again
         {
@@ -188,7 +188,7 @@ public class ActiveUserTest {
 
         // there should still be only one active user
         userCount = ActiveUsers.countUsersActiveSince(process.getProcess(), System.currentTimeMillis() - 10000);
-        assertEquals(2, userCount);
+        assertEquals(1, userCount);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
