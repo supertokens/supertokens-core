@@ -185,36 +185,6 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         return stats;
     }
 
-    private JsonObject getTOTPStats() throws StorageQueryException, TenantOrAppNotFoundException {
-        JsonObject totpStats = new JsonObject();
-        JsonArray totpMauArr = new JsonArray();
-
-        Storage[] storages = StorageLayer.getStoragesForApp(main, this.appIdentifier);
-
-        // TODO Active users are present only on public tenant and TOTP users may be present on different storages
-        Storage publicTenantStorage = StorageLayer.getStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main);
-        final long now = System.currentTimeMillis();
-        for (int i = 1; i <= 31; i++) {
-            long timestamp = now - (i * 24 * 60 * 60 * 1000L);
-
-            int totpMau = 0;
-            // TODO Need to figure out a way to combine the data from different storages to get the final stats
-            // for (Storage storage : storages) {
-            totpMau += ((ActiveUsersStorage) publicTenantStorage).countUsersEnabledTotpAndActiveSince(this.appIdentifier, timestamp);
-            // }
-            totpMauArr.add(new JsonPrimitive(totpMau));
-        }
-
-        totpStats.add("maus", totpMauArr);
-
-        int totpTotalUsers = 0;
-        for (Storage storage : storages) {
-            totpTotalUsers += ((ActiveUsersStorage) storage).countUsersEnabledTotp(this.appIdentifier);
-        }
-        totpStats.addProperty("total_users", totpTotalUsers);
-        return totpStats;
-    }
-
     private boolean isEnterpriseThirdPartyId(String thirdPartyId) {
         for (String enterpriseThirdPartyId : ENTERPRISE_THIRD_PARTY_IDS) {
             if (thirdPartyId.startsWith(enterpriseThirdPartyId)) {
@@ -222,6 +192,36 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
             }
         }
         return false;
+    }
+
+    private JsonObject getMFAStats() throws StorageQueryException, TenantOrAppNotFoundException {
+        // TODO: Active users are present only on public tenant and MFA users may be
+        // present on different storages
+        JsonObject result = new JsonObject();
+        Storage[] storages = StorageLayer.getStoragesForApp(main, this.appIdentifier);
+
+        int totalUserCountWithMoreThanOneLoginMethod = 0;
+        int[] maus = new int[31];
+
+        long now = System.currentTimeMillis();
+
+        for (Storage storage : storages) {
+            totalUserCountWithMoreThanOneLoginMethod += ((AuthRecipeStorage) storage)
+                    .getUsersCountWithMoreThanOneLoginMethodOrTOTPEnabled(this.appIdentifier);
+
+            for (int i = 1; i <= 31; i++) {
+                long timestamp = now - (i * 24 * 60 * 60 * 1000L);
+
+                // `maus[i-1]` since i starts from 1
+                maus[i - 1] += ((ActiveUsersStorage) storage)
+                        .countUsersThatHaveMoreThanOneLoginMethodOrTOTPEnabledAndActiveSince(appIdentifier, timestamp);
+            }
+        }
+
+        result.addProperty("totalUserCountWithMoreThanOneLoginMethodOrTOTPEnabled",
+                totalUserCountWithMoreThanOneLoginMethod);
+        result.add("mauWithMoreThanOneLoginMethodOrTOTPEnabled", new Gson().toJsonTree(maus));
+        return result;
     }
 
     private JsonObject getMultiTenancyStats()
@@ -245,6 +245,21 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
                 hasUsersOrSessions = hasUsersOrSessions || ((SessionSQLStorage) storage).getNumberOfSessions(tenantConfig.tenantIdentifier) > 0;
                 tenantStat.addProperty("usersCount", usersCount);
                 tenantStat.addProperty("hasUsersOrSessions", hasUsersOrSessions);
+                if (tenantConfig.firstFactors != null) {
+                    JsonArray firstFactors = new JsonArray();
+                    for (String firstFactor : tenantConfig.firstFactors) {
+                        firstFactors.add(new JsonPrimitive(firstFactor));
+                    }
+                    tenantStat.add("firstFactors", firstFactors);
+                }
+
+                if (tenantConfig.requiredSecondaryFactors != null) {
+                    JsonArray requiredSecondaryFactors = new JsonArray();
+                    for (String requiredSecondaryFactor : tenantConfig.requiredSecondaryFactors) {
+                        requiredSecondaryFactors.add(new JsonPrimitive(requiredSecondaryFactor));
+                    }
+                    tenantStat.add("requiredSecondaryFactors", requiredSecondaryFactors);
+                }
 
                 try {
                     tenantStat.addProperty("userPoolId", Utils.hashSHA256(storage.getUserPoolId()));
@@ -355,8 +370,8 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
                 usageStats.add(EE_FEATURES.DASHBOARD_LOGIN.toString(), getDashboardLoginStats());
             }
 
-            if (feature == EE_FEATURES.TOTP) {
-                usageStats.add(EE_FEATURES.TOTP.toString(), getTOTPStats());
+            if (feature == EE_FEATURES.MFA) {
+                usageStats.add(EE_FEATURES.MFA.toString(), getMFAStats());
             }
 
             if (feature == EE_FEATURES.MULTI_TENANCY) {

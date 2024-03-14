@@ -96,7 +96,7 @@ public class TestAppData {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES,
-                        new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY, EE_FEATURES.TOTP});
+                        new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA});
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -104,7 +104,7 @@ public class TestAppData {
             return;
         }
 
-        String[] tablesToIgnore = new String[]{"tenant_thirdparty_provider_clients", "tenant_thirdparty_providers"};
+        String[] tablesToIgnore = new String[]{"tenant_thirdparty_provider_clients", "tenant_thirdparty_providers", "tenant_first_factors", "tenant_required_secondary_factors"};
 
         TenantIdentifier app = new TenantIdentifier(null, "a1", null);
 
@@ -113,7 +113,7 @@ public class TestAppData {
                 new EmailPasswordConfig(true),
                 new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                new JsonObject()
+                null, null, new JsonObject()
         ), false);
 
         Storage appStorage = (
@@ -159,8 +159,10 @@ public class TestAppData {
 
         TOTPDevice totpDevice = Totp.registerDevice(app.toAppIdentifier(), appStorage, process.getProcess(),
                 epUser.getSupertokensUserId(), "test", 1, 3);
+        Totp.verifyDevice(app, appStorage, process.getProcess(), epUser.getSupertokensUserId(), totpDevice.deviceName,
+                generateTotpCode(process.getProcess(), totpDevice, -1));
         Totp.verifyCode(app, appStorage, process.getProcess(), epUser.getSupertokensUserId(),
-                generateTotpCode(process.getProcess(), totpDevice, 0), true);
+                generateTotpCode(process.getProcess(), totpDevice, 0));
 
         ActiveUsers.updateLastActive(app.toAppIdentifier(), process.getProcess(),
                 epUser.getSupertokensUserId());

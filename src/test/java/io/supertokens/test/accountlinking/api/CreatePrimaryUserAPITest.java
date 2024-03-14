@@ -452,7 +452,7 @@ public class CreatePrimaryUserAPITest {
                         new EmailPasswordConfig(true),
                         new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        coreConfig
+                        null, null, coreConfig
                 )
         );
 

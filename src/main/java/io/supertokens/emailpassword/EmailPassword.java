@@ -38,6 +38,7 @@ import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicatePassword
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateUserIdException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
+import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerificationSQLStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
@@ -110,14 +111,37 @@ public class EmailPassword {
                 .createHashWithSalt(tenantIdentifier.toAppIdentifier(), password);
 
         while (true) {
-
             String userId = Utils.getUUID();
             long timeJoined = System.currentTimeMillis();
 
             try {
-                return StorageUtils.getEmailPasswordStorage(storage)
+                AuthRecipeUserInfo newUser = StorageUtils.getEmailPasswordStorage(storage)
                         .signUp(tenantIdentifier, userId, email, hashedPassword, timeJoined);
 
+                if (Utils.isFakeEmail(email)) {
+                    try {
+                        EmailVerificationSQLStorage evStorage = StorageUtils.getEmailVerificationStorage(storage);
+                        evStorage.startTransaction(con -> {
+                            try {
+                                evStorage.updateIsEmailVerified_Transaction(tenantIdentifier.toAppIdentifier(), con,
+                                                newUser.getSupertokensUserId(), email, true);
+                                evStorage.commitTransaction(con);
+
+                                return null;
+                            } catch (TenantOrAppNotFoundException e) {
+                                throw new StorageTransactionLogicException(e);
+                            }
+                        });
+                        newUser.loginMethods[0].setVerified(); // newly created user has only one loginMethod
+                    } catch (StorageTransactionLogicException e) {
+                        if (e.actualException instanceof TenantOrAppNotFoundException) {
+                            throw (TenantOrAppNotFoundException) e.actualException;
+                        }
+                        throw new StorageQueryException(e);
+                    }
+                }
+
+                return newUser;
             } catch (DuplicateUserIdException ignored) {
                 // we retry with a new userId (while loop)
             }

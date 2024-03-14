@@ -77,7 +77,7 @@ public class GetTotpDevicesAPITest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        FeatureFlagTestContent.getInstance(process.main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[] { EE_FEATURES.TOTP });
+        FeatureFlagTestContent.getInstance(process.main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[] { EE_FEATURES.MFA });
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
@@ -153,7 +153,8 @@ public class GetTotpDevicesAPITest {
                     null,
                     Utils.getCdiVersionStringLatestForTests(),
                     "totp");
-            assert res2.get("status").getAsString().equals("TOTP_NOT_ENABLED_ERROR");
+            assert res2.get("status").getAsString().equals("OK");
+            assert res2.get("devices").getAsJsonArray().size() == 0;
         }
 
         process.kill();

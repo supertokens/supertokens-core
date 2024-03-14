@@ -187,6 +187,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new DeleteCodesAPI(main));
         addAPI(new DeleteCodeAPI(main));
         addAPI(new CreateCodeAPI(main));
+        addAPI(new CheckCodeAPI(main));
         addAPI(new ConsumeCodeAPI(main));
         addAPI(new TelemetryAPI(main));
         addAPI(new UsersCountAPI(main));
@@ -216,6 +217,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new VerifyTotpAPI(main));
         addAPI(new RemoveTotpDeviceAPI(main));
         addAPI(new GetTotpDevicesAPI(main));
+        addAPI(new ImportTotpDeviceAPI(main));
         addAPI(new UpdateExternalUserIdInfoAPI(main));
         addAPI(new ImportUserWithPasswordHashAPI(main));
         addAPI(new LicenseKeyAPI(main));

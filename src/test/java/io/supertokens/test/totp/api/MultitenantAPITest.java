@@ -39,6 +39,7 @@ import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.test.totp.TOTPRecipeTest;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
+import io.supertokens.totp.Totp;
 import io.supertokens.utils.SemVer;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -75,7 +76,7 @@ public class MultitenantAPITest {
         this.process = TestingProcessManager.start(args);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
-                        EE_FEATURES.MULTI_TENANCY, EE_FEATURES.TOTP});
+                        EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA});
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -108,6 +109,7 @@ public class MultitenantAPITest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(false, null),
                             new PasswordlessConfig(true),
+                            null, null,
                             config
                     )
             );
@@ -128,6 +130,7 @@ public class MultitenantAPITest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(false, null),
                             new PasswordlessConfig(true),
+                            null, null,
                             config
                     )
             );
@@ -148,6 +151,7 @@ public class MultitenantAPITest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(false, null),
                             new PasswordlessConfig(true),
+                            null, null,
                             config
                     )
             );
@@ -159,6 +163,11 @@ public class MultitenantAPITest {
     }
 
     private JsonObject createDevice(TenantIdentifier tenantIdentifier, String userId)
+            throws HttpResponseException, IOException {
+        return createDevice(tenantIdentifier, userId, SemVer.v3_0);
+    }
+
+    private JsonObject createDevice(TenantIdentifier tenantIdentifier, String userId, SemVer version)
             throws HttpResponseException, IOException {
         JsonObject body = new JsonObject();
         body.addProperty("userId", userId);
@@ -174,7 +183,7 @@ public class MultitenantAPITest {
                 1000,
                 1000,
                 null,
-                SemVer.v3_0.get(),
+                version.get(),
                 "totp");
         assertEquals("OK", res.get("status").getAsString());
         return res;
@@ -193,8 +202,8 @@ public class MultitenantAPITest {
                 "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/totp/device"),
                 body,
-                1000,
-                1000,
+                1000000,
+                1000000,
                 null,
                 SemVer.v3_0.get(),
                 "totp");
@@ -241,7 +250,7 @@ public class MultitenantAPITest {
     }
 
     @Test
-    public void testCreateDeviceWorksFromPublicTenantOnly() throws Exception {
+    public void testCreateDeviceWorksFromAllTenants() throws Exception {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
@@ -251,9 +260,32 @@ public class MultitenantAPITest {
         TenantIdentifier[] tenants = new TenantIdentifier[]{t1, t2, t3};
         for (TenantIdentifier tenantId : tenants) {
             createDevice(tenantId, "user"+userCount);
-            createDeviceAlreadyExists(tenantId, "user"+userCount);
 
             userCount++;
+        }
+    }
+
+    @Test
+    public void testCreateDeviceWorksFromPublicTenantOnly_v5() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        int userCount = 1;
+
+        createDevice(t1, "user" + userCount);
+        TOTPDevice device = Totp.getDevices(t1.toAppIdentifier(), (StorageLayer.getStorage(t1, process.getProcess())),
+                "user" + userCount)[0];
+        String validTotp = TOTPRecipeTest.generateTotpCode(process.getProcess(), device);
+        verifyDevice(t1, "user" + userCount, validTotp);
+
+        userCount++;
+
+        try {
+            createDevice(t2, "user" + userCount, SemVer.v5_0);
+            fail();
+        } catch (HttpResponseException e) {
+            assertEquals(403, e.statusCode);
         }
     }
 
@@ -273,7 +305,7 @@ public class MultitenantAPITest {
 
             JsonObject deviceResponse = createDevice(t1, userId);
             String secretKey = deviceResponse.get("secret").getAsString();
-            TOTPDevice device = new TOTPDevice(userId, "d1", secretKey, 2, 1, true);
+            TOTPDevice device = new TOTPDevice("user" + userCount, "d1", secretKey, 2, 1, true, System.currentTimeMillis());
             String validTotp = TOTPRecipeTest.generateTotpCode(process.getProcess(), device);
             verifyDevice(tenant1, userId, validTotp);
 

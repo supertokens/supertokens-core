@@ -218,15 +218,15 @@ public class TestPermissionChecks {
         TestCase[] testCases = new TestCase[]{
                 new TestCase(
                         new TenantIdentifier("127.0.0.1", "a1", "t1"), null,
-                        "Only the public tenantId is allowed to list all tenants"
+                        "Only the public tenantId is allowed to list all tenants associated with this app"
                 ),
                 new TestCase(
                         new TenantIdentifier("127.0.0.1", null, "t1"), null,
-                        "Only the public tenantId is allowed to list all tenants"
+                        "Only the public tenantId is allowed to list all tenants associated with this app"
                 ),
                 new TestCase(
                         new TenantIdentifier(null, null, "t1"), null,
-                        "Only the public tenantId is allowed to list all tenants"
+                        "Only the public tenantId is allowed to list all tenants associated with this app"
                 ),
                 new TestCase(
                         new TenantIdentifier(null, null, null), null, null

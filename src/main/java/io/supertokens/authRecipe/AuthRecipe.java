@@ -25,11 +25,7 @@ import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
-import io.supertokens.pluginInterface.RECIPE_ID;
-import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.Storage;
-import io.supertokens.pluginInterface.StorageUtils;
-import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
+import io.supertokens.pluginInterface.*;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
@@ -126,7 +122,7 @@ public class AuthRecipe {
 
     public static AuthRecipeUserInfo getUserById(AppIdentifier appIdentifier, Storage storage, String userId)
             throws StorageQueryException {
-        return  StorageUtils.getAuthRecipeStorage(storage).getPrimaryUserById(appIdentifier, userId);
+        return StorageUtils.getAuthRecipeStorage(storage).getPrimaryUserById(appIdentifier, userId);
     }
 
     public static class CreatePrimaryUserResult {
@@ -325,22 +321,22 @@ public class AuthRecipe {
     }
 
     public static LinkAccountsResult linkAccounts(Main main, AppIdentifier appIdentifier,
-                                       Storage storage, String _recipeUserId, String _primaryUserId)
+                                                  Storage storage, String _recipeUserId, String _primaryUserId)
             throws StorageQueryException,
             AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException,
             RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException, InputUserIdIsNotAPrimaryUserException,
             UnknownUserIdException, TenantOrAppNotFoundException, FeatureNotEnabledException {
 
         if (Arrays.stream(FeatureFlag.getInstance(main, appIdentifier).getEnabledFeatures())
-                .noneMatch(t -> t == EE_FEATURES.ACCOUNT_LINKING)) {
+                .noneMatch(t -> t == EE_FEATURES.ACCOUNT_LINKING || t == EE_FEATURES.MFA)) {
             throw new FeatureNotEnabledException(
                     "Account linking feature is not enabled for this app. Please contact support to enable it.");
         }
 
         AuthRecipeSQLStorage authRecipeStorage = StorageUtils.getAuthRecipeStorage(storage);
         try {
-            LinkAccountsResult result = authRecipeStorage.startTransaction(con -> {
 
+            LinkAccountsResult result = authRecipeStorage.startTransaction(con -> {
                 try {
                     CanLinkAccountsResult canLinkAccounts = canLinkAccountsHelper(con, appIdentifier,
                             authRecipeStorage, _recipeUserId, _primaryUserId);
@@ -537,7 +533,7 @@ public class AuthRecipe {
             FeatureNotEnabledException {
 
         if (Arrays.stream(FeatureFlag.getInstance(main, appIdentifier).getEnabledFeatures())
-                .noneMatch(t -> t == EE_FEATURES.ACCOUNT_LINKING)) {
+                .noneMatch(t -> t == EE_FEATURES.ACCOUNT_LINKING || t == EE_FEATURES.MFA)) {
             throw new FeatureNotEnabledException(
                     "Account linking feature is not enabled for this app. Please contact support to enable it.");
         }
@@ -911,7 +907,7 @@ public class AuthRecipe {
     }
 
     private static void deleteNonAuthRecipeUser(TransactionConnection con, AppIdentifier appIdentifier,
-            Storage storage, String userId)
+                                                Storage storage, String userId)
             throws StorageQueryException {
         StorageUtils.getUserMetadataStorage(storage)
                 .deleteUserMetadata_Transaction(con, appIdentifier, userId);
@@ -921,6 +917,7 @@ public class AuthRecipe {
                 .deleteEmailVerificationUserInfo_Transaction(con, appIdentifier, userId);
         StorageUtils.getUserRolesStorage(storage)
                 .deleteAllRolesForUser_Transaction(con, appIdentifier, userId);
+
         StorageUtils.getActiveUsersStorage(storage)
                 .deleteUserActive_Transaction(con, appIdentifier, userId);
         StorageUtils.getTOTPStorage(storage)

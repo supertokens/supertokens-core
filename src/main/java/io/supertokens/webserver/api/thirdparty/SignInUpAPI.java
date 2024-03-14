@@ -20,6 +20,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
+import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
@@ -81,7 +82,8 @@ public class SignInUpAPI extends WebserverAPI {
                 ThirdParty.SignInUpResponse response = ThirdParty.signInUp2_7(
                         tenantIdentifier, storage,
                         thirdPartyId, thirdPartyUserId, email, isEmailVerified);
-                UserIdMapping.populateExternalUserIdForUsers(storage, new AuthRecipeUserInfo[]{response.user});
+                UserIdMapping.populateExternalUserIdForUsers(tenantIdentifier.toAppIdentifier(), storage,
+                        new AuthRecipeUserInfo[]{response.user});
 
                 ActiveUsers.updateLastActive(tenantIdentifier.toAppIdentifier(), main,
                         response.user.getSupertokensUserId());
@@ -106,6 +108,7 @@ public class SignInUpAPI extends WebserverAPI {
                         }
                     }
                 }
+
                 super.sendJsonResponse(200, result, resp);
 
             } catch (StorageQueryException | TenantOrAppNotFoundException e) {
@@ -142,7 +145,8 @@ public class SignInUpAPI extends WebserverAPI {
                 ThirdParty.SignInUpResponse response = ThirdParty.signInUp(
                         tenantIdentifier, storage, super.main, thirdPartyId, thirdPartyUserId,
                         email, isEmailVerified);
-                UserIdMapping.populateExternalUserIdForUsers(storage, new AuthRecipeUserInfo[]{response.user});
+                UserIdMapping.populateExternalUserIdForUsers(tenantIdentifier.toAppIdentifier(), storage,
+                        new AuthRecipeUserInfo[]{response.user});
 
                 ActiveUsers.updateLastActive(tenantIdentifier.toAppIdentifier(), main,
                         response.user.getSupertokensUserId());
@@ -169,6 +173,7 @@ public class SignInUpAPI extends WebserverAPI {
                         }
                     }
                 }
+
                 super.sendJsonResponse(200, result, resp);
 
             } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {

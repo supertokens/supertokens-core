@@ -9,6 +9,36 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Add a new core API for fetching all the core properties
 
+## [9.0.0] - 2024-03-13
+
+### Added
+
+- Supports CDI version `5.0`
+- MFA stats in `EEFeatureFlag`
+- Adds `ImportTotpDeviceAPI`
+
+### Changes
+
+- `deviceName` in request body of `CreateOrUpdateTotpDeviceAPI` `POST` is now optional
+- Adds `firstFactors` and `requiredSecondaryFactors` in request body of create or update CUD, App and
+  Tenant APIs
+- Adds `deviceName` in the response of `CreateOrUpdateTotpDeviceAPI` `POST`
+- `VerifyTOTPAPI` changes
+  - Removes `allowUnverifiedDevices` from request body and unverified devices are not allowed
+  - Adds `currentNumberOfFailedAttempts` and `maxNumberOfFailedAttempts` in response when status is 
+    `INVALID_TOTP_ERROR` or `LIMIT_REACHED_ERROR`
+  - Adds status `UNKNOWN_USER_ID_ERROR`
+- `VerifyTotpDeviceAPI` changes
+  - Adds `currentNumberOfFailedAttempts` and `maxNumberOfFailedAttempts` in response when status is
+    `INVALID_TOTP_ERROR` or `LIMIT_REACHED_ERROR`
+- Adds a new required `useDynamicSigningKey` into the request body of `RefreshSessionAPI`
+  - This enables smooth switching between `useDynamicAccessTokenSigningKey` settings by allowing refresh calls to 
+    change the signing key type of a session
+
+### Migration
+
+- TODO - copy once postgres / mysql changelog is done
+
 ## [8.0.1] - 2024-03-11
 
 - Making this version backward compatible. Breaking changes in `8.0.0` can now be ignored.
