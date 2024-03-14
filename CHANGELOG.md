@@ -49,36 +49,6 @@ Make sure the core is already upgraded to version 8.0.0 before migrating
 <summary>If using PostgreSQL</summary>
 
 ```sql
-CREATE TABLE IF NOT EXISTS tenant_first_factors (
-  connection_uri_domain VARCHAR(256) DEFAULT '',
-  app_id VARCHAR(64) DEFAULT 'public',
-  tenant_id VARCHAR(64) DEFAULT 'public',
-  factor_id VARCHAR(128),
-  CONSTRAINT tenant_first_factors_pkey
-    PRIMARY KEY (connection_uri_domain, app_id, tenant_id, factor_id),
-  CONSTRAINT tenant_first_factors_tenant_id_fkey
-    FOREIGN KEY (connection_uri_domain, app_id, tenant_id)
-    REFERENCES tenant_configs (connection_uri_domain, app_id, tenant_id) ON DELETE CASCADE
-);
-
-CREATE INDEX IF NOT EXISTS tenant_first_factors_tenant_id_index ON
-  tenant_first_factors (connection_uri_domain, app_id, tenant_id);
-
-CREATE TABLE IF NOT EXISTS tenant_required_secondary_factors (
-  connection_uri_domain VARCHAR(256) DEFAULT '',
-  app_id VARCHAR(64) DEFAULT 'public',
-  tenant_id VARCHAR(64) DEFAULT 'public',
-  factor_id VARCHAR(128),
-  CONSTRAINT tenant_required_secondary_factors_pkey
-    PRIMARY KEY (connection_uri_domain, app_id, tenant_id, factor_id),
-  CONSTRAINT tenant_required_secondary_factors_tenant_id_fkey
-    FOREIGN KEY (connection_uri_domain, app_id, tenant_id)
-    REFERENCES tenant_configs (connection_uri_domain, app_id, tenant_id) ON DELETE CASCADE
-);
-
-CREATE INDEX IF NOT EXISTS tenant_default_required_factor_ids_tenant_id_index ON 
-  tenant_required_secondary_factors (connection_uri_domain, app_id, tenant_id);
-
 ALTER TABLE totp_user_devices ADD COLUMN IF NOT EXISTS created_at BIGINT default 0;
 ALTER TABLE totp_user_devices 
   ALTER COLUMN created_at DROP DEFAULT;
