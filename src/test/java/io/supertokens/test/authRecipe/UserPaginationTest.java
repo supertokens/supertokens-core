@@ -353,10 +353,6 @@ public class UserPaginationTest {
 
     @Test
     public void testUserPaginationWithSameTimeJoined() throws Exception {
-        String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
         if (StorageLayer.getBaseStorage(process.main).getType() != STORAGE_TYPE.SQL) {
             return;
         }
@@ -415,8 +411,5 @@ public class UserPaginationTest {
             assertEquals(userIds.size(), paginationUserIds.size());
             assertEquals(userIds, paginationUserIds);
         }
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 }
