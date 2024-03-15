@@ -32,6 +32,7 @@ import io.supertokens.session.Session;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.usermetadata.UserMetadata;
+import io.supertokens.version.Version;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -487,6 +488,8 @@ public class AuthRecipeTest {
             fail();
         }
 
+        boolean isMySQL = Version.getVersion(process.getProcess()).getPluginName().equals("mysql");
+
         for (int limit : limits) {
 
             // now we paginate in asc order
@@ -495,6 +498,9 @@ public class AuthRecipeTest {
                 usersCreated.sort((o1, o2) -> {
                     if (o1.timeJoined != o2.timeJoined) {
                         return (int) (o1.timeJoined - o2.timeJoined);
+                    }
+                    if (isMySQL) {
+                        return o1.getSupertokensUserId().compareTo(o2.getSupertokensUserId());
                     }
                     return o2.getSupertokensUserId().compareTo(o1.getSupertokensUserId());
                 });
