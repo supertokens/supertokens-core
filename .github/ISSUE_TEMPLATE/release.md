@@ -53,18 +53,19 @@ labels:
  - [ ] [supertokens-flutter:X.Y](https://github.com/supertokens/supertokens-flutter/X.Y)
     - [ ] check FDI list   
  - [ ] [supertokens-dashboard](https://github.com/supertokens/dashboard)
+    - [ ] Tested all items mentioned in this? https://github.com/supertokens/dashboard/blob/master/.github/PULL_REQUEST_TEMPLATE.md 
  - [ ]  Test day with team. Get people in the team to read the docs and implement something with the new feature.
 
 ### Others
 
 -  [ ] Example apps in create-supertokens-app CLI
 -  [ ] Create new example app in create-supertokens-app CLI?
- - [ ] Examples apps in supertokens-auth-react
+ - [ ] Examples apps in supertokens-auth-react. Update try.supertokens and rerun the pr checklist
  - [ ] Examples apps in supertokens-web-js
  - [ ] Examples apps in supertokens-react-native
  - [ ] Examples apps in supertokens-golang
  - [ ] Examples apps in supertokens-python
- - [ ] Examples apps in supertokens-node
+ - [ ] Examples apps in supertokens-node. Update try.supertokens and rerun the pr checklist
  - [ ] Examples apps in android
  - [ ] Example apps in ios 
  - [ ] Example apps in flutter 

@@ -140,29 +140,30 @@ public class Session {
             sessionHandle += "_" + tenantIdentifier.getTenantId();
         }
 
-        io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping.getUserIdMapping(
-                tenantIdentifier.toAppIdentifier(), storage, recipeUserId, UserIdType.EXTERNAL);
-        if (userIdMapping != null) {
-            recipeUserId = userIdMapping.superTokensUserId;
-        }
-
         String primaryUserId = recipeUserId;
-        if (storage.getType().equals(STORAGE_TYPE.SQL)) {
+
+        if (storage.getType() == STORAGE_TYPE.SQL) {
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping.getUserIdMapping(
+                    tenantIdentifier.toAppIdentifier(), storage, recipeUserId, UserIdType.EXTERNAL);
+            if (userIdMapping != null) {
+                recipeUserId = userIdMapping.superTokensUserId;
+            }
+
             primaryUserId = StorageUtils.getAuthRecipeStorage(storage)
                     .getPrimaryUserIdStrForUserId(tenantIdentifier.toAppIdentifier(), recipeUserId);
             if (primaryUserId == null) {
                 primaryUserId = recipeUserId;
             }
-        }
 
-        HashMap<String, String> userIdMappings = UserIdMapping.getUserIdMappingForSuperTokensUserIds(
-                tenantIdentifier.toAppIdentifier(), storage,
-                new ArrayList<>(Arrays.asList(primaryUserId, recipeUserId)));
-        if (userIdMappings.containsKey(primaryUserId)) {
-            primaryUserId = userIdMappings.get(primaryUserId);
-        }
-        if (userIdMappings.containsKey(recipeUserId)) {
-            recipeUserId = userIdMappings.get(recipeUserId);
+            HashMap<String, String> userIdMappings = UserIdMapping.getUserIdMappingForSuperTokensUserIds(
+                    tenantIdentifier.toAppIdentifier(), storage,
+                    new ArrayList<>(Arrays.asList(primaryUserId, recipeUserId)));
+            if (userIdMappings.containsKey(primaryUserId)) {
+                primaryUserId = userIdMappings.get(primaryUserId);
+            }
+            if (userIdMappings.containsKey(recipeUserId)) {
+                recipeUserId = userIdMappings.get(recipeUserId);
+            }
         }
 
         String antiCsrfToken = enableAntiCsrf ? UUID.randomUUID().toString() : null;

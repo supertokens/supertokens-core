@@ -20,6 +20,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
+import io.supertokens.authRecipe.AuthRecipe;
+import io.supertokens.authRecipe.UserPaginationContainer;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
 import io.supertokens.featureflag.EE_FEATURES;
@@ -33,6 +35,7 @@ import io.supertokens.passwordless.exceptions.*;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -40,6 +43,7 @@ import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicExceptio
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.passwordless.exception.DuplicateLinkCodeHashException;
+import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -344,6 +348,68 @@ public class UserPaginationTest {
                     assertEquals(userCount, userIdSet.size());
                 }
             }
+        }
+    }
+
+    @Test
+    public void testUserPaginationWithSameTimeJoined() throws Exception {
+        if (StorageLayer.getBaseStorage(process.main).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        ThirdPartySQLStorage storage = (ThirdPartySQLStorage) StorageLayer.getBaseStorage(process.getProcess());
+
+        Set<String> userIds = new HashSet<>();
+
+        long timeJoined = System.currentTimeMillis();
+        for (int i = 0; i < 100; i++) {
+            String userId = io.supertokens.utils.Utils.getUUID();
+            storage.signUp(TenantIdentifier.BASE_TENANT, userId, "test"+i+"@example.com", new LoginMethod.ThirdParty("google", userId), timeJoined);
+            userIds.add(userId);
+        }
+
+        // Test ascending
+        {
+            Set<String> paginationUserIds = new HashSet<>();
+            UserPaginationContainer usersRes = AuthRecipe.getUsers(process.getProcess(), 10,
+                    "ASC", null, null, null);
+
+            while (true) {
+                for (AuthRecipeUserInfo user : usersRes.users) {
+                    paginationUserIds.add(user.getSupertokensUserId());
+                }
+
+                if (usersRes.nextPaginationToken == null) {
+                    break;
+                }
+                usersRes = AuthRecipe.getUsers(process.getProcess(), 10,
+                        "ASC", usersRes.nextPaginationToken, null, null);
+            }
+
+            assertEquals(userIds.size(), paginationUserIds.size());
+            assertEquals(userIds, paginationUserIds);
+        }
+
+        // Test descending
+        {
+            Set<String> paginationUserIds = new HashSet<>();
+            UserPaginationContainer usersRes = AuthRecipe.getUsers(process.getProcess(), 10,
+                    "DESC", null, null, null);
+
+            while (true) {
+                for (AuthRecipeUserInfo user : usersRes.users) {
+                    paginationUserIds.add(user.getSupertokensUserId());
+                }
+
+                if (usersRes.nextPaginationToken == null) {
+                    break;
+                }
+                usersRes = AuthRecipe.getUsers(process.getProcess(), 10,
+                        "DESC", usersRes.nextPaginationToken, null, null);
+            }
+
+            assertEquals(userIds.size(), paginationUserIds.size());
+            assertEquals(userIds, paginationUserIds);
         }
     }
 }

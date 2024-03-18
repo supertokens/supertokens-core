@@ -512,6 +512,10 @@ public class TestApp {
 
     @Test
     public void testFirstFactorsArray() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         JsonObject config = new JsonObject();
         StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
 
@@ -738,6 +742,10 @@ public class TestApp {
     @Test
     public void testInvalidTypedValueInCoreConfigWhileCreatingApp() throws Exception {
         if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 

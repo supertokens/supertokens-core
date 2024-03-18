@@ -50,6 +50,51 @@ public class RefreshSessionAPITest5_0 {
     }
 
     @Test
+    public void badInputMissingUseDynamicSigningKey() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        String userId = "userId";
+        JsonObject userDataInJWT = new JsonObject();
+        userDataInJWT.add("nullProp", JsonNull.INSTANCE);
+        userDataInJWT.addProperty("key", "value");
+        JsonObject userDataInDatabase = new JsonObject();
+        userDataInDatabase.addProperty("key", "value");
+
+        JsonObject request = new JsonObject();
+        request.addProperty("userId", userId);
+        request.add("userDataInJWT", userDataInJWT);
+        request.add("userDataInDatabase", userDataInDatabase);
+        request.addProperty("enableAntiCsrf", false);
+
+        JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v5_0.get(),
+                "session");
+        assertEquals(sessionInfo.get("status").getAsString(), "OK");
+
+        JsonObject sessionRefreshBody = new JsonObject();
+
+        sessionRefreshBody.addProperty("refreshToken",
+                sessionInfo.get("refreshToken").getAsJsonObject().get("token").getAsString());
+        sessionRefreshBody.addProperty("enableAntiCsrf", false);
+
+        try {
+            JsonObject sessionRefreshResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/session/refresh", sessionRefreshBody, 1000, 1000, null,
+                    SemVer.v5_0.get(), "session");
+        } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+            assertEquals(e.getMessage(),
+                    "Http error. Status Code: 400. Message: Field name 'useDynamicSigningKey' is invalid in JSON input");
+
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
     public void successOutputUpgradeWithNonStaticKeySessionTest() throws Exception {
         String[] args = { "../" };
 

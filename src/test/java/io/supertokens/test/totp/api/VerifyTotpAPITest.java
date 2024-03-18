@@ -76,7 +76,7 @@ public class VerifyTotpAPITest {
         String[] args = { "../" };
 
         // Trigger rate limiting on 1 wrong attempts:
-        Utils.setValueInConfig("totp_max_attempts", "1");
+        Utils.setValueInConfig("totp_max_attempts", "2");
         // Set cooldown to 1 second:
         Utils.setValueInConfig("totp_rate_limit_cooldown_sec", "1");
 
@@ -95,7 +95,7 @@ public class VerifyTotpAPITest {
         createDeviceReq.addProperty("userId", "user-id");
         createDeviceReq.addProperty("deviceName", "deviceName");
         createDeviceReq.addProperty("period", 2);
-        createDeviceReq.addProperty("skew", 0);
+        createDeviceReq.addProperty("skew", 1);
 
         JsonObject createDeviceRes = HttpRequestForTesting.sendJsonPOSTRequest(
                 process.getProcess(),
@@ -176,6 +176,18 @@ public class VerifyTotpAPITest {
                     "totp");
             assert res0.get("status").getAsString().equals("INVALID_TOTP_ERROR");
 
+            res0 = HttpRequestForTesting.sendJsonPOSTRequest(
+                    process.getProcess(),
+                    "",
+                    "http://localhost:3567/recipe/totp/verify",
+                    body,
+                    1000,
+                    1000,
+                    null,
+                    Utils.getCdiVersionStringLatestForTests(),
+                    "totp");
+            assert res0.get("status").getAsString().equals("INVALID_TOTP_ERROR");
+
             // Check that rate limiting is triggered for the user:
             JsonObject res3 = HttpRequestForTesting.sendJsonPOSTRequest(
                     process.getProcess(),
@@ -191,7 +203,7 @@ public class VerifyTotpAPITest {
             assert res3.get("retryAfterMs") != null;
 
             // wait for cooldown to end (1s)
-            Thread.sleep(1300);
+            Thread.sleep(2000);
 
             // should pass now on valid code
             String validTotp = generateTotpCode(process.getProcess(), device);
@@ -211,6 +223,18 @@ public class VerifyTotpAPITest {
             // try to reuse the same code (replay attack)
             body.addProperty("totp", "mycode");
             JsonObject res2 = HttpRequestForTesting.sendJsonPOSTRequest(
+                    process.getProcess(),
+                    "",
+                    "http://localhost:3567/recipe/totp/verify",
+                    body,
+                    1000,
+                    1000,
+                    null,
+                    Utils.getCdiVersionStringLatestForTests(),
+                    "totp");
+            assert res2.get("status").getAsString().equals("INVALID_TOTP_ERROR");
+
+            res2 = HttpRequestForTesting.sendJsonPOSTRequest(
                     process.getProcess(),
                     "",
                     "http://localhost:3567/recipe/totp/verify",

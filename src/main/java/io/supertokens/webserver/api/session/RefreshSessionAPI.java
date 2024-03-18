@@ -69,8 +69,10 @@ public class RefreshSessionAPI extends WebserverAPI {
         String refreshToken = InputParser.parseStringOrThrowError(input, "refreshToken", false);
         String antiCsrfToken = InputParser.parseStringOrThrowError(input, "antiCsrfToken", true);
         Boolean enableAntiCsrf = InputParser.parseBooleanOrThrowError(input, "enableAntiCsrf", false);
-        Boolean useDynamicSigningKey = version.greaterThanOrEqualTo(SemVer.v5_0) ?
-                InputParser.parseBooleanOrThrowError(input, "useDynamicSigningKey", false) : null;
+        Boolean useDynamicSigningKey = version.greaterThanOrEqualTo(SemVer.v3_0)
+                ? InputParser.parseBooleanOrThrowError(input, "useDynamicSigningKey", version.lesserThan(SemVer.v5_0))
+                : null;
+
         assert enableAntiCsrf != null;
         assert refreshToken != null;
 
