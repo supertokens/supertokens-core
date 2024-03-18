@@ -77,21 +77,15 @@ public class SessionUserAPI extends WebserverAPI {
             String[] sessionHandles;
 
             if (fetchAcrossAllTenants) {
-                // when fetchAcrossAllTenants is true, and given that the backend SDK might pass tenant id
-                // we do not want to enforce public tenant here but behave as if this is an app specific API
-                // So instead of calling enforcePublicTenantAndGetAllStoragesForApp, we simply do all the logic
-                // here to fetch the storages and find the storage where `userId` exists. If user id does not
-                // exist, we use the storage for the tenantId passed in the request.
                 AppIdentifier appIdentifier = getAppIdentifier(req);
-                Storage[] storages = StorageLayer.getStoragesForApp(main, appIdentifier);
                 Storage storage;
                 try {
                     StorageAndUserIdMapping storageAndUserIdMapping =
-                            StorageLayer.findStorageAndUserIdMappingForUser(
-                            appIdentifier, storages, userId, UserIdType.ANY);
+                            enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
+                            req, userId, UserIdType.ANY, false);
                     storage = storageAndUserIdMapping.storage;
                 } catch (UnknownUserIdException e) {
-                    storage = getTenantStorage(req);
+                    throw new IllegalStateException("should never happen");
                 }
                 sessionHandles = Session.getAllNonExpiredSessionHandlesForUser(
                         main, appIdentifier, storage, userId,
@@ -112,7 +106,7 @@ public class SessionUserAPI extends WebserverAPI {
             result.add("sessionHandles", arr);
             super.sendJsonResponse(200, result, resp);
 
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
     }

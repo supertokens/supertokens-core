@@ -113,19 +113,14 @@ public class SessionRemoveAPI extends WebserverAPI {
                 String[] sessionHandlesRevoked;
 
                 if (revokeAcrossAllTenants) {
-                    // when revokeAcrossAllTenants is true, and given that the backend SDK might pass tenant id
-                    // we do not want to enforce public tenant here but behave as if this is an app specific API
-                    // So instead of calling enforcePublicTenantAndGetAllStoragesForApp, we simply do all the logic
-                    // here to fetch the storages and find the storage where `userId` exists. If user id does not
-                    // exist, we use the storage for the tenantId passed in the request.
                     AppIdentifier appIdentifier = getAppIdentifier(req);
-                    Storage[] storages = StorageLayer.getStoragesForApp(main, appIdentifier);
                     try {
-                        StorageAndUserIdMapping storageAndUserIdMapping = StorageLayer.findStorageAndUserIdMappingForUser(
-                                appIdentifier, storages, userId, UserIdType.ANY);
+                        StorageAndUserIdMapping storageAndUserIdMapping =
+                                enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
+                                        req, userId, UserIdType.ANY, false);
                         storage = storageAndUserIdMapping.storage;
                     } catch (UnknownUserIdException e) {
-                        storage = getTenantStorage(req);
+                        throw new IllegalStateException("should never happen");
                     }
                     sessionHandlesRevoked = Session.revokeAllSessionsForUser(
                             main, appIdentifier, storage, userId, revokeSessionsForLinkedAccounts);
@@ -159,7 +154,7 @@ public class SessionRemoveAPI extends WebserverAPI {
                 }
                 result.add("sessionHandlesRevoked", sessionHandlesRevokedJSON);
                 super.sendJsonResponse(200, result, resp);
-            } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+            } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
                 throw new ServletException(e);
             }
         } else {
