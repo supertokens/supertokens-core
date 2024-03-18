@@ -34,18 +34,24 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.usermetadata.sqlStorage.UserMetadataSQLStorage;
+import io.supertokens.session.Session;
+import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
 import io.supertokens.useridmapping.UserIdMapping;
+import io.supertokens.utils.SemVer;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -374,5 +380,92 @@ public class TestWithNonAuthRecipes {
         TestMultitenancyAPIHelper.unverifyEmail(t0, user2.getSupertokensUserId(), "test@example.com", process.getProcess());
         assertFalse(t1EvStorage.isEmailVerified(t0.toAppIdentifier(), user2.getSupertokensUserId(), "test@example.com")); // ensure t1 storage does not have user2's ev
         assertFalse(t0EvStorage.isEmailVerified(t0.toAppIdentifier(), user1.getSupertokensUserId(), "test@example.com")); // ensure t0 storage does not have user1's ev
+    }
+
+    @Test
+    public void testSessionCannotGetAcrossAllStorageOrRevokedAcrossAllTenantsFromNonPublicTenant() throws Exception {
+        if (StorageLayer.getBaseStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
+        TenantIdentifier t0 = new TenantIdentifier(null, null, null);
+        Storage t0Storage = (StorageLayer.getStorage(t0, process.getProcess()));
+
+        TenantIdentifier t1 = new TenantIdentifier(null, null, "t1");
+        Storage t1Storage = (StorageLayer.getStorage(t1, process.getProcess()));
+
+        // Create users
+        AuthRecipeUserInfo user1 = EmailPassword.signUp(t0, t0Storage, process.getProcess(), "test@example.com", "password123");
+        AuthRecipeUserInfo user2 = EmailPassword.signUp(t1, t1Storage, process.getProcess(), "test@example.com", "password123");
+
+        UserIdMapping.populateExternalUserIdForUsers(t0.toAppIdentifier(), t0Storage, new AuthRecipeUserInfo[]{user1});
+        UserIdMapping.populateExternalUserIdForUsers(t1.toAppIdentifier(), t1Storage, new AuthRecipeUserInfo[]{user2});
+
+        SessionInformationHolder sess1 = Session.createNewSession(t0, t0Storage,
+                process.getProcess(), user1.getSupertokensUserId(), new JsonObject(), new JsonObject());
+        SessionInformationHolder sess2 = Session.createNewSession(t1, t1Storage,
+                process.getProcess(), user2.getSupertokensUserId(), new JsonObject(), new JsonObject());
+
+        {
+            Map<String, String> params = new HashMap<>();
+            params.put("fetchAcrossAllTenants", "true");
+            params.put("userId", user1.getSupertokensUserId());
+
+            JsonObject sessionResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    HttpRequestForTesting.getMultitenantUrl(t1, "/recipe/session/user"),
+                    params, 1000, 1000, null, SemVer.v4_0.get(),
+                    "session");
+            assertEquals("OK", sessionResponse.get("status").getAsString());
+            assertEquals(1, sessionResponse.get("sessionHandles").getAsJsonArray().size());
+            assertEquals(sess1.session.handle, sessionResponse.get("sessionHandles").getAsJsonArray().get(0).getAsString());
+        }
+
+        {
+            try {
+                Map<String, String> params = new HashMap<>();
+                params.put("fetchAcrossAllTenants", "true");
+                params.put("userId", user1.getSupertokensUserId());
+
+                JsonObject sessionResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                        HttpRequestForTesting.getMultitenantUrl(t1, "/recipe/session/user"),
+                        params, 1000, 1000, null, SemVer.v5_0.get(),
+                        "session");
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(403, e.statusCode);
+            }
+        }
+
+        {
+            try {
+                JsonObject requestBody = new JsonObject();
+                requestBody.addProperty("userId", user1.getSupertokensUserId());
+                requestBody.addProperty("revokeAcrossAllTenants", true);
+
+                JsonObject sessionResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        HttpRequestForTesting.getMultitenantUrl(t1, "/recipe/session/remove"), requestBody,
+                        1000, 1000, null, SemVer.v5_0.get(),
+                        "session");
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(403, e.statusCode);
+            }
+        }
+
+        {
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("userId", user1.getSupertokensUserId());
+            requestBody.addProperty("revokeAcrossAllTenants", true);
+
+            JsonObject sessionResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    HttpRequestForTesting.getMultitenantUrl(t1, "/recipe/session/remove"), requestBody,
+                    1000, 1000, null, SemVer.v4_0.get(),
+                    "session");
+            assertEquals("OK", sessionResponse.get("status").getAsString());
+        }
     }
 }
