@@ -30,8 +30,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     `INVALID_TOTP_ERROR` or `LIMIT_REACHED_ERROR`
 - Adds `consumedDevice` in the success response of the `ConsumeCodeAPI`
 - Adds `preAuthSessionId` input to `DeleteCodeAPI` to be able to delete codes for a device
-- Adds a new required `useDynamicSigningKey` into the request body of `RefreshSessionAPI`
+- Adds a new `useDynamicSigningKey` into the request body of `RefreshSessionAPI`
   - This enables smooth switching between `useDynamicAccessTokenSigningKey` settings by allowing refresh calls to change the signing key type of a session
+  - This is available after CDI3.0
+  - This is required in&after CDI5.0 and optional before
 - Adds optional `firstFactors` and `requiredSecondaryFactors` to the create or update connectionUriDomain, app and tenant APIs
 - Updates Last active while linking accounts
 - Marks fake email in email password sign up as verified
