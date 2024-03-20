@@ -136,6 +136,11 @@ public class Start
     }
 
     @Override
+    public Storage createBulkImportProxyStorageInstance() {
+        return this;
+    }
+
+    @Override
     public STORAGE_TYPE getType() {
         return STORAGE_TYPE.SQL;
     }

@@ -56,6 +56,14 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     }
 
     public static Storage getNewStorageInstance(Main main, JsonObject config, TenantIdentifier tenantIdentifier, boolean doNotLog) throws InvalidConfigException {
+        return getNewInstance(main, config, tenantIdentifier, doNotLog, false);
+    }
+
+    public static Storage getNewBulkImportProxyStorageInstance(Main main, JsonObject config, TenantIdentifier tenantIdentifier, boolean doNotLog) throws InvalidConfigException {
+        return getNewInstance(main, config, tenantIdentifier, doNotLog, true);
+    }
+
+    private static Storage getNewInstance(Main main, JsonObject config, TenantIdentifier tenantIdentifier, boolean doNotLog, boolean isBulkImportProxy) throws InvalidConfigException {
         Storage result;
         if (StorageLayer.ucl == null) {
             result = new Start(main);
@@ -75,7 +83,11 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
             }
             if (storageLayer != null && !main.isForceInMemoryDB()
                     && (storageLayer.canBeUsed(config) || CLIOptions.get(main).isForceNoInMemoryDB())) {
-                result = storageLayer;
+                if (isBulkImportProxy) {
+                    result = storageLayer.createBulkImportProxyStorageInstance();
+                } else {
+                    result = storageLayer;
+                }
             } else {
                 result = new Start(main);
             }
