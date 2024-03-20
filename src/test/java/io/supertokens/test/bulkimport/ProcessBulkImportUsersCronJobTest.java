@@ -110,7 +110,6 @@ public class ProcessBulkImportUsersCronJobTest {
 
         BulkImportUser bulkImportUser = users.get(0);
 
-        // Thread.sleep(600000);
         Thread.sleep(6000);
 
         List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, null, null,

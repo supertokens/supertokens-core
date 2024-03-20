@@ -24,6 +24,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.google.gson.JsonObject;
+
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.authRecipe.AuthRecipe;
@@ -62,6 +64,7 @@ import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.passwordless.exception.DuplicatePhoneNumberException;
@@ -114,7 +117,7 @@ public class ProcessBulkImportUsers extends CronTask {
                 BulkImport.PROCESS_USERS_BATCH_SIZE);
 
         for (BulkImportUser user : users) {
-            processUser(appIdentifier, user);
+            processUser(appIdentifier, user, bulkImportSQLStorage);
         }
 
         closeAllProxyStorages();
@@ -147,12 +150,23 @@ public class ProcessBulkImportUsers extends CronTask {
             return userPoolToStorageMap.get(userPoolId);
         }
 
-        SQLStorage bulkImportProxyStorage = (SQLStorage) StorageLayer.getNewBulkImportProxyStorageInstance(main,
-                Config.getBaseConfigAsJsonObject(main), tenantIdentifier, true);
+        TenantConfig[] allTenants = Multitenancy.getAllTenants(main);
 
-        userPoolToStorageMap.put(userPoolId, bulkImportProxyStorage);
-        bulkImportProxyStorage.initStorage(true);
-        return bulkImportProxyStorage;
+        Map<ResourceDistributor.KeyClass, JsonObject> normalisedConfigs = Config.getNormalisedConfigsForAllTenants(
+                allTenants,
+                Config.getBaseConfigAsJsonObject(main));
+
+        for (ResourceDistributor.KeyClass key : normalisedConfigs.keySet()) {
+            if (key.getTenantIdentifier().equals(tenantIdentifier)) {
+                SQLStorage bulkImportProxyStorage = (SQLStorage) StorageLayer.getNewBulkImportProxyStorageInstance(main,
+                        normalisedConfigs.get(key), tenantIdentifier, true);
+
+                userPoolToStorageMap.put(userPoolId, bulkImportProxyStorage);
+                bulkImportProxyStorage.initStorage(true);
+                return bulkImportProxyStorage;
+            }
+        }
+        throw new TenantOrAppNotFoundException(tenantIdentifier);
     }
 
     public Storage[] getAllProxyStoragesForApp(Main main, AppIdentifier appIdentifier)
@@ -161,9 +175,10 @@ public class ProcessBulkImportUsers extends CronTask {
 
         Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> resources = main
                 .getResourceDistributor()
-                .getAllResourcesWithResourceKey(RESOURCE_KEY);
+                .getAllResourcesWithResourceKey(StorageLayer.RESOURCE_KEY);
         for (ResourceDistributor.KeyClass key : resources.keySet()) {
             if (key.getTenantIdentifier().toAppIdentifier().equals(appIdentifier)) {
+                System.out.println("Adding storage for tenant: " + key.getTenantIdentifier().getTenantId());
                 allProxyStorages.add(getProxyStorage(key.getTenantIdentifier()));
             }
         }
@@ -176,7 +191,7 @@ public class ProcessBulkImportUsers extends CronTask {
         }
     }
 
-    private void processUser(AppIdentifier appIdentifier, BulkImportUser user)
+    private void processUser(AppIdentifier appIdentifier, BulkImportUser user, BulkImportSQLStorage baseTenantStorage)
             throws TenantOrAppNotFoundException, StorageQueryException, InvalidConfigException, IOException,
             DbInitException {
         // Since all the tenants of a user must share the storage, we will just use the
@@ -202,8 +217,12 @@ public class ProcessBulkImportUsers extends CronTask {
                 createUserMetadata(appIdentifier, bulkImportProxyStorage, user, primaryLM);
                 createUserRoles(main, appIdentifier, bulkImportProxyStorage, user);
 
-                ((BulkImportSQLStorage) bulkImportProxyStorage).deleteBulkImportUser_Transaction(appIdentifier, con,
-                        user.id);
+                // NOTE: We need to use the baseTenantStorage as bulkImportProxyStorage could have a different storage than the baseTenantStorage
+                baseTenantStorage.startTransaction(con2 -> {
+                    baseTenantStorage.deleteBulkImportUser_Transaction(appIdentifier, con2,
+                            user.id);
+                    return null;
+                });
 
                 // We need to commit the transaction manually because we have overridden that in the proxy storage
                 try {
@@ -217,12 +236,11 @@ public class ProcessBulkImportUsers extends CronTask {
                 return null;
             });
         } catch (StorageTransactionLogicException e) {
-            handleProcessUserExceptions(appIdentifier, user, (BulkImportSQLStorage) bulkImportProxyStorage, e);
+            handleProcessUserExceptions(appIdentifier, user, e, baseTenantStorage);
         }
     }
 
-    private void handleProcessUserExceptions(AppIdentifier appIdentifier, BulkImportUser user,
-            BulkImportSQLStorage bulkImportSQLStorage, Exception e)
+    private void handleProcessUserExceptions(AppIdentifier appIdentifier, BulkImportUser user, Exception e, BulkImportSQLStorage baseTenantStorage)
             throws StorageQueryException {
 
         // Java doesn't allow us to reassign local variables inside a lambda expression
@@ -237,8 +255,8 @@ public class ProcessBulkImportUsers extends CronTask {
         String[] userId = { user.id };
 
         try {
-            bulkImportSQLStorage.startTransaction(con -> {
-                bulkImportSQLStorage.updateBulkImportUserStatus_Transaction(appIdentifier, con, userId,
+            baseTenantStorage.startTransaction(con -> {
+                baseTenantStorage.updateBulkImportUserStatus_Transaction(appIdentifier, con, userId,
                         BULK_IMPORT_USER_STATUS.FAILED, errorMessage[0]);
 
                 // We need to commit the transaction manually because we have overridden that in the proxy storage
