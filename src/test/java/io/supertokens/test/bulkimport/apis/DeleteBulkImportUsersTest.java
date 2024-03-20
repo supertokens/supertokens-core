@@ -139,8 +139,8 @@ public class DeleteBulkImportUsersTest {
             return;
         }
 
-        AppIdentifier appIdentifier = new AppIdentifier(null, null);
         BulkImportStorage storage = (BulkImportStorage) StorageLayer.getStorage(process.main);
+        AppIdentifier appIdentifier = new AppIdentifier(null, null);
 
         // Insert users
         List<BulkImportUser> users = generateBulkImportUser(5);

@@ -18,7 +18,9 @@ package io.supertokens.test.bulkimport.apis;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.UUID;
 
@@ -33,14 +35,28 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
+import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
+import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.multitenancy.exception.BadPermissionException;
+import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.EmailPasswordConfig;
+import io.supertokens.pluginInterface.multitenancy.PasswordlessConfig;
+import io.supertokens.pluginInterface.multitenancy.TenantConfig;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.thirdparty.InvalidProviderConfigException;
 import io.supertokens.userroles.UserRoles;
 
 public class AddBulkImportUsersTest {
@@ -72,6 +88,11 @@ public class AddBulkImportUsersTest {
             return;
         }
 
+        // Create user roles
+        {
+            UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), "role1", null);
+        }
+
         String genericErrMsg = "Data has missing or invalid fields. Please check the users field for more details.";
 
         // users is required in the json body
@@ -82,6 +103,7 @@ public class AddBulkImportUsersTest {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/bulk-import/users",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+                fail("The API should have thrown an error");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 String responseString = getResponseMessageFromError(e.getMessage());
                 assertEquals(400, e.statusCode);
@@ -93,6 +115,7 @@ public class AddBulkImportUsersTest {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/bulk-import/users",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+                fail("The API should have thrown an error");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 String responseString = getResponseMessageFromError(e.getMessage());
                 assertEquals(400, e.statusCode);
@@ -107,6 +130,7 @@ public class AddBulkImportUsersTest {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/bulk-import/users",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+                fail("The API should have thrown an error");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 String responseString = getResponseMessageFromError(e.getMessage());
                 assertEquals(400, e.statusCode);
@@ -119,6 +143,7 @@ public class AddBulkImportUsersTest {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/bulk-import/users",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+                fail("The API should have thrown an error");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 String responseString = getResponseMessageFromError(e.getMessage());
                 assertEquals(400, e.statusCode);
@@ -131,6 +156,7 @@ public class AddBulkImportUsersTest {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/bulk-import/users",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+                fail("The API should have thrown an error");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 String responseString = getResponseMessageFromError(e.getMessage());
                 assertEquals(400, e.statusCode);
@@ -146,11 +172,27 @@ public class AddBulkImportUsersTest {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/bulk-import/users",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+                fail("The API should have thrown an error");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 String responseString = getResponseMessageFromError(e.getMessage());
                 assertEquals(400, e.statusCode);
                 assertEquals(responseString,
-                        "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"externalUserId should be of type string.\",\"userRoles should be of type array of string.\",\"totpDevices should be of type array of object.\",\"loginMethods is required.\"]}]}");
+                        "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"externalUserId should be of type string.\",\"userRoles should be of type array of object.\",\"totpDevices should be of type array of object.\",\"loginMethods is required.\"]}]}");
+            }
+            // Non-unique externalUserIds
+            try {
+                JsonObject request = new JsonParser()
+                        .parse("{\"users\":[{\"externalUserId\":\"id1\"}, {\"externalUserId\":\"id1\"}]}")
+                        .getAsJsonObject();
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/bulk-import/users",
+                        request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+                fail("The API should have thrown an error");
+            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                String responseString = getResponseMessageFromError(e.getMessage());
+                assertEquals(400, e.statusCode);
+                assertEquals(responseString,
+                        "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"loginMethods is required.\"]},{\"index\":1,\"errors\":[\"loginMethods is required.\",\"externalUserId id1 is not unique. It is already used by another user.\"]}]}");
             }
             // secretKey is required in totpDevices
             try {
@@ -160,20 +202,38 @@ public class AddBulkImportUsersTest {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/bulk-import/users",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+                fail("The API should have thrown an error");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 String responseString = getResponseMessageFromError(e.getMessage());
                 assertEquals(400, e.statusCode);
                 assertEquals(responseString,
                         "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"secretKey is required for a totp device.\",\"loginMethods is required.\"]}]}");
             }
-            // Invalid role (does not exist)
+            // Invalid role (tenantIds is required)
             try {
                 JsonObject request = new JsonParser()
-                        .parse("{\"users\":[{\"userRoles\":[\"role5\"]}]}")
+                        .parse("{\"users\":[{\"userRoles\":[{\"role\":\"role1\"}]}]}")
                         .getAsJsonObject();
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/bulk-import/users",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+                fail("The API should have thrown an error");
+            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                String responseString = getResponseMessageFromError(e.getMessage());
+                assertEquals(400, e.statusCode);
+                
+                assertEquals(responseString,
+                        "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"tenantIds is required for a user role.\",\"loginMethods is required.\"]}]}");
+            }
+            // Invalid role (role doesn't exist)
+            try {
+                JsonObject request = new JsonParser()
+                        .parse("{\"users\":[{\"userRoles\":[{\"role\":\"role5\", \"tenantIds\": [\"public\"]}]}]}")
+                        .getAsJsonObject();
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/bulk-import/users",
+                        request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+                fail("The API should have thrown an error");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 String responseString = getResponseMessageFromError(e.getMessage());
                 assertEquals(400, e.statusCode);
@@ -186,16 +246,17 @@ public class AddBulkImportUsersTest {
         {
             try {
                 JsonObject request = new JsonParser().parse(
-                        "{\"users\":[{\"loginMethods\":[{\"recipeId\":[],\"tenantId\":[],\"isPrimary\":[],\"isVerified\":[],\"timeJoinedInMSSinceEpoch\":[]}]}]}")
+                        "{\"users\":[{\"loginMethods\":[{\"recipeId\":[],\"tenantIds\":{},\"isPrimary\":[],\"isVerified\":[],\"timeJoinedInMSSinceEpoch\":[]}]}]}")
                         .getAsJsonObject();
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/bulk-import/users",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+                fail("The API should have thrown an error");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 String responseString = getResponseMessageFromError(e.getMessage());
                 assertEquals(400, e.statusCode);
                 assertEquals(responseString,
-                        "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"recipeId should be of type string for a loginMethod.\",\"tenantId should be of type string for a loginMethod.\",\"isVerified should be of type boolean for a loginMethod.\",\"isPrimary should be of type boolean for a loginMethod.\",\"timeJoinedInMSSinceEpoch should be of type integer for a loginMethod\"]}]}");
+                        "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"recipeId should be of type string for a loginMethod.\",\"tenantIds should be of type array of string for a loginMethod.\",\"isVerified should be of type boolean for a loginMethod.\",\"isPrimary should be of type boolean for a loginMethod.\",\"timeJoinedInMSSinceEpoch should be of type integer for a loginMethod\"]}]}");
             }
         }
         // Invalid recipeId
@@ -207,6 +268,7 @@ public class AddBulkImportUsersTest {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/bulk-import/users",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+                fail("The API should have thrown an error");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 String responseString = getResponseMessageFromError(e.getMessage());
                 assertEquals(400, e.statusCode);
@@ -223,6 +285,7 @@ public class AddBulkImportUsersTest {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/bulk-import/users",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+                fail("The API should have thrown an error");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 String responseString = getResponseMessageFromError(e.getMessage());
                 assertEquals(400, e.statusCode);
@@ -237,6 +300,7 @@ public class AddBulkImportUsersTest {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/bulk-import/users",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+                fail("The API should have thrown an error");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 String responseString = getResponseMessageFromError(e.getMessage());
                 assertEquals(400, e.statusCode);
@@ -251,6 +315,7 @@ public class AddBulkImportUsersTest {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/bulk-import/users",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+                fail("The API should have thrown an error");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 String responseString = getResponseMessageFromError(e.getMessage());
                 assertEquals(400, e.statusCode);
@@ -267,6 +332,7 @@ public class AddBulkImportUsersTest {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/bulk-import/users",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+                fail("The API should have thrown an error");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 String responseString = getResponseMessageFromError(e.getMessage());
                 assertEquals(400, e.statusCode);
@@ -281,6 +347,7 @@ public class AddBulkImportUsersTest {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/bulk-import/users",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+                fail("The API should have thrown an error");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 String responseString = getResponseMessageFromError(e.getMessage());
                 assertEquals(400, e.statusCode);
@@ -297,6 +364,7 @@ public class AddBulkImportUsersTest {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/bulk-import/users",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+                fail("The API should have thrown an error");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 String responseString = getResponseMessageFromError(e.getMessage());
                 assertEquals(400, e.statusCode);
@@ -311,45 +379,69 @@ public class AddBulkImportUsersTest {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/bulk-import/users",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+                fail("The API should have thrown an error");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 String responseString = getResponseMessageFromError(e.getMessage());
                 assertEquals(400, e.statusCode);
                 assertEquals(responseString,
-                        "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"email should be of type string for a passwordless recipe.\",\"phoneNumber should be of type string for a passwordless recipe.\"]}]}");
+                        "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"email should be of type string for a passwordless recipe.\",\"phoneNumber should be of type string for a passwordless recipe.\",\"Either email or phoneNumber is required for a passwordless recipe.\"]}]}");
             }
         }
         // Validate tenantId
         {
-            // CASE 1: Different tenantId when multitenancy is not enabled
+            // CASE 1: Invalid tenantId when multitenancy is not enabled
             try {
                 JsonObject request = new JsonParser().parse(
-                        "{\"users\":[{\"loginMethods\":[{\"tenantId\":\"invalid\",\"recipeId\":\"passwordless\",\"email\":\"johndoe@gmail.com\"}]}]}")
+                        "{\"users\":[{\"loginMethods\":[{\"tenantIds\":[\"invalid\"],\"recipeId\":\"passwordless\",\"email\":\"johndoe@gmail.com\"}]}]}")
                         .getAsJsonObject();
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/bulk-import/users",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+                
+                fail("The API should have thrown an error");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 String responseString = getResponseMessageFromError(e.getMessage());
                 assertEquals(400, e.statusCode);
                 assertEquals(responseString,
                         "{\"error\":\"" + genericErrMsg + "\",\"users\":[{\"index\":0,\"errors\":[\"Multitenancy must be enabled before importing users to a different tenant.\"]}]}");
             }
-            // CASE 2: Different tenantId when multitenancy is enabled
+            // CASE 2: Invalid tenantId when multitenancy is enabled
             try {
                 FeatureFlagTestContent.getInstance(process.getProcess())
                     .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
 
                 JsonObject request = new JsonParser().parse(
-                        "{\"users\":[{\"loginMethods\":[{\"tenantId\":\"invalid\",\"recipeId\":\"passwordless\",\"email\":\"johndoe@gmail.com\"}]}]}")
+                        "{\"users\":[{\"loginMethods\":[{\"tenantIds\":[\"invalid\"],\"recipeId\":\"passwordless\",\"email\":\"johndoe@gmail.com\"}]}]}")
                         .getAsJsonObject();
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/bulk-import/users",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+                fail("The API should have thrown an error");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 String responseString = getResponseMessageFromError(e.getMessage());
                 assertEquals(400, e.statusCode);
                 assertEquals(responseString,
                         "{\"error\":\"" + genericErrMsg + "\",\"users\":[{\"index\":0,\"errors\":[\"Invalid tenantId: invalid for passwordless recipe.\"]}]}");
+            }
+            // CASE 3. Two more tenants do not share the same storage
+            try {
+                FeatureFlagTestContent.getInstance(process.getProcess())
+                    .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+    
+                createTenants(process.getProcess());
+    
+                JsonObject request = new JsonParser().parse(
+                        "{\"users\":[{\"loginMethods\":[{\"tenantIds\":[\"public\"],\"recipeId\":\"passwordless\",\"email\":\"johndoe@gmail.com\"}, {\"tenantIds\":[\"t2\"],\"recipeId\":\"thirdparty\", \"email\":\"johndoe@gmail.com\", \"thirdPartyId\":\"id\", \"thirdPartyUserId\":\"id\"}]}]}")
+                        .getAsJsonObject();
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/bulk-import/users",
+                        request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+                fail("The API should have thrown an error");
+            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                String responseString = getResponseMessageFromError(e.getMessage());
+                assertEquals(400, e.statusCode);
+                assertEquals(responseString,
+                        "{\"error\":\"" + genericErrMsg + "\",\"users\":[{\"index\":0,\"errors\":[\"All tenants for a user must share the same storage.\"]}]}");
             }
         }
         // No two loginMethods can have isPrimary as true
@@ -361,6 +453,7 @@ public class AddBulkImportUsersTest {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/bulk-import/users",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+                fail("The API should have thrown an error");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 String responseString = getResponseMessageFromError(e.getMessage());
                 assertEquals(400, e.statusCode);
@@ -372,9 +465,10 @@ public class AddBulkImportUsersTest {
         {
             try {
                 JsonObject request = generateUsersJson(0);
-            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-            "http://localhost:3567/bulk-import/users",
-            request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/bulk-import/users",
+                    request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+                fail("The API should have thrown an error");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 String responseString = getResponseMessageFromError(e.getMessage());
                 assertEquals(400, e.statusCode);
@@ -385,9 +479,10 @@ public class AddBulkImportUsersTest {
         {
             try {
                 JsonObject request = generateUsersJson(10001);
-            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-            "http://localhost:3567/bulk-import/users",
-            request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/bulk-import/users",
+                    request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+                fail("The API should have thrown an error");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 String responseString = getResponseMessageFromError(e.getMessage());
                 assertEquals(400, e.statusCode);
@@ -495,15 +590,16 @@ public class AddBulkImportUsersTest {
 
             user.addProperty("externalUserId", UUID.randomUUID().toString());
             user.add("userMetadata", parser.parse("{\"key1\":\"value1\",\"key2\":{\"key3\":\"value3\"}}"));
-            user.add("userRoles", parser.parse("[\"role1\", \"role2\"]"));
+            user.add("userRoles", parser.parse("[{\"role\":\"role1\", \"tenantIds\": [\"public\"]},{\"role\":\"role2\", \"tenantIds\": [\"public\"]}]"));
             user.add("totpDevices", parser.parse("[{\"secretKey\":\"secretKey\",\"deviceName\":\"deviceName\"}]"));
 
+            JsonArray tenanatIds = parser.parse("[\"public\"]").getAsJsonArray();
             String email = " johndoe+" + i + "@gmail.com ";
 
             JsonArray loginMethodsArray = new JsonArray();
-            loginMethodsArray.add(createEmailLoginMethod(email));
-            loginMethodsArray.add(createThirdPartyLoginMethod(email));
-            loginMethodsArray.add(createPasswordlessLoginMethod(email));
+            loginMethodsArray.add(createEmailLoginMethod(email, tenanatIds));
+            loginMethodsArray.add(createThirdPartyLoginMethod(email, tenanatIds));
+            loginMethodsArray.add(createPasswordlessLoginMethod(email, tenanatIds));
             user.add("loginMethods", loginMethodsArray);
 
             usersArray.add(user);
@@ -513,9 +609,9 @@ public class AddBulkImportUsersTest {
         return userJsonObject;
     }
 
-    private static JsonObject createEmailLoginMethod(String email) {
+    private static JsonObject createEmailLoginMethod(String email, JsonArray tenantIds) {
         JsonObject loginMethod = new JsonObject();
-        loginMethod.addProperty("tenantId", "public");
+        loginMethod.add("tenantIds", tenantIds);
         loginMethod.addProperty("email", email);
         loginMethod.addProperty("recipeId", "emailpassword");
         loginMethod.addProperty("passwordHash", "$argon2d$v=19$m=12,t=3,p=1$aGI4enNvMmd0Zm0wMDAwMA$r6p7qbr6HD+8CD7sBi4HVw");
@@ -526,9 +622,9 @@ public class AddBulkImportUsersTest {
         return loginMethod;
     }
 
-    private static JsonObject createThirdPartyLoginMethod(String email) {
+    private static JsonObject createThirdPartyLoginMethod(String email, JsonArray tenantIds) {
         JsonObject loginMethod = new JsonObject();
-        loginMethod.addProperty("tenantId", "public");
+        loginMethod.add("tenantIds", tenantIds);
         loginMethod.addProperty("recipeId", "thirdparty");
         loginMethod.addProperty("email", email);
         loginMethod.addProperty("thirdPartyId", "google");
@@ -539,9 +635,9 @@ public class AddBulkImportUsersTest {
         return loginMethod;
     }
 
-    private static JsonObject createPasswordlessLoginMethod(String email) {
+    private static JsonObject createPasswordlessLoginMethod(String email, JsonArray tenantIds) {
         JsonObject loginMethod = new JsonObject();
-        loginMethod.addProperty("tenantId", "public");
+        loginMethod.add("tenantIds", tenantIds);
         loginMethod.addProperty("email", email);
         loginMethod.addProperty("recipeId", "passwordless");
         loginMethod.addProperty("phoneNumber", "+91-9999999999");
@@ -549,5 +645,48 @@ public class AddBulkImportUsersTest {
         loginMethod.addProperty("isPrimary", false);
         loginMethod.addProperty("timeJoinedInMSSinceEpoch", 0);
         return loginMethod;
+    }
+
+    private void createTenants(Main main)
+            throws StorageQueryException, TenantOrAppNotFoundException, InvalidProviderConfigException,
+            FeatureNotEnabledException, IOException, InvalidConfigException,
+            CannotModifyBaseConfigException, BadPermissionException {
+        // User pool 1 - (null, null, null), (null, null, t1)
+        // User pool 2 - (null, null, t2)
+
+        { // tenant 1
+            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, null, "t1");
+
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    main,
+                    new TenantIdentifier(null, null, null),
+                    new TenantConfig(
+                            tenantIdentifier,
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(true),
+                            null, null, new JsonObject()
+                    )
+            );
+        }
+        { // tenant 2
+            JsonObject config = new JsonObject();
+            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, null, "t2");
+
+            StorageLayer.getStorage(new TenantIdentifier(null, null, null), main)
+                    .modifyConfigToAddANewUserPoolForTesting(config, 1);
+
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    main,
+                    new TenantIdentifier(null, null, null),
+                    new TenantConfig(
+                            tenantIdentifier,
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(true),
+                            null, null, config
+                    )
+            );
+        }
     }
 }

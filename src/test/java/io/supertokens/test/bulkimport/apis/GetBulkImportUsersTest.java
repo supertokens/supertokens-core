@@ -18,6 +18,7 @@ package io.supertokens.test.bulkimport.apis;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -72,7 +73,7 @@ public class GetBulkImportUsersTest {
             HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/bulk-import/users",
                     params, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
-
+            fail("The API should have thrown an error");
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertEquals(400, e.statusCode);
             assertEquals(
@@ -86,7 +87,7 @@ public class GetBulkImportUsersTest {
             HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/bulk-import/users",
                     params, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
-
+            fail("The API should have thrown an error");
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertEquals(400, e.statusCode);
             assertEquals("Http error. Status Code: 400. Message: limit must a positive integer with min value 1",
@@ -99,7 +100,7 @@ public class GetBulkImportUsersTest {
             HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/bulk-import/users",
                     params, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
-
+            fail("The API should have thrown an error");
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertEquals(400, e.statusCode);
             assertEquals("Http error. Status Code: 400. Message: Max limit allowed is 500", e.getMessage());
@@ -111,7 +112,7 @@ public class GetBulkImportUsersTest {
             HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/bulk-import/users",
                     params, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
-
+            fail("The API should have thrown an error");
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertEquals(400, e.statusCode);
             assertEquals("Http error. Status Code: 400. Message: invalid pagination token", e.getMessage());
@@ -151,7 +152,7 @@ public class GetBulkImportUsersTest {
         assertEquals(1, bulkImportUsers.size());
         JsonObject bulkImportUserJson = bulkImportUsers.get(0).getAsJsonObject();
         bulkImportUserJson.get("status").getAsString().equals("NEW");
-        BulkImportUser.fromTesting_fromJson(bulkImportUserJson).toRawDataForDbStorage().equals(rawData);
+        BulkImportUser.forTesting_fromJson(bulkImportUserJson).toRawDataForDbStorage().equals(rawData);
     
         process.kill();
         Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

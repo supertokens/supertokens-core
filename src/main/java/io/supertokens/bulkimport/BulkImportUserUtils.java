@@ -34,14 +34,17 @@ import io.supertokens.emailpassword.exceptions.UnsupportedPasswordHashingFormatE
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser.LoginMethod;
+import io.supertokens.pluginInterface.bulkimport.BulkImportUser.UserRole;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser.TotpDevice;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
 import io.supertokens.utils.JsonValidatorUtils.ValueType;
 
@@ -49,19 +52,23 @@ import static io.supertokens.utils.JsonValidatorUtils.parseAndValidateFieldType;
 import static io.supertokens.utils.JsonValidatorUtils.validateJsonFieldType;
 
 public class BulkImportUserUtils {
-    public static BulkImportUser createBulkImportUserFromJSON(Main main, AppIdentifier appIdentifier, JsonObject userData, String id, String[] allUserRoles)
+    public static BulkImportUser createBulkImportUserFromJSON(Main main, AppIdentifier appIdentifier,
+            JsonObject userData, String id, String[] allUserRoles, Set<String> allExternalUserIds)
             throws InvalidBulkImportDataException, StorageQueryException, TenantOrAppNotFoundException {
         List<String> errors = new ArrayList<>();
 
-        String externalUserId = parseAndValidateFieldType(userData, "externalUserId", ValueType.STRING, false, String.class,
+        String externalUserId = parseAndValidateFieldType(userData, "externalUserId", ValueType.STRING, false,
+                String.class,
                 errors, ".");
         JsonObject userMetadata = parseAndValidateFieldType(userData, "userMetadata", ValueType.OBJECT, false,
                 JsonObject.class, errors, ".");
-        List<String> userRoles = getParsedUserRoles(userData, allUserRoles, errors);
+        List<UserRole> userRoles = getParsedUserRoles(main, appIdentifier, userData, allUserRoles, errors);
         List<TotpDevice> totpDevices = getParsedTotpDevices(userData, errors);
         List<LoginMethod> loginMethods = getParsedLoginMethods(main, appIdentifier, userData, errors);
 
-        externalUserId = validateAndNormaliseExternalUserId(externalUserId, errors);
+        externalUserId = validateAndNormaliseExternalUserId(externalUserId, allExternalUserIds, errors);
+
+        validateTenantIdsForRoleAndLoginMethods(main, appIdentifier, userRoles, loginMethods, errors);
 
         if (!errors.isEmpty()) {
             throw new InvalidBulkImportDataException(errors);
@@ -69,23 +76,40 @@ public class BulkImportUserUtils {
         return new BulkImportUser(id, externalUserId, userMetadata, userRoles, totpDevices, loginMethods);
     }
 
-    private static List<String> getParsedUserRoles(JsonObject userData, String[] allUserRoles, List<String> errors) {
-        JsonArray jsonUserRoles = parseAndValidateFieldType(userData, "userRoles", ValueType.ARRAY_OF_STRING,
-                false,
+    private static List<UserRole> getParsedUserRoles(Main main, AppIdentifier appIdentifier, JsonObject userData,
+            String[] allUserRoles, List<String> errors) throws StorageQueryException, TenantOrAppNotFoundException {
+        JsonArray jsonUserRoles = parseAndValidateFieldType(userData, "userRoles", ValueType.ARRAY_OF_OBJECT, false,
                 JsonArray.class, errors, ".");
 
         if (jsonUserRoles == null) {
             return null;
         }
 
-        // We already know that the jsonUserRoles is an array of non-empty strings, we will normalise each role now
-        List<String> userRoles = new ArrayList<>();
-        jsonUserRoles.forEach(role -> userRoles.add(validateAndNormaliseUserRole(role.getAsString(), allUserRoles, errors)));
+        List<UserRole> userRoles = new ArrayList<>();
+
+        for (JsonElement jsonUserRoleEl : jsonUserRoles) {
+            JsonObject jsonUserRole = jsonUserRoleEl.getAsJsonObject();
+
+            String role = parseAndValidateFieldType(jsonUserRole, "role", ValueType.STRING, true, String.class, errors,
+                    " for a user role.");
+            JsonArray jsonTenantIds = parseAndValidateFieldType(jsonUserRole, "tenantIds", ValueType.ARRAY_OF_STRING,
+                    true, JsonArray.class, errors, " for a user role.");
+
+            role = validateAndNormaliseUserRole(role, allUserRoles, errors);
+            List<String> normalisedTenantIds = validateAndNormaliseTenantIds(main, appIdentifier, jsonTenantIds, errors,
+                    " for a user role.");
+
+            if (role != null && normalisedTenantIds != null) {
+                userRoles.add(new UserRole(role, normalisedTenantIds));
+            }
+        }
         return userRoles;
     }
 
     private static List<TotpDevice> getParsedTotpDevices(JsonObject userData, List<String> errors) {
-        JsonArray jsonTotpDevices = parseAndValidateFieldType(userData, "totpDevices", ValueType.ARRAY_OF_OBJECT, false, JsonArray.class, errors, ".");
+        JsonArray jsonTotpDevices = parseAndValidateFieldType(userData, "totpDevices", ValueType.ARRAY_OF_OBJECT, false,
+                JsonArray.class, errors, ".");
+
         if (jsonTotpDevices == null) {
             return null;
         }
@@ -94,10 +118,14 @@ public class BulkImportUserUtils {
         for (JsonElement jsonTotpDeviceEl : jsonTotpDevices) {
             JsonObject jsonTotpDevice = jsonTotpDeviceEl.getAsJsonObject();
 
-            String secretKey = parseAndValidateFieldType(jsonTotpDevice, "secretKey", ValueType.STRING, true, String.class, errors, " for a totp device.");
-            Integer period = parseAndValidateFieldType(jsonTotpDevice, "period", ValueType.INTEGER, false, Integer.class, errors, " for a totp device.");
-            Integer skew = parseAndValidateFieldType(jsonTotpDevice, "skew", ValueType.INTEGER, false, Integer.class, errors, " for a totp device.");
-            String deviceName = parseAndValidateFieldType(jsonTotpDevice, "deviceName", ValueType.STRING, false, String.class, errors, " for a totp device.");
+            String secretKey = parseAndValidateFieldType(jsonTotpDevice, "secretKey", ValueType.STRING, true,
+                    String.class, errors, " for a totp device.");
+            Integer period = parseAndValidateFieldType(jsonTotpDevice, "period", ValueType.INTEGER, false,
+                    Integer.class, errors, " for a totp device.");
+            Integer skew = parseAndValidateFieldType(jsonTotpDevice, "skew", ValueType.INTEGER, false, Integer.class,
+                    errors, " for a totp device.");
+            String deviceName = parseAndValidateFieldType(jsonTotpDevice, "deviceName", ValueType.STRING, false,
+                    String.class, errors, " for a totp device.");
 
             secretKey = validateAndNormaliseTotpSecretKey(secretKey, errors);
             period = validateAndNormaliseTotpPeriod(period, errors);
@@ -111,9 +139,11 @@ public class BulkImportUserUtils {
         return totpDevices;
     }
 
-    private static List<LoginMethod> getParsedLoginMethods(Main main, AppIdentifier appIdentifier, JsonObject userData, List<String> errors)
+    private static List<LoginMethod> getParsedLoginMethods(Main main, AppIdentifier appIdentifier, JsonObject userData,
+            List<String> errors)
             throws StorageQueryException, TenantOrAppNotFoundException {
-        JsonArray jsonLoginMethods = parseAndValidateFieldType(userData, "loginMethods", ValueType.ARRAY_OF_OBJECT, true, JsonArray.class, errors, ".");
+        JsonArray jsonLoginMethods = parseAndValidateFieldType(userData, "loginMethods", ValueType.ARRAY_OF_OBJECT,
+                true, JsonArray.class, errors, ".");
 
         if (jsonLoginMethods == null) {
             return new ArrayList<>();
@@ -131,60 +161,89 @@ public class BulkImportUserUtils {
         for (JsonElement jsonLoginMethod : jsonLoginMethods) {
             JsonObject jsonLoginMethodObj = jsonLoginMethod.getAsJsonObject();
 
-            String recipeId = parseAndValidateFieldType(jsonLoginMethodObj, "recipeId", ValueType.STRING, true, String.class, errors, " for a loginMethod.");
-            String tenantId = parseAndValidateFieldType(jsonLoginMethodObj, "tenantId", ValueType.STRING, false, String.class, errors, " for a loginMethod.");
-            Boolean isVerified = parseAndValidateFieldType(jsonLoginMethodObj, "isVerified", ValueType.BOOLEAN, false, Boolean.class, errors, " for a loginMethod.");
-            Boolean isPrimary = parseAndValidateFieldType(jsonLoginMethodObj, "isPrimary", ValueType.BOOLEAN, false, Boolean.class, errors, " for a loginMethod.");
-            Long timeJoined = parseAndValidateFieldType(jsonLoginMethodObj, "timeJoinedInMSSinceEpoch", ValueType.LONG, false, Long.class, errors, " for a loginMethod");
+            String recipeId = parseAndValidateFieldType(jsonLoginMethodObj, "recipeId", ValueType.STRING, true,
+                    String.class, errors, " for a loginMethod.");
+            JsonArray tenantIds = parseAndValidateFieldType(jsonLoginMethodObj, "tenantIds", ValueType.ARRAY_OF_STRING,
+                    false, JsonArray.class, errors, " for a loginMethod.");
+            Boolean isVerified = parseAndValidateFieldType(jsonLoginMethodObj, "isVerified", ValueType.BOOLEAN, false,
+                    Boolean.class, errors, " for a loginMethod.");
+            Boolean isPrimary = parseAndValidateFieldType(jsonLoginMethodObj, "isPrimary", ValueType.BOOLEAN, false,
+                    Boolean.class, errors, " for a loginMethod.");
+            Long timeJoined = parseAndValidateFieldType(jsonLoginMethodObj, "timeJoinedInMSSinceEpoch", ValueType.LONG,
+                    false, Long.class, errors, " for a loginMethod");
 
             recipeId = validateAndNormaliseRecipeId(recipeId, errors);
-            tenantId= validateAndNormaliseTenantId(main, appIdentifier, tenantId, recipeId, errors);
+            List<String> normalisedTenantIds = validateAndNormaliseTenantIds(main, appIdentifier, tenantIds, errors,
+                    " for " + recipeId + " recipe.");
             isPrimary = validateAndNormaliseIsPrimary(isPrimary);
             isVerified = validateAndNormaliseIsVerified(isVerified);
 
             long timeJoinedInMSSinceEpoch = validateAndNormaliseTimeJoined(timeJoined, errors);
 
             if ("emailpassword".equals(recipeId)) {
-                String email = parseAndValidateFieldType(jsonLoginMethodObj, "email", ValueType.STRING, true, String.class, errors, " for an emailpassword recipe.");
-                String passwordHash = parseAndValidateFieldType(jsonLoginMethodObj, "passwordHash", ValueType.STRING, true, String.class, errors, " for an emailpassword recipe.");
-                String hashingAlgorithm = parseAndValidateFieldType(jsonLoginMethodObj, "hashingAlgorithm", ValueType.STRING, true, String.class, errors, " for an emailpassword recipe.");
+                String email = parseAndValidateFieldType(jsonLoginMethodObj, "email", ValueType.STRING, true,
+                        String.class, errors, " for an emailpassword recipe.");
+                String passwordHash = parseAndValidateFieldType(jsonLoginMethodObj, "passwordHash", ValueType.STRING,
+                        true, String.class, errors, " for an emailpassword recipe.");
+                String hashingAlgorithm = parseAndValidateFieldType(jsonLoginMethodObj, "hashingAlgorithm",
+                        ValueType.STRING, true, String.class, errors, " for an emailpassword recipe.");
 
                 email = validateAndNormaliseEmail(email, errors);
-                CoreConfig.PASSWORD_HASHING_ALG normalisedHashingAlgorithm = validateAndNormaliseHashingAlgorithm(hashingAlgorithm, errors);
-                hashingAlgorithm = normalisedHashingAlgorithm != null ? normalisedHashingAlgorithm.toString() : hashingAlgorithm;
-                passwordHash = validateAndNormalisePasswordHash(main, appIdentifier, normalisedHashingAlgorithm, passwordHash, errors);
+                CoreConfig.PASSWORD_HASHING_ALG normalisedHashingAlgorithm = validateAndNormaliseHashingAlgorithm(
+                        hashingAlgorithm, errors);
+                hashingAlgorithm = normalisedHashingAlgorithm != null ? normalisedHashingAlgorithm.toString()
+                        : hashingAlgorithm;
+                passwordHash = validateAndNormalisePasswordHash(main, appIdentifier, normalisedHashingAlgorithm,
+                        passwordHash, errors);
 
-                loginMethods.add(new LoginMethod(tenantId, recipeId, isVerified, isPrimary, timeJoinedInMSSinceEpoch, email, passwordHash, hashingAlgorithm, null, null, null));
+                loginMethods.add(new LoginMethod(normalisedTenantIds, recipeId, isVerified, isPrimary,
+                        timeJoinedInMSSinceEpoch, email, passwordHash, hashingAlgorithm, null, null, null));
             } else if ("thirdparty".equals(recipeId)) {
-                String email = parseAndValidateFieldType(jsonLoginMethodObj, "email", ValueType.STRING, true, String.class, errors, " for a thirdparty recipe.");
-                String thirdPartyId = parseAndValidateFieldType(jsonLoginMethodObj, "thirdPartyId", ValueType.STRING, true, String.class, errors, " for a thirdparty recipe.");
-                String thirdPartyUserId = parseAndValidateFieldType(jsonLoginMethodObj, "thirdPartyUserId", ValueType.STRING, true, String.class, errors, " for a thirdparty recipe.");
+                String email = parseAndValidateFieldType(jsonLoginMethodObj, "email", ValueType.STRING, true,
+                        String.class, errors, " for a thirdparty recipe.");
+                String thirdPartyId = parseAndValidateFieldType(jsonLoginMethodObj, "thirdPartyId", ValueType.STRING,
+                        true, String.class, errors, " for a thirdparty recipe.");
+                String thirdPartyUserId = parseAndValidateFieldType(jsonLoginMethodObj, "thirdPartyUserId",
+                        ValueType.STRING, true, String.class, errors, " for a thirdparty recipe.");
 
                 email = validateAndNormaliseEmail(email, errors);
                 thirdPartyId = validateAndNormaliseThirdPartyId(thirdPartyId, errors);
                 thirdPartyUserId = validateAndNormaliseThirdPartyUserId(thirdPartyUserId, errors);
 
-                loginMethods.add(new LoginMethod(tenantId, recipeId, isVerified, isPrimary, timeJoinedInMSSinceEpoch, email, null, null, thirdPartyId, thirdPartyUserId, null));
+                loginMethods.add(new LoginMethod(normalisedTenantIds, recipeId, isVerified, isPrimary,
+                        timeJoinedInMSSinceEpoch, email, null, null, thirdPartyId, thirdPartyUserId, null));
             } else if ("passwordless".equals(recipeId)) {
-                String email = parseAndValidateFieldType(jsonLoginMethodObj, "email", ValueType.STRING, false, String.class, errors, " for a passwordless recipe.");
-                String phoneNumber = parseAndValidateFieldType(jsonLoginMethodObj, "phoneNumber", ValueType.STRING, false, String.class, errors, " for a passwordless recipe.");
+                String email = parseAndValidateFieldType(jsonLoginMethodObj, "email", ValueType.STRING, false,
+                        String.class, errors, " for a passwordless recipe.");
+                String phoneNumber = parseAndValidateFieldType(jsonLoginMethodObj, "phoneNumber", ValueType.STRING,
+                        false, String.class, errors, " for a passwordless recipe.");
 
                 email = validateAndNormaliseEmail(email, errors);
                 phoneNumber = validateAndNormalisePhoneNumber(phoneNumber, errors);
 
-                loginMethods.add(new LoginMethod(tenantId, recipeId, isVerified, isPrimary, timeJoinedInMSSinceEpoch, email, null, null, null, null, phoneNumber));
+                if (email == null && phoneNumber == null) {
+                    errors.add("Either email or phoneNumber is required for a passwordless recipe.");
+                }
+
+                loginMethods.add(new LoginMethod(normalisedTenantIds, recipeId, isVerified, isPrimary,
+                        timeJoinedInMSSinceEpoch, email, null, null, null, null, phoneNumber));
             }
         }
         return loginMethods;
     }
 
-    private static String validateAndNormaliseExternalUserId(String externalUserId, List<String> errors) {
-        if (externalUserId == null ) {
+    private static String validateAndNormaliseExternalUserId(String externalUserId, Set<String> allExternalUserIds,
+            List<String> errors) {
+        if (externalUserId == null) {
             return null;
         }
 
         if (externalUserId.length() > 255) {
             errors.add("externalUserId " + externalUserId + " is too long. Max length is 128.");
+        }
+
+        if (!allExternalUserIds.add(externalUserId)) {
+            errors.add("externalUserId " + externalUserId + " is not unique. It is already used by another user.");
         }
 
         // We just trim the externalUserId as per the UpdateExternalUserIdInfoAPI.java
@@ -207,7 +266,7 @@ public class BulkImportUserUtils {
     }
 
     private static String validateAndNormaliseTotpSecretKey(String secretKey, List<String> errors) {
-        if (secretKey == null ) {
+        if (secretKey == null) {
             return null;
         }
 
@@ -215,7 +274,7 @@ public class BulkImportUserUtils {
             errors.add("TOTP secretKey " + secretKey + " is too long. Max length is 256.");
         }
 
-         // We don't perform any normalisation on the secretKey in ImportTotpDeviceAPI.java
+        // We don't perform any normalisation on the secretKey in ImportTotpDeviceAPI.java
         return secretKey;
     }
 
@@ -246,7 +305,7 @@ public class BulkImportUserUtils {
     }
 
     private static String validateAndNormaliseTotpDeviceName(String deviceName, List<String> errors) {
-        if (deviceName == null ) {
+        if (deviceName == null) {
             return null;
         }
 
@@ -287,7 +346,28 @@ public class BulkImportUserUtils {
         return recipeId;
     }
 
-    private static String validateAndNormaliseTenantId(Main main, AppIdentifier appIdentifier, String tenantId, String recipeId, List<String> errors)
+    private static List<String> validateAndNormaliseTenantIds(Main main, AppIdentifier appIdentifier,
+            JsonArray tenantIds, List<String> errors, String errorSuffix)
+            throws StorageQueryException, TenantOrAppNotFoundException {
+        if (tenantIds == null) {
+            return List.of(TenantIdentifier.DEFAULT_TENANT_ID); // Default to DEFAULT_TENANT_ID ("public")
+        }
+
+        List<String> normalisedTenantIds = new ArrayList<>();
+
+        for (JsonElement tenantIdEl : tenantIds) {
+            String tenantId = tenantIdEl.getAsString();
+            tenantId = validateAndNormaliseTenantId(main, appIdentifier, tenantId, errors, errorSuffix);
+
+            if (tenantId != null) {
+                normalisedTenantIds.add(tenantId);
+            }
+        }
+        return normalisedTenantIds;
+    }
+
+    private static String validateAndNormaliseTenantId(Main main, AppIdentifier appIdentifier, String tenantId,
+            List<String> errors, String errorSuffix)
             throws StorageQueryException, TenantOrAppNotFoundException {
         if (tenantId == null || tenantId.equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
             return tenantId;
@@ -296,9 +376,9 @@ public class BulkImportUserUtils {
         if (Arrays.stream(FeatureFlag.getInstance(main, appIdentifier).getEnabledFeatures())
                 .noneMatch(t -> t == EE_FEATURES.MULTI_TENANCY)) {
             errors.add("Multitenancy must be enabled before importing users to a different tenant.");
-            return tenantId;
+            return null;
         }
- 
+
         // We make the tenantId lowercase while parsing from the request in WebserverAPI.java
         String normalisedTenantId = tenantId.trim().toLowerCase();
         TenantConfig[] allTenantConfigs = Multitenancy.getAllTenantsForApp(appIdentifier, main);
@@ -307,7 +387,8 @@ public class BulkImportUserUtils {
                 .forEach(tenantConfig -> validTenantIds.add(tenantConfig.tenantIdentifier.getTenantId()));
 
         if (!validTenantIds.contains(normalisedTenantId)) {
-            errors.add("Invalid tenantId: " + tenantId + " for " + recipeId + " recipe.");
+            errors.add("Invalid tenantId: " + tenantId + errorSuffix);
+            return null;
         }
         return normalisedTenantId;
     }
@@ -352,21 +433,25 @@ public class BulkImportUserUtils {
         return Utils.normaliseEmail(email);
     }
 
-    private static CoreConfig.PASSWORD_HASHING_ALG validateAndNormaliseHashingAlgorithm(String hashingAlgorithm, List<String> errors) {
+    private static CoreConfig.PASSWORD_HASHING_ALG validateAndNormaliseHashingAlgorithm(String hashingAlgorithm,
+            List<String> errors) {
         if (hashingAlgorithm == null) {
             return null;
         }
-        
+
         try {
             // We trim the hashingAlgorithm and make it uppercase as per the ImportUserWithPasswordHashAPI.java
             return CoreConfig.PASSWORD_HASHING_ALG.valueOf(hashingAlgorithm.trim().toUpperCase());
         } catch (IllegalArgumentException e) {
-            errors.add("Invalid hashingAlgorithm for emailpassword recipe. Pass one of bcrypt, argon2 or, firebase_scrypt!");
+            errors.add(
+                    "Invalid hashingAlgorithm for emailpassword recipe. Pass one of bcrypt, argon2 or, firebase_scrypt!");
             return null;
         }
     }
 
-    private static String validateAndNormalisePasswordHash(Main main, AppIdentifier appIdentifier, CoreConfig.PASSWORD_HASHING_ALG hashingAlgorithm, String passwordHash, List<String> errors) throws TenantOrAppNotFoundException {
+    private static String validateAndNormalisePasswordHash(Main main, AppIdentifier appIdentifier,
+            CoreConfig.PASSWORD_HASHING_ALG hashingAlgorithm, String passwordHash, List<String> errors)
+            throws TenantOrAppNotFoundException {
         if (hashingAlgorithm == null || passwordHash == null) {
             return passwordHash;
         }
@@ -374,13 +459,14 @@ public class BulkImportUserUtils {
         if (passwordHash.length() > 256) {
             errors.add("passwordHash is too long. Max length is 256.");
         }
-        
+
         // We trim the passwordHash and validate it as per ImportUserWithPasswordHashAPI.java
         passwordHash = passwordHash.trim();
 
         try {
-            PasswordHashingUtils.assertSuperTokensSupportInputPasswordHashFormat(appIdentifier, main, passwordHash, hashingAlgorithm);
-        } catch (UnsupportedPasswordHashingFormatException  e) { 
+            PasswordHashingUtils.assertSuperTokensSupportInputPasswordHashFormat(appIdentifier, main, passwordHash,
+                    hashingAlgorithm);
+        } catch (UnsupportedPasswordHashingFormatException e) {
             errors.add(e.getMessage());
         }
 
@@ -397,8 +483,8 @@ public class BulkImportUserUtils {
         }
 
         // We don't perform any normalisation on the thirdPartyId in SignInUpAPI.java
-       return thirdPartyId;
-   }
+        return thirdPartyId;
+    }
 
     private static String validateAndNormaliseThirdPartyUserId(String thirdPartyUserId, List<String> errors) {
         if (thirdPartyUserId == null) {
@@ -410,8 +496,8 @@ public class BulkImportUserUtils {
         }
 
         // We don't perform any normalisation on the thirdPartyUserId in SignInUpAPI.java
-       return thirdPartyUserId;
-   }
+        return thirdPartyUserId;
+    }
 
     private static String validateAndNormalisePhoneNumber(String phoneNumber, List<String> errors) {
         if (phoneNumber == null) {
@@ -426,4 +512,40 @@ public class BulkImportUserUtils {
         return Utils.normalizeIfPhoneNumber(phoneNumber);
     }
 
+    private static void validateTenantIdsForRoleAndLoginMethods(Main main, AppIdentifier appIdentifier,
+            List<UserRole> userRoles, List<LoginMethod> loginMethods, List<String> errors)
+            throws TenantOrAppNotFoundException {
+        if (loginMethods == null) {
+            return;
+        }
+
+        // First validate that tenantIds provided for userRoles also exist in the loginMethods
+        if (userRoles != null) {
+            for (UserRole userRole : userRoles) {
+                for (String tenantId : userRole.tenantIds) {
+                    if (!tenantId.equals(TenantIdentifier.DEFAULT_TENANT_ID) && loginMethods.stream()
+                            .noneMatch(loginMethod -> loginMethod.tenantIds.contains(tenantId))) {
+                        errors.add("TenantId " + tenantId + " for a user role does not exist in loginMethods.");
+                    }
+                }
+            }
+        }
+
+        // Now validate that all the tenants share the same storage
+        String commonTenantUserPoolId = null;
+        for (LoginMethod loginMethod : loginMethods) {
+            for (String tenantId : loginMethod.tenantIds) {
+                TenantIdentifier tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
+                        appIdentifier.getAppId(), tenantId);
+                Storage storage = StorageLayer.getStorage(tenantIdentifier, main);
+                String tenantUserPoolId = storage.getUserPoolId();
+
+                if (commonTenantUserPoolId == null) {
+                    commonTenantUserPoolId = tenantUserPoolId;
+                } else if (!commonTenantUserPoolId.equals(tenantUserPoolId)) {
+                    errors.add("All tenants for a user must share the same storage.");
+                }
+            }
+        }
+    }
 }

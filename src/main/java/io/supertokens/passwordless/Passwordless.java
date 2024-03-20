@@ -456,52 +456,36 @@ public class Passwordless {
         }
 
         if (user == null) {
-            while (true) {
+            long timeJoined = System.currentTimeMillis();
+            user = createPasswordlessUser(tenantIdentifier, storage, consumedDevice.email,
+                    consumedDevice.phoneNumber, timeJoined);
+
+            // Set email as verified, if using email
+            if (setEmailVerified && consumedDevice.email != null) {
                 try {
-                    String userId = Utils.getUUID();
-                    long timeJoined = System.currentTimeMillis();
-                    user = passwordlessStorage.createUser(tenantIdentifier, userId, consumedDevice.email,
-                            consumedDevice.phoneNumber, timeJoined);
-
-                    // Set email as verified, if using email
-                    if (setEmailVerified && consumedDevice.email != null) {
+                    AuthRecipeUserInfo finalUser = user;
+                    EmailVerificationSQLStorage evStorage = StorageUtils.getEmailVerificationStorage(storage);
+                    evStorage.startTransaction(con -> {
                         try {
-                            AuthRecipeUserInfo finalUser = user;
-                            EmailVerificationSQLStorage evStorage =
-                                    StorageUtils.getEmailVerificationStorage(storage);
-                            evStorage.startTransaction(con -> {
-                                try {
-                                    evStorage.updateIsEmailVerified_Transaction(tenantIdentifier.toAppIdentifier(), con,
-                                                    finalUser.getSupertokensUserId(), consumedDevice.email, true);
-                                    evStorage.commitTransaction(con);
+                            evStorage.updateIsEmailVerified_Transaction(tenantIdentifier.toAppIdentifier(), con,
+                                    finalUser.getSupertokensUserId(), consumedDevice.email, true);
+                            evStorage.commitTransaction(con);
 
-                                    return null;
-                                } catch (TenantOrAppNotFoundException e) {
-                                    throw new StorageTransactionLogicException(e);
-                                }
-                            });
-                            user.loginMethods[0].setVerified(); // newly created user has only one loginMethod
-                        } catch (StorageTransactionLogicException e) {
-                            if (e.actualException instanceof TenantOrAppNotFoundException) {
-                                throw (TenantOrAppNotFoundException) e.actualException;
-                            }
-                            throw new StorageQueryException(e);
+                            return null;
+                        } catch (TenantOrAppNotFoundException e) {
+                            throw new StorageTransactionLogicException(e);
                         }
+                    });
+                    user.loginMethods[0].setVerified(); // newly created user has only one loginMethod
+                } catch (StorageTransactionLogicException e) {
+                    if (e.actualException instanceof TenantOrAppNotFoundException) {
+                        throw (TenantOrAppNotFoundException) e.actualException;
                     }
-
-                    return new ConsumeCodeResponse(true, user, consumedDevice.email, consumedDevice.phoneNumber, consumedDevice);
-                } catch (DuplicateEmailException | DuplicatePhoneNumberException e) {
-                    // Getting these would mean that between getting the user and trying creating it:
-                    // 1. the user managed to do a full create+consume flow
-                    // 2. the users email or phoneNumber was updated to the new one (including device cleanup)
-                    // These should be almost impossibly rare, so it's safe to just ask the user to restart.
-                    // Also, both would make the current login fail if done before the transaction
-                    // by cleaning up the device/code this consume would've used.
-                    throw new RestartFlowException();
-                } catch (DuplicateUserIdException e) {
-                    // We can retry..
+                    throw new StorageQueryException(e);
                 }
             }
+
+            return new ConsumeCodeResponse(true, user, consumedDevice.email, consumedDevice.phoneNumber, consumedDevice);
         } else {
             if (setEmailVerified && consumedDevice.email != null) {
                 // Set email verification
@@ -539,6 +523,29 @@ public class Passwordless {
             }
         }
         return new ConsumeCodeResponse(false, user, consumedDevice.email, consumedDevice.phoneNumber, consumedDevice);
+    }
+
+    public static AuthRecipeUserInfo createPasswordlessUser(TenantIdentifier tenantIdentifier, Storage storage,
+            String email, String phoneNumber, long timeJoined)
+            throws TenantOrAppNotFoundException, StorageQueryException, RestartFlowException {
+        PasswordlessSQLStorage passwordlessStorage = StorageUtils.getPasswordlessStorage(storage);
+
+        while (true) {
+            try {
+                String userId = Utils.getUUID();
+                return passwordlessStorage.createUser(tenantIdentifier, userId, email, phoneNumber, timeJoined);
+            } catch (DuplicateEmailException | DuplicatePhoneNumberException e) {
+                // Getting these would mean that between getting the user and trying creating it:
+                // 1. the user managed to do a full create+consume flow
+                // 2. the users email or phoneNumber was updated to the new one (including device cleanup)
+                // These should be almost impossibly rare, so it's safe to just ask the user to restart.
+                // Also, both would make the current login fail if done before the transaction
+                // by cleaning up the device/code this consume would've used.
+                throw new RestartFlowException();
+            } catch (DuplicateUserIdException e) {
+                // We can retry..
+            }
+        }
     }
 
     @TestOnly
