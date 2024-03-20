@@ -21,6 +21,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
+import java.io.IOException;
+
 import static org.junit.Assert.*;
 
 public class VerifyTotpDeviceAPITest {
@@ -51,6 +53,21 @@ public class VerifyTotpDeviceAPITest {
                         null,
                         Utils.getCdiVersionStringLatestForTests(),
                         "totp"));
+    }
+
+    private void requestWithInvalidCode(TestingProcessManager.TestingProcess process, JsonObject body)
+            throws HttpResponseException, IOException {
+        JsonObject resp = HttpRequestForTesting.sendJsonPOSTRequest(
+                process.getProcess(),
+                "",
+                "http://localhost:3567/recipe/totp/device/verify",
+                body,
+                1000,
+                1000,
+                null,
+                Utils.getCdiVersionStringLatestForTests(),
+                "totp");
+        assertEquals("INVALID_TOTP_ERROR", resp.get("status").getAsString());
     }
 
     private void checkFieldMissingErrorResponse(Exception ex, String fieldName) {
@@ -126,7 +143,7 @@ public class VerifyTotpDeviceAPITest {
             checkFieldMissingErrorResponse(e, "totp");
         }
 
-        // Invalid userId/deviceName/skew/period
+        // Invalid userId/deviceName/totp
         {
             body.addProperty("totp", "");
             Exception e = updateDeviceRequest(process, body);
@@ -137,18 +154,27 @@ public class VerifyTotpDeviceAPITest {
             checkResponseErrorContains(e, "deviceName cannot be empty");
 
             body.addProperty("deviceName", device.deviceName);
-            e = updateDeviceRequest(process, body);
-            checkResponseErrorContains(e, "totp must be 6 characters long");
+            requestWithInvalidCode(process, body);
+
+            Thread.sleep(1100);
 
             // test totp of length 5:
             body.addProperty("totp", "12345");
-            e = updateDeviceRequest(process, body);
-            checkResponseErrorContains(e, "totp must be 6 characters long");
+            requestWithInvalidCode(process, body);
+
+            Thread.sleep(1100);
 
             // test totp of length 8:
             body.addProperty("totp", "12345678");
-            e = updateDeviceRequest(process, body);
-            checkResponseErrorContains(e, "totp must be 6 characters long");
+            requestWithInvalidCode(process, body);
+
+            Thread.sleep(1100);
+
+            // test totp of length alphabets:
+            body.addProperty("totp", "abcd");
+            requestWithInvalidCode(process, body);
+
+            Thread.sleep(2100);
 
             // but let's pass invalid code first
             body.addProperty("totp", "123456");
@@ -247,5 +273,4 @@ public class VerifyTotpDeviceAPITest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
-
 }
