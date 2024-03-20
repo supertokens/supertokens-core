@@ -349,6 +349,8 @@ public class TOTPRecipeTest {
         Thread.sleep(1000);
         // But again try with invalid code:
         assertThrows(InvalidTotpException.class, () -> Totp.verifyCode(main, "user", "invalid0"));
+        assertThrows(InvalidTotpException.class, () -> Totp.verifyCode(main, "user", "invalid0"));
+        assertThrows(InvalidTotpException.class, () -> Totp.verifyCode(main, "user", "invalid0"));
         // This triggered rate limiting again. So even valid codes will fail for
         // another cooldown period:
         assertThrows(LimitReachedException.class,
