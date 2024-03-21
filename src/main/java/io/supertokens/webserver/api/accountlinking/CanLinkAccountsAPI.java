@@ -130,7 +130,7 @@ public class CanLinkAccountsAPI extends WebserverAPI {
             try {
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "RECIPE_USER_ID_ALREADY_LINKED_WITH_ANOTHER_PRIMARY_USER_ID_ERROR");
-                UserIdMapping.populateExternalUserIdForUsers(recipeUserIdStorage,
+                UserIdMapping.populateExternalUserIdForUsers(appIdentifier, recipeUserIdStorage,
                         new AuthRecipeUserInfo[]{e.recipeUser});
                 response.addProperty("primaryUserId", e.recipeUser.getSupertokensOrExternalUserId());
                 response.addProperty("description", e.getMessage());

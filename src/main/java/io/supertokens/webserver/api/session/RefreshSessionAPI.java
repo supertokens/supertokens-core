@@ -63,15 +63,17 @@ public class RefreshSessionAPI extends WebserverAPI {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         // API is app specific, but session is updated based on tenantId obtained from the refreshToken
+        SemVer version = super.getVersionFromRequest(req);
+
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String refreshToken = InputParser.parseStringOrThrowError(input, "refreshToken", false);
         String antiCsrfToken = InputParser.parseStringOrThrowError(input, "antiCsrfToken", true);
         Boolean enableAntiCsrf = InputParser.parseBooleanOrThrowError(input, "enableAntiCsrf", false);
+        Boolean useDynamicSigningKey = version.greaterThanOrEqualTo(SemVer.v3_0) ?
+                InputParser.parseBooleanOrThrowError(input, "useDynamicSigningKey", true) : null;
         assert enableAntiCsrf != null;
         assert refreshToken != null;
 
-
-        SemVer version = super.getVersionFromRequest(req);
         TenantIdentifier tenantIdentifierForLogging = null;
         try {
             tenantIdentifierForLogging = getTenantIdentifier(req);
@@ -85,7 +87,8 @@ public class RefreshSessionAPI extends WebserverAPI {
 
             SessionInformationHolder sessionInfo = Session.refreshSession(appIdentifier, main,
                     refreshToken, antiCsrfToken,
-                    enableAntiCsrf, accessTokenVersion);
+                    enableAntiCsrf, accessTokenVersion,
+                    useDynamicSigningKey == null ? null : Boolean.FALSE.equals(useDynamicSigningKey));
             TenantIdentifier tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
                     appIdentifier.getAppId(), sessionInfo.session.tenantId);
             Storage storage = StorageLayer.getStorage(tenantIdentifier, main);

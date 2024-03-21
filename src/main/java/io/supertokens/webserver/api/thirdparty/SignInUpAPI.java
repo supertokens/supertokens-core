@@ -81,7 +81,8 @@ public class SignInUpAPI extends WebserverAPI {
                 ThirdParty.SignInUpResponse response = ThirdParty.signInUp2_7(
                         tenantIdentifier, storage,
                         thirdPartyId, thirdPartyUserId, email, isEmailVerified);
-                UserIdMapping.populateExternalUserIdForUsers(storage, new AuthRecipeUserInfo[]{response.user});
+                UserIdMapping.populateExternalUserIdForUsers(tenantIdentifier. toAppIdentifier(), storage,
+                        new AuthRecipeUserInfo[]{response.user});
 
                 ActiveUsers.updateLastActive(tenantIdentifier.toAppIdentifier(), main,
                         response.user.getSupertokensUserId());
@@ -142,7 +143,8 @@ public class SignInUpAPI extends WebserverAPI {
                 ThirdParty.SignInUpResponse response = ThirdParty.signInUp(
                         tenantIdentifier, storage, super.main, thirdPartyId, thirdPartyUserId,
                         email, isEmailVerified);
-                UserIdMapping.populateExternalUserIdForUsers(storage, new AuthRecipeUserInfo[]{response.user});
+                UserIdMapping.populateExternalUserIdForUsers(tenantIdentifier.toAppIdentifier(), storage,
+                        new AuthRecipeUserInfo[]{response.user});
 
                 ActiveUsers.updateLastActive(tenantIdentifier.toAppIdentifier(), main,
                         response.user.getSupertokensUserId());

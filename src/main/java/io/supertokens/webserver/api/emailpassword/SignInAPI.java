@@ -78,8 +78,8 @@ public class SignInAPI extends WebserverAPI {
         try {
             AuthRecipeUserInfo user = EmailPassword.signIn(tenantIdentifier, storage, super.main, normalisedEmail,
                     password);
-            io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(storage,
-                    new AuthRecipeUserInfo[]{user});
+            io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(
+                    tenantIdentifier.toAppIdentifier(), storage, new AuthRecipeUserInfo[]{user});
 
             ActiveUsers.updateLastActive(tenantIdentifier.toAppIdentifier(), main,
                     user.getSupertokensUserId()); // use the internal user id
