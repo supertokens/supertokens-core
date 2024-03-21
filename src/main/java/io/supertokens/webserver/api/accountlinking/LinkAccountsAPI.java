@@ -106,6 +106,16 @@ public class LinkAccountsAPI extends WebserverAPI {
             response.addProperty("status", "OK");
             response.addProperty("accountsAlreadyLinked", linkAccountsResult.wasAlreadyLinked);
             response.add("user", linkAccountsResult.user.toJson());
+
+            if (!linkAccountsResult.wasAlreadyLinked) {
+                try {
+                    ActiveUsers.updateLastActiveAfterLinking(
+                            getPublicTenantStorage(req), main, primaryUserId, recipeUserId);
+                } catch (Exception e) {
+                    // ignore
+                }
+            }
+
             super.sendJsonResponse(200, response, resp);
         } catch (StorageQueryException | TenantOrAppNotFoundException | FeatureNotEnabledException e) {
             throw new ServletException(e);

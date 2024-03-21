@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.0.19] - 2024-03-21
+- Fixes userIdMapping queries
+- Fixes issue with session creation for users with userIdMapping and accounts linked
+- Fixes active users tracking while linking accounts
+- Adds a new required `useDynamicSigningKey` into the request body of `RefreshSessionAPI`
+    - This enables smooth switching between `useDynamicAccessTokenSigningKey` settings by allowing refresh calls to
+      change the signing key type of a session
+
 ## [7.0.18] - 2024-02-19
 
 - Fixes vulnerabilities in dependencies
