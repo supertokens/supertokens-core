@@ -617,4 +617,44 @@ public class SessionTests {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    @Test
+    public void testCreateSessionWithUserIdMappedForRecipeUser() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        AuthRecipeUserInfo user1 = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
+        AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "password");
+        AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), user1.getSupertokensUserId());
+
+        UserIdMapping.createUserIdMapping(process.getProcess(), user1.getSupertokensUserId(), "extid1", null, false);
+        UserIdMapping.createUserIdMapping(process.getProcess(), user2.getSupertokensUserId(), "extid2", null, false);
+
+        SessionInformationHolder session1 = Session.createNewSession(process.getProcess(), user1.getSupertokensUserId(), new JsonObject(), new JsonObject());
+        SessionInformationHolder session2 = Session.createNewSession(process.getProcess(), user2.getSupertokensUserId(), new JsonObject(), new JsonObject());
+        SessionInformationHolder session3 = Session.createNewSession(process.getProcess(), "extid1", new JsonObject(), new JsonObject());
+        SessionInformationHolder session4 = Session.createNewSession(process.getProcess(), "extid2", new JsonObject(), new JsonObject());
+
+        assertEquals("extid1", session1.session.userId);
+        assertEquals("extid1", session1.session.recipeUserId);
+        assertEquals("extid1", session2.session.userId);
+        assertEquals("extid2", session2.session.recipeUserId);
+        assertEquals("extid1", session3.session.userId);
+        assertEquals("extid1", session3.session.recipeUserId);
+        assertEquals("extid1", session4.session.userId);
+        assertEquals("extid2", session4.session.recipeUserId);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }
