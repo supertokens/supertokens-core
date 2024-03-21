@@ -92,7 +92,7 @@ public class UserAPI extends WebserverAPI {
                     // if the userIdMapping exists set the userId in the response to the externalUserId
                     if (user != null) {
                         io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(
-                                storageAndUserIdMapping.storage, new AuthRecipeUserInfo[]{user});
+                                appIdentifier, storageAndUserIdMapping.storage, new AuthRecipeUserInfo[]{user});
                     }
                 } catch (UnknownUserIdException e) {
                     user = null;
@@ -103,8 +103,8 @@ public class UserAPI extends WebserverAPI {
                 email = Utils.normaliseEmail(email);
                 user = Passwordless.getUserByEmail(tenantIdentifier, storage, email);
                 if (user != null) {
-                    io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(storage,
-                            new AuthRecipeUserInfo[]{user});
+                    io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(
+                            tenantIdentifier.toAppIdentifier(), storage, new AuthRecipeUserInfo[]{user});
                 }
             } else {
                 TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
@@ -112,8 +112,8 @@ public class UserAPI extends WebserverAPI {
 
                 user = Passwordless.getUserByPhoneNumber(tenantIdentifier, storage, phoneNumber);
                 if (user != null) {
-                    io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(storage,
-                            new AuthRecipeUserInfo[]{user});
+                    io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(
+                            tenantIdentifier.toAppIdentifier(), storage, new AuthRecipeUserInfo[]{user});
                 }
             }
 

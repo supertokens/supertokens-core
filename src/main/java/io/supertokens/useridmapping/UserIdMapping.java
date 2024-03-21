@@ -338,11 +338,12 @@ public class UserIdMapping {
     }
 
     public static HashMap<String, String> getUserIdMappingForSuperTokensUserIds(
+            AppIdentifier appIdentifier,
             Storage storage,
             ArrayList<String> userIds)
             throws StorageQueryException {
         // userIds are already filtered for a tenant
-        return StorageUtils.getUserIdMappingStorage(storage).getUserIdMappingForSuperTokensIds(userIds);
+        return StorageUtils.getUserIdMappingStorage(storage).getUserIdMappingForSuperTokensIds(appIdentifier, userIds);
     }
 
     @TestOnly
@@ -350,7 +351,7 @@ public class UserIdMapping {
                                                                                 ArrayList<String> userIds)
             throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
-        return getUserIdMappingForSuperTokensUserIds(storage, userIds);
+        return getUserIdMappingForSuperTokensUserIds(new AppIdentifier(null, null), storage, userIds);
     }
 
     public static List<String> findNonAuthStoragesWhereUserIdIsUsedOrAssertIfUsed(
@@ -422,7 +423,8 @@ public class UserIdMapping {
         return result;
     }
 
-    public static void populateExternalUserIdForUsers(Storage storage, AuthRecipeUserInfo[] users)
+    public static void populateExternalUserIdForUsers(AppIdentifier appIdentifier, Storage storage,
+                                                      AuthRecipeUserInfo[] users)
             throws StorageQueryException {
         Set<String> userIds = new HashSet<>();
 
@@ -435,7 +437,8 @@ public class UserIdMapping {
         }
         ArrayList<String> userIdsList = new ArrayList<>(userIds);
         userIdsList.addAll(userIds);
-        HashMap<String, String> userIdMappings = getUserIdMappingForSuperTokensUserIds(storage, userIdsList);
+        HashMap<String, String> userIdMappings = getUserIdMappingForSuperTokensUserIds(appIdentifier, storage,
+                userIdsList);
 
         for (AuthRecipeUserInfo user : users) {
             user.setExternalUserId(userIdMappings.get(user.getSupertokensUserId()));

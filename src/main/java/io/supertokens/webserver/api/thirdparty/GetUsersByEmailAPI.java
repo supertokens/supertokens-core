@@ -61,7 +61,7 @@ public class GetUsersByEmailAPI extends WebserverAPI {
             String email = InputParser.getQueryParamOrThrowError(req, "email", false);
             email = Utils.normaliseEmail(email);
             AuthRecipeUserInfo[] users = ThirdParty.getUsersByEmail(tenantIdentifier, storage, email);
-            UserIdMapping.populateExternalUserIdForUsers(storage, users);
+            UserIdMapping.populateExternalUserIdForUsers(tenantIdentifier.toAppIdentifier(), storage, users);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
