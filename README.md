@@ -232,6 +232,10 @@ Melvyn Hills</b></sub></a></td>
 <td align="center"><a href="https://github.com/daniil-borovoy"><img src="https://avatars.githubusercontent.com/u/74528634?v=4" width="100px;" alt=""/><br /><sub><b>Daniil Borovoy</b></sub></a></td>
 <td align="center"><a href="https://github.com/kriskw1999"><img src="https://avatars.githubusercontent.com/u/71312948?v=4" width="100px;" alt=""/><br /><sub><b>Krzysztof Witkowski</b></sub></a></td>
   </tr>
+  <tr>
+<td align="center"><a href="https://github.com/Lehoczky"><img src="https://avatars.githubusercontent.com/u/31937175?v=4" width="100px;" alt=""/><br /><sub><b>Lehoczky Zoltán</b></sub></a></td>
+Melvyn Hills</b></sub></a></td>
+  </tr>
 </table>
 
 ## 👩‍💻 Contributing
