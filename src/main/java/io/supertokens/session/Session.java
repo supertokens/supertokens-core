@@ -613,7 +613,7 @@ public class Session {
                                     sessionInfo.recipeUserId, sessionInfo.userId,
                                     Utils.hashSHA256(newRefreshToken.token),
                                     Utils.hashSHA256(refreshToken), sessionInfo.userDataInJWT, antiCsrfToken,
-                                    null, accessTokenVersion, sessionInfo.useStaticKey);
+                                    null, accessTokenVersion, useStaticKey);
 
                             TokenInfo idRefreshToken = new TokenInfo(UUID.randomUUID().toString(),
                                     newRefreshToken.expiry, newRefreshToken.createdTime);
@@ -710,7 +710,7 @@ public class Session {
                                 sessionHandle,
                                 sessionInfo.recipeUserId, sessionInfo.userId, Utils.hashSHA256(newRefreshToken.token),
                                 Utils.hashSHA256(refreshToken), sessionInfo.userDataInJWT, antiCsrfToken,
-                                null, accessTokenVersion, sessionInfo.useStaticKey);
+                                null, accessTokenVersion, useStaticKey);
 
                         TokenInfo idRefreshToken = new TokenInfo(UUID.randomUUID().toString(), newRefreshToken.expiry,
                                 newRefreshToken.createdTime);
