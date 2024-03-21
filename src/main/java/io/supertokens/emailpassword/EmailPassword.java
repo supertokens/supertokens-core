@@ -183,41 +183,51 @@ public class EmailPassword {
                 tenantIdentifier.toAppIdentifier(), main,
                 passwordHash, hashingAlgorithm);
 
+        EmailPasswordSQLStorage epStorage = StorageUtils.getEmailPasswordStorage(storage);
+        ImportUserResponse response = null;
+
+        try {
+            long timeJoined = System.currentTimeMillis();
+            response = createUserWithPasswordHash(tenantIdentifier, storage, email, passwordHash, timeJoined);
+        } catch (DuplicateEmailException e) {
+            AuthRecipeUserInfo[] allUsers = epStorage.listPrimaryUsersByEmail(tenantIdentifier, email);
+            AuthRecipeUserInfo userInfoToBeUpdated = null;
+            LoginMethod loginMethod = null;
+            for (AuthRecipeUserInfo currUser : allUsers) {
+                for (LoginMethod currLM : currUser.loginMethods) {
+                    if (currLM.email.equals(email) && currLM.recipeId == RECIPE_ID.EMAIL_PASSWORD && currLM.tenantIds.contains(tenantIdentifier.getTenantId())) {
+                        userInfoToBeUpdated = currUser;
+                        loginMethod = currLM;
+                        break;
+                    }
+                }
+            }
+
+            if (userInfoToBeUpdated != null) {
+                LoginMethod finalLoginMethod = loginMethod;
+                epStorage.startTransaction(con -> {
+                    epStorage.updateUsersPassword_Transaction(tenantIdentifier.toAppIdentifier(), con,
+                            finalLoginMethod.getSupertokensUserId(), passwordHash);
+                    return null;
+                });
+                response = new ImportUserResponse(true, userInfoToBeUpdated);
+            }
+        }
+        return response;
+    }
+    public static ImportUserResponse createUserWithPasswordHash(TenantIdentifier tenantIdentifier, Storage storage,
+            @Nonnull String email,
+            @Nonnull String passwordHash, @Nullable long timeJoined)
+            throws StorageQueryException, DuplicateEmailException, TenantOrAppNotFoundException {
+        EmailPasswordSQLStorage epStorage = StorageUtils.getEmailPasswordStorage(storage);
         while (true) {
             String userId = Utils.getUUID();
-            long timeJoined = System.currentTimeMillis();
-
-            EmailPasswordSQLStorage epStorage = StorageUtils.getEmailPasswordStorage(storage);
-
             try {
-                AuthRecipeUserInfo userInfo = epStorage.signUp(tenantIdentifier, userId, email, passwordHash,
-                        timeJoined);
+                AuthRecipeUserInfo userInfo = null;
+                userInfo = epStorage.signUp(tenantIdentifier, userId, email, passwordHash, timeJoined);
                 return new ImportUserResponse(false, userInfo);
             } catch (DuplicateUserIdException e) {
                 // we retry with a new userId
-            } catch (DuplicateEmailException e) {
-                AuthRecipeUserInfo[] allUsers = epStorage.listPrimaryUsersByEmail(tenantIdentifier, email);
-                AuthRecipeUserInfo userInfoToBeUpdated = null;
-                LoginMethod loginMethod = null;
-                for (AuthRecipeUserInfo currUser : allUsers) {
-                    for (LoginMethod currLM : currUser.loginMethods) {
-                        if (currLM.email.equals(email) && currLM.recipeId == RECIPE_ID.EMAIL_PASSWORD && currLM.tenantIds.contains(tenantIdentifier.getTenantId())) {
-                            userInfoToBeUpdated = currUser;
-                            loginMethod = currLM;
-                            break;
-                        }
-                    }
-                }
-
-                if (userInfoToBeUpdated != null) {
-                    LoginMethod finalLoginMethod = loginMethod;
-                    epStorage.startTransaction(con -> {
-                        epStorage.updateUsersPassword_Transaction(tenantIdentifier.toAppIdentifier(), con,
-                                finalLoginMethod.getSupertokensUserId(), passwordHash);
-                        return null;
-                    });
-                    return new ImportUserResponse(true, userInfoToBeUpdated);
-                }
             }
         }
     }
