@@ -17,8 +17,6 @@
 package io.supertokens.cronjobs.bulkimport;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -87,7 +85,7 @@ import jakarta.servlet.ServletException;
 public class ProcessBulkImportUsers extends CronTask {
 
     public static final String RESOURCE_KEY = "io.supertokens.ee.cronjobs.ProcessBulkImportUsers";
-    private Map<String, Storage> userPoolToStorageMap = new HashMap<>();
+    private Map<String, SQLStorage> userPoolToStorageMap = new HashMap<>();
 
     private ProcessBulkImportUsers(Main main, List<List<TenantIdentifier>> tenantsInfo) {
         super("ProcessBulkImportUsers", main, tenantsInfo, true);
@@ -113,7 +111,7 @@ public class ProcessBulkImportUsers extends CronTask {
 
         AppIdentifier appIdentifier = new AppIdentifier(app.getConnectionUriDomain(), app.getAppId());
 
-        List<BulkImportUser> users = bulkImportSQLStorage.getBulkImportUsersForProcessing(appIdentifier,
+        List<BulkImportUser> users = bulkImportSQLStorage.getBulkImportUsersAndChangeStatusToProcessing(appIdentifier,
                 BulkImport.PROCESS_USERS_BATCH_SIZE);
 
         for (BulkImportUser user : users) {
@@ -136,9 +134,11 @@ public class ProcessBulkImportUsers extends CronTask {
 
     @Override
     public int getInitialWaitTimeSeconds() {
-        // We are setting a non-zero initial wait for tests to avoid race condition with the beforeTest process that deletes data in the storage layer
         if (Main.isTesting) {
-            return 5;
+            Integer waitTime = CronTaskTest.getInstance(main).getInitialWaitTimeInSeconds(RESOURCE_KEY);
+            if (waitTime != null) {
+                return waitTime;
+            }
         }
         return 0;
     }
@@ -178,17 +178,18 @@ public class ProcessBulkImportUsers extends CronTask {
                 .getAllResourcesWithResourceKey(StorageLayer.RESOURCE_KEY);
         for (ResourceDistributor.KeyClass key : resources.keySet()) {
             if (key.getTenantIdentifier().toAppIdentifier().equals(appIdentifier)) {
-                System.out.println("Adding storage for tenant: " + key.getTenantIdentifier().getTenantId());
                 allProxyStorages.add(getProxyStorage(key.getTenantIdentifier()));
             }
         }
         return allProxyStorages.toArray(new Storage[0]);
     }
 
-    private void closeAllProxyStorages() {
-        for (Storage storage : userPoolToStorageMap.values()) {
+    private void closeAllProxyStorages() throws StorageQueryException {
+        for (SQLStorage storage : userPoolToStorageMap.values()) {
+            storage.closeConnectionForBulkImportProxyStorage();
             storage.close();
         }
+        userPoolToStorageMap.clear();
     }
 
     private void processUser(AppIdentifier appIdentifier, BulkImportUser user, BulkImportSQLStorage baseTenantStorage)
@@ -206,41 +207,41 @@ public class ProcessBulkImportUsers extends CronTask {
 
         try {
             bulkImportProxyStorage.startTransaction(con -> {
-                for (LoginMethod lm : user.loginMethods) {
-                    processUserLoginMethod(appIdentifier, bulkImportProxyStorage, lm);
-                }
-
-                createPrimaryUserAndLinkAccounts(main, appIdentifier, bulkImportProxyStorage, user, primaryLM);
-                createUserIdMapping(main, appIdentifier, user, primaryLM);
-                verifyEmailForAllLoginMethods(appIdentifier, con, bulkImportProxyStorage, user.loginMethods);
-                createTotpDevices(main, appIdentifier, bulkImportProxyStorage, user.totpDevices, primaryLM);
-                createUserMetadata(appIdentifier, bulkImportProxyStorage, user, primaryLM);
-                createUserRoles(main, appIdentifier, bulkImportProxyStorage, user);
-
-                // NOTE: We need to use the baseTenantStorage as bulkImportProxyStorage could have a different storage than the baseTenantStorage
-                baseTenantStorage.startTransaction(con2 -> {
-                    baseTenantStorage.deleteBulkImportUser_Transaction(appIdentifier, con2,
-                            user.id);
-                    return null;
-                });
-
-                // We need to commit the transaction manually because we have overridden that in the proxy storage
                 try {
-                    Connection connection = (Connection) con.getConnection();
-                    connection.commit();
-                    connection.setAutoCommit(true);
-                } catch (SQLException e) {
-                    throw new StorageTransactionLogicException(e);
-                }
+                    for (LoginMethod lm : user.loginMethods) {
+                        processUserLoginMethod(appIdentifier, bulkImportProxyStorage, lm);
+                    }
 
-                return null;
+                    createPrimaryUserAndLinkAccounts(main, appIdentifier, bulkImportProxyStorage, user, primaryLM);
+                    createUserIdMapping(main, appIdentifier, user, primaryLM);
+                    verifyEmailForAllLoginMethods(appIdentifier, con, bulkImportProxyStorage, user.loginMethods);
+                    createTotpDevices(main, appIdentifier, bulkImportProxyStorage, user.totpDevices, primaryLM);
+                    createUserMetadata(appIdentifier, bulkImportProxyStorage, user, primaryLM);
+                    createUserRoles(main, appIdentifier, bulkImportProxyStorage, user);
+
+                    // NOTE: We need to use the baseTenantStorage as bulkImportProxyStorage could have a different storage than the baseTenantStorage
+                    baseTenantStorage.startTransaction(con2 -> {
+                        baseTenantStorage.deleteBulkImportUser_Transaction(appIdentifier, con2,
+                                user.id);
+                        return null;
+                    });
+
+                    // We need to commit the transaction manually because we have overridden that in the proxy storage
+                    bulkImportProxyStorage.commitTransactionForBulkImportProxyStorage();
+                    return null;
+                } catch (StorageTransactionLogicException e) {
+                    // We need to rollback the transaction manually because we have overridden that in the proxy storage
+                    bulkImportProxyStorage.rollbackTransactionForBulkImportProxyStorage();
+                    throw e;
+                }
             });
         } catch (StorageTransactionLogicException e) {
             handleProcessUserExceptions(appIdentifier, user, e, baseTenantStorage);
         }
     }
 
-    private void handleProcessUserExceptions(AppIdentifier appIdentifier, BulkImportUser user, Exception e, BulkImportSQLStorage baseTenantStorage)
+    private void handleProcessUserExceptions(AppIdentifier appIdentifier, BulkImportUser user, Exception e,
+            BulkImportSQLStorage baseTenantStorage)
             throws StorageQueryException {
 
         // Java doesn't allow us to reassign local variables inside a lambda expression
@@ -252,21 +253,10 @@ public class ProcessBulkImportUsers extends CronTask {
             errorMessage[0] = exception.actualException.getMessage();
         }
 
-        String[] userId = { user.id };
-
         try {
             baseTenantStorage.startTransaction(con -> {
-                baseTenantStorage.updateBulkImportUserStatus_Transaction(appIdentifier, con, userId,
+                baseTenantStorage.updateBulkImportUserStatus_Transaction(appIdentifier, con, user.id,
                         BULK_IMPORT_USER_STATUS.FAILED, errorMessage[0]);
-
-                // We need to commit the transaction manually because we have overridden that in the proxy storage
-                try {
-                    Connection connection = (Connection) con.getConnection();
-                    connection.commit();
-                    connection.setAutoCommit(true);
-                } catch (SQLException ex) {
-                    throw new StorageTransactionLogicException(ex);
-                }
                 return null;
             });
         } catch (StorageTransactionLogicException e1) {

@@ -52,8 +52,16 @@ import static io.supertokens.utils.JsonValidatorUtils.parseAndValidateFieldType;
 import static io.supertokens.utils.JsonValidatorUtils.validateJsonFieldType;
 
 public class BulkImportUserUtils {
-    public static BulkImportUser createBulkImportUserFromJSON(Main main, AppIdentifier appIdentifier,
-            JsonObject userData, String id, String[] allUserRoles, Set<String> allExternalUserIds)
+    private String[] allUserRoles;
+    private Set<String> allExternalUserIds;
+
+    public BulkImportUserUtils(String[] allUserRoles) {
+        this.allUserRoles = allUserRoles;
+        this.allExternalUserIds = new HashSet<>();
+    }
+
+    public BulkImportUser createBulkImportUserFromJSON(Main main, AppIdentifier appIdentifier, JsonObject userData,
+            String id)
             throws InvalidBulkImportDataException, StorageQueryException, TenantOrAppNotFoundException {
         List<String> errors = new ArrayList<>();
 
@@ -62,11 +70,11 @@ public class BulkImportUserUtils {
                 errors, ".");
         JsonObject userMetadata = parseAndValidateFieldType(userData, "userMetadata", ValueType.OBJECT, false,
                 JsonObject.class, errors, ".");
-        List<UserRole> userRoles = getParsedUserRoles(main, appIdentifier, userData, allUserRoles, errors);
-        List<TotpDevice> totpDevices = getParsedTotpDevices(userData, errors);
+        List<UserRole> userRoles = getParsedUserRoles(main, appIdentifier, userData, errors);
+        List<TotpDevice> totpDevices = getParsedTotpDevices(main, appIdentifier, userData, errors);
         List<LoginMethod> loginMethods = getParsedLoginMethods(main, appIdentifier, userData, errors);
 
-        externalUserId = validateAndNormaliseExternalUserId(externalUserId, allExternalUserIds, errors);
+        externalUserId = validateAndNormaliseExternalUserId(externalUserId, errors);
 
         validateTenantIdsForRoleAndLoginMethods(main, appIdentifier, userRoles, loginMethods, errors);
 
@@ -76,8 +84,8 @@ public class BulkImportUserUtils {
         return new BulkImportUser(id, externalUserId, userMetadata, userRoles, totpDevices, loginMethods);
     }
 
-    private static List<UserRole> getParsedUserRoles(Main main, AppIdentifier appIdentifier, JsonObject userData,
-            String[] allUserRoles, List<String> errors) throws StorageQueryException, TenantOrAppNotFoundException {
+    private List<UserRole> getParsedUserRoles(Main main, AppIdentifier appIdentifier, JsonObject userData,
+            List<String> errors) throws StorageQueryException, TenantOrAppNotFoundException {
         JsonArray jsonUserRoles = parseAndValidateFieldType(userData, "userRoles", ValueType.ARRAY_OF_OBJECT, false,
                 JsonArray.class, errors, ".");
 
@@ -95,7 +103,7 @@ public class BulkImportUserUtils {
             JsonArray jsonTenantIds = parseAndValidateFieldType(jsonUserRole, "tenantIds", ValueType.ARRAY_OF_STRING,
                     true, JsonArray.class, errors, " for a user role.");
 
-            role = validateAndNormaliseUserRole(role, allUserRoles, errors);
+            role = validateAndNormaliseUserRole(role, errors);
             List<String> normalisedTenantIds = validateAndNormaliseTenantIds(main, appIdentifier, jsonTenantIds, errors,
                     " for a user role.");
 
@@ -106,11 +114,18 @@ public class BulkImportUserUtils {
         return userRoles;
     }
 
-    private static List<TotpDevice> getParsedTotpDevices(JsonObject userData, List<String> errors) {
+    private List<TotpDevice> getParsedTotpDevices(Main main, AppIdentifier appIdentifier, JsonObject userData,
+            List<String> errors) throws StorageQueryException, TenantOrAppNotFoundException {
         JsonArray jsonTotpDevices = parseAndValidateFieldType(userData, "totpDevices", ValueType.ARRAY_OF_OBJECT, false,
                 JsonArray.class, errors, ".");
 
         if (jsonTotpDevices == null) {
+            return null;
+        }
+
+        if (Arrays.stream(FeatureFlag.getInstance(main, appIdentifier).getEnabledFeatures())
+                .noneMatch(t -> t == EE_FEATURES.MFA)) {
+            errors.add("MFA must be enabled to import totp devices.");
             return null;
         }
 
@@ -139,7 +154,7 @@ public class BulkImportUserUtils {
         return totpDevices;
     }
 
-    private static List<LoginMethod> getParsedLoginMethods(Main main, AppIdentifier appIdentifier, JsonObject userData,
+    private List<LoginMethod> getParsedLoginMethods(Main main, AppIdentifier appIdentifier, JsonObject userData,
             List<String> errors)
             throws StorageQueryException, TenantOrAppNotFoundException {
         JsonArray jsonLoginMethods = parseAndValidateFieldType(userData, "loginMethods", ValueType.ARRAY_OF_OBJECT,
@@ -152,6 +167,13 @@ public class BulkImportUserUtils {
         if (jsonLoginMethods.size() == 0) {
             errors.add("At least one loginMethod is required.");
             return new ArrayList<>();
+        }
+
+        if (jsonLoginMethods.size() > 1) {
+            if (Arrays.stream(FeatureFlag.getInstance(main, appIdentifier).getEnabledFeatures())
+                    .noneMatch(t -> t == EE_FEATURES.ACCOUNT_LINKING || t == EE_FEATURES.MFA)) {
+                errors.add("Account linking or MFA must be enabled to import multiple loginMethods.");
+            }
         }
 
         validateAndNormaliseIsPrimaryField(jsonLoginMethods, errors);
@@ -232,8 +254,7 @@ public class BulkImportUserUtils {
         return loginMethods;
     }
 
-    private static String validateAndNormaliseExternalUserId(String externalUserId, Set<String> allExternalUserIds,
-            List<String> errors) {
+    private String validateAndNormaliseExternalUserId(String externalUserId, List<String> errors) {
         if (externalUserId == null) {
             return null;
         }
@@ -250,7 +271,7 @@ public class BulkImportUserUtils {
         return externalUserId.trim();
     }
 
-    private static String validateAndNormaliseUserRole(String role, String[] allUserRoles, List<String> errors) {
+    private String validateAndNormaliseUserRole(String role, List<String> errors) {
         if (role.length() > 255) {
             errors.add("role " + role + " is too long. Max length is 255.");
         }
@@ -265,7 +286,7 @@ public class BulkImportUserUtils {
         return normalisedRole;
     }
 
-    private static String validateAndNormaliseTotpSecretKey(String secretKey, List<String> errors) {
+    private String validateAndNormaliseTotpSecretKey(String secretKey, List<String> errors) {
         if (secretKey == null) {
             return null;
         }
@@ -278,7 +299,7 @@ public class BulkImportUserUtils {
         return secretKey;
     }
 
-    private static Integer validateAndNormaliseTotpPeriod(Integer period, List<String> errors) {
+    private Integer validateAndNormaliseTotpPeriod(Integer period, List<String> errors) {
         // We default to 30 if period is null
         if (period == null) {
             return 30;
@@ -291,7 +312,7 @@ public class BulkImportUserUtils {
         return period;
     }
 
-    private static Integer validateAndNormaliseTotpSkew(Integer skew, List<String> errors) {
+    private Integer validateAndNormaliseTotpSkew(Integer skew, List<String> errors) {
         // We default to 1 if skew is null
         if (skew == null) {
             return 1;
@@ -304,7 +325,7 @@ public class BulkImportUserUtils {
         return skew;
     }
 
-    private static String validateAndNormaliseTotpDeviceName(String deviceName, List<String> errors) {
+    private String validateAndNormaliseTotpDeviceName(String deviceName, List<String> errors) {
         if (deviceName == null) {
             return null;
         }
@@ -317,7 +338,7 @@ public class BulkImportUserUtils {
         return deviceName.trim();
     }
 
-    private static void validateAndNormaliseIsPrimaryField(JsonArray jsonLoginMethods, List<String> errors) {
+    private void validateAndNormaliseIsPrimaryField(JsonArray jsonLoginMethods, List<String> errors) {
         // We are validating that only one loginMethod has isPrimary as true
         boolean hasPrimaryLoginMethod = false;
         for (JsonElement jsonLoginMethod : jsonLoginMethods) {
@@ -333,7 +354,7 @@ public class BulkImportUserUtils {
         }
     }
 
-    private static String validateAndNormaliseRecipeId(String recipeId, List<String> errors) {
+    private String validateAndNormaliseRecipeId(String recipeId, List<String> errors) {
         if (recipeId == null) {
             return null;
         }
@@ -346,7 +367,7 @@ public class BulkImportUserUtils {
         return recipeId;
     }
 
-    private static List<String> validateAndNormaliseTenantIds(Main main, AppIdentifier appIdentifier,
+    private List<String> validateAndNormaliseTenantIds(Main main, AppIdentifier appIdentifier,
             JsonArray tenantIds, List<String> errors, String errorSuffix)
             throws StorageQueryException, TenantOrAppNotFoundException {
         if (tenantIds == null) {
@@ -366,7 +387,7 @@ public class BulkImportUserUtils {
         return normalisedTenantIds;
     }
 
-    private static String validateAndNormaliseTenantId(Main main, AppIdentifier appIdentifier, String tenantId,
+    private String validateAndNormaliseTenantId(Main main, AppIdentifier appIdentifier, String tenantId,
             List<String> errors, String errorSuffix)
             throws StorageQueryException, TenantOrAppNotFoundException {
         if (tenantId == null || tenantId.equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
@@ -393,17 +414,17 @@ public class BulkImportUserUtils {
         return normalisedTenantId;
     }
 
-    private static Boolean validateAndNormaliseIsPrimary(Boolean isPrimary) {
+    private Boolean validateAndNormaliseIsPrimary(Boolean isPrimary) {
         // We set the default value as false
         return isPrimary == null ? false : isPrimary;
     }
 
-    private static Boolean validateAndNormaliseIsVerified(Boolean isVerified) {
+    private Boolean validateAndNormaliseIsVerified(Boolean isVerified) {
         // We set the default value as false
         return isVerified == null ? false : isVerified;
     }
 
-    private static long validateAndNormaliseTimeJoined(Long timeJoined, List<String> errors) {
+    private long validateAndNormaliseTimeJoined(Long timeJoined, List<String> errors) {
         // We default timeJoined to currentTime if it is null
         if (timeJoined == null) {
             return System.currentTimeMillis();
@@ -420,7 +441,7 @@ public class BulkImportUserUtils {
         return timeJoined.longValue();
     }
 
-    private static String validateAndNormaliseEmail(String email, List<String> errors) {
+    private String validateAndNormaliseEmail(String email, List<String> errors) {
         if (email == null) {
             return null;
         }
@@ -433,7 +454,7 @@ public class BulkImportUserUtils {
         return Utils.normaliseEmail(email);
     }
 
-    private static CoreConfig.PASSWORD_HASHING_ALG validateAndNormaliseHashingAlgorithm(String hashingAlgorithm,
+    private CoreConfig.PASSWORD_HASHING_ALG validateAndNormaliseHashingAlgorithm(String hashingAlgorithm,
             List<String> errors) {
         if (hashingAlgorithm == null) {
             return null;
@@ -449,7 +470,7 @@ public class BulkImportUserUtils {
         }
     }
 
-    private static String validateAndNormalisePasswordHash(Main main, AppIdentifier appIdentifier,
+    private String validateAndNormalisePasswordHash(Main main, AppIdentifier appIdentifier,
             CoreConfig.PASSWORD_HASHING_ALG hashingAlgorithm, String passwordHash, List<String> errors)
             throws TenantOrAppNotFoundException {
         if (hashingAlgorithm == null || passwordHash == null) {
@@ -473,7 +494,7 @@ public class BulkImportUserUtils {
         return passwordHash;
     }
 
-    private static String validateAndNormaliseThirdPartyId(String thirdPartyId, List<String> errors) {
+    private String validateAndNormaliseThirdPartyId(String thirdPartyId, List<String> errors) {
         if (thirdPartyId == null) {
             return null;
         }
@@ -486,7 +507,7 @@ public class BulkImportUserUtils {
         return thirdPartyId;
     }
 
-    private static String validateAndNormaliseThirdPartyUserId(String thirdPartyUserId, List<String> errors) {
+    private String validateAndNormaliseThirdPartyUserId(String thirdPartyUserId, List<String> errors) {
         if (thirdPartyUserId == null) {
             return null;
         }
@@ -499,7 +520,7 @@ public class BulkImportUserUtils {
         return thirdPartyUserId;
     }
 
-    private static String validateAndNormalisePhoneNumber(String phoneNumber, List<String> errors) {
+    private String validateAndNormalisePhoneNumber(String phoneNumber, List<String> errors) {
         if (phoneNumber == null) {
             return null;
         }
@@ -512,7 +533,7 @@ public class BulkImportUserUtils {
         return Utils.normalizeIfPhoneNumber(phoneNumber);
     }
 
-    private static void validateTenantIdsForRoleAndLoginMethods(Main main, AppIdentifier appIdentifier,
+    private void validateTenantIdsForRoleAndLoginMethods(Main main, AppIdentifier appIdentifier,
             List<UserRole> userRoles, List<LoginMethod> loginMethods, List<String> errors)
             throws TenantOrAppNotFoundException {
         if (loginMethods == null) {

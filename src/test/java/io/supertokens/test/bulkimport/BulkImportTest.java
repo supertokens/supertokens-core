@@ -32,6 +32,8 @@ import org.junit.rules.TestRule;
 import io.supertokens.ProcessState;
 import io.supertokens.bulkimport.BulkImport;
 import io.supertokens.bulkimport.BulkImportUserPaginationContainer;
+import io.supertokens.cronjobs.CronTaskTest;
+import io.supertokens.cronjobs.bulkimport.ProcessBulkImportUsers;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.bulkimport.BulkImportStorage;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
@@ -161,10 +163,10 @@ public class BulkImportTest {
             BulkImport.addUsers(appIdentifier, storage, users);
 
             // Update the users status to PROCESSING
-            String[] userIds = users.stream().map(user -> user.id).toArray(String[]::new);
-
             storage.startTransaction(con -> {
-                storage.updateBulkImportUserStatus_Transaction(appIdentifier, con, userIds, BULK_IMPORT_USER_STATUS.PROCESSING, null);
+                for (BulkImportUser user : users) {
+                    storage.updateBulkImportUserStatus_Transaction(appIdentifier, con, user.id, BULK_IMPORT_USER_STATUS.PROCESSING, null);
+                }
                 storage.commitTransaction(con);
                 return null;
             });
@@ -179,10 +181,10 @@ public class BulkImportTest {
             BulkImport.addUsers(appIdentifier, storage, users);
 
             // Update the users status to FAILED
-            String[] userIds = users.stream().map(user -> user.id).toArray(String[]::new);
-
             storage.startTransaction(con -> {
-                storage.updateBulkImportUserStatus_Transaction(appIdentifier, con, userIds, BULK_IMPORT_USER_STATUS.FAILED, null);
+                for (BulkImportUser user : users) {
+                    storage.updateBulkImportUserStatus_Transaction(appIdentifier, con, user.id, BULK_IMPORT_USER_STATUS.FAILED, null);
+                }
                 storage.commitTransaction(con);
                 return null;
             });
@@ -199,7 +201,13 @@ public class BulkImportTest {
     public void randomPaginationTest() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+
+        // We are setting a high initial wait time to ensure the cron job doesn't run while we are running the tests
+        CronTaskTest.getInstance(process.getProcess()).setInitialWaitTimeInSeconds(ProcessBulkImportUsers.RESOURCE_KEY, 1000000);
+
+        process.startProcess();
+
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {

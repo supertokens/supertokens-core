@@ -194,8 +194,24 @@ public class AddBulkImportUsersTest {
                 assertEquals(responseString,
                         "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"loginMethods is required.\"]},{\"index\":1,\"errors\":[\"loginMethods is required.\",\"externalUserId id1 is not unique. It is already used by another user.\"]}]}");
             }
+            // MFA must be enabled to import totpDevices
+            try {
+                JsonObject request = new JsonParser()
+                        .parse("{\"users\":[{\"totpDevices\":[{\"secret\": \"secret\"}]}]}")
+                        .getAsJsonObject();
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/bulk-import/users",
+                        request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+                fail("The API should have thrown an error");
+            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                String responseString = getResponseMessageFromError(e.getMessage());
+                assertEquals(400, e.statusCode);
+                assertEquals(responseString,
+                        "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"MFA must be enabled to import totp devices.\",\"loginMethods is required.\"]}]}");
+            }
             // secretKey is required in totpDevices
             try {
+                setFeatureFlags(process.getProcess(), new EE_FEATURES[]{EE_FEATURES.MFA});
                 JsonObject request = new JsonParser()
                         .parse("{\"users\":[{\"totpDevices\":[{\"secret\": \"secret\"}]}]}")
                         .getAsJsonObject();
@@ -387,6 +403,28 @@ public class AddBulkImportUsersTest {
                         "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"email should be of type string for a passwordless recipe.\",\"phoneNumber should be of type string for a passwordless recipe.\",\"Either email or phoneNumber is required for a passwordless recipe.\"]}]}");
             }
         }
+        // Disabling all feature flags to be able to get the desired error messages
+        {
+            setFeatureFlags(process.getProcess(), new EE_FEATURES[]{});
+        }
+        // More than two loginMethods when either of account linking or MFA is not enabled
+        {
+            // CASE 1: email, passwordHash and hashingAlgorithm are not present
+            try {
+                JsonObject request = new JsonParser()
+                        .parse("{\"users\":[{\"loginMethods\":[{\"recipeId\":\"emailpassword\",\"email\":\"johndoe@gmail.com\",\"passwordHash\":\"$2a\",\"hashingAlgorithm\":\"bcrypt\",\"isPrimary\":true},{\"recipeId\":\"passwordless\",\"email\":\"johndoe@gmail.com\"}]}]}").getAsJsonObject();
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/bulk-import/users",
+                        request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+                fail("The API should have thrown an error");
+            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                String responseString = getResponseMessageFromError(e.getMessage());
+                assertEquals(400, e.statusCode);
+                assertEquals(responseString,
+                        "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"Account linking or MFA must be enabled to import multiple loginMethods.\"]}]}");
+            }
+        }
+
         // Validate tenantId
         {
             // CASE 1: Invalid tenantId when multitenancy is not enabled
@@ -405,11 +443,12 @@ public class AddBulkImportUsersTest {
                 assertEquals(responseString,
                         "{\"error\":\"" + genericErrMsg + "\",\"users\":[{\"index\":0,\"errors\":[\"Multitenancy must be enabled before importing users to a different tenant.\"]}]}");
             }
+            // Now enabling Account linking and Multitenancy for further tests
+            {
+                setFeatureFlags(process.getProcess(), new EE_FEATURES[]{EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+            }
             // CASE 2: Invalid tenantId when multitenancy is enabled
             try {
-                FeatureFlagTestContent.getInstance(process.getProcess())
-                    .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
-
                 JsonObject request = new JsonParser().parse(
                         "{\"users\":[{\"loginMethods\":[{\"tenantIds\":[\"invalid\"],\"recipeId\":\"passwordless\",\"email\":\"johndoe@gmail.com\"}]}]}")
                         .getAsJsonObject();
@@ -425,9 +464,6 @@ public class AddBulkImportUsersTest {
             }
             // CASE 3. Two more tenants do not share the same storage
             try {
-                FeatureFlagTestContent.getInstance(process.getProcess())
-                    .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
-    
                 createTenants(process.getProcess());
     
                 JsonObject request = new JsonParser().parse(
@@ -505,6 +541,8 @@ public class AddBulkImportUsersTest {
             return;
         }
 
+        setFeatureFlags(process.getProcess(), new EE_FEATURES[]{EE_FEATURES.MFA});
+
         // Create user roles before inserting bulk users
         {
             UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), "role1", null);
@@ -531,6 +569,8 @@ public class AddBulkImportUsersTest {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
+
+        setFeatureFlags(process.getProcess(), new EE_FEATURES[]{EE_FEATURES.MFA});
 
         // Create user roles before inserting bulk users
         {
@@ -688,5 +728,9 @@ public class AddBulkImportUsersTest {
                     )
             );
         }
+    }
+
+    private void setFeatureFlags(Main main, EE_FEATURES[] features) {
+        FeatureFlagTestContent.getInstance(main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, features);
     }
 }

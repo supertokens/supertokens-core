@@ -59,6 +59,7 @@ public class BulkImportAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        // API is app specific
         String statusString = InputParser.getQueryParamOrThrowError(req, "status", true);
         String paginationToken = InputParser.getQueryParamOrThrowError(req, "paginationToken", true);
         Integer limit = InputParser.getIntQueryParamOrThrowError(req, "limit", true);
@@ -118,6 +119,7 @@ public class BulkImportAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        // API is app specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         JsonArray users = InputParser.parseArrayOrThrowError(input, "users", false);
 
@@ -148,12 +150,12 @@ public class BulkImportAPI extends WebserverAPI {
         }
 
         JsonArray errorsJson = new JsonArray();
-        Set<String> allExternalUserIds = new HashSet<>();
         List<BulkImportUser> usersToAdd = new ArrayList<>();
 
+        BulkImportUserUtils bulkImportUserUtils = new BulkImportUserUtils(allUserRoles);
         for (int i = 0; i < users.size(); i++) {
             try {
-                BulkImportUser user = BulkImportUserUtils.createBulkImportUserFromJSON(main, appIdentifier, users.get(i).getAsJsonObject(), Utils.getUUID(), allUserRoles, allExternalUserIds);
+                BulkImportUser user = bulkImportUserUtils.createBulkImportUserFromJSON(main, appIdentifier, users.get(i).getAsJsonObject(), Utils.getUUID());
                 usersToAdd.add(user);
             } catch (io.supertokens.bulkimport.exceptions.InvalidBulkImportDataException e) {
                 JsonObject errorObj = new JsonObject();
@@ -191,6 +193,7 @@ public class BulkImportAPI extends WebserverAPI {
 
     @Override
     protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        // API is app specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         JsonArray arr = InputParser.parseArrayOrThrowError(input, "ids", false);
 

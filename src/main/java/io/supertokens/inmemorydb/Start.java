@@ -137,7 +137,27 @@ public class Start
 
     @Override
     public Storage createBulkImportProxyStorageInstance() {
-        return this;
+        // throw not implemented error
+        throw new UnsupportedOperationException("Unimplemented method 'createBulkImportProxyStorageInstance'");
+        
+    }
+
+    @Override
+    public void closeConnectionForBulkImportProxyStorage() throws StorageQueryException {
+        throw new UnsupportedOperationException(
+                "closeConnectionForBulkImportProxyStorage should only be called from BulkImportProxyStorage");
+    }
+
+    @Override
+    public void commitTransactionForBulkImportProxyStorage() throws StorageQueryException {
+        throw new UnsupportedOperationException(
+                "commitTransactionForBulkImportProxyStorage should only be called from BulkImportProxyStorage");
+    }
+
+    @Override
+    public void rollbackTransactionForBulkImportProxyStorage() throws StorageQueryException {
+        throw new UnsupportedOperationException(
+                "rollbackTransactionForBulkImportProxyStorage should only be called from BulkImportProxyStorage");
     }
 
     @Override
