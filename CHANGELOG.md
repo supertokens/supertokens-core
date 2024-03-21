@@ -10,6 +10,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Fixes userIdMapping queries
 - Fixes issue with session creation for users with userIdMapping and accounts linked
 - Fixes active users tracking while linking accounts
+- Adds a new required `useDynamicSigningKey` into the request body of `RefreshSessionAPI`
+  - This enables smooth switching between `useDynamicAccessTokenSigningKey` settings by allowing refresh calls to 
+    change the signing key type of a session
 
 ## [8.0.1] - 2024-03-11
 
