@@ -925,6 +925,8 @@ public class AuthRecipe {
                 .deleteUserActive_Transaction(con, appIdentifier, userId);
         StorageUtils.getTOTPStorage(storage)
                 .removeUser_Transaction(con, appIdentifier, userId);
+        StorageUtils.getActiveUsersStorage(storage)
+                .deleteUserActive_Transaction(con, appIdentifier, userId);
     }
 
     private static void deleteAuthRecipeUser(TransactionConnection con,

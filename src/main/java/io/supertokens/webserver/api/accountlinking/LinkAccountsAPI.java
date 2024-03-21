@@ -17,6 +17,7 @@
 package io.supertokens.webserver.api.accountlinking;
 
 import com.google.gson.JsonObject;
+import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.StorageAndUserIdMapping;
 import io.supertokens.authRecipe.AuthRecipe;
@@ -111,6 +112,16 @@ public class LinkAccountsAPI extends WebserverAPI {
             response.addProperty("status", "OK");
             response.addProperty("accountsAlreadyLinked", linkAccountsResult.wasAlreadyLinked);
             response.add("user", linkAccountsResult.user.toJson());
+
+            if (!linkAccountsResult.wasAlreadyLinked) {
+                try {
+                    ActiveUsers.updateLastActiveAfterLinking(
+                            main, appIdentifier, primaryUserId, recipeUserId);
+                } catch (Exception e) {
+                    // ignore
+                }
+            }
+
             super.sendJsonResponse(200, response, resp);
         } catch (StorageQueryException | TenantOrAppNotFoundException | FeatureNotEnabledException |
                  BadPermissionException e) {

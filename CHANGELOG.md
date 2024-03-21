@@ -9,6 +9,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Fixes userIdMapping queries
 - Fixes issue with session creation for users with userIdMapping and accounts linked
+- Fixes active users tracking while linking accounts
 
 ## [8.0.1] - 2024-03-11
 
