@@ -124,18 +124,19 @@ public class SessionQueries {
 
     public static void updateSessionInfo_Transaction(Start start, Connection con, TenantIdentifier tenantIdentifier,
                                                      String sessionHandle,
-                                                     String refreshTokenHash2, long expiry)
+                                                     String refreshTokenHash2, long expiry, boolean useStaticKey)
             throws SQLException, StorageQueryException {
         String QUERY = "UPDATE " + getConfig(start).getSessionInfoTable()
-                + " SET refresh_token_hash_2 = ?, expires_at = ?"
+                + " SET refresh_token_hash_2 = ?, expires_at = ?, use_static_key = ?"
                 + " WHERE app_id = ? AND tenant_id = ? AND session_handle = ?";
 
         update(con, QUERY, pst -> {
             pst.setString(1, refreshTokenHash2);
             pst.setLong(2, expiry);
-            pst.setString(3, tenantIdentifier.getAppId());
-            pst.setString(4, tenantIdentifier.getTenantId());
-            pst.setString(5, sessionHandle);
+            pst.setBoolean(3, useStaticKey);
+            pst.setString(4, tenantIdentifier.getAppId());
+            pst.setString(5, tenantIdentifier.getTenantId());
+            pst.setString(6, sessionHandle);
         });
     }
 

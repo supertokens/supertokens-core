@@ -351,7 +351,7 @@ public class Session {
                                         accessToken.sessionHandle,
                                         Utils.hashSHA256(accessToken.refreshTokenHash1),
                                         System.currentTimeMillis() +
-                                                config.getRefreshTokenValidity());
+                                                config.getRefreshTokenValidity(), sessionInfo.useStaticKey);
                             }
                             storage.commitTransaction(con);
 
@@ -423,7 +423,7 @@ public class Session {
                                     Utils.hashSHA256(accessToken.refreshTokenHash1),
                                     System.currentTimeMillis() + Config.getConfig(tenantIdentifierWithStorage, main)
                                             .getRefreshTokenValidity(),
-                                    sessionInfo.lastUpdatedSign);
+                                    sessionInfo.lastUpdatedSign, sessionInfo.useStaticKey);
                             if (!success) {
                                 continue;
                             }
@@ -473,7 +473,7 @@ public class Session {
             UnsupportedJWTSigningAlgorithmException, AccessTokenPayloadError {
         try {
             return refreshSession(new AppIdentifier(null, null), main, refreshToken, antiCsrfToken,
-                    enableAntiCsrf, accessTokenVersion);
+                    enableAntiCsrf, accessTokenVersion, null);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
@@ -482,7 +482,8 @@ public class Session {
     public static SessionInformationHolder refreshSession(AppIdentifier appIdentifier, Main main,
                                                           @Nonnull String refreshToken,
                                                           @Nullable String antiCsrfToken, boolean enableAntiCsrf,
-                                                          AccessToken.VERSION accessTokenVersion)
+                                                          AccessToken.VERSION accessTokenVersion,
+                                                          Boolean shouldUseStaticKey)
             throws StorageTransactionLogicException,
             UnauthorisedException, StorageQueryException, TokenTheftDetectedException,
             UnsupportedJWTSigningAlgorithmException, AccessTokenPayloadError, TenantOrAppNotFoundException {
@@ -498,14 +499,15 @@ public class Session {
 
         return refreshSessionHelper(refreshTokenInfo.tenantIdentifier.withStorage(
                         StorageLayer.getStorage(refreshTokenInfo.tenantIdentifier, main)),
-                main, refreshToken, refreshTokenInfo, enableAntiCsrf, accessTokenVersion);
+                main, refreshToken, refreshTokenInfo, enableAntiCsrf, accessTokenVersion, shouldUseStaticKey);
     }
 
     private static SessionInformationHolder refreshSessionHelper(
             TenantIdentifierWithStorage tenantIdentifierWithStorage, Main main, String refreshToken,
             RefreshToken.RefreshTokenInfo refreshTokenInfo,
             boolean enableAntiCsrf,
-            AccessToken.VERSION accessTokenVersion)
+            AccessToken.VERSION accessTokenVersion,
+            Boolean shouldUseStaticKey)
             throws StorageTransactionLogicException, UnauthorisedException, StorageQueryException,
             TokenTheftDetectedException, UnsupportedJWTSigningAlgorithmException, AccessTokenPayloadError,
             TenantOrAppNotFoundException {
@@ -530,7 +532,16 @@ public class Session {
                             throw new UnauthorisedException("Session missing in db or has expired");
                         }
 
+                        boolean useStaticKey = shouldUseStaticKey != null ? shouldUseStaticKey : sessionInfo.useStaticKey;
+
                         if (sessionInfo.refreshTokenHash2.equals(Utils.hashSHA256(Utils.hashSHA256(refreshToken)))) {
+                            if (useStaticKey != sessionInfo.useStaticKey) {
+                                // We do not update anything except the static key status
+                                storage.updateSessionInfo_Transaction(tenantIdentifierWithStorage, con, sessionHandle,
+                                        sessionInfo.refreshTokenHash2, sessionInfo.expiry,
+                                        useStaticKey);
+                            }
+
                             // at this point, the input refresh token is the parent one.
                             storage.commitTransaction(con);
                             String antiCsrfToken = enableAntiCsrf ? UUID.randomUUID().toString() : null;
@@ -542,7 +553,7 @@ public class Session {
                                     main, sessionHandle,
                                     sessionInfo.userId, Utils.hashSHA256(newRefreshToken.token),
                                     Utils.hashSHA256(refreshToken), sessionInfo.userDataInJWT, antiCsrfToken,
-                                    null, accessTokenVersion, sessionInfo.useStaticKey);
+                                    null, accessTokenVersion, useStaticKey);
 
                             TokenInfo idRefreshToken = new TokenInfo(UUID.randomUUID().toString(),
                                     newRefreshToken.expiry, newRefreshToken.createdTime);
@@ -560,13 +571,13 @@ public class Session {
                                 .equals(sessionInfo.refreshTokenHash2))) {
                             storage.updateSessionInfo_Transaction(tenantIdentifierWithStorage, con, sessionHandle,
                                     Utils.hashSHA256(Utils.hashSHA256(refreshToken)),
-                                    System.currentTimeMillis() + config.getRefreshTokenValidity());
+                                    System.currentTimeMillis() + config.getRefreshTokenValidity(), useStaticKey);
 
                             storage.commitTransaction(con);
 
                             return refreshSessionHelper(tenantIdentifierWithStorage, main, refreshToken,
                                     refreshTokenInfo, enableAntiCsrf,
-                                    accessTokenVersion);
+                                    accessTokenVersion, shouldUseStaticKey);
                         }
 
                         storage.commitTransaction(con);
@@ -613,7 +624,19 @@ public class Session {
                         throw new UnauthorisedException("Session missing in db or has expired");
                     }
 
+                    boolean useStaticKey = shouldUseStaticKey != null ? shouldUseStaticKey : sessionInfo.useStaticKey;
+
                     if (sessionInfo.refreshTokenHash2.equals(Utils.hashSHA256(Utils.hashSHA256(refreshToken)))) {
+                        if (sessionInfo.useStaticKey != useStaticKey) {
+                            // We do not update anything except the static key status
+                            boolean success = storage.updateSessionInfo_Transaction(sessionHandle,
+                                    sessionInfo.refreshTokenHash2, sessionInfo.expiry,
+                                    sessionInfo.lastUpdatedSign, useStaticKey);
+                            if (!success) {
+                                continue;
+                            }
+                        }
+
                         // at this point, the input refresh token is the parent one.
                         String antiCsrfToken = enableAntiCsrf ? UUID.randomUUID().toString() : null;
 
@@ -624,7 +647,7 @@ public class Session {
                                 sessionHandle,
                                 sessionInfo.userId, Utils.hashSHA256(newRefreshToken.token),
                                 Utils.hashSHA256(refreshToken), sessionInfo.userDataInJWT, antiCsrfToken,
-                                null, accessTokenVersion, sessionInfo.useStaticKey);
+                                null, accessTokenVersion, useStaticKey);
 
                         TokenInfo idRefreshToken = new TokenInfo(UUID.randomUUID().toString(), newRefreshToken.expiry,
                                 newRefreshToken.createdTime);
@@ -644,13 +667,13 @@ public class Session {
                                 Utils.hashSHA256(Utils.hashSHA256(refreshToken)),
                                 System.currentTimeMillis() +
                                         Config.getConfig(tenantIdentifierWithStorage, main).getRefreshTokenValidity(),
-                                sessionInfo.lastUpdatedSign);
+                                sessionInfo.lastUpdatedSign, useStaticKey);
                         if (!success) {
                             continue;
                         }
                         return refreshSessionHelper(tenantIdentifierWithStorage, main, refreshToken, refreshTokenInfo,
                                 enableAntiCsrf,
-                                accessTokenVersion);
+                                accessTokenVersion, shouldUseStaticKey);
                     }
 
                     throw new TokenTheftDetectedException(sessionHandle, sessionInfo.userId);

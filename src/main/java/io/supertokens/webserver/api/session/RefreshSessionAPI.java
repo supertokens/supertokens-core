@@ -61,10 +61,13 @@ public class RefreshSessionAPI extends WebserverAPI {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         // API is app specific, but session is updated based on tenantId obtained from the refreshToken
+        SemVer version = super.getVersionFromRequest(req);
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String refreshToken = InputParser.parseStringOrThrowError(input, "refreshToken", false);
         String antiCsrfToken = InputParser.parseStringOrThrowError(input, "antiCsrfToken", true);
         Boolean enableAntiCsrf = InputParser.parseBooleanOrThrowError(input, "enableAntiCsrf", false);
+        Boolean useDynamicSigningKey = version.greaterThanOrEqualTo(SemVer.v3_0) ?
+                InputParser.parseBooleanOrThrowError(input, "useDynamicSigningKey", true) : null;
         assert enableAntiCsrf != null;
         assert refreshToken != null;
 
@@ -75,13 +78,13 @@ public class RefreshSessionAPI extends WebserverAPI {
             throw new ServletException(e);
         }
 
-        SemVer version = super.getVersionFromRequest(req);
         try {
             AccessToken.VERSION accessTokenVersion = AccessToken.getAccessTokenVersionForCDI(version);
 
             SessionInformationHolder sessionInfo = Session.refreshSession(appIdentifierWithStorage, main,
                     refreshToken, antiCsrfToken,
-                    enableAntiCsrf, accessTokenVersion);
+                    enableAntiCsrf, accessTokenVersion,
+                    useDynamicSigningKey == null ? null : Boolean.FALSE.equals(useDynamicSigningKey));
 
             if (StorageLayer.getStorage(this.getTenantIdentifierWithStorageFromRequest(req), main).getType() ==
                     STORAGE_TYPE.SQL) {

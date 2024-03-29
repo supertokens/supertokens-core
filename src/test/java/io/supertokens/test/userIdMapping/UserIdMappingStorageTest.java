@@ -583,7 +583,8 @@ public class UserIdMappingStorageTest {
             storage.createUserIdMapping(new AppIdentifier(null, null), superTokensUserId, externalUserId,
                     null);
         }
-        HashMap<String, String> response = storage.getUserIdMappingForSuperTokensIds(superTokensUserIdList);
+        HashMap<String, String> response = storage.getUserIdMappingForSuperTokensIds(
+                new AppIdentifier(null, null), superTokensUserIdList);
         assertEquals(AuthRecipe.USER_PAGINATION_LIMIT, response.size());
         for (int i = 0; i < response.size(); i++) {
             assertEquals(externalUserIdList.get(i), response.get(superTokensUserIdList.get(i)));
@@ -606,7 +607,8 @@ public class UserIdMappingStorageTest {
         UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
         ArrayList<String> emptyList = new ArrayList<>();
 
-        HashMap<String, String> response = storage.getUserIdMappingForSuperTokensIds(emptyList);
+        HashMap<String, String> response = storage.getUserIdMappingForSuperTokensIds(
+                new AppIdentifier(null, null), emptyList);
         assertEquals(0, response.size());
 
         process.kill();
@@ -631,7 +633,8 @@ public class UserIdMappingStorageTest {
             superTokensUserIdList.add(userInfo.id);
         }
 
-        HashMap<String, String> userIdMapping = storage.getUserIdMappingForSuperTokensIds(superTokensUserIdList);
+        HashMap<String, String> userIdMapping = storage.getUserIdMappingForSuperTokensIds(
+                new AppIdentifier(null, null), superTokensUserIdList);
         assertEquals(0, userIdMapping.size());
 
         process.kill();
@@ -668,7 +671,8 @@ public class UserIdMappingStorageTest {
         }
 
         // retrieve UserIDMapping
-        HashMap<String, String> response = storage.getUserIdMappingForSuperTokensIds(superTokensUserIdList);
+        HashMap<String, String> response = storage.getUserIdMappingForSuperTokensIds(
+                new AppIdentifier(null, null), superTokensUserIdList);
         assertEquals(5, response.size());
 
         // check that the last 5 users have their ids mapped
