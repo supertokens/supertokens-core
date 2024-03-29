@@ -258,7 +258,8 @@ public class UserIdMapping {
             ArrayList<String> userIds)
             throws StorageQueryException {
         // userIds are already filtered for a tenant, so this becomes a tenant specific operation.
-        return tenantIdentifierWithStorage.getUserIdMappingStorage().getUserIdMappingForSuperTokensIds(userIds);
+        return tenantIdentifierWithStorage.getUserIdMappingStorage().getUserIdMappingForSuperTokensIds(
+                tenantIdentifierWithStorage.toAppIdentifier(), userIds);
     }
 
     @TestOnly

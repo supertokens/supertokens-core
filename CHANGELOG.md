@@ -7,6 +7,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+## [6.0.19] - 2024-03-29
+
+- Fixes userIdMapping queries
+- Adds a new required `useDynamicSigningKey` into the request body of `RefreshSessionAPI`
+  - This enables smooth switching between `useDynamicAccessTokenSigningKey` settings by allowing refresh calls to
+    change the signing key type of a session
+
 ## [6.0.18] - 2024-02-20
 
 - Fixes vulnerabilities in dependencies
