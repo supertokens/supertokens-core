@@ -170,9 +170,8 @@ public class BulkImportUserUtils {
         }
 
         if (jsonLoginMethods.size() > 1) {
-            if (Arrays.stream(FeatureFlag.getInstance(main, appIdentifier).getEnabledFeatures())
-                    .noneMatch(t -> t == EE_FEATURES.ACCOUNT_LINKING || t == EE_FEATURES.MFA)) {
-                errors.add("Account linking or MFA must be enabled to import multiple loginMethods.");
+            if (!Utils.isAccountLinkingEnabled(main, appIdentifier)) {
+                errors.add("Account linking must be enabled to import multiple loginMethods.");
             }
         }
 

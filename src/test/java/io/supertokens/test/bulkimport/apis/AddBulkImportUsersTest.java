@@ -60,6 +60,8 @@ import io.supertokens.thirdparty.InvalidProviderConfigException;
 import io.supertokens.userroles.UserRoles;
 
 public class AddBulkImportUsersTest {
+    private String genericErrMsg = "Data has missing or invalid fields. Please check the users field for more details.";
+
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
@@ -73,17 +75,135 @@ public class AddBulkImportUsersTest {
         Utils.reset();
     }
 
-    public String getResponseMessageFromError(String response) {
-        return response.substring(response.indexOf("Message: ") + "Message: ".length());
+    @Test
+    public void shouldThrow400IfUsersAreMissingInRequestBody() throws Exception {
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(new String[] { "../" });
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // CASE 1: users field is not present
+        testBadRequest(process.getProcess(), new JsonObject(), "Field name 'users' is invalid in JSON input");
+
+        // CASE 2: users field type in incorrect
+        testBadRequest(process.getProcess(), new JsonParser().parse("{\"users\": \"string\"}").getAsJsonObject(),
+                "Field name 'users' is invalid in JSON input");
+
+        // CASE 3: users array is empty
+        testBadRequest(process.getProcess(), generateUsersJson(0).getAsJsonObject(),
+                "{\"error\":\"You need to add at least one user.\"}");
+
+        // CASE 4: users array length is greater than 10000
+        testBadRequest(process.getProcess(), generateUsersJson(10001).getAsJsonObject(),
+                "{\"error\":\"You can only add 10000 users at a time.\"}");
+
+        process.kill();
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     @Test
-    public void shouldThrow400Error() throws Exception {
-        String[] args = { "../" };
-
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+    public void shouldThrow400IfLoginMethodsAreMissingInUserObject() throws Exception {
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(new String[] { "../" });
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-        
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // CASE 1: loginMethods field is not present
+        testBadRequest(process.getProcess(), new JsonParser().parse("{\"users\":[{}]}").getAsJsonObject(),
+                "{\"error\":\"" + genericErrMsg
+                        + "\",\"users\":[{\"index\":0,\"errors\":[\"loginMethods is required.\"]}]}");
+
+        // CASE 2: loginMethods field type in incorrect
+        testBadRequest(process.getProcess(),
+                new JsonParser().parse("{\"users\":[{\"loginMethods\": \"string\"}]}").getAsJsonObject(),
+                "{\"error\":\"" + genericErrMsg
+                        + "\",\"users\":[{\"index\":0,\"errors\":[\"loginMethods should be of type array of object.\"]}]}");
+
+        // CASE 3: loginMethods array is empty
+        testBadRequest(process.getProcess(),
+                new JsonParser().parse("{\"users\":[{\"loginMethods\": []}]}").getAsJsonObject(),
+                "{\"error\":\"" + genericErrMsg
+                        + "\",\"users\":[{\"index\":0,\"errors\":[\"At least one loginMethod is required.\"]}]}");
+
+        process.kill();
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void shouldThrow400IfNonRequiredFieldsHaveInvalidType() throws Exception {
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(new String[] { "../" });
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        JsonObject requestBody = new JsonParser()
+                .parse("{\"users\":[{\"externalUserId\":[],\"userMetaData\":[],\"userRoles\":{},\"totpDevices\":{}}]}")
+                .getAsJsonObject();
+
+        testBadRequest(process.getProcess(), requestBody,
+                "{\"error\":\"" + genericErrMsg
+                        + "\",\"users\":[{\"index\":0,\"errors\":[\"externalUserId should be of type string.\",\"userRoles should be of type array of object.\",\"totpDevices should be of type array of object.\",\"loginMethods is required.\"]}]}");
+
+        process.kill();
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void shouldThrow400IfNonUniqueExternalIdsArePassed() throws Exception {
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(new String[] { "../" });
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+        JsonObject requestBody = new JsonParser()
+                .parse("{\"users\":[{\"externalUserId\":\"id1\"}, {\"externalUserId\":\"id1\"}]}")
+                .getAsJsonObject();
+
+        testBadRequest(process.getProcess(), requestBody, "{\"error\":\"" + genericErrMsg
+                + "\",\"users\":[{\"index\":0,\"errors\":[\"loginMethods is required.\"]},{\"index\":1,\"errors\":[\"loginMethods is required.\",\"externalUserId id1 is not unique. It is already used by another user.\"]}]}");
+
+        process.kill();
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void shouldThrow400IfTotpDevicesAreNotPassedCorrectly() throws Exception {
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(new String[] { "../" });
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // CASE 1: MFA must be enabled to import totp devices
+        JsonObject requestBody = new JsonParser()
+                .parse("{\"users\":[{\"totpDevices\":[{\"secret\": \"secret\"}]}]}")
+                .getAsJsonObject();
+
+        testBadRequest(process.getProcess(), requestBody, "{\"error\":\"" + genericErrMsg
+                + "\",\"users\":[{\"index\":0,\"errors\":[\"MFA must be enabled to import totp devices.\",\"loginMethods is required.\"]}]}");
+
+        // CASE 2: secretKey is required in totpDevices
+        setFeatureFlags(process.getProcess(), new EE_FEATURES[] { EE_FEATURES.MFA });
+        testBadRequest(process.getProcess(), requestBody, "{\"error\":\"" + genericErrMsg
+                + "\",\"users\":[{\"index\":0,\"errors\":[\"secretKey is required for a totp device.\",\"loginMethods is required.\"]}]}");
+
+        process.kill();
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void shouldThrow400IfUserRolesAreNotPassedCorrectly() throws Exception {
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(new String[] { "../" });
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
@@ -93,438 +213,237 @@ public class AddBulkImportUsersTest {
             UserRoles.createNewRoleOrModifyItsPermissions(process.getProcess(), "role1", null);
         }
 
-        String genericErrMsg = "Data has missing or invalid fields. Please check the users field for more details.";
+        // CASE 1: tenantIds is required for a user role
+        JsonObject requestBody = new JsonParser()
+                .parse("{\"users\":[{\"userRoles\":[{\"role\":\"role1\"}]}]}")
+                .getAsJsonObject();
 
-        // users is required in the json body
-        {
-            // CASE 1: users field is not present
-            try {
-                JsonObject request = new JsonObject();
-                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/users",
-                        request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
-                fail("The API should have thrown an error");
-            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                String responseString = getResponseMessageFromError(e.getMessage());
-                assertEquals(400, e.statusCode);
-                assertEquals(responseString, "Field name 'users' is invalid in JSON input");
-            }
-            // CASE 2: users field type in incorrect
-            try {
-                JsonObject request = new JsonParser().parse("{\"users\": \"string\"}").getAsJsonObject();
-                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/users",
-                        request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
-                fail("The API should have thrown an error");
-            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                String responseString = getResponseMessageFromError(e.getMessage());
-                assertEquals(400, e.statusCode);
-                assertEquals(responseString, "Field name 'users' is invalid in JSON input");
-            }
+        testBadRequest(process.getProcess(), requestBody, "{\"error\":\"" + genericErrMsg
+                + "\",\"users\":[{\"index\":0,\"errors\":[\"tenantIds is required for a user role.\",\"loginMethods is required.\"]}]}");
+
+        // CASE 2: Role doesn't exist
+        JsonObject requestBody2 = new JsonParser()
+                .parse("{\"users\":[{\"userRoles\":[{\"role\":\"role5\", \"tenantIds\": [\"public\"]}]}]}")
+                .getAsJsonObject();
+
+        testBadRequest(process.getProcess(), requestBody2, "{\"error\":\"" + genericErrMsg
+                + "\",\"users\":[{\"index\":0,\"errors\":[\"Role role5 does not exist.\",\"loginMethods is required.\"]}]}");
+
+        process.kill();
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void shouldThrow400IfLoginMethodsHaveInvalidFieldType() throws Exception {
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(new String[] { "../" });
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
         }
-        // loginMethod array is required in the user object
-        {
-            // CASE 1: loginMethods field is not present
-            try {
-                JsonObject request = new JsonParser().parse("{\"users\":[{}]}").getAsJsonObject();
-                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/users",
-                        request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
-                fail("The API should have thrown an error");
-            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                String responseString = getResponseMessageFromError(e.getMessage());
-                assertEquals(400, e.statusCode);
-                assertEquals(responseString, "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"loginMethods is required.\"]}]}");
-            }
-            // CASE 2: loginMethods field type in incorrect
-            try {
-                JsonObject request = new JsonParser().parse("{\"users\":[{\"loginMethods\": \"string\"}]}")
-                        .getAsJsonObject();
-                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/users",
-                        request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
-                fail("The API should have thrown an error");
-            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                String responseString = getResponseMessageFromError(e.getMessage());
-                assertEquals(400, e.statusCode);
-                assertEquals(responseString,
-                        "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"loginMethods should be of type array of object.\"]}]}");
-            }
-            // CASE 3: loginMethods array is empty
-            try {
-                JsonObject request = new JsonParser().parse("{\"users\":[{\"loginMethods\": []}]}").getAsJsonObject();
-                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/users",
-                        request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
-                fail("The API should have thrown an error");
-            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                String responseString = getResponseMessageFromError(e.getMessage());
-                assertEquals(400, e.statusCode);
-                assertEquals(responseString, "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"At least one loginMethod is required.\"]}]}");
-            }
-        }
-        // Invalid field type of non required fields outside loginMethod
-        {
-            try {
-                JsonObject request = new JsonParser()
-                        .parse("{\"users\":[{\"externalUserId\":[],\"userMetaData\":[],\"userRoles\":{},\"totpDevices\":{}}]}")
-                        .getAsJsonObject();
-                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/users",
-                        request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
-                fail("The API should have thrown an error");
-            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                String responseString = getResponseMessageFromError(e.getMessage());
-                assertEquals(400, e.statusCode);
-                assertEquals(responseString,
-                        "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"externalUserId should be of type string.\",\"userRoles should be of type array of object.\",\"totpDevices should be of type array of object.\",\"loginMethods is required.\"]}]}");
-            }
-            // Non-unique externalUserIds
-            try {
-                JsonObject request = new JsonParser()
-                        .parse("{\"users\":[{\"externalUserId\":\"id1\"}, {\"externalUserId\":\"id1\"}]}")
-                        .getAsJsonObject();
-                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/users",
-                        request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
-                fail("The API should have thrown an error");
-            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                String responseString = getResponseMessageFromError(e.getMessage());
-                assertEquals(400, e.statusCode);
-                assertEquals(responseString,
-                        "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"loginMethods is required.\"]},{\"index\":1,\"errors\":[\"loginMethods is required.\",\"externalUserId id1 is not unique. It is already used by another user.\"]}]}");
-            }
-            // MFA must be enabled to import totpDevices
-            try {
-                JsonObject request = new JsonParser()
-                        .parse("{\"users\":[{\"totpDevices\":[{\"secret\": \"secret\"}]}]}")
-                        .getAsJsonObject();
-                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/users",
-                        request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
-                fail("The API should have thrown an error");
-            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                String responseString = getResponseMessageFromError(e.getMessage());
-                assertEquals(400, e.statusCode);
-                assertEquals(responseString,
-                        "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"MFA must be enabled to import totp devices.\",\"loginMethods is required.\"]}]}");
-            }
-            // secretKey is required in totpDevices
-            try {
-                setFeatureFlags(process.getProcess(), new EE_FEATURES[]{EE_FEATURES.MFA});
-                JsonObject request = new JsonParser()
-                        .parse("{\"users\":[{\"totpDevices\":[{\"secret\": \"secret\"}]}]}")
-                        .getAsJsonObject();
-                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/users",
-                        request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
-                fail("The API should have thrown an error");
-            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                String responseString = getResponseMessageFromError(e.getMessage());
-                assertEquals(400, e.statusCode);
-                assertEquals(responseString,
-                        "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"secretKey is required for a totp device.\",\"loginMethods is required.\"]}]}");
-            }
-            // Invalid role (tenantIds is required)
-            try {
-                JsonObject request = new JsonParser()
-                        .parse("{\"users\":[{\"userRoles\":[{\"role\":\"role1\"}]}]}")
-                        .getAsJsonObject();
-                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/users",
-                        request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
-                fail("The API should have thrown an error");
-            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                String responseString = getResponseMessageFromError(e.getMessage());
-                assertEquals(400, e.statusCode);
-                
-                assertEquals(responseString,
-                        "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"tenantIds is required for a user role.\",\"loginMethods is required.\"]}]}");
-            }
-            // Invalid role (role doesn't exist)
-            try {
-                JsonObject request = new JsonParser()
-                        .parse("{\"users\":[{\"userRoles\":[{\"role\":\"role5\", \"tenantIds\": [\"public\"]}]}]}")
-                        .getAsJsonObject();
-                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/users",
-                        request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
-                fail("The API should have thrown an error");
-            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                String responseString = getResponseMessageFromError(e.getMessage());
-                assertEquals(400, e.statusCode);
-                
-                assertEquals(responseString,
-                        "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"Role role5 does not exist.\",\"loginMethods is required.\"]}]}");
-            }
-        }
-        // Invalid field type of non required fields inside loginMethod
-        {
-            try {
-                JsonObject request = new JsonParser().parse(
+
+        // CASE 1: Field type is invalid
+        JsonObject requestBody = new JsonParser()
+                .parse(
                         "{\"users\":[{\"loginMethods\":[{\"recipeId\":[],\"tenantIds\":{},\"isPrimary\":[],\"isVerified\":[],\"timeJoinedInMSSinceEpoch\":[]}]}]}")
-                        .getAsJsonObject();
-                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/users",
-                        request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
-                fail("The API should have thrown an error");
-            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                String responseString = getResponseMessageFromError(e.getMessage());
-                assertEquals(400, e.statusCode);
-                assertEquals(responseString,
-                        "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"recipeId should be of type string for a loginMethod.\",\"tenantIds should be of type array of string for a loginMethod.\",\"isVerified should be of type boolean for a loginMethod.\",\"isPrimary should be of type boolean for a loginMethod.\",\"timeJoinedInMSSinceEpoch should be of type integer for a loginMethod\"]}]}");
-            }
-        }
-        // Invalid recipeId
-        {
-            try {
-                JsonObject request = new JsonParser()
-                        .parse("{\"users\":[{\"loginMethods\":[{\"recipeId\":\"invalid_recipe_id\"}]}]}")
-                        .getAsJsonObject();
-                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/users",
-                        request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
-                fail("The API should have thrown an error");
-            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                String responseString = getResponseMessageFromError(e.getMessage());
-                assertEquals(400, e.statusCode);
-                assertEquals(responseString,
-                        "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"Invalid recipeId for loginMethod. Pass one of emailpassword, thirdparty or, passwordless!\"]}]}");
-            }
-        }
-        // Invalid field type in emailpassword recipe
-        {
-            // CASE 1: email, passwordHash and hashingAlgorithm are not present
-            try {
-                JsonObject request = new JsonParser()
-                        .parse("{\"users\":[{\"loginMethods\":[{\"recipeId\":\"emailpassword\"}]}]}").getAsJsonObject();
-                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/users",
-                        request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
-                fail("The API should have thrown an error");
-            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                String responseString = getResponseMessageFromError(e.getMessage());
-                assertEquals(400, e.statusCode);
-                assertEquals(responseString,
-                        "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"email is required for an emailpassword recipe.\",\"passwordHash is required for an emailpassword recipe.\",\"hashingAlgorithm is required for an emailpassword recipe.\"]}]}");
-            }
-            // CASE 2: email, passwordHash and hashingAlgorithm field type is incorrect
-            try {
-                JsonObject request = new JsonParser().parse(
-                        "{\"users\":[{\"loginMethods\":[{\"recipeId\":\"emailpassword\",\"email\":[],\"passwordHash\":[],\"hashingAlgorithm\":[]}]}]}")
-                        .getAsJsonObject();
-                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/users",
-                        request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
-                fail("The API should have thrown an error");
-            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                String responseString = getResponseMessageFromError(e.getMessage());
-                assertEquals(400, e.statusCode);
-                assertEquals(responseString,
-                        "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"email should be of type string for an emailpassword recipe.\",\"passwordHash should be of type string for an emailpassword recipe.\",\"hashingAlgorithm should be of type string for an emailpassword recipe.\"]}]}");
-            }
-            // CASE 3: hashingAlgorithm is not one of bcrypt, argon2, firebase_scrypt
-            try {
-                JsonObject request = new JsonParser().parse(
-                        "{\"users\":[{\"loginMethods\":[{\"recipeId\":\"emailpassword\",\"email\":\"johndoe@gmail.com\",\"passwordHash\":\"$2a\",\"hashingAlgorithm\":\"invalid_algorithm\"}]}]}")
-                        .getAsJsonObject();
-                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/users",
-                        request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
-                fail("The API should have thrown an error");
-            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                String responseString = getResponseMessageFromError(e.getMessage());
-                assertEquals(400, e.statusCode);
-                assertEquals(responseString,
-                        "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"Invalid hashingAlgorithm for emailpassword recipe. Pass one of bcrypt, argon2 or, firebase_scrypt!\"]}]}");
-            }
-        }
-        // Invalid field type in thirdparty recipe
-        {
-            // CASE 1: email, thirdPartyId and thirdPartyUserId are not present
-            try {
-                JsonObject request = new JsonParser()
-                        .parse("{\"users\":[{\"loginMethods\":[{\"recipeId\":\"thirdparty\"}]}]}").getAsJsonObject();
-                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/users",
-                        request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
-                fail("The API should have thrown an error");
-            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                String responseString = getResponseMessageFromError(e.getMessage());
-                assertEquals(400, e.statusCode);
-                assertEquals(responseString,
-                        "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"email is required for a thirdparty recipe.\",\"thirdPartyId is required for a thirdparty recipe.\",\"thirdPartyUserId is required for a thirdparty recipe.\"]}]}");
-            }
-            // CASE 2: email, passwordHash and thirdPartyUserId field type is incorrect
-            try {
-                JsonObject request = new JsonParser().parse(
-                        "{\"users\":[{\"loginMethods\":[{\"recipeId\":\"thirdparty\",\"email\":[],\"thirdPartyId\":[],\"thirdPartyUserId\":[]}]}]}")
-                        .getAsJsonObject();
-                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/users",
-                        request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
-                fail("The API should have thrown an error");
-            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                String responseString = getResponseMessageFromError(e.getMessage());
-                assertEquals(400, e.statusCode);
-                assertEquals(responseString,
-                        "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"email should be of type string for a thirdparty recipe.\",\"thirdPartyId should be of type string for a thirdparty recipe.\",\"thirdPartyUserId should be of type string for a thirdparty recipe.\"]}]}");
-            }
-        }
-        // Invalid field type in passwordless recipe
-        {
-            // CASE 1: email and phoneNumber are not present
-            try {
-                JsonObject request = new JsonParser()
-                        .parse("{\"users\":[{\"loginMethods\":[{\"recipeId\":\"passwordless\"}]}]}").getAsJsonObject();
-                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/users",
-                        request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
-                fail("The API should have thrown an error");
-            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                String responseString = getResponseMessageFromError(e.getMessage());
-                assertEquals(400, e.statusCode);
-                assertEquals(responseString,
-                        "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"Either email or phoneNumber is required for a passwordless recipe.\"]}]}");
-            }
-            // CASE 2: email and phoneNumber field type is incorrect
-            try {
-                JsonObject request = new JsonParser().parse(
-                        "{\"users\":[{\"loginMethods\":[{\"recipeId\":\"passwordless\",\"email\":[],\"phoneNumber\":[]}]}]}")
-                        .getAsJsonObject();
-                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/users",
-                        request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
-                fail("The API should have thrown an error");
-            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                String responseString = getResponseMessageFromError(e.getMessage());
-                assertEquals(400, e.statusCode);
-                assertEquals(responseString,
-                        "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"email should be of type string for a passwordless recipe.\",\"phoneNumber should be of type string for a passwordless recipe.\",\"Either email or phoneNumber is required for a passwordless recipe.\"]}]}");
-            }
-        }
-        // Disabling all feature flags to be able to get the desired error messages
-        {
-            setFeatureFlags(process.getProcess(), new EE_FEATURES[]{});
-        }
-        // More than two loginMethods when either of account linking or MFA is not enabled
-        {
-            // CASE 1: email, passwordHash and hashingAlgorithm are not present
-            try {
-                JsonObject request = new JsonParser()
-                        .parse("{\"users\":[{\"loginMethods\":[{\"recipeId\":\"emailpassword\",\"email\":\"johndoe@gmail.com\",\"passwordHash\":\"$2a\",\"hashingAlgorithm\":\"bcrypt\",\"isPrimary\":true},{\"recipeId\":\"passwordless\",\"email\":\"johndoe@gmail.com\"}]}]}").getAsJsonObject();
-                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/users",
-                        request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
-                fail("The API should have thrown an error");
-            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                String responseString = getResponseMessageFromError(e.getMessage());
-                assertEquals(400, e.statusCode);
-                assertEquals(responseString,
-                        "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"Account linking or MFA must be enabled to import multiple loginMethods.\"]}]}");
-            }
+                .getAsJsonObject();
+
+        testBadRequest(process.getProcess(), requestBody, "{\"error\":\"" + genericErrMsg
+                + "\",\"users\":[{\"index\":0,\"errors\":[\"recipeId should be of type string for a loginMethod.\",\"tenantIds should be of type array of string for a loginMethod.\",\"isVerified should be of type boolean for a loginMethod.\",\"isPrimary should be of type boolean for a loginMethod.\",\"timeJoinedInMSSinceEpoch should be of type integer for a loginMethod\"]}]}");
+
+        // CASE 2: recipeId is invalid
+        JsonObject requestBody2 = new JsonParser()
+                .parse("{\"users\":[{\"loginMethods\":[{\"recipeId\":\"invalid_recipe_id\"}]}]}")
+                .getAsJsonObject();
+
+        testBadRequest(process.getProcess(), requestBody2, "{\"error\":\"" + genericErrMsg
+                + "\",\"users\":[{\"index\":0,\"errors\":[\"Invalid recipeId for loginMethod. Pass one of emailpassword, thirdparty or, passwordless!\"]}]}");
+
+        process.kill();
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void shouldThrow400IfEmailPasswordRecipeHasInvalidFieldTypes() throws Exception {
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(new String[] { "../" });
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
         }
 
-        // Validate tenantId
-        {
-            // CASE 1: Invalid tenantId when multitenancy is not enabled
-            try {
-                JsonObject request = new JsonParser().parse(
+        // CASE 1: email, passwordHash and hashingAlgorithm are not present
+        JsonObject requestBody = new JsonParser()
+                .parse("{\"users\":[{\"loginMethods\":[{\"recipeId\":\"emailpassword\"}]}]}")
+                .getAsJsonObject();
+
+        testBadRequest(process.getProcess(), requestBody, "{\"error\":\"" + genericErrMsg
+                + "\",\"users\":[{\"index\":0,\"errors\":[\"email is required for an emailpassword recipe.\",\"passwordHash is required for an emailpassword recipe.\",\"hashingAlgorithm is required for an emailpassword recipe.\"]}]}");
+
+        // CASE 2: email, passwordHash and hashingAlgorithm field type is incorrect
+        JsonObject requestBody2 = new JsonParser()
+                .parse(
+                        "{\"users\":[{\"loginMethods\":[{\"recipeId\":\"emailpassword\",\"email\":[],\"passwordHash\":[],\"hashingAlgorithm\":[]}]}]}")
+                .getAsJsonObject();
+
+        testBadRequest(process.getProcess(), requestBody2, "{\"error\":\"" + genericErrMsg
+                + "\",\"users\":[{\"index\":0,\"errors\":[\"email should be of type string for an emailpassword recipe.\",\"passwordHash should be of type string for an emailpassword recipe.\",\"hashingAlgorithm should be of type string for an emailpassword recipe.\"]}]}");
+
+        // CASE 3: hashingAlgorithm is not one of bcrypt, argon2, firebase_scrypt
+        JsonObject requestBody3 = new JsonParser()
+                .parse(
+                        "{\"users\":[{\"loginMethods\":[{\"recipeId\":\"emailpassword\",\"email\":\"johndoe@gmail.com\",\"passwordHash\":\"$2a\",\"hashingAlgorithm\":\"invalid_algorithm\"}]}]}")
+                .getAsJsonObject();
+
+        testBadRequest(process.getProcess(), requestBody3, "{\"error\":\"" + genericErrMsg
+                + "\",\"users\":[{\"index\":0,\"errors\":[\"Invalid hashingAlgorithm for emailpassword recipe. Pass one of bcrypt, argon2 or, firebase_scrypt!\"]}]}");
+
+        process.kill();
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void shouldThrow400IfThirdPartyRecipeHasInvalidFieldTypes() throws Exception {
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(new String[] { "../" });
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // CASE 1: email, thirdPartyId and thirdPartyUserId are not present
+        JsonObject requestBody = new JsonParser()
+                .parse("{\"users\":[{\"loginMethods\":[{\"recipeId\":\"thirdparty\"}]}]}")
+                .getAsJsonObject();
+
+        testBadRequest(process.getProcess(), requestBody, "{\"error\":\"" + genericErrMsg
+                + "\",\"users\":[{\"index\":0,\"errors\":[\"email is required for a thirdparty recipe.\",\"thirdPartyId is required for a thirdparty recipe.\",\"thirdPartyUserId is required for a thirdparty recipe.\"]}]}");
+
+        // CASE 2: email, passwordHash and thirdPartyUserId field type is incorrect
+        JsonObject requestBody2 = new JsonParser()
+                .parse(
+                        "{\"users\":[{\"loginMethods\":[{\"recipeId\":\"thirdparty\",\"email\":[],\"thirdPartyId\":[],\"thirdPartyUserId\":[]}]}]}")
+                .getAsJsonObject();
+
+        testBadRequest(process.getProcess(), requestBody2, "{\"error\":\"" + genericErrMsg
+                + "\",\"users\":[{\"index\":0,\"errors\":[\"email should be of type string for a thirdparty recipe.\",\"thirdPartyId should be of type string for a thirdparty recipe.\",\"thirdPartyUserId should be of type string for a thirdparty recipe.\"]}]}");
+
+        process.kill();
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void shouldThrow400IfPasswordlessRecipeHasInvalidFieldTypes() throws Exception {
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(new String[] { "../" });
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // CASE 1: email and phoneNumber are not present
+        JsonObject requestBody = new JsonParser()
+                .parse("{\"users\":[{\"loginMethods\":[{\"recipeId\":\"passwordless\"}]}]}")
+                .getAsJsonObject();
+
+        testBadRequest(process.getProcess(), requestBody, "{\"error\":\"" + genericErrMsg
+                + "\",\"users\":[{\"index\":0,\"errors\":[\"Either email or phoneNumber is required for a passwordless recipe.\"]}]}");
+
+        // CASE 2: email and phoneNumber field type is incorrect
+        JsonObject requestBody2 = new JsonParser()
+                .parse(
+                        "{\"users\":[{\"loginMethods\":[{\"recipeId\":\"passwordless\",\"email\":[],\"phoneNumber\":[]}]}]}")
+                .getAsJsonObject();
+
+        testBadRequest(process.getProcess(), requestBody2, "{\"error\":\"" + genericErrMsg
+                + "\",\"users\":[{\"index\":0,\"errors\":[\"email should be of type string for a passwordless recipe.\",\"phoneNumber should be of type string for a passwordless recipe.\",\"Either email or phoneNumber is required for a passwordless recipe.\"]}]}");
+
+        process.kill();
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void shouldThrow400IfAUserHasMultipleLoginMethodsAndAccountLinkingIsDisabled() throws Exception {
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(new String[] { "../" });
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+        JsonObject requestBody = new JsonParser()
+                .parse("{\"users\":[{\"loginMethods\":[{\"recipeId\":\"emailpassword\",\"email\":\"johndoe@gmail.com\",\"passwordHash\":\"$2a\",\"hashingAlgorithm\":\"bcrypt\",\"isPrimary\":true},{\"recipeId\":\"passwordless\",\"email\":\"johndoe@gmail.com\"}]}]}")
+                .getAsJsonObject();
+
+        testBadRequest(process.getProcess(), requestBody, "{\"error\":\"" + genericErrMsg
+                + "\",\"users\":[{\"index\":0,\"errors\":[\"Account linking must be enabled to import multiple loginMethods.\"]}]}");
+
+        process.kill();
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void shouldThrow400IfInvalidTenantIdIsPassed() throws Exception {
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(new String[] { "../" });
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // CASE 1: Multitenancy is not enabled
+        JsonObject requestBody = new JsonParser()
+                .parse(
                         "{\"users\":[{\"loginMethods\":[{\"tenantIds\":[\"invalid\"],\"recipeId\":\"passwordless\",\"email\":\"johndoe@gmail.com\"}]}]}")
-                        .getAsJsonObject();
-                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/users",
-                        request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
-                
-                fail("The API should have thrown an error");
-            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                String responseString = getResponseMessageFromError(e.getMessage());
-                assertEquals(400, e.statusCode);
-                assertEquals(responseString,
-                        "{\"error\":\"" + genericErrMsg + "\",\"users\":[{\"index\":0,\"errors\":[\"Multitenancy must be enabled before importing users to a different tenant.\"]}]}");
-            }
-            // Now enabling Account linking and Multitenancy for further tests
-            {
-                setFeatureFlags(process.getProcess(), new EE_FEATURES[]{EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
-            }
-            // CASE 2: Invalid tenantId when multitenancy is enabled
-            try {
-                JsonObject request = new JsonParser().parse(
+                .getAsJsonObject();
+
+        testBadRequest(process.getProcess(), requestBody, "{\"error\":\"" + genericErrMsg
+                + "\",\"users\":[{\"index\":0,\"errors\":[\"Multitenancy must be enabled before importing users to a different tenant.\"]}]}");
+
+        // CASE 2: Invalid tenantId
+        setFeatureFlags(process.getProcess(),
+                new EE_FEATURES[] { EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY });
+
+        JsonObject requestBody2 = new JsonParser()
+                .parse(
                         "{\"users\":[{\"loginMethods\":[{\"tenantIds\":[\"invalid\"],\"recipeId\":\"passwordless\",\"email\":\"johndoe@gmail.com\"}]}]}")
-                        .getAsJsonObject();
-                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/users",
-                        request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
-                fail("The API should have thrown an error");
-            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                String responseString = getResponseMessageFromError(e.getMessage());
-                assertEquals(400, e.statusCode);
-                assertEquals(responseString,
-                        "{\"error\":\"" + genericErrMsg + "\",\"users\":[{\"index\":0,\"errors\":[\"Invalid tenantId: invalid for passwordless recipe.\"]}]}");
-            }
-            // CASE 3. Two more tenants do not share the same storage
-            try {
-                createTenants(process.getProcess());
-    
-                JsonObject request = new JsonParser().parse(
-                        "{\"users\":[{\"loginMethods\":[{\"tenantIds\":[\"public\"],\"recipeId\":\"passwordless\",\"email\":\"johndoe@gmail.com\"}, {\"tenantIds\":[\"t2\"],\"recipeId\":\"thirdparty\", \"email\":\"johndoe@gmail.com\", \"thirdPartyId\":\"id\", \"thirdPartyUserId\":\"id\"}]}]}")
-                        .getAsJsonObject();
-                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/users",
-                        request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
-                fail("The API should have thrown an error");
-            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                String responseString = getResponseMessageFromError(e.getMessage());
-                assertEquals(400, e.statusCode);
-                assertEquals(responseString,
-                        "{\"error\":\"" + genericErrMsg + "\",\"users\":[{\"index\":0,\"errors\":[\"All tenants for a user must share the same storage.\"]}]}");
-            }
+                .getAsJsonObject();
+
+        testBadRequest(process.getProcess(), requestBody2, "{\"error\":\"" + genericErrMsg
+                + "\",\"users\":[{\"index\":0,\"errors\":[\"Invalid tenantId: invalid for passwordless recipe.\"]}]}");
+
+        // CASE 3: Two or more tenants do not share the same storage
+
+        createTenants(process.getProcess());
+
+        JsonObject requestBody3 = new JsonParser().parse(
+                "{\"users\":[{\"loginMethods\":[{\"tenantIds\":[\"public\"],\"recipeId\":\"passwordless\",\"email\":\"johndoe@gmail.com\"}, {\"tenantIds\":[\"t2\"],\"recipeId\":\"thirdparty\", \"email\":\"johndoe@gmail.com\", \"thirdPartyId\":\"id\", \"thirdPartyUserId\":\"id\"}]}]}")
+                .getAsJsonObject();
+
+        testBadRequest(process.getProcess(), requestBody3, "{\"error\":\"" + genericErrMsg
+                + "\",\"users\":[{\"index\":0,\"errors\":[\"All tenants for a user must share the same storage.\"]}]}");
+
+        process.kill();
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void shouldThrow400IfTwoLoginMethodsHaveIsPrimaryTrue() throws Exception {
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(new String[] { "../" });
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
         }
-        // No two loginMethods can have isPrimary as true
-        {
-            // CASE 1: email, passwordHash and hashingAlgorithm are not present
-            try {
-                JsonObject request = new JsonParser()
-                        .parse("{\"users\":[{\"loginMethods\":[{\"recipeId\":\"emailpassword\",\"email\":\"johndoe@gmail.com\",\"passwordHash\":\"$2a\",\"hashingAlgorithm\":\"bcrypt\",\"isPrimary\":true},{\"recipeId\":\"passwordless\",\"email\":\"johndoe@gmail.com\",\"isPrimary\":true}]}]}").getAsJsonObject();
-                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/users",
-                        request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
-                fail("The API should have thrown an error");
-            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                String responseString = getResponseMessageFromError(e.getMessage());
-                assertEquals(400, e.statusCode);
-                assertEquals(responseString,
-                        "{\"error\":\"" + genericErrMsg +  "\",\"users\":[{\"index\":0,\"errors\":[\"No two loginMethods can have isPrimary as true.\"]}]}");
-            }
-        }
-        // Can't import less than 1 user at a time
-        {
-            try {
-                JsonObject request = generateUsersJson(0);
-                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/bulk-import/users",
-                    request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
-                fail("The API should have thrown an error");
-            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                String responseString = getResponseMessageFromError(e.getMessage());
-                assertEquals(400, e.statusCode);
-                assertEquals(responseString, "{\"error\":\"You need to add at least one user.\"}");
-            }
-        }
-        // Can't import more than 10000 users at a time
-        {
-            try {
-                JsonObject request = generateUsersJson(10001);
-                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/bulk-import/users",
-                    request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
-                fail("The API should have thrown an error");
-            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                String responseString = getResponseMessageFromError(e.getMessage());
-                assertEquals(400, e.statusCode);
-                assertEquals(responseString, "{\"error\":\"You can only add 10000 users at a time.\"}");
-            }
-        }
+
+        setFeatureFlags(process.getProcess(),
+                new EE_FEATURES[] { EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY });
+
+        JsonObject requestBody = new JsonParser()
+                .parse("{\"users\":[{\"loginMethods\":[{\"recipeId\":\"emailpassword\",\"email\":\"johndoe@gmail.com\",\"passwordHash\":\"$2a\",\"hashingAlgorithm\":\"bcrypt\",\"isPrimary\":true},{\"recipeId\":\"passwordless\",\"email\":\"johndoe@gmail.com\",\"isPrimary\":true}]}]}")
+                .getAsJsonObject();
+
+        testBadRequest(process.getProcess(), requestBody, "{\"error\":\"" + genericErrMsg
+                + "\",\"users\":[{\"index\":0,\"errors\":[\"No two loginMethods can have isPrimary as true.\"]}]}");
 
         process.kill();
         Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -541,7 +460,7 @@ public class AddBulkImportUsersTest {
             return;
         }
 
-        setFeatureFlags(process.getProcess(), new EE_FEATURES[]{EE_FEATURES.MFA});
+        setFeatureFlags(process.getProcess(), new EE_FEATURES[] { EE_FEATURES.MFA });
 
         // Create user roles before inserting bulk users
         {
@@ -551,8 +470,8 @@ public class AddBulkImportUsersTest {
 
         JsonObject request = generateUsersJson(10000);
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-        "http://localhost:3567/bulk-import/users",
-        request, 1000, 10000, null, Utils.getCdiVersionStringLatestForTests(), null);
+                "http://localhost:3567/bulk-import/users",
+                request, 1000, 10000, null, Utils.getCdiVersionStringLatestForTests(), null);
         assertEquals("OK", response.get("status").getAsString());
 
         process.kill();
@@ -570,7 +489,7 @@ public class AddBulkImportUsersTest {
             return;
         }
 
-        setFeatureFlags(process.getProcess(), new EE_FEATURES[]{EE_FEATURES.MFA});
+        setFeatureFlags(process.getProcess(), new EE_FEATURES[] { EE_FEATURES.MFA });
 
         // Create user roles before inserting bulk users
         {
@@ -580,8 +499,8 @@ public class AddBulkImportUsersTest {
 
         JsonObject request = generateUsersJson(1);
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-        "http://localhost:3567/bulk-import/users",
-        request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+                "http://localhost:3567/bulk-import/users",
+                request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
         assertEquals("OK", response.get("status").getAsString());
 
         JsonObject getResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -620,6 +539,24 @@ public class AddBulkImportUsersTest {
         Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    private String getResponseMessageFromError(String response) {
+        return response.substring(response.indexOf("Message: ") + "Message: ".length());
+    }
+
+    private void testBadRequest(Main main, JsonObject requestBody, String expectedErrorMessage) throws Exception {
+        try {
+            HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                    "http://localhost:3567/bulk-import/users",
+                    requestBody, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+
+            fail("The API should have thrown an error");
+        } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+            String responseString = getResponseMessageFromError(e.getMessage());
+            assertEquals(400, e.statusCode);
+            assertEquals(responseString, expectedErrorMessage);
+        }
+    }
+
     public static JsonObject generateUsersJson(int numberOfUsers) {
         JsonObject userJsonObject = new JsonObject();
         JsonParser parser = new JsonParser();
@@ -630,7 +567,8 @@ public class AddBulkImportUsersTest {
 
             user.addProperty("externalUserId", UUID.randomUUID().toString());
             user.add("userMetadata", parser.parse("{\"key1\":\"value1\",\"key2\":{\"key3\":\"value3\"}}"));
-            user.add("userRoles", parser.parse("[{\"role\":\"role1\", \"tenantIds\": [\"public\"]},{\"role\":\"role2\", \"tenantIds\": [\"public\"]}]"));
+            user.add("userRoles", parser.parse(
+                    "[{\"role\":\"role1\", \"tenantIds\": [\"public\"]},{\"role\":\"role2\", \"tenantIds\": [\"public\"]}]"));
             user.add("totpDevices", parser.parse("[{\"secretKey\":\"secretKey\",\"deviceName\":\"deviceName\"}]"));
 
             JsonArray tenanatIds = parser.parse("[\"public\"]").getAsJsonArray();
@@ -654,11 +592,12 @@ public class AddBulkImportUsersTest {
         loginMethod.add("tenantIds", tenantIds);
         loginMethod.addProperty("email", email);
         loginMethod.addProperty("recipeId", "emailpassword");
-        loginMethod.addProperty("passwordHash", "$argon2d$v=19$m=12,t=3,p=1$aGI4enNvMmd0Zm0wMDAwMA$r6p7qbr6HD+8CD7sBi4HVw");
+        loginMethod.addProperty("passwordHash",
+                "$argon2d$v=19$m=12,t=3,p=1$aGI4enNvMmd0Zm0wMDAwMA$r6p7qbr6HD+8CD7sBi4HVw");
         loginMethod.addProperty("hashingAlgorithm", "argon2");
         loginMethod.addProperty("isVerified", true);
         loginMethod.addProperty("isPrimary", true);
-        loginMethod.addProperty("timeJoinedInMSSinceEpoch",  0);
+        loginMethod.addProperty("timeJoinedInMSSinceEpoch", 0);
         return loginMethod;
     }
 
@@ -705,9 +644,7 @@ public class AddBulkImportUsersTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            null, null, new JsonObject()
-                    )
-            );
+                            null, null, new JsonObject()));
         }
         { // tenant 2
             JsonObject config = new JsonObject();
@@ -724,9 +661,7 @@ public class AddBulkImportUsersTest {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            null, null, config
-                    )
-            );
+                            null, null, config));
         }
     }
 

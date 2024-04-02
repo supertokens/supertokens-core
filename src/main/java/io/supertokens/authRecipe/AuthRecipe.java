@@ -42,6 +42,8 @@ import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.session.Session;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.useridmapping.UserIdType;
+import io.supertokens.utils.Utils;
+
 import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nullable;
@@ -327,8 +329,7 @@ public class AuthRecipe {
             RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException, InputUserIdIsNotAPrimaryUserException,
             UnknownUserIdException, TenantOrAppNotFoundException, FeatureNotEnabledException {
 
-        if (Arrays.stream(FeatureFlag.getInstance(main, appIdentifier).getEnabledFeatures())
-                .noneMatch(t -> t == EE_FEATURES.ACCOUNT_LINKING || t == EE_FEATURES.MFA)) {
+        if (!Utils.isAccountLinkingEnabled(main, appIdentifier)) {
             throw new FeatureNotEnabledException(
                     "Account linking feature is not enabled for this app. Please contact support to enable it.");
         }
@@ -532,8 +533,7 @@ public class AuthRecipe {
             RecipeUserIdAlreadyLinkedWithPrimaryUserIdException, UnknownUserIdException, TenantOrAppNotFoundException,
             FeatureNotEnabledException {
 
-        if (Arrays.stream(FeatureFlag.getInstance(main, appIdentifier).getEnabledFeatures())
-                .noneMatch(t -> t == EE_FEATURES.ACCOUNT_LINKING || t == EE_FEATURES.MFA)) {
+        if (!Utils.isAccountLinkingEnabled(main, appIdentifier)) {
             throw new FeatureNotEnabledException(
                     "Account linking feature is not enabled for this app. Please contact support to enable it.");
         }

@@ -29,11 +29,16 @@ import io.supertokens.pluginInterface.bulkimport.BulkImportUser.TotpDevice;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser.UserRole;
 
 public class BulkImportTestUtils {
+
     public static List<BulkImportUser> generateBulkImportUser(int numberOfUsers) {
+        return generateBulkImportUser(numberOfUsers, List.of("public", "t1"), 0);
+    }
+
+    public static List<BulkImportUser> generateBulkImportUser(int numberOfUsers, List<String> tenants, int startIndex) {
         List<BulkImportUser> users = new ArrayList<>();
         JsonParser parser = new JsonParser();
 
-        for (int i = 0; i < numberOfUsers; i++) {
+        for (int i = startIndex; i < numberOfUsers + startIndex; i++) {
             String email = "user" + i + "@example.com";
             String id = io.supertokens.utils.Utils.getUUID();
             String externalId = io.supertokens.utils.Utils.getUUID();
@@ -41,17 +46,17 @@ public class BulkImportTestUtils {
             JsonObject userMetadata = parser.parse("{\"key1\":\"value1\",\"key2\":{\"key3\":\"value3\"}}").getAsJsonObject();
 
             List<UserRole> userRoles = new ArrayList<>();
-            userRoles.add(new UserRole("role1", List.of("public")));
-            userRoles.add(new UserRole("role2", List.of("public")));
+            userRoles.add(new UserRole("role1", tenants));
+            userRoles.add(new UserRole("role2", tenants));
 
             List<TotpDevice> totpDevices = new ArrayList<>();
             totpDevices.add(new TotpDevice("secretKey", 30, 1, "deviceName"));
 
             List<LoginMethod> loginMethods = new ArrayList<>();
             long currentTimeMillis =  System.currentTimeMillis();
-            loginMethods.add(new LoginMethod(List.of("public", "t1"), "emailpassword", true, true, currentTimeMillis, email, "$2a", "BCRYPT", null, null, null));
-            loginMethods.add(new LoginMethod(List.of("public", "t1"), "thirdparty", true, false, currentTimeMillis,  email,  null, null, "thirdPartyId" + i, "thirdPartyUserId" + i, null));
-            loginMethods.add(new LoginMethod(List.of("public", "t1"), "passwordless", true, false, currentTimeMillis, email, null, null, null, null, null));
+            loginMethods.add(new LoginMethod(tenants, "emailpassword", true, true, currentTimeMillis, email, "$2a", "BCRYPT", null, null, null));
+            loginMethods.add(new LoginMethod(tenants, "thirdparty", true, false, currentTimeMillis,  email,  null, null, "thirdPartyId" + i, "thirdPartyUserId" + i, null));
+            loginMethods.add(new LoginMethod(tenants, "passwordless", true, false, currentTimeMillis, email, null, null, null, null, null));
             users.add(new BulkImportUser(id, externalId, userMetadata, userRoles, totpDevices, loginMethods));
         }
         return users;

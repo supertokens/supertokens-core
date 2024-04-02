@@ -29,8 +29,9 @@ import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
-import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException; 
+import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
@@ -89,7 +90,7 @@ public class ProcessBulkImportUsersCronJobTest {
     }
 
     @Test
-    public void shouldProcessBulkImportUsers() throws Exception {
+    public void shouldProcessBulkImportUsersInTheSameTenant() throws Exception {
         TestingProcess process = startCronProcess();
         Main main = process.getProcess();
 
@@ -115,7 +116,6 @@ public class ProcessBulkImportUsersCronJobTest {
         List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, null, null,
                 null, null);
 
-        System.out.println("Users after processing: " + usersAfterProcessing.size());
         assertEquals(0, usersAfterProcessing.size());
 
         UserPaginationContainer container = AuthRecipe.getUsers(main, 100, "ASC", null, null, null);
@@ -123,28 +123,64 @@ public class ProcessBulkImportUsersCronJobTest {
 
         UserIdMapping.populateExternalUserIdForUsers(appIdentifier, storage, container.users);
 
-        for (AuthRecipeUserInfo user : container.users) {
-            for (LoginMethod lm1 : user.loginMethods) {
-                bulkImportUser.loginMethods.forEach(lm2 -> {
-                    if (lm2.recipeId.equals(lm1.recipeId.toString())) {
-                        assertLoginMethodEquals(lm1, lm2);
-                    }
-                });
-            }
+        TenantIdentifier publicTenant = new TenantIdentifier(null, null, "public");
 
-            JsonObject createdUserMetadata = UserMetadata.getUserMetadata(main, user.getSupertokensOrExternalUserId());
-            assertEquals(bulkImportUser.userMetadata, createdUserMetadata);
+        assertBulkImportUserAndAuthRecipeUserAreEqual(appIdentifier, publicTenant, storage, bulkImportUser,
+                container.users[0]);
 
-            String[] createdUserRoles = UserRoles.getRolesForUser(main, user.getSupertokensOrExternalUserId());
-            String[] bulkImportUserRoles = bulkImportUser.userRoles.stream().map(r -> r.role).toArray(String[]::new);
-            assertArrayEquals(bulkImportUserRoles, createdUserRoles);
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 
-            assertEquals(bulkImportUser.externalUserId, user.getSupertokensOrExternalUserId());
+    @Test
+    public void shouldProcessBulkImportUsersInMultipleTenantsWithDifferentStorages() throws Exception {
+        TestingProcess process = startCronProcess();
+        Main main = process.getProcess();
 
-
-            TOTPDevice[] createdTotpDevices = Totp.getDevices(main, user.getSupertokensOrExternalUserId());
-            assertTotpDevicesEquals(createdTotpDevices, bulkImportUser.totpDevices.toArray(new TotpDevice[0]));
+        // Create user roles before inserting bulk users
+        {
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
         }
+
+        createTenants(main);
+
+        TenantIdentifier t1 = new TenantIdentifier(null, null, "t1");
+        TenantIdentifier t2 = new TenantIdentifier(null, null, "t2");
+
+        BulkImportSQLStorage storage = (BulkImportSQLStorage) StorageLayer.getStorage(main);
+        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+
+        List<BulkImportUser> usersT1 = generateBulkImportUser(1, List.of(t1.getTenantId()), 0);
+        List<BulkImportUser> usersT2 = generateBulkImportUser(1, List.of(t2.getTenantId()), 1);
+
+        BulkImportUser bulkImportUserT1 = usersT1.get(0);
+        BulkImportUser bulkImportUserT2 = usersT2.get(0);
+
+        BulkImport.addUsers(appIdentifier, storage, List.of(bulkImportUserT1, bulkImportUserT2));
+
+        Thread.sleep(6000);
+
+        List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, null, null,
+                null, null);
+
+        assertEquals(0, usersAfterProcessing.size());
+
+        Storage storageT1 = StorageLayer.getStorage(t1, main);
+        Storage storageT2 = StorageLayer.getStorage(t2, main);
+
+        UserPaginationContainer containerT1 = AuthRecipe.getUsers(t1, storageT1, 100, "ASC", null, null, null);
+        UserPaginationContainer containerT2 = AuthRecipe.getUsers(t2, storageT2, 100, "ASC", null, null, null);
+
+        assertEquals(usersT1.size() + usersT2.size(), containerT1.users.length + containerT2.users.length);
+
+        UserIdMapping.populateExternalUserIdForUsers(appIdentifier, storageT1, containerT1.users);
+        UserIdMapping.populateExternalUserIdForUsers(appIdentifier, storageT2, containerT2.users);
+
+        assertBulkImportUserAndAuthRecipeUserAreEqual(appIdentifier, t1, storageT1, bulkImportUserT1,
+                containerT1.users[0]);
+        assertBulkImportUserAndAuthRecipeUserAreEqual(appIdentifier, t2, storageT2, bulkImportUserT2,
+                containerT2.users[0]);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -226,6 +262,30 @@ public class ProcessBulkImportUsersCronJobTest {
         }
 
         return process;
+    }
+
+    private void assertBulkImportUserAndAuthRecipeUserAreEqual(AppIdentifier appIdentifier,
+            TenantIdentifier tenantIdentifier, Storage storage, BulkImportUser bulkImportUser,
+            AuthRecipeUserInfo authRecipeUser) throws StorageQueryException, TenantOrAppNotFoundException {
+        for (LoginMethod lm1 : authRecipeUser.loginMethods) {
+            bulkImportUser.loginMethods.forEach(lm2 -> {
+                if (lm2.recipeId.equals(lm1.recipeId.toString())) {
+                    assertLoginMethodEquals(lm1, lm2);
+                }
+            });
+        }
+        assertEquals(bulkImportUser.externalUserId, authRecipeUser.getSupertokensOrExternalUserId());
+        assertEquals(bulkImportUser.userMetadata,
+                UserMetadata.getUserMetadata(appIdentifier, storage, authRecipeUser.getSupertokensOrExternalUserId()));
+
+        String[] createdUserRoles = UserRoles.getRolesForUser(tenantIdentifier, storage,
+                authRecipeUser.getSupertokensOrExternalUserId());
+        String[] bulkImportUserRoles = bulkImportUser.userRoles.stream().map(r -> r.role).toArray(String[]::new);
+        assertArrayEquals(bulkImportUserRoles, createdUserRoles);
+
+        TOTPDevice[] createdTotpDevices = Totp.getDevices(appIdentifier, storage,
+                authRecipeUser.getSupertokensOrExternalUserId());
+        assertTotpDevicesEquals(createdTotpDevices, bulkImportUser.totpDevices.toArray(new TotpDevice[0]));
     }
 
     private void assertLoginMethodEquals(LoginMethod lm1,

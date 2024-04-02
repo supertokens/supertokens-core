@@ -110,13 +110,11 @@ public class ProcessBulkImportUsers extends CronTask {
         BulkImportSQLStorage bulkImportSQLStorage = (BulkImportSQLStorage) StorageLayer
                 .getStorage(app.getAsPublicTenantIdentifier(), main);
 
-        AppIdentifier appIdentifier = new AppIdentifier(app.getConnectionUriDomain(), app.getAppId());
-
-        List<BulkImportUser> users = bulkImportSQLStorage.getBulkImportUsersAndChangeStatusToProcessing(appIdentifier,
+        List<BulkImportUser> users = bulkImportSQLStorage.getBulkImportUsersAndChangeStatusToProcessing(app,
                 BulkImport.PROCESS_USERS_BATCH_SIZE);
 
         for (BulkImportUser user : users) {
-            processUser(appIdentifier, user, bulkImportSQLStorage);
+            processUser(app, user, bulkImportSQLStorage);
         }
 
         closeAllProxyStorages();
