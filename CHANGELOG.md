@@ -9,7 +9,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [5.0.3] - 2024-04-02
 
-- Fixes telemetry data length to 31
+- Fixes vulnerabilities in dependencies
+- Updates telemetry payload
 
 ## [5.0.2] - 2023-09-07
 

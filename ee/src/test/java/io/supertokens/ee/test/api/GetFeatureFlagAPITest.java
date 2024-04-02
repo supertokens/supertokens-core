@@ -54,7 +54,7 @@ public class GetFeatureFlagAPITest {
         if (StorageLayer.getStorage(process.getProcess()).getType() == STORAGE_TYPE.SQL) {
             JsonArray mauArr = usageStats.get("maus").getAsJsonArray();
             assertEquals(1, usageStats.entrySet().size());
-            assertEquals(30, mauArr.size());
+            assertEquals(31, mauArr.size());
             assertEquals(0, mauArr.get(0).getAsInt());
             assertEquals(0, mauArr.get(29).getAsInt());
         } else {
@@ -87,7 +87,7 @@ public class GetFeatureFlagAPITest {
         if (StorageLayer.getStorage(process.getProcess()).getType() == STORAGE_TYPE.SQL) {
             JsonArray mauArr = usageStats.get("maus").getAsJsonArray();
             assertEquals(1, usageStats.entrySet().size());
-            assertEquals(30, mauArr.size());
+            assertEquals(31, mauArr.size());
             assertEquals(0, mauArr.get(0).getAsInt());
             assertEquals(0, mauArr.get(29).getAsInt());
         } else {
