@@ -145,10 +145,23 @@ public class Main {
         }
     }
 
+    private void superTokensStarterTemplate() {
+        System.out.println(Logging.ANSI_GREEN + "  ____                       _____     _                  ");
+        System.out.println(Logging.ANSI_GREEN + " / ___| _   _ _ __   ___ _ _|_   _|__ | | _____ _ __  ___ ");
+        System.out.println(Logging.ANSI_GREEN + " \\___ \\| | | | '_ \\ / _ \\ '__|| |/ _ \\| |/ / _ \\ '_ \\/ __|");
+        System.out.println(Logging.ANSI_GREEN + "  ___) | |_| | |_) |  __/ |   | | (_) |   <  __/ | | \\__ \\");
+        System.out.println(Logging.ANSI_GREEN + " |____/ \\__,_| .__/ \\___|_|   |_|\\___/|_|\\_\\___|_| |_|___/");
+        System.out.println(Logging.ANSI_GREEN + "             |_|                                          ");
+        System.out.println(Logging.ANSI_RESET);
+    }
+
     private void init() throws IOException, StorageQueryException {
 
         // Handle kill signal gracefully
         handleKillSignalForWhenItHappens();
+
+        // generates the starter supertokens template
+        superTokensStarterTemplate();
 
         // loading configs for core from config.yaml file.
         try {

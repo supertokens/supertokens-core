@@ -124,7 +124,7 @@ public class Logging extends ResourceDistributor.SingletonResource {
             msg = msg.trim();
             if (toConsoleAsWell) {
                 if (tenantIdentifier.equals(TenantIdentifier.BASE_TENANT)) {
-                    systemOut(msg);
+                    systemOut(Logging.ANSI_BLUE + msg);
                 } else {
                     systemOut(prependTenantIdentifierToMessage(tenantIdentifier, msg));
                 }
