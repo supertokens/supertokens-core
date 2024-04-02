@@ -116,8 +116,6 @@ public class ProcessBulkImportUsers extends CronTask {
         for (BulkImportUser user : users) {
             processUser(app, user, bulkImportSQLStorage);
         }
-
-        closeAllProxyStorages();
     }
 
     @Override
@@ -257,6 +255,8 @@ public class ProcessBulkImportUsers extends CronTask {
                     // We need to rollback the transaction manually because we have overridden that in the proxy storage
                     bulkImportProxyStorage.rollbackTransactionForBulkImportProxyStorage();
                     throw e;
+                } finally {
+                    closeAllProxyStorages();
                 }
             });
         } catch (StorageTransactionLogicException e) {
