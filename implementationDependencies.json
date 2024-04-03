@@ -53,7 +53,7 @@
     },
     {
       "jar": "https://repo1.maven.org/maven2/org/apache/tomcat/embed/tomcat-embed-core/10.1.18/tomcat-embed-core-10.1.18.jar",
-      "name": "Tomcat embed core API 10.1.18",
+      "name": "Tomcat embed core API 10.1.1",
       "src": "https://repo1.maven.org/maven2/org/apache/tomcat/embed/tomcat-embed-core/10.1.18/tomcat-embed-core-10.1.18-sources.jar"
     },
     {
