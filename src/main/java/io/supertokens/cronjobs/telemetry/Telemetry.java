@@ -92,7 +92,6 @@ public class Telemetry extends CronTask {
             }
 
             { // Dashboard user emails
-                // Dashboard APIs are app specific and are always stored on the public tenant
                 DashboardUser[] dashboardUsers = Dashboard.getAllDashboardUsers(main);
                 JsonArray dashboardUserEmails = new JsonArray();
                 for (DashboardUser user : dashboardUsers) {
@@ -129,7 +128,7 @@ public class Telemetry extends CronTask {
         // we call the API only if we are not testing the core, of if the request can be mocked (in case a test wants
         // to use this)
         if (!Main.isTesting || HttpRequestMocking.getInstance(main).getMockURL(REQUEST_ID, url) != null) {
-            HttpRequest.sendJsonPOSTRequest(main, REQUEST_ID, url, json, 10000, 10000, 0);
+            HttpRequest.sendJsonPOSTRequest(main, REQUEST_ID, url, json, 10000, 10000, 5);
             ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.SENT_TELEMETRY, null);
         }
     }
