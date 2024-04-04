@@ -39,7 +39,7 @@ public class BulkImport {
     public static final int GET_USERS_DEFAULT_LIMIT = 100;
     public static final int DELETE_USERS_LIMIT = 500;
     public static final int PROCESS_USERS_BATCH_SIZE = 1000;
-    public static final int PROCESS_USERS_INTERVAL = 60;
+    public static final int PROCESS_USERS_INTERVAL_SECONDS = 60;
 
     public static void addUsers(AppIdentifier appIdentifier, Storage storage, List<BulkImportUser> users)
             throws StorageQueryException, TenantOrAppNotFoundException {

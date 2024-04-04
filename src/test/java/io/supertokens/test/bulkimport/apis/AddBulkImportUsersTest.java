@@ -16,13 +16,18 @@
 
 package io.supertokens.test.bulkimport.apis;
 
+import static io.supertokens.test.bulkimport.BulkImportTestUtils.generateBulkImportUser;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -44,6 +49,7 @@ import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.EmailPasswordConfig;
@@ -537,6 +543,57 @@ public class AddBulkImportUsersTest {
 
         process.kill();
         Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void shouldFailIfANewFieldWasAddedToBulkImportUser() throws Exception {
+        List<BulkImportUser> bulkImportUsers = generateBulkImportUser(1);
+        BulkImportUser user = bulkImportUsers.get(0);
+
+        checkFields(user, "BulkImportUser",
+                Arrays.asList("id", "externalUserId", "userMetadata", "userRoles", "totpDevices",
+                        "loginMethods", "status", "primaryUserId", "errorMessage", "createdAt",
+                        "updatedAt"));
+
+        checkLoginMethodFields(user.loginMethods.get(0), "LoginMethod",
+                Arrays.asList("tenantIds", "isVerified", "isPrimary", "timeJoinedInMSSinceEpoch",
+                        "recipeId", "email", "passwordHash", "hashingAlgorithm",
+                        "phoneNumber", "thirdPartyId", "thirdPartyUserId", "externalUserId", "superTokensUserId"));
+
+        checkTotpDeviceFields(user.totpDevices.get(0), "TotpDevice",
+                Arrays.asList("secretKey", "period", "skew", "deviceName"));
+
+        checkUserRoleFields(user.userRoles.get(0), "UserRole",
+                Arrays.asList("role", "tenantIds"));
+    }
+
+    private void checkFields(Object object, String objectType, List<String> expectedFields) {
+        Field[] actualFields = object.getClass().getDeclaredFields();
+        List<String> actualFieldNames = Arrays.stream(actualFields)
+                .map(Field::getName)
+                .collect(Collectors.toList());
+
+        List<String> extraFields = actualFieldNames.stream()
+                .filter(fieldName -> !expectedFields.contains(fieldName))
+                .collect(Collectors.toList());
+
+        if (!extraFields.isEmpty()) {
+            fail("The following extra field(s) are present in " + objectType + ": " + String.join(", ", extraFields));
+        }
+    }
+
+    private void checkLoginMethodFields(BulkImportUser.LoginMethod loginMethod, String objectType,
+            List<String> expectedFields) {
+        checkFields(loginMethod, objectType, expectedFields);
+    }
+
+    private void checkTotpDeviceFields(BulkImportUser.TotpDevice totpDevice, String objectType,
+            List<String> expectedFields) {
+        checkFields(totpDevice, objectType, expectedFields);
+    }
+
+    private void checkUserRoleFields(BulkImportUser.UserRole userRole, String objectType, List<String> expectedFields) {
+        checkFields(userRole, objectType, expectedFields);
     }
 
     private String getResponseMessageFromError(String response) {

@@ -126,7 +126,7 @@ public class ProcessBulkImportUsers extends CronTask {
                 return interval;
             }
         }
-        return BulkImport.PROCESS_USERS_INTERVAL;
+        return BulkImport.PROCESS_USERS_INTERVAL_SECONDS;
     }
 
     @Override
