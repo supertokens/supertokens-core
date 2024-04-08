@@ -563,7 +563,8 @@ public class BulkImportUserUtils {
                 if (commonTenantUserPoolId == null) {
                     commonTenantUserPoolId = tenantUserPoolId;
                 } else if (!commonTenantUserPoolId.equals(tenantUserPoolId)) {
-                    errors.add("All tenants for a user must share the same storage.");
+                    errors.add("All tenants for a user must share the same storage for " + loginMethod.recipeId
+                            + " recipe.");
                 }
             }
         }

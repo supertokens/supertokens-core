@@ -65,6 +65,8 @@ public class Main {
 
     // this is a special variable that will be set to true by TestingProcessManager
     public static boolean isTesting = false;
+    // this flag is used in ProcessBulkImportUsersCronJobTest to skip the user validation
+    public static boolean isTesting_skipBulkImportUserValidationInCronJob = false;
 
     // this is a special variable that will be set to true by TestingProcessManager
     public static boolean makeConsolePrintSilent = false;

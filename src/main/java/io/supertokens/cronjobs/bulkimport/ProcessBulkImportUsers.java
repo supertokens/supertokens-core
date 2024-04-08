@@ -32,6 +32,8 @@ import io.supertokens.authRecipe.exception.InputUserIdIsNotAPrimaryUserException
 import io.supertokens.authRecipe.exception.RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException;
 import io.supertokens.authRecipe.exception.RecipeUserIdAlreadyLinkedWithPrimaryUserIdException;
 import io.supertokens.bulkimport.BulkImport;
+import io.supertokens.bulkimport.BulkImportUserUtils;
+import io.supertokens.bulkimport.exceptions.InvalidBulkImportDataException;
 import io.supertokens.config.Config;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
@@ -113,8 +115,11 @@ public class ProcessBulkImportUsers extends CronTask {
         List<BulkImportUser> users = bulkImportSQLStorage.getBulkImportUsersAndChangeStatusToProcessing(app,
                 BulkImport.PROCESS_USERS_BATCH_SIZE);
 
+        String[] allUserRoles = StorageUtils.getUserRolesStorage(bulkImportSQLStorage).getRoles(app);
+        BulkImportUserUtils bulkImportUserUtils = new BulkImportUserUtils(allUserRoles);
+
         for (BulkImportUser user : users) {
-            processUser(app, user, bulkImportSQLStorage);
+            processUser(app, user, bulkImportUserUtils, bulkImportSQLStorage);
         }
     }
 
@@ -189,21 +194,30 @@ public class ProcessBulkImportUsers extends CronTask {
         userPoolToStorageMap.clear();
     }
 
-    private void processUser(AppIdentifier appIdentifier, BulkImportUser user, BulkImportSQLStorage baseTenantStorage)
+    private void processUser(AppIdentifier appIdentifier, BulkImportUser user, BulkImportUserUtils bulkImportUserUtils,
+            BulkImportSQLStorage baseTenantStorage)
             throws TenantOrAppNotFoundException, StorageQueryException, InvalidConfigException, IOException,
             DbInitException {
-        // Since all the tenants of a user must share the storage, we will just use the
-        // storage of the first tenantId of the first loginMethod
 
-        TenantIdentifier firstTenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
-                appIdentifier.getAppId(), user.loginMethods.get(0).tenantIds.get(0));
-
-        SQLStorage bulkImportProxyStorage = (SQLStorage) getProxyStorage(firstTenantIdentifier);
-
-        LoginMethod primaryLM = getPrimaryLoginMethod(user);
-
-        AuthRecipeSQLStorage authRecipeSQLStorage = (AuthRecipeSQLStorage) getProxyStorage(firstTenantIdentifier);
         try {
+            if (Main.isTesting && Main.isTesting_skipBulkImportUserValidationInCronJob) {
+                // Skip validation when the flag is enabled during testing
+            } else {
+                // Validate the user
+                bulkImportUserUtils.createBulkImportUserFromJSON(main, appIdentifier, user.toJsonObject(), user.id);
+            }
+
+            // Since all the tenants of a user must share the storage, we will just use the
+            // storage of the first tenantId of the first loginMethod
+
+            TenantIdentifier firstTenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
+                    appIdentifier.getAppId(), user.loginMethods.get(0).tenantIds.get(0));
+
+            SQLStorage bulkImportProxyStorage = (SQLStorage) getProxyStorage(firstTenantIdentifier);
+
+            LoginMethod primaryLM = getPrimaryLoginMethod(user);
+
+            AuthRecipeSQLStorage authRecipeSQLStorage = (AuthRecipeSQLStorage) getProxyStorage(firstTenantIdentifier);
             // If primaryUserId is not null, it means we may have already processed this user but failed to delete the entry
             // If the primaryUserId exists in the database, we'll delete the corresponding entry from the bulkImportUser table and proceed to skip this user.
             if (user.primaryUserId != null) {
@@ -259,7 +273,7 @@ public class ProcessBulkImportUsers extends CronTask {
                     closeAllProxyStorages();
                 }
             });
-        } catch (StorageTransactionLogicException e) {
+        } catch (StorageTransactionLogicException | InvalidBulkImportDataException e) {
             handleProcessUserExceptions(appIdentifier, user, e, baseTenantStorage);
         }
     }
@@ -275,6 +289,8 @@ public class ProcessBulkImportUsers extends CronTask {
         if (e instanceof StorageTransactionLogicException) {
             StorageTransactionLogicException exception = (StorageTransactionLogicException) e;
             errorMessage[0] = exception.actualException.getMessage();
+        } else if (e instanceof InvalidBulkImportDataException) {
+            errorMessage[0] = ((InvalidBulkImportDataException) e).errors.toString();
         }
 
         try {

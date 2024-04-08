@@ -191,6 +191,9 @@ public class ProcessBulkImportUsersCronJobTest {
         // Creating a non-existing user role will result in an error.
         // Since, user role creation happens at the last step of the bulk import process, everything should be deleted from the DB.
 
+        // NOTE: We will also need to disable the bulk import user validation in the cron job for this test to work.
+        Main.isTesting_skipBulkImportUserValidationInCronJob = true;
+
         TestingProcess process = startCronProcess();
         Main main = process.getProcess();
 
@@ -225,6 +228,12 @@ public class ProcessBulkImportUsersCronJobTest {
         BulkImportSQLStorage storage = (BulkImportSQLStorage) StorageLayer.getStorage(main);
         AppIdentifier appIdentifier = new AppIdentifier(null, null);
 
+        // Create user roles before inserting bulk users
+        {
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
+        }
+
         List<BulkImportUser> users = generateBulkImportUser(1);
         BulkImport.addUsers(appIdentifier, storage, users);
 
@@ -236,7 +245,38 @@ public class ProcessBulkImportUsersCronJobTest {
         assertEquals(1, usersAfterProcessing.size());
         assertEquals(BULK_IMPORT_USER_STATUS.FAILED, usersAfterProcessing.get(0).status);
         assertEquals(
-                "Tenant with the following connectionURIDomain, appId and tenantId combination not found: (, public, t1)",
+                "[Invalid tenantId: t1 for a user role., Invalid tenantId: t1 for a user role., Invalid tenantId: t1 for emailpassword recipe., Invalid tenantId: t1 for thirdparty recipe., Invalid tenantId: t1 for passwordless recipe.]",
+                usersAfterProcessing.get(0).errorMessage);
+    }
+
+    @Test
+    public void shouldThrowTenantHaveDifferentStoragesError() throws Exception {
+        TestingProcess process = startCronProcess();
+        Main main = process.getProcess();
+
+        BulkImportSQLStorage storage = (BulkImportSQLStorage) StorageLayer.getStorage(main);
+        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+
+        // Create user roles before inserting bulk users
+        {
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
+        }
+        createTenants(main);
+
+
+        List<BulkImportUser> users = generateBulkImportUser(1, List.of("t1", "t2"), 0);
+        BulkImport.addUsers(appIdentifier, storage, users);
+
+        Thread.sleep(6000);
+
+        List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, null, null,
+                null, null);
+
+        assertEquals(1, usersAfterProcessing.size());
+        assertEquals(BULK_IMPORT_USER_STATUS.FAILED, usersAfterProcessing.get(0).status);
+        assertEquals(
+                "[All tenants for a user must share the same storage for emailpassword recipe., All tenants for a user must share the same storage for thirdparty recipe., All tenants for a user must share the same storage for passwordless recipe.]",
                 usersAfterProcessing.get(0).errorMessage);
     }
 
