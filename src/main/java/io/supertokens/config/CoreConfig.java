@@ -19,6 +19,7 @@ package io.supertokens.config;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -29,9 +30,13 @@ import io.supertokens.config.annotations.ConfigYamlOnly;
 import io.supertokens.config.annotations.EnumProperty;
 import io.supertokens.config.annotations.IgnoreForAnnotationCheck;
 import io.supertokens.config.annotations.NotConflictingInApp;
+import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.ConfigFieldInfo;
 import io.supertokens.pluginInterface.LOG_LEVEL;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
+import io.supertokens.pluginInterface.multitenancy.TenantConfig;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.Utils;
 import io.supertokens.webserver.WebserverAPI;
@@ -39,6 +44,8 @@ import jakarta.servlet.ServletException;
 import org.apache.catalina.filters.RemoteAddrFilter;
 import org.jetbrains.annotations.TestOnly;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -792,7 +799,13 @@ public class CoreConfig {
         }
     }
 
-    public static ArrayList<ConfigFieldInfo> getConfigFieldsInfo() {
+    public static ArrayList<ConfigFieldInfo> getConfigFieldsInfo(Main main, TenantIdentifier tenantIdentifier)
+            throws IOException, TenantOrAppNotFoundException {
+        JsonObject tenantConfig = Multitenancy.getNormalisedTenantConfig(main,
+                tenantIdentifier);
+
+        JsonObject defaultConfig = new Gson().toJsonTree(new CoreConfig()).getAsJsonObject();
+
         ArrayList<ConfigFieldInfo> result = new ArrayList<ConfigFieldInfo>();
 
         for (String fieldId : CoreConfig.getValidFields()) {
@@ -806,34 +819,44 @@ public class CoreConfig {
                     continue;
                 }
 
-                String name = field.getName();
+                String key = field.getName();
                 String description = field.isAnnotationPresent(ConfigDescription.class)
                         ? field.getAnnotation(ConfigDescription.class).value()
                         : "";
                 boolean isDifferentAcrossTenants = !field.isAnnotationPresent(NotConflictingInApp.class);
 
-                String type = null;
+                String valueType = null;
 
                 Class<?> fieldType = field.getType();
 
                 if (fieldType == String.class) {
-                    type = "string";
+                    valueType = "string";
                 } else if (fieldType == boolean.class) {
-                    type = "boolean";
+                    valueType = "boolean";
                 } else if (fieldType == int.class || fieldType == long.class || fieldType == double.class) {
-                    type = "number";
+                    valueType = "number";
                 } else {
                     throw new RuntimeException("Unknown field type " + fieldType.getName());
                 }
 
-                String[] options = null;
+                String[] possibleValues = null;
 
                 if (field.isAnnotationPresent(EnumProperty.class)) {
-                    type = "enum";
-                    options = field.getAnnotation(EnumProperty.class).value();
+                    valueType = "enum";
+                    possibleValues = field.getAnnotation(EnumProperty.class).value();
                 }
 
-                result.add(new ConfigFieldInfo(name, description, isDifferentAcrossTenants, type, options));
+                boolean isConfigYamlOnly = field.isAnnotationPresent(ConfigYamlOnly.class);
+                boolean isNullable = field.isAnnotationPresent(Nullable.class);
+
+                JsonElement value = tenantConfig.get(field.getName());
+
+                boolean isSaasProtected = false; // TODO
+                JsonElement defaultValue = defaultConfig.get(field.getName());
+
+                result.add(new ConfigFieldInfo(
+                        key, valueType, value, description, isSaasProtected, isDifferentAcrossTenants,
+                        isConfigYamlOnly, possibleValues, isNullable, defaultValue, false));
 
             } catch (NoSuchFieldException e) {
                 continue;

@@ -16,6 +16,7 @@
 
 package io.supertokens.multitenancy;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
@@ -601,6 +602,15 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             }
         }
         return null;
+    }
+
+    public static JsonObject getNormalisedTenantConfig(Main main, TenantIdentifier tenantIdentifier)
+            throws IOException, TenantOrAppNotFoundException {
+        Map<ResourceDistributor.KeyClass, JsonObject> normalisedConfigs = Config.getNormalisedConfigsForAllTenants(
+                getAllTenants(main),
+                Config.getBaseConfigAsJsonObject(main));
+
+        return new Gson().toJsonTree(Config.getConfig(tenantIdentifier, main)).getAsJsonObject();
     }
 
     public static TenantConfig[] getAllTenantsForApp(AppIdentifier appIdentifier, Main main) {

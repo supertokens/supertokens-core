@@ -24,6 +24,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.pluginInterface.ConfigFieldInfo;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.webserver.WebserverAPI;
 
@@ -53,20 +54,20 @@ public class CoreConfigListAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        ArrayList<ConfigFieldInfo> config = CoreConfig.getConfigFieldsInfo();
-        ArrayList<ConfigFieldInfo> storageFields = StorageLayer.getBaseStorage(main).getConfigFieldsInfo();
-
-        config.addAll(storageFields);
-
-        JsonObject result = new JsonObject();
-
-        JsonArray configJson = new JsonArray();
-        for (ConfigFieldInfo field : config) {
-            JsonObject fieldJson = new GsonBuilder().create().toJsonTree(field).getAsJsonObject();
-            configJson.add(fieldJson);
-        }
-
         try {
+            ArrayList<ConfigFieldInfo> config = CoreConfig.getConfigFieldsInfo(main, getTenantIdentifier(req));
+            ArrayList<ConfigFieldInfo> storageFields = StorageLayer.getBaseStorage(main).getConfigFieldsInfo();
+
+            config.addAll(storageFields);
+
+            JsonObject result = new JsonObject();
+
+            JsonArray configJson = new JsonArray();
+            for (ConfigFieldInfo field : config) {
+                JsonObject fieldJson = new GsonBuilder().create().toJsonTree(field).getAsJsonObject();
+                configJson.add(fieldJson);
+            }
+
             if (shouldProtectProtectedConfig(req)) {
                 JsonArray configWithouProtectedFields = new JsonArray();
                 String[] protectedPluginFields = StorageLayer.getBaseStorage(main)
@@ -79,12 +80,13 @@ public class CoreConfigListAPI extends WebserverAPI {
                 }
                 configJson = configWithouProtectedFields;
             }
-        } catch (Exception e) {
+
+            result.addProperty("status", "OK");
+            result.add("config", configJson);
+            super.sendJsonResponse(200, result, resp);
+
+        } catch (TenantOrAppNotFoundException e) {
+            throw new ServletException(e);
         }
-
-        result.addProperty("status", "OK");
-        result.add("config", configJson);
-        super.sendJsonResponse(200, result, resp);
-
     }
 }
