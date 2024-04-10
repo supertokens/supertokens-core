@@ -76,7 +76,7 @@ public class BulkImportTest {
         BulkImportStorage storage = (BulkImportStorage) StorageLayer.getStorage(process.main);
         BulkImport.addUsers(new AppIdentifier(null, null), storage, users);
 
-        List<BulkImportUser> addedUsers = storage.getBulkImportUsers(new AppIdentifier(null, null), null, BULK_IMPORT_USER_STATUS.NEW, null, null);
+        List<BulkImportUser> addedUsers = storage.getBulkImportUsers(new AppIdentifier(null, null), 100, BULK_IMPORT_USER_STATUS.NEW, null, null);
 
         // Verify that all users are present in addedUsers
         for (BulkImportUser user : users) {
@@ -116,7 +116,7 @@ public class BulkImportTest {
         AppIdentifier appIdentifier = new AppIdentifier(null, null);
         BulkImport.addUsers(appIdentifier, storage, users);
 
-        List<BulkImportUser> addedUsers = storage.getBulkImportUsers(appIdentifier, null, BULK_IMPORT_USER_STATUS.NEW, null, null);
+        List<BulkImportUser> addedUsers = storage.getBulkImportUsers(appIdentifier, 1000, BULK_IMPORT_USER_STATUS.NEW, null, null);
 
         // Verify that the other properties are same but ids changed
         for (BulkImportUser user : users) {
@@ -153,7 +153,7 @@ public class BulkImportTest {
             List<BulkImportUser> users = generateBulkImportUser(10);
             BulkImport.addUsers(appIdentifier, storage, users);
 
-            List<BulkImportUser> addedUsers = storage.getBulkImportUsers(appIdentifier, null, BULK_IMPORT_USER_STATUS.NEW, null, null);
+            List<BulkImportUser> addedUsers = storage.getBulkImportUsers(appIdentifier, 100, BULK_IMPORT_USER_STATUS.NEW, null, null);
             assertEquals(10, addedUsers.size());
         }
 
@@ -171,7 +171,7 @@ public class BulkImportTest {
                 return null;
             });
 
-            List<BulkImportUser> addedUsers = storage.getBulkImportUsers(appIdentifier, null, BULK_IMPORT_USER_STATUS.PROCESSING, null, null);
+            List<BulkImportUser> addedUsers = storage.getBulkImportUsers(appIdentifier, 100, BULK_IMPORT_USER_STATUS.PROCESSING, null, null);
             assertEquals(10, addedUsers.size());
         }
 
@@ -189,7 +189,7 @@ public class BulkImportTest {
                 return null;
             });
 
-            List<BulkImportUser> addedUsers = storage.getBulkImportUsers(appIdentifier, null, BULK_IMPORT_USER_STATUS.FAILED, null, null);
+            List<BulkImportUser> addedUsers = storage.getBulkImportUsers(appIdentifier, 100, BULK_IMPORT_USER_STATUS.FAILED, null, null);
             assertEquals(10, addedUsers.size());
         }
 
@@ -229,7 +229,7 @@ public class BulkImportTest {
         }
 
         // Get all inserted users
-        List<BulkImportUser> addedUsers = storage.getBulkImportUsers(new AppIdentifier(null, null), null, null, null, null);
+        List<BulkImportUser> addedUsers = storage.getBulkImportUsers(new AppIdentifier(null, null), 1000, null, null, null);
         assertEquals(numberOfUsers, addedUsers.size());
 
         // We are sorting the users based on createdAt and id like we do in the storage layer

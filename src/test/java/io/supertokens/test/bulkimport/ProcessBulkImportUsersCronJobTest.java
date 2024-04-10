@@ -113,7 +113,7 @@ public class ProcessBulkImportUsersCronJobTest {
 
         Thread.sleep(6000);
 
-        List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, null, null,
+        List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, 100, null,
                 null, null);
 
         assertEquals(0, usersAfterProcessing.size());
@@ -161,7 +161,7 @@ public class ProcessBulkImportUsersCronJobTest {
 
         Thread.sleep(6000);
 
-        List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, null, null,
+        List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, 100, null,
                 null, null);
 
         assertEquals(0, usersAfterProcessing.size());
@@ -207,7 +207,7 @@ public class ProcessBulkImportUsersCronJobTest {
 
         Thread.sleep(6000);
 
-        List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, null, null,
+        List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, 100, null,
                 null, null);
 
         assertEquals(1, usersAfterProcessing.size());
@@ -239,7 +239,7 @@ public class ProcessBulkImportUsersCronJobTest {
 
         Thread.sleep(6000);
 
-        List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, null, null,
+        List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, 100, null,
                 null, null);
 
         assertEquals(1, usersAfterProcessing.size());
@@ -270,7 +270,7 @@ public class ProcessBulkImportUsersCronJobTest {
 
         Thread.sleep(6000);
 
-        List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, null, null,
+        List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, 100, null,
                 null, null);
 
         assertEquals(1, usersAfterProcessing.size());

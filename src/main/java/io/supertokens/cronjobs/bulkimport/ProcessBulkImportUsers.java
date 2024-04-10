@@ -146,7 +146,7 @@ public class ProcessBulkImportUsers extends CronTask {
     }
 
     private Storage getProxyStorage(TenantIdentifier tenantIdentifier)
-            throws InvalidConfigException, IOException, TenantOrAppNotFoundException, DbInitException {
+            throws InvalidConfigException, IOException, TenantOrAppNotFoundException, DbInitException, StorageQueryException {
         String userPoolId = StorageLayer.getStorage(tenantIdentifier, main).getUserPoolId();
         if (userPoolToStorageMap.containsKey(userPoolId)) {
             return userPoolToStorageMap.get(userPoolId);
@@ -165,6 +165,7 @@ public class ProcessBulkImportUsers extends CronTask {
 
                 userPoolToStorageMap.put(userPoolId, bulkImportProxyStorage);
                 bulkImportProxyStorage.initStorage(true);
+                bulkImportProxyStorage.commitTransactionForBulkImportProxyStorage();
                 return bulkImportProxyStorage;
             }
         }
@@ -172,7 +173,7 @@ public class ProcessBulkImportUsers extends CronTask {
     }
 
     public Storage[] getAllProxyStoragesForApp(Main main, AppIdentifier appIdentifier)
-            throws TenantOrAppNotFoundException, InvalidConfigException, IOException, DbInitException {
+            throws TenantOrAppNotFoundException, InvalidConfigException, IOException, DbInitException, StorageQueryException {
         List<Storage> allProxyStorages = new ArrayList<>();
 
         Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> resources = main

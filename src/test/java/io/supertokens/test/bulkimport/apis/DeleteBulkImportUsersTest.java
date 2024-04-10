@@ -158,7 +158,7 @@ public class DeleteBulkImportUsersTest {
 
         JsonObject response = HttpRequestForTesting.sendJsonDELETERequest(process.getProcess(), "",
         "http://localhost:3567/bulk-import/users",
-        request, 1000000, 1000000, null, Utils.getCdiVersionStringLatestForTests(), null);
+        request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
 
         response.get("deletedIds").getAsJsonArray().forEach(id -> {
             assertTrue(validIds.contains(id));
