@@ -348,13 +348,33 @@ public class TOTPRecipeTest {
         // Wait for 1 second (Should cool down rate limiting):
         Thread.sleep(1000);
         // But again try with invalid code:
-        assertThrows(InvalidTotpException.class, () -> Totp.verifyCode(main, "user", "invalid0"));
+        InvalidTotpException invalidTotpException = assertThrows(InvalidTotpException.class,
+                () -> Totp.verifyCode(main, "user", "invalid0"));
+        assertEquals(1, invalidTotpException.currentAttempts);
+        invalidTotpException = assertThrows(InvalidTotpException.class, () -> Totp.verifyCode(main, "user", "invalid0"));
+        assertEquals(2, invalidTotpException.currentAttempts);
+        invalidTotpException = assertThrows(InvalidTotpException.class, () -> Totp.verifyCode(main, "user", "invalid0"));
+        assertEquals(3, invalidTotpException.currentAttempts);
+
         // This triggered rate limiting again. So even valid codes will fail for
         // another cooldown period:
-        assertThrows(LimitReachedException.class,
+        LimitReachedException limitReachedException = assertThrows(LimitReachedException.class,
                 () -> Totp.verifyCode(main, "user", generateTotpCode(main, device)));
+        assertEquals(3, limitReachedException.currentAttempts);
         // Wait for 1 second (Should cool down rate limiting):
         Thread.sleep(1000);
+
+        // test that after cool down, we can retry invalid codes N times again
+        invalidTotpException = assertThrows(InvalidTotpException.class,
+                () -> Totp.verifyCode(main, "user", "invalid0"));
+        assertEquals(1, invalidTotpException.currentAttempts);
+        invalidTotpException = assertThrows(InvalidTotpException.class, () -> Totp.verifyCode(main, "user", "invalid0"));
+        assertEquals(2, invalidTotpException.currentAttempts);
+        invalidTotpException = assertThrows(InvalidTotpException.class, () -> Totp.verifyCode(main, "user", "invalid0"));
+        assertEquals(3, invalidTotpException.currentAttempts);
+
+        Thread.sleep(1100);
+
         // Now try with valid code:
         Totp.verifyCode(main, "user", generateTotpCode(main, device));
         // Now invalid code shouldn't trigger rate limiting. Unless you do it N times:

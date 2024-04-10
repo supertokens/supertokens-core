@@ -46,9 +46,6 @@ public class VerifyTotpAPI extends WebserverAPI {
         if (userId.isEmpty()) {
             throw new ServletException(new BadRequestException("userId cannot be empty"));
         }
-        if (totp.length() != 6) {
-            throw new ServletException(new BadRequestException("totp must be 6 characters long"));
-        }
 
         JsonObject result = new JsonObject();
 

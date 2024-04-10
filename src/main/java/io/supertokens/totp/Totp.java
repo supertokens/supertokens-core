@@ -203,17 +203,28 @@ public class Totp {
 
                     // N represents # of invalid attempts that will trigger rate limiting:
                     int N = Config.getConfig(tenantIdentifier, main).getTotpMaxAttempts(); // (Default 5)
-                    // Count # of contiguous invalids in latest N attempts (stop at first valid):
-                    long invalidOutOfN = Arrays.stream(usedCodes).limit(N).takeWhile(usedCode -> !usedCode.isValid)
-                            .count();
+
+                    // filter only invalid codes, stop at first valid code
+                    TOTPUsedCode[] invalidUsedCodes = Arrays.stream(usedCodes).limit(N).takeWhile(
+                            usedCode -> !usedCode.isValid).toArray(TOTPUsedCode[]::new);
+
                     int rateLimitResetTimeInMs = Config.getConfig(tenantIdentifier, main)
                             .getTotpRateLimitCooldownTimeSec() *
                             1000; // (Default 15 mins)
 
+                    // Count how many of the latest invalid codes fall under the rate limiting compared
+                    // to the latest invalid attempt
+                    long invalidOutOfN = 0;
+                    if (invalidUsedCodes.length > 0) {
+                        invalidOutOfN = Arrays.stream(invalidUsedCodes).limit(N).takeWhile(
+                                usedCode -> usedCode.createdTime > invalidUsedCodes[0].createdTime - rateLimitResetTimeInMs
+                            ).count();
+                    }
+
                     // Check if the user has been rate limited:
                     if (invalidOutOfN == N) {
                         // All of the latest N attempts were invalid:
-                        long latestInvalidCodeCreatedTime = usedCodes[0].createdTime;
+                        long latestInvalidCodeCreatedTime = invalidUsedCodes[0].createdTime;
                         long now = System.currentTimeMillis();
 
                         if (now - latestInvalidCodeCreatedTime < rateLimitResetTimeInMs) {
@@ -225,6 +236,9 @@ public class Totp {
                             // If we insert the used code here, then it will further delay the user from
                             // being able to login. So not inserting it here.
                         }
+
+                        // since we are past the cool down period, the user can retry all the attempts
+                        invalidOutOfN = 0;
                     }
 
                     // Check if the code is valid for any device:
