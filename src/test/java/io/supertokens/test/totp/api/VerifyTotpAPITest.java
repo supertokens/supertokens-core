@@ -23,6 +23,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
+import java.io.IOException;
+
 import static io.supertokens.test.totp.TOTPRecipeTest.generateTotpCode;
 import static org.junit.Assert.*;
 
@@ -54,6 +56,21 @@ public class VerifyTotpAPITest {
                         null,
                         Utils.getCdiVersionStringLatestForTests(),
                         "totp"));
+    }
+
+    private void verifyTotpRequestThatReturnsInvalidCode(TestingProcessManager.TestingProcess process, JsonObject body)
+            throws HttpResponseException, IOException {
+        JsonObject resp = HttpRequestForTesting.sendJsonPOSTRequest(
+                process.getProcess(),
+                "",
+                "http://localhost:3567/recipe/totp/verify",
+                body,
+                1000,
+                1000,
+                null,
+                Utils.getCdiVersionStringLatestForTests(),
+                "totp");
+        assertEquals("INVALID_TOTP_ERROR", resp.get("status").getAsString());
     }
 
     private void checkFieldMissingErrorResponse(Exception ex, String fieldName) {
@@ -149,18 +166,27 @@ public class VerifyTotpAPITest {
             checkResponseErrorContains(e, "userId cannot be empty"); // Note that this is not a field missing error
 
             body.addProperty("userId", device.userId);
-            e = verifyTotpCodeRequest(process, body);
-            checkResponseErrorContains(e, "totp must be 6 characters long");
+            verifyTotpRequestThatReturnsInvalidCode(process, body);
+
+            Thread.sleep(1100);
 
             // test totp of length 5:
             body.addProperty("totp", "12345");
-            e = verifyTotpCodeRequest(process, body);
-            checkResponseErrorContains(e, "totp must be 6 characters long");
+            verifyTotpRequestThatReturnsInvalidCode(process, body);
+
+            Thread.sleep(1100);
+
+            // test totp of alphabets:
+            body.addProperty("totp", "abcd");
+            verifyTotpRequestThatReturnsInvalidCode(process, body);
+
+            Thread.sleep(1100);
 
             // test totp of length 8:
             body.addProperty("totp", "12345678");
-            e = verifyTotpCodeRequest(process, body);
-            checkResponseErrorContains(e, "totp must be 6 characters long");
+            verifyTotpRequestThatReturnsInvalidCode(process, body);
+
+            Thread.sleep(1100);
 
             // but let's pass invalid code first
             body.addProperty("totp", "123456");

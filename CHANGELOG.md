@@ -9,6 +9,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Add a new core API for fetching all the core properties
 
+## [9.0.1] - 2024-03-20
+
+- Fixes verify TOTP and verify device APIs to treat any code as invalid
+- Fixes the computation of the number of failed attempts when return `INVALID_TOTP_ERROR`
+
 ## [9.0.0] - 2024-03-13
 
 ### Added
