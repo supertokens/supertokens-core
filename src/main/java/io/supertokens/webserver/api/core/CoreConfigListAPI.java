@@ -56,7 +56,7 @@ public class CoreConfigListAPI extends WebserverAPI {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         try {
             ArrayList<ConfigFieldInfo> config = CoreConfig.getConfigFieldsInfo(main, getTenantIdentifier(req));
-            ArrayList<ConfigFieldInfo> storageFields = StorageLayer.getBaseStorage(main).getConfigFieldsInfo();
+            ArrayList<ConfigFieldInfo> storageFields = getTenantStorage(req).getConfigFieldsInfo();
 
             config.addAll(storageFields);
 

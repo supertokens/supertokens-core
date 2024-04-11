@@ -856,7 +856,7 @@ public class CoreConfig {
 
                 result.add(new ConfigFieldInfo(
                         key, valueType, value, description, isSaasProtected, isDifferentAcrossTenants,
-                        isConfigYamlOnly, possibleValues, isNullable, defaultValue, false));
+                        isConfigYamlOnly, possibleValues, isNullable, defaultValue, false, false));
 
             } catch (NoSuchFieldException e) {
                 continue;
