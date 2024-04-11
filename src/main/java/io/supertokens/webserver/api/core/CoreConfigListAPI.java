@@ -64,7 +64,7 @@ public class CoreConfigListAPI extends WebserverAPI {
 
             JsonArray configJson = new JsonArray();
             for (ConfigFieldInfo field : config) {
-                JsonObject fieldJson = new GsonBuilder().create().toJsonTree(field).getAsJsonObject();
+                JsonObject fieldJson = new GsonBuilder().serializeNulls().create().toJsonTree(field).getAsJsonObject();
                 configJson.add(fieldJson);
             }
 
