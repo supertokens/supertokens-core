@@ -847,12 +847,12 @@ public class CoreConfig {
                 }
 
                 boolean isConfigYamlOnly = field.isAnnotationPresent(ConfigYamlOnly.class);
-                boolean isNullable = field.isAnnotationPresent(Nullable.class);
 
                 JsonElement value = tenantConfig.get(field.getName());
 
                 boolean isSaasProtected = false; // TODO
                 JsonElement defaultValue = defaultConfig.get(field.getName());
+                boolean isNullable = defaultValue == null;
 
                 result.add(new ConfigFieldInfo(
                         key, valueType, value, description, isSaasProtected, isDifferentAcrossTenants,
