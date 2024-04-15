@@ -188,6 +188,11 @@ public class Start
     }
 
     @Override
+    public void addTenantIdentifier(TenantIdentifier tenantIdentifier) {
+        // not necessary for inmemory db
+    }
+
+    @Override
     public <T> T startTransaction(TransactionLogic<T> logic)
             throws StorageTransactionLogicException, StorageQueryException {
         return startTransaction(logic, TransactionIsolationLevel.SERIALIZABLE);

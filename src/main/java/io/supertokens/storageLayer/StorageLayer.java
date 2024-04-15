@@ -32,6 +32,7 @@ import io.supertokens.pluginInterface.exceptions.DbInitException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
+import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateTenantException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
@@ -279,6 +280,13 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                 Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> resources =
                         main.getResourceDistributor()
                                 .getAllResourcesWithResourceKey(RESOURCE_KEY);
+
+                // Set tenant identifiers handled by each storage instance before initialising them
+                for (ResourceDistributor.KeyClass key : resources.keySet()) {
+                    ResourceDistributor.SingletonResource resource = resources.get(key);
+                    ((StorageLayer) resource).storage.addTenantIdentifier(key.getTenantIdentifier());
+                }
+
                 for (ResourceDistributor.SingletonResource resource : resources.values()) {
                     try {
                         ((StorageLayer) resource).storage.initStorage(false);
