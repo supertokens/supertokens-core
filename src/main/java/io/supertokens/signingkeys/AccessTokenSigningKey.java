@@ -115,7 +115,12 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                                             RESOURCE_KEY,
                                             new AccessTokenSigningKey(app, main));
                         } catch (TenantOrAppNotFoundException e) {
-                            throw new IllegalStateException(e);
+                            if (app.getAsPublicTenantIdentifier().equals(TenantIdentifier.BASE_TENANT)) {
+                                throw new IllegalStateException(e);
+                            }
+                            // ignore otherwise
+                            Logging.warn(main, app.getAsPublicTenantIdentifier(), "Could not load AccessTokenSigningKey: " +
+                                    e.getMessage());
                         }
                     }
                 }

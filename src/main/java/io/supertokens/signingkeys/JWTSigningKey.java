@@ -20,6 +20,7 @@ import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
+import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -85,7 +86,12 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
                                 jwtSigningKey.generateKeysForSupportedAlgos(main);
 
                             } catch (TenantOrAppNotFoundException e) {
-                                throw new IllegalStateException(e);
+                                if (app.getAsPublicTenantIdentifier().equals(TenantIdentifier.BASE_TENANT)) {
+                                    throw new IllegalStateException(e);
+                                }
+                                // ignore otherwise
+                                Logging.warn(main, app.getAsPublicTenantIdentifier(), "Could not load JWTSigningKey: " +
+                                        e.getMessage());
                             }
                         }
                     }
