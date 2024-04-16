@@ -305,6 +305,8 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             tenantsThatChanged = MultitenancyHelper.getInstance(main)
                     .refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(false);
             try {
+                StorageLayer.getStorage(newTenant.tenantIdentifier, main).addTenantIdentifier(
+                        newTenant.tenantIdentifier);
                 ((MultitenancyStorage) StorageLayer.getStorage(newTenant.tenantIdentifier, main))
                         .addTenantIdInTargetStorage(newTenant.tenantIdentifier);
             } catch (TenantOrAppNotFoundException e) {
@@ -324,6 +326,8 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                     // such that the main tenant was added in the user pool, but did not get created
                     // in the tenant specific db (cause it's not happening in a transaction), then we
                     // do this to make it consistent.
+                    StorageLayer.getStorage(newTenant.tenantIdentifier, main).addTenantIdentifier(
+                            newTenant.tenantIdentifier);
                     ((MultitenancyStorage) StorageLayer.getStorage(newTenant.tenantIdentifier, main))
                             .addTenantIdInTargetStorage(newTenant.tenantIdentifier);
                     return false;
