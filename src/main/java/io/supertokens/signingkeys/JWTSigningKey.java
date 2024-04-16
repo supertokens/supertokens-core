@@ -90,8 +90,8 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
                                     throw new IllegalStateException(e);
                                 }
                                 // ignore otherwise
-                                Logging.warn(main, app.getAsPublicTenantIdentifier(), "Could not load JWTSigningKey: " +
-                                        e.getMessage());
+                                Logging.error(main, app.getAsPublicTenantIdentifier(), "Could not load JWTSigningKey: " +
+                                        e.getMessage(), true);
                             }
                         }
                     }

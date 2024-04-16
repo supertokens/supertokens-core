@@ -119,8 +119,8 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                                 throw new IllegalStateException(e);
                             }
                             // ignore otherwise
-                            Logging.warn(main, app.getAsPublicTenantIdentifier(), "Could not load AccessTokenSigningKey: " +
-                                    e.getMessage());
+                            Logging.error(main, app.getAsPublicTenantIdentifier(), "Could not load AccessTokenSigningKey: " +
+                                    e.getMessage(), true);
                         }
                     }
                 }
