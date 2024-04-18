@@ -426,7 +426,7 @@ public class AddBulkImportUsersTest {
                 .getAsJsonObject();
 
         testBadRequest(process.getProcess(), requestBody3, "{\"error\":\"" + genericErrMsg
-                + "\",\"users\":[{\"index\":0,\"errors\":[\"All tenants for a user must share the same storage for thirdparty recipe.\"]}]}");
+                + "\",\"users\":[{\"index\":0,\"errors\":[\"All tenants for a user must share the same database for thirdparty recipe.\"]}]}");
 
         process.kill();
         Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

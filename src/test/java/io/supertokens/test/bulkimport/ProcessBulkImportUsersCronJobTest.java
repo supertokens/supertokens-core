@@ -276,7 +276,7 @@ public class ProcessBulkImportUsersCronJobTest {
         assertEquals(1, usersAfterProcessing.size());
         assertEquals(BULK_IMPORT_USER_STATUS.FAILED, usersAfterProcessing.get(0).status);
         assertEquals(
-                "[All tenants for a user must share the same storage for emailpassword recipe., All tenants for a user must share the same storage for thirdparty recipe., All tenants for a user must share the same storage for passwordless recipe.]",
+                "[All tenants for a user must share the same database for emailpassword recipe., All tenants for a user must share the same database for thirdparty recipe., All tenants for a user must share the same database for passwordless recipe.]",
                 usersAfterProcessing.get(0).errorMessage);
     }
 
