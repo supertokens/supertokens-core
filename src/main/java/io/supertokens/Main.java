@@ -38,6 +38,7 @@ import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.exceptions.DbInitException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.session.refreshToken.RefreshTokenKey;
 import io.supertokens.signingkeys.AccessTokenSigningKey;
@@ -187,7 +188,7 @@ public class Main {
             }
         }
         try {
-            StorageLayer.getBaseStorage(this).initStorage(true);
+            StorageLayer.getBaseStorage(this).initStorage(true, List.of(TenantIdentifier.BASE_TENANT));
         } catch (DbInitException e) {
             throw new QuitProgramException(e);
         }
@@ -208,8 +209,16 @@ public class Main {
             // load all configs for each of the tenants.
             MultitenancyHelper.getInstance(this).loadConfig(new ArrayList<>());
 
+            // We now want all tenant entries to be synced on their appropriate storages
+            TenantConfig[] tenantConfigs = MultitenancyHelper.getInstance(
+                    this).getAllTenants();
+            List<TenantIdentifier> tenantIdentifiers = new ArrayList<>();
+            for (TenantConfig tenantConfig : tenantConfigs) {
+                tenantIdentifiers.add(tenantConfig.tenantIdentifier);
+            }
+
             // init storage layers for each unique db connection based on unique (user pool ID, connection pool ID).
-            MultitenancyHelper.getInstance(this).loadStorageLayer();
+            MultitenancyHelper.getInstance(this).loadStorageLayer(tenantIdentifiers);
         } catch (InvalidConfigException e) {
             throw new QuitProgramException(e);
         }

@@ -175,7 +175,7 @@ public class Start
     }
 
     @Override
-    public void initStorage(boolean shouldWait) throws DbInitException {
+    public void initStorage(boolean shouldWait, List<TenantIdentifier> tenantIdentifiers) throws DbInitException {
         if (ConnectionPool.isAlreadyInitialised(this)) {
             return;
         }
@@ -185,11 +185,6 @@ public class Start
         } catch (SQLException | StorageQueryException e) {
             throw new DbInitException(e);
         }
-    }
-
-    @Override
-    public void addTenantIdentifier(TenantIdentifier tenantIdentifier) {
-        // not necessary for inmemory db
     }
 
     @Override

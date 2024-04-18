@@ -165,7 +165,7 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
                         // we do these two here cause they don't really depend on any table in the db, and these
                         // two are required for allocating any further resource for this tenant
                         loadConfig(tenantsThatChanged);
-                        loadStorageLayer();
+                        loadStorageLayer(tenantsThatChanged);
                     }
                     return tenantsThatChanged;
                 } catch (Exception e) {
@@ -183,7 +183,7 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
             main.getResourceDistributor().withResourceDistributorLock(() -> {
                 try {
                     loadConfig(tenantsThatChanged);
-                    loadStorageLayer();
+                    loadStorageLayer(tenantsThatChanged);
                     loadFeatureFlag(tenantsThatChanged);
                     loadSigningKeys(tenantsThatChanged);
                     refreshCronjobs();
@@ -201,8 +201,8 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
         Config.loadAllTenantConfig(main, this.tenantConfigs, tenantsThatChanged);
     }
 
-    public void loadStorageLayer() throws IOException, InvalidConfigException {
-        StorageLayer.loadAllTenantStorage(main, this.tenantConfigs);
+    public void loadStorageLayer(List<TenantIdentifier> tenantsThatChanged) throws IOException, InvalidConfigException {
+        StorageLayer.loadAllTenantStorage(main, this.tenantConfigs, tenantsThatChanged);
     }
 
     public void loadFeatureFlag(List<TenantIdentifier> tenantsThatChanged) {

@@ -26,6 +26,7 @@ import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.LOG_LEVEL;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.DbInitException;
@@ -120,7 +121,6 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
 
         this.storage = getNewStorageInstance(main, configJson, tenantIdentifier, false);
-        this.storage.addTenantIdentifier(tenantIdentifier);
 
         if (this.storage instanceof Start) {
             Logging.info(main, TenantIdentifier.BASE_TENANT, "Using in memory storage.", true);
@@ -193,7 +193,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                 new StorageLayer(main, pluginFolderPath, configJson, TenantIdentifier.BASE_TENANT));
     }
 
-    public static void loadAllTenantStorage(Main main, TenantConfig[] tenants)
+    public static void loadAllTenantStorage(Main main, TenantConfig[] tenants, List<TenantIdentifier> tenantsThatChanged)
             throws InvalidConfigException, IOException {
         // We decided not to include tenantsThatChanged in this function because we do not want to reload the storage
         // when the db config has not change. And when db config has changed, it results in a
@@ -282,18 +282,41 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                         main.getResourceDistributor()
                                 .getAllResourcesWithResourceKey(RESOURCE_KEY);
 
+                // we are creating this map to find tenantIdentifiers that are associated with each storage.
+                // when we call the initStorage, the storage instance remembers the tenants that need to be created
+                // in case error happens. Whenever the connection is restored, the tenant entries are created on that
+                // storage. If the storage is already live, then it will be a no-op.
+                Map<Storage, List<TenantIdentifier>> storageToTenantIdentifiersMap = new HashMap<>();
                 // Set tenant identifiers handled by each storage instance before initialising them
                 for (ResourceDistributor.KeyClass key : resources.keySet()) {
-                    ResourceDistributor.SingletonResource resource = resources.get(key);
-                    ((StorageLayer) resource).storage.addTenantIdentifier(key.getTenantIdentifier());
+                    if (storageToTenantIdentifiersMap.get(((StorageLayer) resources.get(key)).storage) == null) {
+                        storageToTenantIdentifiersMap.put(((StorageLayer) resources.get(key)).storage, new ArrayList<>());
+                    }
+                    storageToTenantIdentifiersMap.get(((StorageLayer) resources.get(key)).storage).add(key.getTenantIdentifier());
                 }
 
-                for (ResourceDistributor.SingletonResource resource : resources.values()) {
+                for (ResourceDistributor.KeyClass key : resources.keySet()) {
+                    ResourceDistributor.SingletonResource resource = resources.get(key);
+
                     try {
-                        ((StorageLayer) resource).storage.initStorage(false);
+                        ((StorageLayer) resource).storage.initStorage(false, storageToTenantIdentifiersMap.get(((StorageLayer) resource).storage));
                         ((StorageLayer) resource).storage.initFileLogging(
                                 Config.getBaseConfig(main).getInfoLogPath(main),
                                 Config.getBaseConfig(main).getErrorLogPath(main));
+                        ((StorageLayer) resource).storage.initFileLogging(
+                                Config.getBaseConfig(main).getInfoLogPath(main),
+                                Config.getBaseConfig(main).getErrorLogPath(main));
+
+                        if (tenantsThatChanged.contains(key.getTenantIdentifier())) {
+                            // also add the tenant entry in the db
+                            try {
+                                StorageUtils.getMultitenancyStorage(((StorageLayer) resource).storage).addTenantIdInTargetStorage(key.getTenantIdentifier());
+                            } catch (DuplicateTenantException e) {
+                                // ignore
+                            } catch (StorageQueryException e) {
+                                throw new DbInitException(e);
+                            }
+                        }
                     } catch (DbInitException e) {
 
                         Logging.error(main, TenantIdentifier.BASE_TENANT, e.getMessage(), false, e);
