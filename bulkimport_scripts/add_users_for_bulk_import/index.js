@@ -15,21 +15,46 @@
  */
 
 const fs = require('fs/promises');
+const yargs = require('yargs');
 const process = require('process');
 
 const BATCH_SIZE = 10000;
-const USERS_HAVING_INVALID_SCHEMA_FILE = './usersHavingInvalidSchema.json';
-const REMAINING_USERS_FILE = './remainingUsers.json';
 
-function parseInputArgs() {
-  if (process.argv.length !== 4) {
-    console.error('Usage: node index.js <CoreAPIURL> <InputFileName>');
-    process.exit(1);
-  }
+async function parseInputArgs() {
+  const argv = await yargs
+      .option('core-endpoint', {
+          alias: 'c',
+          type: 'string',
+          describe: 'Core API URL endpoint',
+          demandOption: true,
+      })
+      .option('input-file', {
+          alias: 'i',
+          type: 'string',
+          describe: 'Path to the input file',
+          demandOption: true,
+      })
+      .option('invalid-schema-file', {
+          alias: 's',
+          type: 'string',
+          describe: 'Path to the file storing users with invalid schema',
+          default: './usersHavingInvalidSchema.json',
+      })
+      .option('remaining-users-file', {
+          alias: 'r',
+          type: 'string',
+          describe: 'Path to the file storing remaining users',
+          default: './remainingUsers.json',
+      })
+      .argv;
 
-  return { coreAPIUrl: process.argv[2], inputFileName: process.argv[3] };
+  return {
+      coreAPIUrl: argv['core-endpoint'],
+      inputFileName: argv['input-file'],
+      usersHavingInvalidSchemaFileName: argv['invalid-schema-file'],
+      remainingUsersFileName: argv['remaining-users-file'],
+  };
 }
-
 
 async function getUsersFromInputFile({ inputFileName }) {
   try {
@@ -47,20 +72,20 @@ async function getUsersFromInputFile({ inputFileName }) {
   }
 }
 
-async function deleteFailedToAddUsersFileIfExists() {
+async function deleteUsersHavingInvalidSchemaFileIfExists({ usersHavingInvalidSchemaFileName }) {
   try {
-    await fs.rm(USERS_HAVING_INVALID_SCHEMA_FILE);
+    await fs.rm(usersHavingInvalidSchemaFileName);
   } catch (error) {
     if (error.code !== 'ENOENT') {
-      console.error(`Failed to delete ${USERS_HAVING_INVALID_SCHEMA_FILE}:`, error.message);
+      console.error(`Failed to delete ${usersHavingInvalidSchemaFileName}:`, error.message);
     }
   }
 }
 
-async function addInvalidSchemaUsersToFile({ errors, users }) {
+async function addInvalidSchemaUsersToFile({ errors, users, usersHavingInvalidSchemaFileName }) {
   let parsedData = null;
   try {
-    const existingData = await fs.readFile(USERS_HAVING_INVALID_SCHEMA_FILE, 'utf8');
+    const existingData = await fs.readFile(usersHavingInvalidSchemaFileName, 'utf8');
     parsedData = JSON.parse(existingData);
   } catch (error) {
     if (error.code === 'ENOENT') {
@@ -71,35 +96,35 @@ async function addInvalidSchemaUsersToFile({ errors, users }) {
     }
   }
 
-  parsedData.users.push(...errors.map((err, index) => ({ user: users[index], errors: err.errors })));
+  parsedData.users.push(...errors.map((err) => ({ user: users[err.index], errors: err.errors })));
 
-  await fs.writeFile(USERS_HAVING_INVALID_SCHEMA_FILE, JSON.stringify(parsedData, null, 2));
+  await fs.writeFile(usersHavingInvalidSchemaFileName, JSON.stringify(parsedData, null, 2));
 
   return users.filter((_, index) => !errors.some(err => err.index === index));
 }
 
-async function updateRemainingUsersFile({ users, index }) {
+async function updateRemainingUsersFile({ users, index, remainingUsersFileName }) {
   const remainingUsers = users.slice(index + 1);
-  await fs.writeFile(REMAINING_USERS_FILE, JSON.stringify({ users: remainingUsers }, null, 2));
+  await fs.writeFile(remainingUsersFileName, JSON.stringify({ users: remainingUsers }, null, 2));
 }
 
-async function removeRemainingUsersFile() {
+async function removeRemainingUsersFile({ remainingUsersFileName }) {
   try {
-    await fs.rm(REMAINING_USERS_FILE);
+    await fs.rm(remainingUsersFileName);
   } catch (error) {
     if (error.code !== 'ENOENT') {
-      console.error(`Failed to delete ${REMAINING_USERS_FILE}:`, error.message);
+      console.error(`Failed to delete ${remainingUsersFileName}:`, error.message);
     }
   }
 }
 
 async function main() {
-  const { coreAPIUrl, inputFileName } = parseInputArgs();
+  const { coreAPIUrl, inputFileName, usersHavingInvalidSchemaFileName, remainingUsersFileName } = await parseInputArgs();
 
   const users = await getUsersFromInputFile({ inputFileName });
 
-  await deleteFailedToAddUsersFileIfExists();
-  await updateRemainingUsersFile({ users, index: 0 });
+  await deleteUsersHavingInvalidSchemaFileIfExists({ usersHavingInvalidSchemaFileName });
+  await updateRemainingUsersFile({ users,  index: 0, remainingUsersFileName });
 
   let usersToProcessInBatch = [];
   let usersHavingInvalidSchemaCount = 0;
@@ -129,9 +154,9 @@ async function main() {
       if (res.status === 400) {
         const errors = await res.json();
         usersHavingInvalidSchemaCount += errors.users.length;
-        usersToProcessInBatch = await addInvalidSchemaUsersToFile({ errors: errors.users, users: usersToProcessInBatch });
+        usersToProcessInBatch = await addInvalidSchemaUsersToFile({ errors: errors.users, users: usersToProcessInBatch, usersHavingInvalidSchemaFileName });
       } else {
-        await updateRemainingUsersFile({ users, index: i });
+        await updateRemainingUsersFile({ users, index: i, remainingUsersFileName });
         usersToProcessInBatch = [];
       }
 
@@ -146,22 +171,21 @@ async function main() {
     processedUsers: i,
     remainingUsers: users.length - i,
     usersHavingInvalidSchema: usersHavingInvalidSchemaCount,
-    ...(users.length - i > 0 && { remainingUsersFileName: REMAINING_USERS_FILE }),
-    ...(usersHavingInvalidSchemaCount > 0 && { usersHavingInvalidSchemaFileName: USERS_HAVING_INVALID_SCHEMA_FILE }),
+    ...(users.length - i > 0 && { remainingUsersFileName }),
+    ...(usersHavingInvalidSchemaCount > 0 && { usersHavingInvalidSchemaFileName }),
   };
 
   if (i < users.length) {
     const message = usersHavingInvalidSchemaCount > 0 ?
-      `We processed ${i} users and ${usersHavingInvalidSchemaCount} users have invalid schema! Remaining users can be processed again by processing the ${REMAINING_USERS_FILE} file and users having invalid schema needs to be fixed and processed again by processing the ${USERS_HAVING_INVALID_SCHEMA_FILE} file.`
-      : `We processed ${i} users and ${users.length - i} users are remaining to be processed! Remaining users can be processed again by processing the ${REMAINING_USERS_FILE} file.`;
+      `We processed ${i} users and ${usersHavingInvalidSchemaCount} users have invalid schema! Remaining users can be processed again by processing the ${remainingUsersFileName} file and users having invalid schema needs to be fixed and processed again by processing the ${usersHavingInvalidSchemaFileName} file.`
+      : `We processed ${i} users and ${users.length - i} users are remaining to be processed! Remaining users can be processed again by processing the ${remainingUsersFileName} file.`;
     console.log({ message, ...result });
   } else {
-    await removeRemainingUsersFile();
+    await removeRemainingUsersFile({ remainingUsersFileName });
     const message = usersHavingInvalidSchemaCount > 0 ?
-      `All users processed but ${usersHavingInvalidSchemaCount} users have invalid schema! Users having invalid schema needs to be fixed and processed again by processing the ${USERS_HAVING_INVALID_SCHEMA_FILE} file.` : `All users processed successfully!`;
+      `All users processed but ${usersHavingInvalidSchemaCount} users have invalid schema! Users having invalid schema needs to be fixed and processed again by processing the ${usersHavingInvalidSchemaFileName} file.` : `All users processed successfully!`;
     console.log({ message, ...result }); ``
   }
 }
-
 
 main()

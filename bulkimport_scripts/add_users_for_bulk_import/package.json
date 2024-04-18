@@ -12,5 +12,7 @@
   "keywords": [],
   "author": "",
   "license": "Apache-2.0",
-  "dependencies": {}
+  "dependencies": {
+    "yargs": "^17.7.2"
+  }
 }
