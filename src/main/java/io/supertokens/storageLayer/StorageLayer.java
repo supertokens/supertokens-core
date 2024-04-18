@@ -26,14 +26,12 @@ import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.LOG_LEVEL;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
-import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.DbInitException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
-import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateTenantException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
@@ -193,7 +191,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                 new StorageLayer(main, pluginFolderPath, configJson, TenantIdentifier.BASE_TENANT));
     }
 
-    public static void loadAllTenantStorage(Main main, TenantConfig[] tenants, List<TenantIdentifier> tenantsThatChanged)
+    public static void loadAllTenantStorage(Main main, TenantConfig[] tenants)
             throws InvalidConfigException, IOException {
         // We decided not to include tenantsThatChanged in this function because we do not want to reload the storage
         // when the db config has not change. And when db config has changed, it results in a
@@ -306,17 +304,6 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                         ((StorageLayer) resource).storage.initFileLogging(
                                 Config.getBaseConfig(main).getInfoLogPath(main),
                                 Config.getBaseConfig(main).getErrorLogPath(main));
-
-                        if (tenantsThatChanged.contains(key.getTenantIdentifier())) {
-                            // also add the tenant entry in the db
-                            try {
-                                StorageUtils.getMultitenancyStorage(((StorageLayer) resource).storage).addTenantIdInTargetStorage(key.getTenantIdentifier());
-                            } catch (DuplicateTenantException e) {
-                                // ignore
-                            } catch (StorageQueryException e) {
-                                throw new DbInitException(e);
-                            }
-                        }
                     } catch (DbInitException e) {
 
                         Logging.error(main, TenantIdentifier.BASE_TENANT, e.getMessage(), false, e);

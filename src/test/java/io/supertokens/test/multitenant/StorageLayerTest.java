@@ -1794,7 +1794,7 @@ public class StorageLayerTest {
                         new PasswordlessConfig(true),
                         null, null, config2
                 )
-        }, List.of());
+        });
 
         TenantIdentifier[] tenants = new TenantIdentifier[]{
                 TenantIdentifier.BASE_TENANT,

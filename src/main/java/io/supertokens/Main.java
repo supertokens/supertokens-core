@@ -188,7 +188,7 @@ public class Main {
             }
         }
         try {
-            StorageLayer.getBaseStorage(this).initStorage(true, List.of(TenantIdentifier.BASE_TENANT));
+            StorageLayer.getBaseStorage(this).initStorage(true, List.of());
         } catch (DbInitException e) {
             throw new QuitProgramException(e);
         }
@@ -209,16 +209,14 @@ public class Main {
             // load all configs for each of the tenants.
             MultitenancyHelper.getInstance(this).loadConfig(new ArrayList<>());
 
-            // We now want all tenant entries to be synced on their appropriate storages
-            TenantConfig[] tenantConfigs = MultitenancyHelper.getInstance(
-                    this).getAllTenants();
-            List<TenantIdentifier> tenantIdentifiers = new ArrayList<>();
-            for (TenantConfig tenantConfig : tenantConfigs) {
-                tenantIdentifiers.add(tenantConfig.tenantIdentifier);
-            }
+            // we want to load storage layer once again so that the base storage also contains the right
+            // tenant identifier set passed to the init. So we close the base storage layer and also clear
+            // all the resources for storage layer
+            StorageLayer.getBaseStorage(this).stopLogging();
+            StorageLayer.getBaseStorage(this).close();
+            this.getResourceDistributor().clearAllResourcesWithResourceKey(StorageLayer.RESOURCE_KEY);
 
-            // init storage layers for each unique db connection based on unique (user pool ID, connection pool ID).
-            MultitenancyHelper.getInstance(this).loadStorageLayer(tenantIdentifiers);
+            MultitenancyHelper.getInstance(this).loadStorageLayer();
         } catch (InvalidConfigException e) {
             throw new QuitProgramException(e);
         }
