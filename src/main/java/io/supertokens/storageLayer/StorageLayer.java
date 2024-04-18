@@ -284,11 +284,11 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                 // when we call the initStorage, the storage instance remembers the tenants that need to be created
                 // in case error happens. Whenever the connection is restored, the tenant entries are created on that
                 // storage. If the storage is already live, then it will be a no-op.
-                Map<Storage, List<TenantIdentifier>> storageToTenantIdentifiersMap = new HashMap<>();
+                Map<Storage, Set<TenantIdentifier>> storageToTenantIdentifiersMap = new HashMap<>();
                 // Set tenant identifiers handled by each storage instance before initialising them
                 for (ResourceDistributor.KeyClass key : resources.keySet()) {
                     if (storageToTenantIdentifiersMap.get(((StorageLayer) resources.get(key)).storage) == null) {
-                        storageToTenantIdentifiersMap.put(((StorageLayer) resources.get(key)).storage, new ArrayList<>());
+                        storageToTenantIdentifiersMap.put(((StorageLayer) resources.get(key)).storage, new HashSet<>());
                     }
                     storageToTenantIdentifiersMap.get(((StorageLayer) resources.get(key)).storage).add(key.getTenantIdentifier());
                 }
@@ -297,10 +297,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                     ResourceDistributor.SingletonResource resource = resources.get(key);
 
                     try {
-                        ((StorageLayer) resource).storage.initStorage(false, storageToTenantIdentifiersMap.get(((StorageLayer) resource).storage));
-                        ((StorageLayer) resource).storage.initFileLogging(
-                                Config.getBaseConfig(main).getInfoLogPath(main),
-                                Config.getBaseConfig(main).getErrorLogPath(main));
+                        ((StorageLayer) resource).storage.initStorage(false, new ArrayList<>(storageToTenantIdentifiersMap.get(((StorageLayer) resource).storage)));
                         ((StorageLayer) resource).storage.initFileLogging(
                                 Config.getBaseConfig(main).getInfoLogPath(main),
                                 Config.getBaseConfig(main).getErrorLogPath(main));
