@@ -120,6 +120,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
 
         this.storage = getNewStorageInstance(main, configJson, tenantIdentifier, false);
+        this.storage.addTenantIdentifier(tenantIdentifier);
 
         if (this.storage instanceof Start) {
             Logging.info(main, TenantIdentifier.BASE_TENANT, "Using in memory storage.", true);

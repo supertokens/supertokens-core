@@ -22,10 +22,7 @@ import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.output.Logging;
-import io.supertokens.pluginInterface.KeyValueInfo;
-import io.supertokens.pluginInterface.KeyValueInfoWithLastUpdated;
-import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.*;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.jwt.JWTAsymmetricSigningKeyInfo;
@@ -34,7 +31,9 @@ import io.supertokens.pluginInterface.jwt.exceptions.DuplicateKeyIdException;
 import io.supertokens.pluginInterface.jwt.nosqlstorage.JWTRecipeNoSQLStorage_1;
 import io.supertokens.pluginInterface.jwt.sqlstorage.JWTRecipeSQLStorage;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.MultitenancyStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateTenantException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.session.noSqlStorage.SessionNoSQLStorage_1;
@@ -115,12 +114,7 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                                             RESOURCE_KEY,
                                             new AccessTokenSigningKey(app, main));
                         } catch (TenantOrAppNotFoundException e) {
-                            if (app.getAsPublicTenantIdentifier().equals(TenantIdentifier.BASE_TENANT)) {
-                                throw new IllegalStateException(e);
-                            }
-                            // ignore otherwise
-                            Logging.error(main, app.getAsPublicTenantIdentifier(), "Could not load AccessTokenSigningKey: " +
-                                    e.getMessage(), true);
+                            new IllegalStateException(e);
                         }
                     }
                 }
@@ -176,7 +170,17 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                 });
             } catch (StorageTransactionLogicException e) {
                 if (e.actualException instanceof TenantOrAppNotFoundException) {
-                    throw (TenantOrAppNotFoundException) e.actualException;
+                    // This means that the entry for app/tenant is missing in the tenant storage
+                    MultitenancyStorage mtStorage =
+                            StorageUtils.getMultitenancyStorage(StorageLayer.getStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main));
+                    try {
+                        mtStorage.addTenantIdInTargetStorage(appIdentifier.getAsPublicTenantIdentifier());
+                    } catch (DuplicateTenantException dtExc) {
+                        // ignore
+                    }
+                    // retry again now that the tenant is added
+                    this.transferLegacyKeyToNewTable();
+                    return;
                 }
                 throw e;
             }
@@ -287,7 +291,16 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                 });
             } catch (StorageTransactionLogicException e) {
                 if (e.actualException instanceof TenantOrAppNotFoundException) {
-                    throw (TenantOrAppNotFoundException) e.actualException;
+                    // This means that the entry for app/tenant is missing in the tenant storage
+                    MultitenancyStorage mtStorage =
+                            StorageUtils.getMultitenancyStorage(StorageLayer.getStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main));
+                    try {
+                        mtStorage.addTenantIdInTargetStorage(appIdentifier.getAsPublicTenantIdentifier());
+                    } catch (DuplicateTenantException dtExc) {
+                        // ignore
+                    }
+                    // retry again now that the tenant is added
+                    return getOrCreateAndGetSigningKeys();
                 }
                 throw e;
             }

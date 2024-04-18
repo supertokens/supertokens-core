@@ -22,6 +22,7 @@ import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.jwt.JWTAsymmetricSigningKeyInfo;
@@ -32,7 +33,9 @@ import io.supertokens.pluginInterface.jwt.exceptions.DuplicateKeyIdException;
 import io.supertokens.pluginInterface.jwt.nosqlstorage.JWTRecipeNoSQLStorage_1;
 import io.supertokens.pluginInterface.jwt.sqlstorage.JWTRecipeSQLStorage;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.MultitenancyStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateTenantException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
@@ -86,12 +89,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
                                 jwtSigningKey.generateKeysForSupportedAlgos(main);
 
                             } catch (TenantOrAppNotFoundException e) {
-                                if (app.getAsPublicTenantIdentifier().equals(TenantIdentifier.BASE_TENANT)) {
-                                    throw new IllegalStateException(e);
-                                }
-                                // ignore otherwise
-                                Logging.error(main, app.getAsPublicTenantIdentifier(), "Could not load JWTSigningKey: " +
-                                        e.getMessage(), true);
+                                throw new IllegalStateException(e);
                             }
                         }
                     }
@@ -247,7 +245,17 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
                     throw (UnsupportedJWTSigningAlgorithmException) e.actualException;
                 }
                 if (e.actualException instanceof TenantOrAppNotFoundException) {
-                    throw (TenantOrAppNotFoundException) e.actualException;
+                    // This means that the entry for app/tenant is missing in the tenant storage
+                    MultitenancyStorage mtStorage =
+                            StorageUtils.getMultitenancyStorage(StorageLayer.getStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main));
+                    try {
+                        mtStorage.addTenantIdInTargetStorage(appIdentifier.getAsPublicTenantIdentifier());
+                    } catch (DuplicateTenantException dtExc) {
+                        // ignore
+                    }
+
+                    // retry again now that the tenant is added
+                    return getOrCreateAndGetKeyForAlgorithm(algorithm);
                 }
 
                 throw e;
