@@ -21,7 +21,7 @@ The `/bulk-import/users` POST API endpoint in SuperTokens Core allows to add use
 
 ## Format of Input File
 
-The input file should be a JSON file with the same format as requested by the `/bulk-import/users` POST API endpoint.
+The input file should be a JSON file with the same format as requested by the `/bulk-import/users` POST API endpoint. An example file named `example_input_file.json` is provided in the same directory.
 
 ## Expected Outputs
 
