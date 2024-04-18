@@ -245,17 +245,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
                     throw (UnsupportedJWTSigningAlgorithmException) e.actualException;
                 }
                 if (e.actualException instanceof TenantOrAppNotFoundException) {
-                    // This means that the entry for app/tenant is missing in the tenant storage
-                    MultitenancyStorage mtStorage =
-                            StorageUtils.getMultitenancyStorage(StorageLayer.getStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main));
-                    try {
-                        mtStorage.addTenantIdInTargetStorage(appIdentifier.getAsPublicTenantIdentifier());
-                    } catch (DuplicateTenantException dtExc) {
-                        // ignore
-                    }
-
-                    // retry again now that the tenant is added
-                    return getOrCreateAndGetKeyForAlgorithm(algorithm);
+                    throw (TenantOrAppNotFoundException) e.actualException;
                 }
 
                 throw e;

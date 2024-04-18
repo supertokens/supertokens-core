@@ -170,17 +170,7 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                 });
             } catch (StorageTransactionLogicException e) {
                 if (e.actualException instanceof TenantOrAppNotFoundException) {
-                    // This means that the entry for app/tenant is missing in the tenant storage
-                    MultitenancyStorage mtStorage =
-                            StorageUtils.getMultitenancyStorage(StorageLayer.getStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main));
-                    try {
-                        mtStorage.addTenantIdInTargetStorage(appIdentifier.getAsPublicTenantIdentifier());
-                    } catch (DuplicateTenantException dtExc) {
-                        // ignore
-                    }
-                    // retry again now that the tenant is added
-                    this.transferLegacyKeyToNewTable();
-                    return;
+                    throw (TenantOrAppNotFoundException) e.actualException;
                 }
                 throw e;
             }
@@ -291,16 +281,7 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                 });
             } catch (StorageTransactionLogicException e) {
                 if (e.actualException instanceof TenantOrAppNotFoundException) {
-                    // This means that the entry for app/tenant is missing in the tenant storage
-                    MultitenancyStorage mtStorage =
-                            StorageUtils.getMultitenancyStorage(StorageLayer.getStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main));
-                    try {
-                        mtStorage.addTenantIdInTargetStorage(appIdentifier.getAsPublicTenantIdentifier());
-                    } catch (DuplicateTenantException dtExc) {
-                        // ignore
-                    }
-                    // retry again now that the tenant is added
-                    return getOrCreateAndGetSigningKeys();
+                    throw (TenantOrAppNotFoundException) e.actualException;
                 }
                 throw e;
             }

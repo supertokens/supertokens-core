@@ -152,16 +152,7 @@ public class RefreshTokenKey extends ResourceDistributor.SingletonResource {
                 });
             } catch (StorageTransactionLogicException e) {
                 if (e.actualException instanceof TenantOrAppNotFoundException) {
-                    // This means that the entry for app/tenant is missing in the tenant storage
-                    MultitenancyStorage mtStorage =
-                            StorageUtils.getMultitenancyStorage(StorageLayer.getStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main));
-                    try {
-                        mtStorage.addTenantIdInTargetStorage(appIdentifier.getAsPublicTenantIdentifier());
-                    } catch (DuplicateTenantException dtExc) {
-                        // ignore
-                    }
-                    // retry again now that the tenant is added
-                    return maybeGenerateNewKeyAndUpdateInDb();
+                    throw (TenantOrAppNotFoundException) e.actualException;
                 }
                 throw e;
             }
