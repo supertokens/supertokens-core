@@ -22,7 +22,10 @@ import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.output.Logging;
-import io.supertokens.pluginInterface.*;
+import io.supertokens.pluginInterface.KeyValueInfo;
+import io.supertokens.pluginInterface.KeyValueInfoWithLastUpdated;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.jwt.JWTAsymmetricSigningKeyInfo;
@@ -31,9 +34,7 @@ import io.supertokens.pluginInterface.jwt.exceptions.DuplicateKeyIdException;
 import io.supertokens.pluginInterface.jwt.nosqlstorage.JWTRecipeNoSQLStorage_1;
 import io.supertokens.pluginInterface.jwt.sqlstorage.JWTRecipeSQLStorage;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
-import io.supertokens.pluginInterface.multitenancy.MultitenancyStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
-import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateTenantException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.session.noSqlStorage.SessionNoSQLStorage_1;
@@ -114,7 +115,7 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                                             RESOURCE_KEY,
                                             new AccessTokenSigningKey(app, main));
                         } catch (TenantOrAppNotFoundException e) {
-                            new IllegalStateException(e);
+                            throw new IllegalStateException(e);
                         }
                     }
                 }
