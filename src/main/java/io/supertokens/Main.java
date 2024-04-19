@@ -204,7 +204,7 @@ public class Main {
             // load all configs for each of the tenants.
             MultitenancyHelper.getInstance(this).loadConfig(new ArrayList<>());
 
-            // we want to load storage layer once again so that the base storage also contains the right
+            // we want to init storage connection once again so that the base storage also contains the right
             // tenant identifier set passed to the init. So we call the resetPostConnectCallbackForBaseTenantStorage.
             StorageLayer.getBaseStorage(this).resetConnectionPoolForReinitWithAllTenantsForBaseStorage();
 
