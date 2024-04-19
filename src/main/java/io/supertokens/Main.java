@@ -38,6 +38,7 @@ import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.exceptions.DbInitException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.session.refreshToken.RefreshTokenKey;
 import io.supertokens.signingkeys.AccessTokenSigningKey;
@@ -187,7 +188,7 @@ public class Main {
             }
         }
         try {
-            StorageLayer.getBaseStorage(this).initStorage(true);
+            StorageLayer.getBaseStorage(this).initStorage(true, List.of());
         } catch (DbInitException e) {
             throw new QuitProgramException(e);
         }
@@ -208,7 +209,13 @@ public class Main {
             // load all configs for each of the tenants.
             MultitenancyHelper.getInstance(this).loadConfig(new ArrayList<>());
 
-            // init storage layers for each unique db connection based on unique (user pool ID, connection pool ID).
+            // we want to load storage layer once again so that the base storage also contains the right
+            // tenant identifier set passed to the init. So we close the base storage layer and also clear
+            // all the resources for storage layer
+            StorageLayer.getBaseStorage(this).stopLogging();
+            StorageLayer.getBaseStorage(this).close();
+            this.getResourceDistributor().clearAllResourcesWithResourceKey(StorageLayer.RESOURCE_KEY);
+
             MultitenancyHelper.getInstance(this).loadStorageLayer();
         } catch (InvalidConfigException e) {
             throw new QuitProgramException(e);
