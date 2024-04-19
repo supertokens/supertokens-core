@@ -188,7 +188,7 @@ public class Start
     }
 
     @Override
-    public void resetPostConnectCallbackForBaseTenantStorage() {
+    public void resetConnectionPoolForReinitWithAllTenantsForBaseStorage() {
         // no op
     }
 
