@@ -209,14 +209,9 @@ public class Main {
             // load all configs for each of the tenants.
             MultitenancyHelper.getInstance(this).loadConfig(new ArrayList<>());
 
-            if (!StorageLayer.isInMemDb(this)) {
-                // we want to load storage layer once again so that the base storage also contains the right
-                // tenant identifier set passed to the init. So we close the base storage layer and also clear
-                // all the resources for storage layer
-                StorageLayer.getBaseStorage(this).stopLogging();
-                StorageLayer.getBaseStorage(this).close();
-                this.getResourceDistributor().clearAllResourcesWithResourceKey(StorageLayer.RESOURCE_KEY);
-            }
+            // we want to load storage layer once again so that the base storage also contains the right
+            // tenant identifier set passed to the init. So we call the resetPostConnectCallbackForBaseTenantStorage.
+            StorageLayer.getBaseStorage(this).resetPostConnectCallbackForBaseTenantStorage();
 
             MultitenancyHelper.getInstance(this).loadStorageLayer();
         } catch (InvalidConfigException e) {
