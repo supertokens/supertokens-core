@@ -279,9 +279,25 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                 Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> resources =
                         main.getResourceDistributor()
                                 .getAllResourcesWithResourceKey(RESOURCE_KEY);
-                for (ResourceDistributor.SingletonResource resource : resources.values()) {
+
+                // we are creating this map to find tenantIdentifiers that are associated with each storage.
+                // when we call the initStorage, the storage instance remembers the tenants that need to be created
+                // in case error happens. Whenever the connection is restored, the tenant entries are created on that
+                // storage. If the storage is already live, then it will be a no-op.
+                Map<Storage, Set<TenantIdentifier>> storageToTenantIdentifiersMap = new HashMap<>();
+                // Set tenant identifiers handled by each storage instance before initialising them
+                for (ResourceDistributor.KeyClass key : resources.keySet()) {
+                    if (storageToTenantIdentifiersMap.get(((StorageLayer) resources.get(key)).storage) == null) {
+                        storageToTenantIdentifiersMap.put(((StorageLayer) resources.get(key)).storage, new HashSet<>());
+                    }
+                    storageToTenantIdentifiersMap.get(((StorageLayer) resources.get(key)).storage).add(key.getTenantIdentifier());
+                }
+
+                for (ResourceDistributor.KeyClass key : resources.keySet()) {
+                    ResourceDistributor.SingletonResource resource = resources.get(key);
+
                     try {
-                        ((StorageLayer) resource).storage.initStorage(false);
+                        ((StorageLayer) resource).storage.initStorage(false, new ArrayList<>(storageToTenantIdentifiersMap.get(((StorageLayer) resource).storage)));
                         ((StorageLayer) resource).storage.initFileLogging(
                                 Config.getBaseConfig(main).getInfoLogPath(main),
                                 Config.getBaseConfig(main).getErrorLogPath(main));

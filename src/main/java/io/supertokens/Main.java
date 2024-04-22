@@ -187,7 +187,7 @@ public class Main {
             }
         }
         try {
-            StorageLayer.getBaseStorage(this).initStorage(true);
+            StorageLayer.getBaseStorage(this).initStorage(true, List.of());
         } catch (DbInitException e) {
             throw new QuitProgramException(e);
         }
@@ -207,6 +207,12 @@ public class Main {
         try {
             // load all configs for each of the tenants.
             MultitenancyHelper.getInstance(this).loadConfig(new ArrayList<>());
+
+            if (!StorageLayer.isInMemDb(this)) {
+                // we want to init storage connection once again so that the base storage also contains the right
+                // tenant identifier set passed to the init. So we call the resetPostConnectCallbackForBaseTenantStorage.
+                StorageLayer.getBaseStorage(this).close();
+            }
 
             // init storage layers for each unique db connection based on unique (user pool ID, connection pool ID).
             MultitenancyHelper.getInstance(this).loadStorageLayer();
