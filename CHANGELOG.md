@@ -9,6 +9,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Add a new core API for fetching all the core properties
 
+## [9.0.2] - 2024-04-17
+
+- Fixes issue with core startup when creation of CUD/app/tenant has partial failure
+
 ## [9.0.1] - 2024-03-20
 
 - Fixes verify TOTP and verify device APIs to treat any code as invalid

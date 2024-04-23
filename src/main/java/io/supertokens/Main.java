@@ -39,10 +39,6 @@ import io.supertokens.pluginInterface.exceptions.DbInitException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
-import io.supertokens.session.refreshToken.RefreshTokenKey;
-import io.supertokens.signingkeys.AccessTokenSigningKey;
-import io.supertokens.signingkeys.JWTSigningKey;
-import io.supertokens.signingkeys.SigningKeys;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.version.Version;
 import io.supertokens.webserver.Webserver;
@@ -187,7 +183,7 @@ public class Main {
             }
         }
         try {
-            StorageLayer.getBaseStorage(this).initStorage(true);
+            StorageLayer.getBaseStorage(this).initStorage(true, List.of());
         } catch (DbInitException e) {
             throw new QuitProgramException(e);
         }
@@ -208,7 +204,12 @@ public class Main {
             // load all configs for each of the tenants.
             MultitenancyHelper.getInstance(this).loadConfig(new ArrayList<>());
 
-            // init storage layers for each unique db connection based on unique (user pool ID, connection pool ID).
+            if (!StorageLayer.isInMemDb(this)) {
+                // we want to init storage connection once again so that the base storage also contains the right
+                // tenant identifier set passed to the init. So we call the resetPostConnectCallbackForBaseTenantStorage.
+                StorageLayer.getBaseStorage(this).close();
+            }
+
             MultitenancyHelper.getInstance(this).loadStorageLayer();
         } catch (InvalidConfigException e) {
             throw new QuitProgramException(e);
