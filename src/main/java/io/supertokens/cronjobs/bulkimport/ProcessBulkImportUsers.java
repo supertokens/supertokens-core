@@ -164,7 +164,7 @@ public class ProcessBulkImportUsers extends CronTask {
                         normalisedConfigs.get(key), tenantIdentifier, true);
 
                 userPoolToStorageMap.put(userPoolId, bulkImportProxyStorage);
-                bulkImportProxyStorage.initStorage(true);
+                bulkImportProxyStorage.initStorage(true, new ArrayList<>(List.of(tenantIdentifier)));
                 bulkImportProxyStorage.commitTransactionForBulkImportProxyStorage();
                 return bulkImportProxyStorage;
             }
