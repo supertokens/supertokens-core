@@ -75,8 +75,8 @@ public class DeleteBulkImportUsersTest {
         {
             try {
                 JsonObject request = new JsonObject();
-                HttpRequestForTesting.sendJsonDELETERequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/users",
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/bulk-import/users/remove",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertEquals(400, e.statusCode);
@@ -86,8 +86,8 @@ public class DeleteBulkImportUsersTest {
         {
             try {
                 JsonObject request = new JsonParser().parse("{\"ids\":[]}").getAsJsonObject();
-                HttpRequestForTesting.sendJsonDELETERequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/users",
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/bulk-import/users/remove",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertEquals(400, e.statusCode);
@@ -97,8 +97,8 @@ public class DeleteBulkImportUsersTest {
         {
             try {
                 JsonObject request = new JsonParser().parse("{\"ids\":[\"\"]}").getAsJsonObject();
-                HttpRequestForTesting.sendJsonDELETERequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/users",
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/bulk-import/users/remove",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertEquals(400, e.statusCode);
@@ -115,8 +115,8 @@ public class DeleteBulkImportUsersTest {
                 }
                 request.add("ids", ids);
 
-                HttpRequestForTesting.sendJsonDELETERequest(process.getProcess(), "",
-                        "http://localhost:3567/bulk-import/users",
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/bulk-import/users/remove",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertEquals(400, e.statusCode);
@@ -156,8 +156,8 @@ public class DeleteBulkImportUsersTest {
         
         request.add("ids", validIds);
 
-        JsonObject response = HttpRequestForTesting.sendJsonDELETERequest(process.getProcess(), "",
-        "http://localhost:3567/bulk-import/users",
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+        "http://localhost:3567/bulk-import/users/remove",
         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
 
         response.get("deletedIds").getAsJsonArray().forEach(id -> {

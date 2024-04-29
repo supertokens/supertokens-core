@@ -19,8 +19,10 @@ package io.supertokens.cronjobs.bulkimport;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.google.gson.JsonObject;
 
@@ -164,7 +166,7 @@ public class ProcessBulkImportUsers extends CronTask {
                         normalisedConfigs.get(key), tenantIdentifier, true);
 
                 userPoolToStorageMap.put(userPoolId, bulkImportProxyStorage);
-                bulkImportProxyStorage.initStorage(true, new ArrayList<>(List.of(tenantIdentifier)));
+                bulkImportProxyStorage.initStorage(true, new ArrayList<>());
                 bulkImportProxyStorage.commitTransactionForBulkImportProxyStorage();
                 return bulkImportProxyStorage;
             }
