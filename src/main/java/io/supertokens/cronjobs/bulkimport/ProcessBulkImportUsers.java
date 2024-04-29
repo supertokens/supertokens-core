@@ -245,7 +245,7 @@ public class ProcessBulkImportUsers extends CronTask {
                     createPrimaryUserAndLinkAccounts(main, appIdentifier, bulkImportProxyStorage, user, primaryLM);
                     createUserIdMapping(main, appIdentifier, user, primaryLM);
                     verifyEmailForAllLoginMethods(appIdentifier, con, bulkImportProxyStorage, user.loginMethods);
-                    createTotpDevices(main, appIdentifier, bulkImportProxyStorage, user.totpDevices, primaryLM);
+                    createTotpDevices(main, appIdentifier, bulkImportProxyStorage, user, primaryLM);
                     createUserMetadata(appIdentifier, bulkImportProxyStorage, user, primaryLM);
                     createUserRoles(main, appIdentifier, bulkImportProxyStorage, user);
 
@@ -522,17 +522,19 @@ public class ProcessBulkImportUsers extends CronTask {
     }
 
     private void createTotpDevices(Main main, AppIdentifier appIdentifier, Storage storage,
-            List<TotpDevice> totpDevices, LoginMethod primaryLM) throws StorageTransactionLogicException {
-        for (TotpDevice totpDevice : totpDevices) {
-            try {
-                Totp.createDevice(main, appIdentifier, storage, primaryLM.getSuperTokenOrExternalUserId(),
-                        totpDevice.deviceName, totpDevice.skew, totpDevice.period, totpDevice.secretKey,
-                        true, System.currentTimeMillis());
-            } catch (TenantOrAppNotFoundException | StorageQueryException | FeatureNotEnabledException e) {
-                throw new StorageTransactionLogicException(e);
-            } catch (DeviceAlreadyExistsException e) {
-                throw new StorageTransactionLogicException(
-                        new Exception("A totp device with name " + totpDevice.deviceName + " already exists"));
+            BulkImportUser user, LoginMethod primaryLM) throws StorageTransactionLogicException {
+        if (user.totpDevices != null) {
+            for (TotpDevice totpDevice : user.totpDevices) {
+                try {
+                    Totp.createDevice(main, appIdentifier, storage, primaryLM.getSuperTokenOrExternalUserId(),
+                            totpDevice.deviceName, totpDevice.skew, totpDevice.period, totpDevice.secretKey,
+                            true, System.currentTimeMillis());
+                } catch (TenantOrAppNotFoundException | StorageQueryException | FeatureNotEnabledException e) {
+                    throw new StorageTransactionLogicException(e);
+                } catch (DeviceAlreadyExistsException e) {
+                    throw new StorageTransactionLogicException(
+                            new Exception("A totp device with name " + totpDevice.deviceName + " already exists"));
+                }
             }
         }
     }
