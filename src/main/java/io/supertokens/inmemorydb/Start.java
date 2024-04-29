@@ -137,8 +137,7 @@ public class Start
 
     @Override
     public Storage createBulkImportProxyStorageInstance() {
-        // throw not implemented error
-        throw new UnsupportedOperationException("Unimplemented method 'createBulkImportProxyStorageInstance'");
+        throw new UnsupportedOperationException("'createBulkImportProxyStorageInstance' is not supported for in-memory db");
         
     }
 

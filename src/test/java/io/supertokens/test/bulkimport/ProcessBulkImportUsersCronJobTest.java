@@ -94,6 +94,10 @@ public class ProcessBulkImportUsersCronJobTest {
         TestingProcess process = startCronProcess();
         Main main = process.getProcess();
 
+        if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+            return;
+        }
+
         // Create user roles before inserting bulk users
         {
             UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
@@ -136,6 +140,10 @@ public class ProcessBulkImportUsersCronJobTest {
     public void shouldProcessBulkImportUsersInMultipleTenantsWithDifferentStorages() throws Exception {
         TestingProcess process = startCronProcess();
         Main main = process.getProcess();
+
+        if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+            return;
+        }
 
         // Create user roles before inserting bulk users
         {
@@ -197,6 +205,10 @@ public class ProcessBulkImportUsersCronJobTest {
         TestingProcess process = startCronProcess();
         Main main = process.getProcess();
 
+        if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+            return;
+        }
+
         createTenants(main);
 
         BulkImportSQLStorage storage = (BulkImportSQLStorage) StorageLayer.getStorage(main);
@@ -224,6 +236,10 @@ public class ProcessBulkImportUsersCronJobTest {
     public void shouldThrowTenantDoesNotExistError() throws Exception {
         TestingProcess process = startCronProcess();
         Main main = process.getProcess();
+
+        if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+            return;
+        }
 
         BulkImportSQLStorage storage = (BulkImportSQLStorage) StorageLayer.getStorage(main);
         AppIdentifier appIdentifier = new AppIdentifier(null, null);
@@ -253,6 +269,10 @@ public class ProcessBulkImportUsersCronJobTest {
     public void shouldThrowTenantHaveDifferentStoragesError() throws Exception {
         TestingProcess process = startCronProcess();
         Main main = process.getProcess();
+
+        if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+            return;
+        }
 
         BulkImportSQLStorage storage = (BulkImportSQLStorage) StorageLayer.getStorage(main);
         AppIdentifier appIdentifier = new AppIdentifier(null, null);

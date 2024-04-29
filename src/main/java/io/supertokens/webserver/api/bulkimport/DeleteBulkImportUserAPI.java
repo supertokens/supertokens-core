@@ -30,6 +30,7 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -49,6 +50,11 @@ public class DeleteBulkImportUserAPI extends WebserverAPI {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         // API is app specific
+
+        if (StorageLayer.isInMemDb(main)) {
+            throw new ServletException(new BadRequestException("This API is not supported in the in-memory database."));
+        }
+
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         JsonArray arr = InputParser.parseArrayOrThrowError(input, "ids", false);
 

@@ -107,7 +107,7 @@ public class ProcessBulkImportUsers extends CronTask {
             throws TenantOrAppNotFoundException, StorageQueryException, InvalidConfigException, IOException,
             DbInitException {
 
-        if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL) {
+        if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
             return;
         }
 

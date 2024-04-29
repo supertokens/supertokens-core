@@ -34,6 +34,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
@@ -62,15 +63,16 @@ public class GetBulkImportUsersTest {
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
 
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+        if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
             return;
         }
 
         try {
             Map<String, String> params = new HashMap<>();
             params.put("status", "INVALID_STATUS");
-            HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+            HttpRequestForTesting.sendGETRequest(main, "",
                     "http://localhost:3567/bulk-import/users",
                     params, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
             fail("The API should have thrown an error");
@@ -84,7 +86,7 @@ public class GetBulkImportUsersTest {
         try {
             Map<String, String> params = new HashMap<>();
             params.put("limit", "0");
-            HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+            HttpRequestForTesting.sendGETRequest(main, "",
                     "http://localhost:3567/bulk-import/users",
                     params, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
             fail("The API should have thrown an error");
@@ -97,7 +99,7 @@ public class GetBulkImportUsersTest {
         try {
             Map<String, String> params = new HashMap<>();
             params.put("limit", "501");
-            HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+            HttpRequestForTesting.sendGETRequest(main, "",
                     "http://localhost:3567/bulk-import/users",
                     params, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
             fail("The API should have thrown an error");
@@ -109,7 +111,7 @@ public class GetBulkImportUsersTest {
         try {
             Map<String, String> params = new HashMap<>();
             params.put("paginationToken", "invalid_token");
-            HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+            HttpRequestForTesting.sendGETRequest(main, "",
                     "http://localhost:3567/bulk-import/users",
                     params, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
             fail("The API should have thrown an error");
@@ -128,8 +130,9 @@ public class GetBulkImportUsersTest {
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
 
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+        if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
             return;
         }
 
@@ -137,14 +140,14 @@ public class GetBulkImportUsersTest {
         String rawData = "{\"users\":[{\"loginMethods\":[{\"recipeId\":\"passwordless\",\"email\":\"johndoe@gmail.com\"}]}]}";
         {
             JsonObject request = new JsonParser().parse(rawData).getAsJsonObject();
-            JsonObject res = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+            JsonObject res = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                     "http://localhost:3567/bulk-import/users",
                     request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
             assert res.get("status").getAsString().equals("OK");
         }
 
         Map<String, String> params = new HashMap<>();
-        JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+        JsonObject response = HttpRequestForTesting.sendGETRequest(main, "",
                 "http://localhost:3567/bulk-import/users",
                 params, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
         assertEquals("OK", response.get("status").getAsString());

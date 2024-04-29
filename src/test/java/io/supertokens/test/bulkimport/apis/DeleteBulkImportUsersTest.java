@@ -34,6 +34,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 
+import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.bulkimport.BulkImport;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
@@ -67,15 +68,16 @@ public class DeleteBulkImportUsersTest {
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
 
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+        if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
             return;
         }
 
         {
             try {
                 JsonObject request = new JsonObject();
-                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                         "http://localhost:3567/bulk-import/users/remove",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
@@ -86,7 +88,7 @@ public class DeleteBulkImportUsersTest {
         {
             try {
                 JsonObject request = new JsonParser().parse("{\"ids\":[]}").getAsJsonObject();
-                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                         "http://localhost:3567/bulk-import/users/remove",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
@@ -97,7 +99,7 @@ public class DeleteBulkImportUsersTest {
         {
             try {
                 JsonObject request = new JsonParser().parse("{\"ids\":[\"\"]}").getAsJsonObject();
-                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                         "http://localhost:3567/bulk-import/users/remove",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
@@ -115,7 +117,7 @@ public class DeleteBulkImportUsersTest {
                 }
                 request.add("ids", ids);
 
-                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                         "http://localhost:3567/bulk-import/users/remove",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
@@ -134,8 +136,9 @@ public class DeleteBulkImportUsersTest {
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
 
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+        if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
             return;
         }
 
@@ -156,7 +159,7 @@ public class DeleteBulkImportUsersTest {
         
         request.add("ids", validIds);
 
-        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
         "http://localhost:3567/bulk-import/users/remove",
         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
 
