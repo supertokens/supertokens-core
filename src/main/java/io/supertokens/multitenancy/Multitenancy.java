@@ -605,11 +605,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
     }
 
     public static JsonObject getNormalisedTenantConfig(Main main, TenantIdentifier tenantIdentifier)
-            throws IOException, TenantOrAppNotFoundException {
-        Map<ResourceDistributor.KeyClass, JsonObject> normalisedConfigs = Config.getNormalisedConfigsForAllTenants(
-                getAllTenants(main),
-                Config.getBaseConfigAsJsonObject(main));
-
+            throws TenantOrAppNotFoundException {
         return new Gson().toJsonTree(Config.getConfig(tenantIdentifier, main)).getAsJsonObject();
     }
 

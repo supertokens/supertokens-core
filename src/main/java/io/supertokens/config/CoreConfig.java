@@ -843,11 +843,8 @@ public class CoreConfig {
                     possibleValues = field.getAnnotation(EnumProperty.class).value();
                 }
 
-                boolean isConfigYamlOnly = field.isAnnotationPresent(ConfigYamlOnly.class);
-
                 JsonElement value = tenantConfig.get(field.getName());
 
-                boolean isSaasProtected = false; // TODO
                 JsonElement defaultValue = defaultConfig.get(field.getName());
                 boolean isNullable = defaultValue == null;
 
