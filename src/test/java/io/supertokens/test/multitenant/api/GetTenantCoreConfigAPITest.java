@@ -14,7 +14,7 @@
  *    under the License.
  */
 
-package io.supertokens.test;
+package io.supertokens.test.multitenant.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.JsonArray;
@@ -23,9 +23,8 @@ import io.supertokens.ProcessState;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.config.annotations.ConfigDescription;
 import io.supertokens.httpRequest.HttpRequest;
-import io.supertokens.storageLayer.StorageLayer;
-import io.supertokens.test.httpRequest.HttpRequestForTesting;
-import io.supertokens.utils.SemVer;
+import io.supertokens.test.TestingProcessManager;
+import io.supertokens.test.Utils;
 
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -37,15 +36,13 @@ import static org.junit.Assert.*;
 
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.io.FileReader;
 import java.io.BufferedReader;
 import java.lang.reflect.Field;
 
-public class CoreConfigListAPITest {
+public class GetTenantCoreConfigAPITest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
@@ -60,101 +57,48 @@ public class CoreConfigListAPITest {
     }
 
     @Test
-    public void testRetreivingConfigProperties() throws Exception {
+    public void testRetrievingConfigProperties() throws Exception {
         String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         JsonObject response = HttpRequest.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/core-config/list", null,
-                1000, 1000, null);
+                "http://localhost:3567/recipe/multitenancy/tenant/core-config", null,
+                1000, 1000000, null);
 
         assertEquals(response.get("status").getAsString(), "OK");
         JsonArray result = response.get("config").getAsJsonArray();
 
-        for (int i = 0; i < result.size(); i++) {
-            JsonObject config = result.get(i).getAsJsonObject();
-            assertTrue(config.get("name").getAsJsonPrimitive().isString());
-            assertTrue(config.get("description").getAsJsonPrimitive().isString());
-            assertTrue(config.get("isDifferentAcrossTenants").getAsJsonPrimitive().isBoolean());
-            assertTrue(config.get("type").getAsJsonPrimitive().isString());
-
-            String type = config.get("type").getAsString();
-            assertTrue(type.equals("number") || type.equals("boolean") || type.equals("string") || type.equals("enum"));
-
-            if (type.equals("enum")) {
-                assertTrue(config.get("options").getAsJsonArray().size() > 0);
-            }
-
-        }
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-    }
-
-    @Test
-    public void testProtectedConfigsAreHandledCorrectlyIfSuperTokensSaaSSecretIsSet() throws Exception {
-        String[] args = { "../" };
-
-        String saasSecret = "hg40239oirjgBHD9450=Beew123--hg40239oirjgBHD9450=Beew123--hg40239oirjgBHD9450=Beew123-";
-        Utils.setValueInConfig("supertokens_saas_secret", saasSecret);
-        String apiKey = "hg40239oirjgBHD9450=Beew123--hg40239oiBeew123-";
-        Utils.setValueInConfig("api_keys", apiKey);
-
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        String[] protectedPluginFields = StorageLayer.getBaseStorage(process.main)
-                        .getProtectedConfigsFromSuperTokensSaaSUsers();
-
-        // Make sure that the protected fields are not included in the response
-        // if supertokens_saas_secret is set and it is not used for api_key
-        {
-            JsonObject response = HttpRequestForTesting.sendJsonRequest(process.getProcess(), "",
-                    "http://localhost:3567/core-config/list",
-                    null, 1000, 1000, null,
-                    SemVer.v3_0.get(), "GET", apiKey, "");
-
-            assertEquals(response.get("status").getAsString(), "OK");
-            JsonArray result = response.get("config").getAsJsonArray();
+        try {
+            String[] fields = new String[]{"key", "valueType", "value", "description", "isDifferentAcrossTenants", "possibleValues", "isNullable", "defaultValue", "isPluginProperty", "isPluginPropertyEditable"};
 
             for (int i = 0; i < result.size(); i++) {
-                String fieldName = result.get(i).getAsJsonObject().get("name").getAsString();
-                if (Arrays.asList(protectedPluginFields).contains(fieldName)
-                        || Arrays.asList(CoreConfig.PROTECTED_CONFIGS).contains(fieldName)) {
-                    fail("Protected config " + fieldName
-                            + " is included in the response even though supertokens_saas_secret is set and api key does not match.");
+                JsonObject config = result.get(i).getAsJsonObject();
+                assertEquals(fields.length, config.entrySet().size());
+                for (String field : fields) {
+                    assertTrue(config.has(field));
                 }
-            }
-        }
 
-        // Make sure that the protected fields are included in the response
-        // if supertokens_saas_secret is set and it is used for the api_key
-        {
-            JsonObject response = HttpRequestForTesting.sendJsonRequest(process.getProcess(), "",
-                    "http://localhost:3567/core-config/list",
-                    null, 1000, 1000, null,
-                    SemVer.v3_0.get(), "GET", saasSecret, "");
-
-            assertEquals(response.get("status").getAsString(), "OK");
-            JsonArray result = response.get("config").getAsJsonArray();
-
-            Set<String> allProtectedFields = new HashSet<String>();
-            allProtectedFields.addAll(Arrays.asList(CoreConfig.PROTECTED_CONFIGS));
-            allProtectedFields.addAll(Arrays.asList(protectedPluginFields));
-
-            for (int i = 0; i < result.size(); i++) {
-                String fieldName = result.get(i).getAsJsonObject().get("name").getAsString();
-               // Ensure that all the protected fields are included in the response
-                if (allProtectedFields.contains(fieldName)) {
-                    allProtectedFields.remove(fieldName);
+                // check for some known fields
+                switch (config.get("key").getAsString()) {
+                    case "port":
+                        fail(); // config yaml only properties should not be returned
+                        break;
+                    case "access_token_validity":
+                        assertEquals("number", config.get("valueType").getAsString());
+                        assertEquals(3600, config.get("defaultValue").getAsInt());
+                        assertFalse(config.get("isDifferentAcrossTenants").getAsBoolean());
+                        break;
+                    case "password_hashing_alg":
+                        assertTrue(config.get("possibleValues").isJsonArray());
+                        assertEquals(2, config.get("possibleValues").getAsJsonArray().size());
+                        break;
                 }
-            }
 
-            if (allProtectedFields.size() > 0) {
-                fail("Protected configs " + allProtectedFields.toString() + " are not included in the response even though supertokens_saas_secret is added in the request.");
             }
+        } catch (NullPointerException e) {
+            throw e;
         }
 
         process.kill();
@@ -261,5 +205,4 @@ public class CoreConfigListAPITest {
             }
         }
     }
-
 }

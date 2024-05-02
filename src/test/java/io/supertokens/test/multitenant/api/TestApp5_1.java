@@ -19,6 +19,7 @@ package io.supertokens.test.multitenant.api;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.config.CoreConfigTestContent;
 import io.supertokens.featureflag.EE_FEATURES;
@@ -54,7 +55,7 @@ import java.util.Set;
 
 import static org.junit.Assert.*;
 
-public class TestApp {
+public class TestApp5_1 {
     TestingProcessManager.TestingProcess process;
 
     @AfterClass
@@ -94,13 +95,13 @@ public class TestApp {
         StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
                 .modifyConfigToAddANewUserPoolForTesting(coreConfig, 1);
 
-        TestMultitenancyAPIHelper.createApp(
+        createApp(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
                 "a1", true, true, true,
                 coreConfig);
 
-        JsonObject result = TestMultitenancyAPIHelper.listApps(new TenantIdentifier(null, null, null), process.getProcess());
+        JsonObject result = listApps(new TenantIdentifier(null, null, null), process.getProcess());
         assertTrue(result.has("apps"));
 
         boolean found = false;
@@ -113,8 +114,16 @@ public class TestApp {
 
                 for (JsonElement tenant : appObj.get("tenants").getAsJsonArray()) {
                     JsonObject tenantObj = tenant.getAsJsonObject();
+                    assertEquals(6, tenantObj.entrySet().size());
+                    assertEquals("public", tenantObj.get("tenantId").getAsString());
+                    assertTrue(tenantObj.get("useFirstFactorsFromStaticConfigIfEmpty").getAsBoolean());
+                    assertEquals(1, tenantObj.get("emailPassword").getAsJsonObject().entrySet().size());
                     assertTrue(tenantObj.get("emailPassword").getAsJsonObject().get("enabled").getAsBoolean());
+                    assertEquals(3, tenantObj.get("thirdParty").getAsJsonObject().entrySet().size());
                     assertTrue(tenantObj.get("thirdParty").getAsJsonObject().get("enabled").getAsBoolean());
+                    assertTrue(tenantObj.get("thirdParty").getAsJsonObject().get(
+                            "useThirdPartyProvidersFromStaticConfigIfEmpty").getAsBoolean());
+                    assertEquals(1, tenantObj.get("passwordless").getAsJsonObject().entrySet().size());
                     assertTrue(tenantObj.get("passwordless").getAsJsonObject().get("enabled").getAsBoolean());
                     assertEquals(coreConfig, tenantObj.get("coreConfig").getAsJsonObject());
                 }
@@ -136,7 +145,7 @@ public class TestApp {
                 .modifyConfigToAddANewUserPoolForTesting(coreConfig, 1);
 
         // Create
-        TestMultitenancyAPIHelper.createApp(
+        createApp(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
                 "a1", true, true, true,
@@ -147,13 +156,13 @@ public class TestApp {
         coreConfig.addProperty("email_verification_token_lifetime", 2000);
 
         // Update
-        TestMultitenancyAPIHelper.createApp(
+        createApp(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
                 "a1", true, true, true,
                 newConfig);
 
-        JsonObject result = TestMultitenancyAPIHelper.listApps(new TenantIdentifier(null, null, null), process.getProcess());
+        JsonObject result = listApps(new TenantIdentifier(null, null, null), process.getProcess());
         assertTrue(result.has("apps"));
 
         boolean found = false;
@@ -166,8 +175,16 @@ public class TestApp {
 
                 for (JsonElement tenant : appObj.get("tenants").getAsJsonArray()) {
                     JsonObject tenantObj = tenant.getAsJsonObject();
+                    assertEquals(6, tenantObj.entrySet().size());
+                    assertEquals("public", tenantObj.get("tenantId").getAsString());
+                    assertTrue(tenantObj.get("useFirstFactorsFromStaticConfigIfEmpty").getAsBoolean());
+                    assertEquals(1, tenantObj.get("emailPassword").getAsJsonObject().entrySet().size());
                     assertTrue(tenantObj.get("emailPassword").getAsJsonObject().get("enabled").getAsBoolean());
+                    assertEquals(3, tenantObj.get("thirdParty").getAsJsonObject().entrySet().size());
                     assertTrue(tenantObj.get("thirdParty").getAsJsonObject().get("enabled").getAsBoolean());
+                    assertTrue(tenantObj.get("thirdParty").getAsJsonObject().get(
+                            "useThirdPartyProvidersFromStaticConfigIfEmpty").getAsBoolean());
+                    assertEquals(1, tenantObj.get("passwordless").getAsJsonObject().entrySet().size());
                     assertTrue(tenantObj.get("passwordless").getAsJsonObject().get("enabled").getAsBoolean());
                     assertEquals(coreConfig, tenantObj.get("coreConfig").getAsJsonObject());
                 }
@@ -190,7 +207,7 @@ public class TestApp {
         coreConfig.addProperty("email_verification_token_lifetime", 2000);
 
         // Create
-        TestMultitenancyAPIHelper.createApp(
+        createApp(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
                 "a1", true, true, true,
@@ -201,13 +218,13 @@ public class TestApp {
         coreConfig.remove("email_verification_token_lifetime"); // for verification
 
         // Update
-        TestMultitenancyAPIHelper.createApp(
+        createApp(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
                 "a1", true, true, true,
                 newConfig);
 
-        JsonObject result = TestMultitenancyAPIHelper.listApps(new TenantIdentifier(null, null, null), process.getProcess());
+        JsonObject result = listApps(new TenantIdentifier(null, null, null), process.getProcess());
         assertTrue(result.has("apps"));
 
         boolean found = false;
@@ -242,25 +259,25 @@ public class TestApp {
         StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
                 .modifyConfigToAddANewUserPoolForTesting(coreConfig, 1);
 
-        TestMultitenancyAPIHelper.createApp(
+        createApp(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
                 "a1", true, true, true,
                 coreConfig);
 
-        JsonObject result = TestMultitenancyAPIHelper.listApps(new TenantIdentifier(null, null, null), process.getProcess());
+        JsonObject result = listApps(new TenantIdentifier(null, null, null), process.getProcess());
         assertTrue(result.has("apps"));
         assertEquals(2, result.get("apps").getAsJsonArray().size());
 
-        JsonObject response = TestMultitenancyAPIHelper.deleteApp(new TenantIdentifier(null, null, null), "a1",
+        JsonObject response = deleteApp(new TenantIdentifier(null, null, null), "a1",
                 process.getProcess());
         assertTrue(response.get("didExist").getAsBoolean());
 
-        result = TestMultitenancyAPIHelper.listApps(new TenantIdentifier(null, null, null), process.getProcess());
+        result = listApps(new TenantIdentifier(null, null, null), process.getProcess());
         assertTrue(result.has("apps"));
         assertEquals(1, result.get("apps").getAsJsonArray().size());
 
-        response = TestMultitenancyAPIHelper.deleteApp(new TenantIdentifier(null, null, null), "a1",
+        response = deleteApp(new TenantIdentifier(null, null, null), "a1",
                 process.getProcess());
         assertFalse(response.get("didExist").getAsBoolean());
     }
@@ -271,19 +288,19 @@ public class TestApp {
             return;
         }
 
-        TestMultitenancyAPIHelper.createApp(
+        createApp(
                 process.getProcess(),
                 new TenantIdentifier("localhost", null, null),
                 "a1", true, true, true,
                 new JsonObject());
 
-        TestMultitenancyAPIHelper.createApp(
+        createApp(
                 process.getProcess(),
                 new TenantIdentifier("127.0.0.1", null, null),
                 "a2", true, true, true,
                 new JsonObject());
 
-        JsonObject result = TestMultitenancyAPIHelper.listApps(new TenantIdentifier(null, null, null), process.getProcess());
+        JsonObject result = listApps(new TenantIdentifier(null, null, null), process.getProcess());
         assertTrue(result.has("apps"));
         assertEquals(3, result.get("apps").getAsJsonArray().size());
 
@@ -341,7 +358,7 @@ public class TestApp {
         }
 
         for (int i = 0; i < valueForCreate.length; i++) {
-            TestMultitenancyAPIHelper.createApp(
+            createApp(
                     process.getProcess(),
                     new TenantIdentifier(null, null, null),
                     valueForCreate[i], true, true, true,
@@ -364,7 +381,7 @@ public class TestApp {
         String[] valueForCreate = new String[]{"a_b", "1", "1a", "appid-hello"};
         for (int i = 0; i < valueForCreate.length; i++) {
             try {
-                TestMultitenancyAPIHelper.createApp(
+                createApp(
                         process.getProcess(),
                         new TenantIdentifier(null, null, null),
                         valueForCreate[i], true, true, true,
@@ -391,7 +408,7 @@ public class TestApp {
                 .modifyConfigToAddANewUserPoolForTesting(coreConfig, 1000); // This db should not exist
 
         try {
-            TestMultitenancyAPIHelper.createApp(
+            createApp(
                     process.getProcess(),
                     new TenantIdentifier(null, null, null),
                     "a1", true, true, true,
@@ -406,7 +423,7 @@ public class TestApp {
         assertNotNull(errorStorage);
 
         {
-            JsonObject result = TestMultitenancyAPIHelper.listApps(new TenantIdentifier(null, null, null),
+            JsonObject result = listApps(new TenantIdentifier(null, null, null),
                     process.getProcess());
             assertTrue(result.has("apps"));
 
@@ -444,14 +461,14 @@ public class TestApp {
         StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
                 .modifyConfigToAddANewUserPoolForTesting(coreConfig, 1); // This db should exist
 
-        TestMultitenancyAPIHelper.createApp(
+        createApp(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
                 "a1", true, true, true,
                 coreConfig);
 
         {
-            JsonObject result = TestMultitenancyAPIHelper.listApps(new TenantIdentifier(null, null, null),
+            JsonObject result = listApps(new TenantIdentifier(null, null, null),
                     process.getProcess());
             assertTrue(result.has("apps"));
 
@@ -495,7 +512,7 @@ public class TestApp {
         JsonObject config = new JsonObject();
         StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
 
-        JsonObject response = TestMultitenancyAPIHelper.createApp(
+        JsonObject response = createApp(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
                 "a1", null, null, null,
@@ -503,240 +520,11 @@ public class TestApp {
 
         assertTrue(response.get("createdNew").getAsBoolean());
 
-        JsonObject tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, "a1", null),
+        JsonObject tenant = getTenant(new TenantIdentifier(null, "a1", null),
                 process.getProcess());
         assertTrue(tenant.get("emailPassword").getAsJsonObject().get("enabled").getAsBoolean());
         assertTrue(tenant.get("thirdParty").getAsJsonObject().get("enabled").getAsBoolean());
         assertTrue(tenant.get("passwordless").getAsJsonObject().get("enabled").getAsBoolean());
-    }
-
-    @Test
-    public void testFirstFactorsArray() throws Exception {
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            return;
-        }
-
-        JsonObject config = new JsonObject();
-        StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
-
-        JsonObject response = TestMultitenancyAPIHelper.createApp(
-                process.getProcess(),
-                new TenantIdentifier(null, null, null),
-                "a1", null, null, null,
-                config);
-
-        assertTrue(response.get("createdNew").getAsBoolean());
-
-        JsonObject tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, "a1", null),
-                process.getProcess(), SemVer.v5_0);
-        assertNull(tenant.get("firstFactors"));
-
-        // builtin firstFactor
-        String[] firstFactors = new String[]{"otp-phone"};
-        response = TestMultitenancyAPIHelper.createApp(
-                process.getProcess(),
-                new TenantIdentifier(null, null, null),
-                "a1", null, null, null,
-                true, new String[]{"otp-phone"}, false, null,
-                config, SemVer.v5_0);
-        assertFalse(response.get("createdNew").getAsBoolean());
-
-        tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, "a1", null),
-                process.getProcess(), SemVer.v5_0);
-        assertTrue(tenant.get("firstFactors").isJsonArray());
-        assertEquals(1, tenant.get("firstFactors").getAsJsonArray().size());
-        assertEquals(firstFactors, new Gson().fromJson(tenant.get("firstFactors").getAsJsonArray(), String[].class));
-
-        response = TestMultitenancyAPIHelper.createApp(
-                process.getProcess(),
-                new TenantIdentifier(null, null, null),
-                "a1", null, null, null,
-                false, null, false, null,
-                config, SemVer.v5_0);
-        assertFalse(response.get("createdNew").getAsBoolean());
-
-        tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, "a1", null),
-                process.getProcess(), SemVer.v5_0);
-        assertTrue(tenant.get("firstFactors").isJsonArray());
-        assertEquals(1, tenant.get("firstFactors").getAsJsonArray().size());
-        assertEquals(firstFactors, new Gson().fromJson(tenant.get("firstFactors").getAsJsonArray(), String[].class));
-
-        // custom factors
-        firstFactors = new String[]{"biometric"};
-        response = TestMultitenancyAPIHelper.createApp(
-                process.getProcess(),
-                new TenantIdentifier(null, null, null),
-                "a1", null, null, null,
-                true, firstFactors, false, null,
-                config, SemVer.v5_0);
-        assertFalse(response.get("createdNew").getAsBoolean());
-
-        tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, "a1", null),
-                process.getProcess(), SemVer.v5_0);
-        assertTrue(tenant.get("firstFactors").isJsonArray());
-        assertEquals(1, tenant.get("firstFactors").getAsJsonArray().size());
-        assertEquals(firstFactors, new Gson().fromJson(tenant.get("firstFactors").getAsJsonArray(), String[].class));
-
-        // test both
-        firstFactors = new String[]{"otp-phone", "emailpassword", "biometric", "custom"};
-        response = TestMultitenancyAPIHelper.createApp(
-                process.getProcess(),
-                new TenantIdentifier(null, null, null),
-                "a1", null, null, null,
-                true, firstFactors, false, null,
-                config, SemVer.v5_0);
-        assertFalse(response.get("createdNew").getAsBoolean());
-
-        tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, "a1", null),
-                process.getProcess(), SemVer.v5_0);
-        assertTrue(tenant.get("firstFactors").isJsonArray());
-        assertEquals(4, tenant.get("firstFactors").getAsJsonArray().size());
-        assertEquals(Set.of(firstFactors), Set.of(new Gson().fromJson(tenant.get("firstFactors").getAsJsonArray(), String[].class)));
-
-        response = TestMultitenancyAPIHelper.createApp(
-                process.getProcess(),
-                new TenantIdentifier(null, null, null),
-                "a1", null, null, null,
-                true, null, false, null,
-                config, SemVer.v5_0);
-        assertFalse(response.get("createdNew").getAsBoolean());
-
-        tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, "a1", null),
-                process.getProcess(), SemVer.v5_0);
-        assertNull(tenant.get("firstFactors"));
-    }
-
-    @Test
-    public void testRequiredSecondaryFactorsArray() throws Exception {
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            return;
-        }
-
-        JsonObject config = new JsonObject();
-        StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
-
-        JsonObject response = TestMultitenancyAPIHelper.createApp(
-                process.getProcess(),
-                new TenantIdentifier(null, null, null),
-                "a1", null, null, null,
-                config);
-
-        assertTrue(response.get("createdNew").getAsBoolean());
-
-        JsonObject tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, "a1", null),
-                process.getProcess(), SemVer.v5_0);
-        assertNull(tenant.get("requiredSecondaryFactors"));
-
-        // builtin firstFactor
-        String[] requiredSecondaryFactors = new String[]{"otp-phone"};
-        response = TestMultitenancyAPIHelper.createApp(
-                process.getProcess(),
-                new TenantIdentifier(null, null, null),
-                "a1", null, null, null,
-                false, null, true, new String[]{"otp-phone"},
-                config, SemVer.v5_0);
-        assertFalse(response.get("createdNew").getAsBoolean());
-
-        tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, "a1", null),
-                process.getProcess(), SemVer.v5_0);
-        assertTrue(tenant.get("requiredSecondaryFactors").isJsonArray());
-        assertEquals(1, tenant.get("requiredSecondaryFactors").getAsJsonArray().size());
-        assertEquals(requiredSecondaryFactors, new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class));
-
-        response = TestMultitenancyAPIHelper.createApp(
-                process.getProcess(),
-                new TenantIdentifier(null, null, null),
-                "a1", null, null, null,
-                false, null, false, null,
-                config, SemVer.v5_0);
-        assertFalse(response.get("createdNew").getAsBoolean());
-
-        tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, "a1", null),
-                process.getProcess(), SemVer.v5_0);
-        assertTrue(tenant.get("requiredSecondaryFactors").isJsonArray());
-        assertEquals(1, tenant.get("requiredSecondaryFactors").getAsJsonArray().size());
-        assertEquals(requiredSecondaryFactors, new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class));
-
-        // custom factors
-        requiredSecondaryFactors = new String[]{"biometric"};
-        response = TestMultitenancyAPIHelper.createApp(
-                process.getProcess(),
-                new TenantIdentifier(null, null, null),
-                "a1", null, null, null,
-                false, null, true, requiredSecondaryFactors,
-                config, SemVer.v5_0);
-        assertFalse(response.get("createdNew").getAsBoolean());
-
-        tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, "a1", null),
-                process.getProcess(), SemVer.v5_0);
-        assertTrue(tenant.get("requiredSecondaryFactors").isJsonArray());
-        assertEquals(1, tenant.get("requiredSecondaryFactors").getAsJsonArray().size());
-        assertEquals(requiredSecondaryFactors, new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class));
-
-        // test both
-        requiredSecondaryFactors = new String[]{"otp-phone", "emailpassword", "biometric", "custom"};
-        response = TestMultitenancyAPIHelper.createApp(
-                process.getProcess(),
-                new TenantIdentifier(null, null, null),
-                "a1", null, null, null,
-                false, null, true, requiredSecondaryFactors,
-                config, SemVer.v5_0);
-        assertFalse(response.get("createdNew").getAsBoolean());
-
-        tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, "a1", null),
-                process.getProcess(), SemVer.v5_0);
-        assertTrue(tenant.get("requiredSecondaryFactors").isJsonArray());
-        assertEquals(4, tenant.get("requiredSecondaryFactors").getAsJsonArray().size());
-        assertEquals(Set.of(requiredSecondaryFactors), Set.of(new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class)));
-
-        response = TestMultitenancyAPIHelper.createApp(
-                process.getProcess(),
-                new TenantIdentifier(null, null, null),
-                "a1", null, null, null,
-                false, null, true, null,
-                config, SemVer.v5_0);
-        assertFalse(response.get("createdNew").getAsBoolean());
-
-        tenant = TestMultitenancyAPIHelper.getTenant(new TenantIdentifier(null, "a1", null),
-                process.getProcess(), SemVer.v5_0);
-        assertNull(tenant.get("requiredSecondaryFactors"));
-    }
-
-    @Test
-    public void testDuplicateValuesInFirstFactorsAndRequiredSecondaryFactors() throws Exception {
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            return;
-        }
-
-        JsonObject config = new JsonObject();
-        StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
-
-        String[] factors = new String[]{"duplicate", "emailpassword", "duplicate", "custom"};
-        try {
-            TestMultitenancyAPIHelper.createApp(
-                    process.getProcess(),
-                    new TenantIdentifier(null, null, null),
-                    "a1", null, null, null,
-                    true, factors, false, null,
-                    config, SemVer.v5_0);
-            fail();
-        } catch (HttpResponseException e) {
-            assertEquals(400, e.statusCode);
-            assertEquals("Http error. Status Code: 400. Message: firstFactors input should not contain duplicate values", e.getMessage());
-        }
-
-        try {
-            TestMultitenancyAPIHelper.createApp(
-                    process.getProcess(),
-                    new TenantIdentifier(null, null, null),
-                    "a1", null, null, null,
-                    false, null, true, factors,
-                    config, SemVer.v5_0);
-            fail();
-        } catch (HttpResponseException e) {
-            assertEquals(400, e.statusCode);
-            assertEquals("Http error. Status Code: 400. Message: requiredSecondaryFactors input should not contain duplicate values", e.getMessage());
-        }
     }
 
     @Test
@@ -778,8 +566,6 @@ public class TestApp {
                 "Http error. Status Code: 400. Message: Invalid core config: 'mysql_connection_pool_size' must be of type int", // mysql_connection_pool_size
         };
 
-        System.out.println(StorageLayer.getStorage(process.getProcess()).getClass().getCanonicalName());
-
         for (int i = 0; i < properties.length; i++) {
             try {
                 System.out.println("Test case " + i);
@@ -798,7 +584,7 @@ public class TestApp {
                 }
                 StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
 
-                JsonObject response = TestMultitenancyAPIHelper.createApp(
+                JsonObject response = createApp(
                         process.getProcess(),
                         new TenantIdentifier(null, null, null),
                         "a1", null, null, null,
@@ -816,6 +602,272 @@ public class TestApp {
     }
 
     @Test
+    public void testInvalidCoreConfig() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+        CoreConfigTestContent.getInstance(process.getProcess()).setKeyValue(CoreConfigTestContent.VALIDITY_TESTING,
+                true);
+
+        {
+            JsonObject config = new JsonObject();
+            config.addProperty("access_token_validity", 3600);
+            config.addProperty("refresh_token_validity", 3);
+            StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
+
+            try {
+                JsonObject response = createApp(
+                        process.getProcess(),
+                        new TenantIdentifier(null, null, null),
+                        "a1", null, null, null,
+                        config);
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(400, e.statusCode);
+                assertEquals("Http error. Status Code: 400. Message: Invalid core config: 'refresh_token_validity' must be strictly greater than 'access_token_validity'.", e.getMessage());
+            }
+        }
+    }
+
+    @Test
+    public void testFirstFactorsArray() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        JsonObject config = new JsonObject();
+        StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
+
+        JsonObject response = createApp(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "a1", null, null, null,
+                config);
+
+        assertTrue(response.get("createdNew").getAsBoolean());
+
+        JsonObject tenant = getTenant(new TenantIdentifier(null, "a1", null),
+                process.getProcess());
+        assertNull(tenant.get("firstFactors"));
+
+        // builtin firstFactor
+        String[] firstFactors = new String[]{"otp-phone"};
+        response = createApp(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "a1", null, null, null,
+                true, new String[]{"otp-phone"}, false, null,
+                config);
+        assertFalse(response.get("createdNew").getAsBoolean());
+
+        tenant = getTenant(new TenantIdentifier(null, "a1", null),
+                process.getProcess());
+        assertTrue(tenant.get("firstFactors").isJsonArray());
+        assertEquals(1, tenant.get("firstFactors").getAsJsonArray().size());
+        assertEquals(firstFactors, new Gson().fromJson(tenant.get("firstFactors").getAsJsonArray(), String[].class));
+
+        response = createApp(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "a1", null, null, null,
+                false, null, false, null,
+                config);
+        assertFalse(response.get("createdNew").getAsBoolean());
+
+        tenant = getTenant(new TenantIdentifier(null, "a1", null),
+                process.getProcess());
+        assertEquals(8, tenant.entrySet().size());
+        assertTrue(tenant.get("firstFactors").isJsonArray());
+        assertEquals(1, tenant.get("firstFactors").getAsJsonArray().size());
+        assertEquals(firstFactors, new Gson().fromJson(tenant.get("firstFactors").getAsJsonArray(), String[].class));
+
+        // custom factors
+        firstFactors = new String[]{"biometric"};
+        response = createApp(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "a1", null, null, null,
+                true, firstFactors, false, null,
+                config);
+        assertFalse(response.get("createdNew").getAsBoolean());
+
+        tenant = getTenant(new TenantIdentifier(null, "a1", null),
+                process.getProcess());
+        assertEquals(8, tenant.entrySet().size());
+        assertTrue(tenant.get("firstFactors").isJsonArray());
+        assertEquals(1, tenant.get("firstFactors").getAsJsonArray().size());
+        assertEquals(firstFactors, new Gson().fromJson(tenant.get("firstFactors").getAsJsonArray(), String[].class));
+
+        // test both
+        firstFactors = new String[]{"otp-phone", "emailpassword", "biometric", "custom"};
+        response = createApp(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "a1", null, null, null,
+                true, firstFactors, false, null,
+                config);
+        assertFalse(response.get("createdNew").getAsBoolean());
+
+        tenant = getTenant(new TenantIdentifier(null, "a1", null),
+                process.getProcess());
+        assertEquals(8, tenant.entrySet().size());
+        assertTrue(tenant.get("firstFactors").isJsonArray());
+        assertEquals(4, tenant.get("firstFactors").getAsJsonArray().size());
+        assertEquals(Set.of(firstFactors), Set.of(new Gson().fromJson(tenant.get("firstFactors").getAsJsonArray(), String[].class)));
+
+        response = createApp(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "a1", null, null, null,
+                true, null, false, null,
+                config);
+        assertFalse(response.get("createdNew").getAsBoolean());
+
+        tenant = getTenant(new TenantIdentifier(null, "a1", null),
+                process.getProcess());
+        assertEquals(7, tenant.entrySet().size());
+        assertNull(tenant.get("firstFactors"));
+    }
+
+    @Test
+    public void testRequiredSecondaryFactorsArray() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        JsonObject config = new JsonObject();
+        StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
+
+        JsonObject response = createApp(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "a1", null, null, null,
+                config);
+
+        assertTrue(response.get("createdNew").getAsBoolean());
+
+        JsonObject tenant = getTenant(new TenantIdentifier(null, "a1", null),
+                process.getProcess());
+        assertNull(tenant.get("requiredSecondaryFactors"));
+
+        // builtin firstFactor
+        String[] requiredSecondaryFactors = new String[]{"otp-phone"};
+        response = createApp(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "a1", null, null, null,
+                false, null, true, new String[]{"otp-phone"},
+                config);
+        assertFalse(response.get("createdNew").getAsBoolean());
+
+        tenant = getTenant(new TenantIdentifier(null, "a1", null),
+                process.getProcess());
+        assertEquals(8, tenant.entrySet().size());
+        assertTrue(tenant.get("requiredSecondaryFactors").isJsonArray());
+        assertEquals(1, tenant.get("requiredSecondaryFactors").getAsJsonArray().size());
+        assertEquals(requiredSecondaryFactors, new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class));
+
+        response = createApp(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "a1", null, null, null,
+                false, null, false, null,
+                config);
+        assertFalse(response.get("createdNew").getAsBoolean());
+
+        tenant = getTenant(new TenantIdentifier(null, "a1", null),
+                process.getProcess());
+        assertEquals(8, tenant.entrySet().size());
+        assertTrue(tenant.get("requiredSecondaryFactors").isJsonArray());
+        assertEquals(1, tenant.get("requiredSecondaryFactors").getAsJsonArray().size());
+        assertEquals(requiredSecondaryFactors, new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class));
+
+        // custom factors
+        requiredSecondaryFactors = new String[]{"biometric"};
+        response = createApp(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "a1", null, null, null,
+                false, null, true, requiredSecondaryFactors,
+                config);
+        assertFalse(response.get("createdNew").getAsBoolean());
+
+        tenant = getTenant(new TenantIdentifier(null, "a1", null),
+                process.getProcess());
+        assertEquals(8, tenant.entrySet().size());
+        assertTrue(tenant.get("requiredSecondaryFactors").isJsonArray());
+        assertEquals(1, tenant.get("requiredSecondaryFactors").getAsJsonArray().size());
+        assertEquals(requiredSecondaryFactors, new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class));
+
+        // test both
+        requiredSecondaryFactors = new String[]{"otp-phone", "emailpassword", "biometric", "custom"};
+        response = createApp(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "a1", null, null, null,
+                false, null, true, requiredSecondaryFactors,
+                config);
+        assertFalse(response.get("createdNew").getAsBoolean());
+
+        tenant = getTenant(new TenantIdentifier(null, "a1", null),
+                process.getProcess());
+        assertEquals(8, tenant.entrySet().size());
+        assertTrue(tenant.get("requiredSecondaryFactors").isJsonArray());
+        assertEquals(4, tenant.get("requiredSecondaryFactors").getAsJsonArray().size());
+        assertEquals(Set.of(requiredSecondaryFactors), Set.of(new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class)));
+
+        response = createApp(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "a1", null, null, null,
+                false, null, true, null,
+                config);
+        assertFalse(response.get("createdNew").getAsBoolean());
+
+        tenant = getTenant(new TenantIdentifier(null, "a1", null),
+                process.getProcess());
+        assertEquals(7, tenant.entrySet().size());
+        assertNull(tenant.get("requiredSecondaryFactors"));
+    }
+
+    @Test
+    public void testDuplicateValuesInFirstFactorsAndRequiredSecondaryFactors() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        JsonObject config = new JsonObject();
+        StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
+
+        String[] factors = new String[]{"duplicate", "emailpassword", "duplicate", "custom"};
+        try {
+            createApp(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    "a1", null, null, null,
+                    true, factors, false, null,
+                    config);
+            fail();
+        } catch (HttpResponseException e) {
+            assertEquals(400, e.statusCode);
+            assertEquals("Http error. Status Code: 400. Message: firstFactors input should not contain duplicate values", e.getMessage());
+        }
+
+        try {
+            createApp(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    "a1", null, null, null,
+                    false, null, true, factors,
+                    config);
+            fail();
+        } catch (HttpResponseException e) {
+            assertEquals(400, e.statusCode);
+            assertEquals("Http error. Status Code: 400. Message: requiredSecondaryFactors input should not contain duplicate values", e.getMessage());
+        }
+    }
+
+    @Test
     public void testFirstFactorArrayValueValidationBasedOnDisabledRecipe() throws Exception {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
@@ -824,21 +876,21 @@ public class TestApp {
         JsonObject config = new JsonObject();
         StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
 
-        TestMultitenancyAPIHelper.createApp(
+        createApp(
             process.getProcess(),
             new TenantIdentifier(null, null, null),
             "a1", true, true, true,
             false, null, false, null,
-            config, SemVer.v5_0);
+            config);
 
         {
             try {
-                TestMultitenancyAPIHelper.createApp(
+                createApp(
                         process.getProcess(),
                         new TenantIdentifier(null, null, null),
                         "a1", false, null, null,
                         true, new String[]{}, false, null,
-                        config, SemVer.v5_0);
+                        config);
                 fail();
             } catch (HttpResponseException e) {
                 assertEquals(400, e.statusCode);
@@ -851,12 +903,12 @@ public class TestApp {
         {
             String[] factors = new String[]{"emailpassword", "custom"};
             try {
-                TestMultitenancyAPIHelper.createApp(
+                createApp(
                         process.getProcess(),
                         new TenantIdentifier(null, null, null),
                         "a1", false, null, null,
                         true, factors, false, null,
-                        config, SemVer.v5_0);
+                        config);
                 fail();
             } catch (HttpResponseException e) {
                 assertEquals(400, e.statusCode);
@@ -864,21 +916,21 @@ public class TestApp {
             }
 
             {
-                TestMultitenancyAPIHelper.createApp(
+                createApp(
                         process.getProcess(),
                         new TenantIdentifier(null, null, null),
                         "a1", false, null, null,
                         false, null, false, null,
-                        config, SemVer.v5_0);
+                        config);
             }
 
             try {
-                TestMultitenancyAPIHelper.createApp(
+                createApp(
                         process.getProcess(),
                         new TenantIdentifier(null, null, null),
-                        "a1", null, null, null,
+                        "a1", false, null, null,
                         true, factors, false, null,
-                        config, SemVer.v5_0);
+                        config);
                 fail();
             } catch (HttpResponseException e) {
                 assertEquals(400, e.statusCode);
@@ -889,12 +941,12 @@ public class TestApp {
         {
             String[] factors = new String[]{"otp-email", "custom"};
             try {
-                TestMultitenancyAPIHelper.createApp(
+                createApp(
                         process.getProcess(),
                         new TenantIdentifier(null, null, null),
                         "a1", null, null, false,
                         true, factors, false, null,
-                        config, SemVer.v5_0);
+                        config);
                 fail();
             } catch (HttpResponseException e) {
                 assertEquals(400, e.statusCode);
@@ -902,21 +954,21 @@ public class TestApp {
             }
 
             {
-                TestMultitenancyAPIHelper.createApp(
+                createApp(
                         process.getProcess(),
                         new TenantIdentifier(null, null, null),
                         "a1", null, null, false,
                         false, null, false, null,
-                        config, SemVer.v5_0);
+                        config);
             }
 
             try {
-                TestMultitenancyAPIHelper.createApp(
+                createApp(
                         process.getProcess(),
                         new TenantIdentifier(null, null, null),
-                        "a1", null, null, null,
+                        "a1", null, null, false,
                         true, factors, false, null,
-                        config, SemVer.v5_0);
+                        config);
                 fail();
             } catch (HttpResponseException e) {
                 assertEquals(400, e.statusCode);
@@ -927,12 +979,12 @@ public class TestApp {
         {
             String[] factors = new String[]{"thirdparty", "custom"};
             try {
-                TestMultitenancyAPIHelper.createApp(
+                createApp(
                         process.getProcess(),
                         new TenantIdentifier(null, null, null),
                         "a1", null, false, null,
                         true, factors, false, null,
-                        config, SemVer.v5_0);
+                        config);
                 fail();
             } catch (HttpResponseException e) {
                 assertEquals(400, e.statusCode);
@@ -940,21 +992,21 @@ public class TestApp {
             }
 
             {
-                TestMultitenancyAPIHelper.createApp(
+                createApp(
                         process.getProcess(),
                         new TenantIdentifier(null, null, null),
                         "a1", null, false, null,
                         false, null, false, null,
-                        config, SemVer.v5_0);
+                        config);
             }
 
             try {
-                TestMultitenancyAPIHelper.createApp(
+                createApp(
                         process.getProcess(),
                         new TenantIdentifier(null, null, null),
-                        "a1", null, null, null,
+                        "a1", null, false, null,
                         true, factors, false, null,
-                        config, SemVer.v5_0);
+                        config);
                 fail();
             } catch (HttpResponseException e) {
                 assertEquals(400, e.statusCode);
@@ -973,21 +1025,21 @@ public class TestApp {
         JsonObject config = new JsonObject();
         StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
 
-        TestMultitenancyAPIHelper.createApp(
+        createApp(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
                 "a1", true, true, true,
                 false, null, false, null,
-                config, SemVer.v5_0);
+                config);
 
         {
             try {
-                TestMultitenancyAPIHelper.createApp(
+                createApp(
                         process.getProcess(),
                         new TenantIdentifier(null, null, null),
                         "a1", false, null, null,
                         false, null, true, new String[]{},
-                        config, SemVer.v5_0);
+                        config);
                 fail();
             } catch (HttpResponseException e) {
                 assertEquals(400, e.statusCode);
@@ -1000,12 +1052,12 @@ public class TestApp {
         {
             String[] factors = new String[]{"emailpassword", "custom"};
             try {
-                TestMultitenancyAPIHelper.createApp(
+                createApp(
                         process.getProcess(),
                         new TenantIdentifier(null, null, null),
                         "a1", false, null, null,
                         false, null, true, factors,
-                        config, SemVer.v5_0);
+                        config);
                 fail();
             } catch (HttpResponseException e) {
                 assertEquals(400, e.statusCode);
@@ -1013,21 +1065,21 @@ public class TestApp {
             }
 
             {
-                TestMultitenancyAPIHelper.createApp(
+                createApp(
                         process.getProcess(),
                         new TenantIdentifier(null, null, null),
                         "a1", false, null, null,
                         false, null, false, null,
-                        config, SemVer.v5_0);
+                        config);
             }
 
             try {
-                TestMultitenancyAPIHelper.createApp(
+                createApp(
                         process.getProcess(),
                         new TenantIdentifier(null, null, null),
                         "a1", null, null, null,
                         false, null, true, factors,
-                        config, SemVer.v5_0);
+                        config);
                 fail();
             } catch (HttpResponseException e) {
                 assertEquals(400, e.statusCode);
@@ -1038,12 +1090,12 @@ public class TestApp {
         {
             String[] factors = new String[]{"otp-email", "custom"};
             try {
-                TestMultitenancyAPIHelper.createApp(
+                createApp(
                         process.getProcess(),
                         new TenantIdentifier(null, null, null),
                         "a1", null, null, false,
                         false, null, true, factors,
-                        config, SemVer.v5_0);
+                        config);
                 fail();
             } catch (HttpResponseException e) {
                 assertEquals(400, e.statusCode);
@@ -1051,21 +1103,21 @@ public class TestApp {
             }
 
             {
-                TestMultitenancyAPIHelper.createApp(
+                createApp(
                         process.getProcess(),
                         new TenantIdentifier(null, null, null),
                         "a1", null, null, false,
                         false, null, false, null,
-                        config, SemVer.v5_0);
+                        config);
             }
 
             try {
-                TestMultitenancyAPIHelper.createApp(
+                createApp(
                         process.getProcess(),
                         new TenantIdentifier(null, null, null),
                         "a1", null, null, null,
                         false, null, true, factors,
-                        config, SemVer.v5_0);
+                        config);
                 fail();
             } catch (HttpResponseException e) {
                 assertEquals(400, e.statusCode);
@@ -1076,12 +1128,12 @@ public class TestApp {
         {
             String[] factors = new String[]{"thirdparty", "custom"};
             try {
-                TestMultitenancyAPIHelper.createApp(
+                createApp(
                         process.getProcess(),
                         new TenantIdentifier(null, null, null),
                         "a1", null, false, null,
                         false, null, true, factors,
-                        config, SemVer.v5_0);
+                        config);
                 fail();
             } catch (HttpResponseException e) {
                 assertEquals(400, e.statusCode);
@@ -1089,21 +1141,21 @@ public class TestApp {
             }
 
             {
-                TestMultitenancyAPIHelper.createApp(
+                createApp(
                         process.getProcess(),
                         new TenantIdentifier(null, null, null),
                         "a1", null, false, null,
                         false, null, false, null,
-                        config, SemVer.v5_0);
+                        config);
             }
 
             try {
-                TestMultitenancyAPIHelper.createApp(
+                createApp(
                         process.getProcess(),
                         new TenantIdentifier(null, null, null),
                         "a1", null, null, null,
                         false, null, true, factors,
-                        config, SemVer.v5_0);
+                        config);
                 fail();
             } catch (HttpResponseException e) {
                 assertEquals(400, e.statusCode);
@@ -1112,30 +1164,81 @@ public class TestApp {
         }
     }
 
-    public void testInvalidCoreConfig() throws Exception {
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            return;
-        }
-        CoreConfigTestContent.getInstance(process.getProcess()).setKeyValue(CoreConfigTestContent.VALIDITY_TESTING,
-                true);
+    private static JsonObject createApp(Main main, TenantIdentifier sourceTenant, String appId, Boolean emailPasswordEnabled,
+                                        Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
+                                        JsonObject coreConfig) throws HttpResponseException, IOException {
+        return createApp(main, sourceTenant, appId, emailPasswordEnabled, thirdPartyEnabled, passwordlessEnabled,
+                false, null, false, null, coreConfig);
+    }
 
-        {
-            JsonObject config = new JsonObject();
-            config.addProperty("access_token_validity", 3600);
-            config.addProperty("refresh_token_validity", 3);
-            StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
-
-            try {
-                JsonObject response = TestMultitenancyAPIHelper.createApp(
-                        process.getProcess(),
-                        new TenantIdentifier(null, null, null),
-                        "a1", null, null, null,
-                        config);
-                fail();
-            } catch (HttpResponseException e) {
-                assertEquals(400, e.statusCode);
-                assertEquals("Http error. Status Code: 400. Message: Invalid core config: 'refresh_token_validity' must be strictly greater than 'access_token_validity'.", e.getMessage());
-            }
+    private static JsonObject createApp(Main main, TenantIdentifier sourceTenant, String appId, Boolean emailPasswordEnabled,
+                                       Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
+                                        boolean setFirstFactors, String[] firstFactors,
+                                        boolean setRequiredSecondaryFactors, String[] requiredSecondaryFactors,
+                                        JsonObject coreConfig) throws HttpResponseException, IOException {
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("appId", appId);
+        if (emailPasswordEnabled != null) {
+            requestBody.addProperty("emailPasswordEnabled", emailPasswordEnabled);
         }
+        if (thirdPartyEnabled != null) {
+            requestBody.addProperty("thirdPartyEnabled", thirdPartyEnabled);
+        }
+        if (passwordlessEnabled != null) {
+            requestBody.addProperty("passwordlessEnabled", passwordlessEnabled);
+        }
+        if (setFirstFactors || firstFactors != null) {
+            requestBody.add("firstFactors", new Gson().toJsonTree(firstFactors));
+        }
+        if (setRequiredSecondaryFactors || requiredSecondaryFactors != null) {
+            requestBody.add("requiredSecondaryFactors", new Gson().toJsonTree(requiredSecondaryFactors));
+        }
+        requestBody.add("coreConfig", coreConfig);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/app"),
+                requestBody, 1000, 2500, null,
+                SemVer.v5_1.get(), "multitenancy");
+
+        assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
+        return response;
+    }
+
+    private static JsonObject getTenant(TenantIdentifier tenantIdentifier, Main main)
+            throws HttpResponseException, IOException {
+
+        JsonObject response = HttpRequestForTesting.sendGETRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/multitenancy/tenant"),
+                null, 1000, 1000, null,
+                SemVer.v5_1.get(), "multitenancy");
+
+        assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
+        return response;
+    }
+
+
+    private static JsonObject listApps(TenantIdentifier sourceTenant, Main main)
+            throws HttpResponseException, IOException {
+        JsonObject response = HttpRequestForTesting.sendGETRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/app/list"),
+                null, 1000, 1000000, null,
+                SemVer.v5_1.get(), "multitenancy");
+
+        assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
+        return response;
+    }
+
+    private static JsonObject deleteApp(TenantIdentifier sourceTenant, String appId, Main main)
+            throws HttpResponseException, IOException {
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("appId", appId);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/app/remove"),
+                requestBody, 1000, 2500, null,
+                SemVer.v5_1.get(), "multitenancy");
+
+        assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
+        return response;
     }
 }

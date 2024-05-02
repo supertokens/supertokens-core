@@ -29,7 +29,6 @@ import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.featureflag.exceptions.NoLicenseKeyFoundException;
 import io.supertokens.multitenancy.Multitenancy;
-import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -356,9 +355,9 @@ public class FeatureFlagTest {
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     new TenantIdentifier(null, null, "t1"),
                     new EmailPasswordConfig(true),
-                    new ThirdPartyConfig(true, null),
+                    new ThirdPartyConfig(true, true, null),
                     new PasswordlessConfig(true),
-                    null, null,
+                    null, true, null,
                     new JsonObject()
             ), false);
             Multitenancy.addUserIdToTenant(
@@ -420,9 +419,9 @@ public class FeatureFlagTest {
                     new TenantConfig(
                             tenantIdentifier,
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
+                            new ThirdPartyConfig(true, true, null),
                             new PasswordlessConfig(true),
-                            null, null,
+                            null, true, null,
                             new JsonObject()
                     )
             );
@@ -482,9 +481,9 @@ public class FeatureFlagTest {
                     new TenantConfig(
                             tenantIdentifier,
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
+                            new ThirdPartyConfig(true, true, null),
                             new PasswordlessConfig(true),
-                            null, null,
+                            null, true, null,
                             coreConfig
                     )
             );
@@ -509,12 +508,12 @@ public class FeatureFlagTest {
                         new TenantConfig(
                                 tenantIdentifier,
                                 new EmailPasswordConfig(true),
-                                new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[]{
+                                new ThirdPartyConfig(true, true, new ThirdPartyConfig.Provider[]{
                                         new ThirdPartyConfig.Provider("okta", "Okta", null, null, null, null, null,
                                                 null, null, null, null, null, null, null)
                                 }),
                                 new PasswordlessConfig(true),
-                                null, null,
+                                null, true, null,
                                 coreConfig
                         )
                 );
@@ -585,9 +584,9 @@ public class FeatureFlagTest {
                 new TenantConfig(
                         new TenantIdentifier(null, "a1", null),
                         new EmailPasswordConfig(true),
-                        new ThirdPartyConfig(true, null),
+                        new ThirdPartyConfig(true, true, null),
                         new PasswordlessConfig(true),
-                        null, null,
+                        null, true, null,
                         new JsonObject()
                 )
         );
@@ -604,9 +603,9 @@ public class FeatureFlagTest {
                     new TenantConfig(
                             tenantIdentifier,
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
+                            new ThirdPartyConfig(true, true, null),
                             new PasswordlessConfig(true),
-                            null, null,
+                            null, true, null,
                             coreConfig
                     )
             );
@@ -631,12 +630,12 @@ public class FeatureFlagTest {
                         new TenantConfig(
                                 tenantIdentifier,
                                 new EmailPasswordConfig(true),
-                                new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[]{
+                                new ThirdPartyConfig(true, true, new ThirdPartyConfig.Provider[]{
                                         new ThirdPartyConfig.Provider("okta", "Okta", null, null, null, null, null,
                                                 null, null, null, null, null, null, null)
                                 }),
                                 new PasswordlessConfig(true),
-                                null, null,
+                                null, true, null,
                                 coreConfig
                         )
                 );
@@ -716,9 +715,9 @@ public class FeatureFlagTest {
                     new TenantConfig(
                             new TenantIdentifier("127.0.0.1", null, null),
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
+                            new ThirdPartyConfig(true, true, null),
                             new PasswordlessConfig(true),
-                            null, null,
+                            null, true, null,
                             coreConfig
                     )
             );
@@ -736,9 +735,9 @@ public class FeatureFlagTest {
                     new TenantConfig(
                             tenantIdentifier,
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
+                            new ThirdPartyConfig(true, true, null),
                             new PasswordlessConfig(true),
-                            null, null,
+                            null, true, null,
                             coreConfig
                     )
             );
@@ -763,12 +762,12 @@ public class FeatureFlagTest {
                         new TenantConfig(
                                 tenantIdentifier,
                                 new EmailPasswordConfig(true),
-                                new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[]{
+                                new ThirdPartyConfig(true, true, new ThirdPartyConfig.Provider[]{
                                         new ThirdPartyConfig.Provider("okta", "Okta", null, null, null, null, null,
                                                 null, null, null, null, null, null, null)
                                 }),
                                 new PasswordlessConfig(true),
-                                null, null,
+                                null, true, null,
                                 coreConfig
                         )
                 );
@@ -839,9 +838,9 @@ public class FeatureFlagTest {
                     new TenantConfig(
                             tenantIdentifier,
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
+                            new ThirdPartyConfig(true, true, null),
                             new PasswordlessConfig(true),
-                            null, null,
+                            null, true, null,
                             new JsonObject()
                     )
             );

@@ -34,7 +34,6 @@ import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.ConfigFieldInfo;
 import io.supertokens.pluginInterface.LOG_LEVEL;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
-import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.utils.SemVer;
@@ -44,8 +43,6 @@ import jakarta.servlet.ServletException;
 import org.apache.catalina.filters.RemoteAddrFilter;
 import org.jetbrains.annotations.TestOnly;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -644,7 +641,7 @@ public class CoreConfig {
                     String[] allowedValues = field.getAnnotation(EnumProperty.class).value();
                     try {
                         String value = field.get(this) != null ? field.get(this).toString() : null;
-                        if (!Arrays.asList(allowedValues).contains(value)) {
+                        if (!Arrays.asList(Arrays.stream(allowedValues).map(str -> str.toLowerCase()).toArray()).contains(value.toLowerCase())) {
                             throw new InvalidConfigException(
                                     fieldId + " property is not set correctly. It must be one of "
                                             + Arrays.toString(allowedValues));
@@ -815,7 +812,7 @@ public class CoreConfig {
                 // or is annotated with ConfigYamlOnly, then skip
                 if ( !field.isAnnotationPresent(JsonProperty.class)
                         || field.isAnnotationPresent(ConfigYamlOnly.class)
-                        || fieldId == "core_config_version") {
+                        || fieldId.equals("core_config_version")) {
                     continue;
                 }
 
@@ -855,8 +852,8 @@ public class CoreConfig {
                 boolean isNullable = defaultValue == null;
 
                 result.add(new ConfigFieldInfo(
-                        key, valueType, value, description, isSaasProtected, isDifferentAcrossTenants,
-                        isConfigYamlOnly, possibleValues, isNullable, defaultValue, false, false));
+                        key, valueType, value, description, isDifferentAcrossTenants,
+                        possibleValues, isNullable, defaultValue, false, false));
 
             } catch (NoSuchFieldException e) {
                 continue;

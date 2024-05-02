@@ -153,7 +153,8 @@ public class ConfigGenerator {
             // generate_<fieldName> should be defined in the GenerateXYZ class, so that it returns
             // GeneratedValueAndExpectation as result.
             Method generatorMethod = generatorClass.getMethod("generate_" + field.getName(), paramTypes);
-            GeneratedValueAndExpectation generated = (GeneratedValueAndExpectation) generatorMethod.invoke(null, generateParams);
+            GeneratedValueAndExpectation generated = (GeneratedValueAndExpectation) generatorMethod.invoke(null,
+                    generateParams);
             constructorParamValues[i] = generated.value;
             expectations.put(field.getName(), generated.expectation);
         }

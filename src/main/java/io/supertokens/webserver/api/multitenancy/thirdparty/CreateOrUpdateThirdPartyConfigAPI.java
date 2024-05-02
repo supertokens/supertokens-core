@@ -112,9 +112,11 @@ public class CreateOrUpdateThirdPartyConfigAPI extends WebserverAPI {
                     tenantConfig.emailPasswordConfig,
                     new ThirdPartyConfig(
                             tenantConfig.thirdPartyConfig.enabled,
+                            false,
                             newProviders.toArray(new ThirdPartyConfig.Provider[0])),
                     tenantConfig.passwordlessConfig,
-                    tenantConfig.firstFactors, tenantConfig.requiredSecondaryFactors, tenantConfig.coreConfig
+                    tenantConfig.firstFactors, tenantConfig.useFirstFactorsFromStaticConfigIfEmpty,
+                    tenantConfig.requiredSecondaryFactors, tenantConfig.coreConfig
             );
 
             Multitenancy.addNewOrUpdateAppOrTenant(main, updatedConfig, shouldProtectProtectedConfig(req),

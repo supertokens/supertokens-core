@@ -155,9 +155,9 @@ public class ConfigTest {
 
         Config.loadAllTenantConfig(process.getProcess(), new TenantConfig[]{
                 new TenantConfig(new TenantIdentifier("abc", null, null), new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new ThirdPartyConfig(false, true, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        null, null, tenantConfig)}, new ArrayList<>());
+                        null, true, null, tenantConfig)}, new ArrayList<>());
 
         Assert.assertEquals(Config.getConfig(process.getProcess()).getRefreshTokenValidity(),
                 (long) 144001 * 60 * 1000);
@@ -207,9 +207,9 @@ public class ConfigTest {
         try {
             Config.loadAllTenantConfig(process.getProcess(), new TenantConfig[]{
                     new TenantConfig(new TenantIdentifier("abc", null, null), new EmailPasswordConfig(false),
-                            new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                            new ThirdPartyConfig(false, true, new ThirdPartyConfig.Provider[0]),
                             new PasswordlessConfig(false),
-                            null, null, tenantConfig)}, new ArrayList<>());
+                            null, true, null, tenantConfig)}, new ArrayList<>());
             fail();
         } catch (InvalidConfigException e) {
             assert (e.getMessage()
@@ -243,9 +243,9 @@ public class ConfigTest {
         try {
             Config.loadAllTenantConfig(process.getProcess(), new TenantConfig[]{
                     new TenantConfig(new TenantIdentifier(null, null, "abc"), new EmailPasswordConfig(false),
-                            new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                            new ThirdPartyConfig(false, true, new ThirdPartyConfig.Provider[0]),
                             new PasswordlessConfig(false),
-                            null, null, tenantConfig)}, new ArrayList<>());
+                            null, true, null, tenantConfig)}, new ArrayList<>());
             fail();
         } catch (InvalidConfigException e) {
             assert (e.getMessage()
@@ -293,9 +293,9 @@ public class ConfigTest {
 
             Config.loadAllTenantConfig(process.getProcess(), new TenantConfig[]{
                     new TenantConfig(new TenantIdentifier("abc", null, null), new EmailPasswordConfig(false),
-                            new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                            new ThirdPartyConfig(false, true, new ThirdPartyConfig.Provider[0]),
                             new PasswordlessConfig(false),
-                            null, null, tenantConfig)}, new ArrayList<>());
+                            null, true, null, tenantConfig)}, new ArrayList<>());
 
         }
 
@@ -342,9 +342,9 @@ public class ConfigTest {
             StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
                     .modifyConfigToAddANewUserPoolForTesting(tenantConfig, 2);
             tenants[0] = new TenantConfig(new TenantIdentifier("c1", null, null), new EmailPasswordConfig(false),
-                    new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                    new ThirdPartyConfig(false, true, new ThirdPartyConfig.Provider[0]),
                     new PasswordlessConfig(false),
-                    null, null, tenantConfig);
+                    null, true, null, tenantConfig);
         }
 
         {
@@ -353,27 +353,27 @@ public class ConfigTest {
                     .modifyConfigToAddANewUserPoolForTesting(tenantConfig, 2);
             tenantConfig.add("email_verification_token_lifetime", new JsonPrimitive(144003));
             tenants[1] = new TenantConfig(new TenantIdentifier("c1", null, "t1"), new EmailPasswordConfig(false),
-                    new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                    new ThirdPartyConfig(false, true, new ThirdPartyConfig.Provider[0]),
                     new PasswordlessConfig(false),
-                    null, null, tenantConfig);
+                    null, true, null, tenantConfig);
         }
 
         {
             JsonObject tenantConfig = new JsonObject();
             tenantConfig.add("email_verification_token_lifetime", new JsonPrimitive(144004));
             tenants[2] = new TenantConfig(new TenantIdentifier(null, null, "t2"), new EmailPasswordConfig(false),
-                    new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                    new ThirdPartyConfig(false, true, new ThirdPartyConfig.Provider[0]),
                     new PasswordlessConfig(false),
-                    null, null, tenantConfig);
+                    null, true, null, tenantConfig);
         }
 
         {
             JsonObject tenantConfig = new JsonObject();
             tenantConfig.add("email_verification_token_lifetime", new JsonPrimitive(144005));
             tenants[3] = new TenantConfig(new TenantIdentifier(null, null, "t1"), new EmailPasswordConfig(false),
-                    new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                    new ThirdPartyConfig(false, true, new ThirdPartyConfig.Provider[0]),
                     new PasswordlessConfig(false),
-                    null, null, tenantConfig);
+                    null, true, null, tenantConfig);
         }
 
         Config.loadAllTenantConfig(process.getProcess(), tenants, new ArrayList<>());
@@ -437,9 +437,9 @@ public class ConfigTest {
             StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
                     .modifyConfigToAddANewUserPoolForTesting(tenantConfig, 2);
             tenants[0] = new TenantConfig(new TenantIdentifier("c1", null, null), new EmailPasswordConfig(false),
-                    new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                    new ThirdPartyConfig(false, true, new ThirdPartyConfig.Provider[0]),
                     new PasswordlessConfig(false),
-                    null, null, tenantConfig);
+                    null, true, null, tenantConfig);
         }
 
         {
@@ -448,9 +448,9 @@ public class ConfigTest {
                     .modifyConfigToAddANewUserPoolForTesting(tenantConfig, 2);
             tenantConfig.add("email_verification_token_lifetime", new JsonPrimitive(144003));
             tenants[1] = new TenantConfig(new TenantIdentifier("c2", null, null), new EmailPasswordConfig(false),
-                    new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                    new ThirdPartyConfig(false, true, new ThirdPartyConfig.Provider[0]),
                     new PasswordlessConfig(false),
-                    null, null, tenantConfig);
+                    null, true, null, tenantConfig);
         }
 
         try {
@@ -488,9 +488,9 @@ public class ConfigTest {
                 new TenantConfig(
                         new TenantIdentifier(null, null, "t1"),
                         new EmailPasswordConfig(true),
-                        new ThirdPartyConfig(true, null),
+                        new ThirdPartyConfig(true, true, null),
                         new PasswordlessConfig(true),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 )
         );
 
@@ -500,9 +500,9 @@ public class ConfigTest {
                 new TenantConfig(
                         new TenantIdentifier(null, "a1", null),
                         new EmailPasswordConfig(true),
-                        new ThirdPartyConfig(true, null),
+                        new ThirdPartyConfig(true, true, null),
                         new PasswordlessConfig(true),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 )
         );
 
@@ -512,9 +512,9 @@ public class ConfigTest {
                 new TenantConfig(
                         new TenantIdentifier(null, "a1", "t1"),
                         new EmailPasswordConfig(true),
-                        new ThirdPartyConfig(true, null),
+                        new ThirdPartyConfig(true, true, null),
                         new PasswordlessConfig(true),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 )
         );
 
@@ -524,9 +524,9 @@ public class ConfigTest {
                 new TenantConfig(
                         new TenantIdentifier(null, "a2", null),
                         new EmailPasswordConfig(true),
-                        new ThirdPartyConfig(true, null),
+                        new ThirdPartyConfig(true, true, null),
                         new PasswordlessConfig(true),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 )
         );
 
@@ -536,9 +536,9 @@ public class ConfigTest {
                 new TenantConfig(
                         new TenantIdentifier(null, "a2", "t1"),
                         new EmailPasswordConfig(true),
-                        new ThirdPartyConfig(true, null),
+                        new ThirdPartyConfig(true, true, null),
                         new PasswordlessConfig(true),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 )
         );
 
@@ -548,9 +548,9 @@ public class ConfigTest {
                 new TenantConfig(
                         new TenantIdentifier(null, "a2", "t2"),
                         new EmailPasswordConfig(true),
-                        new ThirdPartyConfig(true, null),
+                        new ThirdPartyConfig(true, true, null),
                         new PasswordlessConfig(true),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 )
         );
 
@@ -565,9 +565,9 @@ public class ConfigTest {
                     new TenantConfig(
                             new TenantIdentifier("c1", null, null),
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
+                            new ThirdPartyConfig(true, true, null),
                             new PasswordlessConfig(true),
-                            null, null, config
+                            null, true, null, config
                     )
             );
 
@@ -577,9 +577,9 @@ public class ConfigTest {
                     new TenantConfig(
                             new TenantIdentifier("c1", null, "t1"),
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
+                            new ThirdPartyConfig(true, true, null),
                             new PasswordlessConfig(true),
-                            null, null, config
+                            null, true, null, config
                     )
             );
 
@@ -589,9 +589,9 @@ public class ConfigTest {
                     new TenantConfig(
                             new TenantIdentifier("c1", "a1", null),
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
+                            new ThirdPartyConfig(true, true, null),
                             new PasswordlessConfig(true),
-                            null, null, config
+                            null, true, null, config
                     )
             );
 
@@ -601,9 +601,9 @@ public class ConfigTest {
                     new TenantConfig(
                             new TenantIdentifier("c1", "a1", "t1"),
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
+                            new ThirdPartyConfig(true, true, null),
                             new PasswordlessConfig(true),
-                            null, null, config
+                            null, true, null, config
                     )
             );
 
@@ -613,9 +613,9 @@ public class ConfigTest {
                     new TenantConfig(
                             new TenantIdentifier("c1", "a2", null),
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
+                            new ThirdPartyConfig(true, true, null),
                             new PasswordlessConfig(true),
-                            null, null, config
+                            null, true, null, config
                     )
             );
 
@@ -625,9 +625,9 @@ public class ConfigTest {
                     new TenantConfig(
                             new TenantIdentifier("c1", "a2", "t1"),
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
+                            new ThirdPartyConfig(true, true, null),
                             new PasswordlessConfig(true),
-                            null, null, config
+                            null, true, null, config
                     )
             );
 
@@ -637,9 +637,9 @@ public class ConfigTest {
                     new TenantConfig(
                             new TenantIdentifier("c1", "a2", "t2"),
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
+                            new ThirdPartyConfig(true, true, null),
                             new PasswordlessConfig(true),
-                            null, null, config
+                            null, true, null, config
                     )
             );
         }
@@ -683,9 +683,9 @@ public class ConfigTest {
                     new TenantConfig(
                             new TenantIdentifier("c2", null, null),
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
+                            new ThirdPartyConfig(true, true, null),
                             new PasswordlessConfig(true),
-                            null, null, config
+                            null, true, null, config
                     )
             );
             fail();
@@ -700,9 +700,9 @@ public class ConfigTest {
                     new TenantConfig(
                             new TenantIdentifier(null, "a1", null),
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
+                            new ThirdPartyConfig(true, true, null),
                             new PasswordlessConfig(true),
-                            null, null, config
+                            null, true, null, config
                     )
             );
 
@@ -712,9 +712,9 @@ public class ConfigTest {
                     new TenantConfig(
                             new TenantIdentifier(null, "a2", null),
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
+                            new ThirdPartyConfig(true, true, null),
                             new PasswordlessConfig(true),
-                            null, null, config
+                            null, true, null, config
                     )
             );
             fail();
@@ -729,9 +729,9 @@ public class ConfigTest {
                     new TenantConfig(
                             new TenantIdentifier(null, null, "t1"),
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
+                            new ThirdPartyConfig(true, true, null),
                             new PasswordlessConfig(true),
-                            null, null, config
+                            null, true, null, config
                     )
             );
 
@@ -741,9 +741,9 @@ public class ConfigTest {
                     new TenantConfig(
                             new TenantIdentifier(null, null, "t2"),
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
+                            new ThirdPartyConfig(true, true, null),
                             new PasswordlessConfig(true),
-                            null, null, config
+                            null, true, null, config
                     )
             );
             fail();
@@ -758,9 +758,9 @@ public class ConfigTest {
                     new TenantConfig(
                             new TenantIdentifier(null, "a1", "t2"),
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
+                            new ThirdPartyConfig(true, true, null),
                             new PasswordlessConfig(true),
-                            null, null, config
+                            null, true, null, config
                     )
             );
             fail();
@@ -775,9 +775,9 @@ public class ConfigTest {
                     new TenantConfig(
                             new TenantIdentifier(null, "a2", "t2"),
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
+                            new ThirdPartyConfig(true, true, null),
                             new PasswordlessConfig(true),
-                            null, null, config
+                            null, true, null, config
                     )
             );
             fail();
@@ -792,9 +792,9 @@ public class ConfigTest {
                     new TenantConfig(
                             new TenantIdentifier("c2", null, "t1"),
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
+                            new ThirdPartyConfig(true, true, null),
                             new PasswordlessConfig(true),
-                            null, null, config
+                            null, true, null, config
                     )
             );
             fail();
@@ -809,9 +809,9 @@ public class ConfigTest {
                     new TenantConfig(
                             new TenantIdentifier("c1", null, "t2"),
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
+                            new ThirdPartyConfig(true, true, null),
                             new PasswordlessConfig(true),
-                            null, null, config
+                            null, true, null, config
                     )
             );
             fail();
@@ -826,9 +826,9 @@ public class ConfigTest {
                     new TenantConfig(
                             new TenantIdentifier("c1", "a2", null),
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
+                            new ThirdPartyConfig(true, true, null),
                             new PasswordlessConfig(true),
-                            null, null, config
+                            null, true, null, config
                     )
             );
             fail();
@@ -843,9 +843,9 @@ public class ConfigTest {
                     new TenantConfig(
                             new TenantIdentifier("c1", "a1", "t2"),
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
+                            new ThirdPartyConfig(true, true, null),
                             new PasswordlessConfig(true),
-                            null, null, config
+                            null, true, null, config
                     )
             );
             fail();
@@ -860,9 +860,9 @@ public class ConfigTest {
                     new TenantConfig(
                             new TenantIdentifier("c2", "a1", "t1"),
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
+                            new ThirdPartyConfig(true, true, null),
                             new PasswordlessConfig(true),
-                            null, null, config
+                            null, true, null, config
                     )
             );
             fail();
@@ -877,9 +877,9 @@ public class ConfigTest {
                     new TenantConfig(
                             new TenantIdentifier("c1", "a1", "t1"),
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
+                            new ThirdPartyConfig(true, true, null),
                             new PasswordlessConfig(true),
-                            null, null, config
+                            null, true, null, config
                     )
             );
             fail();
@@ -894,9 +894,9 @@ public class ConfigTest {
                     new TenantConfig(
                             new TenantIdentifier(null, "a1", "t1"),
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
+                            new ThirdPartyConfig(true, true, null),
                             new PasswordlessConfig(true),
-                            null, null, config
+                            null, true, null, config
                     )
             );
             fail();
@@ -934,9 +934,9 @@ public class ConfigTest {
                 new TenantConfig(
                         new TenantIdentifier(null, null, null),
                         new EmailPasswordConfig(true),
-                        new ThirdPartyConfig(true, null),
+                        new ThirdPartyConfig(true, true, null),
                         new PasswordlessConfig(false),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 )
         );
 
@@ -972,9 +972,9 @@ public class ConfigTest {
                     new TenantConfig(
                             new TenantIdentifier(null, "a1", null),
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
+                            new ThirdPartyConfig(true, true, null),
                             new PasswordlessConfig(false),
-                            null, null, coreConfig
+                            null, true, null, coreConfig
                     )
             );
         }
@@ -990,9 +990,9 @@ public class ConfigTest {
                         new TenantConfig(
                                 new TenantIdentifier(null, "a1", "t1"),
                                 new EmailPasswordConfig(true),
-                                new ThirdPartyConfig(true, null),
+                                new ThirdPartyConfig(true, true, null),
                                 new PasswordlessConfig(false),
-                                null, null, coreConfig
+                                null, true, null, coreConfig
                         )
                 );
                 fail();
@@ -1008,9 +1008,9 @@ public class ConfigTest {
                     new TenantConfig(
                             new TenantIdentifier(null, "a1", "t1"),
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
+                            new ThirdPartyConfig(true, true, null),
                             new PasswordlessConfig(false),
-                            null, null, new JsonObject()
+                            null, true, null, new JsonObject()
                     )
             );
 
@@ -1023,9 +1023,9 @@ public class ConfigTest {
                     new TenantConfig(
                             new TenantIdentifier(null, "a1", "t2"),
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
+                            new ThirdPartyConfig(true, true, null),
                             new PasswordlessConfig(false),
-                            null, null, coreConfig
+                            null, true, null, coreConfig
                     )
             );
         }
@@ -1040,9 +1040,9 @@ public class ConfigTest {
                     new TenantConfig(
                             new TenantIdentifier(null, "a2", null),
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
+                            new ThirdPartyConfig(true, true, null),
                             new PasswordlessConfig(false),
-                            null, null, coreConfig
+                            null, true, null, coreConfig
                     )
             );
         }
@@ -1116,9 +1116,9 @@ public class ConfigTest {
                     Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                             tenantIdentifier,
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
+                            new ThirdPartyConfig(true, true, null),
                             new PasswordlessConfig(true),
-                            null, null, coreConfigJson
+                            null, true, null, coreConfigJson
                     ), false);
 
                     CoreConfig coreConfig = Config.getConfig(tenantIdentifier, process.getProcess());
@@ -1136,9 +1136,9 @@ public class ConfigTest {
                     Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                             tenantIdentifier,
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
+                            new ThirdPartyConfig(true, true, null),
                             new PasswordlessConfig(true),
-                            null, null, coreConfigJson
+                            null, true, null, coreConfigJson
                     ), false);
 
                     CoreConfig coreConfig2 = Config.getConfig(tenantIdentifier, process.getProcess());
@@ -1174,9 +1174,9 @@ public class ConfigTest {
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     tenantIdentifier,
                     new EmailPasswordConfig(true),
-                    new ThirdPartyConfig(true, null),
+                    new ThirdPartyConfig(true, true, null),
                     new PasswordlessConfig(true),
-                    null, null, coreConfigJson
+                    null, true, null, coreConfigJson
             ), false);
 
             CoreConfig coreConfig = Config.getConfig(tenantIdentifier, process.getProcess());
@@ -1192,9 +1192,9 @@ public class ConfigTest {
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     tenantIdentifier,
                     new EmailPasswordConfig(true),
-                    new ThirdPartyConfig(true, null),
+                    new ThirdPartyConfig(true, true, null),
                     new PasswordlessConfig(true),
-                    null, null, coreConfigJson
+                    null, true, null, coreConfigJson
             ), false);
 
             CoreConfig coreConfig = Config.getConfig(tenantIdentifier, process.getProcess());
@@ -1234,9 +1234,9 @@ public class ConfigTest {
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     tenantIdentifier,
                     new EmailPasswordConfig(true),
-                    new ThirdPartyConfig(true, null),
+                    new ThirdPartyConfig(true, true, null),
                     new PasswordlessConfig(true),
-                    null, null, coreConfigJson
+                    null, true, null, coreConfigJson
             ), false);
 
             CoreConfig coreConfig = Config.getConfig(tenantIdentifier, process.getProcess());
@@ -1252,9 +1252,9 @@ public class ConfigTest {
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     tenantIdentifier,
                     new EmailPasswordConfig(true),
-                    new ThirdPartyConfig(true, null),
+                    new ThirdPartyConfig(true, true, null),
                     new PasswordlessConfig(true),
-                    null, null, coreConfigJson
+                    null, true, null, coreConfigJson
             ), false);
 
             CoreConfig coreConfig = Config.getConfig(tenantIdentifier, process.getProcess());
@@ -1270,9 +1270,9 @@ public class ConfigTest {
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     tenantIdentifier,
                     new EmailPasswordConfig(true),
-                    new ThirdPartyConfig(true, null),
+                    new ThirdPartyConfig(true, true, null),
                     new PasswordlessConfig(true),
-                    null, null, coreConfigJson
+                    null, true, null, coreConfigJson
             ), false);
 
             CoreConfig coreConfig = Config.getConfig(tenantIdentifier, process.getProcess());
@@ -1303,9 +1303,9 @@ public class ConfigTest {
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     new TenantIdentifier(null, null, "t1"),
                     new EmailPasswordConfig(true),
-                    new ThirdPartyConfig(true, null),
+                    new ThirdPartyConfig(true, true, null),
                     new PasswordlessConfig(true),
-                    null, null, coreConfig
+                    null, true, null, coreConfig
             ), false);
             fail();
         } catch (InvalidConfigException e) {
@@ -1336,9 +1336,9 @@ public class ConfigTest {
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     t1,
                     new EmailPasswordConfig(true),
-                    new ThirdPartyConfig(true, null),
+                    new ThirdPartyConfig(true, true, null),
                     new PasswordlessConfig(true),
-                    null, null, coreConfig
+                    null, true, null, coreConfig
             ), false);
         }
 
@@ -1351,9 +1351,9 @@ public class ConfigTest {
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     t1,
                     new EmailPasswordConfig(true),
-                    new ThirdPartyConfig(true, null),
+                    new ThirdPartyConfig(true, true, null),
                     new PasswordlessConfig(true),
-                    null, null, coreConfig
+                    null, true, null, coreConfig
             ), false);
 
             assertNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.TENANTS_CHANGED_DURING_REFRESH_FROM_DB));
@@ -1371,9 +1371,9 @@ public class ConfigTest {
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     t1,
                     new EmailPasswordConfig(true),
-                    new ThirdPartyConfig(true, null),
+                    new ThirdPartyConfig(true, true, null),
                     new PasswordlessConfig(true),
-                    null, null, coreConfig
+                    null, true, null, coreConfig
             ), false);
 
             Config configAfter = Config.getInstance(t1, process.getProcess());
@@ -1406,16 +1406,16 @@ public class ConfigTest {
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     a1,
                     new EmailPasswordConfig(true),
-                    new ThirdPartyConfig(true, null),
+                    new ThirdPartyConfig(true, true, null),
                     new PasswordlessConfig(true),
-                    null, null, coreConfig
+                    null, true, null, coreConfig
             ), false);
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     t1,
                     new EmailPasswordConfig(true),
-                    new ThirdPartyConfig(true, null),
+                    new ThirdPartyConfig(true, true, null),
                     new PasswordlessConfig(true),
-                    null, null, coreConfig
+                    null, true, null, coreConfig
             ), false);
         }
 
@@ -1428,15 +1428,15 @@ public class ConfigTest {
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     a1,
                     new EmailPasswordConfig(true),
-                    new ThirdPartyConfig(true, null),
+                    new ThirdPartyConfig(true, true, null),
                     new PasswordlessConfig(true),
-                    null, null, coreConfig
+                    null, true, null, coreConfig
             ), false);Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 t1,
                 new EmailPasswordConfig(true),
-                new ThirdPartyConfig(true, null),
+                new ThirdPartyConfig(true, true, null),
                 new PasswordlessConfig(true),
-                null, null, coreConfig
+                null, true, null, coreConfig
         ), false);
 
             assertNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.TENANTS_CHANGED_DURING_REFRESH_FROM_DB));
@@ -1454,9 +1454,9 @@ public class ConfigTest {
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     a1,
                     new EmailPasswordConfig(true),
-                    new ThirdPartyConfig(true, null),
+                    new ThirdPartyConfig(true, true, null),
                     new PasswordlessConfig(true),
-                    null, null, coreConfig
+                    null, true, null, coreConfig
             ), false);
 
             Config configAfter = Config.getInstance(t1, process.getProcess());
@@ -1488,9 +1488,9 @@ public class ConfigTest {
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     t1,
                     new EmailPasswordConfig(true),
-                    new ThirdPartyConfig(true, null),
+                    new ThirdPartyConfig(true, true, null),
                     new PasswordlessConfig(true),
-                    null, null, coreConfig
+                    null, true, null, coreConfig
             ), false);
         }
 
@@ -1502,9 +1502,9 @@ public class ConfigTest {
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     t1,
                     new EmailPasswordConfig(true),
-                    new ThirdPartyConfig(true, null),
+                    new ThirdPartyConfig(true, true, null),
                     new PasswordlessConfig(true),
-                    null, null, coreConfig
+                    null, true, null, coreConfig
             ), false);
 
             assertNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.TENANTS_CHANGED_DURING_REFRESH_FROM_DB));
@@ -1521,9 +1521,9 @@ public class ConfigTest {
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     t1,
                     new EmailPasswordConfig(true),
-                    new ThirdPartyConfig(true, null),
+                    new ThirdPartyConfig(true, true, null),
                     new PasswordlessConfig(true),
-                    null, null, coreConfig
+                    null, true, null, coreConfig
             ), false);
 
             Storage storageLayerAfter = StorageLayer.getStorage(t1, process.getProcess());
@@ -1541,9 +1541,9 @@ public class ConfigTest {
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     t1,
                     new EmailPasswordConfig(true),
-                    new ThirdPartyConfig(true, null),
+                    new ThirdPartyConfig(true, true, null),
                     new PasswordlessConfig(true),
-                    null, null, coreConfig
+                    null, true, null, coreConfig
             ), false);
 
             Storage storageLayerAfter = StorageLayer.getStorage(t1, process.getProcess());
@@ -1575,9 +1575,9 @@ public class ConfigTest {
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     t1.getAsPublicTenantIdentifier(),
                     new EmailPasswordConfig(true),
-                    new ThirdPartyConfig(true, null),
+                    new ThirdPartyConfig(true, true, null),
                     new PasswordlessConfig(true),
-                    null, null, coreConfig
+                    null, true, null, coreConfig
             ), false);
         }
 
@@ -1590,9 +1590,9 @@ public class ConfigTest {
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     t1.getAsPublicTenantIdentifier(),
                     new EmailPasswordConfig(true),
-                    new ThirdPartyConfig(true, null),
+                    new ThirdPartyConfig(true, true, null),
                     new PasswordlessConfig(true),
-                    null, null, coreConfig
+                    null, true, null, coreConfig
             ), false);
 
             assertNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.TENANTS_CHANGED_DURING_REFRESH_FROM_DB));
@@ -1609,9 +1609,9 @@ public class ConfigTest {
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     t1.getAsPublicTenantIdentifier(),
                     new EmailPasswordConfig(true),
-                    new ThirdPartyConfig(true, null),
+                    new ThirdPartyConfig(true, true, null),
                     new PasswordlessConfig(true),
-                    null, null, coreConfig
+                    null, true, null, coreConfig
             ), false);
 
             FeatureFlag featureFlagAfter = FeatureFlag.getInstance(process.getProcess(), t1);
@@ -1643,9 +1643,9 @@ public class ConfigTest {
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     t1.getAsPublicTenantIdentifier(),
                     new EmailPasswordConfig(true),
-                    new ThirdPartyConfig(true, null),
+                    new ThirdPartyConfig(true, true, null),
                     new PasswordlessConfig(true),
-                    null, null, coreConfig
+                    null, true, null, coreConfig
             ), false);
         }
 
@@ -1661,9 +1661,9 @@ public class ConfigTest {
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     t1.getAsPublicTenantIdentifier(),
                     new EmailPasswordConfig(true),
-                    new ThirdPartyConfig(true, null),
+                    new ThirdPartyConfig(true, true, null),
                     new PasswordlessConfig(true),
-                    null, null, coreConfig
+                    null, true, null, coreConfig
             ), false);
 
             assertNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.TENANTS_CHANGED_DURING_REFRESH_FROM_DB));
@@ -1690,9 +1690,9 @@ public class ConfigTest {
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     t1.getAsPublicTenantIdentifier(),
                     new EmailPasswordConfig(true),
-                    new ThirdPartyConfig(true, null),
+                    new ThirdPartyConfig(true, true, null),
                     new PasswordlessConfig(true),
-                    null, null, coreConfig
+                    null, true, null, coreConfig
             ), false);
 
             AccessTokenSigningKey accessTokenSigningKeyAfter = AccessTokenSigningKey.getInstance(t1, process.getProcess());
@@ -1732,9 +1732,9 @@ public class ConfigTest {
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 new TenantIdentifier(null, "a1", null),
                 new EmailPasswordConfig(true),
-                new ThirdPartyConfig(true, null),
+                new ThirdPartyConfig(true, true, null),
                 new PasswordlessConfig(true),
-                null, null, config
+                null, true, null, config
         ), false);
 
         // Now load a new set of configs
@@ -1751,30 +1751,30 @@ public class ConfigTest {
                 new TenantConfig(
                         new TenantIdentifier(null, null, null),
                         new EmailPasswordConfig(true),
-                        new ThirdPartyConfig(false, null),
+                        new ThirdPartyConfig(false, true, null),
                         new PasswordlessConfig(true),
-                        null, null, config1
+                        null, true, null, config1
                 ),
                 new TenantConfig(
                         new TenantIdentifier(null, "a2", null),
                         new EmailPasswordConfig(true),
-                        new ThirdPartyConfig(false, null),
+                        new ThirdPartyConfig(false, true, null),
                         new PasswordlessConfig(true),
-                        null, null, config2
+                        null, true, null, config2
                 ),
                 new TenantConfig(
                         new TenantIdentifier(null, "a2", "t1"),
                         new EmailPasswordConfig(true),
-                        new ThirdPartyConfig(true, null),
+                        new ThirdPartyConfig(true, true, null),
                         new PasswordlessConfig(true),
-                        null, null, config3
+                        null, true, null, config3
                 ),
                 new TenantConfig(
                         new TenantIdentifier(null, "a1", null),
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(true, null),
+                        new ThirdPartyConfig(true, true, null),
                         new PasswordlessConfig(true),
-                        null, null, config4
+                        null, true, null, config4
                 ),
         };
         Config.loadAllTenantConfig(process.getProcess(), tenantConfigs);
@@ -1818,9 +1818,9 @@ public class ConfigTest {
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     new TenantIdentifier(null, "a1", null),
                     new EmailPasswordConfig(true),
-                    new ThirdPartyConfig(true, null),
+                    new ThirdPartyConfig(true, true, null),
                     new PasswordlessConfig(true),
-                    null, null, mistypedConfig
+                    null, true, null, mistypedConfig
             ), false);
             fail();
         } catch (InvalidConfigException e) {
@@ -1871,9 +1871,9 @@ public class ConfigTest {
                 Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                         new TenantIdentifier(null, "a1", null),
                         new EmailPasswordConfig(true),
-                        new ThirdPartyConfig(true, null),
+                        new ThirdPartyConfig(true, true, null),
                         new PasswordlessConfig(true),
-                        null, null, config
+                        null, true, null, config
                 ), false);
                 fail();
             } catch (InvalidConfigException e) {
@@ -1962,9 +1962,9 @@ public class ConfigTest {
                 Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                         new TenantIdentifier(null, "a1", null),
                         new EmailPasswordConfig(true),
-                        new ThirdPartyConfig(true, null),
+                        new ThirdPartyConfig(true, true, null),
                         new PasswordlessConfig(true),
-                        null, null, config
+                        null, true, null, config
                 ), false);
                 fail();
             } catch (InvalidConfigException e) {
@@ -2025,9 +2025,9 @@ public class ConfigTest {
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     new TenantIdentifier(null, "a1", null),
                     new EmailPasswordConfig(true),
-                    new ThirdPartyConfig(true, null),
+                    new ThirdPartyConfig(true, true, null),
                     new PasswordlessConfig(true),
-                    null, null, config
+                    null, true, null, config
             ), false);
 
             JsonObject config2 = new JsonObject();
@@ -2046,9 +2046,9 @@ public class ConfigTest {
                 Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                         new TenantIdentifier(null, "a1", "t1"),
                         new EmailPasswordConfig(true),
-                        new ThirdPartyConfig(true, null),
+                        new ThirdPartyConfig(true, true, null),
                         new PasswordlessConfig(true),
-                        null, null, config2
+                        null, true, null, config2
                 ), false);
                 fail();
             } catch (InvalidConfigException e) {

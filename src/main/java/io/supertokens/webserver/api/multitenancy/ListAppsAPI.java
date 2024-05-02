@@ -27,6 +27,7 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -82,7 +83,17 @@ public class ListAppsAPI extends WebserverAPI {
                 JsonArray tenantsArray = new JsonArray();
                 for (TenantConfig tenantConfig : entry.getValue()) {
                     JsonObject tenantConfigJson = tenantConfig.toJson(shouldProtect,
-                            storage, CoreConfig.PROTECTED_CONFIGS);
+                            storage, CoreConfig.PROTECTED_CONFIGS, getVersionFromRequest(req).lesserThan(SemVer.v5_1));
+
+                    if (getVersionFromRequest(req).lesserThan(SemVer.v5_1)) {
+                        tenantConfigJson.remove("useFirstFactorsFromStaticConfigIfEmpty");
+                        tenantConfigJson.get("thirdParty").getAsJsonObject().remove("useThirdPartyProvidersFromStaticConfigIfEmpty");
+                    }
+
+                    if (getVersionFromRequest(req).lesserThan(SemVer.v5_0)) {
+                        tenantConfigJson.remove("firstFactors");
+                        tenantConfigJson.remove("requiredSecondaryFactors");
+                    }
                     tenantsArray.add(tenantConfigJson);
                 }
                 appObject.add("tenants", tenantsArray);

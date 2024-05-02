@@ -116,27 +116,27 @@ public class HelloAPITest {
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 new TenantIdentifier(null, "hello", null),
                 new EmailPasswordConfig(true),
-                new ThirdPartyConfig(true, null),
+                new ThirdPartyConfig(true, true, null),
                 new PasswordlessConfig(true),
-                null, null,
+                null, true, null,
                 new JsonObject()
         ), false);
 
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 new TenantIdentifier(null, "hello", "test"),
                 new EmailPasswordConfig(true),
-                new ThirdPartyConfig(true, null),
+                new ThirdPartyConfig(true, true, null),
                 new PasswordlessConfig(true),
-                null, null,
+                null, true, null,
                 new JsonObject()
         ), false);
 
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 new TenantIdentifier(null, null, "test"),
                 new EmailPasswordConfig(true),
-                new ThirdPartyConfig(true, null),
+                new ThirdPartyConfig(true, true, null),
                 new PasswordlessConfig(true),
-                null, null,
+                null, true, null,
                 new JsonObject()
         ), false);
 
@@ -202,27 +202,27 @@ public class HelloAPITest {
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 new TenantIdentifier(null, "hello", null),
                 new EmailPasswordConfig(true),
-                new ThirdPartyConfig(true, null),
+                new ThirdPartyConfig(true, true, null),
                 new PasswordlessConfig(true),
-                null, null,
+                null, true, null,
                 new JsonObject()
         ), false);
 
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 new TenantIdentifier(null, "hello", "test"),
                 new EmailPasswordConfig(true),
-                new ThirdPartyConfig(true, null),
+                new ThirdPartyConfig(true, true, null),
                 new PasswordlessConfig(true),
-                null, null,
+                null, true, null,
                 new JsonObject()
         ), false);
 
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 new TenantIdentifier(null, null, "test"),
                 new EmailPasswordConfig(true),
-                new ThirdPartyConfig(true, null),
+                new ThirdPartyConfig(true, true, null),
                 new PasswordlessConfig(true),
-                null, null,
+                null, true, null,
                 new JsonObject()
         ), false);
 
@@ -289,27 +289,27 @@ public class HelloAPITest {
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 new TenantIdentifier(null, "hello", null),
                 new EmailPasswordConfig(true),
-                new ThirdPartyConfig(true, null),
+                new ThirdPartyConfig(true, true, null),
                 new PasswordlessConfig(true),
-                null, null,
+                null, true, null,
                 new JsonObject()
         ), false);
 
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 new TenantIdentifier(null, "hello", "test"),
                 new EmailPasswordConfig(true),
-                new ThirdPartyConfig(true, null),
+                new ThirdPartyConfig(true, true, null),
                 new PasswordlessConfig(true),
-                null, null,
+                null, true, null,
                 new JsonObject()
         ), false);
 
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 new TenantIdentifier(null, null, "test"),
                 new EmailPasswordConfig(true),
-                new ThirdPartyConfig(true, null),
+                new ThirdPartyConfig(true, true, null),
                 new PasswordlessConfig(true),
-                null, null,
+                null, true, null,
                 new JsonObject()
         ), false);
 

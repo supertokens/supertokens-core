@@ -37,7 +37,6 @@ import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
-import io.supertokens.test.multitenant.api.TestMultitenancyAPIHelper;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
 import io.supertokens.utils.SemVer;
 import org.junit.After;
@@ -115,9 +114,9 @@ public class MultitenantAPITest {
                     new TenantConfig(
                             tenantIdentifier,
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(false, null),
+                            new ThirdPartyConfig(false, true, null),
                             new PasswordlessConfig(false),
-                            null, null,
+                            null, true, null,
                             config
                     )
             );
@@ -140,9 +139,9 @@ public class MultitenantAPITest {
                     new TenantConfig(
                             tenantIdentifier,
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(false, null),
+                            new ThirdPartyConfig(false, true, null),
                             new PasswordlessConfig(false),
-                            null, null,
+                            null, true, null,
                             config
                     )
             );
@@ -165,9 +164,9 @@ public class MultitenantAPITest {
                     new TenantConfig(
                             tenantIdentifier,
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(false, null),
+                            new ThirdPartyConfig(false, true, null),
                             new PasswordlessConfig(false),
-                            null, null,
+                            null, true, null,
                             config
                     )
             );

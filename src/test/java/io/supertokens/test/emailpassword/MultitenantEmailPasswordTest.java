@@ -82,9 +82,9 @@ public class MultitenantEmailPasswordTest {
                     new TenantConfig(
                             tenantIdentifier,
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(false, null),
+                            new ThirdPartyConfig(false, true, null),
                             new PasswordlessConfig(false),
-                            null, null,
+                            null, true, null,
                             config
                     )
             );
@@ -103,9 +103,9 @@ public class MultitenantEmailPasswordTest {
                     new TenantConfig(
                             tenantIdentifier,
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(false, null),
+                            new ThirdPartyConfig(false, true, null),
                             new PasswordlessConfig(false),
-                            null, null,
+                            null, true, null,
                             config
                     )
             );
@@ -124,9 +124,9 @@ public class MultitenantEmailPasswordTest {
                     new TenantConfig(
                             tenantIdentifier,
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(false, null),
+                            new ThirdPartyConfig(false, true, null),
                             new PasswordlessConfig(false),
-                            null, null,
+                            null, true, null,
                             config
                     )
             );

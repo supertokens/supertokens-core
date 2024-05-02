@@ -104,17 +104,17 @@ public class AppTenantUserTest {
                 Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                         app,
                         new EmailPasswordConfig(true),
-                        new ThirdPartyConfig(true, null),
+                        new ThirdPartyConfig(true, true, null),
                         new PasswordlessConfig(true),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 ), false);
 
                 Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                         tenant,
                         new EmailPasswordConfig(true),
-                        new ThirdPartyConfig(true, null),
+                        new ThirdPartyConfig(true, true, null),
                         new PasswordlessConfig(true),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 ), false);
 
                 Storage tStorage = (
@@ -144,17 +144,17 @@ public class AppTenantUserTest {
                 Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                         app,
                         new EmailPasswordConfig(true),
-                        new ThirdPartyConfig(true, null),
+                        new ThirdPartyConfig(true, true, null),
                         new PasswordlessConfig(true),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 ), false);
 
                 Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                         tenant,
                         new EmailPasswordConfig(true),
-                        new ThirdPartyConfig(true, null),
+                        new ThirdPartyConfig(true, true, null),
                         new PasswordlessConfig(true),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 ), false);
 
                 UserIdMapping.findNonAuthStoragesWhereUserIdIsUsedOrAssertIfUsed(t.toAppIdentifier(), tStorage,
@@ -201,17 +201,17 @@ public class AppTenantUserTest {
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 app,
                 new EmailPasswordConfig(true),
-                new ThirdPartyConfig(true, null),
+                new ThirdPartyConfig(true, true, null),
                 new PasswordlessConfig(true),
-                null, null, new JsonObject()
+                null, true, null, new JsonObject()
         ), false);
 
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 tenant,
                 new EmailPasswordConfig(true),
-                new ThirdPartyConfig(true, null),
+                new ThirdPartyConfig(true, true, null),
                 new PasswordlessConfig(true),
-                null, null, new JsonObject()
+                null, true, null, new JsonObject()
         ), false);
 
         Storage appStorage = (
@@ -274,17 +274,17 @@ public class AppTenantUserTest {
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 app,
                 new EmailPasswordConfig(true),
-                new ThirdPartyConfig(true, null),
+                new ThirdPartyConfig(true, true, null),
                 new PasswordlessConfig(true),
-                null, null, new JsonObject()
+                null, true, null, new JsonObject()
         ), false);
 
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 tenant,
                 new EmailPasswordConfig(true),
-                new ThirdPartyConfig(true, null),
+                new ThirdPartyConfig(true, true, null),
                 new PasswordlessConfig(true),
-                null, null, new JsonObject()
+                null, true, null, new JsonObject()
         ), false);
 
         Storage appStorage = (

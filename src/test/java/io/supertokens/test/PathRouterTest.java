@@ -87,9 +87,9 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(
                         new TenantIdentifier(null, null, "t1"),
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, null),
+                        new ThirdPartyConfig(false, true, null),
                         new PasswordlessConfig(false),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 ),
                 false
         );
@@ -98,9 +98,9 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(
                         new TenantIdentifier(null, null, "t2"),
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, null),
+                        new ThirdPartyConfig(false, true, null),
                         new PasswordlessConfig(false),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 ),
                 false
         );
@@ -109,9 +109,9 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(
                         new TenantIdentifier(null, null, "hello"),
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, null),
+                        new ThirdPartyConfig(false, true, null),
                         new PasswordlessConfig(false),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 ),
                 false
         );
@@ -263,9 +263,9 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(
                         new TenantIdentifier(null, null, "t1"),
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, null),
+                        new ThirdPartyConfig(false, true, null),
                         new PasswordlessConfig(false),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 ),
                 false
         );
@@ -274,9 +274,9 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(
                         new TenantIdentifier(null, null, "t2"),
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, null),
+                        new ThirdPartyConfig(false, true, null),
                         new PasswordlessConfig(false),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 ),
                 false
         );
@@ -285,9 +285,9 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(
                         new TenantIdentifier(null, null, "hello"),
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, null),
+                        new ThirdPartyConfig(false, true, null),
                         new PasswordlessConfig(false),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 ),
                 false
         );
@@ -439,9 +439,9 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(
                         new TenantIdentifier(null, null, "t1"),
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, null),
+                        new ThirdPartyConfig(false, true, null),
                         new PasswordlessConfig(false),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 ),
                 false
         );
@@ -450,9 +450,9 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(
                         new TenantIdentifier(null, null, "t2"),
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, null),
+                        new ThirdPartyConfig(false, true, null),
                         new PasswordlessConfig(false),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 ),
                 false
         );
@@ -461,9 +461,9 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(
                         new TenantIdentifier(null, null, "hello"),
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, null),
+                        new ThirdPartyConfig(false, true, null),
                         new PasswordlessConfig(false),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 ),
                 false
         );
@@ -625,9 +625,9 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(
                         new TenantIdentifier(null, null, "t1"),
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, null),
+                        new ThirdPartyConfig(false, true, null),
                         new PasswordlessConfig(false),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 ),
                 false
         );
@@ -636,9 +636,9 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(
                         new TenantIdentifier(null, null, "t2"),
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, null),
+                        new ThirdPartyConfig(false, true, null),
                         new PasswordlessConfig(false),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 ),
                 false
         );
@@ -647,9 +647,9 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(
                         new TenantIdentifier(null, null, "hello"),
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, null),
+                        new ThirdPartyConfig(false, true, null),
                         new PasswordlessConfig(false),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 ),
                 false
         );
@@ -812,9 +812,9 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(
                         new TenantIdentifier(null, null, "t1"),
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, null),
+                        new ThirdPartyConfig(false, true, null),
                         new PasswordlessConfig(false),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 ),
                 false
         );
@@ -823,9 +823,9 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(
                         new TenantIdentifier(null, null, "t2"),
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, null),
+                        new ThirdPartyConfig(false, true, null),
                         new PasswordlessConfig(false),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 ),
                 false
         );
@@ -834,9 +834,9 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(
                         new TenantIdentifier(null, null, "hello"),
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, null),
+                        new ThirdPartyConfig(false, true, null),
                         new PasswordlessConfig(false),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 ),
                 false
         );
@@ -996,9 +996,9 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(
                         new TenantIdentifier(null, null, "t1"),
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, null),
+                        new ThirdPartyConfig(false, true, null),
                         new PasswordlessConfig(false),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 ),
                 false);
         Multitenancy.addNewOrUpdateAppOrTenant(
@@ -1006,9 +1006,9 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(
                         new TenantIdentifier(null, null, "t2"),
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, null),
+                        new ThirdPartyConfig(false, true, null),
                         new PasswordlessConfig(false),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 ),
                 false);
 
@@ -1374,33 +1374,33 @@ public class PathRouterTest extends Mockito {
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
                 new TenantConfig(new TenantIdentifier("localhost", null, null), new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new ThirdPartyConfig(false, true, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        null, null, tenantConfig),
+                        null, true, null, tenantConfig),
                 false
         );
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
                 new TenantConfig(new TenantIdentifier("localhost", null, "t1"), new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new ThirdPartyConfig(false, true, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        null, null, tenantConfig),
+                        null, true, null, tenantConfig),
                 false
         );
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
                 new TenantConfig(new TenantIdentifier("127.0.0.1", null, null), new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new ThirdPartyConfig(false, true, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        null, null, tenant2Config),
+                        null, true, null, tenant2Config),
                 false
         );
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
                 new TenantConfig(new TenantIdentifier("127.0.0.1", null, "t1"), new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new ThirdPartyConfig(false, true, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        null, null, tenant2Config),
+                        null, true, null, tenant2Config),
                 false
         );
 
@@ -1499,25 +1499,25 @@ public class PathRouterTest extends Mockito {
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
                 new TenantConfig(new TenantIdentifier("localhost", null, null), new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new ThirdPartyConfig(false, true, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        null, null, tenantConfig),
+                        null, true, null, tenantConfig),
                 false
         );
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
                 new TenantConfig(new TenantIdentifier("localhost", null, "t1"), new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new ThirdPartyConfig(false, true, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        null, null, tenantConfig),
+                        null, true, null, tenantConfig),
                 false
         );
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
                 new TenantConfig(new TenantIdentifier(null, null, "t2"), new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new ThirdPartyConfig(false, true, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        null, null, new JsonObject()),
+                        null, true, null, new JsonObject()),
                 false
         );
 
@@ -1625,9 +1625,9 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(
                         new TenantIdentifier("localhost", null, null),
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new ThirdPartyConfig(false, true, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        null, null, tenantConfig),
+                        null, true, null, tenantConfig),
                 false
         );
         Multitenancy.addNewOrUpdateAppOrTenant(
@@ -1635,9 +1635,9 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(
                         new TenantIdentifier("localhost", null, "t1"),
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new ThirdPartyConfig(false, true, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        null, null, tenantConfig),
+                        null, true, null, tenantConfig),
                 false
         );
 
@@ -1700,9 +1700,9 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(
                         new TenantIdentifier(null, "abc", null),
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, null),
+                        new ThirdPartyConfig(false, true, null),
                         new PasswordlessConfig(false),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 ),
                 false
         );
@@ -1711,9 +1711,9 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(
                         new TenantIdentifier(null, "abc", "t2"),
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, null),
+                        new ThirdPartyConfig(false, true, null),
                         new PasswordlessConfig(false),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 ),
                 false
         );
@@ -1722,9 +1722,9 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(
                         new TenantIdentifier(null, "appid-abc", null),
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, null),
+                        new ThirdPartyConfig(false, true, null),
                         new PasswordlessConfig(false),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 ),
                 false
         );
@@ -1733,9 +1733,9 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(
                         new TenantIdentifier(null, "appid-abc", "t2"),
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, null),
+                        new ThirdPartyConfig(false, true, null),
                         new PasswordlessConfig(false),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 ),
                 false
         );
@@ -1744,9 +1744,9 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(
                         new TenantIdentifier(null, null, "t1"),
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, null),
+                        new ThirdPartyConfig(false, true, null),
                         new PasswordlessConfig(false),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 ),
                 false
         );
@@ -1755,9 +1755,9 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(
                         new TenantIdentifier(null, null, "t2"),
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, null),
+                        new ThirdPartyConfig(false, true, null),
                         new PasswordlessConfig(false),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 ),
                 false
         );
@@ -1766,9 +1766,9 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(
                         new TenantIdentifier(null, null, "hello"),
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, null),
+                        new ThirdPartyConfig(false, true, null),
                         new PasswordlessConfig(false),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 ),
                 false
         );
@@ -2005,9 +2005,9 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(
                         new TenantIdentifier(null, "abc", null),
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, null),
+                        new ThirdPartyConfig(false, true, null),
                         new PasswordlessConfig(false),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 ),
                 false
         );
@@ -2016,9 +2016,9 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(
                         new TenantIdentifier(null, "abc", "t2"),
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, null),
+                        new ThirdPartyConfig(false, true, null),
                         new PasswordlessConfig(false),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 ),
                 false
         );
@@ -2027,9 +2027,9 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(
                         new TenantIdentifier(null, "appid-abc", null),
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, null),
+                        new ThirdPartyConfig(false, true, null),
                         new PasswordlessConfig(false),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 ),
                 false
         );
@@ -2038,9 +2038,9 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(
                         new TenantIdentifier(null, "appid-abc", "t2"),
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, null),
+                        new ThirdPartyConfig(false, true, null),
                         new PasswordlessConfig(false),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 ),
                 false
         );
@@ -2049,9 +2049,9 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(
                         new TenantIdentifier(null, null, "t1"),
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, null),
+                        new ThirdPartyConfig(false, true, null),
                         new PasswordlessConfig(false),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 ),
                 false
         );
@@ -2060,9 +2060,9 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(
                         new TenantIdentifier(null, null, "t2"),
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, null),
+                        new ThirdPartyConfig(false, true, null),
                         new PasswordlessConfig(false),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 ),
                 false
         );
@@ -2071,9 +2071,9 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(
                         new TenantIdentifier(null, null, "hello"),
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, null),
+                        new ThirdPartyConfig(false, true, null),
                         new PasswordlessConfig(false),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 ),
                 false
         );
@@ -2294,9 +2294,9 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(
                         new TenantIdentifier(null, "abc", null),
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, null),
+                        new ThirdPartyConfig(false, true, null),
                         new PasswordlessConfig(false),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 ),
                 false
         );
@@ -2305,9 +2305,9 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(
                         new TenantIdentifier(null, "abc", "t2"),
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, null),
+                        new ThirdPartyConfig(false, true, null),
                         new PasswordlessConfig(false),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 ),
                 false
         );
@@ -2316,9 +2316,9 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(
                         new TenantIdentifier(null, "appid-abc", null),
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, null),
+                        new ThirdPartyConfig(false, true, null),
                         new PasswordlessConfig(false),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 ),
                 false
         );
@@ -2327,9 +2327,9 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(
                         new TenantIdentifier(null, "appid-abc", "t2"),
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, null),
+                        new ThirdPartyConfig(false, true, null),
                         new PasswordlessConfig(false),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 ),
                 false
         );
@@ -2338,9 +2338,9 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(
                         new TenantIdentifier(null, null, "t1"),
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, null),
+                        new ThirdPartyConfig(false, true, null),
                         new PasswordlessConfig(false),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 ),
                 false
         );
@@ -2349,9 +2349,9 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(
                         new TenantIdentifier(null, null, "t2"),
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, null),
+                        new ThirdPartyConfig(false, true, null),
                         new PasswordlessConfig(false),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 ),
                 false
         );
@@ -2360,9 +2360,9 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(
                         new TenantIdentifier(null, null, "hello"),
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, null),
+                        new ThirdPartyConfig(false, true, null),
                         new PasswordlessConfig(false),
-                        null, null, new JsonObject()
+                        null, true, null, new JsonObject()
                 ),
                 false
         );
@@ -2600,33 +2600,33 @@ public class PathRouterTest extends Mockito {
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
                 new TenantConfig(new TenantIdentifier("localhost", null, null), new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new ThirdPartyConfig(false, true, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        null, null, tenantConfig),
+                        null, true, null, tenantConfig),
                 false
         );
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
                 new TenantConfig(new TenantIdentifier("localhost", "app1", null), new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new ThirdPartyConfig(false, true, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        null, null, tenantConfig),
+                        null, true, null, tenantConfig),
                 false
         );
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
                 new TenantConfig(new TenantIdentifier("localhost", "app1", "t1"), new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new ThirdPartyConfig(false, true, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        null, null, tenantConfig),
+                        null, true, null, tenantConfig),
                 false
         );
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
                 new TenantConfig(new TenantIdentifier("127.0.0.1", null, null), new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new ThirdPartyConfig(false, true, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        null, null, tenant2Config),
+                        null, true, null, tenant2Config),
                 false
         );
         Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
@@ -2678,17 +2678,17 @@ public class PathRouterTest extends Mockito {
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
                 new TenantConfig(new TenantIdentifier("127.0.0.1", "app1", null), new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new ThirdPartyConfig(false, true, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        null, null, tenant2Config),
+                        null, true, null, tenant2Config),
                 false
         );
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
                 new TenantConfig(new TenantIdentifier("127.0.0.1", "app1", "t1"), new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new ThirdPartyConfig(false, true, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        null, null, tenant2Config),
+                        null, true, null, tenant2Config),
                 false
         );
 
@@ -2744,41 +2744,41 @@ public class PathRouterTest extends Mockito {
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
                 new TenantConfig(new TenantIdentifier("localhost", null, null), new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new ThirdPartyConfig(false, true, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        null, null, tenantConfig),
+                        null, true, null, tenantConfig),
                 false
         );
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
                 new TenantConfig(new TenantIdentifier("localhost", "app1", null), new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new ThirdPartyConfig(false, true, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        null, null, tenantConfig),
+                        null, true, null, tenantConfig),
                 false
         );
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
                 new TenantConfig(new TenantIdentifier("localhost", "app1", "t1"), new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new ThirdPartyConfig(false, true, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        null, null, tenantConfig),
+                        null, true, null, tenantConfig),
                 false
         );
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
                 new TenantConfig(new TenantIdentifier(null, "app2", null), new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new ThirdPartyConfig(false, true, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        null, null, new JsonObject()),
+                        null, true, null, new JsonObject()),
                 false
         );
         Multitenancy.addNewOrUpdateAppOrTenant(
                 process.getProcess(),
                 new TenantConfig(new TenantIdentifier(null, "app2", "t2"), new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new ThirdPartyConfig(false, true, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        null, null, new JsonObject()),
+                        null, true, null, new JsonObject()),
                 false
         );
 
@@ -2917,9 +2917,9 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(
                         new TenantIdentifier("localhost", null, null),
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new ThirdPartyConfig(false, true, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        null, null, tenantConfig),
+                        null, true, null, tenantConfig),
                 false
         );
         Multitenancy.addNewOrUpdateAppOrTenant(
@@ -2927,9 +2927,9 @@ public class PathRouterTest extends Mockito {
                 new TenantConfig(
                         new TenantIdentifier("localhost", "app1", "t1"),
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new ThirdPartyConfig(false, true, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                        null, null, tenantConfig),
+                        null, true, null, tenantConfig),
                 false
         );
 

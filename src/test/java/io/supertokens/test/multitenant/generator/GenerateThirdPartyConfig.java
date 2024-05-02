@@ -76,6 +76,13 @@ public class GenerateThirdPartyConfig {
                 new ConfigGenerator.Expectation("ok", enabled));
     }
 
+    public static ConfigGenerator.GeneratedValueAndExpectation generate_useThirdPartyProvidersFromStaticConfigIfEmpty() {
+        boolean val = new Random().nextBoolean();
+        return new ConfigGenerator.GeneratedValueAndExpectation(
+                val,
+                new ConfigGenerator.Expectation("ok", val));
+    }
+
     public static ConfigGenerator.GeneratedValueAndExpectation generate_providers()
             throws ClassNotFoundException, InvocationTargetException, NoSuchMethodException, IllegalAccessException,
             InstantiationException {

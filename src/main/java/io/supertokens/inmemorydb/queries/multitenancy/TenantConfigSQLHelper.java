@@ -55,9 +55,13 @@ public class TenantConfigSQLHelper {
                 return new TenantConfig(
                         new TenantIdentifier(result.getString("connection_uri_domain"), result.getString("app_id"), result.getString("tenant_id")),
                         new EmailPasswordConfig(result.getBoolean("email_password_enabled")),
-                        new ThirdPartyConfig(result.getBoolean("third_party_enabled"), this.providers),
+                        new ThirdPartyConfig(
+                                result.getBoolean("third_party_enabled"),
+                                result.getBoolean("use_third_party_providers_from_static_if_empty"),
+                                this.providers),
                         new PasswordlessConfig(result.getBoolean("passwordless_enabled")),
                         firstFactors.length == 0 ? null : firstFactors,
+                        result.getBoolean("use_first_factors_from_static_if_empty"),
                         requiredSecondaryFactors.length == 0 ? null : requiredSecondaryFactors,
                         JsonUtils.stringToJsonObject(result.getString("core_config"))
                 );
@@ -69,7 +73,9 @@ public class TenantConfigSQLHelper {
 
     public static TenantConfig[] selectAll(Start start, HashMap<TenantIdentifier, HashMap<String, ThirdPartyConfig.Provider>> providerMap, HashMap<TenantIdentifier, String[]> firstFactorsMap, HashMap<TenantIdentifier, String[]> requiredSecondaryFactorsMap)
             throws SQLException, StorageQueryException {
-        String QUERY = "SELECT connection_uri_domain, app_id, tenant_id, core_config, email_password_enabled, passwordless_enabled, third_party_enabled FROM "
+        String QUERY = "SELECT connection_uri_domain, app_id, tenant_id, core_config, "
+                + " email_password_enabled, passwordless_enabled, third_party_enabled, "
+                + " use_first_factors_from_static_if_empty, use_third_party_providers_from_static_if_empty FROM "
                 + Config.getConfig(start).getTenantConfigsTable() + ";";
 
         TenantConfig[] tenantConfigs = execute(start, QUERY, pst -> {}, result -> {
@@ -98,8 +104,10 @@ public class TenantConfigSQLHelper {
     public static void create(Start start, Connection sqlCon, TenantConfig tenantConfig)
             throws SQLException, StorageQueryException {
         String QUERY = "INSERT INTO " + Config.getConfig(start).getTenantConfigsTable()
-                + "(connection_uri_domain, app_id, tenant_id, core_config, email_password_enabled, passwordless_enabled, third_party_enabled)"
-                + " VALUES(?, ?, ?, ?, ?, ?, ?)";
+                + "(connection_uri_domain, app_id, tenant_id, core_config,"
+                + " email_password_enabled, passwordless_enabled, third_party_enabled,"
+                + " use_first_factors_from_static_if_empty, use_third_party_providers_from_static_if_empty)"
+                + " VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         update(sqlCon, QUERY, pst -> {
             pst.setString(1, tenantConfig.tenantIdentifier.getConnectionUriDomain());
@@ -109,6 +117,8 @@ public class TenantConfigSQLHelper {
             pst.setBoolean(5, tenantConfig.emailPasswordConfig.enabled);
             pst.setBoolean(6, tenantConfig.passwordlessConfig.enabled);
             pst.setBoolean(7, tenantConfig.thirdPartyConfig.enabled);
+            pst.setBoolean(8, tenantConfig.useFirstFactorsFromStaticConfigIfEmpty);
+            pst.setBoolean(9, tenantConfig.thirdPartyConfig.useThirdPartyProvidersFromStaticConfigIfEmpty);
         });
     }
 

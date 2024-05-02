@@ -36,7 +36,6 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.session.Session;
-import io.supertokens.session.info.SessionInfo;
 import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -89,9 +88,9 @@ public class SessionTests {
                     new TenantConfig(
                             tenantIdentifier,
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
+                            new ThirdPartyConfig(true, true, null),
                             new PasswordlessConfig(true),
-                            null, null, config
+                            null, true, null, config
                     )
             );
         }
@@ -109,9 +108,9 @@ public class SessionTests {
                     new TenantConfig(
                             tenantIdentifier,
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
+                            new ThirdPartyConfig(true, true, null),
                             new PasswordlessConfig(true),
-                            null, null, config
+                            null, true, null, config
                     )
             );
         }
@@ -129,9 +128,9 @@ public class SessionTests {
                     new TenantConfig(
                             tenantIdentifier,
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
+                            new ThirdPartyConfig(true, true, null),
                             new PasswordlessConfig(true),
-                            null, null, config
+                            null, true, null, config
                     )
             );
         }
@@ -149,9 +148,9 @@ public class SessionTests {
                     new TenantConfig(
                             tenantIdentifier,
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
+                            new ThirdPartyConfig(true, true, null),
                             new PasswordlessConfig(true),
-                            null, null, config
+                            null, true, null, config
                     )
             );
         }

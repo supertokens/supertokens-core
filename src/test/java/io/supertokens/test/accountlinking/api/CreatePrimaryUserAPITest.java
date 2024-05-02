@@ -450,9 +450,9 @@ public class CreatePrimaryUserAPITest {
                 new TenantConfig(
                         tenantIdentifier,
                         new EmailPasswordConfig(true),
-                        new ThirdPartyConfig(true, null),
+                        new ThirdPartyConfig(true, true, null),
                         new PasswordlessConfig(true),
-                        null, null, coreConfig
+                        null, true, null, coreConfig
                 )
         );
 

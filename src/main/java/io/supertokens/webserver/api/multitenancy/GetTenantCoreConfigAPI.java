@@ -14,37 +14,37 @@
  *    under the License.
  */
 
-package io.supertokens.webserver.api.core;
+package io.supertokens.webserver.api.multitenancy;
 
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-
 import io.supertokens.Main;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.pluginInterface.ConfigFieldInfo;
+import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-public class CoreConfigListAPI extends WebserverAPI {
+public class GetTenantCoreConfigAPI extends WebserverAPI {
     private static final long serialVersionUID = -4641988458637882374L;
 
-    public CoreConfigListAPI(Main main) {
-        super(main, "");
+    public GetTenantCoreConfigAPI(Main main) {
+        super(main, RECIPE_ID.MULTITENANCY.toString());
     }
 
     @Override
     public String getPath() {
-        return "/core-config/list";
+        return "/recipe/multitenancy/tenant/core-config";
     }
 
     @Override
@@ -69,16 +69,16 @@ public class CoreConfigListAPI extends WebserverAPI {
             }
 
             if (shouldProtectProtectedConfig(req)) {
-                JsonArray configWithouProtectedFields = new JsonArray();
-                String[] protectedPluginFields = StorageLayer.getBaseStorage(main)
+                JsonArray configWithoutProtectedFields = new JsonArray();
+                String[] protectedPluginFields = getTenantStorage(req)
                         .getProtectedConfigsFromSuperTokensSaaSUsers();
                 for (JsonElement field : configJson) {
                     String fieldName = field.getAsJsonObject().get("name").getAsString();
                     if (!Arrays.asList(protectedPluginFields).contains(fieldName) && !Arrays.asList(CoreConfig.PROTECTED_CONFIGS).contains(fieldName)) {
-                        configWithouProtectedFields.add(field);
+                        configWithoutProtectedFields.add(field);
                     }
                 }
-                configJson = configWithouProtectedFields;
+                configJson = configWithoutProtectedFields;
             }
 
             result.addProperty("status", "OK");

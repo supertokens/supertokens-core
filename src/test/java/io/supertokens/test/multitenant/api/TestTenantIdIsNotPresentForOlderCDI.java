@@ -120,9 +120,9 @@ public class TestTenantIdIsNotPresentForOlderCDI {
                     new TenantConfig(
                             tenantIdentifier,
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
+                            new ThirdPartyConfig(true, true, null),
                             new PasswordlessConfig(true),
-                            null, null, config
+                            null, true, null, config
                     )
             );
         }
@@ -140,9 +140,9 @@ public class TestTenantIdIsNotPresentForOlderCDI {
                     new TenantConfig(
                             tenantIdentifier,
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
+                            new ThirdPartyConfig(true, true, null),
                             new PasswordlessConfig(true),
-                            null, null, config
+                            null, true, null, config
                     )
             );
         }
@@ -160,9 +160,9 @@ public class TestTenantIdIsNotPresentForOlderCDI {
                     new TenantConfig(
                             tenantIdentifier,
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
+                            new ThirdPartyConfig(true, true, null),
                             new PasswordlessConfig(true),
-                            null, null, config
+                            null, true, null, config
                     )
             );
         }

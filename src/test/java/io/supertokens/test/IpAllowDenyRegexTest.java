@@ -20,7 +20,6 @@ import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.config.Config;
-import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.httpRequest.HttpRequest;
@@ -384,14 +383,14 @@ public class IpAllowDenyRegexTest extends Mockito {
 
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     new TenantIdentifier(null, null, "t1"),
-                    new EmailPasswordConfig(true), new ThirdPartyConfig(true, null), new PasswordlessConfig(true),
-                    null, null,
+                    new EmailPasswordConfig(true), new ThirdPartyConfig(true, true, null), new PasswordlessConfig(true),
+                    null, true, null,
                     coreConfig
             ), false);
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     new TenantIdentifier(null, null, "t2"),
-                    new EmailPasswordConfig(true), new ThirdPartyConfig(true, null), new PasswordlessConfig(true),
-                    null, null,
+                    new EmailPasswordConfig(true), new ThirdPartyConfig(true, true, null), new PasswordlessConfig(true),
+                    null, true, null,
                     new JsonObject()
             ), false);
 
@@ -426,14 +425,14 @@ public class IpAllowDenyRegexTest extends Mockito {
 
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     new TenantIdentifier(null, null, "t1"),
-                    new EmailPasswordConfig(true), new ThirdPartyConfig(true, null), new PasswordlessConfig(true),
-                    null, null,
+                    new EmailPasswordConfig(true), new ThirdPartyConfig(true, true, null), new PasswordlessConfig(true),
+                    null, true, null,
                     coreConfig
             ), false);
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     new TenantIdentifier(null, null, "t2"),
-                    new EmailPasswordConfig(true), new ThirdPartyConfig(true, null), new PasswordlessConfig(true),
-                    null, null,
+                    new EmailPasswordConfig(true), new ThirdPartyConfig(true, true, null), new PasswordlessConfig(true),
+                    null, true, null,
                     new JsonObject()
             ), false);
 
