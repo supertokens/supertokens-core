@@ -97,6 +97,17 @@ public class ListConnectionUriDomainsAPI extends WebserverAPI {
                     for (TenantConfig tenantConfig : entry2.getValue()) {
                         JsonObject tenantConfigJson = tenantConfig.toJson(shouldProtect,
                                 storage, CoreConfig.PROTECTED_CONFIGS, getVersionFromRequest(req).lesserThan(SemVer.v5_1));
+
+                        if (getVersionFromRequest(req).lesserThan(SemVer.v5_1)) {
+                            tenantConfigJson.remove("useFirstFactorsFromStaticConfigIfEmpty");
+                            tenantConfigJson.get("thirdParty").getAsJsonObject().remove("useThirdPartyProvidersFromStaticConfigIfEmpty");
+                        }
+
+                        if (getVersionFromRequest(req).lesserThan(SemVer.v5_0)) {
+                            tenantConfigJson.remove("firstFactors");
+                            tenantConfigJson.remove("requiredSecondaryFactors");
+                        }
+
                         tenantsArray.add(tenantConfigJson);
                     }
                     appObject.add("tenants", tenantsArray);
