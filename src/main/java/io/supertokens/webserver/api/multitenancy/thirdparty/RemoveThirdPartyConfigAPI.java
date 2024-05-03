@@ -30,6 +30,7 @@ import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
+import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -82,7 +83,8 @@ public class RemoveThirdPartyConfigAPI extends WebserverAPI {
                     config.emailPasswordConfig,
                     new ThirdPartyConfig(
                             config.thirdPartyConfig.enabled,
-                            false,
+                            getVersionFromRequest(req).lesserThan(SemVer.v5_1) ?
+                                    config.thirdPartyConfig.useThirdPartyProvidersFromStaticConfigIfEmpty : false,
                             newProviders.toArray(new ThirdPartyConfig.Provider[0])),
                     config.passwordlessConfig,
                     config.firstFactors, config.useFirstFactorsFromStaticConfigIfEmpty,
