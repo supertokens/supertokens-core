@@ -34,6 +34,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class GetTenantCoreConfigAPI extends WebserverAPI {
     private static final long serialVersionUID = -4641988458637882374L;
@@ -55,9 +56,12 @@ public class GetTenantCoreConfigAPI extends WebserverAPI {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         try {
-            ArrayList<ConfigFieldInfo> config = CoreConfig.getConfigFieldsInfo(main, getTenantIdentifier(req));
-            ArrayList<ConfigFieldInfo> storageFields = getTenantStorage(req).getConfigFieldsInfo();
+            ArrayList<ConfigFieldInfo> config = new ArrayList<>();
+            List<ConfigFieldInfo> coreConfigFields = CoreConfig.getConfigFieldsInfo(main,
+                    getTenantIdentifier(req));
+            List<ConfigFieldInfo> storageFields = getTenantStorage(req).getConfigFieldsInfo();
 
+            config.addAll(coreConfigFields);
             config.addAll(storageFields);
 
             JsonObject result = new JsonObject();
