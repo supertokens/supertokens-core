@@ -95,7 +95,6 @@ public class GetTenantCoreConfigAPITest {
                         assertEquals(2, config.get("possibleValues").getAsJsonArray().size());
                         break;
                 }
-
             }
         } catch (NullPointerException e) {
             throw e;
