@@ -656,6 +656,7 @@ public class TestApp5_0 {
 
         tenant = getTenant(new TenantIdentifier(null, "a1", null),
                 process.getProcess());
+        assertEquals(7, tenant.entrySet().size());
         assertTrue(tenant.get("firstFactors").isJsonArray());
         assertEquals(1, tenant.get("firstFactors").getAsJsonArray().size());
         assertEquals(firstFactors, new Gson().fromJson(tenant.get("firstFactors").getAsJsonArray(), String[].class));
