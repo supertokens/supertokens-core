@@ -63,17 +63,15 @@ public class ListTenantsAPI extends WebserverAPI {
 
             boolean shouldProtect = shouldProtectProtectedConfig(req);
             for (TenantConfig tenantConfig : tenantConfigs) {
-                JsonObject tenantConfigJson = tenantConfig.toJson(shouldProtect,
-                        storage, CoreConfig.PROTECTED_CONFIGS, getVersionFromRequest(req).lesserThan(SemVer.v5_1));
 
-                if (getVersionFromRequest(req).lesserThan(SemVer.v5_1)) {
-                    tenantConfigJson.remove("useFirstFactorsFromStaticConfigIfEmpty");
-                    tenantConfigJson.get("thirdParty").getAsJsonObject().remove("useThirdPartyProvidersFromStaticConfigIfEmpty");
-                }
+                JsonObject tenantConfigJson;
 
                 if (getVersionFromRequest(req).lesserThan(SemVer.v5_0)) {
-                    tenantConfigJson.remove("firstFactors");
-                    tenantConfigJson.remove("requiredSecondaryFactors");
+                    tenantConfigJson = tenantConfig.toJson3_0(shouldProtect, storage, CoreConfig.PROTECTED_CONFIGS);
+                } else if (getVersionFromRequest(req).lesserThan(SemVer.v5_1)) {
+                    tenantConfigJson = tenantConfig.toJson5_0(shouldProtect, storage, CoreConfig.PROTECTED_CONFIGS);
+                } else {
+                    tenantConfigJson = tenantConfig.toJson5_1(shouldProtect, storage, CoreConfig.PROTECTED_CONFIGS);
                 }
 
                 tenantsArray.add(tenantConfigJson);

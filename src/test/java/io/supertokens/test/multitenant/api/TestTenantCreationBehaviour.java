@@ -625,7 +625,7 @@ public class TestTenantCreationBehaviour {
             throws HttpResponseException, IOException {
         JsonObject response = HttpRequestForTesting.sendGETRequest(main, "",
                 HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/app/list"),
-                null, 1000, 1000000, null,
+                null, 1000, 1000, null,
                 SemVer.v5_1.get(), "multitenancy");
 
         assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());

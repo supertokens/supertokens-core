@@ -798,8 +798,7 @@ public class CoreConfig {
 
     public static ArrayList<ConfigFieldInfo> getConfigFieldsInfo(Main main, TenantIdentifier tenantIdentifier)
             throws IOException, TenantOrAppNotFoundException {
-        JsonObject tenantConfig = Multitenancy.getNormalisedTenantConfig(main,
-                tenantIdentifier);
+        JsonObject tenantConfig = new Gson().toJsonTree(Config.getConfig(tenantIdentifier, main)).getAsJsonObject();
 
         JsonObject defaultConfig = new Gson().toJsonTree(new CoreConfig()).getAsJsonObject();
 

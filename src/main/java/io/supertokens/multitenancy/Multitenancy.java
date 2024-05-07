@@ -604,11 +604,6 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         return null;
     }
 
-    public static JsonObject getNormalisedTenantConfig(Main main, TenantIdentifier tenantIdentifier)
-            throws TenantOrAppNotFoundException {
-        return new Gson().toJsonTree(Config.getConfig(tenantIdentifier, main)).getAsJsonObject();
-    }
-
     public static TenantConfig[] getAllTenantsForApp(AppIdentifier appIdentifier, Main main) {
         MultitenancyHelper.getInstance(main).refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(true);
         TenantConfig[] tenants = MultitenancyHelper.getInstance(main).getAllTenants();

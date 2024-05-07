@@ -256,7 +256,7 @@ public class EmailVerificationTest {
             signUpRequestBody.add("email", emailObject);
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/signinup", signUpRequestBody, 1000000, 1000000, null,
+                    "http://localhost:3567/recipe/signinup", signUpRequestBody, 1000, 1000, null,
                     SemVer.v4_0.get(), "thirdparty");
 
             assertTrue(EmailVerification.isEmailVerified(process.getProcess(), user2.getSupertokensUserId(), "test@example.com"));
