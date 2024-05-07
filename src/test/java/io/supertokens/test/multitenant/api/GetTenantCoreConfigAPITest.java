@@ -21,8 +21,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.config.CoreConfig;
+import io.supertokens.config.annotations.ConfigDescription;
 import io.supertokens.httpRequest.HttpRequest;
-import io.supertokens.pluginInterface.annotations.ConfigDescription;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 
