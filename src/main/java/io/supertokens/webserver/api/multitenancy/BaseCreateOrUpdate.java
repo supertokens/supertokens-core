@@ -394,22 +394,6 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
             createdNew = true;
         }
 
-        if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_1)) {
-            // if using first factors as a way to enable/disable recipes but the tenant was already created using an
-            // old CDI, we automatically enable the recipes to make things work seamlessly
-            if (hasFirstFactors && firstFactors != null) {
-                if (List.of(firstFactors).contains("emailpassword") && emailPasswordEnabled == null) {
-                    emailPasswordEnabled = true;
-                }
-                if (List.of(firstFactors).contains("thirdparty") && thirdPartyEnabled == null) {
-                    thirdPartyEnabled = true;
-                }
-                if ((List.of(firstFactors).contains("otp-email") || List.of(firstFactors).contains("otp-phone") || List.of(firstFactors).contains("link-email") || List.of(firstFactors).contains("link-phone")) && passwordlessEnabled == null) {
-                    passwordlessEnabled = true;
-                }
-            }
-        }
-
         if (emailPasswordEnabled != null) {
             tenantConfig = new TenantConfig(
                     tenantConfig.tenantIdentifier,
