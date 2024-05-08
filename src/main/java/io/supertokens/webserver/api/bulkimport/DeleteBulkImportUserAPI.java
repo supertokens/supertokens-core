@@ -62,9 +62,9 @@ public class DeleteBulkImportUserAPI extends WebserverAPI {
             throw new ServletException(new WebserverAPI.BadRequestException("Field name 'ids' cannot be an empty array"));
         }
 
-        if (arr.size() > BulkImport.DELETE_USERS_LIMIT) {
+        if (arr.size() > BulkImport.DELETE_USERS_MAX_LIMIT) {
             throw new ServletException(new WebserverAPI.BadRequestException("Field name 'ids' cannot contain more than "
-                    + BulkImport.DELETE_USERS_LIMIT + " elements"));
+                    + BulkImport.DELETE_USERS_MAX_LIMIT + " elements"));
         }
 
         String[] userIds = new String[arr.size()];

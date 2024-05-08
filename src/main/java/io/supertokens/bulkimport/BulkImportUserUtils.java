@@ -565,6 +565,7 @@ public class BulkImportUserUtils {
                 } else if (!commonTenantUserPoolId.equals(tenantUserPoolId)) {
                     errors.add("All tenants for a user must share the same database for " + loginMethod.recipeId
                             + " recipe.");
+                    break; // Break to avoid adding the same error multiple times for the same loginMethod
                 }
             }
         }

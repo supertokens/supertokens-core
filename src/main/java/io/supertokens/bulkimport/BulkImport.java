@@ -29,16 +29,21 @@ import io.supertokens.utils.Utils;
 
 import java.util.List;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class BulkImport {
 
+    // Maximum number of users that can be added in a single /bulk-import/users POST request
     public static final int MAX_USERS_TO_ADD = 10000;
-    public static final int GET_USERS_PAGINATION_LIMIT = 500;
+    // Maximum number of users to return in a single page when calling /bulk-import/users GET
+    public static final int GET_USERS_PAGINATION_MAX_LIMIT = 500;
+    // Default number of users to return when no specific limit is given in /bulk-import/users GET
     public static final int GET_USERS_DEFAULT_LIMIT = 100;
-    public static final int DELETE_USERS_LIMIT = 500;
+    // Maximum number of users that can be deleted in a single operation
+    public static final int DELETE_USERS_MAX_LIMIT = 500;
+    // Number of users to process in a single batch of ProcessBulkImportUsers Cron Job
     public static final int PROCESS_USERS_BATCH_SIZE = 1000;
+    // Time interval in seconds between two consecutive runs of ProcessBulkImportUsers Cron Job
     public static final int PROCESS_USERS_INTERVAL_SECONDS = 60;
 
     public static void addUsers(AppIdentifier appIdentifier, Storage storage, List<BulkImportUser> users)
@@ -57,7 +62,7 @@ public class BulkImport {
     }
 
     public static BulkImportUserPaginationContainer getUsers(AppIdentifier appIdentifier, Storage storage,
-            @Nonnull Integer limit, @Nullable BULK_IMPORT_USER_STATUS status, @Nullable String paginationToken)
+            int limit, @Nullable BULK_IMPORT_USER_STATUS status, @Nullable String paginationToken)
             throws StorageQueryException, BulkImportUserPaginationToken.InvalidTokenException {
         List<BulkImportUser> users;
 

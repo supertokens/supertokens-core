@@ -69,9 +69,9 @@ public class BulkImportAPI extends WebserverAPI {
         Integer limit = InputParser.getIntQueryParamOrThrowError(req, "limit", true);
 
         if (limit != null) {
-            if (limit > BulkImport.GET_USERS_PAGINATION_LIMIT) {
+            if (limit > BulkImport.GET_USERS_PAGINATION_MAX_LIMIT) {
                 throw new ServletException(
-                        new BadRequestException("Max limit allowed is " + BulkImport.GET_USERS_PAGINATION_LIMIT));
+                        new BadRequestException("Max limit allowed is " + BulkImport.GET_USERS_PAGINATION_MAX_LIMIT));
             } else if (limit < 1) {
                 throw new ServletException(new BadRequestException("limit must a positive integer with min value 1"));
             }

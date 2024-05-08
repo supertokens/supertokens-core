@@ -89,6 +89,9 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                     result = storageLayer;
                 }
             } else {
+                if (isBulkImportProxy) {
+                    throw new QuitProgramException("Creating a bulk import proxy storage instance with in-memory DB is not supported.");
+                }
                 result = new Start(main);
             }
         }

@@ -147,7 +147,7 @@ public class ProcessBulkImportUsers extends CronTask {
         return 0;
     }
 
-    private Storage getProxyStorage(TenantIdentifier tenantIdentifier)
+    private synchronized Storage getProxyStorage(TenantIdentifier tenantIdentifier)
             throws InvalidConfigException, IOException, TenantOrAppNotFoundException, DbInitException, StorageQueryException {
         String userPoolId = StorageLayer.getStorage(tenantIdentifier, main).getUserPoolId();
         if (userPoolToStorageMap.containsKey(userPoolId)) {
@@ -166,7 +166,13 @@ public class ProcessBulkImportUsers extends CronTask {
                         normalisedConfigs.get(key), tenantIdentifier, true);
 
                 userPoolToStorageMap.put(userPoolId, bulkImportProxyStorage);
-                bulkImportProxyStorage.initStorage(true, new ArrayList<>());
+                bulkImportProxyStorage.initStorage(false, new ArrayList<>());
+                // `BulkImportProxyStorage` uses `BulkImportProxyConnection`, which overrides the `.commit()` method on the Connection object.
+                // The `initStorage()` method runs `select * from table_name limit 1` queries to check if the tables exist but these queries
+                // don't get committed due to the overridden `.commit()`, so we need to manually commit the transaction to remove any locks on the tables.
+
+                // Without this commit, a call to `select * from bulk_import_users limit 1` in `doesTableExist()` locks the `bulk_import_users` table,
+                // causing other queries to stall indefinitely.
                 bulkImportProxyStorage.commitTransactionForBulkImportProxyStorage();
                 return bulkImportProxyStorage;
             }
@@ -178,13 +184,9 @@ public class ProcessBulkImportUsers extends CronTask {
             throws TenantOrAppNotFoundException, InvalidConfigException, IOException, DbInitException, StorageQueryException {
         List<Storage> allProxyStorages = new ArrayList<>();
 
-        Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> resources = main
-                .getResourceDistributor()
-                .getAllResourcesWithResourceKey(StorageLayer.RESOURCE_KEY);
-        for (ResourceDistributor.KeyClass key : resources.keySet()) {
-            if (key.getTenantIdentifier().toAppIdentifier().equals(appIdentifier)) {
-                allProxyStorages.add(getProxyStorage(key.getTenantIdentifier()));
-            }
+        TenantConfig[] tenantConfigs = Multitenancy.getAllTenantsForApp(appIdentifier, main);
+        for (TenantConfig tenantConfig : tenantConfigs) {
+            allProxyStorages.add(getProxyStorage(tenantConfig.tenantIdentifier));
         }
         return allProxyStorages.toArray(new Storage[0]);
     }
@@ -221,17 +223,39 @@ public class ProcessBulkImportUsers extends CronTask {
             LoginMethod primaryLM = getPrimaryLoginMethod(user);
 
             AuthRecipeSQLStorage authRecipeSQLStorage = (AuthRecipeSQLStorage) getProxyStorage(firstTenantIdentifier);
-            // If primaryUserId is not null, it means we may have already processed this user but failed to delete the entry
-            // If the primaryUserId exists in the database, we'll delete the corresponding entry from the bulkImportUser table and proceed to skip this user.
+
+            /*
+            * We use two separate storage instances: one for importing the user and another for managing bulk_import_users entries. 
+            * This is necessary because the bulk_import_users entries are always in the public tenant storage, 
+            * but the actual user data could be in a different storage.
+            * 
+            * If transactions are committed individually, in this order:
+            * 1. Commit the transaction that imports the user.
+            * 2. Commit the transaction that deletes the corresponding bulk import entry.
+            *
+            * There's a risk where the first commit succeeds, but the second fails. This creates a situation where 
+            * the bulk import entry is re-processed, even though the user has already been imported into the database.
+            *
+            * To resolve this, we added a `primaryUserId` field to the `bulk_import_users` table.
+            * The processing logic now follows these steps:
+            *
+            * 1. Import the user and get the `primaryUserId` (transaction uncommitted).
+            * 2. Update the `primaryUserId` in the corresponding bulk import entry.
+            * 3. Commit the import transaction from step 1.
+            * 4. Delete the bulk import entry.
+            *
+            * If step 2 or any earlier step fails, nothing is committed, preventing partial state.
+            * If step 3 fails, the `primaryUserId` in the bulk import entry is updated, but the user doesn't exist in the database—this results in re-processing on the next run.
+            * If step 4 fails, the user exists but the bulk import entry remains; this will be handled by deleting it in the next run.
+            *
+            * The following code implements this logic.
+            */
             if (user.primaryUserId != null) {
-                AuthRecipeUserInfo processedUser = authRecipeSQLStorage.getPrimaryUserById(appIdentifier,
+                AuthRecipeUserInfo importedUser = authRecipeSQLStorage.getPrimaryUserById(appIdentifier,
                         user.primaryUserId);
 
-                if (processedUser != null && isProcessedUserFromSameBulkImportUserEntry(processedUser, user)) {
-                    baseTenantStorage.startTransaction(con2 -> {
-                        baseTenantStorage.deleteBulkImportUser_Transaction(appIdentifier, con2, user.id);
-                        return null;
-                    });
+                if (importedUser != null && isProcessedUserFromSameBulkImportUserEntry(importedUser, user)) {
+                    baseTenantStorage.deleteBulkImportUsers(appIdentifier, new String[] { user.id });
                     return;
                 }
             }
@@ -263,10 +287,7 @@ public class ProcessBulkImportUsers extends CronTask {
                     // NOTE: We need to use the baseTenantStorage as bulkImportProxyStorage could have a different storage than the baseTenantStorage
                     // If this fails, the primaryUserId will be updated in the bulkImportUser and it would exist in the database.
                     // When processing the user again, we'll check if primaryUserId exists with the same email. In this case the user will exist, and we'll simply delete the entry.
-                    baseTenantStorage.startTransaction(con2 -> {
-                        baseTenantStorage.deleteBulkImportUser_Transaction(appIdentifier, con2, user.id);
-                        return null;
-                    });
+                    baseTenantStorage.deleteBulkImportUsers(appIdentifier, new String[] { user.id });
                     return null;
                 } catch (StorageTransactionLogicException e) {
                     // We need to rollback the transaction manually because we have overridden that in the proxy storage
@@ -555,15 +576,16 @@ public class ProcessBulkImportUsers extends CronTask {
         return oldestLM;
     }
 
+    // Checks if the importedUser was processed from the same bulkImportUser entry.
     private boolean isProcessedUserFromSameBulkImportUserEntry(
-            AuthRecipeUserInfo processedUser, BulkImportUser bulkImportUser) {
-        if (bulkImportUser == null || processedUser == null || bulkImportUser.loginMethods == null ||
-                processedUser.loginMethods == null) {
+            AuthRecipeUserInfo importedUser, BulkImportUser bulkImportEntry) {
+        if (bulkImportEntry == null || importedUser == null || bulkImportEntry.loginMethods == null ||
+                importedUser.loginMethods == null) {
             return false;
         }
 
-        for (LoginMethod lm1 : bulkImportUser.loginMethods) {
-            for (io.supertokens.pluginInterface.authRecipe.LoginMethod lm2 : processedUser.loginMethods) {
+        for (LoginMethod lm1 : bulkImportEntry.loginMethods) {
+            for (io.supertokens.pluginInterface.authRecipe.LoginMethod lm2 : importedUser.loginMethods) {
                 if (lm2.recipeId.toString().equals(lm1.recipeId)) {
                     if (lm1.email != null && !lm1.email.equals(lm2.email)) {
                         return false;
