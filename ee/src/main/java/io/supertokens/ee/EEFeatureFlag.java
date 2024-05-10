@@ -269,12 +269,15 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
             }
             {
                 boolean hasEnterpriseLogin = false;
-                for (ThirdPartyConfig.Provider provider : tenantConfig.thirdPartyConfig.providers) {
-                    if (isEnterpriseThirdPartyId(provider.thirdPartyId)) {
-                        hasEnterpriseLogin = true;
-                        break;
+                if (tenantConfig.thirdPartyConfig.providers != null) {
+                    for (ThirdPartyConfig.Provider provider : tenantConfig.thirdPartyConfig.providers) {
+                        if (isEnterpriseThirdPartyId(provider.thirdPartyId)) {
+                            hasEnterpriseLogin = true;
+                            break;
+                        }
                     }
                 }
+
                 tenantStat.addProperty("hasEnterpriseLogin", hasEnterpriseLogin);
             }
 

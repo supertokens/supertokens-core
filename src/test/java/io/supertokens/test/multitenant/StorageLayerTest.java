@@ -108,8 +108,7 @@ public class StorageLayerTest {
         assertTrue(baseTenantConfig.emailPasswordConfig.enabled);
         assertTrue(baseTenantConfig.passwordlessConfig.enabled);
         assertTrue(baseTenantConfig.thirdPartyConfig.enabled);
-        assertNotNull(baseTenantConfig.thirdPartyConfig.providers);
-        assertEquals(0, baseTenantConfig.thirdPartyConfig.providers.length);
+        assertNull(baseTenantConfig.thirdPartyConfig.providers);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -149,7 +148,7 @@ public class StorageLayerTest {
         mtStorage.overwriteTenantConfig(new TenantConfig(
                 new TenantIdentifier(null, null, null),
                 new EmailPasswordConfig(true),
-                new ThirdPartyConfig(true, true, new ThirdPartyConfig.Provider[]{
+                new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[]{
                         new ThirdPartyConfig.Provider(
                                 "google",
                                 "Google",
@@ -180,7 +179,7 @@ public class StorageLayerTest {
                         )
                 }),
                 new PasswordlessConfig(true),
-                null, true, null, new JsonObject()
+                null, null, new JsonObject()
         ));
 
         TenantConfig[] tenantConfigs = mtStorage.getAllTenants();
@@ -254,7 +253,7 @@ public class StorageLayerTest {
         mtStorage.overwriteTenantConfig(new TenantConfig(
                 new TenantIdentifier(null, null, null),
                 new EmailPasswordConfig(true),
-                new ThirdPartyConfig(true, true, new ThirdPartyConfig.Provider[]{
+                new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[]{
                         new ThirdPartyConfig.Provider(
                                 "google",
                                 "Google",
@@ -285,7 +284,7 @@ public class StorageLayerTest {
                         )
                 }),
                 new PasswordlessConfig(true),
-                null, true, null, new JsonObject()
+                null, null, new JsonObject()
         ));
 
         TenantConfig[] tenantConfigs = mtStorage.getAllTenants();
@@ -357,7 +356,7 @@ public class StorageLayerTest {
         mtStorage.overwriteTenantConfig(new TenantConfig(
                 new TenantIdentifier(null, null, null),
                 new EmailPasswordConfig(true),
-                new ThirdPartyConfig(true, true, new ThirdPartyConfig.Provider[]{
+                new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[]{
                         new ThirdPartyConfig.Provider(
                                 "google",
                                 "Google",
@@ -388,7 +387,7 @@ public class StorageLayerTest {
                         )
                 }),
                 new PasswordlessConfig(true),
-                null, true, null, new JsonObject()
+                null, null, new JsonObject()
         ));
 
         TenantConfig[] tenantConfigs = mtStorage.getAllTenants();
@@ -460,7 +459,7 @@ public class StorageLayerTest {
         mtStorage.overwriteTenantConfig(new TenantConfig(
                 new TenantIdentifier(null, null, null),
                 new EmailPasswordConfig(true),
-                new ThirdPartyConfig(true, true, new ThirdPartyConfig.Provider[]{
+                new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[]{
                         new ThirdPartyConfig.Provider(
                                 "google",
                                 "Google",
@@ -482,7 +481,7 @@ public class StorageLayerTest {
                         )
                 }),
                 new PasswordlessConfig(true),
-                null, true, null, new JsonObject()
+                null, null, new JsonObject()
         ));
 
         TenantConfig[] tenantConfigs = mtStorage.getAllTenants();
@@ -547,9 +546,9 @@ public class StorageLayerTest {
         mtStorage.overwriteTenantConfig(new TenantConfig(
                 new TenantIdentifier(null, null, null),
                 new EmailPasswordConfig(true),
-                new ThirdPartyConfig(true, true, null),
+                new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                null, true, null, new JsonObject()
+                null, null, new JsonObject()
         ));
 
         TenantConfig[] tenantConfigs = mtStorage.getAllTenants();
@@ -561,8 +560,7 @@ public class StorageLayerTest {
         assertTrue(baseTenantConfig.emailPasswordConfig.enabled);
         assertTrue(baseTenantConfig.passwordlessConfig.enabled);
         assertTrue(baseTenantConfig.thirdPartyConfig.enabled);
-        assertNotNull(baseTenantConfig.thirdPartyConfig.providers);
-        assertEquals(0, baseTenantConfig.thirdPartyConfig.providers.length);
+        assertNull(baseTenantConfig.thirdPartyConfig.providers);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -602,7 +600,7 @@ public class StorageLayerTest {
         mtStorage.createTenant(new TenantConfig(
                 new TenantIdentifier(null, null, "t1"),
                 new EmailPasswordConfig(true),
-                new ThirdPartyConfig(true, true, new ThirdPartyConfig.Provider[]{
+                new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[]{
                         new ThirdPartyConfig.Provider(
                                 "google",
                                 "Google",
@@ -633,7 +631,7 @@ public class StorageLayerTest {
                         )
                 }),
                 new PasswordlessConfig(true),
-                null, true, null, new JsonObject()
+                null, null, new JsonObject()
         ));
 
         TenantConfig[] tenantConfigs = mtStorage.getAllTenants();
@@ -718,7 +716,7 @@ public class StorageLayerTest {
         mtStorage.createTenant(new TenantConfig(
                 new TenantIdentifier(null, null, "t1"),
                 new EmailPasswordConfig(true),
-                new ThirdPartyConfig(true, true, new ThirdPartyConfig.Provider[]{
+                new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[]{
                         new ThirdPartyConfig.Provider(
                                 "google",
                                 "Google",
@@ -749,14 +747,14 @@ public class StorageLayerTest {
                         )
                 }),
                 new PasswordlessConfig(true),
-                null, true, null, new JsonObject()
+                null, null, new JsonObject()
         ));
 
         try {
             mtStorage.createTenant(new TenantConfig(
                     new TenantIdentifier(null, null, "t1"),
                     new EmailPasswordConfig(true),
-                    new ThirdPartyConfig(true, true, new ThirdPartyConfig.Provider[]{
+                    new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[]{
                             new ThirdPartyConfig.Provider(
                                     "google",
                                     "Google",
@@ -787,7 +785,7 @@ public class StorageLayerTest {
                             )
                     }),
                     new PasswordlessConfig(true),
-                    null, true, null, new JsonObject()
+                    null, null, new JsonObject()
             ));
             fail();
         } catch (DuplicateTenantException e) {
@@ -866,7 +864,7 @@ public class StorageLayerTest {
             mtStorage.overwriteTenantConfig(new TenantConfig(
                     new TenantIdentifier(null, null, "t1"),
                     new EmailPasswordConfig(true),
-                    new ThirdPartyConfig(true, true, new ThirdPartyConfig.Provider[]{
+                    new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[]{
                             new ThirdPartyConfig.Provider(
                                     "google",
                                     "Google",
@@ -897,7 +895,7 @@ public class StorageLayerTest {
                             )
                     }),
                     new PasswordlessConfig(true),
-                    null, true, null, new JsonObject()
+                    null, null, new JsonObject()
             ));
             fail();
         } catch (TenantOrAppNotFoundException e) {
@@ -941,7 +939,7 @@ public class StorageLayerTest {
             mtStorage.createTenant(new TenantConfig(
                     new TenantIdentifier(null, null, "t1"),
                     new EmailPasswordConfig(true),
-                    new ThirdPartyConfig(true, true, new ThirdPartyConfig.Provider[]{
+                    new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[]{
                             new ThirdPartyConfig.Provider(
                                     "google",
                                     "Google",
@@ -1000,7 +998,7 @@ public class StorageLayerTest {
                             )
                     }),
                     new PasswordlessConfig(true),
-                    null, true, null, new JsonObject()
+                    null, null, new JsonObject()
             ));
             fail();
         } catch (DuplicateThirdPartyIdException e) {
@@ -1045,7 +1043,7 @@ public class StorageLayerTest {
             mtStorage.createTenant(new TenantConfig(
                     new TenantIdentifier(null, null, "t1"),
                     new EmailPasswordConfig(true),
-                    new ThirdPartyConfig(true, true, new ThirdPartyConfig.Provider[]{
+                    new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[]{
                             new ThirdPartyConfig.Provider(
                                     "google",
                                     "Google",
@@ -1076,7 +1074,7 @@ public class StorageLayerTest {
                             )
                     }),
                     new PasswordlessConfig(true),
-                    null, true, null, new JsonObject()
+                    null, null, new JsonObject()
             ));
         } catch (DuplicateTenantException e) {
             fail();
@@ -1086,7 +1084,7 @@ public class StorageLayerTest {
             mtStorage.createTenant(new TenantConfig(
                     new TenantIdentifier(null, null, "t1"),
                     new EmailPasswordConfig(true),
-                    new ThirdPartyConfig(true, true, new ThirdPartyConfig.Provider[]{
+                    new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[]{
                             new ThirdPartyConfig.Provider(
                                     "google",
                                     "Google",
@@ -1145,7 +1143,7 @@ public class StorageLayerTest {
                             )
                     }),
                     new PasswordlessConfig(true),
-                    null, true, null, new JsonObject()
+                    null, null, new JsonObject()
             ));
             fail();
         } catch (DuplicateTenantException e) {
@@ -1190,7 +1188,7 @@ public class StorageLayerTest {
             mtStorage.createTenant(new TenantConfig(
                     new TenantIdentifier(null, null, "t1"),
                     new EmailPasswordConfig(true),
-                    new ThirdPartyConfig(true, true, new ThirdPartyConfig.Provider[]{
+                    new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[]{
                             new ThirdPartyConfig.Provider(
                                     "google",
                                     "Google",
@@ -1221,7 +1219,7 @@ public class StorageLayerTest {
                             )
                     }),
                     new PasswordlessConfig(true),
-                    null, true, null, new JsonObject()
+                    null, null, new JsonObject()
             ));
         } catch (DuplicateTenantException e) {
             fail();
@@ -1231,7 +1229,7 @@ public class StorageLayerTest {
             mtStorage.createTenant(new TenantConfig(
                     new TenantIdentifier(null, null, "t1"),
                     new EmailPasswordConfig(true),
-                    new ThirdPartyConfig(true, true, new ThirdPartyConfig.Provider[]{
+                    new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[]{
                             new ThirdPartyConfig.Provider(
                                     "google",
                                     "Google",
@@ -1270,7 +1268,7 @@ public class StorageLayerTest {
                             )
                     }),
                     new PasswordlessConfig(true),
-                    null, true, null, new JsonObject()
+                    null, null, new JsonObject()
             ));
             fail();
         } catch (DuplicateTenantException e) {
@@ -1315,7 +1313,7 @@ public class StorageLayerTest {
             mtStorage.createTenant(new TenantConfig(
                     new TenantIdentifier(null, null, "t1"),
                     new EmailPasswordConfig(true),
-                    new ThirdPartyConfig(true, true, new ThirdPartyConfig.Provider[]{
+                    new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[]{
                             new ThirdPartyConfig.Provider(
                                     "google",
                                     "Google",
@@ -1382,7 +1380,7 @@ public class StorageLayerTest {
                             )
                     }),
                     new PasswordlessConfig(true),
-                    null, true, null, new JsonObject()
+                    null, null, new JsonObject()
             ));
             fail();
         } catch (DuplicateClientTypeException e) {
@@ -1427,7 +1425,7 @@ public class StorageLayerTest {
             mtStorage.overwriteTenantConfig(new TenantConfig(
                     new TenantIdentifier(null, null, null),
                     new EmailPasswordConfig(true),
-                    new ThirdPartyConfig(true, true, new ThirdPartyConfig.Provider[]{
+                    new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[]{
                             new ThirdPartyConfig.Provider(
                                     "google",
                                     "Google",
@@ -1486,7 +1484,7 @@ public class StorageLayerTest {
                             )
                     }),
                     new PasswordlessConfig(true),
-                    null, true, null, new JsonObject()
+                    null, null, new JsonObject()
             ));
             fail();
         } catch (DuplicateThirdPartyIdException e) {
@@ -1531,7 +1529,7 @@ public class StorageLayerTest {
             mtStorage.overwriteTenantConfig(new TenantConfig(
                     new TenantIdentifier(null, null, null),
                     new EmailPasswordConfig(true),
-                    new ThirdPartyConfig(true, true, new ThirdPartyConfig.Provider[]{
+                    new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[]{
                             new ThirdPartyConfig.Provider(
                                     "google",
                                     "Google",
@@ -1598,7 +1596,7 @@ public class StorageLayerTest {
                             )
                     }),
                     new PasswordlessConfig(true),
-                    null, true, null, new JsonObject()
+                    null, null, new JsonObject()
             ));
             fail();
         } catch (DuplicateClientTypeException e) {
@@ -1654,7 +1652,7 @@ public class StorageLayerTest {
                         mtStorage.overwriteTenantConfig(new TenantConfig(
                                 new TenantIdentifier(null, null, null),
                                 new EmailPasswordConfig(true),
-                                new ThirdPartyConfig(true, true, new ThirdPartyConfig.Provider[]{
+                                new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[]{
                                         new ThirdPartyConfig.Provider(
                                                 "google",
                                                 "Google",
@@ -1687,7 +1685,7 @@ public class StorageLayerTest {
                                         )
                                 }),
                                 new PasswordlessConfig(true),
-                                null, true, null, new JsonObject()
+                                null, null, new JsonObject()
                         ));
                         break;
                     } catch (Exception e) {
@@ -1769,30 +1767,30 @@ public class StorageLayerTest {
                 new TenantConfig(
                         new TenantIdentifier(null, null, "t1"),
                         new EmailPasswordConfig(true),
-                        new ThirdPartyConfig(true, true, null),
+                        new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        null, true, null, config1
+                        null, null, config1
                 ),
                 new TenantConfig(
                         new TenantIdentifier(null, null, "t2"),
                         new EmailPasswordConfig(true),
-                        new ThirdPartyConfig(true, true, null),
+                        new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        null, true, null, config1
+                        null, null, config1
                 ),
                 new TenantConfig(
                         new TenantIdentifier(null, "a1", null),
                         new EmailPasswordConfig(true),
-                        new ThirdPartyConfig(true, true, null),
+                        new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        null, true, null, config2
+                        null, null, config2
                 ),
                 new TenantConfig(
                         new TenantIdentifier(null, "a1", "t1"),
                         new EmailPasswordConfig(true),
-                        new ThirdPartyConfig(true, true, null),
+                        new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        null, true, null, config2
+                        null, null, config2
                 )
         });
 
@@ -1847,9 +1845,9 @@ public class StorageLayerTest {
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 new TenantIdentifier(null, null, "t1"),
                 new EmailPasswordConfig(true),
-                new ThirdPartyConfig(true, true, null),
+                new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                null, true, null, config
+                null, null, config
         ), false);
 
         Storage storage = StorageLayer.getStorage(new TenantIdentifier(null, null, "t1"), process.getProcess());
@@ -1893,16 +1891,16 @@ public class StorageLayerTest {
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 new TenantIdentifier(null, null, "t1"),
                 new EmailPasswordConfig(true),
-                new ThirdPartyConfig(true, true, null),
+                new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                null, true, null, config
+                null, null, config
         ), false);
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 new TenantIdentifier(null, null, "t2"),
                 new EmailPasswordConfig(true),
-                new ThirdPartyConfig(true, true, null),
+                new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                null, true, null, config
+                null, null, config
         ), false);
 
         Storage storage = StorageLayer.getStorage(new TenantIdentifier(null, null, "t1"), process.getProcess());
@@ -1951,16 +1949,16 @@ public class StorageLayerTest {
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 new TenantIdentifier(null, null, "t1"),
                 new EmailPasswordConfig(true),
-                new ThirdPartyConfig(true, true, null),
+                new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                null, true, null, config
+                null, null, config
         ), false);
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 new TenantIdentifier(null, null, "t2"),
                 new EmailPasswordConfig(true),
-                new ThirdPartyConfig(true, true, null),
+                new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                null, true, null, config
+                null, null, config
         ), false);
 
 
@@ -2031,9 +2029,9 @@ public class StorageLayerTest {
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 new TenantIdentifier(null, null, "t1"),
                 new EmailPasswordConfig(true),
-                new ThirdPartyConfig(true, true, null),
+                new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                null, true, null, new JsonObject()
+                null, null, new JsonObject()
         ), false);
 
         Storage storage = StorageLayer.getBaseStorage(process.getProcess());
@@ -2046,9 +2044,9 @@ public class StorageLayerTest {
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 new TenantIdentifier(null, null, "t1"),
                 new EmailPasswordConfig(true),
-                new ThirdPartyConfig(true, true, null),
+                new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                null, true, null, config
+                null, null, config
         ), false);
 
         storage = StorageLayer.getBaseStorage(process.getProcess());

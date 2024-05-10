@@ -106,9 +106,9 @@ public class MultitenantAPITest {
                     new TenantConfig(
                             tenantIdentifier,
                             new EmailPasswordConfig(false),
-                            new ThirdPartyConfig(true, true, null),
+                            new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(false),
-                            null, true, null,
+                            null, null,
                             config
                     )
             );
@@ -127,9 +127,9 @@ public class MultitenantAPITest {
                     new TenantConfig(
                             tenantIdentifier,
                             new EmailPasswordConfig(false),
-                            new ThirdPartyConfig(true, true, null),
+                            new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(false),
-                            null, true, null,
+                            null, null,
                             config
                     )
             );
@@ -148,9 +148,9 @@ public class MultitenantAPITest {
                     new TenantConfig(
                             tenantIdentifier,
                             new EmailPasswordConfig(false),
-                            new ThirdPartyConfig(true, true, null),
+                            new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(false),
-                            null, true, null,
+                            null, null,
                             config
                     )
             );

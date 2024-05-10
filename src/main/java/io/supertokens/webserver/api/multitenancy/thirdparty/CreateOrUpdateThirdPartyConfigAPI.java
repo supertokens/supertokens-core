@@ -31,7 +31,6 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
-import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -88,19 +87,21 @@ public class CreateOrUpdateThirdPartyConfigAPI extends WebserverAPI {
 
             boolean found = false;
 
-            for (ThirdPartyConfig.Provider provider : tenantConfig.thirdPartyConfig.providers) {
-                // Loop through all the existing thirdParty providers in the db
+            if (tenantConfig.thirdPartyConfig.providers != null) {
+                for (ThirdPartyConfig.Provider provider : tenantConfig.thirdPartyConfig.providers) {
+                    // Loop through all the existing thirdParty providers in the db
 
-                if (!provider.thirdPartyId.equals(thirdPartyId)) {
-                    // if the thirdPartyId is not the same as the one we are trying to update, add it to the new list
-                    newProviders.add(provider);
-                } else {
-                    // if the thirdPartyId is the same as the one we are trying to update, add the one from json input
-                    // to the new list
-                    ThirdPartyConfig.Provider newProvider = new Gson().fromJson(config,
-                            ThirdPartyConfig.Provider.class);
-                    newProviders.add(normalize(newProvider));
-                    found = true;
+                    if (!provider.thirdPartyId.equals(thirdPartyId)) {
+                        // if the thirdPartyId is not the same as the one we are trying to update, add it to the new list
+                        newProviders.add(provider);
+                    } else {
+                        // if the thirdPartyId is the same as the one we are trying to update, add the one from json input
+                        // to the new list
+                        ThirdPartyConfig.Provider newProvider = new Gson().fromJson(config,
+                                ThirdPartyConfig.Provider.class);
+                        newProviders.add(normalize(newProvider));
+                        found = true;
+                    }
                 }
             }
             if (!found) {
@@ -113,11 +114,9 @@ public class CreateOrUpdateThirdPartyConfigAPI extends WebserverAPI {
                     tenantConfig.emailPasswordConfig,
                     new ThirdPartyConfig(
                             tenantConfig.thirdPartyConfig.enabled,
-                            getVersionFromRequest(req).lesserThan(SemVer.v5_1) ?
-                                    tenantConfig.thirdPartyConfig.useThirdPartyProvidersFromStaticConfigIfEmpty : false,
                             newProviders.toArray(new ThirdPartyConfig.Provider[0])),
                     tenantConfig.passwordlessConfig,
-                    tenantConfig.firstFactors, tenantConfig.useFirstFactorsFromStaticConfigIfEmpty,
+                    tenantConfig.firstFactors,
                     tenantConfig.requiredSecondaryFactors, tenantConfig.coreConfig
             );
 

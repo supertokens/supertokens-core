@@ -20,7 +20,8 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.multitenancy.Multitenancy;
-import io.supertokens.pluginInterface.multitenancy.*;
+import io.supertokens.pluginInterface.multitenancy.TenantConfig;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.InputParser;
@@ -31,18 +32,17 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
-@Deprecated
-public class CreateOrUpdateTenantOrGetTenantAPI extends BaseCreateOrUpdate {
+public class CreateOrUpdateTenantOrGetTenantV2API extends BaseCreateOrUpdate {
 
     private static final long serialVersionUID = -4641988458637882374L;
 
-    public CreateOrUpdateTenantOrGetTenantAPI(Main main) {
+    public CreateOrUpdateTenantOrGetTenantV2API(Main main) {
         super(main);
     }
 
     @Override
     public String getPath() {
-        return "/recipe/multitenancy/tenant";
+        return "/recipe/multitenancy/tenant/v2";
     }
 
     @Override
@@ -61,7 +61,7 @@ public class CreateOrUpdateTenantOrGetTenantAPI extends BaseCreateOrUpdate {
             throw new ServletException(e);
         }
 
-        super.handle(
+        super.handle_v2(
                 req, sourceTenantIdentifier,
                 new TenantIdentifier(sourceTenantIdentifier.getConnectionUriDomain(), sourceTenantIdentifier.getAppId(), tenantId),
                 input, resp);
@@ -76,12 +76,7 @@ public class CreateOrUpdateTenantOrGetTenantAPI extends BaseCreateOrUpdate {
                 throw new TenantOrAppNotFoundException(tenantIdentifier);
             }
             boolean shouldProtect = shouldProtectProtectedConfig(req);
-            JsonObject result;
-            if (getVersionFromRequest(req).lesserThan(SemVer.v5_0)) {
-                result = config.toJson3_0(shouldProtect, getTenantStorage(req), CoreConfig.PROTECTED_CONFIGS);
-            } else {
-                result = config.toJson5_0(shouldProtect, getTenantStorage(req), CoreConfig.PROTECTED_CONFIGS);
-            }
+            JsonObject result = config.toJson_v2(shouldProtect, getTenantStorage(req), CoreConfig.PROTECTED_CONFIGS);
 
             result.addProperty("status", "OK");
 

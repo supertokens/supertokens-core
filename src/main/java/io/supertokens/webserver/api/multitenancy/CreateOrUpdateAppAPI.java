@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 
+@Deprecated
 public class CreateOrUpdateAppAPI extends BaseCreateOrUpdate {
 
     private static final long serialVersionUID = -4641988458637882374L;

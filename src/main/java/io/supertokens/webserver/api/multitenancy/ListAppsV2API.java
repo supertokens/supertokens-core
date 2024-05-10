@@ -34,51 +34,66 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-@Deprecated
-public class ListTenantsAPI extends WebserverAPI {
+public class ListAppsV2API extends WebserverAPI {
     private static final long serialVersionUID = -4641988458637882374L;
 
-    public ListTenantsAPI(Main main) {
+    public ListAppsV2API(Main main) {
         super(main, RECIPE_ID.MULTITENANCY.toString());
     }
 
     @Override
     public String getPath() {
-        return "/recipe/multitenancy/tenant/list";
+        return "/recipe/multitenancy/app/list/v2";
     }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         try {
             TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
-            Storage storage = getTenantStorage(req);
+            Storage storage = this.getTenantStorage(req);
 
-            if (!tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
-                throw new BadPermissionException("Only the public tenantId is allowed to list all tenants " +
-                        "associated with this app");
+            if (!tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)
+                    || !tenantIdentifier.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)) {
+                throw new BadPermissionException("Only the public tenantId and public appId is allowed to list " +
+                        "all apps associated with this connection uri domain");
             }
 
-            TenantConfig[] tenantConfigs = Multitenancy.getAllTenantsForApp(tenantIdentifier.toAppIdentifier(), main);
-            JsonArray tenantsArray = new JsonArray();
+            TenantConfig[] tenantConfigs = Multitenancy.getAllAppsAndTenantsForConnectionUriDomain(
+                    tenantIdentifier.getConnectionUriDomain(), main);
+
+            Map<String, List<TenantConfig>> appsToTenants = new HashMap<>();
+            for (TenantConfig tenantConfig : tenantConfigs) {
+                if (!appsToTenants.containsKey(tenantConfig.tenantIdentifier.getAppId())) {
+                    appsToTenants.put(tenantConfig.tenantIdentifier.getAppId(), new ArrayList<>());
+                }
+                appsToTenants.get(tenantConfig.tenantIdentifier.getAppId()).add(tenantConfig);
+            }
 
             boolean shouldProtect = shouldProtectProtectedConfig(req);
-            for (TenantConfig tenantConfig : tenantConfigs) {
+            JsonArray appsArray = new JsonArray();
+            for (Map.Entry<String, List<TenantConfig>> entry : appsToTenants.entrySet()) {
+               String appId = entry.getKey();
+               JsonObject appObject = new JsonObject();
+               appObject.addProperty("appId", appId);
+                JsonArray tenantsArray = new JsonArray();
+                for (TenantConfig tenantConfig : entry.getValue()) {
+                    JsonObject tenantConfigJson = tenantConfig.toJson_v2(shouldProtect, storage,
+                            CoreConfig.PROTECTED_CONFIGS);
 
-                JsonObject tenantConfigJson;
-
-                if (getVersionFromRequest(req).lesserThan(SemVer.v5_0)) {
-                    tenantConfigJson = tenantConfig.toJson3_0(shouldProtect, storage, CoreConfig.PROTECTED_CONFIGS);
-                } else {
-                    tenantConfigJson = tenantConfig.toJson5_0(shouldProtect, storage, CoreConfig.PROTECTED_CONFIGS);
+                    tenantsArray.add(tenantConfigJson);
                 }
-
-                tenantsArray.add(tenantConfigJson);
+                appObject.add("tenants", tenantsArray);
+                appsArray.add(appObject);
             }
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
-            result.add("tenants", tenantsArray);
+            result.add("apps", appsArray);
 
             super.sendJsonResponse(200, result, resp);
 

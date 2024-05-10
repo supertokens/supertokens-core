@@ -66,9 +66,9 @@ public class TestSkipValidationInCreateThirdParty {
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 new TenantIdentifier(null, "a1", null),
                 new EmailPasswordConfig(true),
-                new ThirdPartyConfig(true, true, null),
+                new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                null, true, null, new JsonObject()
+                null, null, new JsonObject()
         ), false);
 
         try {

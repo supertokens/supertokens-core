@@ -57,11 +57,9 @@ public class TenantConfigSQLHelper {
                         new EmailPasswordConfig(result.getBoolean("email_password_enabled")),
                         new ThirdPartyConfig(
                                 result.getBoolean("third_party_enabled"),
-                                result.getBoolean("use_third_party_providers_from_static_if_empty"),
                                 this.providers),
                         new PasswordlessConfig(result.getBoolean("passwordless_enabled")),
                         firstFactors.length == 0 ? null : firstFactors,
-                        result.getBoolean("use_first_factors_from_static_if_empty"),
                         requiredSecondaryFactors.length == 0 ? null : requiredSecondaryFactors,
                         JsonUtils.stringToJsonObject(result.getString("core_config"))
                 );
@@ -75,7 +73,7 @@ public class TenantConfigSQLHelper {
             throws SQLException, StorageQueryException {
         String QUERY = "SELECT connection_uri_domain, app_id, tenant_id, core_config, "
                 + " email_password_enabled, passwordless_enabled, third_party_enabled, "
-                + " use_first_factors_from_static_if_empty, use_third_party_providers_from_static_if_empty FROM "
+                + " is_first_factors_null, is_third_party_providers_null FROM "
                 + Config.getConfig(start).getTenantConfigsTable() + ";";
 
         TenantConfig[] tenantConfigs = execute(start, QUERY, pst -> {}, result -> {
@@ -106,7 +104,7 @@ public class TenantConfigSQLHelper {
         String QUERY = "INSERT INTO " + Config.getConfig(start).getTenantConfigsTable()
                 + "(connection_uri_domain, app_id, tenant_id, core_config,"
                 + " email_password_enabled, passwordless_enabled, third_party_enabled,"
-                + " use_first_factors_from_static_if_empty, use_third_party_providers_from_static_if_empty)"
+                + " is_first_factors_null, is_third_party_providers_null)"
                 + " VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         update(sqlCon, QUERY, pst -> {
@@ -117,8 +115,8 @@ public class TenantConfigSQLHelper {
             pst.setBoolean(5, tenantConfig.emailPasswordConfig.enabled);
             pst.setBoolean(6, tenantConfig.passwordlessConfig.enabled);
             pst.setBoolean(7, tenantConfig.thirdPartyConfig.enabled);
-            pst.setBoolean(8, tenantConfig.useFirstFactorsFromStaticConfigIfEmpty);
-            pst.setBoolean(9, tenantConfig.thirdPartyConfig.useThirdPartyProvidersFromStaticConfigIfEmpty);
+            pst.setBoolean(8, tenantConfig.firstFactors == null);
+            pst.setBoolean(9, tenantConfig.thirdPartyConfig.providers == null);
         });
     }
 

@@ -39,6 +39,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Deprecated
 public class ListAppsAPI extends WebserverAPI {
     private static final long serialVersionUID = -4641988458637882374L;
 
@@ -86,10 +87,8 @@ public class ListAppsAPI extends WebserverAPI {
 
                     if (getVersionFromRequest(req).lesserThan(SemVer.v5_0)) {
                         tenantConfigJson = tenantConfig.toJson3_0(shouldProtect, storage, CoreConfig.PROTECTED_CONFIGS);
-                    } else if (getVersionFromRequest(req).lesserThan(SemVer.v5_1)) {
-                        tenantConfigJson = tenantConfig.toJson5_0(shouldProtect, storage, CoreConfig.PROTECTED_CONFIGS);
                     } else {
-                        tenantConfigJson = tenantConfig.toJson5_1(shouldProtect, storage, CoreConfig.PROTECTED_CONFIGS);
+                        tenantConfigJson = tenantConfig.toJson5_0(shouldProtect, storage, CoreConfig.PROTECTED_CONFIGS);
                     }
 
                     tenantsArray.add(tenantConfigJson);

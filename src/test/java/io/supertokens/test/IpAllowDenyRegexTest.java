@@ -383,14 +383,14 @@ public class IpAllowDenyRegexTest extends Mockito {
 
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     new TenantIdentifier(null, null, "t1"),
-                    new EmailPasswordConfig(true), new ThirdPartyConfig(true, true, null), new PasswordlessConfig(true),
-                    null, true, null,
+                    new EmailPasswordConfig(true), new ThirdPartyConfig(true, null), new PasswordlessConfig(true),
+                    null, null,
                     coreConfig
             ), false);
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     new TenantIdentifier(null, null, "t2"),
-                    new EmailPasswordConfig(true), new ThirdPartyConfig(true, true, null), new PasswordlessConfig(true),
-                    null, true, null,
+                    new EmailPasswordConfig(true), new ThirdPartyConfig(true, null), new PasswordlessConfig(true),
+                    null, null,
                     new JsonObject()
             ), false);
 
@@ -425,14 +425,14 @@ public class IpAllowDenyRegexTest extends Mockito {
 
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     new TenantIdentifier(null, null, "t1"),
-                    new EmailPasswordConfig(true), new ThirdPartyConfig(true, true, null), new PasswordlessConfig(true),
-                    null, true, null,
+                    new EmailPasswordConfig(true), new ThirdPartyConfig(true, null), new PasswordlessConfig(true),
+                    null, null,
                     coreConfig
             ), false);
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     new TenantIdentifier(null, null, "t2"),
-                    new EmailPasswordConfig(true), new ThirdPartyConfig(true, true, null), new PasswordlessConfig(true),
-                    null, true, null,
+                    new EmailPasswordConfig(true), new ThirdPartyConfig(true, null), new PasswordlessConfig(true),
+                    null, null,
                     new JsonObject()
             ), false);
 

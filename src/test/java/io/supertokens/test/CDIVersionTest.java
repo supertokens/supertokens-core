@@ -270,16 +270,16 @@ public class CDIVersionTest {
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 new TenantIdentifier(null, "a1", null),
                 new EmailPasswordConfig(true),
-                new ThirdPartyConfig(true, true, null),
+                new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                null, true, null, config
+                null, null, config
         ), false);
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 new TenantIdentifier(null, "a1", "t1"),
                 new EmailPasswordConfig(true),
-                new ThirdPartyConfig(true, true, null),
+                new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                null, true, null, new JsonObject()
+                null, null, new JsonObject()
         ), false);
 
         String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",

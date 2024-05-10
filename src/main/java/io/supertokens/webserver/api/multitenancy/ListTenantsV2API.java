@@ -35,17 +35,16 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
-@Deprecated
-public class ListTenantsAPI extends WebserverAPI {
+public class ListTenantsV2API extends WebserverAPI {
     private static final long serialVersionUID = -4641988458637882374L;
 
-    public ListTenantsAPI(Main main) {
+    public ListTenantsV2API(Main main) {
         super(main, RECIPE_ID.MULTITENANCY.toString());
     }
 
     @Override
     public String getPath() {
-        return "/recipe/multitenancy/tenant/list";
+        return "/recipe/multitenancy/tenant/list/v2";
     }
 
     @Override
@@ -65,13 +64,8 @@ public class ListTenantsAPI extends WebserverAPI {
             boolean shouldProtect = shouldProtectProtectedConfig(req);
             for (TenantConfig tenantConfig : tenantConfigs) {
 
-                JsonObject tenantConfigJson;
-
-                if (getVersionFromRequest(req).lesserThan(SemVer.v5_0)) {
-                    tenantConfigJson = tenantConfig.toJson3_0(shouldProtect, storage, CoreConfig.PROTECTED_CONFIGS);
-                } else {
-                    tenantConfigJson = tenantConfig.toJson5_0(shouldProtect, storage, CoreConfig.PROTECTED_CONFIGS);
-                }
+                JsonObject tenantConfigJson = tenantConfig.toJson_v2(shouldProtect, storage,
+                        CoreConfig.PROTECTED_CONFIGS);
 
                 tenantsArray.add(tenantConfigJson);
             }

@@ -98,9 +98,9 @@ public class MultitenantTest {
                     new TenantConfig(
                             tenantIdentifier,
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, true, null),
+                            new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            null, true, null, config
+                            null, null, config
                     )
             );
         }
@@ -118,9 +118,9 @@ public class MultitenantTest {
                     new TenantConfig(
                             tenantIdentifier,
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, true, null),
+                            new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            null, true, null, config
+                            null, null, config
                     )
             );
         }
@@ -138,9 +138,9 @@ public class MultitenantTest {
                     new TenantConfig(
                             tenantIdentifier,
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, true, null),
+                            new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            null, true, null, config
+                            null, null, config
                     )
             );
         }
@@ -158,9 +158,9 @@ public class MultitenantTest {
                     new TenantConfig(
                             tenantIdentifier,
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, true, null),
+                            new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            null, true, null, config
+                            null, null, config
                     )
             );
         }

@@ -78,41 +78,41 @@ public class LogTest {
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 new TenantIdentifier(null, "a1", null),
                 new EmailPasswordConfig(true),
-                new ThirdPartyConfig(true, true, null),
+                new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                null, true, null, new JsonObject()), false);
+                null, null, new JsonObject()), false);
 
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 new TenantIdentifier(null, "a1", "t1"),
                 new EmailPasswordConfig(true),
-                new ThirdPartyConfig(true, true, null),
+                new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                null, true, null, new JsonObject()), false);
+                null, null, new JsonObject()), false);
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 new TenantIdentifier(null, "a1", "t2"),
                 new EmailPasswordConfig(true),
-                new ThirdPartyConfig(true, true, null),
+                new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                null, true, null, new JsonObject()), false);
+                null, null, new JsonObject()), false);
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 new TenantIdentifier(null, "a2", null),
                 new EmailPasswordConfig(true),
-                new ThirdPartyConfig(true, true, null),
+                new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                null, true, null, new JsonObject()), false);
+                null, null, new JsonObject()), false);
 
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 new TenantIdentifier(null, "a2", "t1"),
                 new EmailPasswordConfig(true),
-                new ThirdPartyConfig(true, true, null),
+                new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                null, true, null, new JsonObject()), false);
+                null, null, new JsonObject()), false);
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 new TenantIdentifier(null, "a2", "t2"),
                 new EmailPasswordConfig(true),
-                new ThirdPartyConfig(true, true, null),
+                new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                null, true, null, new JsonObject()), false);
+                null, null, new JsonObject()), false);
 
         assertEquals(7, Multitenancy.getAllTenants(process.getProcess()).length);
 

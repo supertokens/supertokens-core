@@ -86,9 +86,9 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
                         new TenantConfig(
                                 new TenantIdentifier(null, null, null),
                                 new EmailPasswordConfig(true),
-                                new ThirdPartyConfig(true, true, null),
+                                new ThirdPartyConfig(true, null),
                                 new PasswordlessConfig(true),
-                                null, true, null, new JsonObject()), false, false, false);
+                                null, null, new JsonObject()), false, false, false);
                 // Not force reloading all resources here (the last boolean in the function above)
                 // because the ucl for the FeatureFlag is not yet loaded and results in an empty
                 // instance of eeFeatureFlag. This is applicable only when the core is starting on
@@ -106,9 +106,9 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
                     new TenantConfig(
                             TenantIdentifier.BASE_TENANT,
                             new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, true, null),
+                            new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            null, true, null, new JsonObject()
+                            null, null, new JsonObject()
                     )
             };
         }

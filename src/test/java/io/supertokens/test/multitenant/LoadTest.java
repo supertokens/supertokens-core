@@ -73,9 +73,9 @@ public class LoadTest {
             JsonObject config = new JsonObject();
             tenants[insideLoop] = new TenantConfig(new TenantIdentifier(null, "a" + insideLoop, null),
                     new EmailPasswordConfig(false),
-                    new ThirdPartyConfig(false, true, new ThirdPartyConfig.Provider[0]),
+                    new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                     new PasswordlessConfig(false),
-                    null, true, null, config);
+                    null, null, config);
             try {
                 Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantIdentifier(null, null, null),
                         tenants[insideLoop]);

@@ -103,7 +103,7 @@ public class EmailPassword {
         if (config == null) {
             throw new TenantOrAppNotFoundException(tenantIdentifier);
         }
-        if (!config.emailPasswordConfig.enabled) {
+        if (!config.isEmailPasswordEnabled()) {
             throw new BadPermissionException("Email password login not enabled for tenant");
         }
 
@@ -175,7 +175,7 @@ public class EmailPassword {
         if (config == null) {
             throw new TenantOrAppNotFoundException(tenantIdentifier);
         }
-        if (!config.emailPasswordConfig.enabled) {
+        if (!config.isEmailPasswordEnabled()) {
             throw new BadPermissionException("Email password login not enabled for tenant");
         }
 
@@ -259,7 +259,7 @@ public class EmailPassword {
         if (config == null) {
             throw new TenantOrAppNotFoundException(tenantIdentifier);
         }
-        if (!config.emailPasswordConfig.enabled) {
+        if (!config.isEmailPasswordEnabled()) {
             throw new BadPermissionException("Email password login not enabled for tenant");
         }
 
@@ -370,7 +370,7 @@ public class EmailPassword {
         if (config == null) {
             throw new TenantOrAppNotFoundException(tenantIdentifier);
         }
-        if (!config.emailPasswordConfig.enabled) {
+        if (!config.isEmailPasswordEnabled()) {
             throw new BadPermissionException("Email password login not enabled for tenant");
         }
 

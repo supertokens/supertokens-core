@@ -40,10 +40,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public abstract class BaseCreateOrUpdate extends WebserverAPI {
 
@@ -59,10 +56,8 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
         try {
             if (getVersionFromRequest(req).lesserThan(SemVer.v5_0)) {
                 this.handle3_0(req, sourceTenantIdentifier, targetTenantIdentifier, input, resp);
-            } else if (getVersionFromRequest(req).lesserThan(SemVer.v5_1)) {
-                this.handle5_0(req, sourceTenantIdentifier, targetTenantIdentifier, input, resp);
             } else {
-                this.handle5_1(req, sourceTenantIdentifier, targetTenantIdentifier, input, resp);
+                this.handle5_0(req, sourceTenantIdentifier, targetTenantIdentifier, input, resp);
             }
         } catch (BadPermissionException | StorageQueryException | FeatureNotEnabledException
                 | TenantOrAppNotFoundException e) {
@@ -76,24 +71,49 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
         }
     }
 
-    private void handle5_1(HttpServletRequest req, TenantIdentifier sourceTenantIdentifier,
+    protected void handle_v2(HttpServletRequest req, TenantIdentifier sourceTenantIdentifier,
+                          TenantIdentifier targetTenantIdentifier,
+                          JsonObject input, HttpServletResponse resp)
+            throws ServletException, IOException {
+
+        try {
+            this.handle_v2_5_1(req, sourceTenantIdentifier, targetTenantIdentifier, input, resp);
+        } catch (BadPermissionException | StorageQueryException | FeatureNotEnabledException
+                 | TenantOrAppNotFoundException e) {
+            throw new ServletException(e);
+        } catch (CannotModifyBaseConfigException e) {
+            throw new ServletException(new BadRequestException("Cannot modify base config"));
+        } catch (InvalidConfigException e) {
+            throw new ServletException(new BadRequestException("Invalid core config: " + e.getMessage()));
+        } catch (InvalidProviderConfigException e) {
+            throw new ServletException(new BadRequestException("Invalid third party config: " + e.getMessage()));
+        }
+    }
+
+    private void handle_v2_5_1(HttpServletRequest req, TenantIdentifier sourceTenantIdentifier,
                            TenantIdentifier targetTenantIdentifier, JsonObject input, HttpServletResponse resp)
             throws ServletException, IOException, InvalidProviderConfigException, StorageQueryException,
             FeatureNotEnabledException, TenantOrAppNotFoundException, InvalidConfigException,
             CannotModifyBaseConfigException, BadPermissionException {
 
-        Boolean emailPasswordEnabled = InputParser.parseBooleanOrThrowError(input, "emailPasswordEnabled", true);
-        Boolean thirdPartyEnabled = InputParser.parseBooleanOrThrowError(input, "thirdPartyEnabled", true);
-        Boolean passwordlessEnabled = InputParser.parseBooleanOrThrowError(input, "passwordlessEnabled", true);
+        if (input.has("emailPasswordEnabled")) {
+            throw new ServletException(new BadRequestException("emailPasswordEnabled is not allowed in this API version"));
+        }
+
+        if (input.has("thirdPartyEnabled")) {
+            throw new ServletException(new BadRequestException("thirdPartyEnabled is not allowed in this API version"));
+        }
+
+        if (input.has("passwordlessEnabled")) {
+            throw new ServletException(new BadRequestException("passwordlessEnabled is not allowed in this API version"));
+        }
+
         JsonObject coreConfig = InputParser.parseJsonObjectOrThrowError(input, "coreConfig", true);
 
         String[] firstFactors = null;
         boolean hasFirstFactors;
         String[] requiredSecondaryFactors = null;
         boolean hasRequiredSecondaryFactors;
-
-        Boolean useFirstFactorsFromStaticIfEmpty = null;
-        Boolean useThirdPartyProvidersFromStaticIfEmpty = null;
 
         hasFirstFactors = input.has("firstFactors");
         if (hasFirstFactors && !input.get("firstFactors").isJsonNull()) {
@@ -116,19 +136,6 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
             if (requiredSecondaryFactors.length != new HashSet<>(Arrays.asList(requiredSecondaryFactors)).size()) {
                 throw new ServletException(new BadRequestException("requiredSecondaryFactors input should not contain duplicate values"));
             }
-        }
-
-        if (input.has("useFirstFactorsFromStaticIfEmpty")) {
-            useFirstFactorsFromStaticIfEmpty = InputParser.parseBooleanOrThrowError(input,
-                    "useFirstFactorsFromStaticIfEmpty", false);
-        }
-        if (input.has("useThirdPartyProvidersFromStaticIfEmpty")) {
-            useThirdPartyProvidersFromStaticIfEmpty = InputParser.parseBooleanOrThrowError(input,
-                    "useThirdPartyProvidersFromStaticIfEmpty", false);
-        }
-
-        if (hasFirstFactors && firstFactors != null && firstFactors.length == 0) {
-            throw new ServletException(new BadRequestException("firstFactors cannot be empty. Set null instead to remove all first factors."));
         }
 
         if (hasRequiredSecondaryFactors && requiredSecondaryFactors != null && requiredSecondaryFactors.length == 0) {
@@ -157,84 +164,21 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                 tenantConfig = new TenantConfig(
                         targetTenantIdentifier,
                         new EmailPasswordConfig(true),
-                        new ThirdPartyConfig(true, true, null),
+                        new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        null, true,
+                        null,
                         null, new JsonObject()
                 );
             } else {
                 tenantConfig = new TenantConfig(
                         targetTenantIdentifier,
                         new EmailPasswordConfig(true),
-                        new ThirdPartyConfig(true, false, null),
+                        new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[]{}),
                         new PasswordlessConfig(true),
-                        null, false, null, new JsonObject()
+                        new String[]{}, null, new JsonObject()
                 );
             }
             createdNew = true;
-        }
-
-        // if using first factors as a way to enable/disable recipes but the tenant was already created using an
-        // old CDI, we automatically enable the recipes to make things work seamlessly
-        if (hasFirstFactors && firstFactors != null) {
-            if (List.of(firstFactors).contains("emailpassword") && emailPasswordEnabled == null) {
-                emailPasswordEnabled = true;
-            }
-            if (List.of(firstFactors).contains("thirdparty") && thirdPartyEnabled == null) {
-                thirdPartyEnabled = true;
-            }
-            if ((List.of(firstFactors).contains("otp-email") || List.of(firstFactors).contains("otp-phone") || List.of(firstFactors).contains("link-email") || List.of(firstFactors).contains("link-phone")) && passwordlessEnabled == null) {
-                passwordlessEnabled = true;
-            }
-        }
-
-        // if using secondary factors we might need to enable the recipes as they might be disabled if the tenant was
-        // created using an older CDI
-        if (hasRequiredSecondaryFactors && requiredSecondaryFactors != null) {
-            if (List.of(requiredSecondaryFactors).contains("emailpassword") && emailPasswordEnabled == null) {
-                emailPasswordEnabled = true;
-            }
-            if (List.of(requiredSecondaryFactors).contains("thirdparty") && thirdPartyEnabled == null) {
-                thirdPartyEnabled = true;
-            }
-            if ((List.of(requiredSecondaryFactors).contains("otp-email") || List.of(requiredSecondaryFactors).contains("otp-phone") || List.of(requiredSecondaryFactors).contains("link-email") || List.of(requiredSecondaryFactors).contains("link-phone")) && passwordlessEnabled == null) {
-                passwordlessEnabled = true;
-            }
-        }
-
-        if (emailPasswordEnabled != null) {
-            tenantConfig = new TenantConfig(
-                    tenantConfig.tenantIdentifier,
-                    new EmailPasswordConfig(emailPasswordEnabled),
-                    tenantConfig.thirdPartyConfig,
-                    tenantConfig.passwordlessConfig,
-                    tenantConfig.firstFactors, tenantConfig.useFirstFactorsFromStaticConfigIfEmpty,
-                    tenantConfig.requiredSecondaryFactors, tenantConfig.coreConfig
-            );
-        }
-
-        if (thirdPartyEnabled != null) {
-            tenantConfig = new TenantConfig(
-                    tenantConfig.tenantIdentifier,
-                    tenantConfig.emailPasswordConfig,
-                    new ThirdPartyConfig(thirdPartyEnabled,
-                            tenantConfig.thirdPartyConfig.useThirdPartyProvidersFromStaticConfigIfEmpty,
-                            tenantConfig.thirdPartyConfig.providers),
-                    tenantConfig.passwordlessConfig,
-                    tenantConfig.firstFactors, tenantConfig.useFirstFactorsFromStaticConfigIfEmpty,
-                    tenantConfig.requiredSecondaryFactors, tenantConfig.coreConfig
-            );
-        }
-
-        if (passwordlessEnabled != null) {
-            tenantConfig = new TenantConfig(
-                    tenantConfig.tenantIdentifier,
-                    tenantConfig.emailPasswordConfig,
-                    tenantConfig.thirdPartyConfig,
-                    new PasswordlessConfig(passwordlessEnabled),
-                    tenantConfig.firstFactors, tenantConfig.useFirstFactorsFromStaticConfigIfEmpty,
-                    tenantConfig.requiredSecondaryFactors, tenantConfig.coreConfig
-            );
         }
 
         if (hasFirstFactors) {
@@ -243,12 +187,9 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                     tenantConfig.emailPasswordConfig,
                     tenantConfig.thirdPartyConfig,
                     tenantConfig.passwordlessConfig,
-                    firstFactors, tenantConfig.useFirstFactorsFromStaticConfigIfEmpty,
+                    firstFactors,
                     tenantConfig.requiredSecondaryFactors, tenantConfig.coreConfig
             );
-            if (useFirstFactorsFromStaticIfEmpty == null) {
-                useFirstFactorsFromStaticIfEmpty = false;
-            }
         }
 
         if (hasRequiredSecondaryFactors) {
@@ -257,32 +198,8 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                     tenantConfig.emailPasswordConfig,
                     tenantConfig.thirdPartyConfig,
                     tenantConfig.passwordlessConfig,
-                    tenantConfig.firstFactors, tenantConfig.useFirstFactorsFromStaticConfigIfEmpty,
+                    tenantConfig.firstFactors,
                     requiredSecondaryFactors, tenantConfig.coreConfig
-            );
-        }
-
-        if (useFirstFactorsFromStaticIfEmpty != null) {
-            tenantConfig = new TenantConfig(
-                    tenantConfig.tenantIdentifier,
-                    tenantConfig.emailPasswordConfig,
-                    tenantConfig.thirdPartyConfig,
-                    tenantConfig.passwordlessConfig,
-                    tenantConfig.firstFactors, useFirstFactorsFromStaticIfEmpty,
-                    tenantConfig.requiredSecondaryFactors, tenantConfig.coreConfig
-            );
-        }
-
-        if (useThirdPartyProvidersFromStaticIfEmpty != null) {
-            tenantConfig = new TenantConfig(
-                    tenantConfig.tenantIdentifier,
-                    tenantConfig.emailPasswordConfig,
-                    new ThirdPartyConfig(tenantConfig.thirdPartyConfig.enabled,
-                            useThirdPartyProvidersFromStaticIfEmpty,
-                            tenantConfig.thirdPartyConfig.providers),
-                    tenantConfig.passwordlessConfig,
-                    tenantConfig.firstFactors, tenantConfig.useFirstFactorsFromStaticConfigIfEmpty,
-                    tenantConfig.requiredSecondaryFactors, tenantConfig.coreConfig
             );
         }
 
@@ -293,7 +210,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                     tenantConfig.emailPasswordConfig,
                     tenantConfig.thirdPartyConfig,
                     tenantConfig.passwordlessConfig,
-                    tenantConfig.firstFactors, tenantConfig.useFirstFactorsFromStaticConfigIfEmpty,
+                    tenantConfig.firstFactors,
                     tenantConfig.requiredSecondaryFactors, coreConfig
             );
         }
@@ -377,18 +294,18 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                 tenantConfig = new TenantConfig(
                         targetTenantIdentifier,
                         new EmailPasswordConfig(true),
-                        new ThirdPartyConfig(true, true, null),
+                        new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        null, true,
+                        null,
                         null, new JsonObject()
                 );
             } else {
                 tenantConfig = new TenantConfig(
                         targetTenantIdentifier,
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, true, null),
+                        new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(false),
-                        null, true, null, new JsonObject()
+                        null, null, new JsonObject()
                 );
             }
             createdNew = true;
@@ -400,7 +317,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                     new EmailPasswordConfig(emailPasswordEnabled),
                     tenantConfig.thirdPartyConfig,
                     tenantConfig.passwordlessConfig,
-                    tenantConfig.firstFactors, tenantConfig.useFirstFactorsFromStaticConfigIfEmpty,
+                    tenantConfig.firstFactors,
                     tenantConfig.requiredSecondaryFactors, tenantConfig.coreConfig
             );
         }
@@ -410,10 +327,9 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                     tenantConfig.tenantIdentifier,
                     tenantConfig.emailPasswordConfig,
                     new ThirdPartyConfig(thirdPartyEnabled,
-                            tenantConfig.thirdPartyConfig.useThirdPartyProvidersFromStaticConfigIfEmpty,
                             tenantConfig.thirdPartyConfig.providers),
                     tenantConfig.passwordlessConfig,
-                    tenantConfig.firstFactors, tenantConfig.useFirstFactorsFromStaticConfigIfEmpty,
+                    tenantConfig.firstFactors,
                     tenantConfig.requiredSecondaryFactors, tenantConfig.coreConfig
             );
         }
@@ -424,7 +340,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                     tenantConfig.emailPasswordConfig,
                     tenantConfig.thirdPartyConfig,
                     new PasswordlessConfig(passwordlessEnabled),
-                    tenantConfig.firstFactors, tenantConfig.useFirstFactorsFromStaticConfigIfEmpty,
+                    tenantConfig.firstFactors,
                     tenantConfig.requiredSecondaryFactors, tenantConfig.coreConfig
             );
         }
@@ -435,7 +351,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                     tenantConfig.emailPasswordConfig,
                     tenantConfig.thirdPartyConfig,
                     tenantConfig.passwordlessConfig,
-                    firstFactors, tenantConfig.useFirstFactorsFromStaticConfigIfEmpty,
+                    firstFactors,
                     tenantConfig.requiredSecondaryFactors, tenantConfig.coreConfig
             );
         }
@@ -446,7 +362,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                     tenantConfig.emailPasswordConfig,
                     tenantConfig.thirdPartyConfig,
                     tenantConfig.passwordlessConfig,
-                    tenantConfig.firstFactors, tenantConfig.useFirstFactorsFromStaticConfigIfEmpty,
+                    tenantConfig.firstFactors,
                     requiredSecondaryFactors, tenantConfig.coreConfig
             );
         }
@@ -458,13 +374,58 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                     tenantConfig.emailPasswordConfig,
                     tenantConfig.thirdPartyConfig,
                     tenantConfig.passwordlessConfig,
-                    tenantConfig.firstFactors, tenantConfig.useFirstFactorsFromStaticConfigIfEmpty,
+                    tenantConfig.firstFactors,
                     tenantConfig.requiredSecondaryFactors, coreConfig
             );
         }
 
         Multitenancy.checkPermissionsForCreateOrUpdate(
                 main, sourceTenantIdentifier, tenantConfig.tenantIdentifier);
+
+        // Validate firstFactors and requiredSecondaryFactors
+        {
+            Set<String> disallowedFactors = new HashSet<>();
+            Map<String, String> factorIdToRecipeName = new HashMap<>();
+            if (!tenantConfig.emailPasswordConfig.enabled) {
+                disallowedFactors.add("emailpassword");
+
+                factorIdToRecipeName.put("emailpassword", "emailPassword");
+            }
+            if (!tenantConfig.passwordlessConfig.enabled) {
+                disallowedFactors.add("otp-email");
+                disallowedFactors.add("otp-phone");
+                disallowedFactors.add("link-email");
+                disallowedFactors.add("link-phone");
+
+                factorIdToRecipeName.put("otp-email", "passwordless");
+                factorIdToRecipeName.put("otp-phone", "passwordless");
+                factorIdToRecipeName.put("link-email", "passwordless");
+                factorIdToRecipeName.put("link-phone", "passwordless");
+            }
+            if (!tenantConfig.thirdPartyConfig.enabled) {
+                disallowedFactors.add("thirdparty");
+
+                factorIdToRecipeName.put("thirdparty", "thirdParty");
+            }
+
+            if (tenantConfig.firstFactors != null) {
+                for (String factor : tenantConfig.firstFactors) {
+                    if (disallowedFactors.contains(factor)) {
+                        throw new InvalidConfigException("firstFactors should not contain '" + factor
+                                + "' because " + factorIdToRecipeName.get(factor) + " is disabled for the tenant.");
+                    }
+                }
+            }
+
+            if (tenantConfig.requiredSecondaryFactors != null) {
+                for (String factor : tenantConfig.requiredSecondaryFactors) {
+                    if (disallowedFactors.contains(factor)) {
+                        throw new InvalidConfigException("requiredSecondaryFactors should not contain '" + factor
+                                + "' because " + factorIdToRecipeName.get(factor) + " is disabled for the tenant.");
+                    }
+                }
+            }
+        }
 
         Multitenancy.addNewOrUpdateAppOrTenant(main, tenantConfig, shouldProtectProtectedConfig(req), false, true);
         JsonObject result = new JsonObject();
@@ -506,18 +467,18 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                 tenantConfig = new TenantConfig(
                         targetTenantIdentifier,
                         new EmailPasswordConfig(true),
-                        new ThirdPartyConfig(true, true, null),
+                        new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true),
-                        null, true,
+                        null,
                         null, new JsonObject()
                 );
             } else {
                 tenantConfig = new TenantConfig(
                         targetTenantIdentifier,
                         new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, true, null),
+                        new ThirdPartyConfig(false, null),
                         new PasswordlessConfig(false),
-                        null, true, null, new JsonObject()
+                        null, null, new JsonObject()
                 );
             }
             createdNew = true;
@@ -529,7 +490,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                     new EmailPasswordConfig(emailPasswordEnabled),
                     tenantConfig.thirdPartyConfig,
                     tenantConfig.passwordlessConfig,
-                    tenantConfig.firstFactors, tenantConfig.useFirstFactorsFromStaticConfigIfEmpty,
+                    tenantConfig.firstFactors,
                     tenantConfig.requiredSecondaryFactors, tenantConfig.coreConfig
             );
         }
@@ -539,10 +500,9 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                     tenantConfig.tenantIdentifier,
                     tenantConfig.emailPasswordConfig,
                     new ThirdPartyConfig(thirdPartyEnabled,
-                            tenantConfig.thirdPartyConfig.useThirdPartyProvidersFromStaticConfigIfEmpty,
                             tenantConfig.thirdPartyConfig.providers),
                     tenantConfig.passwordlessConfig,
-                    tenantConfig.firstFactors, tenantConfig.useFirstFactorsFromStaticConfigIfEmpty,
+                    tenantConfig.firstFactors,
                     tenantConfig.requiredSecondaryFactors, tenantConfig.coreConfig
             );
         }
@@ -553,7 +513,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                     tenantConfig.emailPasswordConfig,
                     tenantConfig.thirdPartyConfig,
                     new PasswordlessConfig(passwordlessEnabled),
-                    tenantConfig.firstFactors, tenantConfig.useFirstFactorsFromStaticConfigIfEmpty,
+                    tenantConfig.firstFactors,
                     tenantConfig.requiredSecondaryFactors, tenantConfig.coreConfig
             );
         }
@@ -565,7 +525,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                     tenantConfig.emailPasswordConfig,
                     tenantConfig.thirdPartyConfig,
                     tenantConfig.passwordlessConfig,
-                    tenantConfig.firstFactors, tenantConfig.useFirstFactorsFromStaticConfigIfEmpty,
+                    tenantConfig.firstFactors,
                     tenantConfig.requiredSecondaryFactors, coreConfig
             );
         }

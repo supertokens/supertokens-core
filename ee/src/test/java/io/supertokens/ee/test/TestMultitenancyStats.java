@@ -76,27 +76,27 @@ public class TestMultitenancyStats {
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     new TenantIdentifier("127.0.0.1", null, null),
                     new EmailPasswordConfig(true),
-                    new ThirdPartyConfig(true, true, null),
+                    new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    null, true, null,
+                    null, null,
                     config
             ), false);
 
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     new TenantIdentifier("127.0.0.1", "a1", null),
                     new EmailPasswordConfig(true),
-                    new ThirdPartyConfig(true, true, null),
+                    new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    null, true, null,
+                    null, null,
                     config
             ), false);
 
             Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                     new TenantIdentifier("127.0.0.1", "a1", "t1"),
                     new EmailPasswordConfig(true),
-                    new ThirdPartyConfig(true, true, null),
+                    new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
-                    null, true, null,
+                    null, null,
                     config
             ), false);
         }

@@ -16,12 +16,10 @@
 
 package io.supertokens.webserver.api.multitenancy;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.Utils;
 import jakarta.servlet.ServletException;
@@ -29,42 +27,41 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashSet;
 
-@Deprecated
-public class CreateOrUpdateConnectionUriDomainAPI extends BaseCreateOrUpdate {
+public class CreateOrUpdateAppV2API extends BaseCreateOrUpdate {
 
     private static final long serialVersionUID = -4641988458637882374L;
 
-    public CreateOrUpdateConnectionUriDomainAPI(Main main) {
+    public CreateOrUpdateAppV2API(Main main) {
         super(main);
     }
 
     @Override
     public String getPath() {
-        return "/recipe/multitenancy/connectionuridomain";
+        return "/recipe/multitenancy/app/v2";
     }
 
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
-        String connectionUriDomain = InputParser.parseStringOrThrowError(input, "connectionUriDomain", true);
-        if (connectionUriDomain != null) {
-            connectionUriDomain = Utils.normalizeAndValidateConnectionUriDomain(connectionUriDomain);
+        String appId = InputParser.parseStringOrThrowError(input, "appId", true);
+        if (appId != null) {
+            appId = Utils.normalizeAndValidateAppId(appId);
         }
 
         TenantIdentifier sourceTenantIdentifier;
+
         try {
             sourceTenantIdentifier = getTenantIdentifier(req);
         } catch (TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
 
-        super.handle(
+        super.handle_v2(
                 req, sourceTenantIdentifier,
-                new TenantIdentifier(connectionUriDomain, null, null), input, resp);
+                new TenantIdentifier(sourceTenantIdentifier.getConnectionUriDomain(), appId, null),
+                input, resp);
 
     }
 }

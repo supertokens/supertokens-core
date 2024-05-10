@@ -152,7 +152,7 @@ public class InMemoryDBTest {
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
             process.getProcess().setForceInMemoryDB();
             process.startProcess();
-            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED, 600000));
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
             String userId = "userId";
             JsonObject userDataInJWT = new JsonObject();

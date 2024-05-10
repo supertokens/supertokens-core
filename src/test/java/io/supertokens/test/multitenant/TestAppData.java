@@ -111,9 +111,9 @@ public class TestAppData {
         Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
                 app,
                 new EmailPasswordConfig(true),
-                new ThirdPartyConfig(true, true, null),
+                new ThirdPartyConfig(true, null),
                 new PasswordlessConfig(true),
-                null, true, null, new JsonObject()
+                null, null, new JsonObject()
         ), false);
 
         Storage appStorage = (
