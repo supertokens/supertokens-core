@@ -147,7 +147,7 @@ public class InMemoryDBTest {
 
     @Test
     public void createAndForgetSession() throws Exception {
-        try {
+        {
             String[] args = {"../"};
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
             process.getProcess().setForceInMemoryDB();
@@ -171,8 +171,6 @@ public class InMemoryDBTest {
 
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-        } catch (Exception e) {
-            throw e;
         }
         {
             String[] args = {"../"};
