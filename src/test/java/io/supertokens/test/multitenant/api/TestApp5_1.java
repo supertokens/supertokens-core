@@ -98,7 +98,7 @@ public class TestApp5_1 {
         createApp(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "a1", true, true, true,
+                "a1", true, new String[]{"emailpassword", "thirdparty", "otp-email"}, false, null,
                 coreConfig);
 
         JsonObject result = listApps(new TenantIdentifier(null, null, null), process.getProcess());
@@ -114,17 +114,10 @@ public class TestApp5_1 {
 
                 for (JsonElement tenant : appObj.get("tenants").getAsJsonArray()) {
                     JsonObject tenantObj = tenant.getAsJsonObject();
-                    assertEquals(6, tenantObj.entrySet().size());
+                    assertEquals(4, tenantObj.entrySet().size());
                     assertEquals("public", tenantObj.get("tenantId").getAsString());
-                    assertTrue(tenantObj.get("useFirstFactorsFromStaticConfigIfEmpty").getAsBoolean());
-                    assertEquals(1, tenantObj.get("emailPassword").getAsJsonObject().entrySet().size());
-                    assertTrue(tenantObj.get("emailPassword").getAsJsonObject().get("enabled").getAsBoolean());
-                    assertEquals(3, tenantObj.get("thirdParty").getAsJsonObject().entrySet().size());
-                    assertTrue(tenantObj.get("thirdParty").getAsJsonObject().get("enabled").getAsBoolean());
-                    assertTrue(tenantObj.get("thirdParty").getAsJsonObject().get(
-                            "useThirdPartyProvidersFromStaticConfigIfEmpty").getAsBoolean());
-                    assertEquals(1, tenantObj.get("passwordless").getAsJsonObject().entrySet().size());
-                    assertTrue(tenantObj.get("passwordless").getAsJsonObject().get("enabled").getAsBoolean());
+                    assertEquals(0, tenantObj.get("thirdParty").getAsJsonObject().entrySet().size());
+                    assertEquals(3, tenantObj.get("firstFactors").getAsJsonArray().size());
                     assertEquals(coreConfig, tenantObj.get("coreConfig").getAsJsonObject());
                 }
             }
@@ -148,7 +141,7 @@ public class TestApp5_1 {
         createApp(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "a1", true, true, true,
+                "a1", true, new String[]{"emailpassword", "thirdparty", "otp-email"}, false, null,
                 coreConfig);
 
         JsonObject newConfig = new JsonObject();
@@ -159,7 +152,7 @@ public class TestApp5_1 {
         createApp(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "a1", true, true, true,
+                "a1", true, new String[]{"emailpassword", "thirdparty", "otp-email"}, false, null,
                 newConfig);
 
         JsonObject result = listApps(new TenantIdentifier(null, null, null), process.getProcess());
@@ -175,17 +168,10 @@ public class TestApp5_1 {
 
                 for (JsonElement tenant : appObj.get("tenants").getAsJsonArray()) {
                     JsonObject tenantObj = tenant.getAsJsonObject();
-                    assertEquals(6, tenantObj.entrySet().size());
+                    assertEquals(4, tenantObj.entrySet().size());
                     assertEquals("public", tenantObj.get("tenantId").getAsString());
-                    assertTrue(tenantObj.get("useFirstFactorsFromStaticConfigIfEmpty").getAsBoolean());
-                    assertEquals(1, tenantObj.get("emailPassword").getAsJsonObject().entrySet().size());
-                    assertTrue(tenantObj.get("emailPassword").getAsJsonObject().get("enabled").getAsBoolean());
-                    assertEquals(3, tenantObj.get("thirdParty").getAsJsonObject().entrySet().size());
-                    assertTrue(tenantObj.get("thirdParty").getAsJsonObject().get("enabled").getAsBoolean());
-                    assertTrue(tenantObj.get("thirdParty").getAsJsonObject().get(
-                            "useThirdPartyProvidersFromStaticConfigIfEmpty").getAsBoolean());
-                    assertEquals(1, tenantObj.get("passwordless").getAsJsonObject().entrySet().size());
-                    assertTrue(tenantObj.get("passwordless").getAsJsonObject().get("enabled").getAsBoolean());
+                    assertEquals(0, tenantObj.get("thirdParty").getAsJsonObject().entrySet().size());
+                    assertEquals(3, tenantObj.get("firstFactors").getAsJsonArray().size());
                     assertEquals(coreConfig, tenantObj.get("coreConfig").getAsJsonObject());
                 }
             }
@@ -210,7 +196,7 @@ public class TestApp5_1 {
         createApp(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "a1", true, true, true,
+                "a1", true, new String[]{"emailpassword", "thirdparty", "otp-email"}, false, null,
                 coreConfig);
 
         JsonObject newConfig = new JsonObject();
@@ -221,7 +207,8 @@ public class TestApp5_1 {
         createApp(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "a1", true, true, true,
+                "a1", true, new String[]{"emailpassword", "thirdparty", "otp-email"}, false, null,
+
                 newConfig);
 
         JsonObject result = listApps(new TenantIdentifier(null, null, null), process.getProcess());
@@ -237,9 +224,6 @@ public class TestApp5_1 {
 
                 for (JsonElement tenant : appObj.get("tenants").getAsJsonArray()) {
                     JsonObject tenantObj = tenant.getAsJsonObject();
-                    assertTrue(tenantObj.get("emailPassword").getAsJsonObject().get("enabled").getAsBoolean());
-                    assertTrue(tenantObj.get("thirdParty").getAsJsonObject().get("enabled").getAsBoolean());
-                    assertTrue(tenantObj.get("passwordless").getAsJsonObject().get("enabled").getAsBoolean());
                     assertEquals(coreConfig, tenantObj.get("coreConfig").getAsJsonObject());
                 }
             }
@@ -262,7 +246,7 @@ public class TestApp5_1 {
         createApp(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "a1", true, true, true,
+                "a1", true, new String[]{"emailpassword", "thirdparty", "otp-email"}, false, null,
                 coreConfig);
 
         JsonObject result = listApps(new TenantIdentifier(null, null, null), process.getProcess());
@@ -291,13 +275,13 @@ public class TestApp5_1 {
         createApp(
                 process.getProcess(),
                 new TenantIdentifier("localhost", null, null),
-                "a1", true, true, true,
+                "a1", true, new String[]{"emailpassword", "thirdparty", "otp-email"}, false, null,
                 new JsonObject());
 
         createApp(
                 process.getProcess(),
                 new TenantIdentifier("127.0.0.1", null, null),
-                "a2", true, true, true,
+                "a2", true, new String[]{"emailpassword", "thirdparty", "otp-email"}, false, null,
                 new JsonObject());
 
         JsonObject result = listApps(new TenantIdentifier(null, null, null), process.getProcess());
@@ -361,7 +345,8 @@ public class TestApp5_1 {
             createApp(
                     process.getProcess(),
                     new TenantIdentifier(null, null, null),
-                    valueForCreate[i], true, true, true,
+                    valueForCreate[i], true, new String[]{"emailpassword", "thirdparty", "otp-email"}, false, null,
+
                     new JsonObject());
 
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -384,7 +369,7 @@ public class TestApp5_1 {
                 createApp(
                         process.getProcess(),
                         new TenantIdentifier(null, null, null),
-                        valueForCreate[i], true, true, true,
+                        valueForCreate[i], true, new String[]{"emailpassword", "thirdparty", "otp-email"}, false, null,
                         new JsonObject());
             } catch (HttpResponseException e) {
                 assertTrue(e.getMessage().contains("appId can only contain letters, numbers and hyphens") || e.getMessage().contains("appId must not start with 'appid-'"));
@@ -411,7 +396,7 @@ public class TestApp5_1 {
             createApp(
                     process.getProcess(),
                     new TenantIdentifier(null, null, null),
-                    "a1", true, true, true,
+                    "a1", true, new String[]{"emailpassword", "thirdparty", "otp-email"}, false, null,
                     coreConfig);
             fail();
         } catch (HttpResponseException e) {
@@ -437,9 +422,6 @@ public class TestApp5_1 {
 
                     for (JsonElement tenant : appObj.get("tenants").getAsJsonArray()) {
                         JsonObject tenantObj = tenant.getAsJsonObject();
-                        assertTrue(tenantObj.get("emailPassword").getAsJsonObject().get("enabled").getAsBoolean());
-                        assertTrue(tenantObj.get("thirdParty").getAsJsonObject().get("enabled").getAsBoolean());
-                        assertTrue(tenantObj.get("passwordless").getAsJsonObject().get("enabled").getAsBoolean());
                         assertEquals(coreConfig, tenantObj.get("coreConfig").getAsJsonObject());
                     }
                 }
@@ -464,7 +446,7 @@ public class TestApp5_1 {
         createApp(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "a1", true, true, true,
+                "a1", true, new String[]{"emailpassword", "thirdparty", "otp-email"}, false, null,
                 coreConfig);
 
         {
@@ -482,9 +464,6 @@ public class TestApp5_1 {
 
                     for (JsonElement tenant : appObj.get("tenants").getAsJsonArray()) {
                         JsonObject tenantObj = tenant.getAsJsonObject();
-                        assertTrue(tenantObj.get("emailPassword").getAsJsonObject().get("enabled").getAsBoolean());
-                        assertTrue(tenantObj.get("thirdParty").getAsJsonObject().get("enabled").getAsBoolean());
-                        assertTrue(tenantObj.get("passwordless").getAsJsonObject().get("enabled").getAsBoolean());
                         assertEquals(coreConfig, tenantObj.get("coreConfig").getAsJsonObject());
                     }
                 }
@@ -515,16 +494,14 @@ public class TestApp5_1 {
         JsonObject response = createApp(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "a1", null, null, null,
+                "a1", false, null, false, null,
                 config);
 
         assertTrue(response.get("createdNew").getAsBoolean());
 
         JsonObject tenant = getTenant(new TenantIdentifier(null, "a1", null),
                 process.getProcess());
-        assertTrue(tenant.get("emailPassword").getAsJsonObject().get("enabled").getAsBoolean());
-        assertTrue(tenant.get("thirdParty").getAsJsonObject().get("enabled").getAsBoolean());
-        assertTrue(tenant.get("passwordless").getAsJsonObject().get("enabled").getAsBoolean());
+        assertFalse(tenant.has("firstFactors")); // use static config
     }
 
     @Test
@@ -587,7 +564,7 @@ public class TestApp5_1 {
                 JsonObject response = createApp(
                         process.getProcess(),
                         new TenantIdentifier(null, null, null),
-                        "a1", null, null, null,
+                        "a1", true, new String[]{"emailpassword", "thirdparty", "otp-email"}, false, null,
                         config);
                 if (expectedErrorMessages[i] != null) {
                     fail();
@@ -619,7 +596,7 @@ public class TestApp5_1 {
                 JsonObject response = createApp(
                         process.getProcess(),
                         new TenantIdentifier(null, null, null),
-                        "a1", null, null, null,
+                        "a1", true, new String[]{"emailpassword", "thirdparty", "otp-email"}, false, null,
                         config);
                 fail();
             } catch (HttpResponseException e) {
@@ -641,27 +618,28 @@ public class TestApp5_1 {
         JsonObject response = createApp(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "a1", null, null, null,
+                "a1", false, null, false, null,
                 config);
 
         assertTrue(response.get("createdNew").getAsBoolean());
 
         JsonObject tenant = getTenant(new TenantIdentifier(null, "a1", null),
                 process.getProcess());
-        assertNull(tenant.get("firstFactors"));
+        assertEquals(4, tenant.entrySet().size());
+        assertFalse(tenant.has("firstFactors"));
 
         // builtin firstFactor
         String[] firstFactors = new String[]{"otp-phone"};
         response = createApp(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "a1", null, null, null,
-                true, new String[]{"otp-phone"}, false, null,
+                "a1", true, new String[]{"otp-phone"}, false, null,
                 config);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = getTenant(new TenantIdentifier(null, "a1", null),
                 process.getProcess());
+        assertEquals(5, tenant.entrySet().size());
         assertTrue(tenant.get("firstFactors").isJsonArray());
         assertEquals(1, tenant.get("firstFactors").getAsJsonArray().size());
         assertEquals(firstFactors, new Gson().fromJson(tenant.get("firstFactors").getAsJsonArray(), String[].class));
@@ -669,14 +647,13 @@ public class TestApp5_1 {
         response = createApp(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "a1", null, null, null,
-                false, null, false, null,
+                "a1", false, null, false, null,
                 config);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = getTenant(new TenantIdentifier(null, "a1", null),
                 process.getProcess());
-        assertEquals(8, tenant.entrySet().size());
+        assertEquals(5, tenant.entrySet().size());
         assertTrue(tenant.get("firstFactors").isJsonArray());
         assertEquals(1, tenant.get("firstFactors").getAsJsonArray().size());
         assertEquals(firstFactors, new Gson().fromJson(tenant.get("firstFactors").getAsJsonArray(), String[].class));
@@ -686,14 +663,13 @@ public class TestApp5_1 {
         response = createApp(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "a1", null, null, null,
-                true, firstFactors, false, null,
+                "a1", true, firstFactors, false, null,
                 config);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = getTenant(new TenantIdentifier(null, "a1", null),
                 process.getProcess());
-        assertEquals(8, tenant.entrySet().size());
+        assertEquals(5, tenant.entrySet().size());
         assertTrue(tenant.get("firstFactors").isJsonArray());
         assertEquals(1, tenant.get("firstFactors").getAsJsonArray().size());
         assertEquals(firstFactors, new Gson().fromJson(tenant.get("firstFactors").getAsJsonArray(), String[].class));
@@ -703,14 +679,13 @@ public class TestApp5_1 {
         response = createApp(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "a1", null, null, null,
-                true, firstFactors, false, null,
+                "a1", true, firstFactors, false, null,
                 config);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = getTenant(new TenantIdentifier(null, "a1", null),
                 process.getProcess());
-        assertEquals(8, tenant.entrySet().size());
+        assertEquals(5, tenant.entrySet().size());
         assertTrue(tenant.get("firstFactors").isJsonArray());
         assertEquals(4, tenant.get("firstFactors").getAsJsonArray().size());
         assertEquals(Set.of(firstFactors), Set.of(new Gson().fromJson(tenant.get("firstFactors").getAsJsonArray(), String[].class)));
@@ -718,15 +693,14 @@ public class TestApp5_1 {
         response = createApp(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "a1", null, null, null,
-                true, null, false, null,
+                "a1", true, null, false, null,
                 config);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = getTenant(new TenantIdentifier(null, "a1", null),
                 process.getProcess());
-        assertEquals(7, tenant.entrySet().size());
-        assertNull(tenant.get("firstFactors"));
+        assertEquals(4, tenant.entrySet().size());
+        assertFalse(tenant.has("firstFactors"));
     }
 
     @Test
@@ -741,28 +715,27 @@ public class TestApp5_1 {
         JsonObject response = createApp(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "a1", null, null, null,
-                config);
+                "a1", false, null, false, null, config);
 
         assertTrue(response.get("createdNew").getAsBoolean());
 
         JsonObject tenant = getTenant(new TenantIdentifier(null, "a1", null),
                 process.getProcess());
-        assertNull(tenant.get("requiredSecondaryFactors"));
+        assertEquals(4, tenant.entrySet().size());
+        assertFalse(tenant.has("requiredSecondaryFactors"));
 
         // builtin firstFactor
         String[] requiredSecondaryFactors = new String[]{"otp-phone"};
         response = createApp(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "a1", null, null, null,
-                false, null, true, new String[]{"otp-phone"},
+                "a1", false, null, true, new String[]{"otp-phone"},
                 config);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = getTenant(new TenantIdentifier(null, "a1", null),
                 process.getProcess());
-        assertEquals(8, tenant.entrySet().size());
+        assertEquals(5, tenant.entrySet().size());
         assertTrue(tenant.get("requiredSecondaryFactors").isJsonArray());
         assertEquals(1, tenant.get("requiredSecondaryFactors").getAsJsonArray().size());
         assertEquals(requiredSecondaryFactors, new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class));
@@ -770,14 +743,13 @@ public class TestApp5_1 {
         response = createApp(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "a1", null, null, null,
-                false, null, false, null,
+                "a1", false, null, false, null,
                 config);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = getTenant(new TenantIdentifier(null, "a1", null),
                 process.getProcess());
-        assertEquals(8, tenant.entrySet().size());
+        assertEquals(5, tenant.entrySet().size());
         assertTrue(tenant.get("requiredSecondaryFactors").isJsonArray());
         assertEquals(1, tenant.get("requiredSecondaryFactors").getAsJsonArray().size());
         assertEquals(requiredSecondaryFactors, new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class));
@@ -787,14 +759,13 @@ public class TestApp5_1 {
         response = createApp(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "a1", null, null, null,
-                false, null, true, requiredSecondaryFactors,
+                "a1", false, null, true, requiredSecondaryFactors,
                 config);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = getTenant(new TenantIdentifier(null, "a1", null),
                 process.getProcess());
-        assertEquals(8, tenant.entrySet().size());
+        assertEquals(5, tenant.entrySet().size());
         assertTrue(tenant.get("requiredSecondaryFactors").isJsonArray());
         assertEquals(1, tenant.get("requiredSecondaryFactors").getAsJsonArray().size());
         assertEquals(requiredSecondaryFactors, new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class));
@@ -804,14 +775,13 @@ public class TestApp5_1 {
         response = createApp(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "a1", null, null, null,
-                false, null, true, requiredSecondaryFactors,
+                "a1", false, null, true, requiredSecondaryFactors,
                 config);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = getTenant(new TenantIdentifier(null, "a1", null),
                 process.getProcess());
-        assertEquals(8, tenant.entrySet().size());
+        assertEquals(5, tenant.entrySet().size());
         assertTrue(tenant.get("requiredSecondaryFactors").isJsonArray());
         assertEquals(4, tenant.get("requiredSecondaryFactors").getAsJsonArray().size());
         assertEquals(Set.of(requiredSecondaryFactors), Set.of(new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class)));
@@ -819,15 +789,14 @@ public class TestApp5_1 {
         response = createApp(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "a1", null, null, null,
-                false, null, true, null,
+                "a1", false, null, true, null,
                 config);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = getTenant(new TenantIdentifier(null, "a1", null),
                 process.getProcess());
-        assertEquals(7, tenant.entrySet().size());
-        assertNull(tenant.get("requiredSecondaryFactors"));
+        assertEquals(4, tenant.entrySet().size());
+        assertFalse(tenant.has("requiredSecondaryFactors"));
     }
 
     @Test
@@ -844,8 +813,7 @@ public class TestApp5_1 {
             createApp(
                     process.getProcess(),
                     new TenantIdentifier(null, null, null),
-                    "a1", null, null, null,
-                    true, factors, false, null,
+                    "a1", true, factors, false, null,
                     config);
             fail();
         } catch (HttpResponseException e) {
@@ -857,8 +825,7 @@ public class TestApp5_1 {
             createApp(
                     process.getProcess(),
                     new TenantIdentifier(null, null, null),
-                    "a1", null, null, null,
-                    false, null, true, factors,
+                    "a1", false, null, true, factors,
                     config);
             fail();
         } catch (HttpResponseException e) {
@@ -867,326 +834,12 @@ public class TestApp5_1 {
         }
     }
 
-    @Test
-    public void testFirstFactorArrayValueValidationBasedOnDisabledRecipe() throws Exception {
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            return;
-        }
-
-        JsonObject config = new JsonObject();
-        StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
-
-        createApp(
-            process.getProcess(),
-            new TenantIdentifier(null, null, null),
-            "a1", true, true, true,
-            false, null, false, null,
-            config);
-
-        {
-            try {
-                createApp(
-                        process.getProcess(),
-                        new TenantIdentifier(null, null, null),
-                        "a1", false, null, null,
-                        true, new String[]{}, false, null,
-                        config);
-                fail();
-            } catch (HttpResponseException e) {
-                assertEquals(400, e.statusCode);
-                assertEquals(
-                        "Http error. Status Code: 400. Message: firstFactors cannot be empty. Set null instead to remove all first factors.",
-                        e.getMessage());
-            }
-        }
-
-        {
-            String[] factors = new String[]{"emailpassword", "custom"};
-            try {
-                createApp(
-                        process.getProcess(),
-                        new TenantIdentifier(null, null, null),
-                        "a1", false, null, null,
-                        true, factors, false, null,
-                        config);
-                fail();
-            } catch (HttpResponseException e) {
-                assertEquals(400, e.statusCode);
-                assertEquals("Http error. Status Code: 400. Message: Invalid core config: firstFactors should not contain 'emailpassword' because emailPassword is disabled for the tenant.", e.getMessage());
-            }
-
-            {
-                createApp(
-                        process.getProcess(),
-                        new TenantIdentifier(null, null, null),
-                        "a1", false, null, null,
-                        false, null, false, null,
-                        config);
-            }
-
-            try {
-                createApp(
-                        process.getProcess(),
-                        new TenantIdentifier(null, null, null),
-                        "a1", false, null, null,
-                        true, factors, false, null,
-                        config);
-                fail();
-            } catch (HttpResponseException e) {
-                assertEquals(400, e.statusCode);
-                assertEquals("Http error. Status Code: 400. Message: Invalid core config: firstFactors should not contain 'emailpassword' because emailPassword is disabled for the tenant.", e.getMessage());
-            }
-        }
-
-        {
-            String[] factors = new String[]{"otp-email", "custom"};
-            try {
-                createApp(
-                        process.getProcess(),
-                        new TenantIdentifier(null, null, null),
-                        "a1", null, null, false,
-                        true, factors, false, null,
-                        config);
-                fail();
-            } catch (HttpResponseException e) {
-                assertEquals(400, e.statusCode);
-                assertEquals("Http error. Status Code: 400. Message: Invalid core config: firstFactors should not contain 'otp-email' because passwordless is disabled for the tenant.", e.getMessage());
-            }
-
-            {
-                createApp(
-                        process.getProcess(),
-                        new TenantIdentifier(null, null, null),
-                        "a1", null, null, false,
-                        false, null, false, null,
-                        config);
-            }
-
-            try {
-                createApp(
-                        process.getProcess(),
-                        new TenantIdentifier(null, null, null),
-                        "a1", null, null, false,
-                        true, factors, false, null,
-                        config);
-                fail();
-            } catch (HttpResponseException e) {
-                assertEquals(400, e.statusCode);
-                assertEquals("Http error. Status Code: 400. Message: Invalid core config: firstFactors should not contain 'otp-email' because passwordless is disabled for the tenant.", e.getMessage());
-            }
-        }
-
-        {
-            String[] factors = new String[]{"thirdparty", "custom"};
-            try {
-                createApp(
-                        process.getProcess(),
-                        new TenantIdentifier(null, null, null),
-                        "a1", null, false, null,
-                        true, factors, false, null,
-                        config);
-                fail();
-            } catch (HttpResponseException e) {
-                assertEquals(400, e.statusCode);
-                assertEquals("Http error. Status Code: 400. Message: Invalid core config: firstFactors should not contain 'thirdparty' because thirdParty is disabled for the tenant.", e.getMessage());
-            }
-
-            {
-                createApp(
-                        process.getProcess(),
-                        new TenantIdentifier(null, null, null),
-                        "a1", null, false, null,
-                        false, null, false, null,
-                        config);
-            }
-
-            try {
-                createApp(
-                        process.getProcess(),
-                        new TenantIdentifier(null, null, null),
-                        "a1", null, false, null,
-                        true, factors, false, null,
-                        config);
-                fail();
-            } catch (HttpResponseException e) {
-                assertEquals(400, e.statusCode);
-                assertEquals("Http error. Status Code: 400. Message: Invalid core config: firstFactors should not contain 'thirdparty' because thirdParty is disabled for the tenant.", e.getMessage());
-            }
-        }
-
-    }
-
-    @Test
-    public void testRequiredSecondaryFactorArrayValueValidationBasedOnDisabledRecipe() throws Exception {
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            return;
-        }
-
-        JsonObject config = new JsonObject();
-        StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
-
-        createApp(
-                process.getProcess(),
-                new TenantIdentifier(null, null, null),
-                "a1", true, true, true,
-                false, null, false, null,
-                config);
-
-        {
-            try {
-                createApp(
-                        process.getProcess(),
-                        new TenantIdentifier(null, null, null),
-                        "a1", false, null, null,
-                        false, null, true, new String[]{},
-                        config);
-                fail();
-            } catch (HttpResponseException e) {
-                assertEquals(400, e.statusCode);
-                assertEquals(
-                        "Http error. Status Code: 400. Message: requiredSecondaryFactors cannot be empty. Set null instead to remove all required secondary factors.",
-                        e.getMessage());
-            }
-        }
-
-        {
-            String[] factors = new String[]{"emailpassword", "custom"};
-            try {
-                createApp(
-                        process.getProcess(),
-                        new TenantIdentifier(null, null, null),
-                        "a1", false, null, null,
-                        false, null, true, factors,
-                        config);
-                fail();
-            } catch (HttpResponseException e) {
-                assertEquals(400, e.statusCode);
-                assertEquals("Http error. Status Code: 400. Message: Invalid core config: requiredSecondaryFactors should not contain 'emailpassword' because emailPassword is disabled for the tenant.", e.getMessage());
-            }
-
-            {
-                createApp(
-                        process.getProcess(),
-                        new TenantIdentifier(null, null, null),
-                        "a1", false, null, null,
-                        false, null, false, null,
-                        config);
-            }
-
-            try {
-                createApp(
-                        process.getProcess(),
-                        new TenantIdentifier(null, null, null),
-                        "a1", false, null, null,
-                        false, null, true, factors,
-                        config);
-                fail();
-            } catch (HttpResponseException e) {
-                assertEquals(400, e.statusCode);
-                assertEquals("Http error. Status Code: 400. Message: Invalid core config: requiredSecondaryFactors should not contain 'emailpassword' because emailPassword is disabled for the tenant.", e.getMessage());
-            }
-        }
-
-        {
-            String[] factors = new String[]{"otp-email", "custom"};
-            try {
-                createApp(
-                        process.getProcess(),
-                        new TenantIdentifier(null, null, null),
-                        "a1", null, null, false,
-                        false, null, true, factors,
-                        config);
-                fail();
-            } catch (HttpResponseException e) {
-                assertEquals(400, e.statusCode);
-                assertEquals("Http error. Status Code: 400. Message: Invalid core config: requiredSecondaryFactors should not contain 'otp-email' because passwordless is disabled for the tenant.", e.getMessage());
-            }
-
-            {
-                createApp(
-                        process.getProcess(),
-                        new TenantIdentifier(null, null, null),
-                        "a1", null, null, false,
-                        false, null, false, null,
-                        config);
-            }
-
-            try {
-                createApp(
-                        process.getProcess(),
-                        new TenantIdentifier(null, null, null),
-                        "a1", null, null, false,
-                        false, null, true, factors,
-                        config);
-                fail();
-            } catch (HttpResponseException e) {
-                assertEquals(400, e.statusCode);
-                assertEquals("Http error. Status Code: 400. Message: Invalid core config: requiredSecondaryFactors should not contain 'otp-email' because passwordless is disabled for the tenant.", e.getMessage());
-            }
-        }
-
-        {
-            String[] factors = new String[]{"thirdparty", "custom"};
-            try {
-                createApp(
-                        process.getProcess(),
-                        new TenantIdentifier(null, null, null),
-                        "a1", null, false, null,
-                        false, null, true, factors,
-                        config);
-                fail();
-            } catch (HttpResponseException e) {
-                assertEquals(400, e.statusCode);
-                assertEquals("Http error. Status Code: 400. Message: Invalid core config: requiredSecondaryFactors should not contain 'thirdparty' because thirdParty is disabled for the tenant.", e.getMessage());
-            }
-
-            {
-                createApp(
-                        process.getProcess(),
-                        new TenantIdentifier(null, null, null),
-                        "a1", null, false, null,
-                        false, null, false, null,
-                        config);
-            }
-
-            try {
-                createApp(
-                        process.getProcess(),
-                        new TenantIdentifier(null, null, null),
-                        "a1", null, false, null,
-                        false, null, true, factors,
-                        config);
-                fail();
-            } catch (HttpResponseException e) {
-                assertEquals(400, e.statusCode);
-                assertEquals("Http error. Status Code: 400. Message: Invalid core config: requiredSecondaryFactors should not contain 'thirdparty' because thirdParty is disabled for the tenant.", e.getMessage());
-            }
-        }
-    }
-
-    private static JsonObject createApp(Main main, TenantIdentifier sourceTenant, String appId, Boolean emailPasswordEnabled,
-                                        Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
-                                        JsonObject coreConfig) throws HttpResponseException, IOException {
-        return createApp(main, sourceTenant, appId, emailPasswordEnabled, thirdPartyEnabled, passwordlessEnabled,
-                false, null, false, null, coreConfig);
-    }
-
-    private static JsonObject createApp(Main main, TenantIdentifier sourceTenant, String appId, Boolean emailPasswordEnabled,
-                                       Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
+    private static JsonObject createApp(Main main, TenantIdentifier sourceTenant, String appId,
                                         boolean setFirstFactors, String[] firstFactors,
                                         boolean setRequiredSecondaryFactors, String[] requiredSecondaryFactors,
                                         JsonObject coreConfig) throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("appId", appId);
-        if (emailPasswordEnabled != null) {
-            requestBody.addProperty("emailPasswordEnabled", emailPasswordEnabled);
-        }
-        if (thirdPartyEnabled != null) {
-            requestBody.addProperty("thirdPartyEnabled", thirdPartyEnabled);
-        }
-        if (passwordlessEnabled != null) {
-            requestBody.addProperty("passwordlessEnabled", passwordlessEnabled);
-        }
         if (setFirstFactors || firstFactors != null) {
             requestBody.add("firstFactors", new Gson().toJsonTree(firstFactors));
         }
@@ -1196,7 +849,7 @@ public class TestApp5_1 {
         requestBody.add("coreConfig", coreConfig);
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
-                HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/app"),
+                HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/app/v2"),
                 requestBody, 1000, 2500, null,
                 SemVer.v5_1.get(), "multitenancy");
 
@@ -1208,7 +861,7 @@ public class TestApp5_1 {
             throws HttpResponseException, IOException {
 
         JsonObject response = HttpRequestForTesting.sendGETRequest(main, "",
-                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/multitenancy/tenant"),
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/multitenancy/tenant/v2"),
                 null, 1000, 1000, null,
                 SemVer.v5_1.get(), "multitenancy");
 
@@ -1220,7 +873,7 @@ public class TestApp5_1 {
     private static JsonObject listApps(TenantIdentifier sourceTenant, Main main)
             throws HttpResponseException, IOException {
         JsonObject response = HttpRequestForTesting.sendGETRequest(main, "",
-                HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/app/list"),
+                HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/app/list/v2"),
                 null, 1000, 1000, null,
                 SemVer.v5_1.get(), "multitenancy");
 
