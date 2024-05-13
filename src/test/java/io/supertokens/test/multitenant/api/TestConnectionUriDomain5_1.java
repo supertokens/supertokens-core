@@ -100,7 +100,7 @@ public class TestConnectionUriDomain5_1 {
         createConnectionUriDomain(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "127.0.0.1:3567", true, true, true,
+                "127.0.0.1:3567", true, new String[]{"emailpassword", "thirdparty", "otp-email"}, false, null,
                 coreConfig);
 
         JsonObject result = listConnectionUriDomains(new TenantIdentifier(null, null, null), process.getProcess());
@@ -117,17 +117,10 @@ public class TestConnectionUriDomain5_1 {
 
                     for (JsonElement tenant : appObj.get("tenants").getAsJsonArray()) {
                         JsonObject tenantObj = tenant.getAsJsonObject();
-                        assertEquals(6, tenantObj.entrySet().size());
+                        assertEquals(4, tenantObj.entrySet().size());
                         assertEquals("public", tenantObj.get("tenantId").getAsString());
-                        assertTrue(tenantObj.get("useFirstFactorsFromStaticConfigIfEmpty").getAsBoolean());
-                        assertEquals(1, tenantObj.get("emailPassword").getAsJsonObject().entrySet().size());
-                        assertTrue(tenantObj.get("emailPassword").getAsJsonObject().get("enabled").getAsBoolean());
-                        assertEquals(3, tenantObj.get("thirdParty").getAsJsonObject().entrySet().size());
-                        assertTrue(tenantObj.get("thirdParty").getAsJsonObject().get("enabled").getAsBoolean());
-                        assertTrue(tenantObj.get("thirdParty").getAsJsonObject().get(
-                                "useThirdPartyProvidersFromStaticConfigIfEmpty").getAsBoolean());
-                        assertEquals(1, tenantObj.get("passwordless").getAsJsonObject().entrySet().size());
-                        assertTrue(tenantObj.get("passwordless").getAsJsonObject().get("enabled").getAsBoolean());
+                        assertEquals(0, tenantObj.get("thirdParty").getAsJsonObject().entrySet().size());
+                        assertEquals(3, tenantObj.get("firstFactors").getAsJsonArray().size());
                         assertEquals(coreConfig, tenantObj.get("coreConfig").getAsJsonObject());
                     }
                 }
@@ -155,7 +148,7 @@ public class TestConnectionUriDomain5_1 {
         createConnectionUriDomain(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "127.0.0.1:3567", true, true, true,
+                "127.0.0.1:3567", true, new String[]{"emailpassword", "thirdparty", "otp-email"}, false, null,
                 coreConfig);
 
         JsonObject newConfig = new JsonObject();
@@ -166,7 +159,7 @@ public class TestConnectionUriDomain5_1 {
         createConnectionUriDomain(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "127.0.0.1:3567", true, true, true,
+                "127.0.0.1:3567", true, new String[]{"emailpassword", "thirdparty", "otp-email"}, false, null,
                 newConfig);
 
         JsonObject result = listConnectionUriDomains(new TenantIdentifier(null, null, null), process.getProcess());
@@ -183,17 +176,10 @@ public class TestConnectionUriDomain5_1 {
 
                     for (JsonElement tenant : appObj.get("tenants").getAsJsonArray()) {
                         JsonObject tenantObj = tenant.getAsJsonObject();
-                        assertEquals(6, tenantObj.entrySet().size());
+                        assertEquals(4, tenantObj.entrySet().size());
                         assertEquals("public", tenantObj.get("tenantId").getAsString());
-                        assertTrue(tenantObj.get("useFirstFactorsFromStaticConfigIfEmpty").getAsBoolean());
-                        assertEquals(1, tenantObj.get("emailPassword").getAsJsonObject().entrySet().size());
-                        assertTrue(tenantObj.get("emailPassword").getAsJsonObject().get("enabled").getAsBoolean());
-                        assertEquals(3, tenantObj.get("thirdParty").getAsJsonObject().entrySet().size());
-                        assertTrue(tenantObj.get("thirdParty").getAsJsonObject().get("enabled").getAsBoolean());
-                        assertTrue(tenantObj.get("thirdParty").getAsJsonObject().get(
-                                "useThirdPartyProvidersFromStaticConfigIfEmpty").getAsBoolean());
-                        assertEquals(1, tenantObj.get("passwordless").getAsJsonObject().entrySet().size());
-                        assertTrue(tenantObj.get("passwordless").getAsJsonObject().get("enabled").getAsBoolean());
+                        assertEquals(0, tenantObj.get("thirdParty").getAsJsonObject().entrySet().size());
+                        assertEquals(3, tenantObj.get("firstFactors").getAsJsonArray().size());
                         assertEquals(coreConfig, tenantObj.get("coreConfig").getAsJsonObject());
                     }
                 }
@@ -221,7 +207,7 @@ public class TestConnectionUriDomain5_1 {
         createConnectionUriDomain(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "127.0.0.1:3567", true, true, true,
+                "127.0.0.1:3567", true, new String[]{"emailpassword", "thirdparty", "otp-email"}, false, null,
                 coreConfig);
 
         JsonObject newConfig = new JsonObject();
@@ -232,7 +218,7 @@ public class TestConnectionUriDomain5_1 {
         createConnectionUriDomain(
                 process.getProcess(),
                 new TenantIdentifier("127.0.0.1", null, null),
-                "127.0.0.1", true, true, true,
+                "127.0.0.1:3567", true, new String[]{"emailpassword", "thirdparty", "otp-email"}, false, null,
                 newConfig);
 
         JsonObject result = listConnectionUriDomains(new TenantIdentifier(null, null, null), process.getProcess());
@@ -249,17 +235,10 @@ public class TestConnectionUriDomain5_1 {
 
                     for (JsonElement tenant : appObj.get("tenants").getAsJsonArray()) {
                         JsonObject tenantObj = tenant.getAsJsonObject();
-                        assertEquals(6, tenantObj.entrySet().size());
+                        assertEquals(4, tenantObj.entrySet().size());
                         assertEquals("public", tenantObj.get("tenantId").getAsString());
-                        assertTrue(tenantObj.get("useFirstFactorsFromStaticConfigIfEmpty").getAsBoolean());
-                        assertEquals(1, tenantObj.get("emailPassword").getAsJsonObject().entrySet().size());
-                        assertTrue(tenantObj.get("emailPassword").getAsJsonObject().get("enabled").getAsBoolean());
-                        assertEquals(3, tenantObj.get("thirdParty").getAsJsonObject().entrySet().size());
-                        assertTrue(tenantObj.get("thirdParty").getAsJsonObject().get("enabled").getAsBoolean());
-                        assertTrue(tenantObj.get("thirdParty").getAsJsonObject().get(
-                                "useThirdPartyProvidersFromStaticConfigIfEmpty").getAsBoolean());
-                        assertEquals(1, tenantObj.get("passwordless").getAsJsonObject().entrySet().size());
-                        assertTrue(tenantObj.get("passwordless").getAsJsonObject().get("enabled").getAsBoolean());
+                        assertEquals(0, tenantObj.get("thirdParty").getAsJsonObject().entrySet().size());
+                        assertEquals(3, tenantObj.get("firstFactors").getAsJsonArray().size());
                         assertEquals(coreConfig, tenantObj.get("coreConfig").getAsJsonObject());
                     }
                 }
@@ -288,7 +267,7 @@ public class TestConnectionUriDomain5_1 {
         createConnectionUriDomain(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "127.0.0.1:3567", true, true, true,
+                "127.0.0.1:3567", true, new String[]{"emailpassword", "thirdparty", "otp-email"}, false, null,
                 coreConfig);
 
         JsonObject newConfig = new JsonObject();
@@ -299,7 +278,7 @@ public class TestConnectionUriDomain5_1 {
         createConnectionUriDomain(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "127.0.0.1:3567", true, true, true,
+                "127.0.0.1:3567", true, new String[]{"emailpassword", "thirdparty", "otp-email"}, false, null,
                 newConfig);
 
         JsonObject result = listConnectionUriDomains(new TenantIdentifier(null, null, null), process.getProcess());
@@ -316,9 +295,6 @@ public class TestConnectionUriDomain5_1 {
 
                     for (JsonElement tenant : appObj.get("tenants").getAsJsonArray()) {
                         JsonObject tenantObj = tenant.getAsJsonObject();
-                        assertTrue(tenantObj.get("emailPassword").getAsJsonObject().get("enabled").getAsBoolean());
-                        assertTrue(tenantObj.get("thirdParty").getAsJsonObject().get("enabled").getAsBoolean());
-                        assertTrue(tenantObj.get("passwordless").getAsJsonObject().get("enabled").getAsBoolean());
                         assertEquals(coreConfig, tenantObj.get("coreConfig").getAsJsonObject());
                     }
                 }
@@ -345,7 +321,7 @@ public class TestConnectionUriDomain5_1 {
         createConnectionUriDomain(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "127.0.0.1:3567", true, true, true,
+                "127.0.0.1:3567", true, new String[]{"emailpassword", "thirdparty", "otp-email"}, false, null,
                 coreConfig);
 
         JsonObject result = listConnectionUriDomains(new TenantIdentifier(null, null, null), process.getProcess());
@@ -388,7 +364,8 @@ public class TestConnectionUriDomain5_1 {
             String[] args = {"../"};
             this.process = TestingProcessManager.start(args);
             FeatureFlagTestContent.getInstance(process.getProcess())
-                    .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+                    .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES
+                    .MULTI_TENANCY});
             process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -421,7 +398,7 @@ public class TestConnectionUriDomain5_1 {
             createConnectionUriDomain(
                     process.getProcess(),
                     new TenantIdentifier(null, null, null),
-                    valueForCreate[i], true, true, true,
+                    valueForCreate[i], true, new String[]{"emailpassword", "thirdparty", "otp-email"}, false, null,
                     config);
 
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -437,7 +414,8 @@ public class TestConnectionUriDomain5_1 {
 
     @Test
     public void testCUDsThatAreSame() throws Exception {
-        String[] valueForCreate = new String[]{"localhost:3567", "LOCALHOST:3567", "loCalHost:3567", "localhost", "localhost:12345"};
+        String[] valueForCreate = new String[]{"localhost:3567", "LOCALHOST:3567", "loCalHost:3567", "localhost",
+        "localhost:12345"};
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
@@ -454,7 +432,7 @@ public class TestConnectionUriDomain5_1 {
             JsonObject response = createConnectionUriDomain(
                     process.getProcess(),
                     new TenantIdentifier(null, null, null),
-                    valueForCreate[i], true, true, true,
+                    valueForCreate[i], true, new String[]{"emailpassword", "thirdparty", "otp-email"}, false, null,
                     config);
 
             if (i == 0) {
@@ -480,7 +458,7 @@ public class TestConnectionUriDomain5_1 {
                 createConnectionUriDomain(
                         process.getProcess(),
                         new TenantIdentifier(null, null, null),
-                        valueForCreate[i], true, true, true,
+                        valueForCreate[i], true, new String[]{"emailpassword", "thirdparty", "otp-email"}, false, null,
                         config);
                 fail(valueForCreate[i]);
             } catch (HttpResponseException e) {
@@ -505,25 +483,19 @@ public class TestConnectionUriDomain5_1 {
         JsonObject response = createConnectionUriDomain(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "localhost:3567", null, null, null,
+                "localhost:3567", false, null, false, null,
                 config);
 
         assertTrue(response.get("createdNew").getAsBoolean());
 
         JsonObject tenant = getTenant(new TenantIdentifier("localhost", null, null),
                 process.getProcess());
-        assertTrue(tenant.get("emailPassword").getAsJsonObject().get("enabled").getAsBoolean());
-        assertTrue(tenant.get("thirdParty").getAsJsonObject().get("enabled").getAsBoolean());
-        assertTrue(tenant.get("passwordless").getAsJsonObject().get("enabled").getAsBoolean());
+        assertFalse(tenant.has("firstFactors")); // use static config
     }
 
     @Test
     public void testFirstFactorsArray() throws Exception {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            return;
-        }
-
-        if (StorageLayer.isInMemDb(process.getProcess())) {
             return;
         }
 
@@ -533,29 +505,28 @@ public class TestConnectionUriDomain5_1 {
         JsonObject response = createConnectionUriDomain(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "127.0.0.1", null, null, null,
+                "127.0.0.1", false, null, false, null,
                 config);
 
         assertTrue(response.get("createdNew").getAsBoolean());
 
         JsonObject tenant = getTenant(new TenantIdentifier("127.0.0.1", null, null),
                 process.getProcess());
-        assertEquals(7, tenant.entrySet().size());
-        assertNull(tenant.get("firstFactors"));
+        assertEquals(4, tenant.entrySet().size());
+        assertFalse(tenant.has("firstFactors"));
 
         // builtin firstFactor
         String[] firstFactors = new String[]{"otp-phone"};
         response = createConnectionUriDomain(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "127.0.0.1", null, null, null,
-                true, new String[]{"otp-phone"}, false, null,
+                "127.0.0.1", true, new String[]{"otp-phone"}, false, null,
                 config);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = getTenant(new TenantIdentifier("127.0.0.1", null, null),
                 process.getProcess());
-        assertEquals(8, tenant.entrySet().size());
+        assertEquals(5, tenant.entrySet().size());
         assertTrue(tenant.get("firstFactors").isJsonArray());
         assertEquals(1, tenant.get("firstFactors").getAsJsonArray().size());
         assertEquals(firstFactors, new Gson().fromJson(tenant.get("firstFactors").getAsJsonArray(), String[].class));
@@ -563,14 +534,13 @@ public class TestConnectionUriDomain5_1 {
         response = createConnectionUriDomain(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "127.0.0.1", null, null, null,
-                false, null, false, null,
+                "127.0.0.1", false, null, false, null,
                 config);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = getTenant(new TenantIdentifier("127.0.0.1", null, null),
                 process.getProcess());
-        assertEquals(8, tenant.entrySet().size());
+        assertEquals(5, tenant.entrySet().size());
         assertTrue(tenant.get("firstFactors").isJsonArray());
         assertEquals(1, tenant.get("firstFactors").getAsJsonArray().size());
         assertEquals(firstFactors, new Gson().fromJson(tenant.get("firstFactors").getAsJsonArray(), String[].class));
@@ -580,14 +550,13 @@ public class TestConnectionUriDomain5_1 {
         response = createConnectionUriDomain(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "127.0.0.1", null, null, null,
-                true, firstFactors, false, null,
+                "127.0.0.1", true, firstFactors, false, null,
                 config);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = getTenant(new TenantIdentifier("127.0.0.1", null, null),
                 process.getProcess());
-        assertEquals(8, tenant.entrySet().size());
+        assertEquals(5, tenant.entrySet().size());
         assertTrue(tenant.get("firstFactors").isJsonArray());
         assertEquals(1, tenant.get("firstFactors").getAsJsonArray().size());
         assertEquals(firstFactors, new Gson().fromJson(tenant.get("firstFactors").getAsJsonArray(), String[].class));
@@ -597,14 +566,13 @@ public class TestConnectionUriDomain5_1 {
         response = createConnectionUriDomain(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "127.0.0.1", null, null, null,
-                true, firstFactors, false, null,
+                "127.0.0.1", true, firstFactors, false, null,
                 config);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = getTenant(new TenantIdentifier("127.0.0.1", null, null),
                 process.getProcess());
-        assertEquals(8, tenant.entrySet().size());
+        assertEquals(5, tenant.entrySet().size());
         assertTrue(tenant.get("firstFactors").isJsonArray());
         assertEquals(4, tenant.get("firstFactors").getAsJsonArray().size());
         assertEquals(Set.of(firstFactors), Set.of(new Gson().fromJson(tenant.get("firstFactors").getAsJsonArray(), String[].class)));
@@ -612,24 +580,19 @@ public class TestConnectionUriDomain5_1 {
         response = createConnectionUriDomain(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "127.0.0.1", null, null, null,
-                true, null, false, null,
+                "127.0.0.1", true, null, false, null,
                 config);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = getTenant(new TenantIdentifier("127.0.0.1", null, null),
                 process.getProcess());
-        assertEquals(7, tenant.entrySet().size());
-        assertNull(tenant.get("firstFactors"));
+        assertEquals(4, tenant.entrySet().size());
+        assertFalse(tenant.has("firstFactors"));
     }
 
     @Test
     public void testRequiredSecondaryFactorsArray() throws Exception {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            return;
-        }
-
-        if (StorageLayer.isInMemDb(process.getProcess())) {
             return;
         }
 
@@ -639,28 +602,27 @@ public class TestConnectionUriDomain5_1 {
         JsonObject response = createConnectionUriDomain(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "127.0.0.1", null, null, null,
-                config);
+                "127.0.0.1", false, null, false, null, config);
 
         assertTrue(response.get("createdNew").getAsBoolean());
 
         JsonObject tenant = getTenant(new TenantIdentifier("127.0.0.1", null, null),
                 process.getProcess());
-        assertNull(tenant.get("requiredSecondaryFactors"));
+        assertEquals(4, tenant.entrySet().size());
+        assertFalse(tenant.has("requiredSecondaryFactors"));
 
         // builtin firstFactor
         String[] requiredSecondaryFactors = new String[]{"otp-phone"};
         response = createConnectionUriDomain(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "127.0.0.1", null, null, null,
-                false, null, true, new String[]{"otp-phone"},
+                "127.0.0.1", false, null, true, new String[]{"otp-phone"},
                 config);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = getTenant(new TenantIdentifier("127.0.0.1", null, null),
                 process.getProcess());
-        assertEquals(8, tenant.entrySet().size());
+        assertEquals(5, tenant.entrySet().size());
         assertTrue(tenant.get("requiredSecondaryFactors").isJsonArray());
         assertEquals(1, tenant.get("requiredSecondaryFactors").getAsJsonArray().size());
         assertEquals(requiredSecondaryFactors, new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class));
@@ -668,14 +630,13 @@ public class TestConnectionUriDomain5_1 {
         response = createConnectionUriDomain(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "127.0.0.1", null, null, null,
-                false, null, false, null,
+                "127.0.0.1", false, null, false, null,
                 config);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = getTenant(new TenantIdentifier("127.0.0.1", null, null),
                 process.getProcess());
-        assertEquals(8, tenant.entrySet().size());
+        assertEquals(5, tenant.entrySet().size());
         assertTrue(tenant.get("requiredSecondaryFactors").isJsonArray());
         assertEquals(1, tenant.get("requiredSecondaryFactors").getAsJsonArray().size());
         assertEquals(requiredSecondaryFactors, new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class));
@@ -685,14 +646,13 @@ public class TestConnectionUriDomain5_1 {
         response = createConnectionUriDomain(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "127.0.0.1", null, null, null,
-                false, null, true, requiredSecondaryFactors,
+                "127.0.0.1", false, null, true, requiredSecondaryFactors,
                 config);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = getTenant(new TenantIdentifier("127.0.0.1", null, null),
                 process.getProcess());
-        assertEquals(8, tenant.entrySet().size());
+        assertEquals(5, tenant.entrySet().size());
         assertTrue(tenant.get("requiredSecondaryFactors").isJsonArray());
         assertEquals(1, tenant.get("requiredSecondaryFactors").getAsJsonArray().size());
         assertEquals(requiredSecondaryFactors, new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class));
@@ -702,14 +662,13 @@ public class TestConnectionUriDomain5_1 {
         response = createConnectionUriDomain(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "127.0.0.1", null, null, null,
-                false, null, true, requiredSecondaryFactors,
+                "127.0.0.1", false, null, true, requiredSecondaryFactors,
                 config);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = getTenant(new TenantIdentifier("127.0.0.1", null, null),
                 process.getProcess());
-        assertEquals(8, tenant.entrySet().size());
+        assertEquals(5, tenant.entrySet().size());
         assertTrue(tenant.get("requiredSecondaryFactors").isJsonArray());
         assertEquals(4, tenant.get("requiredSecondaryFactors").getAsJsonArray().size());
         assertEquals(Set.of(requiredSecondaryFactors), Set.of(new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class)));
@@ -717,15 +676,14 @@ public class TestConnectionUriDomain5_1 {
         response = createConnectionUriDomain(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "127.0.0.1", null, null, null,
-                false, null, true, null,
+                "127.0.0.1", false, null, true, null,
                 config);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = getTenant(new TenantIdentifier("127.0.0.1", null, null),
                 process.getProcess());
-        assertEquals(7, tenant.entrySet().size());
-        assertNull(tenant.get("requiredSecondaryFactors"));
+        assertEquals(4, tenant.entrySet().size());
+        assertFalse(tenant.has("requiredSecondaryFactors"));
     }
 
     @Test
@@ -742,7 +700,7 @@ public class TestConnectionUriDomain5_1 {
             createConnectionUriDomain(
                     process.getProcess(),
                     new TenantIdentifier(null, null, null),
-                    "127.0.0.1", null, null, null,
+                    "127.0.0.1",
                     true, factors, false, null,
                     config);
             fail();
@@ -755,7 +713,7 @@ public class TestConnectionUriDomain5_1 {
             createConnectionUriDomain(
                     process.getProcess(),
                     new TenantIdentifier(null, null, null),
-                    "127.0.0.1", null, null, null,
+                    "127.0.0.1",
                     false, null, true, factors,
                     config);
             fail();
@@ -766,31 +724,13 @@ public class TestConnectionUriDomain5_1 {
     }
 
     private static JsonObject createConnectionUriDomain(Main main, TenantIdentifier sourceTenant,
-                                                        String connectionUriDomain, Boolean emailPasswordEnabled,
-                                                        Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
-                                                        JsonObject coreConfig) throws HttpResponseException, IOException {
-        return createConnectionUriDomain(main, sourceTenant, connectionUriDomain, emailPasswordEnabled, thirdPartyEnabled,
-                passwordlessEnabled, false, null, false, null, coreConfig);
-    }
-
-    private static JsonObject createConnectionUriDomain(Main main, TenantIdentifier sourceTenant,
-                                                        String connectionUriDomain, Boolean emailPasswordEnabled,
-                                                        Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
+                                                        String connectionUriDomain,
                                                         boolean setFirstFactors, String[] firstFactors,
                                                         boolean setRequiredSecondaryFactors, String[] requiredSecondaryFactors,
                                                         JsonObject coreConfig) throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
         if (connectionUriDomain != null) {
             requestBody.addProperty("connectionUriDomain", connectionUriDomain);
-        }
-        if (emailPasswordEnabled != null) {
-            requestBody.addProperty("emailPasswordEnabled", emailPasswordEnabled);
-        }
-        if (thirdPartyEnabled != null) {
-            requestBody.addProperty("thirdPartyEnabled", thirdPartyEnabled);
-        }
-        if (passwordlessEnabled != null) {
-            requestBody.addProperty("passwordlessEnabled", passwordlessEnabled);
         }
         if (setFirstFactors || firstFactors != null) {
             requestBody.add("firstFactors", new Gson().toJsonTree(firstFactors));
@@ -802,7 +742,7 @@ public class TestConnectionUriDomain5_1 {
         requestBody.add("coreConfig", coreConfig);
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
-                HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/connectionuridomain"),
+                HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/connectionuridomain/v2"),
                 requestBody, 1000, 2500, null,
                 SemVer.v5_1.get(), "multitenancy");
 
@@ -814,7 +754,8 @@ public class TestConnectionUriDomain5_1 {
     private static JsonObject listConnectionUriDomains(TenantIdentifier sourceTenant, Main main)
             throws HttpResponseException, IOException {
         JsonObject response = HttpRequestForTesting.sendGETRequest(main, "",
-                HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/connectionuridomain/list"),
+                HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/connectionuridomain/list" +
+                        "/v2"),
                 null, 1000, 1000, null,
                 SemVer.v5_1.get(), "multitenancy");
 
@@ -840,7 +781,7 @@ public class TestConnectionUriDomain5_1 {
     private static JsonObject getTenant(TenantIdentifier tenantIdentifier, Main main)
             throws HttpResponseException, IOException {
         JsonObject response = HttpRequestForTesting.sendGETRequest(main, "",
-                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/multitenancy/tenant"),
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/multitenancy/tenant/v2"),
                 null, 1000, 1000, null,
                 SemVer.v5_1.get(), "multitenancy");
 
