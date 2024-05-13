@@ -96,7 +96,7 @@ public class TestTenant5_1 {
         createTenant(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "t1", true, true, true,
+                "t1", true, new String[]{"emailpassword", "thirdparty", "otp-email"}, false, null,
                 coreConfig);
 
         JsonObject result = listTenants(new TenantIdentifier(null, null, null), process.getProcess());
@@ -110,16 +110,11 @@ public class TestTenant5_1 {
             if (tenantObj.get("tenantId").getAsString().equals("t1")) {
                 found = true;
 
-                assertEquals(6, tenantObj.entrySet().size());
-                assertFalse(tenantObj.get("useFirstFactorsFromStaticConfigIfEmpty").getAsBoolean());
-                assertEquals(1, tenantObj.get("emailPassword").getAsJsonObject().entrySet().size());
-                assertTrue(tenantObj.get("emailPassword").getAsJsonObject().get("enabled").getAsBoolean());
-                assertEquals(3, tenantObj.get("thirdParty").getAsJsonObject().entrySet().size());
-                assertTrue(tenantObj.get("thirdParty").getAsJsonObject().get("enabled").getAsBoolean());
-                assertFalse(tenantObj.get("thirdParty").getAsJsonObject().get(
-                        "useThirdPartyProvidersFromStaticConfigIfEmpty").getAsBoolean());
-                assertEquals(1, tenantObj.get("passwordless").getAsJsonObject().entrySet().size());
-                assertTrue(tenantObj.get("passwordless").getAsJsonObject().get("enabled").getAsBoolean());
+                assertEquals(4, tenantObj.entrySet().size());
+                assertEquals("t1", tenantObj.get("tenantId").getAsString());
+                assertEquals(1, tenantObj.get("thirdParty").getAsJsonObject().entrySet().size());
+                assertEquals(0, tenantObj.get("thirdParty").getAsJsonObject().get("providers").getAsJsonArray().size());
+                assertEquals(3, tenantObj.get("firstFactors").getAsJsonArray().size());
                 assertEquals(coreConfig, tenantObj.get("coreConfig").getAsJsonObject());
             }
         }
@@ -142,7 +137,7 @@ public class TestTenant5_1 {
         createTenant(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "t1", true, true, true,
+                "t1", true, new String[]{"emailpassword", "thirdparty", "otp-email"}, false, null,
                 coreConfig);
 
         JsonObject newConfig = new JsonObject();
@@ -153,7 +148,7 @@ public class TestTenant5_1 {
         createTenant(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "t1", true, true, true,
+                "t1", true, new String[]{"emailpassword", "thirdparty"}, false, null,
                 newConfig);
 
         JsonObject result = listTenants(new TenantIdentifier(null, null, null), process.getProcess());
@@ -167,16 +162,11 @@ public class TestTenant5_1 {
             if (tenantObj.get("tenantId").getAsString().equals("t1")) {
                 found = true;
 
-                assertEquals(6, tenantObj.entrySet().size());
-                assertFalse(tenantObj.get("useFirstFactorsFromStaticConfigIfEmpty").getAsBoolean());
-                assertEquals(1, tenantObj.get("emailPassword").getAsJsonObject().entrySet().size());
-                assertTrue(tenantObj.get("emailPassword").getAsJsonObject().get("enabled").getAsBoolean());
-                assertEquals(3, tenantObj.get("thirdParty").getAsJsonObject().entrySet().size());
-                assertTrue(tenantObj.get("thirdParty").getAsJsonObject().get("enabled").getAsBoolean());
-                assertFalse(tenantObj.get("thirdParty").getAsJsonObject().get(
-                        "useThirdPartyProvidersFromStaticConfigIfEmpty").getAsBoolean());
-                assertEquals(1, tenantObj.get("passwordless").getAsJsonObject().entrySet().size());
-                assertTrue(tenantObj.get("passwordless").getAsJsonObject().get("enabled").getAsBoolean());
+                assertEquals(4, tenantObj.entrySet().size());
+                assertEquals("t1", tenantObj.get("tenantId").getAsString());
+                assertEquals(1, tenantObj.get("thirdParty").getAsJsonObject().entrySet().size());
+                assertEquals(0, tenantObj.get("thirdParty").getAsJsonObject().get("providers").getAsJsonArray().size());
+                assertEquals(2, tenantObj.get("firstFactors").getAsJsonArray().size());
                 assertEquals(coreConfig, tenantObj.get("coreConfig").getAsJsonObject());
             }
         }
@@ -200,7 +190,7 @@ public class TestTenant5_1 {
         createTenant(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "t1", true, true, true,
+                "t1", true, new String[]{"emailpassword", "thirdparty", "otp-email"}, false, null,
                 coreConfig);
 
         JsonObject newConfig = new JsonObject();
@@ -211,7 +201,7 @@ public class TestTenant5_1 {
         createTenant(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "t1", true, true, true,
+                "t1", true, new String[]{"emailpassword", "thirdparty", "otp-email"}, false, null,
                 newConfig);
 
         JsonObject result = listTenants(new TenantIdentifier(null, null, null), process.getProcess());
@@ -225,9 +215,6 @@ public class TestTenant5_1 {
             if (tenantObj.get("tenantId").getAsString().equals("t1")) {
                 found = true;
 
-                assertTrue(tenantObj.get("emailPassword").getAsJsonObject().get("enabled").getAsBoolean());
-                assertTrue(tenantObj.get("thirdParty").getAsJsonObject().get("enabled").getAsBoolean());
-                assertTrue(tenantObj.get("passwordless").getAsJsonObject().get("enabled").getAsBoolean());
                 assertEquals(coreConfig, tenantObj.get("coreConfig").getAsJsonObject());
             }
         }
@@ -249,7 +236,7 @@ public class TestTenant5_1 {
         createTenant(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "t1", true, true, true,
+                "t1", true, new String[]{"emailpassword", "thirdparty", "otp-email"}, false, null,
                 coreConfig);
 
         JsonObject result = listTenants(new TenantIdentifier(null, null, null), process.getProcess());
@@ -309,7 +296,7 @@ public class TestTenant5_1 {
             createTenant(
                     process.getProcess(),
                     new TenantIdentifier(null, null, null),
-                    valueForCreate[i], true, true, true,
+                    valueForCreate[i], true, new String[]{"emailpassword", "thirdparty", "otp-email"}, false, null,
                     new JsonObject());
 
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -332,7 +319,8 @@ public class TestTenant5_1 {
                 createTenant(
                         process.getProcess(),
                         new TenantIdentifier(null, null, null),
-                        valueForCreate[i], true, true, true,
+                        valueForCreate[i], true, new String[]{"emailpassword", "thirdparty", "otp-email"}, false, null,
+
                         new JsonObject());
             } catch (HttpResponseException e) {
                 assertTrue(e.getMessage().contains("tenantId can only contain letters, numbers and hyphens")
@@ -354,16 +342,22 @@ public class TestTenant5_1 {
         JsonObject response = createTenant(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "t1", null, null, null,
+                "t1", false, null, false, null,
                 config);
 
         assertTrue(response.get("createdNew").getAsBoolean());
 
-        JsonObject tenant = getTenant(new TenantIdentifier(null, null, "t1"),
+        JsonObject tenantObj = getTenant(new TenantIdentifier(null, null, "t1"),
                 process.getProcess());
-        assertTrue(tenant.get("emailPassword").getAsJsonObject().get("enabled").getAsBoolean());
-        assertTrue(tenant.get("thirdParty").getAsJsonObject().get("enabled").getAsBoolean());
-        assertTrue(tenant.get("passwordless").getAsJsonObject().get("enabled").getAsBoolean());
+        assertEquals("OK", tenantObj.get("status").getAsString());
+        tenantObj.remove("status");
+
+        assertEquals(4, tenantObj.entrySet().size());
+        assertEquals("t1", tenantObj.get("tenantId").getAsString());
+        assertEquals(1, tenantObj.get("thirdParty").getAsJsonObject().entrySet().size());
+        assertEquals(0, tenantObj.get("thirdParty").getAsJsonObject().get("providers").getAsJsonArray().size());
+        assertEquals(0, tenantObj.get("firstFactors").getAsJsonArray().size()); // no recipes are enabled
+        assertFalse(tenantObj.has("requiredSecondaryFactors"));
     }
 
     @Test
@@ -378,29 +372,28 @@ public class TestTenant5_1 {
         JsonObject response = createTenant(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "t1", null, null, null,
+                "t1", false, null, false, null,
                 config);
 
         assertTrue(response.get("createdNew").getAsBoolean());
 
         JsonObject tenant = getTenant(new TenantIdentifier(null, null, "t1"),
                 process.getProcess());
-        assertEquals(7, tenant.entrySet().size());
-        assertNull(tenant.get("firstFactors"));
+        assertEquals(5, tenant.entrySet().size());
+        assertEquals(0, tenant.get("firstFactors").getAsJsonArray().size());
 
         // builtin firstFactor
         String[] firstFactors = new String[]{"otp-phone"};
         response = createTenant(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "t1", null, null, true,
-                true, new String[]{"otp-phone"}, false, null,
+                "t1", true, new String[]{"otp-phone"}, false, null,
                 config);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = getTenant(new TenantIdentifier(null, null, "t1"),
                 process.getProcess());
-        assertEquals(8, tenant.entrySet().size());
+        assertEquals(5, tenant.entrySet().size());
         assertTrue(tenant.get("firstFactors").isJsonArray());
         assertEquals(1, tenant.get("firstFactors").getAsJsonArray().size());
         assertEquals(firstFactors, new Gson().fromJson(tenant.get("firstFactors").getAsJsonArray(), String[].class));
@@ -408,14 +401,13 @@ public class TestTenant5_1 {
         response = createTenant(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "t1", null, null, null,
-                false, null, false, null,
+                "t1", false, null, false, null,
                 config);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = getTenant(new TenantIdentifier(null, null, "t1"),
                 process.getProcess());
-        assertEquals(8, tenant.entrySet().size());
+        assertEquals(5, tenant.entrySet().size());
         assertTrue(tenant.get("firstFactors").isJsonArray());
         assertEquals(1, tenant.get("firstFactors").getAsJsonArray().size());
         assertEquals(firstFactors, new Gson().fromJson(tenant.get("firstFactors").getAsJsonArray(), String[].class));
@@ -425,15 +417,13 @@ public class TestTenant5_1 {
         response = createTenant(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "t1", null, null, null,
-                true, firstFactors, false, null,
+                "t1", true, firstFactors, false, null,
                 config);
-        assertEquals(8, tenant.entrySet().size());
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = getTenant(new TenantIdentifier(null, null, "t1"),
                 process.getProcess());
-        assertEquals(8, tenant.entrySet().size());
+        assertEquals(5, tenant.entrySet().size());
         assertTrue(tenant.get("firstFactors").isJsonArray());
         assertEquals(1, tenant.get("firstFactors").getAsJsonArray().size());
         assertEquals(firstFactors, new Gson().fromJson(tenant.get("firstFactors").getAsJsonArray(), String[].class));
@@ -443,15 +433,13 @@ public class TestTenant5_1 {
         response = createTenant(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "t1", true, null, true,
-                true, firstFactors, false, null,
+                "t1", true, firstFactors, false, null,
                 config);
-        assertEquals(8, tenant.entrySet().size());
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = getTenant(new TenantIdentifier(null, null, "t1"),
                 process.getProcess());
-        assertEquals(8, tenant.entrySet().size());
+        assertEquals(5, tenant.entrySet().size());
         assertTrue(tenant.get("firstFactors").isJsonArray());
         assertEquals(4, tenant.get("firstFactors").getAsJsonArray().size());
         assertEquals(Set.of(firstFactors), Set.of(new Gson().fromJson(tenant.get("firstFactors").getAsJsonArray(), String[].class)));
@@ -459,15 +447,14 @@ public class TestTenant5_1 {
         response = createTenant(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "t1", null, null, null,
-                true, null, false, null,
+                "t1", true, null, false, null,
                 config);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = getTenant(new TenantIdentifier(null, null, "t1"),
                 process.getProcess());
-        assertEquals(7, tenant.entrySet().size());
-        assertNull(tenant.get("firstFactors"));
+        assertEquals(4, tenant.entrySet().size());
+        assertFalse(tenant.has("firstFactors"));
     }
 
     @Test
@@ -482,29 +469,27 @@ public class TestTenant5_1 {
         JsonObject response = createTenant(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "t1", null, null, null,
-                config);
+                "t1", false, null, false, null, config);
 
         assertTrue(response.get("createdNew").getAsBoolean());
 
         JsonObject tenant = getTenant(new TenantIdentifier(null, null, "t1"),
                 process.getProcess());
-        assertEquals(7, tenant.entrySet().size());
-        assertNull(tenant.get("requiredSecondaryFactors"));
+        assertEquals(5, tenant.entrySet().size());
+        assertFalse(tenant.has("requiredSecondaryFactors"));
 
         // builtin firstFactor
         String[] requiredSecondaryFactors = new String[]{"otp-phone"};
         response = createTenant(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "t1", null, null, true,
-                false, null, true, new String[]{"otp-phone"},
+                "t1", false, null, true, new String[]{"otp-phone"},
                 config);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = getTenant(new TenantIdentifier(null, null, "t1"),
                 process.getProcess());
-        assertEquals(8, tenant.entrySet().size());
+        assertEquals(6, tenant.entrySet().size());
         assertTrue(tenant.get("requiredSecondaryFactors").isJsonArray());
         assertEquals(1, tenant.get("requiredSecondaryFactors").getAsJsonArray().size());
         assertEquals(requiredSecondaryFactors, new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class));
@@ -512,14 +497,13 @@ public class TestTenant5_1 {
         response = createTenant(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "t1", null, null, null,
-                false, null, false, null,
+                "t1", false, null, false, null,
                 config);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = getTenant(new TenantIdentifier(null, null, "t1"),
                 process.getProcess());
-        assertEquals(8, tenant.entrySet().size());
+        assertEquals(6, tenant.entrySet().size());
         assertTrue(tenant.get("requiredSecondaryFactors").isJsonArray());
         assertEquals(1, tenant.get("requiredSecondaryFactors").getAsJsonArray().size());
         assertEquals(requiredSecondaryFactors, new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class));
@@ -529,14 +513,13 @@ public class TestTenant5_1 {
         response = createTenant(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "t1", null, null, null,
-                false, null, true, requiredSecondaryFactors,
+                "t1", false, null, true, requiredSecondaryFactors,
                 config);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = getTenant(new TenantIdentifier(null, null, "t1"),
                 process.getProcess());
-        assertEquals(8, tenant.entrySet().size());
+        assertEquals(6, tenant.entrySet().size());
         assertTrue(tenant.get("requiredSecondaryFactors").isJsonArray());
         assertEquals(1, tenant.get("requiredSecondaryFactors").getAsJsonArray().size());
         assertEquals(requiredSecondaryFactors, new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class));
@@ -546,14 +529,13 @@ public class TestTenant5_1 {
         response = createTenant(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "t1", true, null, true,
-                false, null, true, requiredSecondaryFactors,
+                "t1", false, null, true, requiredSecondaryFactors,
                 config);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = getTenant(new TenantIdentifier(null, null, "t1"),
                 process.getProcess());
-        assertEquals(8, tenant.entrySet().size());
+        assertEquals(6, tenant.entrySet().size());
         assertTrue(tenant.get("requiredSecondaryFactors").isJsonArray());
         assertEquals(4, tenant.get("requiredSecondaryFactors").getAsJsonArray().size());
         assertEquals(Set.of(requiredSecondaryFactors), Set.of(new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class)));
@@ -561,15 +543,14 @@ public class TestTenant5_1 {
         response = createTenant(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "t1", null, null, null,
-                false, null, true, null,
+                "t1", false, null, true, null,
                 config);
         assertFalse(response.get("createdNew").getAsBoolean());
 
         tenant = getTenant(new TenantIdentifier(null, null, "t1"),
                 process.getProcess());
-        assertEquals(7, tenant.entrySet().size());
-        assertNull(tenant.get("requiredSecondaryFactors"));
+        assertEquals(5, tenant.entrySet().size());
+        assertFalse(tenant.has("requiredSecondaryFactors"));
     }
 
     @Test
@@ -586,8 +567,7 @@ public class TestTenant5_1 {
             createTenant(
                     process.getProcess(),
                     new TenantIdentifier(null, null, null),
-                    "t1", null, null, null,
-                    true, factors, false, null,
+                    "t1", true, factors, false, null,
                     config);
             fail();
         } catch (HttpResponseException e) {
@@ -599,8 +579,7 @@ public class TestTenant5_1 {
             createTenant(
                     process.getProcess(),
                     new TenantIdentifier(null, null, null),
-                    "t1", null, null, null,
-                    false, null, true, factors,
+                    "t1", false, null, true, factors,
                     config);
             fail();
         } catch (HttpResponseException e) {
@@ -610,30 +589,11 @@ public class TestTenant5_1 {
     }
 
     private static JsonObject createTenant(Main main, TenantIdentifier sourceTenant, String tenantId,
-                                           Boolean emailPasswordEnabled,
-                                           Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
-                                           JsonObject coreConfig) throws HttpResponseException, IOException {
-        return createTenant(main, sourceTenant, tenantId, emailPasswordEnabled, thirdPartyEnabled, passwordlessEnabled,
-                false, null, false, null, coreConfig);
-    }
-
-    private static JsonObject createTenant(Main main, TenantIdentifier sourceTenant, String tenantId,
-                                     Boolean emailPasswordEnabled,
-                                          Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
                                            boolean setFirstFactors, String[] firstFactors,
                                            boolean setRequiredSecondaryFactors, String[] requiredSecondaryFactors,
                                           JsonObject coreConfig) throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("tenantId", tenantId);
-        if (emailPasswordEnabled != null) {
-            requestBody.addProperty("emailPasswordEnabled", emailPasswordEnabled);
-        }
-        if (thirdPartyEnabled != null) {
-            requestBody.addProperty("thirdPartyEnabled", thirdPartyEnabled);
-        }
-        if (passwordlessEnabled != null) {
-            requestBody.addProperty("passwordlessEnabled", passwordlessEnabled);
-        }
         if (setFirstFactors || firstFactors != null) {
             requestBody.add("firstFactors", new Gson().toJsonTree(firstFactors));
         }
@@ -644,7 +604,7 @@ public class TestTenant5_1 {
         requestBody.add("coreConfig", coreConfig);
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
-                HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/tenant"),
+                HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/tenant/v2"),
                 requestBody, 1000, 2500, null,
                 SemVer.v5_1.get(), "multitenancy");
 
@@ -655,7 +615,7 @@ public class TestTenant5_1 {
     private static JsonObject listTenants(TenantIdentifier sourceTenant, Main main)
             throws HttpResponseException, IOException {
         JsonObject response = HttpRequestForTesting.sendGETRequest(main, "",
-                HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/tenant/list"),
+                HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/tenant/list/v2"),
                 null, 1000, 1000, null,
                 SemVer.v5_1.get(), "multitenancy");
 
@@ -667,7 +627,7 @@ public class TestTenant5_1 {
             throws HttpResponseException, IOException {
 
         JsonObject response = HttpRequestForTesting.sendGETRequest(main, "",
-                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/multitenancy/tenant"),
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/multitenancy/tenant/v2"),
                 null, 1000, 1000, null,
                 SemVer.v5_1.get(), "multitenancy");
 
