@@ -7,7 +7,27 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
-- Add a new core API for fetching all the core properties
+## [9.1.0]
+
+- Adds new core API for fetching all the core properties for a tenant
+  - GET `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant/core-config`
+- Deprecated the following APIs
+  - PUT `/recipe/multitenancy/connectionuridomain`
+  - GET `/recipe/multitenancy/connectionuridomain/list`
+  - PUT `/recipe/multitenancy/app`
+  - GET `/recipe/multitenancy/app/list`
+  - PUT `/appid-<appid>/recipe/multitenancy/tenant`
+  - GET `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant`
+  - GET `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant/list`
+- Adds the following APIs to replace the deprecated APIs
+  - PUT `/recipe/multitenancy/connectionuridomain/v2`
+  - GET `/recipe/multitenancy/connectionuridomain/list/v2`
+  - PUT `/recipe/multitenancy/app/v2`
+  - GET `/recipe/multitenancy/app/list/v2`
+  - PUT `/appid-<appid>/recipe/multitenancy/tenant/v2`
+  - GET `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant/v2`
+  - GET `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant/list/v2`
+- Backward compatible recipe enabled boolean computations based on - https://github.com/supertokens/supertokens-core/issues/979#issuecomment-2099971371
 
 ## [9.0.2] - 2024-04-17
 
