@@ -104,13 +104,6 @@ public class GenerateTenantConfig {
                 new ConfigGenerator.Expectation("ok", factors));
     }
 
-    public static ConfigGenerator.GeneratedValueAndExpectation generate_useFirstFactorsFromStaticConfigIfEmpty() {
-        boolean val = new Random().nextBoolean();
-        return new ConfigGenerator.GeneratedValueAndExpectation(
-                val,
-                new ConfigGenerator.Expectation("ok", val));
-    }
-
     public static ConfigGenerator.GeneratedValueAndExpectation generate_requiredSecondaryFactors() {
         if (new Random().nextFloat() < 0.15) {
             return new ConfigGenerator.GeneratedValueAndExpectation(
