@@ -814,6 +814,11 @@ public class CoreConfig {
                 String description = field.isAnnotationPresent(ConfigDescription.class)
                         ? field.getAnnotation(ConfigDescription.class).value()
                         : "";
+
+                if (description.contains("Deprecated")) {
+                    continue;
+                }
+
                 boolean isDifferentAcrossTenants = !field.isAnnotationPresent(NotConflictingInApp.class);
 
                 String valueType = null;
