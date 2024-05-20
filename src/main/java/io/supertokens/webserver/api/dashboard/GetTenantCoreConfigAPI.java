@@ -14,7 +14,7 @@
  *    under the License.
  */
 
-package io.supertokens.webserver.api.multitenancy;
+package io.supertokens.webserver.api.dashboard;
 
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -25,7 +25,6 @@ import io.supertokens.config.CoreConfig;
 import io.supertokens.pluginInterface.ConfigFieldInfo;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -40,26 +39,21 @@ public class GetTenantCoreConfigAPI extends WebserverAPI {
     private static final long serialVersionUID = -4641988458637882374L;
 
     public GetTenantCoreConfigAPI(Main main) {
-        super(main, RECIPE_ID.MULTITENANCY.toString());
+        super(main, RECIPE_ID.DASHBOARD.toString());
     }
 
     @Override
     public String getPath() {
-        return "/recipe/multitenancy/tenant/core-config";
-    }
-
-    @Override
-    protected boolean checkAPIKey(HttpServletRequest req) {
-        return false;
+        return "/recipe/dashboard/tenant/core-config";
     }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         try {
             ArrayList<ConfigFieldInfo> config = new ArrayList<>();
-            List<ConfigFieldInfo> coreConfigFields = CoreConfig.getConfigFieldsInfo(main,
+            List<ConfigFieldInfo> coreConfigFields = CoreConfig.getConfigFieldsInfoForDashboard(main,
                     getTenantIdentifier(req));
-            List<ConfigFieldInfo> storageFields = getTenantStorage(req).getConfigFieldsInfo();
+            List<ConfigFieldInfo> storageFields = getTenantStorage(req).getConfigFieldsInfoForDashboard();
 
             config.addAll(coreConfigFields);
             config.addAll(storageFields);
