@@ -180,8 +180,7 @@ If you think this is a project you could use in the future, please :star2: this 
 <td align="center"><a href="https://github.com/taijuten"><img src="https://avatars.githubusercontent.com/u/4288526?v=4" width="100px;" alt=""/><br /><sub><b>Ralph Lawrence</b></sub></a></td>
 <td align="center"><a href="https://github.com/christopher-kapic"><img src="https://avatars.githubusercontent.com/u/59740769?v=4" width="100px;" alt=""/><br /><sub><b>Christopher Kapic</b></sub></a></td>
 <td align="center"><a href="https://github.com/Hanzyusuf"><img src="https://avatars.githubusercontent.com/u/22171112?v=4" width="100px;" alt=""/><br /><sub><b>Hanzyusuf</b></sub></a></td>
-<td align="center"><a href="https://github.com/porcellus"><img src="https://avatars.githubusercontent.com/u/1129990?v=4" width="100px;" alt=""/><br /><sub><b>
-Mihály Lengyel</b></sub></a></td>
+<td align="center"><a href="https://github.com/porcellus"><img src="https://avatars.githubusercontent.com/u/1129990?v=4" width="100px;" alt=""/><br /><sub><b>Mihály Lengyel</b></sub></a></td>
   </tr>
   <tr>
 <td align="center"><a href="https://github.com/cerino-ligutom"><img src="https://avatars.githubusercontent.com/u/6721822?v=4" width="100px;" alt=""/><br /><sub><b>Cerino O. Ligutom III</b></sub></a></td>
@@ -223,19 +222,16 @@ Mihály Lengyel</b></sub></a></td>
 <td align="center"><a href="https://github.com/sublimator"><img src="https://avatars.githubusercontent.com/u/525211?v=4" width="100px;" alt=""/><br /><sub><b>Nicholas Dudfield</b></sub></a></td>
 <td align="center"><a href="https://github.com/Qdea"><img src="https://avatars.githubusercontent.com/u/58660439?v=4" width="100px;" alt=""/><br /><sub><b>Qdea</b></sub></a></td>
 <td align="center"><a href="https://github.com/LukasKnuth"><img src="https://avatars.githubusercontent.com/u/692211?v=4" width="100px;" alt=""/><br /><sub><b>Lukas Knuth</b></sub></a></td>
-<td align="center"><a href="https://github.com/melvynhills"><img src="https://avatars.githubusercontent.com/u/417315?v=4" width="100px;" alt=""/><br /><sub><b>
-Melvyn Hills</b></sub></a></td>
+<td align="center"><a href="https://github.com/melvynhills"><img src="https://avatars.githubusercontent.com/u/417315?v=4" width="100px;" alt=""/><br /><sub><b>Melvyn Hills</b></sub></a></td>
   <tr>
 <td align="center"><a href="https://github.com/mattanimation"><img src="https://avatars.githubusercontent.com/u/1426997?v=4" width="100px;" alt=""/><br /><sub><b>Matt Murray</b></sub></a></td>
-Melvyn Hills</b></sub></a></td>
 <td align="center"><a href="https://github.com/constantoine"><img src="https://avatars.githubusercontent.com/u/13930958?v=4" width="100px;" alt=""/><br /><sub><b>Cléo Rebert</b></sub></a></td>
 <td align="center"><a href="https://github.com/daniil-borovoy"><img src="https://avatars.githubusercontent.com/u/74528634?v=4" width="100px;" alt=""/><br /><sub><b>Daniil Borovoy</b></sub></a></td>
 <td align="center"><a href="https://github.com/kriskw1999"><img src="https://avatars.githubusercontent.com/u/71312948?v=4" width="100px;" alt=""/><br /><sub><b>Krzysztof Witkowski</b></sub></a></td>
   </tr>
   <tr>
 <td align="center"><a href="https://github.com/Lehoczky"><img src="https://avatars.githubusercontent.com/u/31937175?v=4" width="100px;" alt=""/><br /><sub><b>Lehoczky Zoltán</b></sub></a></td>
-Melvyn Hills</b></sub></a></td>
-    <td align="center"><a href="https://github.com/virajkanwade"><img src="https://avatars.githubusercontent.com/u/316111?v=4" width="100px;" alt=""/><br /><sub><b>Viraj Kanwade</b></sub></a></td>
+<td align="center"><a href="https://github.com/virajkanwade"><img src="https://avatars.githubusercontent.com/u/316111?v=4" width="100px;" alt=""/><br /><sub><b>Viraj Kanwade</b></sub></a></td>
   </tr>
 </table>
 
