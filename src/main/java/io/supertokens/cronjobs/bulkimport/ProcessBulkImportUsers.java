@@ -70,8 +70,7 @@ public class ProcessBulkImportUsers extends CronTask {
 
     @Override
     protected void doTaskPerApp(AppIdentifier app)
-            throws TenantOrAppNotFoundException, StorageQueryException, InvalidConfigException, IOException,
-            DbInitException {
+            throws TenantOrAppNotFoundException, StorageQueryException, IOException, DbInitException {
 
         if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
             return;
@@ -114,7 +113,8 @@ public class ProcessBulkImportUsers extends CronTask {
     }
 
     private synchronized Storage getBulkImportProxyStorage(TenantIdentifier tenantIdentifier)
-            throws InvalidConfigException, IOException, TenantOrAppNotFoundException, DbInitException, StorageQueryException {
+            throws InvalidConfigException, IOException, TenantOrAppNotFoundException, DbInitException,
+            StorageQueryException {
         String userPoolId = StorageLayer.getStorage(tenantIdentifier, main).getUserPoolId();
         if (userPoolToStorageMap.containsKey(userPoolId)) {
             return userPoolToStorageMap.get(userPoolId);
@@ -151,13 +151,13 @@ public class ProcessBulkImportUsers extends CronTask {
 
         try {
             List<Storage> allProxyStorages = new ArrayList<>();
-    
             TenantConfig[] tenantConfigs = Multitenancy.getAllTenantsForApp(appIdentifier, main);
             for (TenantConfig tenantConfig : tenantConfigs) {
                 allProxyStorages.add(getBulkImportProxyStorage(tenantConfig.tenantIdentifier));
             }
             return allProxyStorages.toArray(new Storage[0]);
-        } catch (TenantOrAppNotFoundException | InvalidConfigException | IOException | DbInitException | StorageQueryException e) {
+        } catch (TenantOrAppNotFoundException | InvalidConfigException | IOException | DbInitException
+                | StorageQueryException e) {
             throw new StorageTransactionLogicException(e);
         }
     }
@@ -172,7 +172,7 @@ public class ProcessBulkImportUsers extends CronTask {
 
     private void processUser(AppIdentifier appIdentifier, BulkImportUser user, BulkImportUserUtils bulkImportUserUtils,
             BulkImportSQLStorage baseTenantStorage)
-            throws TenantOrAppNotFoundException, StorageQueryException, InvalidConfigException, IOException,
+            throws TenantOrAppNotFoundException, StorageQueryException, IOException,
             DbInitException {
 
         try {
@@ -193,34 +193,36 @@ public class ProcessBulkImportUsers extends CronTask {
 
             LoginMethod primaryLM = BulkImport.getPrimaryLoginMethod(user);
 
-            AuthRecipeSQLStorage authRecipeSQLStorage = (AuthRecipeSQLStorage) getBulkImportProxyStorage(firstTenantIdentifier);
+            AuthRecipeSQLStorage authRecipeSQLStorage = (AuthRecipeSQLStorage) getBulkImportProxyStorage(
+                    firstTenantIdentifier);
 
             /*
-            * We use two separate storage instances: one for importing the user and another for managing bulk_import_users entries. 
-            * This is necessary because the bulk_import_users entries are always in the public tenant storage, 
-            * but the actual user data could be in a different storage.
-            * 
-            * If transactions are committed individually, in this order:
-            * 1. Commit the transaction that imports the user.
-            * 2. Commit the transaction that deletes the corresponding bulk import entry.
-            *
-            * There's a risk where the first commit succeeds, but the second fails. This creates a situation where 
-            * the bulk import entry is re-processed, even though the user has already been imported into the database.
-            *
-            * To resolve this, we added a `primaryUserId` field to the `bulk_import_users` table.
-            * The processing logic now follows these steps:
-            *
-            * 1. Import the user and get the `primaryUserId` (transaction uncommitted).
-            * 2. Update the `primaryUserId` in the corresponding bulk import entry.
-            * 3. Commit the import transaction from step 1.
-            * 4. Delete the bulk import entry.
-            *
-            * If step 2 or any earlier step fails, nothing is committed, preventing partial state.
-            * If step 3 fails, the `primaryUserId` in the bulk import entry is updated, but the user doesn't exist in the database—this results in re-processing on the next run.
-            * If step 4 fails, the user exists but the bulk import entry remains; this will be handled by deleting it in the next run.
-            *
-            * The following code implements this logic.
-            */
+             * We use two separate storage instances: one for importing the user and another for managing bulk_import_users entries.
+             * This is necessary because the bulk_import_users entries are always in the public tenant storage,
+             * but the actual user data could be in a different storage.
+             * 
+             * If transactions are committed individually, in this order:
+             * 1. Commit the transaction that imports the user.
+             * 2. Commit the transaction that deletes the corresponding bulk import entry.
+             *
+             * There's a risk where the first commit succeeds, but the second fails. This creates a situation where
+             * the bulk import entry is re-processed, even though the user has already been imported into the database.
+             *
+             * To resolve this, we added a `primaryUserId` field to the `bulk_import_users` table.
+             * The processing logic now follows these steps:
+             *
+             * 1. Import the user and get the `primaryUserId` (transaction uncommitted).
+             * 2. Update the `primaryUserId` in the corresponding bulk import entry.
+             * 3. Commit the import transaction from step 1.
+             * 4. Delete the bulk import entry.
+             *
+             * If step 2 or any earlier step fails, nothing is committed, preventing partial state.
+             * If step 3 fails, the `primaryUserId` in the bulk import entry is updated, but the user doesn't exist in the database—this results in re-processing on the
+             * next run.
+             * If step 4 fails, the user exists but the bulk import entry remains; this will be handled by deleting it in the next run.
+             *
+             * The following code implements this logic.
+             */
             if (user.primaryUserId != null) {
                 AuthRecipeUserInfo importedUser = authRecipeSQLStorage.getPrimaryUserById(appIdentifier,
                         user.primaryUserId);
@@ -237,12 +239,14 @@ public class ProcessBulkImportUsers extends CronTask {
                         BulkImport.processUserLoginMethod(main, appIdentifier, bulkImportProxyStorage, lm);
                     }
 
-                    BulkImport.createPrimaryUserAndLinkAccounts(main, appIdentifier, bulkImportProxyStorage, user, primaryLM);
+                    BulkImport.createPrimaryUserAndLinkAccounts(main, appIdentifier, bulkImportProxyStorage, user,
+                            primaryLM);
 
                     Storage[] allStoragesForApp = getAllProxyStoragesForApp(main, appIdentifier);
                     BulkImport.createUserIdMapping(appIdentifier, user, primaryLM, allStoragesForApp);
 
-                    BulkImport.verifyEmailForAllLoginMethods(appIdentifier, con, bulkImportProxyStorage, user.loginMethods);
+                    BulkImport.verifyEmailForAllLoginMethods(appIdentifier, con, bulkImportProxyStorage,
+                            user.loginMethods);
                     BulkImport.createTotpDevices(main, appIdentifier, bulkImportProxyStorage, user, primaryLM);
                     BulkImport.createUserMetadata(appIdentifier, bulkImportProxyStorage, user, primaryLM);
                     BulkImport.createUserRoles(main, appIdentifier, bulkImportProxyStorage, user);
@@ -271,7 +275,7 @@ public class ProcessBulkImportUsers extends CronTask {
                     closeAllProxyStorages();
                 }
             });
-        } catch (StorageTransactionLogicException | InvalidBulkImportDataException e) {
+        } catch (StorageTransactionLogicException | InvalidBulkImportDataException | InvalidConfigException e) {
             handleProcessUserExceptions(appIdentifier, user, e, baseTenantStorage);
         }
     }
@@ -289,6 +293,8 @@ public class ProcessBulkImportUsers extends CronTask {
             errorMessage[0] = exception.actualException.getMessage();
         } else if (e instanceof InvalidBulkImportDataException) {
             errorMessage[0] = ((InvalidBulkImportDataException) e).errors.toString();
+        } else if (e instanceof InvalidConfigException) {
+            errorMessage[0] = e.getMessage();
         }
 
         try {

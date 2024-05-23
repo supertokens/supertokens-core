@@ -297,6 +297,72 @@ public class BulkImportTest {
     }
 
     @Test
+    public void testGetBulkImportUsersCount() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+
+        if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+            return;
+        }
+
+        BulkImportSQLStorage storage = (BulkImportSQLStorage) StorageLayer.getStorage(process.main);
+        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+
+        // Test with status = 'NEW'
+        {
+            List<BulkImportUser> users = generateBulkImportUser(10);
+            BulkImport.addUsers(appIdentifier, storage, users);
+
+            long count = BulkImport.getBulkImportUsersCount(appIdentifier, storage, BULK_IMPORT_USER_STATUS.NEW);
+            assertEquals(10, count);
+        }
+
+        // Test with status = 'PROCESSING'
+        {
+            List<BulkImportUser> users = generateBulkImportUser(10);
+            BulkImport.addUsers(appIdentifier, storage, users);
+
+            // Update the users status to PROCESSING
+            storage.startTransaction(con -> {
+                for (BulkImportUser user : users) {
+                    storage.updateBulkImportUserStatus_Transaction(appIdentifier, con, user.id,
+                            BULK_IMPORT_USER_STATUS.PROCESSING, null);
+                }
+                storage.commitTransaction(con);
+                return null;
+            });
+
+            long count = BulkImport.getBulkImportUsersCount(appIdentifier, storage, BULK_IMPORT_USER_STATUS.PROCESSING);
+            assertEquals(10, count);
+        }
+
+        // Test with status = 'FAILED'
+        {
+            List<BulkImportUser> users = generateBulkImportUser(10);
+            BulkImport.addUsers(appIdentifier, storage, users);
+
+            // Update the users status to FAILED
+            storage.startTransaction(con -> {
+                for (BulkImportUser user : users) {
+                    storage.updateBulkImportUserStatus_Transaction(appIdentifier, con, user.id,
+                            BULK_IMPORT_USER_STATUS.FAILED, null);
+                }
+                storage.commitTransaction(con);
+                return null;
+            });
+
+            long count = BulkImport.getBulkImportUsersCount(appIdentifier, storage, BULK_IMPORT_USER_STATUS.FAILED);
+            assertEquals(10, count);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
     public void shouldImportTheUserInTheSameTenant() throws Exception {
         String[] args = { "../" };
 

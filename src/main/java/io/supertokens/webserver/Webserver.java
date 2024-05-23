@@ -27,6 +27,7 @@ import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.api.accountlinking.*;
 import io.supertokens.webserver.api.bulkimport.BulkImportAPI;
+import io.supertokens.webserver.api.bulkimport.CountBulkImportUsersAPI;
 import io.supertokens.webserver.api.bulkimport.DeleteBulkImportUserAPI;
 import io.supertokens.webserver.api.bulkimport.ImportUserAPI;
 import io.supertokens.webserver.api.core.*;
@@ -266,6 +267,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new BulkImportAPI(main));
         addAPI(new DeleteBulkImportUserAPI(main));
         addAPI(new ImportUserAPI(main));
+        addAPI(new CountBulkImportUsersAPI(main));
 
         StandardContext context = tomcatReference.getContext();
         Tomcat tomcat = tomcatReference.getTomcat();

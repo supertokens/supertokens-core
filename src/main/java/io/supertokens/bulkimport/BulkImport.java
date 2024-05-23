@@ -148,6 +148,12 @@ public class BulkImport {
         return StorageUtils.getBulkImportStorage(storage).deleteBulkImportUsers(appIdentifier, userIds);
     }
 
+    public static long getBulkImportUsersCount(AppIdentifier appIdentifier, Storage storage,
+            @Nullable BULK_IMPORT_USER_STATUS status)
+            throws StorageQueryException {
+        return StorageUtils.getBulkImportStorage(storage).getBulkImportUsersCount(appIdentifier, status);
+    }
+
     public static synchronized AuthRecipeUserInfo importUser(Main main, AppIdentifier appIdentifier,
             BulkImportUser user)
             throws StorageQueryException, InvalidConfigException, IOException, TenantOrAppNotFoundException,
@@ -180,8 +186,10 @@ public class BulkImport {
 
                     bulkImportProxyStorage.commitTransactionForBulkImportProxyStorage();
 
-                    AuthRecipeUserInfo importedUser = AuthRecipe.getUserById(appIdentifier, bulkImportProxyStorage, primaryLM.superTokensUserId);
-                    io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(appIdentifier, bulkImportProxyStorage, new AuthRecipeUserInfo[]{importedUser});
+                    AuthRecipeUserInfo importedUser = AuthRecipe.getUserById(appIdentifier, bulkImportProxyStorage,
+                            primaryLM.superTokensUserId);
+                    io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(appIdentifier,
+                            bulkImportProxyStorage, new AuthRecipeUserInfo[] { importedUser });
 
                     return importedUser;
                 } catch (StorageTransactionLogicException e) {
@@ -257,7 +265,11 @@ public class BulkImport {
                     lm.phoneNumber, lm.timeJoinedInMSSinceEpoch);
 
             lm.superTokensUserId = userInfo.getSupertokensUserId();
-        } catch (StorageQueryException | TenantOrAppNotFoundException | RestartFlowException e) {
+        } catch (RestartFlowException e) {
+            String errorMessage = lm.email != null ? "A user with email " + lm.email + " already exists."
+                    : "A user with phoneNumber " + lm.phoneNumber + " already exists.";
+            throw new StorageTransactionLogicException(new Exception(errorMessage));
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new StorageTransactionLogicException(e);
         }
     }
@@ -485,13 +497,14 @@ public class BulkImport {
 
         try {
             List<Storage> allProxyStorages = new ArrayList<>();
-    
+
             TenantConfig[] tenantConfigs = Multitenancy.getAllTenantsForApp(appIdentifier, main);
             for (TenantConfig tenantConfig : tenantConfigs) {
                 allProxyStorages.add(getBulkImportProxyStorage(main, tenantConfig.tenantIdentifier));
             }
             return allProxyStorages.toArray(new Storage[0]);
-        } catch (TenantOrAppNotFoundException | InvalidConfigException | IOException | DbInitException | StorageQueryException e) {
+        } catch (TenantOrAppNotFoundException | InvalidConfigException | IOException | DbInitException
+                | StorageQueryException e) {
             throw new StorageTransactionLogicException(e);
         }
     }
