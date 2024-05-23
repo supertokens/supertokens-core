@@ -1436,7 +1436,33 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
               SELECT concat('ALTER TABLE ', table_schema,'.',table_name,' DROP FOREIGN KEY ', constraint_name, ';') 
               FROM information_schema.table_constraints
               WHERE constraint_type='FOREIGN KEY' 
-                  AND table_schema = DATABASE();
+                  AND table_schema = DATABASE()
+                  AND table_name in (
+                    'all_auth_recipe_users',
+                    'dashboard_user_sessions',
+                    'dashboard_users',
+                    'emailpassword_pswd_reset_tokens',
+                    'emailpassword_users',
+                    'emailverification_tokens',
+                    'emailverification_verified_emails',
+                    'jwt_signing_keys',
+                    'key_value',
+                    'passwordless_codes',
+                    'passwordless_devices',
+                    'passwordless_users',
+                    'role_permissions',
+                    'roles',
+                    'session_access_token_signing_keys',
+                    'session_info',
+                    'thirdparty_users',
+                    'totp_used_codes',
+                    'totp_user_devices',
+                    'totp_users',
+                    'user_last_active',
+                    'user_metadata',
+                    'user_roles',
+                    'userid_mapping'
+                  );
 
       DECLARE CONTINUE handler for NOT found SET done = true;
         OPEN dropCur;
@@ -1459,7 +1485,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
         CLOSE dropCur;
     END
 
-    ---
+    --
 
     CREATE PROCEDURE st_drop_all_pkeys()
     BEGIN
@@ -1469,7 +1495,33 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
               SELECT concat('ALTER TABLE ', table_schema,'.',table_name,' DROP PRIMARY KEY ', ';') 
               FROM information_schema.table_constraints
               WHERE constraint_type='PRIMARY KEY' 
-                  AND table_schema = DATABASE();
+                  AND table_schema = DATABASE()
+                  AND table_name in (
+                    'all_auth_recipe_users',
+                    'dashboard_user_sessions',
+                    'dashboard_users',
+                    'emailpassword_pswd_reset_tokens',
+                    'emailpassword_users',
+                    'emailverification_tokens',
+                    'emailverification_verified_emails',
+                    'jwt_signing_keys',
+                    'key_value',
+                    'passwordless_codes',
+                    'passwordless_devices',
+                    'passwordless_users',
+                    'role_permissions',
+                    'roles',
+                    'session_access_token_signing_keys',
+                    'session_info',
+                    'thirdparty_users',
+                    'totp_used_codes',
+                    'totp_user_devices',
+                    'totp_users',
+                    'user_last_active',
+                    'user_metadata',
+                    'user_roles',
+                    'userid_mapping'
+                  );
 
       DECLARE CONTINUE handler for NOT found SET done = true;
         OPEN dropCur;
@@ -1492,7 +1544,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
         CLOSE dropCur;
     END
 
-    ---
+    --
 
     CREATE PROCEDURE st_drop_all_keys()
     BEGIN
@@ -1502,7 +1554,33 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
               SELECT concat('ALTER TABLE ', table_schema,'.',table_name,' DROP INDEX ', constraint_name, ';') 
               FROM information_schema.table_constraints
               WHERE constraint_type='UNIQUE' 
-                  AND table_schema = DATABASE();
+                  AND table_schema = DATABASE()
+                  AND table_name in (
+                    'all_auth_recipe_users',
+                    'dashboard_user_sessions',
+                    'dashboard_users',
+                    'emailpassword_pswd_reset_tokens',
+                    'emailpassword_users',
+                    'emailverification_tokens',
+                    'emailverification_verified_emails',
+                    'jwt_signing_keys',
+                    'key_value',
+                    'passwordless_codes',
+                    'passwordless_devices',
+                    'passwordless_users',
+                    'role_permissions',
+                    'roles',
+                    'session_access_token_signing_keys',
+                    'session_info',
+                    'thirdparty_users',
+                    'totp_used_codes',
+                    'totp_user_devices',
+                    'totp_users',
+                    'user_last_active',
+                    'user_metadata',
+                    'user_roles',
+                    'userid_mapping'
+                  );
 
       DECLARE CONTINUE handler for NOT found SET done = true;
         OPEN dropCur;
@@ -1525,7 +1603,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
         CLOSE dropCur;
     END
 
-    ---
+    --
 
     CREATE PROCEDURE st_drop_all_indexes()
     BEGIN
@@ -1534,7 +1612,34 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
       DECLARE dropCur CURSOR for 
               SELECT DISTINCT concat('ALTER TABLE ', table_schema, '.', table_name, ' DROP INDEX ', index_name, ';')
               FROM information_schema.statistics
-              WHERE NON_UNIQUE = 1 AND table_schema = database();
+              WHERE NON_UNIQUE = 1 
+                AND table_schema = database()
+                AND table_name in (
+                  'all_auth_recipe_users',
+                  'dashboard_user_sessions',
+                  'dashboard_users',
+                  'emailpassword_pswd_reset_tokens',
+                  'emailpassword_users',
+                  'emailverification_tokens',
+                  'emailverification_verified_emails',
+                  'jwt_signing_keys',
+                  'key_value',
+                  'passwordless_codes',
+                  'passwordless_devices',
+                  'passwordless_users',
+                  'role_permissions',
+                  'roles',
+                  'session_access_token_signing_keys',
+                  'session_info',
+                  'thirdparty_users',
+                  'totp_used_codes',
+                  'totp_user_devices',
+                  'totp_users',
+                  'user_last_active',
+                  'user_metadata',
+                  'user_roles',
+                  'userid_mapping'
+                );
 
       DECLARE CONTINUE handler for NOT found SET done = true;
         OPEN dropCur;
@@ -1557,7 +1662,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
         CLOSE dropCur;
     END
 
-    ---
+    --
 
     CREATE PROCEDURE st_add_column_if_not_exists(
     IN p_table_name varchar(50), 
@@ -1609,7 +1714,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
     INSERT IGNORE INTO apps (app_id, created_at_time) 
       VALUES ('public', 0);
 
-    ------------------------------------------------------------
+    --
 
     CREATE TABLE IF NOT EXISTS tenants (
       app_id VARCHAR(64) NOT NULL DEFAULT 'public',
@@ -1627,7 +1732,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
     INSERT IGNORE INTO tenants (app_id, tenant_id, created_at_time) 
       VALUES ('public', 'public', 0);
 
-    ------------------------------------------------------------
+    --
 
     CALL st_add_column_if_not_exists('key_value', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
     CALL st_add_column_if_not_exists('key_value', 'tenant_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
@@ -1639,7 +1744,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
       ADD FOREIGN KEY (app_id, tenant_id)
         REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE;
 
-    ------------------------------------------------------------
+    --
 
     CREATE TABLE IF NOT EXISTS app_id_to_user_id (
       app_id VARCHAR(64) NOT NULL DEFAULT 'public',
@@ -1658,7 +1763,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
       SELECT user_id, recipe_id
       FROM all_auth_recipe_users;
 
-    ------------------------------------------------------------
+    --
 
     CALL st_add_column_if_not_exists('all_auth_recipe_users', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
     CALL st_add_column_if_not_exists('all_auth_recipe_users', 'tenant_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
@@ -1691,7 +1796,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
     ALTER TABLE tenant_configs
       ADD PRIMARY KEY (connection_uri_domain, app_id, tenant_id);
 
-    ------------------------------------------------------------
+    --
 
     CREATE TABLE IF NOT EXISTS tenant_thirdparty_providers (
       connection_uri_domain VARCHAR(256) DEFAULT '',
@@ -1724,7 +1829,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
       ADD FOREIGN KEY (connection_uri_domain, app_id, tenant_id)
         REFERENCES tenant_configs (connection_uri_domain, app_id, tenant_id) ON DELETE CASCADE;
 
-    ------------------------------------------------------------
+    --
 
     CREATE TABLE IF NOT EXISTS tenant_thirdparty_provider_clients (
       connection_uri_domain VARCHAR(256) DEFAULT '',
@@ -1761,7 +1866,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
 
     CREATE INDEX session_expiry_index ON session_info (expires_at);
 
-    ------------------------------------------------------------
+    --
 
     CALL st_add_column_if_not_exists('session_access_token_signing_keys', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
 
@@ -1794,7 +1899,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
       ADD FOREIGN KEY (app_id)
         REFERENCES apps (app_id) ON DELETE CASCADE;
 
-    ------------------------------------------------------------
+    --
 
     CALL st_add_column_if_not_exists('emailverification_tokens', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
     CALL st_add_column_if_not_exists('emailverification_tokens', 'tenant_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
@@ -1822,7 +1927,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
       ADD FOREIGN KEY (app_id, user_id)
         REFERENCES app_id_to_user_id (app_id, user_id) ON DELETE CASCADE;
 
-    -- ------------------------------------------------------------
+    -- --
 
     CREATE TABLE IF NOT EXISTS emailpassword_user_to_tenant (
       app_id VARCHAR(64) DEFAULT 'public',
@@ -1844,7 +1949,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
     INSERT IGNORE INTO emailpassword_user_to_tenant (user_id, email)
       SELECT user_id, email FROM emailpassword_users;
 
-    ------------------------------------------------------------
+    --
 
     CALL st_add_column_if_not_exists('emailpassword_pswd_reset_tokens', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
 
@@ -1871,7 +1976,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
       ADD FOREIGN KEY (app_id, user_id)
         REFERENCES app_id_to_user_id (app_id, user_id) ON DELETE CASCADE;
 
-    ------------------------------------------------------------
+    --
 
     CREATE TABLE IF NOT EXISTS passwordless_user_to_tenant (
       app_id VARCHAR(64) DEFAULT 'public',
@@ -1897,7 +2002,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
     INSERT IGNORE INTO passwordless_user_to_tenant (user_id, email, phone_number)
       SELECT user_id, email, phone_number FROM passwordless_users;
 
-    ------------------------------------------------------------
+    --
 
     CALL st_add_column_if_not_exists('passwordless_devices', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
     CALL st_add_column_if_not_exists('passwordless_devices', 'tenant_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
@@ -1913,7 +2018,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
 
     CREATE INDEX passwordless_devices_phone_number_index ON passwordless_devices (app_id, tenant_id, phone_number);
 
-    ------------------------------------------------------------
+    --
 
     CALL st_add_column_if_not_exists('passwordless_codes', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
     CALL st_add_column_if_not_exists('passwordless_codes', 'tenant_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
@@ -1946,7 +2051,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
 
     CREATE INDEX thirdparty_users_email_index ON thirdparty_users (app_id, email);
 
-    ------------------------------------------------------------
+    --
 
     CREATE TABLE IF NOT EXISTS thirdparty_user_to_tenant (
       app_id VARCHAR(64) DEFAULT 'public',
@@ -2000,7 +2105,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
       ADD FOREIGN KEY (app_id)
         REFERENCES apps (app_id) ON DELETE CASCADE;
 
-    ------------------------------------------------------------
+    --
 
     CALL st_add_column_if_not_exists('role_permissions', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
 
@@ -2013,7 +2118,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
 
     CREATE INDEX role_permissions_permission_index ON role_permissions (app_id, permission);
 
-    ------------------------------------------------------------
+    --
 
     CALL st_add_column_if_not_exists('user_roles', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
     CALL st_add_column_if_not_exists('user_roles', 'tenant_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
@@ -2057,7 +2162,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
       ADD FOREIGN KEY (app_id)
         REFERENCES apps (app_id) ON DELETE CASCADE;
 
-    ------------------------------------------------------------
+    --
 
     CALL st_add_column_if_not_exists('dashboard_user_sessions', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
 
@@ -2081,7 +2186,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
       ADD FOREIGN KEY (app_id)
         REFERENCES apps (app_id) ON DELETE CASCADE;
 
-    ------------------------------------------------------------
+    --
 
     CALL st_add_column_if_not_exists('totp_user_devices', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
 
@@ -2092,7 +2197,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
       ADD FOREIGN KEY (app_id, user_id)
         REFERENCES totp_users (app_id, user_id) ON DELETE CASCADE;
 
-    ------------------------------------------------------------
+    --
 
     CALL st_add_column_if_not_exists('totp_used_codes', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
     CALL st_add_column_if_not_exists('totp_used_codes', 'tenant_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
