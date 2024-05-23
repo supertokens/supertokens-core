@@ -491,13 +491,13 @@ public class ThirdParty {
                     " Boxy SAML provider";
 
             try {
-                if (client.additionalConfig == null ||
-                        !client.additionalConfig.has("boxyURL") ||
-                        client.additionalConfig.get("boxyURL").isJsonNull() ||
-                        client.additionalConfig.get("boxyURL").getAsString().isEmpty() ||
-                        !client.additionalConfig.getAsJsonPrimitive("boxyURL").isString()) {
+                if (client.additionalConfig != null && client.additionalConfig.has("boxyURL")) {
+                    if (client.additionalConfig.get("boxyURL").isJsonNull() ||
+                            client.additionalConfig.get("boxyURL").getAsString().isEmpty() ||
+                            !client.additionalConfig.getAsJsonPrimitive("boxyURL").isString()) {
 
-                    throw new InvalidProviderConfigException(errorMessage);
+                        throw new InvalidProviderConfigException(errorMessage);
+                    }
                 }
             } catch (ClassCastException e) {
                 throw new InvalidProviderConfigException(errorMessage);

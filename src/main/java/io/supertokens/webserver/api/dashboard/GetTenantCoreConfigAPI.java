@@ -71,7 +71,7 @@ public class GetTenantCoreConfigAPI extends WebserverAPI {
                 String[] protectedPluginFields = getTenantStorage(req)
                         .getProtectedConfigsFromSuperTokensSaaSUsers();
                 for (JsonElement field : configJson) {
-                    String fieldName = field.getAsJsonObject().get("name").getAsString();
+                    String fieldName = field.getAsJsonObject().get("key").getAsString();
                     if (!Arrays.asList(protectedPluginFields).contains(fieldName) && !Arrays.asList(CoreConfig.PROTECTED_CONFIGS).contains(fieldName)) {
                         configWithoutProtectedFields.add(field);
                     }
