@@ -64,7 +64,7 @@ public class GetTenantCoreConfigAPITest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         JsonObject response = HttpRequest.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/multitenancy/tenant/core-config", null,
+                "http://localhost:3567/recipe/dashboard/tenant/core-config", null,
                 1000, 1000, null);
 
         assertEquals(response.get("status").getAsString(), "OK");

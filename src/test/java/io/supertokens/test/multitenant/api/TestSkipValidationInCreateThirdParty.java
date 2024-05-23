@@ -72,10 +72,12 @@ public class TestSkipValidationInCreateThirdParty {
         ), false);
 
         try {
+            JsonObject additionalConfig = new JsonObject();
+            additionalConfig.addProperty("boxyURL", "");
             TestMultitenancyAPIHelper.addOrUpdateThirdPartyProviderConfig(new TenantIdentifier(null, "a1", null),
                     new ThirdPartyConfig.Provider(
                             "boxy-saml", "Boxy SAML", new ThirdPartyConfig.ProviderClient[]{
-                            new ThirdPartyConfig.ProviderClient("web", "clientid", "clientsecret", null, null, null)
+                            new ThirdPartyConfig.ProviderClient("web", "clientid", "clientsecret", null, null, additionalConfig)
                     }, null, null, null,
                             null, null, null, null, null, null, null,
                             null
