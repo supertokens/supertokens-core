@@ -21,7 +21,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -44,25 +43,13 @@ import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
-import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
-import io.supertokens.multitenancy.Multitenancy;
-import io.supertokens.multitenancy.exception.BadPermissionException;
-import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
-import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
-import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.multitenancy.EmailPasswordConfig;
-import io.supertokens.pluginInterface.multitenancy.PasswordlessConfig;
-import io.supertokens.pluginInterface.multitenancy.TenantConfig;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
-import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
-import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import io.supertokens.test.bulkimport.BulkImportTestUtils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
-import io.supertokens.thirdparty.InvalidProviderConfigException;
 import io.supertokens.userroles.UserRoles;
 
 public class AddBulkImportUsersTest {
@@ -431,7 +418,7 @@ public class AddBulkImportUsersTest {
 
         // CASE 3: Two or more tenants do not share the same storage
 
-        createTenants(main);
+        BulkImportTestUtils.createTenants(main);
 
         JsonObject requestBody3 = new JsonParser().parse(
                 "{\"users\":[{\"loginMethods\":[{\"tenantIds\":[\"public\"],\"recipeId\":\"passwordless\",\"email\":\"johndoe@gmail.com\"}, {\"tenantIds\":[\"t2\"],\"recipeId\":\"thirdparty\", \"email\":\"johndoe@gmail.com\", \"thirdPartyId\":\"id\", \"thirdPartyUserId\":\"id\"}]}]}")
@@ -696,45 +683,6 @@ public class AddBulkImportUsersTest {
         loginMethod.addProperty("isPrimary", false);
         loginMethod.addProperty("timeJoinedInMSSinceEpoch", 0);
         return loginMethod;
-    }
-
-    private void createTenants(Main main)
-            throws StorageQueryException, TenantOrAppNotFoundException, InvalidProviderConfigException,
-            FeatureNotEnabledException, IOException, InvalidConfigException,
-            CannotModifyBaseConfigException, BadPermissionException {
-        // User pool 1 - (null, null, null), (null, null, t1)
-        // User pool 2 - (null, null, t2)
-
-        { // tenant 1
-            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, null, "t1");
-
-            Multitenancy.addNewOrUpdateAppOrTenant(
-                    main,
-                    new TenantIdentifier(null, null, null),
-                    new TenantConfig(
-                            tenantIdentifier,
-                            new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
-                            new PasswordlessConfig(true),
-                            null, null, new JsonObject()));
-        }
-        { // tenant 2
-            JsonObject config = new JsonObject();
-            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, null, "t2");
-
-            StorageLayer.getStorage(new TenantIdentifier(null, null, null), main)
-                    .modifyConfigToAddANewUserPoolForTesting(config, 1);
-
-            Multitenancy.addNewOrUpdateAppOrTenant(
-                    main,
-                    new TenantIdentifier(null, null, null),
-                    new TenantConfig(
-                            tenantIdentifier,
-                            new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
-                            new PasswordlessConfig(true),
-                            null, null, config));
-        }
     }
 
     private void setFeatureFlags(Main main, EE_FEATURES[] features) {

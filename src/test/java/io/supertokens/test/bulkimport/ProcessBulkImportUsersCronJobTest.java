@@ -26,36 +26,18 @@ import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.cronjobs.bulkimport.ProcessBulkImportUsers;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
-import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
-import io.supertokens.multitenancy.Multitenancy;
-import io.supertokens.multitenancy.exception.BadPermissionException;
-import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
-import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
-import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
 import io.supertokens.pluginInterface.bulkimport.BulkImportStorage.BULK_IMPORT_USER_STATUS;
-import io.supertokens.pluginInterface.bulkimport.BulkImportUser.TotpDevice;
 import io.supertokens.pluginInterface.bulkimport.sqlStorage.BulkImportSQLStorage;
-import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
-import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
-import io.supertokens.pluginInterface.multitenancy.EmailPasswordConfig;
-import io.supertokens.pluginInterface.multitenancy.PasswordlessConfig;
-import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
-import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
-import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.totp.TOTPDevice;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.TestingProcessManager.TestingProcess;
 import io.supertokens.test.Utils;
-import io.supertokens.thirdparty.InvalidProviderConfigException;
-import io.supertokens.totp.Totp;
 import io.supertokens.useridmapping.UserIdMapping;
-import io.supertokens.usermetadata.UserMetadata;
 import io.supertokens.userroles.UserRoles;
 
 import org.junit.AfterClass;
@@ -64,15 +46,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import com.google.gson.JsonObject;
-
 import static io.supertokens.test.bulkimport.BulkImportTestUtils.generateBulkImportUser;
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
-import java.io.IOException;
 import java.util.List;
 
 public class ProcessBulkImportUsersCronJobTest {
@@ -104,7 +81,7 @@ public class ProcessBulkImportUsersCronJobTest {
             UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
         }
 
-        createTenants(main);
+        BulkImportTestUtils.createTenants(main);
 
         BulkImportSQLStorage storage = (BulkImportSQLStorage) StorageLayer.getStorage(main);
         AppIdentifier appIdentifier = new AppIdentifier(null, null);
@@ -129,7 +106,8 @@ public class ProcessBulkImportUsersCronJobTest {
 
         TenantIdentifier publicTenant = new TenantIdentifier(null, null, "public");
 
-        assertBulkImportUserAndAuthRecipeUserAreEqual(appIdentifier, publicTenant, storage, bulkImportUser,
+        BulkImportTestUtils.assertBulkImportUserAndAuthRecipeUserAreEqual(appIdentifier, publicTenant, storage,
+                bulkImportUser,
                 container.users[0]);
 
         process.kill();
@@ -151,7 +129,7 @@ public class ProcessBulkImportUsersCronJobTest {
             UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
         }
 
-        createTenants(main);
+        BulkImportTestUtils.createTenants(main);
 
         TenantIdentifier t1 = new TenantIdentifier(null, null, "t1");
         TenantIdentifier t2 = new TenantIdentifier(null, null, "t2");
@@ -185,9 +163,11 @@ public class ProcessBulkImportUsersCronJobTest {
         UserIdMapping.populateExternalUserIdForUsers(appIdentifier, storageT1, containerT1.users);
         UserIdMapping.populateExternalUserIdForUsers(appIdentifier, storageT2, containerT2.users);
 
-        assertBulkImportUserAndAuthRecipeUserAreEqual(appIdentifier, t1, storageT1, bulkImportUserT1,
+        BulkImportTestUtils.assertBulkImportUserAndAuthRecipeUserAreEqual(appIdentifier, t1, storageT1,
+                bulkImportUserT1,
                 containerT1.users[0]);
-        assertBulkImportUserAndAuthRecipeUserAreEqual(appIdentifier, t2, storageT2, bulkImportUserT2,
+        BulkImportTestUtils.assertBulkImportUserAndAuthRecipeUserAreEqual(appIdentifier, t2, storageT2,
+                bulkImportUserT2,
                 containerT2.users[0]);
 
         process.kill();
@@ -209,7 +189,7 @@ public class ProcessBulkImportUsersCronJobTest {
             return;
         }
 
-        createTenants(main);
+        BulkImportTestUtils.createTenants(main);
 
         BulkImportSQLStorage storage = (BulkImportSQLStorage) StorageLayer.getStorage(main);
         AppIdentifier appIdentifier = new AppIdentifier(null, null);
@@ -282,8 +262,7 @@ public class ProcessBulkImportUsersCronJobTest {
             UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
             UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
         }
-        createTenants(main);
-
+        BulkImportTestUtils.createTenants(main);
 
         List<BulkImportUser> users = generateBulkImportUser(1, List.of("t1", "t2"), 0);
         BulkImport.addUsers(appIdentifier, storage, users);
@@ -322,97 +301,5 @@ public class ProcessBulkImportUsersCronJobTest {
         }
 
         return process;
-    }
-
-    private void assertBulkImportUserAndAuthRecipeUserAreEqual(AppIdentifier appIdentifier,
-            TenantIdentifier tenantIdentifier, Storage storage, BulkImportUser bulkImportUser,
-            AuthRecipeUserInfo authRecipeUser) throws StorageQueryException, TenantOrAppNotFoundException {
-        for (LoginMethod lm1 : authRecipeUser.loginMethods) {
-            bulkImportUser.loginMethods.forEach(lm2 -> {
-                if (lm2.recipeId.equals(lm1.recipeId.toString())) {
-                    assertLoginMethodEquals(lm1, lm2);
-                }
-            });
-        }
-        assertEquals(bulkImportUser.externalUserId, authRecipeUser.getSupertokensOrExternalUserId());
-        assertEquals(bulkImportUser.userMetadata,
-                UserMetadata.getUserMetadata(appIdentifier, storage, authRecipeUser.getSupertokensOrExternalUserId()));
-
-        String[] createdUserRoles = UserRoles.getRolesForUser(tenantIdentifier, storage,
-                authRecipeUser.getSupertokensOrExternalUserId());
-        String[] bulkImportUserRoles = bulkImportUser.userRoles.stream().map(r -> r.role).toArray(String[]::new);
-        assertArrayEquals(bulkImportUserRoles, createdUserRoles);
-
-        TOTPDevice[] createdTotpDevices = Totp.getDevices(appIdentifier, storage,
-                authRecipeUser.getSupertokensOrExternalUserId());
-        assertTotpDevicesEquals(createdTotpDevices, bulkImportUser.totpDevices.toArray(new TotpDevice[0]));
-    }
-
-    private void assertLoginMethodEquals(LoginMethod lm1,
-            io.supertokens.pluginInterface.bulkimport.BulkImportUser.LoginMethod lm2) {
-        assertEquals(lm1.email, lm2.email);
-        assertEquals(lm1.verified, lm2.isVerified);
-        assertTrue(lm2.tenantIds.containsAll(lm1.tenantIds) && lm1.tenantIds.containsAll(lm2.tenantIds));
-
-        switch (lm2.recipeId) {
-            case "emailpassword":
-                assertEquals(lm1.passwordHash, lm2.passwordHash);
-                break;
-            case "thirdparty":
-                assertEquals(lm1.thirdParty.id, lm2.thirdPartyId);
-                assertEquals(lm1.thirdParty.userId, lm2.thirdPartyUserId);
-                break;
-            case "passwordless":
-                assertEquals(lm1.phoneNumber, lm2.phoneNumber);
-                break;
-            default:
-                break;
-        }
-    }
-
-    private void assertTotpDevicesEquals(TOTPDevice[] createdTotpDevices, TotpDevice[] bulkImportTotpDevices) {
-        assertEquals(createdTotpDevices.length, bulkImportTotpDevices.length);
-        for (int i = 0; i < createdTotpDevices.length; i++) {
-            assertEquals(createdTotpDevices[i].deviceName, bulkImportTotpDevices[i].deviceName);
-            assertEquals(createdTotpDevices[i].period, bulkImportTotpDevices[i].period);
-            assertEquals(createdTotpDevices[i].secretKey, bulkImportTotpDevices[i].secretKey);
-            assertEquals(createdTotpDevices[i].skew, bulkImportTotpDevices[i].skew);
-        }
-    }
-
-    private void createTenants(Main main)
-            throws StorageQueryException, TenantOrAppNotFoundException, InvalidProviderConfigException,
-            FeatureNotEnabledException, IOException, InvalidConfigException,
-            CannotModifyBaseConfigException, BadPermissionException {
-        { // tenant 1 (t1 in the same storage as public tenant)
-            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, null, "t1");
-
-            Multitenancy.addNewOrUpdateAppOrTenant(
-                    main,
-                    new TenantIdentifier(null, null, null),
-                    new TenantConfig(
-                            tenantIdentifier,
-                            new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
-                            new PasswordlessConfig(true),
-                            null, null, new JsonObject()));
-        }
-        { // tenant 2 (t2 in the different storage than public tenant)
-            TenantIdentifier tenantIdentifier = new TenantIdentifier(null, null, "t2");
-
-            JsonObject config = new JsonObject();
-
-            StorageLayer.getStorage(new TenantIdentifier(null, null, null), main)
-                    .modifyConfigToAddANewUserPoolForTesting(config, 1);
-            Multitenancy.addNewOrUpdateAppOrTenant(
-                    main,
-                    new TenantIdentifier(null, null, null),
-                    new TenantConfig(
-                            tenantIdentifier,
-                            new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
-                            new PasswordlessConfig(true),
-                            null, null, config));
-        }
     }
 }

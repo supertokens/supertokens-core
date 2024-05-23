@@ -20,7 +20,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.junit.AfterClass;
@@ -35,15 +40,21 @@ import io.supertokens.bulkimport.BulkImport;
 import io.supertokens.bulkimport.BulkImportUserPaginationContainer;
 import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.cronjobs.bulkimport.ProcessBulkImportUsers;
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.bulkimport.BulkImportStorage;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
 import io.supertokens.pluginInterface.bulkimport.BulkImportStorage.BULK_IMPORT_USER_STATUS;
 import io.supertokens.pluginInterface.bulkimport.sqlStorage.BulkImportSQLStorage;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import io.supertokens.userroles.UserRoles;
 
 import static io.supertokens.test.bulkimport.BulkImportTestUtils.generateBulkImportUser;
 
@@ -63,7 +74,7 @@ public class BulkImportTest {
 
     @Test
     public void shouldAddUsersInBulkImportUsersTable() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -78,7 +89,8 @@ public class BulkImportTest {
         BulkImportStorage storage = (BulkImportStorage) StorageLayer.getStorage(process.main);
         BulkImport.addUsers(new AppIdentifier(null, null), storage, users);
 
-        List<BulkImportUser> addedUsers = storage.getBulkImportUsers(new AppIdentifier(null, null), 100, BULK_IMPORT_USER_STATUS.NEW, null, null);
+        List<BulkImportUser> addedUsers = storage.getBulkImportUsers(new AppIdentifier(null, null), 100,
+                BULK_IMPORT_USER_STATUS.NEW, null, null);
 
         // Verify that all users are present in addedUsers
         for (BulkImportUser user : users) {
@@ -98,7 +110,7 @@ public class BulkImportTest {
 
     @Test
     public void shouldCreatedNewIdsIfDuplicateIdIsFound() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -119,7 +131,8 @@ public class BulkImportTest {
         AppIdentifier appIdentifier = new AppIdentifier(null, null);
         BulkImport.addUsers(appIdentifier, storage, users);
 
-        List<BulkImportUser> addedUsers = storage.getBulkImportUsers(appIdentifier, 1000, BULK_IMPORT_USER_STATUS.NEW, null, null);
+        List<BulkImportUser> addedUsers = storage.getBulkImportUsers(appIdentifier, 1000, BULK_IMPORT_USER_STATUS.NEW,
+                null, null);
 
         // Verify that the other properties are same but ids changed
         for (BulkImportUser user : users) {
@@ -139,7 +152,7 @@ public class BulkImportTest {
 
     @Test
     public void testGetUsersStatusFilter() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -148,7 +161,7 @@ public class BulkImportTest {
         if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
             return;
         }
-        
+
         BulkImportSQLStorage storage = (BulkImportSQLStorage) StorageLayer.getStorage(process.main);
         AppIdentifier appIdentifier = new AppIdentifier(null, null);
 
@@ -157,7 +170,8 @@ public class BulkImportTest {
             List<BulkImportUser> users = generateBulkImportUser(10);
             BulkImport.addUsers(appIdentifier, storage, users);
 
-            List<BulkImportUser> addedUsers = storage.getBulkImportUsers(appIdentifier, 100, BULK_IMPORT_USER_STATUS.NEW, null, null);
+            List<BulkImportUser> addedUsers = storage.getBulkImportUsers(appIdentifier, 100,
+                    BULK_IMPORT_USER_STATUS.NEW, null, null);
             assertEquals(10, addedUsers.size());
         }
 
@@ -169,13 +183,15 @@ public class BulkImportTest {
             // Update the users status to PROCESSING
             storage.startTransaction(con -> {
                 for (BulkImportUser user : users) {
-                    storage.updateBulkImportUserStatus_Transaction(appIdentifier, con, user.id, BULK_IMPORT_USER_STATUS.PROCESSING, null);
+                    storage.updateBulkImportUserStatus_Transaction(appIdentifier, con, user.id,
+                            BULK_IMPORT_USER_STATUS.PROCESSING, null);
                 }
                 storage.commitTransaction(con);
                 return null;
             });
 
-            List<BulkImportUser> addedUsers = storage.getBulkImportUsers(appIdentifier, 100, BULK_IMPORT_USER_STATUS.PROCESSING, null, null);
+            List<BulkImportUser> addedUsers = storage.getBulkImportUsers(appIdentifier, 100,
+                    BULK_IMPORT_USER_STATUS.PROCESSING, null, null);
             assertEquals(10, addedUsers.size());
         }
 
@@ -187,13 +203,15 @@ public class BulkImportTest {
             // Update the users status to FAILED
             storage.startTransaction(con -> {
                 for (BulkImportUser user : users) {
-                    storage.updateBulkImportUserStatus_Transaction(appIdentifier, con, user.id, BULK_IMPORT_USER_STATUS.FAILED, null);
+                    storage.updateBulkImportUserStatus_Transaction(appIdentifier, con, user.id,
+                            BULK_IMPORT_USER_STATUS.FAILED, null);
                 }
                 storage.commitTransaction(con);
                 return null;
             });
 
-            List<BulkImportUser> addedUsers = storage.getBulkImportUsers(appIdentifier, 100, BULK_IMPORT_USER_STATUS.FAILED, null, null);
+            List<BulkImportUser> addedUsers = storage.getBulkImportUsers(appIdentifier, 100,
+                    BULK_IMPORT_USER_STATUS.FAILED, null, null);
             assertEquals(10, addedUsers.size());
         }
 
@@ -203,12 +221,13 @@ public class BulkImportTest {
 
     @Test
     public void randomPaginationTest() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
 
         // We are setting a high initial wait time to ensure the cron job doesn't run while we are running the tests
-        CronTaskTest.getInstance(process.getProcess()).setInitialWaitTimeInSeconds(ProcessBulkImportUsers.RESOURCE_KEY, 1000000);
+        CronTaskTest.getInstance(process.getProcess()).setInitialWaitTimeInSeconds(ProcessBulkImportUsers.RESOURCE_KEY,
+                1000000);
 
         process.startProcess();
 
@@ -234,7 +253,8 @@ public class BulkImportTest {
         }
 
         // Get all inserted users
-        List<BulkImportUser> addedUsers = storage.getBulkImportUsers(new AppIdentifier(null, null), 1000, null, null, null);
+        List<BulkImportUser> addedUsers = storage.getBulkImportUsers(new AppIdentifier(null, null), 1000, null, null,
+                null);
         assertEquals(numberOfUsers, addedUsers.size());
 
         // We are sorting the users based on createdAt and id like we do in the storage layer
@@ -248,13 +268,14 @@ public class BulkImportTest {
                 })
                 .collect(Collectors.toList());
 
-        int[] limits = new int[]{10, 14, 20, 23, 50, 100, 110, 150, 200, 510};
+        int[] limits = new int[] { 10, 14, 20, 23, 50, 100, 110, 150, 200, 510 };
 
         for (int limit : limits) {
             int indexIntoUsers = 0;
             String paginationToken = null;
             do {
-                BulkImportUserPaginationContainer users = BulkImport.getUsers(new AppIdentifier(null, null), storage, limit, null, paginationToken);
+                BulkImportUserPaginationContainer users = BulkImport.getUsers(new AppIdentifier(null, null), storage,
+                        limit, null, paginationToken);
 
                 for (BulkImportUser actualUser : users.users) {
                     BulkImportUser expectedUser = sortedUsers.get(indexIntoUsers);
@@ -269,6 +290,146 @@ public class BulkImportTest {
             } while (paginationToken != null);
 
             assert (indexIntoUsers == sortedUsers.size());
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void shouldImportTheUserInTheSameTenant() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+
+        if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+            return;
+        }
+
+        FeatureFlagTestContent.getInstance(main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES,
+                new EE_FEATURES[] { EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA, EE_FEATURES.ACCOUNT_LINKING });
+
+        // Create tenants
+        BulkImportTestUtils.createTenants(main);
+
+        // Create user roles
+        {
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
+        }
+
+        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+        List<BulkImportUser> users = generateBulkImportUser(1);
+
+        AuthRecipeUserInfo importedUser = BulkImport.importUser(main, appIdentifier, users.get(0));
+
+        BulkImportTestUtils.assertBulkImportUserAndAuthRecipeUserAreEqual(appIdentifier,
+                appIdentifier.getAsPublicTenantIdentifier(), StorageLayer.getStorage(main), users.get(0), importedUser);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void shouldImportTheUserInMultipleTenantsWithDifferentStorages() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+
+        if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+            return;
+        }
+
+        FeatureFlagTestContent.getInstance(main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES,
+                new EE_FEATURES[] { EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA, EE_FEATURES.ACCOUNT_LINKING });
+
+        // Create tenants
+        BulkImportTestUtils.createTenants(main);
+
+        // Create user roles
+        {
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
+        }
+
+        TenantIdentifier t1 = new TenantIdentifier(null, null, "t1");
+        TenantIdentifier t2 = new TenantIdentifier(null, null, "t2");
+
+        Storage storageT1 = StorageLayer.getStorage(t1, main);
+        Storage storageT2 = StorageLayer.getStorage(t2, main);
+
+        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+
+        List<BulkImportUser> usersT1 = generateBulkImportUser(1, List.of(t1.getTenantId()), 0);
+        List<BulkImportUser> usersT2 = generateBulkImportUser(1, List.of(t2.getTenantId()), 1);
+
+        BulkImportUser bulkImportUserT1 = usersT1.get(0);
+        BulkImportUser bulkImportUserT2 = usersT2.get(0);
+
+        AuthRecipeUserInfo importedUser1 = BulkImport.importUser(main, appIdentifier, bulkImportUserT1);
+        AuthRecipeUserInfo importedUser2 = BulkImport.importUser(main, appIdentifier, bulkImportUserT2);
+
+        BulkImportTestUtils.assertBulkImportUserAndAuthRecipeUserAreEqual(appIdentifier, t1, storageT1,
+                bulkImportUserT1,
+                importedUser1);
+        BulkImportTestUtils.assertBulkImportUserAndAuthRecipeUserAreEqual(appIdentifier, t2, storageT2,
+                bulkImportUserT2,
+                importedUser2);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void shouldImportUsersConcurrently() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+
+        if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+            return;
+        }
+
+        FeatureFlagTestContent.getInstance(main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES,
+                new EE_FEATURES[] { EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA, EE_FEATURES.ACCOUNT_LINKING });
+
+        // Create tenants
+        BulkImportTestUtils.createTenants(main);
+
+        // Create user roles
+        {
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
+        }
+
+        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+        List<BulkImportUser> users = generateBulkImportUser(10);
+
+        // Concurrently import users
+        ExecutorService executor = Executors.newFixedThreadPool(10);
+        List<Future<AuthRecipeUserInfo>> futures = new ArrayList<>();
+
+        for (BulkImportUser user : users) {
+            Future<AuthRecipeUserInfo> future = executor.submit(() -> {
+                return BulkImport.importUser(main, appIdentifier, user);
+            });
+            futures.add(future);
+        }
+
+        executor.shutdown();
+        executor.awaitTermination(1, TimeUnit.MINUTES);
+
+        for (int i = 0; i < users.size(); i++) {
+            AuthRecipeUserInfo importedUser = futures.get(i).get();
+            BulkImportTestUtils.assertBulkImportUserAndAuthRecipeUserAreEqual(appIdentifier,
+                    appIdentifier.getAsPublicTenantIdentifier(), StorageLayer.getStorage(main), users.get(i),
+                    importedUser);
         }
 
         process.kill();
