@@ -7,7 +7,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
-## [9.1.0]
+## [9.1.0] - 2024-05-24
 
 - Adds new core API for fetching all the core properties for a tenant
   - GET `/appid-<appid>/<tenantid>/recipe/dashboard/tenant/core-config`
@@ -1427,6 +1427,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
 
     ```sql
     -- helper stored procedures
+    DELIMITER //
 
     CREATE PROCEDURE st_drop_all_fkeys()
     BEGIN
@@ -1483,7 +1484,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
         END LOOP;
 
         CLOSE dropCur;
-    END
+    END //
 
     --
 
@@ -1542,7 +1543,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
         END LOOP;
 
         CLOSE dropCur;
-    END
+    END //
 
     --
 
@@ -1601,7 +1602,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
         END LOOP;
 
         CLOSE dropCur;
-    END
+    END //
 
     --
 
@@ -1660,7 +1661,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
         END LOOP;
 
         CLOSE dropCur;
-    END
+    END //
 
     --
 
@@ -1692,8 +1693,9 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
         execute add_column_sql;
           SELECT 'Column Successfully  Created!' INTO p_status_message;
         END IF;
-    END
+    END //
 
+    DELIMITER ;
     -- Drop constraints and indexes
 
     CALL st_drop_all_fkeys();
