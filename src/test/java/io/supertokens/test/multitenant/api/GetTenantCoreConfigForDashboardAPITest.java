@@ -42,7 +42,7 @@ import java.io.FileReader;
 import java.io.BufferedReader;
 import java.lang.reflect.Field;
 
-public class GetTenantCoreConfigAPITest {
+public class GetTenantCoreConfigForDashboardAPITest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 

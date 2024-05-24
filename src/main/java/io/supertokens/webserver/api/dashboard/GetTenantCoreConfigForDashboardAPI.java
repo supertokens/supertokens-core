@@ -35,10 +35,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class GetTenantCoreConfigAPI extends WebserverAPI {
+public class GetTenantCoreConfigForDashboardAPI extends WebserverAPI {
     private static final long serialVersionUID = -4641988458637882374L;
 
-    public GetTenantCoreConfigAPI(Main main) {
+    public GetTenantCoreConfigForDashboardAPI(Main main) {
         super(main, RECIPE_ID.DASHBOARD.toString());
     }
 

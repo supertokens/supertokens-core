@@ -10,7 +10,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [9.1.0]
 
 - Adds new core API for fetching all the core properties for a tenant
-  - GET `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant/core-config`
+  - GET `/appid-<appid>/<tenantid>/recipe/dashboard/tenant/core-config`
 - Deprecated the following APIs
   - PUT `/recipe/multitenancy/connectionuridomain`
   - GET `/recipe/multitenancy/connectionuridomain/list`
