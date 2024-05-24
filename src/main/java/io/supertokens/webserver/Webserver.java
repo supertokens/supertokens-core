@@ -230,17 +230,23 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new GetDashboardSessionsForUserAPI(main));
         addAPI(new SearchTagsAPI(main));
 
-        addAPI(new CreateOrUpdateConnectionUriDomainAPI(main));
+        addAPI(new CreateOrUpdateConnectionUriDomainAPI(main)); // deprecated
+        addAPI(new CreateOrUpdateConnectionUriDomainV2API(main));
         addAPI(new RemoveConnectionUriDomainAPI(main));
-        addAPI(new ListConnectionUriDomainsAPI(main));
+        addAPI(new ListConnectionUriDomainsAPI(main)); // deprecated
+        addAPI(new ListConnectionUriDomainsV2API(main));
 
-        addAPI(new CreateOrUpdateAppAPI(main));
+        addAPI(new CreateOrUpdateAppAPI(main)); // deprecated
+        addAPI(new CreateOrUpdateAppV2API(main));
         addAPI(new RemoveAppAPI(main));
-        addAPI(new ListAppsAPI(main));
+        addAPI(new ListAppsAPI(main)); // deprecated
+        addAPI(new ListAppsV2API(main));
 
-        addAPI(new CreateOrUpdateTenantOrGetTenantAPI(main));
+        addAPI(new CreateOrUpdateTenantOrGetTenantAPI(main)); // deprecated
+        addAPI(new CreateOrUpdateTenantOrGetTenantV2API(main));
         addAPI(new RemoveTenantAPI(main));
-        addAPI(new ListTenantsAPI(main));
+        addAPI(new ListTenantsAPI(main)); // deprecated
+        addAPI(new ListTenantsV2API(main));
 
         addAPI(new CreateOrUpdateThirdPartyConfigAPI(main));
         addAPI(new RemoveThirdPartyConfigAPI(main));
@@ -259,6 +265,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new ConsumeResetPasswordAPI(main));
 
         addAPI(new RequestStatsAPI(main));
+        addAPI(new GetTenantCoreConfigForDashboardAPI(main));
 
         StandardContext context = tomcatReference.getContext();
         Tomcat tomcat = tomcatReference.getTomcat();

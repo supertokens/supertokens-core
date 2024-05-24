@@ -39,17 +39,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Deprecated
-public class ListConnectionUriDomainsAPI extends WebserverAPI {
+public class ListConnectionUriDomainsV2API extends WebserverAPI {
     private static final long serialVersionUID = -4641988458637882374L;
 
-    public ListConnectionUriDomainsAPI(Main main) {
+    public ListConnectionUriDomainsV2API(Main main) {
         super(main, RECIPE_ID.MULTITENANCY.toString());
     }
 
     @Override
     public String getPath() {
-        return "/recipe/multitenancy/connectionuridomain/list";
+        return "/recipe/multitenancy/connectionuridomain/list/v2";
     }
 
     @Override
@@ -96,13 +95,8 @@ public class ListConnectionUriDomainsAPI extends WebserverAPI {
                     appObject.addProperty("appId", appId);
                     JsonArray tenantsArray = new JsonArray();
                     for (TenantConfig tenantConfig : entry2.getValue()) {
-                        JsonObject tenantConfigJson;
-
-                        if (getVersionFromRequest(req).lesserThan(SemVer.v5_0)) {
-                            tenantConfigJson = tenantConfig.toJson3_0(shouldProtect, storage, CoreConfig.PROTECTED_CONFIGS);
-                        } else {
-                            tenantConfigJson = tenantConfig.toJson5_0(shouldProtect, storage, CoreConfig.PROTECTED_CONFIGS);
-                        }
+                        JsonObject tenantConfigJson = tenantConfig.toJson_v2(shouldProtect, storage,
+                                CoreConfig.PROTECTED_CONFIGS);
 
                         tenantsArray.add(tenantConfigJson);
                     }

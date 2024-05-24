@@ -2775,6 +2775,11 @@ public class Start
     }
 
     @Override
+    public List<ConfigFieldInfo> getPluginConfigFieldsInfo() {
+        return new ArrayList<ConfigFieldInfo>();
+    }
+
+    @Override
     public void setLogLevels(Set<LOG_LEVEL> logLevels) {
         Config.setLogLevels(this, logLevels);
     }

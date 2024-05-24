@@ -202,8 +202,8 @@ public class MultitenantAPITest {
                 "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/totp/device"),
                 body,
-                1000000,
-                1000000,
+                1000,
+                1000,
                 null,
                 SemVer.v3_0.get(),
                 "totp");

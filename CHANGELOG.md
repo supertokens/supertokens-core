@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+## [9.1.0] - 2024-05-24
+
+- Adds new core API for fetching all the core properties for a tenant
+  - GET `/appid-<appid>/<tenantid>/recipe/dashboard/tenant/core-config`
+- Deprecated the following APIs
+  - PUT `/recipe/multitenancy/connectionuridomain`
+  - GET `/recipe/multitenancy/connectionuridomain/list`
+  - PUT `/recipe/multitenancy/app`
+  - GET `/recipe/multitenancy/app/list`
+  - PUT `/appid-<appid>/recipe/multitenancy/tenant`
+  - GET `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant`
+  - GET `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant/list`
+- Adds the following APIs to replace the deprecated APIs
+  - PUT `/recipe/multitenancy/connectionuridomain/v2`
+  - GET `/recipe/multitenancy/connectionuridomain/list/v2`
+  - PUT `/recipe/multitenancy/app/v2`
+  - GET `/recipe/multitenancy/app/list/v2`
+  - PUT `/appid-<appid>/recipe/multitenancy/tenant/v2`
+  - GET `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant/v2`
+  - GET `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant/list/v2`
+- Backward compatible recipe enabled boolean computations based on - https://github.com/supertokens/supertokens-core/issues/979#issuecomment-2099971371
+
 ## [9.0.2] - 2024-04-17
 
 - Fixes issue with core startup when creation of CUD/app/tenant has partial failure
@@ -1403,6 +1427,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
 
     ```sql
     -- helper stored procedures
+    DELIMITER //
 
     CREATE PROCEDURE st_drop_all_fkeys()
     BEGIN
@@ -1459,7 +1484,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
         END LOOP;
 
         CLOSE dropCur;
-    END
+    END //
 
     --
 
@@ -1518,7 +1543,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
         END LOOP;
 
         CLOSE dropCur;
-    END
+    END //
 
     --
 
@@ -1577,7 +1602,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
         END LOOP;
 
         CLOSE dropCur;
-    END
+    END //
 
     --
 
@@ -1636,7 +1661,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
         END LOOP;
 
         CLOSE dropCur;
-    END
+    END //
 
     --
 
@@ -1668,8 +1693,9 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
         execute add_column_sql;
           SELECT 'Column Successfully  Created!' INTO p_status_message;
         END IF;
-    END
+    END //
 
+    DELIMITER ;
     -- Drop constraints and indexes
 
     CALL st_drop_all_fkeys();

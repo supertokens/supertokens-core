@@ -85,7 +85,8 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
                 Multitenancy.addNewOrUpdateAppOrTenant(main,
                         new TenantConfig(
                                 new TenantIdentifier(null, null, null),
-                                new EmailPasswordConfig(true), new ThirdPartyConfig(true, null),
+                                new EmailPasswordConfig(true),
+                                new ThirdPartyConfig(true, null),
                                 new PasswordlessConfig(true),
                                 null, null, new JsonObject()), false, false, false);
                 // Not force reloading all resources here (the last boolean in the function above)

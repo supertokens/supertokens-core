@@ -92,7 +92,7 @@ public class Passwordless {
         if (config == null) {
             throw new TenantOrAppNotFoundException(tenantIdentifier);
         }
-        if (!config.passwordlessConfig.enabled) {
+        if (!config.isPasswordlessEnabled()) {
             throw new BadPermissionException("Passwordless login not enabled for tenant");
         }
 
@@ -299,7 +299,7 @@ public class Passwordless {
         if (config == null) {
             throw new TenantOrAppNotFoundException(tenantIdentifier);
         }
-        if (!config.passwordlessConfig.enabled) {
+        if (!config.isPasswordlessEnabled()) {
             throw new BadPermissionException("Passwordless login not enabled for tenant");
         }
 

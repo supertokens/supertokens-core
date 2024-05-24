@@ -16,12 +16,10 @@
 
 package io.supertokens.webserver.api.multitenancy;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.Utils;
 import jakarta.servlet.ServletException;
@@ -29,21 +27,18 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashSet;
 
-@Deprecated
-public class CreateOrUpdateConnectionUriDomainAPI extends BaseCreateOrUpdate {
+public class CreateOrUpdateConnectionUriDomainV2API extends BaseCreateOrUpdate {
 
     private static final long serialVersionUID = -4641988458637882374L;
 
-    public CreateOrUpdateConnectionUriDomainAPI(Main main) {
+    public CreateOrUpdateConnectionUriDomainV2API(Main main) {
         super(main);
     }
 
     @Override
     public String getPath() {
-        return "/recipe/multitenancy/connectionuridomain";
+        return "/recipe/multitenancy/connectionuridomain/v2";
     }
 
     @Override
@@ -62,7 +57,7 @@ public class CreateOrUpdateConnectionUriDomainAPI extends BaseCreateOrUpdate {
             throw new ServletException(e);
         }
 
-        super.handle(
+        super.handle_v2(
                 req, sourceTenantIdentifier,
                 new TenantIdentifier(connectionUriDomain, null, null), input, resp);
 

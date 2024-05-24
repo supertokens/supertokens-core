@@ -160,7 +160,7 @@ public class ThirdParty {
         if (config == null) {
             throw new TenantOrAppNotFoundException(tenantIdentifier);
         }
-        if (!config.thirdPartyConfig.enabled) {
+        if (!config.isThirdPartyEnabled()) {
             throw new BadPermissionException("Third Party login not enabled for tenant");
         }
 
@@ -404,13 +404,15 @@ public class ThirdParty {
 
         HashSet<String> thirdPartyIds = new HashSet<>();
 
-        for (ThirdPartyConfig.Provider provider : providers) {
-            if (thirdPartyIds.contains(provider.thirdPartyId)) {
-                throw new InvalidProviderConfigException("Duplicate ThirdPartyId was specified in the providers list.");
-            }
-            thirdPartyIds.add(provider.thirdPartyId);
+        if (providers != null) {
+            for (ThirdPartyConfig.Provider provider : providers) {
+                if (thirdPartyIds.contains(provider.thirdPartyId)) {
+                    throw new InvalidProviderConfigException("Duplicate ThirdPartyId was specified in the providers list.");
+                }
+                thirdPartyIds.add(provider.thirdPartyId);
 
-            verifyThirdPartyProvider(provider);
+                verifyThirdPartyProvider(provider);
+            }
         }
     }
 
@@ -489,13 +491,13 @@ public class ThirdParty {
                     " Boxy SAML provider";
 
             try {
-                if (client.additionalConfig == null ||
-                        !client.additionalConfig.has("boxyURL") ||
-                        client.additionalConfig.get("boxyURL").isJsonNull() ||
-                        client.additionalConfig.get("boxyURL").getAsString().isEmpty() ||
-                        !client.additionalConfig.getAsJsonPrimitive("boxyURL").isString()) {
+                if (client.additionalConfig != null && client.additionalConfig.has("boxyURL")) {
+                    if (client.additionalConfig.get("boxyURL").isJsonNull() ||
+                            client.additionalConfig.get("boxyURL").getAsString().isEmpty() ||
+                            !client.additionalConfig.getAsJsonPrimitive("boxyURL").isString()) {
 
-                    throw new InvalidProviderConfigException(errorMessage);
+                        throw new InvalidProviderConfigException(errorMessage);
+                    }
                 }
             } catch (ClassCastException e) {
                 throw new InvalidProviderConfigException(errorMessage);

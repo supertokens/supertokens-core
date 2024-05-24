@@ -108,8 +108,7 @@ public class StorageLayerTest {
         assertTrue(baseTenantConfig.emailPasswordConfig.enabled);
         assertTrue(baseTenantConfig.passwordlessConfig.enabled);
         assertTrue(baseTenantConfig.thirdPartyConfig.enabled);
-        assertNotNull(baseTenantConfig.thirdPartyConfig.providers);
-        assertEquals(0, baseTenantConfig.thirdPartyConfig.providers.length);
+        assertNull(baseTenantConfig.thirdPartyConfig.providers);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -561,8 +560,7 @@ public class StorageLayerTest {
         assertTrue(baseTenantConfig.emailPasswordConfig.enabled);
         assertTrue(baseTenantConfig.passwordlessConfig.enabled);
         assertTrue(baseTenantConfig.thirdPartyConfig.enabled);
-        assertNotNull(baseTenantConfig.thirdPartyConfig.providers);
-        assertEquals(0, baseTenantConfig.thirdPartyConfig.providers.length);
+        assertNull(baseTenantConfig.thirdPartyConfig.providers);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
