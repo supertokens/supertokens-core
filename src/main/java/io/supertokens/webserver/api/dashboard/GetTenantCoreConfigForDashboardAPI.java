@@ -24,6 +24,7 @@ import io.supertokens.Main;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.pluginInterface.ConfigFieldInfo;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -53,7 +54,7 @@ public class GetTenantCoreConfigForDashboardAPI extends WebserverAPI {
             ArrayList<ConfigFieldInfo> config = new ArrayList<>();
             List<ConfigFieldInfo> coreConfigFields = CoreConfig.getConfigFieldsInfoForDashboard(main,
                     getTenantIdentifier(req));
-            List<ConfigFieldInfo> storageFields = getTenantStorage(req).getConfigFieldsInfoForDashboard();
+            List<ConfigFieldInfo> storageFields = StorageUtils.getDashboardStorage(getTenantStorage(req)).getPluginConfigFieldsInfo();
 
             config.addAll(coreConfigFields);
             config.addAll(storageFields);

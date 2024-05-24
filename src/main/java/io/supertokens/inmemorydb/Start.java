@@ -2775,7 +2775,7 @@ public class Start
     }
 
     @Override
-    public List<ConfigFieldInfo> getConfigFieldsInfoForDashboard() {
+    public List<ConfigFieldInfo> getPluginConfigFieldsInfo() {
         return new ArrayList<ConfigFieldInfo>();
     }
 
