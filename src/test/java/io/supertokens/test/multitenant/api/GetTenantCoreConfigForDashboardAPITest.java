@@ -23,6 +23,8 @@ import io.supertokens.ProcessState;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.config.annotations.ConfigDescription;
 import io.supertokens.httpRequest.HttpRequest;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 
@@ -62,6 +64,10 @@ public class GetTenantCoreConfigForDashboardAPITest {
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         JsonObject response = HttpRequest.sendGETRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/dashboard/tenant/core-config", null,

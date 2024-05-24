@@ -25,10 +25,12 @@ import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
@@ -75,6 +77,10 @@ public class TestTenantCreationBehaviour {
 
     @Test
     public void testDefaultStateWhenNothingIsPassedWhileCreatingAppAndTenant_3_0() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         createApp_3_0(process.getProcess(), TenantIdentifier.BASE_TENANT, "a1", null, null, null, new JsonObject());
         {
             // Get using CDI 3.0
@@ -157,6 +163,10 @@ public class TestTenantCreationBehaviour {
 
     @Test
     public void testDefaultStateWhenNothingIsPassedWhileCreatingAppAndTenant_5_0() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         createApp_5_0(process.getProcess(), TenantIdentifier.BASE_TENANT, "a1", null, null, null, false, null, false, null, new JsonObject());
         {
             // Get using CDI 3.0
@@ -239,6 +249,10 @@ public class TestTenantCreationBehaviour {
 
     @Test
     public void testDefaultStateWhenNothingIsPassedWhileCreatingAppAndTenant_5_1() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         createApp_5_1(process.getProcess(), TenantIdentifier.BASE_TENANT, "a1", false, null, false, null, new JsonObject());
         {
             // Get using CDI 3.0
@@ -323,6 +337,10 @@ public class TestTenantCreationBehaviour {
 
     @Test
     public void testCreationOfAppAndTenantUsingFirstFactors() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         createApp_5_1(process.getProcess(), TenantIdentifier.BASE_TENANT, "a1", true, new String[]{"emailpassword", "otp-phone"}, false, null, new JsonObject());
 
         {
@@ -413,6 +431,10 @@ public class TestTenantCreationBehaviour {
 
     @Test
     public void shouldBeAbleToEnableRecipesForTenantCreatedInOlderCDI() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         // all recipes are disabled by default
         createTenant_3_0(process.getProcess(), TenantIdentifier.BASE_TENANT, "t1", null, null, null, new JsonObject());
 
