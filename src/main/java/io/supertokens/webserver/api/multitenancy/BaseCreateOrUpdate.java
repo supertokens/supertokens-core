@@ -90,6 +90,95 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
         }
     }
 
+    private TenantConfig applyTenantUpdates(
+            TenantConfig tenantConfig,
+            Boolean emailPasswordEnabled, Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
+            boolean hasFirstFactors, String[] firstFactors,
+            boolean hasRequiredSecondaryFactors, String[] requiredSecondaryFactors,
+            JsonObject coreConfig) {
+
+        if (emailPasswordEnabled != null) {
+            tenantConfig = new TenantConfig(
+                    tenantConfig.tenantIdentifier,
+                    new EmailPasswordConfig(emailPasswordEnabled),
+                    tenantConfig.thirdPartyConfig,
+                    tenantConfig.passwordlessConfig,
+                    tenantConfig.firstFactors,
+                    tenantConfig.requiredSecondaryFactors, tenantConfig.coreConfig
+            );
+        }
+
+        if (thirdPartyEnabled != null) {
+            tenantConfig = new TenantConfig(
+                    tenantConfig.tenantIdentifier,
+                    tenantConfig.emailPasswordConfig,
+                    new ThirdPartyConfig(thirdPartyEnabled,
+                            tenantConfig.thirdPartyConfig.providers),
+                    tenantConfig.passwordlessConfig,
+                    tenantConfig.firstFactors,
+                    tenantConfig.requiredSecondaryFactors, tenantConfig.coreConfig
+            );
+        }
+
+        if (passwordlessEnabled != null) {
+            tenantConfig = new TenantConfig(
+                    tenantConfig.tenantIdentifier,
+                    tenantConfig.emailPasswordConfig,
+                    tenantConfig.thirdPartyConfig,
+                    new PasswordlessConfig(passwordlessEnabled),
+                    tenantConfig.firstFactors,
+                    tenantConfig.requiredSecondaryFactors, tenantConfig.coreConfig
+            );
+        }
+
+        if (hasFirstFactors) {
+            tenantConfig = new TenantConfig(
+                    tenantConfig.tenantIdentifier,
+                    tenantConfig.emailPasswordConfig,
+                    tenantConfig.thirdPartyConfig,
+                    tenantConfig.passwordlessConfig,
+                    firstFactors,
+                    tenantConfig.requiredSecondaryFactors, tenantConfig.coreConfig
+            );
+        }
+
+        if (hasRequiredSecondaryFactors) {
+            tenantConfig = new TenantConfig(
+                    tenantConfig.tenantIdentifier,
+                    tenantConfig.emailPasswordConfig,
+                    tenantConfig.thirdPartyConfig,
+                    tenantConfig.passwordlessConfig,
+                    tenantConfig.firstFactors,
+                    requiredSecondaryFactors, tenantConfig.coreConfig
+            );
+        }
+
+        if (coreConfig != null) {
+            coreConfig = mergeConfig(tenantConfig.coreConfig, coreConfig);
+            tenantConfig = new TenantConfig(
+                    tenantConfig.tenantIdentifier,
+                    tenantConfig.emailPasswordConfig,
+                    tenantConfig.thirdPartyConfig,
+                    tenantConfig.passwordlessConfig,
+                    tenantConfig.firstFactors,
+                    tenantConfig.requiredSecondaryFactors, coreConfig
+            );
+        }
+
+        return tenantConfig;
+    }
+
+    private void createOrUpdate(HttpServletRequest req, TenantIdentifier sourceTenantIdentifier,
+                                TenantConfig tenantConfig)
+            throws InvalidProviderConfigException, StorageQueryException, FeatureNotEnabledException,
+            TenantOrAppNotFoundException, InvalidConfigException, CannotModifyBaseConfigException,
+            BadPermissionException, IOException {
+        Multitenancy.checkPermissionsForCreateOrUpdate(
+                main, sourceTenantIdentifier, tenantConfig.tenantIdentifier);
+
+        Multitenancy.addNewOrUpdateAppOrTenant(main, tenantConfig, shouldProtectProtectedConfig(req), false, true);
+    }
+
     private void handle_v2_5_1(HttpServletRequest req, TenantIdentifier sourceTenantIdentifier,
                            TenantIdentifier targetTenantIdentifier, JsonObject input, HttpServletResponse resp)
             throws ServletException, IOException, InvalidProviderConfigException, StorageQueryException,
@@ -181,44 +270,16 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
             createdNew = true;
         }
 
-        if (hasFirstFactors) {
-            tenantConfig = new TenantConfig(
-                    tenantConfig.tenantIdentifier,
-                    tenantConfig.emailPasswordConfig,
-                    tenantConfig.thirdPartyConfig,
-                    tenantConfig.passwordlessConfig,
-                    firstFactors,
-                    tenantConfig.requiredSecondaryFactors, tenantConfig.coreConfig
-            );
-        }
+        Boolean recipeEnabledValue = hasFirstFactors ? false : null;
 
-        if (hasRequiredSecondaryFactors) {
-            tenantConfig = new TenantConfig(
-                    tenantConfig.tenantIdentifier,
-                    tenantConfig.emailPasswordConfig,
-                    tenantConfig.thirdPartyConfig,
-                    tenantConfig.passwordlessConfig,
-                    tenantConfig.firstFactors,
-                    requiredSecondaryFactors, tenantConfig.coreConfig
-            );
-        }
+        tenantConfig = this.applyTenantUpdates(
+                tenantConfig,
+                recipeEnabledValue, recipeEnabledValue, recipeEnabledValue,
+                hasFirstFactors, firstFactors,
+                hasRequiredSecondaryFactors, requiredSecondaryFactors,
+                coreConfig);
+        this.createOrUpdate(req, sourceTenantIdentifier, tenantConfig);
 
-        if (coreConfig != null) {
-            coreConfig = mergeConfig(tenantConfig.coreConfig, coreConfig);
-            tenantConfig = new TenantConfig(
-                    tenantConfig.tenantIdentifier,
-                    tenantConfig.emailPasswordConfig,
-                    tenantConfig.thirdPartyConfig,
-                    tenantConfig.passwordlessConfig,
-                    tenantConfig.firstFactors,
-                    tenantConfig.requiredSecondaryFactors, coreConfig
-            );
-        }
-
-        Multitenancy.checkPermissionsForCreateOrUpdate(
-                main, sourceTenantIdentifier, tenantConfig.tenantIdentifier);
-
-        Multitenancy.addNewOrUpdateAppOrTenant(main, tenantConfig, shouldProtectProtectedConfig(req), false, true);
         JsonObject result = new JsonObject();
         result.addProperty("status", "OK");
         result.addProperty("createdNew", createdNew);
@@ -311,76 +372,11 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
             createdNew = true;
         }
 
-        if (emailPasswordEnabled != null) {
-            tenantConfig = new TenantConfig(
-                    tenantConfig.tenantIdentifier,
-                    new EmailPasswordConfig(emailPasswordEnabled),
-                    tenantConfig.thirdPartyConfig,
-                    tenantConfig.passwordlessConfig,
-                    tenantConfig.firstFactors,
-                    tenantConfig.requiredSecondaryFactors, tenantConfig.coreConfig
-            );
-        }
-
-        if (thirdPartyEnabled != null) {
-            tenantConfig = new TenantConfig(
-                    tenantConfig.tenantIdentifier,
-                    tenantConfig.emailPasswordConfig,
-                    new ThirdPartyConfig(thirdPartyEnabled,
-                            tenantConfig.thirdPartyConfig.providers),
-                    tenantConfig.passwordlessConfig,
-                    tenantConfig.firstFactors,
-                    tenantConfig.requiredSecondaryFactors, tenantConfig.coreConfig
-            );
-        }
-
-        if (passwordlessEnabled != null) {
-            tenantConfig = new TenantConfig(
-                    tenantConfig.tenantIdentifier,
-                    tenantConfig.emailPasswordConfig,
-                    tenantConfig.thirdPartyConfig,
-                    new PasswordlessConfig(passwordlessEnabled),
-                    tenantConfig.firstFactors,
-                    tenantConfig.requiredSecondaryFactors, tenantConfig.coreConfig
-            );
-        }
-
-        if (hasFirstFactors) {
-            tenantConfig = new TenantConfig(
-                    tenantConfig.tenantIdentifier,
-                    tenantConfig.emailPasswordConfig,
-                    tenantConfig.thirdPartyConfig,
-                    tenantConfig.passwordlessConfig,
-                    firstFactors,
-                    tenantConfig.requiredSecondaryFactors, tenantConfig.coreConfig
-            );
-        }
-
-        if (hasRequiredSecondaryFactors) {
-            tenantConfig = new TenantConfig(
-                    tenantConfig.tenantIdentifier,
-                    tenantConfig.emailPasswordConfig,
-                    tenantConfig.thirdPartyConfig,
-                    tenantConfig.passwordlessConfig,
-                    tenantConfig.firstFactors,
-                    requiredSecondaryFactors, tenantConfig.coreConfig
-            );
-        }
-
-        if (coreConfig != null) {
-            coreConfig = mergeConfig(tenantConfig.coreConfig, coreConfig);
-            tenantConfig = new TenantConfig(
-                    tenantConfig.tenantIdentifier,
-                    tenantConfig.emailPasswordConfig,
-                    tenantConfig.thirdPartyConfig,
-                    tenantConfig.passwordlessConfig,
-                    tenantConfig.firstFactors,
-                    tenantConfig.requiredSecondaryFactors, coreConfig
-            );
-        }
-
-        Multitenancy.checkPermissionsForCreateOrUpdate(
-                main, sourceTenantIdentifier, tenantConfig.tenantIdentifier);
+        tenantConfig = this.applyTenantUpdates(
+                tenantConfig,
+                emailPasswordEnabled, thirdPartyEnabled, passwordlessEnabled,
+                hasFirstFactors, firstFactors, hasRequiredSecondaryFactors, requiredSecondaryFactors,
+                coreConfig);
 
         // Validate firstFactors and requiredSecondaryFactors
         {
@@ -426,6 +422,8 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                 }
             }
         }
+
+        this.createOrUpdate(req, sourceTenantIdentifier, tenantConfig);
 
         Multitenancy.addNewOrUpdateAppOrTenant(main, tenantConfig, shouldProtectProtectedConfig(req), false, true);
         JsonObject result = new JsonObject();
@@ -484,56 +482,13 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
             createdNew = true;
         }
 
-        if (emailPasswordEnabled != null) {
-            tenantConfig = new TenantConfig(
-                    tenantConfig.tenantIdentifier,
-                    new EmailPasswordConfig(emailPasswordEnabled),
-                    tenantConfig.thirdPartyConfig,
-                    tenantConfig.passwordlessConfig,
-                    tenantConfig.firstFactors,
-                    tenantConfig.requiredSecondaryFactors, tenantConfig.coreConfig
-            );
-        }
+        tenantConfig = this.applyTenantUpdates(
+                tenantConfig,
+                emailPasswordEnabled, thirdPartyEnabled, passwordlessEnabled,
+                false, null, false, null,
+                coreConfig);
+        this.createOrUpdate(req, sourceTenantIdentifier, tenantConfig);
 
-        if (thirdPartyEnabled != null) {
-            tenantConfig = new TenantConfig(
-                    tenantConfig.tenantIdentifier,
-                    tenantConfig.emailPasswordConfig,
-                    new ThirdPartyConfig(thirdPartyEnabled,
-                            tenantConfig.thirdPartyConfig.providers),
-                    tenantConfig.passwordlessConfig,
-                    tenantConfig.firstFactors,
-                    tenantConfig.requiredSecondaryFactors, tenantConfig.coreConfig
-            );
-        }
-
-        if (passwordlessEnabled != null) {
-            tenantConfig = new TenantConfig(
-                    tenantConfig.tenantIdentifier,
-                    tenantConfig.emailPasswordConfig,
-                    tenantConfig.thirdPartyConfig,
-                    new PasswordlessConfig(passwordlessEnabled),
-                    tenantConfig.firstFactors,
-                    tenantConfig.requiredSecondaryFactors, tenantConfig.coreConfig
-            );
-        }
-
-        if (coreConfig != null) {
-            coreConfig = mergeConfig(tenantConfig.coreConfig, coreConfig);
-            tenantConfig = new TenantConfig(
-                    tenantConfig.tenantIdentifier,
-                    tenantConfig.emailPasswordConfig,
-                    tenantConfig.thirdPartyConfig,
-                    tenantConfig.passwordlessConfig,
-                    tenantConfig.firstFactors,
-                    tenantConfig.requiredSecondaryFactors, coreConfig
-            );
-        }
-
-        Multitenancy.checkPermissionsForCreateOrUpdate(
-                main, sourceTenantIdentifier, tenantConfig.tenantIdentifier);
-
-        Multitenancy.addNewOrUpdateAppOrTenant(main, tenantConfig, shouldProtectProtectedConfig(req), false, true);
         JsonObject result = new JsonObject();
         result.addProperty("status", "OK");
         result.addProperty("createdNew", createdNew);
