@@ -61,8 +61,7 @@ public class ImportUserAPI extends WebserverAPI {
       throw new ServletException(new BadRequestException("This API is not supported in the in-memory database."));
     }
 
-    JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-    JsonObject jsonUser = InputParser.parseJsonObjectOrThrowError(input, "user", false);
+    JsonObject jsonUser = InputParser.parseJsonObjectOrThrowError(req);
 
     AppIdentifier appIdentifier = null;
     Storage storage = null;

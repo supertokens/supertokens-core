@@ -237,7 +237,7 @@ public class BulkImport {
             throw new StorageTransactionLogicException(e);
         } catch (DuplicateEmailException e) {
             throw new StorageTransactionLogicException(
-                    new Exception("A user with email " + lm.email + " already exists"));
+                    new Exception("A user with email " + lm.email + " already exists in emailpassword loginMethod."));
         }
     }
 
@@ -253,7 +253,7 @@ public class BulkImport {
             throw new StorageTransactionLogicException(e);
         } catch (DuplicateThirdPartyUserException e) {
             throw new StorageTransactionLogicException(new Exception("A user with thirdPartyId " + lm.thirdPartyId
-                    + " and thirdPartyUserId " + lm.thirdPartyUserId + " already exists"));
+                    + " and thirdPartyUserId " + lm.thirdPartyUserId + " already exists in thirdparty loginMethod."));
         }
     }
 
@@ -266,8 +266,8 @@ public class BulkImport {
 
             lm.superTokensUserId = userInfo.getSupertokensUserId();
         } catch (RestartFlowException e) {
-            String errorMessage = lm.email != null ? "A user with email " + lm.email + " already exists."
-                    : "A user with phoneNumber " + lm.phoneNumber + " already exists.";
+            String errorMessage = lm.email != null ? "A user with email " + lm.email + " already exists in passwordless loginMethod."
+                    : "A user with phoneNumber " + lm.phoneNumber + " already exists in passwordless loginMethod.";
             throw new StorageTransactionLogicException(new Exception(errorMessage));
         } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new StorageTransactionLogicException(e);

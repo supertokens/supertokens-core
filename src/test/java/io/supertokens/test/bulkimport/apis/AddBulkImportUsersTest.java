@@ -85,11 +85,7 @@ public class AddBulkImportUsersTest {
         testBadRequest(main, new JsonParser().parse("{\"users\": \"string\"}").getAsJsonObject(),
                 "Field name 'users' is invalid in JSON input");
 
-        // CASE 3: users array is empty
-        testBadRequest(main, generateUsersJson(0).getAsJsonObject(),
-                "{\"error\":\"You need to add at least one user.\"}");
-
-        // CASE 4: users array length is greater than 10000
+        // CASE 3: users array length is greater than 10000
         testBadRequest(main, generateUsersJson(10001).getAsJsonObject(),
                 "{\"error\":\"You can only add 10000 users at a time.\"}");
 

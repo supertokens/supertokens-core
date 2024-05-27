@@ -19,6 +19,7 @@ package io.supertokens.test.bulkimport.apis;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.util.List;
 
@@ -80,9 +81,11 @@ public class DeleteBulkImportUsersTest {
                 HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                         "http://localhost:3567/bulk-import/users/remove",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+                fail("The API should have thrown an error");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertEquals(400, e.statusCode);
-                assertEquals("Http error. Status Code: 400. Message: Field name 'ids' is invalid in JSON input", e.getMessage());
+                assertEquals("Http error. Status Code: 400. Message: Field name 'ids' is invalid in JSON input",
+                        e.getMessage());
             }
         }
         {
@@ -91,20 +94,11 @@ public class DeleteBulkImportUsersTest {
                 HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                         "http://localhost:3567/bulk-import/users/remove",
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+                fail("The API should have thrown an error");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertEquals(400, e.statusCode);
-                assertEquals("Http error. Status Code: 400. Message: Field name 'ids' cannot be an empty array", e.getMessage());
-            }
-        }
-        {
-            try {
-                JsonObject request = new JsonParser().parse("{\"ids\":[\"\"]}").getAsJsonObject();
-                HttpRequestForTesting.sendJsonPOSTRequest(main, "",
-                        "http://localhost:3567/bulk-import/users/remove",
-                        request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
-            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                assertEquals(400, e.statusCode);
-                assertEquals("Http error. Status Code: 400. Message: Field name 'ids' cannot contain an empty string", e.getMessage());
+                assertEquals("Http error. Status Code: 400. Message: Field name 'ids' cannot be an empty array",
+                        e.getMessage());
             }
         }
         {
@@ -122,7 +116,9 @@ public class DeleteBulkImportUsersTest {
                         request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertEquals(400, e.statusCode);
-                assertEquals("Http error. Status Code: 400. Message: Field name 'ids' cannot contain more than 500 elements", e.getMessage());
+                assertEquals(
+                        "Http error. Status Code: 400. Message: Field name 'ids' cannot contain more than 500 elements",
+                        e.getMessage());
             }
         }
 
@@ -142,33 +138,46 @@ public class DeleteBulkImportUsersTest {
             return;
         }
 
-        BulkImportStorage storage = (BulkImportStorage) StorageLayer.getStorage(process.main);
-        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+        // Call the API with empty array
+        {
+            JsonObject request = new JsonParser().parse("{\"ids\":[\"\"]}").getAsJsonObject();
+            JsonObject resonse = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                    "http://localhost:3567/bulk-import/users/remove",
+                    request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
 
-        // Insert users
-        List<BulkImportUser> users = generateBulkImportUser(5);
-        BulkImport.addUsers(appIdentifier, storage, users);
-
-        String invalidId = io.supertokens.utils.Utils.getUUID();
-        JsonObject request = new JsonObject();
-        JsonArray validIds = new JsonArray();
-        for (BulkImportUser user : users) {
-            validIds.add(new JsonPrimitive(user.id));
+            assertEquals(0, resonse.get("deletedIds").getAsJsonArray().size());
+            assertEquals(0, resonse.get("invalidIds").getAsJsonArray().size());
         }
-        validIds.add(new JsonPrimitive(invalidId));
-        
-        request.add("ids", validIds);
 
-        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
-        "http://localhost:3567/bulk-import/users/remove",
-        request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+        {
 
-        response.get("deletedIds").getAsJsonArray().forEach(id -> {
-            assertTrue(validIds.contains(id));
-        });
+            BulkImportStorage storage = (BulkImportStorage) StorageLayer.getStorage(process.main);
+            AppIdentifier appIdentifier = new AppIdentifier(null, null);
 
-        assertEquals(invalidId, response.get("invalidIds").getAsJsonArray().get(0).getAsString());
+            // Insert users
+            List<BulkImportUser> users = generateBulkImportUser(5);
+            BulkImport.addUsers(appIdentifier, storage, users);
 
+            String invalidId = io.supertokens.utils.Utils.getUUID();
+            JsonObject request = new JsonObject();
+            JsonArray validIds = new JsonArray();
+            for (BulkImportUser user : users) {
+                validIds.add(new JsonPrimitive(user.id));
+            }
+            validIds.add(new JsonPrimitive(invalidId));
+
+            request.add("ids", validIds);
+
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                    "http://localhost:3567/bulk-import/users/remove",
+                    request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
+
+            response.get("deletedIds").getAsJsonArray().forEach(id -> {
+                assertTrue(validIds.contains(id));
+            });
+
+            assertEquals(invalidId, response.get("invalidIds").getAsJsonArray().get(0).getAsString());
+        }
         process.kill();
         Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }

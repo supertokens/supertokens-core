@@ -113,8 +113,7 @@ public class ProcessBulkImportUsers extends CronTask {
     }
 
     private synchronized Storage getBulkImportProxyStorage(TenantIdentifier tenantIdentifier)
-            throws InvalidConfigException, IOException, TenantOrAppNotFoundException, DbInitException,
-            StorageQueryException {
+            throws InvalidConfigException, IOException, TenantOrAppNotFoundException, DbInitException {
         String userPoolId = StorageLayer.getStorage(tenantIdentifier, main).getUserPoolId();
         if (userPoolToStorageMap.containsKey(userPoolId)) {
             return userPoolToStorageMap.get(userPoolId);
@@ -133,13 +132,6 @@ public class ProcessBulkImportUsers extends CronTask {
 
                 userPoolToStorageMap.put(userPoolId, bulkImportProxyStorage);
                 bulkImportProxyStorage.initStorage(false, new ArrayList<>());
-                // `BulkImportProxyStorage` uses `BulkImportProxyConnection`, which overrides the `.commit()` method on the Connection object.
-                // The `initStorage()` method runs `select * from table_name limit 1` queries to check if the tables exist but these queries
-                // don't get committed due to the overridden `.commit()`, so we need to manually commit the transaction to remove any locks on the tables.
-
-                // Without this commit, a call to `select * from bulk_import_users limit 1` in `doesTableExist()` locks the `bulk_import_users` table,
-                // causing other queries to stall indefinitely.
-                bulkImportProxyStorage.commitTransactionForBulkImportProxyStorage();
                 return bulkImportProxyStorage;
             }
         }
@@ -156,8 +148,7 @@ public class ProcessBulkImportUsers extends CronTask {
                 allProxyStorages.add(getBulkImportProxyStorage(tenantConfig.tenantIdentifier));
             }
             return allProxyStorages.toArray(new Storage[0]);
-        } catch (TenantOrAppNotFoundException | InvalidConfigException | IOException | DbInitException
-                | StorageQueryException e) {
+        } catch (TenantOrAppNotFoundException | InvalidConfigException | IOException | DbInitException e) {
             throw new StorageTransactionLogicException(e);
         }
     }
@@ -165,7 +156,6 @@ public class ProcessBulkImportUsers extends CronTask {
     private void closeAllProxyStorages() throws StorageQueryException {
         for (SQLStorage storage : userPoolToStorageMap.values()) {
             storage.closeConnectionForBulkImportProxyStorage();
-            storage.close();
         }
         userPoolToStorageMap.clear();
     }

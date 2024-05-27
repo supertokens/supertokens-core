@@ -71,27 +71,12 @@ public class ImportUserTest {
     }
 
     {
-      try {
-        JsonObject request = new JsonObject();
-        HttpRequestForTesting.sendJsonPOSTRequest(main, "",
-            "http://localhost:3567/bulk-import/import",
-            request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
-        fail("The API should have thrown an error");
-      } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-        assertEquals(400, e.statusCode);
-        assertEquals("Http error. Status Code: 400. Message: Field name 'user' is invalid in JSON input",
-            e.getMessage());
-      }
-    }
-
-    {
       FeatureFlagTestContent.getInstance(main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES,
           new EE_FEATURES[] { EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA, EE_FEATURES.ACCOUNT_LINKING });
 
       try {
-        JsonObject request = new JsonObject();
         List<BulkImportUser> users = BulkImportTestUtils.generateBulkImportUser(1);
-        request.add("user", users.get(0).toJsonObject());
+        JsonObject request = users.get(0).toJsonObject();
 
         HttpRequestForTesting.sendJsonPOSTRequest(main, "",
             "http://localhost:3567/bulk-import/import",
@@ -132,10 +117,8 @@ public class ImportUserTest {
       UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
       UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
     }
-
-    JsonObject request = new JsonObject();
     List<BulkImportUser> users = BulkImportTestUtils.generateBulkImportUser(1);
-    request.add("user", users.get(0).toJsonObject());
+    JsonObject request = users.get(0).toJsonObject();
 
     JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
         "http://localhost:3567/bulk-import/import",

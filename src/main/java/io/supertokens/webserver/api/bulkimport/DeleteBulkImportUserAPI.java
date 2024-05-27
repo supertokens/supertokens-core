@@ -59,7 +59,10 @@ public class DeleteBulkImportUserAPI extends WebserverAPI {
         JsonArray arr = InputParser.parseArrayOrThrowError(input, "ids", false);
 
         if (arr.size() == 0) {
-            throw new ServletException(new WebserverAPI.BadRequestException("Field name 'ids' cannot be an empty array"));
+            JsonObject result = new JsonObject();
+            result.add("deletedIds", new JsonArray());
+            result.add("invalidIds", new JsonArray());
+            super.sendJsonResponse(200, result, resp);
         }
 
         if (arr.size() > BulkImport.DELETE_USERS_MAX_LIMIT) {

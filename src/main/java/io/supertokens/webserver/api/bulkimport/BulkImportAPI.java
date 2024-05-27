@@ -132,7 +132,14 @@ public class BulkImportAPI extends WebserverAPI {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         JsonArray users = InputParser.parseArrayOrThrowError(input, "users", false);
 
-        if (users.size() <= 0 || users.size() > BulkImport.MAX_USERS_TO_ADD) {
+        if (users.size() == 0) {
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "OK");
+            super.sendJsonResponse(200, result, resp);
+            return;
+        }
+
+        if (users.size() > BulkImport.MAX_USERS_TO_ADD) {
             JsonObject errorResponseJson = new JsonObject();
             String errorMsg = users.size() <= 0 ? "You need to add at least one user."
                     : "You can only add " + BulkImport.MAX_USERS_TO_ADD + " users at a time.";
