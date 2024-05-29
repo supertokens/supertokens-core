@@ -106,7 +106,7 @@ public class ProcessBulkImportUsersCronJobTest {
 
         TenantIdentifier publicTenant = new TenantIdentifier(null, null, "public");
 
-        BulkImportTestUtils.assertBulkImportUserAndAuthRecipeUserAreEqual(appIdentifier, publicTenant, storage,
+        BulkImportTestUtils.assertBulkImportUserAndAuthRecipeUserAreEqual(main, appIdentifier, publicTenant, storage,
                 bulkImportUser,
                 container.users[0]);
 
@@ -163,10 +163,10 @@ public class ProcessBulkImportUsersCronJobTest {
         UserIdMapping.populateExternalUserIdForUsers(appIdentifier, storageT1, containerT1.users);
         UserIdMapping.populateExternalUserIdForUsers(appIdentifier, storageT2, containerT2.users);
 
-        BulkImportTestUtils.assertBulkImportUserAndAuthRecipeUserAreEqual(appIdentifier, t1, storageT1,
+        BulkImportTestUtils.assertBulkImportUserAndAuthRecipeUserAreEqual(main, appIdentifier, t1, storageT1,
                 bulkImportUserT1,
                 containerT1.users[0]);
-        BulkImportTestUtils.assertBulkImportUserAndAuthRecipeUserAreEqual(appIdentifier, t2, storageT2,
+        BulkImportTestUtils.assertBulkImportUserAndAuthRecipeUserAreEqual(main, appIdentifier, t2, storageT2,
                 bulkImportUserT2,
                 containerT2.users[0]);
 
@@ -205,7 +205,7 @@ public class ProcessBulkImportUsersCronJobTest {
         assertEquals(1, usersAfterProcessing.size());
 
         assertEquals(BULK_IMPORT_USER_STATUS.FAILED, usersAfterProcessing.get(0).status);
-        assertEquals("Role role1 does not exist! You need pre-create the role before assigning it to the user.",
+        assertEquals("E034: Role role1 does not exist! You need pre-create the role before assigning it to the user.",
                 usersAfterProcessing.get(0).errorMessage);
 
         UserPaginationContainer container = AuthRecipe.getUsers(main, 100, "ASC", null, null, null);

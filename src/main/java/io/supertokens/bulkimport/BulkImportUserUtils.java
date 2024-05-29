@@ -205,9 +205,15 @@ public class BulkImportUserUtils {
                 String email = parseAndValidateFieldType(jsonLoginMethodObj, "email", ValueType.STRING, true,
                         String.class, errors, " for an emailpassword recipe.");
                 String passwordHash = parseAndValidateFieldType(jsonLoginMethodObj, "passwordHash", ValueType.STRING,
-                        true, String.class, errors, " for an emailpassword recipe.");
+                        false, String.class, errors, " for an emailpassword recipe.");
                 String hashingAlgorithm = parseAndValidateFieldType(jsonLoginMethodObj, "hashingAlgorithm",
-                        ValueType.STRING, true, String.class, errors, " for an emailpassword recipe.");
+                        ValueType.STRING, false, String.class, errors, " for an emailpassword recipe.");
+                String plainTextPassword = parseAndValidateFieldType(jsonLoginMethodObj, "plainTextPassword",
+                        ValueType.STRING, false, String.class, errors, " for an emailpassword recipe.");
+
+                if ((passwordHash == null || hashingAlgorithm == null) && plainTextPassword == null) {
+                    errors.add("Either (passwordHash, hashingAlgorithm) or plainTextPassword is required for an emailpassword recipe.");
+                }
 
                 email = validateAndNormaliseEmail(email, errors);
                 CoreConfig.PASSWORD_HASHING_ALG normalisedHashingAlgorithm = validateAndNormaliseHashingAlgorithm(
@@ -218,7 +224,7 @@ public class BulkImportUserUtils {
                         passwordHash, errors);
 
                 loginMethods.add(new LoginMethod(normalisedTenantIds, recipeId, isVerified, isPrimary,
-                        timeJoinedInMSSinceEpoch, email, passwordHash, hashingAlgorithm, null, null, null));
+                        timeJoinedInMSSinceEpoch, email, passwordHash, hashingAlgorithm, null, null, null, null));
             } else if ("thirdparty".equals(recipeId)) {
                 String email = parseAndValidateFieldType(jsonLoginMethodObj, "email", ValueType.STRING, true,
                         String.class, errors, " for a thirdparty recipe.");
@@ -232,7 +238,7 @@ public class BulkImportUserUtils {
                 thirdPartyUserId = validateAndNormaliseThirdPartyUserId(thirdPartyUserId, errors);
 
                 loginMethods.add(new LoginMethod(normalisedTenantIds, recipeId, isVerified, isPrimary,
-                        timeJoinedInMSSinceEpoch, email, null, null, thirdPartyId, thirdPartyUserId, null));
+                        timeJoinedInMSSinceEpoch, email, null, null, null, thirdPartyId, thirdPartyUserId, null));
             } else if ("passwordless".equals(recipeId)) {
                 String email = parseAndValidateFieldType(jsonLoginMethodObj, "email", ValueType.STRING, false,
                         String.class, errors, " for a passwordless recipe.");
@@ -247,7 +253,7 @@ public class BulkImportUserUtils {
                 }
 
                 loginMethods.add(new LoginMethod(normalisedTenantIds, recipeId, isVerified, isPrimary,
-                        timeJoinedInMSSinceEpoch, email, null, null, null, null, phoneNumber));
+                        timeJoinedInMSSinceEpoch, email, null, null, null, null, null, phoneNumber));
             }
         }
         return loginMethods;

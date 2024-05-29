@@ -47,6 +47,7 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.bulkimport.BulkImportStorage;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
+import io.supertokens.pluginInterface.bulkimport.BulkImportUser.LoginMethod;
 import io.supertokens.pluginInterface.bulkimport.BulkImportStorage.BULK_IMPORT_USER_STATUS;
 import io.supertokens.pluginInterface.bulkimport.sqlStorage.BulkImportSQLStorage;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
@@ -391,7 +392,7 @@ public class BulkImportTest {
 
         AuthRecipeUserInfo importedUser = BulkImport.importUser(main, appIdentifier, users.get(0));
 
-        BulkImportTestUtils.assertBulkImportUserAndAuthRecipeUserAreEqual(appIdentifier,
+        BulkImportTestUtils.assertBulkImportUserAndAuthRecipeUserAreEqual(main, appIdentifier,
                 appIdentifier.getAsPublicTenantIdentifier(), StorageLayer.getStorage(main), users.get(0), importedUser);
 
         process.kill();
@@ -439,10 +440,10 @@ public class BulkImportTest {
         AuthRecipeUserInfo importedUser1 = BulkImport.importUser(main, appIdentifier, bulkImportUserT1);
         AuthRecipeUserInfo importedUser2 = BulkImport.importUser(main, appIdentifier, bulkImportUserT2);
 
-        BulkImportTestUtils.assertBulkImportUserAndAuthRecipeUserAreEqual(appIdentifier, t1, storageT1,
+        BulkImportTestUtils.assertBulkImportUserAndAuthRecipeUserAreEqual(main, appIdentifier, t1, storageT1,
                 bulkImportUserT1,
                 importedUser1);
-        BulkImportTestUtils.assertBulkImportUserAndAuthRecipeUserAreEqual(appIdentifier, t2, storageT2,
+        BulkImportTestUtils.assertBulkImportUserAndAuthRecipeUserAreEqual(main, appIdentifier, t2, storageT2,
                 bulkImportUserT2,
                 importedUser2);
 
@@ -493,10 +494,56 @@ public class BulkImportTest {
 
         for (int i = 0; i < users.size(); i++) {
             AuthRecipeUserInfo importedUser = futures.get(i).get();
-            BulkImportTestUtils.assertBulkImportUserAndAuthRecipeUserAreEqual(appIdentifier,
+            BulkImportTestUtils.assertBulkImportUserAndAuthRecipeUserAreEqual(main, appIdentifier,
                     appIdentifier.getAsPublicTenantIdentifier(), StorageLayer.getStorage(main), users.get(i),
                     importedUser);
         }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void shouldImportWithPlainTextPassword() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Main main = process.getProcess();
+
+        if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+            return;
+        }
+
+        FeatureFlagTestContent.getInstance(main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES,
+                new EE_FEATURES[] { EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA, EE_FEATURES.ACCOUNT_LINKING });
+
+        // Create tenants
+        BulkImportTestUtils.createTenants(main);
+
+        // Create user roles
+        {
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
+        }
+
+        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+        List<BulkImportUser> users = generateBulkImportUser(1);
+        BulkImportUser bulkImportUser = users.get(0);
+
+        // Set passwordHash to null and plainTextPassword to a value to ensure we do a plainTextPassword import
+        for (LoginMethod lm : bulkImportUser.loginMethods) {
+            if (lm.recipeId == "emailpassword") {
+                lm.passwordHash = null;
+                lm.hashingAlgorithm = null;
+                lm.plainTextPassword = "testPass@123";
+            }
+        }
+    
+        AuthRecipeUserInfo importedUser = BulkImport.importUser(main, appIdentifier, bulkImportUser);
+
+        BulkImportTestUtils.assertBulkImportUserAndAuthRecipeUserAreEqual(main, appIdentifier,
+                appIdentifier.getAsPublicTenantIdentifier(), StorageLayer.getStorage(main), bulkImportUser, importedUser);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

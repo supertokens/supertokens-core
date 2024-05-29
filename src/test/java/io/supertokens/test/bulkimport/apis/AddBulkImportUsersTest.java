@@ -275,7 +275,7 @@ public class AddBulkImportUsersTest {
                 .getAsJsonObject();
 
         testBadRequest(main, requestBody, "{\"error\":\"" + genericErrMsg
-                + "\",\"users\":[{\"index\":0,\"errors\":[\"email is required for an emailpassword recipe.\",\"passwordHash is required for an emailpassword recipe.\",\"hashingAlgorithm is required for an emailpassword recipe.\"]}]}");
+                + "\",\"users\":[{\"index\":0,\"errors\":[\"email is required for an emailpassword recipe.\",\"Either (passwordHash, hashingAlgorithm) or plainTextPassword is required for an emailpassword recipe.\"]}]}");
 
         // CASE 2: email, passwordHash and hashingAlgorithm field type is incorrect
         JsonObject requestBody2 = new JsonParser()
@@ -284,7 +284,7 @@ public class AddBulkImportUsersTest {
                 .getAsJsonObject();
 
         testBadRequest(main, requestBody2, "{\"error\":\"" + genericErrMsg
-                + "\",\"users\":[{\"index\":0,\"errors\":[\"email should be of type string for an emailpassword recipe.\",\"passwordHash should be of type string for an emailpassword recipe.\",\"hashingAlgorithm should be of type string for an emailpassword recipe.\"]}]}");
+                + "\",\"users\":[{\"index\":0,\"errors\":[\"email should be of type string for an emailpassword recipe.\",\"passwordHash should be of type string for an emailpassword recipe.\",\"hashingAlgorithm should be of type string for an emailpassword recipe.\",\"Either (passwordHash, hashingAlgorithm) or plainTextPassword is required for an emailpassword recipe.\"]}]}");
 
         // CASE 3: hashingAlgorithm is not one of bcrypt, argon2, firebase_scrypt
         JsonObject requestBody3 = new JsonParser()
@@ -555,7 +555,7 @@ public class AddBulkImportUsersTest {
 
         checkLoginMethodFields(user.loginMethods.get(0), "LoginMethod",
                 Arrays.asList("tenantIds", "isVerified", "isPrimary", "timeJoinedInMSSinceEpoch",
-                        "recipeId", "email", "passwordHash", "hashingAlgorithm",
+                        "recipeId", "email", "passwordHash", "plainTextPassword", "hashingAlgorithm",
                         "phoneNumber", "thirdPartyId", "thirdPartyUserId", "externalUserId", "superTokensUserId"));
 
         checkTotpDeviceFields(user.totpDevices.get(0), "TotpDevice",

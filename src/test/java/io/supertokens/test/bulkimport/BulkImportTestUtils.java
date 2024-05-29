@@ -28,6 +28,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import io.supertokens.Main;
+import io.supertokens.emailpassword.PasswordHashing;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
@@ -82,11 +83,13 @@ public class BulkImportTestUtils {
             List<LoginMethod> loginMethods = new ArrayList<>();
             long currentTimeMillis = System.currentTimeMillis();
             loginMethods.add(new LoginMethod(tenants, "emailpassword", true, true, currentTimeMillis, email, "$2a",
-                    "BCRYPT", null, null, null));
-            loginMethods.add(new LoginMethod(tenants, "thirdparty", true, false, currentTimeMillis, email, null, null,
-                    "thirdPartyId" + i, "thirdPartyUserId" + i, null));
-            loginMethods.add(new LoginMethod(tenants, "passwordless", true, false, currentTimeMillis, email, null, null,
-                    null, null, null));
+                    "BCRYPT", null, null, null, null));
+            loginMethods
+                    .add(new LoginMethod(tenants, "thirdparty", true, false, currentTimeMillis, email, null, null, null,
+                            "thirdPartyId" + i, "thirdPartyUserId" + i, null));
+            loginMethods.add(
+                    new LoginMethod(tenants, "passwordless", true, false, currentTimeMillis, email, null, null, null,
+                            null, null, null));
             users.add(new BulkImportUser(id, externalId, userMetadata, userRoles, totpDevices, loginMethods));
         }
         return users;
@@ -131,15 +134,15 @@ public class BulkImportTestUtils {
         }
     }
 
-    public static void assertBulkImportUserAndAuthRecipeUserAreEqual(AppIdentifier appIdentifier,
+    public static void assertBulkImportUserAndAuthRecipeUserAreEqual(Main main, AppIdentifier appIdentifier,
             TenantIdentifier tenantIdentifier, Storage storage, BulkImportUser bulkImportUser,
             AuthRecipeUserInfo authRecipeUser) throws StorageQueryException, TenantOrAppNotFoundException {
         for (io.supertokens.pluginInterface.authRecipe.LoginMethod lm1 : authRecipeUser.loginMethods) {
-            bulkImportUser.loginMethods.forEach(lm2 -> {
+            for (LoginMethod lm2 : bulkImportUser.loginMethods) {
                 if (lm2.recipeId.equals(lm1.recipeId.toString())) {
-                    assertLoginMethodEquals(lm1, lm2);
+                    assertLoginMethodEquals(main, lm1, lm2);
                 }
-            });
+            }
         }
         assertEquals(bulkImportUser.externalUserId, authRecipeUser.getSupertokensOrExternalUserId());
         assertEquals(bulkImportUser.userMetadata,
@@ -155,15 +158,23 @@ public class BulkImportTestUtils {
         assertTotpDevicesEquals(createdTotpDevices, bulkImportUser.totpDevices.toArray(new TotpDevice[0]));
     }
 
-    private static void assertLoginMethodEquals(io.supertokens.pluginInterface.authRecipe.LoginMethod lm1,
-            io.supertokens.pluginInterface.bulkimport.BulkImportUser.LoginMethod lm2) {
+    private static void assertLoginMethodEquals(Main main, io.supertokens.pluginInterface.authRecipe.LoginMethod lm1,
+            io.supertokens.pluginInterface.bulkimport.BulkImportUser.LoginMethod lm2)
+            throws TenantOrAppNotFoundException {
         assertEquals(lm1.email, lm2.email);
         assertEquals(lm1.verified, lm2.isVerified);
         assertTrue(lm2.tenantIds.containsAll(lm1.tenantIds) && lm1.tenantIds.containsAll(lm2.tenantIds));
 
         switch (lm2.recipeId) {
             case "emailpassword":
-                assertEquals(lm1.passwordHash, lm2.passwordHash);
+                // If lm2.passwordHash is null then the user was imported using plainTextPassword
+                // We check if the plainTextPassword matches the stored passwordHash
+                if (lm2.passwordHash == null) {
+                    assertTrue(PasswordHashing.getInstance(main).verifyPasswordWithHash(lm2.plainTextPassword,
+                            lm1.passwordHash));
+                } else {
+                    assertEquals(lm1.passwordHash, lm2.passwordHash);
+                }
                 break;
             case "thirdparty":
                 assertEquals(lm1.thirdParty.id, lm2.thirdPartyId);

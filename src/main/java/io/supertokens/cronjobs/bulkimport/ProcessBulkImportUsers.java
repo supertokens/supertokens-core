@@ -33,6 +33,7 @@ import io.supertokens.config.Config;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
@@ -148,8 +149,14 @@ public class ProcessBulkImportUsers extends CronTask {
                 allProxyStorages.add(getBulkImportProxyStorage(tenantConfig.tenantIdentifier));
             }
             return allProxyStorages.toArray(new Storage[0]);
-        } catch (TenantOrAppNotFoundException | InvalidConfigException | IOException | DbInitException e) {
-            throw new StorageTransactionLogicException(e);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new StorageTransactionLogicException(new Exception("E043: " + e.getMessage()));
+        } catch (InvalidConfigException e) {
+            throw new StorageTransactionLogicException(new InvalidConfigException("E044: " + e.getMessage()));
+        } catch (DbInitException e) {
+            throw new StorageTransactionLogicException(new DbInitException("E045: " + e.getMessage()));
+        } catch (IOException e) {
+            throw new StorageTransactionLogicException(new IOException("E046: " + e.getMessage()));
         }
     }
 
@@ -225,21 +232,8 @@ public class ProcessBulkImportUsers extends CronTask {
 
             bulkImportProxyStorage.startTransaction(con -> {
                 try {
-                    for (LoginMethod lm : user.loginMethods) {
-                        BulkImport.processUserLoginMethod(main, appIdentifier, bulkImportProxyStorage, lm);
-                    }
-
-                    BulkImport.createPrimaryUserAndLinkAccounts(main, appIdentifier, bulkImportProxyStorage, user,
-                            primaryLM);
-
                     Storage[] allStoragesForApp = getAllProxyStoragesForApp(main, appIdentifier);
-                    BulkImport.createUserIdMapping(appIdentifier, user, primaryLM, allStoragesForApp);
-
-                    BulkImport.verifyEmailForAllLoginMethods(appIdentifier, con, bulkImportProxyStorage,
-                            user.loginMethods);
-                    BulkImport.createTotpDevices(main, appIdentifier, bulkImportProxyStorage, user, primaryLM);
-                    BulkImport.createUserMetadata(appIdentifier, bulkImportProxyStorage, user, primaryLM);
-                    BulkImport.createUserRoles(main, appIdentifier, bulkImportProxyStorage, user);
+                    BulkImport.processUserImportSteps(main, con, appIdentifier, bulkImportProxyStorage, user, primaryLM, allStoragesForApp);
 
                     // We are updating the primaryUserId in the bulkImportUser entry. This will help us handle the inconsistent transaction commit.
                     // If this update statement fails then the outer transaction will fail as well and the user will simpl be processed again. No inconsistency will happen in this
@@ -273,13 +267,18 @@ public class ProcessBulkImportUsers extends CronTask {
     private void handleProcessUserExceptions(AppIdentifier appIdentifier, BulkImportUser user, Exception e,
             BulkImportSQLStorage baseTenantStorage)
             throws StorageQueryException {
-
         // Java doesn't allow us to reassign local variables inside a lambda expression
         // so we have to use an array.
         String[] errorMessage = { e.getMessage() };
 
         if (e instanceof StorageTransactionLogicException) {
             StorageTransactionLogicException exception = (StorageTransactionLogicException) e;
+            // If the exception is due to a StorageQueryException, we want to retry the entry after sometime instead 
+            // of marking it as FAILED. We will return early in that case. 
+            if (exception.actualException instanceof StorageQueryException) {
+                Logging.error(main, null, "We got an StorageQueryException while processing a bulk import user entry. It will be retried again. Error Message: " + e.getMessage(), true);
+                return;
+            }
             errorMessage[0] = exception.actualException.getMessage();
         } else if (e instanceof InvalidBulkImportDataException) {
             errorMessage[0] = ((InvalidBulkImportDataException) e).errors.toString();
