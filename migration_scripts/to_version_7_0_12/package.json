@@ -15,7 +15,7 @@
   "dependencies": {
     "knex": "^3.0.1",
     "libphonenumber-js": "^1.10.49",
-    "mysql2": "^3.6.3",
+    "mysql2": "^3.9.8",
     "pg": "^8.11.3"
   }
 }
