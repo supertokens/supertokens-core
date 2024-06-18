@@ -136,6 +136,30 @@ public class Start
     }
 
     @Override
+    public Storage createBulkImportProxyStorageInstance() {
+        throw new UnsupportedOperationException("'createBulkImportProxyStorageInstance' is not supported for in-memory db");
+        
+    }
+
+    @Override
+    public void closeConnectionForBulkImportProxyStorage() throws StorageQueryException {
+        throw new UnsupportedOperationException(
+                "closeConnectionForBulkImportProxyStorage should only be called from BulkImportProxyStorage");
+    }
+
+    @Override
+    public void commitTransactionForBulkImportProxyStorage() throws StorageQueryException {
+        throw new UnsupportedOperationException(
+                "commitTransactionForBulkImportProxyStorage should only be called from BulkImportProxyStorage");
+    }
+
+    @Override
+    public void rollbackTransactionForBulkImportProxyStorage() throws StorageQueryException {
+        throw new UnsupportedOperationException(
+                "rollbackTransactionForBulkImportProxyStorage should only be called from BulkImportProxyStorage");
+    }
+
+    @Override
     public STORAGE_TYPE getType() {
         return STORAGE_TYPE.SQL;
     }
