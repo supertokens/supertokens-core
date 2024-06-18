@@ -90,19 +90,6 @@ public class DeleteBulkImportUsersTest {
         }
         {
             try {
-                JsonObject request = new JsonParser().parse("{\"ids\":[]}").getAsJsonObject();
-                HttpRequestForTesting.sendJsonPOSTRequest(main, "",
-                        "http://localhost:3567/bulk-import/users/remove",
-                        request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
-                fail("The API should have thrown an error");
-            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                assertEquals(400, e.statusCode);
-                assertEquals("Http error. Status Code: 400. Message: Field name 'ids' cannot be an empty array",
-                        e.getMessage());
-            }
-        }
-        {
-            try {
                 // Create a string array of 500 uuids
                 JsonObject request = new JsonObject();
                 JsonArray ids = new JsonArray();
@@ -140,13 +127,13 @@ public class DeleteBulkImportUsersTest {
 
         // Call the API with empty array
         {
-            JsonObject request = new JsonParser().parse("{\"ids\":[\"\"]}").getAsJsonObject();
-            JsonObject resonse = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+            JsonObject request = new JsonParser().parse("{\"ids\":[]}").getAsJsonObject();
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                     "http://localhost:3567/bulk-import/users/remove",
                     request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
 
-            assertEquals(0, resonse.get("deletedIds").getAsJsonArray().size());
-            assertEquals(0, resonse.get("invalidIds").getAsJsonArray().size());
+            assertEquals(0, response.get("deletedIds").getAsJsonArray().size());
+            assertEquals(0, response.get("invalidIds").getAsJsonArray().size());
         }
 
         {

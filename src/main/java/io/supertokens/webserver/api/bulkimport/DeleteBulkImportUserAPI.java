@@ -63,6 +63,7 @@ public class DeleteBulkImportUserAPI extends WebserverAPI {
             result.add("deletedIds", new JsonArray());
             result.add("invalidIds", new JsonArray());
             super.sendJsonResponse(200, result, resp);
+            return;
         }
 
         if (arr.size() > BulkImport.DELETE_USERS_MAX_LIMIT) {
