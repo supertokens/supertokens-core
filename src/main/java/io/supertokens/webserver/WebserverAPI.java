@@ -168,6 +168,17 @@ public abstract class WebserverAPI extends HttpServlet {
             TenantOrAppNotFoundException {
         String apiKey = req.getHeader("api-key");
 
+        if (apiKey == null) {
+            // API Key may also be passed via authoriation header
+            final String AUTH_HEADER = "Authorization";
+            final String BEARER_PREFIX = "bearer ";
+            String authHeader = req.getHeader(AUTH_HEADER);
+
+            if (authHeader != null && authHeader.toLowerCase().startsWith(BEARER_PREFIX)) {
+                apiKey = authHeader.substring(BEARER_PREFIX.length());
+            }
+        }
+
         // first we try the normal API key
         String[] keys = Config.getConfig(
                 new TenantIdentifier(getConnectionUriDomain(req), getAppId(req), getTenantId(req)),

@@ -148,7 +148,7 @@ public class HttpRequestForTesting {
                 con.setRequestProperty("cdi-version", cdiVersion);
             }
             if (apiKey != null) {
-                con.setRequestProperty("api-key", apiKey);
+                con.setRequestProperty("Authorization", "Bearer " + apiKey);
             }
             if (rid != null) {
                 con.setRequestProperty("rId", rid);
