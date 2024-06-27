@@ -27,6 +27,7 @@ import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.exception.*;
+import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
@@ -603,5 +604,29 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
     public static TenantConfig[] getAllTenants(Main main) {
         MultitenancyHelper.getInstance(main).refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(true);
         return MultitenancyHelper.getInstance(main).getAllTenants();
+    }
+
+    public static void saveWebsiteAndAPIDomainForApp(Storage storage, AppIdentifier appIdentifier, String websiteDomain, String apiDomain)
+            throws StorageQueryException, TenantOrAppNotFoundException {
+        if (websiteDomain != null) {
+            storage.setKeyValue(appIdentifier.getAsPublicTenantIdentifier(), "websiteDomain",
+                    new KeyValueInfo(websiteDomain, System.currentTimeMillis()));
+        }
+        if (apiDomain != null) {
+            storage.setKeyValue(appIdentifier.getAsPublicTenantIdentifier(), "apiDomain",
+                    new KeyValueInfo(apiDomain, System.currentTimeMillis()));
+        }
+    }
+
+    public static String getWebsiteDomain(Storage storage, AppIdentifier appIdentifier)
+            throws StorageQueryException, TenantOrAppNotFoundException {
+        KeyValueInfo websiteDomain = storage.getKeyValue(appIdentifier.getAsPublicTenantIdentifier(), "websiteDomain");
+        return websiteDomain == null ? null : websiteDomain.value;
+    }
+
+    public static String getAPIDomain(Storage storage, AppIdentifier appIdentifier)
+            throws StorageQueryException, TenantOrAppNotFoundException {
+        KeyValueInfo apiDomain = storage.getKeyValue(appIdentifier.getAsPublicTenantIdentifier(), "apiDomain");
+        return apiDomain == null ? null : apiDomain.value;
     }
 }

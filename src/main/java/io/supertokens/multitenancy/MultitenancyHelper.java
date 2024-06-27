@@ -40,6 +40,7 @@ import io.supertokens.signingkeys.JWTSigningKey;
 import io.supertokens.signingkeys.SigningKeys;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
+import io.supertokens.utils.SemVer;
 
 import java.io.IOException;
 import java.util.*;
@@ -274,5 +275,35 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
 
     public boolean isConnectionUriDomainPresentInDb(String cud) {
         return this.dangerous_allCUDsFromDb.contains(cud);
+    }
+
+    public static boolean isEmailPasswordEnabled(TenantConfig tenantConfig, SemVer version) {
+        if (version.greaterThanOrEqualTo(SemVer.v5_1)) {
+            return true;
+        } else if (version.greaterThanOrEqualTo(SemVer.v5_0)) {
+            return tenantConfig.toJson5_0(false, null, null).get("emailPassword").getAsJsonObject().get("enabled").getAsBoolean();
+        } else {
+            return tenantConfig.toJson3_0(false, null, null).get("emailPassword").getAsJsonObject().get("enabled").getAsBoolean();
+        }
+    }
+
+    public static boolean isThirdPartyEnabled(TenantConfig tenantConfig, SemVer version) {
+        if (version.greaterThanOrEqualTo(SemVer.v5_1)) {
+            return true;
+        } else if (version.greaterThanOrEqualTo(SemVer.v5_0)) {
+            return tenantConfig.toJson5_0(false, null, null).get("thirdParty").getAsJsonObject().get("enabled").getAsBoolean();
+        } else {
+            return tenantConfig.toJson3_0(false, null, null).get("thirdParty").getAsJsonObject().get("enabled").getAsBoolean();
+        }
+    }
+
+    public static boolean isPasswordlessEnabled(TenantConfig tenantConfig, SemVer version) {
+        if (version.greaterThanOrEqualTo(SemVer.v5_1)) {
+            return true;
+        } else if (version.greaterThanOrEqualTo(SemVer.v5_0)) {
+            return tenantConfig.toJson5_0(false, null, null).get("passwordless").getAsJsonObject().get("enabled").getAsBoolean();
+        } else {
+            return tenantConfig.toJson3_0(false, null, null).get("passwordless").getAsJsonObject().get("enabled").getAsBoolean();
+        }
     }
 }

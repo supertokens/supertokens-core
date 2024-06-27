@@ -25,6 +25,7 @@ import io.supertokens.emailpassword.exceptions.ResetPasswordInvalidTokenExceptio
 import io.supertokens.emailpassword.exceptions.UnsupportedPasswordHashingFormatException;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.multitenancy.MultitenancyHelper;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
@@ -46,6 +47,7 @@ import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.WebserverAPI;
 import org.jetbrains.annotations.TestOnly;
@@ -88,14 +90,22 @@ public class EmailPassword {
         try {
             Storage storage = StorageLayer.getStorage(main);
             return signUp(new TenantIdentifier(null, null, null), storage,
-                    main, email, password);
+                    main, email, password, SemVer.v5_0);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
         }
     }
 
+    @TestOnly
     public static AuthRecipeUserInfo signUp(TenantIdentifier tenantIdentifier, Storage storage, Main main,
-                                  @Nonnull String email, @Nonnull String password)
+                                            @Nonnull String email, @Nonnull String password)
+            throws DuplicateEmailException, StorageQueryException, TenantOrAppNotFoundException,
+            BadPermissionException {
+        return signUp(tenantIdentifier, storage, main, email, password, SemVer.v5_0);
+    }
+
+    public static AuthRecipeUserInfo signUp(TenantIdentifier tenantIdentifier, Storage storage, Main main,
+                                            @Nonnull String email, @Nonnull String password, SemVer version)
             throws DuplicateEmailException, StorageQueryException, TenantOrAppNotFoundException,
             BadPermissionException {
 
@@ -103,7 +113,7 @@ public class EmailPassword {
         if (config == null) {
             throw new TenantOrAppNotFoundException(tenantIdentifier);
         }
-        if (!config.isEmailPasswordEnabled()) {
+        if (!MultitenancyHelper.isEmailPasswordEnabled(config, version)) {
             throw new BadPermissionException("Email password login not enabled for tenant");
         }
 
@@ -124,7 +134,7 @@ public class EmailPassword {
                         evStorage.startTransaction(con -> {
                             try {
                                 evStorage.updateIsEmailVerified_Transaction(tenantIdentifier.toAppIdentifier(), con,
-                                                newUser.getSupertokensUserId(), email, true);
+                                        newUser.getSupertokensUserId(), email, true);
                                 evStorage.commitTransaction(con);
 
                                 return null;
@@ -158,7 +168,7 @@ public class EmailPassword {
 
             return importUserWithPasswordHash(
                     new TenantIdentifier(null, null, null), storage, main, email,
-                    passwordHash, hashingAlgorithm);
+                    passwordHash, hashingAlgorithm, SemVer.v5_0);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
         }
@@ -167,7 +177,8 @@ public class EmailPassword {
     public static ImportUserResponse importUserWithPasswordHash(TenantIdentifier tenantIdentifier, Storage storage,
                                                                 Main main, @Nonnull String email,
                                                                 @Nonnull String passwordHash, @Nullable
-                                                                CoreConfig.PASSWORD_HASHING_ALG hashingAlgorithm)
+                                                                CoreConfig.PASSWORD_HASHING_ALG hashingAlgorithm,
+                                                                SemVer version)
             throws StorageQueryException, StorageTransactionLogicException, UnsupportedPasswordHashingFormatException,
             TenantOrAppNotFoundException, BadPermissionException {
 
@@ -175,7 +186,7 @@ public class EmailPassword {
         if (config == null) {
             throw new TenantOrAppNotFoundException(tenantIdentifier);
         }
-        if (!config.isEmailPasswordEnabled()) {
+        if (!MultitenancyHelper.isEmailPasswordEnabled(config, version)) {
             throw new BadPermissionException("Email password login not enabled for tenant");
         }
 
@@ -201,7 +212,8 @@ public class EmailPassword {
                 LoginMethod loginMethod = null;
                 for (AuthRecipeUserInfo currUser : allUsers) {
                     for (LoginMethod currLM : currUser.loginMethods) {
-                        if (currLM.email.equals(email) && currLM.recipeId == RECIPE_ID.EMAIL_PASSWORD && currLM.tenantIds.contains(tenantIdentifier.getTenantId())) {
+                        if (currLM.email.equals(email) && currLM.recipeId == RECIPE_ID.EMAIL_PASSWORD &&
+                                currLM.tenantIds.contains(tenantIdentifier.getTenantId())) {
                             userInfoToBeUpdated = currUser;
                             loginMethod = currLM;
                             break;
@@ -230,7 +242,7 @@ public class EmailPassword {
             Storage storage = StorageLayer.getStorage(main);
             return importUserWithPasswordHash(
                     new TenantIdentifier(null, null, null), storage,
-                    main, email, passwordHash, null);
+                    main, email, passwordHash, null, SemVer.v5_0);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
         }
@@ -243,15 +255,25 @@ public class EmailPassword {
         try {
             Storage storage = StorageLayer.getStorage(main);
             return signIn(new TenantIdentifier(null, null, null), storage,
-                    main, email, password);
+                    main, email, password, SemVer.v5_0);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
         }
     }
 
+    @TestOnly
     public static AuthRecipeUserInfo signIn(TenantIdentifier tenantIdentifier, Storage storage, Main main,
                                             @Nonnull String email,
                                             @Nonnull String password)
+            throws StorageQueryException, WrongCredentialsException, TenantOrAppNotFoundException,
+            BadPermissionException {
+        return signIn(tenantIdentifier, storage, main, email, password, SemVer.v5_0);
+    }
+
+    public static AuthRecipeUserInfo signIn(TenantIdentifier tenantIdentifier, Storage storage, Main main,
+                                            @Nonnull String email,
+                                            @Nonnull String password,
+                                            SemVer version)
             throws StorageQueryException, WrongCredentialsException, TenantOrAppNotFoundException,
             BadPermissionException {
 
@@ -259,7 +281,7 @@ public class EmailPassword {
         if (config == null) {
             throw new TenantOrAppNotFoundException(tenantIdentifier);
         }
-        if (!config.isEmailPasswordEnabled()) {
+        if (!MultitenancyHelper.isEmailPasswordEnabled(config, version)) {
             throw new BadPermissionException("Email password login not enabled for tenant");
         }
 
@@ -309,7 +331,7 @@ public class EmailPassword {
             Storage storage = StorageLayer.getStorage(main);
             return generatePasswordResetTokenBeforeCdi4_0(
                     new TenantIdentifier(null, null, null), storage,
-                    main, userId);
+                    main, userId, SemVer.v3_0);
         } catch (TenantOrAppNotFoundException | BadPermissionException | WebserverAPI.BadRequestException e) {
             throw new IllegalStateException(e);
         }
@@ -322,7 +344,7 @@ public class EmailPassword {
             Storage storage = StorageLayer.getStorage(main);
             return generatePasswordResetToken(
                     new TenantIdentifier(null, null, null), storage,
-                    main, userId, null);
+                    main, userId, null, SemVer.v5_0);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
         }
@@ -335,15 +357,24 @@ public class EmailPassword {
             Storage storage = StorageLayer.getStorage(main);
             return generatePasswordResetToken(
                     new TenantIdentifier(null, null, null), storage,
-                    main, userId, email);
+                    main, userId, email, SemVer.v5_0);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
         }
     }
 
+    @TestOnly
     public static String generatePasswordResetTokenBeforeCdi4_0(TenantIdentifier tenantIdentifier, Storage storage,
                                                                 Main main,
                                                                 String userId)
+            throws InvalidKeySpecException, NoSuchAlgorithmException, StorageQueryException, UnknownUserIdException,
+            TenantOrAppNotFoundException, BadPermissionException, WebserverAPI.BadRequestException {
+        return generatePasswordResetTokenBeforeCdi4_0(tenantIdentifier, storage, main, userId, SemVer.v3_0);
+    }
+
+    public static String generatePasswordResetTokenBeforeCdi4_0(TenantIdentifier tenantIdentifier, Storage storage,
+                                                                Main main,
+                                                                String userId, SemVer version)
             throws InvalidKeySpecException, NoSuchAlgorithmException, StorageQueryException, UnknownUserIdException,
             TenantOrAppNotFoundException, BadPermissionException, WebserverAPI.BadRequestException {
         AuthRecipeUserInfo user = AuthRecipe.getUserById(tenantIdentifier.toAppIdentifier(), storage, userId);
@@ -358,11 +389,11 @@ public class EmailPassword {
             // this used to be the behaviour of the older CDI version and it was enforced via a fkey constraint
             throw new UnknownUserIdException();
         }
-        return generatePasswordResetToken(tenantIdentifier, storage, main, userId, user.loginMethods[0].email);
+        return generatePasswordResetToken(tenantIdentifier, storage, main, userId, user.loginMethods[0].email, version);
     }
 
     public static String generatePasswordResetToken(TenantIdentifier tenantIdentifier, Storage storage, Main main,
-                                                    String userId, String email)
+                                                    String userId, String email, SemVer version)
             throws InvalidKeySpecException, NoSuchAlgorithmException, StorageQueryException, UnknownUserIdException,
             TenantOrAppNotFoundException, BadPermissionException {
 
@@ -370,7 +401,7 @@ public class EmailPassword {
         if (config == null) {
             throw new TenantOrAppNotFoundException(tenantIdentifier);
         }
-        if (!config.isEmailPasswordEnabled()) {
+        if (!MultitenancyHelper.isEmailPasswordEnabled(config, version)) {
             throw new BadPermissionException("Email password login not enabled for tenant");
         }
 

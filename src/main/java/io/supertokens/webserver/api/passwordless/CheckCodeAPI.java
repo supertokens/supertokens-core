@@ -85,7 +85,7 @@ public class CheckCodeAPI extends WebserverAPI {
                     tenantIdentifier,
                     storage, main,
                     deviceId, deviceIdHash,
-                    userInputCode, linkCode, false);
+                    userInputCode, linkCode, false, getVersionFromRequest(req));
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

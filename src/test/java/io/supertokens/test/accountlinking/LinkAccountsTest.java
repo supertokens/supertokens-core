@@ -470,7 +470,7 @@ public class LinkAccountsTest {
 
         Multitenancy.addNewOrUpdateAppOrTenant(process.main, new TenantIdentifier(null, null, null),
                 new TenantConfig(new TenantIdentifier(null, null, "t1"), new EmailPasswordConfig(true),
-                        new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[0]), new PasswordlessConfig(true),
+                        new ThirdPartyConfig(true, null), new PasswordlessConfig(true),
                         null, null, new JsonObject()));
 
         Storage storage = (StorageLayer.getStorage(process.main));

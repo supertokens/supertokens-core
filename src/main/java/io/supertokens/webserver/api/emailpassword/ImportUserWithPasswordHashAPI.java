@@ -99,7 +99,7 @@ public class ImportUserWithPasswordHashAPI extends WebserverAPI {
             Storage storage = getTenantStorage(req);
             EmailPassword.ImportUserResponse importUserResponse = EmailPassword.importUserWithPasswordHash(
                     tenantIdentifier, storage, main, email,
-                    passwordHash, passwordHashingAlgorithm);
+                    passwordHash, passwordHashingAlgorithm, getVersionFromRequest(req));
             UserIdMapping.populateExternalUserIdForUsers(tenantIdentifier.toAppIdentifier(), storage,
                     new AuthRecipeUserInfo[]{importUserResponse.user});
             JsonObject response = new JsonObject();

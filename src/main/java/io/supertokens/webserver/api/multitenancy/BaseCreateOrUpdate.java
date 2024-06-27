@@ -66,25 +66,6 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                 // tenant config does not exist, so this would be a create operation
                 tenantConfig = createBaseConfigForVersion(getVersionFromRequest(req), targetTenantIdentifier, isV2);
 
-                if (targetTenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
-                    // We enable all the recipes by default while creating app or CUD
-                    tenantConfig = new TenantConfig(
-                            targetTenantIdentifier,
-                            new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, null),
-                            new PasswordlessConfig(true),
-                            null,
-                            null, new JsonObject()
-                    );
-                } else {
-                    tenantConfig = new TenantConfig(
-                            targetTenantIdentifier,
-                            new EmailPasswordConfig(true),
-                            new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[]{}),
-                            new PasswordlessConfig(true),
-                            new String[]{}, null, new JsonObject()
-                    );
-                }
                 createdNew = true;
             }
 
@@ -200,7 +181,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                 return new TenantConfig(
                         tenantIdentifier,
                         new EmailPasswordConfig(true),
-                        new ThirdPartyConfig(true, null),
+                        new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[]{}),
                         new PasswordlessConfig(true),
                         new String[]{}, null, new JsonObject()
                 );
