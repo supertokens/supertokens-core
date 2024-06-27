@@ -194,6 +194,19 @@ public class SigningKeys extends ResourceDistributor.SingletonResource {
         }
     }
 
+    public long getCacheDurationInSeconds()
+            throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException,
+            UnsupportedJWTSigningAlgorithmException {
+        CoreConfig config = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main);
+
+        long timeLeftForNewKeyCreation = (
+                getLatestIssuedDynamicKey().createdAtTime
+                        + config.getAccessTokenDynamicSigningKeyUpdateInterval()
+                        - AccessTokenSigningKey.getInstance(appIdentifier, main).getDynamicSigningKeyOverlapMS()
+                        - System.currentTimeMillis()) / 1000;
+        return Math.max(timeLeftForNewKeyCreation, 0);
+    }
+
     public long getDynamicSigningKeyExpiryTime()
             throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException,
             UnsupportedJWTSigningAlgorithmException {
