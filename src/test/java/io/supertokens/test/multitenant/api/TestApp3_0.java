@@ -116,7 +116,7 @@ public class TestApp3_0 {
                     assertEquals("public", tenantObj.get("tenantId").getAsString());
                     assertEquals(1, tenantObj.get("emailPassword").getAsJsonObject().entrySet().size());
                     assertTrue(tenantObj.get("emailPassword").getAsJsonObject().get("enabled").getAsBoolean());
-                    assertEquals(2, tenantObj.get("thirdParty").getAsJsonObject().entrySet().size());
+                    assertEquals(1, tenantObj.get("thirdParty").getAsJsonObject().entrySet().size());
                     assertTrue(tenantObj.get("thirdParty").getAsJsonObject().get("enabled").getAsBoolean());
                     assertEquals(1, tenantObj.get("passwordless").getAsJsonObject().entrySet().size());
                     assertTrue(tenantObj.get("passwordless").getAsJsonObject().get("enabled").getAsBoolean());
@@ -174,7 +174,7 @@ public class TestApp3_0 {
                     assertEquals("public", tenantObj.get("tenantId").getAsString());
                     assertEquals(1, tenantObj.get("emailPassword").getAsJsonObject().entrySet().size());
                     assertTrue(tenantObj.get("emailPassword").getAsJsonObject().get("enabled").getAsBoolean());
-                    assertEquals(2, tenantObj.get("thirdParty").getAsJsonObject().entrySet().size());
+                    assertEquals(1, tenantObj.get("thirdParty").getAsJsonObject().entrySet().size());
                     assertTrue(tenantObj.get("thirdParty").getAsJsonObject().get("enabled").getAsBoolean());
                     assertEquals(1, tenantObj.get("passwordless").getAsJsonObject().entrySet().size());
                     assertTrue(tenantObj.get("passwordless").getAsJsonObject().get("enabled").getAsBoolean());

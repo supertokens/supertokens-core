@@ -118,7 +118,7 @@ public class TestApp5_0 {
                     assertEquals("public", tenantObj.get("tenantId").getAsString());
                     assertEquals(1, tenantObj.get("emailPassword").getAsJsonObject().entrySet().size());
                     assertTrue(tenantObj.get("emailPassword").getAsJsonObject().get("enabled").getAsBoolean());
-                    assertEquals(2, tenantObj.get("thirdParty").getAsJsonObject().entrySet().size());
+                    assertEquals(1, tenantObj.get("thirdParty").getAsJsonObject().entrySet().size());
                     assertTrue(tenantObj.get("thirdParty").getAsJsonObject().get("enabled").getAsBoolean());
                     assertEquals(1, tenantObj.get("passwordless").getAsJsonObject().entrySet().size());
                     assertTrue(tenantObj.get("passwordless").getAsJsonObject().get("enabled").getAsBoolean());
@@ -176,7 +176,7 @@ public class TestApp5_0 {
                     assertEquals("public", tenantObj.get("tenantId").getAsString());
                     assertEquals(1, tenantObj.get("emailPassword").getAsJsonObject().entrySet().size());
                     assertTrue(tenantObj.get("emailPassword").getAsJsonObject().get("enabled").getAsBoolean());
-                    assertEquals(2, tenantObj.get("thirdParty").getAsJsonObject().entrySet().size());
+                    assertEquals(1, tenantObj.get("thirdParty").getAsJsonObject().entrySet().size());
                     assertTrue(tenantObj.get("thirdParty").getAsJsonObject().get("enabled").getAsBoolean());
                     assertEquals(1, tenantObj.get("passwordless").getAsJsonObject().entrySet().size());
                     assertTrue(tenantObj.get("passwordless").getAsJsonObject().get("enabled").getAsBoolean());
@@ -923,7 +923,7 @@ public class TestApp5_0 {
                 createApp(
                         process.getProcess(),
                         new TenantIdentifier(null, null, null),
-                        "a1", null, null, null,
+                        "a1", false, null, null,
                         true, factors, false, null,
                         config);
                 fail();
@@ -961,7 +961,7 @@ public class TestApp5_0 {
                 createApp(
                         process.getProcess(),
                         new TenantIdentifier(null, null, null),
-                        "a1", null, null, null,
+                        "a1", null, null, false,
                         true, factors, false, null,
                         config);
                 fail();
@@ -999,7 +999,7 @@ public class TestApp5_0 {
                 createApp(
                         process.getProcess(),
                         new TenantIdentifier(null, null, null),
-                        "a1", null, null, null,
+                        "a1", null, false, null,
                         true, factors, false, null,
                         config);
                 fail();
@@ -1072,7 +1072,7 @@ public class TestApp5_0 {
                 createApp(
                         process.getProcess(),
                         new TenantIdentifier(null, null, null),
-                        "a1", null, null, null,
+                        "a1", false, null, null,
                         false, null, true, factors,
                         config);
                 fail();
@@ -1110,7 +1110,7 @@ public class TestApp5_0 {
                 createApp(
                         process.getProcess(),
                         new TenantIdentifier(null, null, null),
-                        "a1", null, null, null,
+                        "a1", null, null, false,
                         false, null, true, factors,
                         config);
                 fail();
@@ -1148,7 +1148,7 @@ public class TestApp5_0 {
                 createApp(
                         process.getProcess(),
                         new TenantIdentifier(null, null, null),
-                        "a1", null, null, null,
+                        "a1", null, false, null,
                         false, null, true, factors,
                         config);
                 fail();

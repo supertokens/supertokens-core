@@ -64,9 +64,9 @@ public class CreateOrUpdateAppAPI extends BaseCreateOrUpdate {
         }
 
         super.handle(
-                req, sourceTenantIdentifier,
+                req, resp, sourceTenantIdentifier,
                 new TenantIdentifier(sourceTenantIdentifier.getConnectionUriDomain(), appId, null),
-                input, resp);
+                input, false);
 
     }
 }

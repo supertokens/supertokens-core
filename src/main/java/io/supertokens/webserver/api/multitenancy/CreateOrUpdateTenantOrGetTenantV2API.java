@@ -23,7 +23,6 @@ import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.Utils;
 import jakarta.servlet.ServletException;
@@ -61,10 +60,10 @@ public class CreateOrUpdateTenantOrGetTenantV2API extends BaseCreateOrUpdate {
             throw new ServletException(e);
         }
 
-        super.handle_v2(
-                req, sourceTenantIdentifier,
+        super.handle(
+                req, resp, sourceTenantIdentifier,
                 new TenantIdentifier(sourceTenantIdentifier.getConnectionUriDomain(), sourceTenantIdentifier.getAppId(), tenantId),
-                input, resp);
+                input, true);
     }
 
     @Override
@@ -76,7 +75,7 @@ public class CreateOrUpdateTenantOrGetTenantV2API extends BaseCreateOrUpdate {
                 throw new TenantOrAppNotFoundException(tenantIdentifier);
             }
             boolean shouldProtect = shouldProtectProtectedConfig(req);
-            JsonObject result = config.toJson_v2(shouldProtect, getTenantStorage(req), CoreConfig.PROTECTED_CONFIGS);
+            JsonObject result = config.toJson_v2_5_1(shouldProtect, getTenantStorage(req), CoreConfig.PROTECTED_CONFIGS);
 
             result.addProperty("status", "OK");
 

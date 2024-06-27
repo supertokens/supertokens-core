@@ -58,10 +58,10 @@ public class CreateOrUpdateAppV2API extends BaseCreateOrUpdate {
             throw new ServletException(e);
         }
 
-        super.handle_v2(
-                req, sourceTenantIdentifier,
+        super.handle(
+                req, resp, sourceTenantIdentifier,
                 new TenantIdentifier(sourceTenantIdentifier.getConnectionUriDomain(), appId, null),
-                input, resp);
+                input, true);
 
     }
 }

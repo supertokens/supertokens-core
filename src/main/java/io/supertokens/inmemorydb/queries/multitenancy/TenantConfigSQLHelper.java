@@ -22,6 +22,7 @@ import io.supertokens.inmemorydb.queries.utils.JsonUtils;
 import io.supertokens.pluginInterface.RowMapper;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
+import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
