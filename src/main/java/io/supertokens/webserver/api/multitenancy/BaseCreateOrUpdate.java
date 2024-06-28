@@ -691,6 +691,16 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                         tenantConfig.requiredSecondaryFactors,
                         tenantConfig.coreConfig
                 );
+            } else {
+                tenantConfig = new TenantConfig(
+                        tenantConfig.tenantIdentifier,
+                        new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, tenantConfig.thirdPartyConfig.providers),
+                        new PasswordlessConfig(true),
+                        tenantConfig.firstFactors,
+                        requiredSecondaryFactors,
+                        tenantConfig.coreConfig
+                );
             }
 
             if (hasFirstFactors) {

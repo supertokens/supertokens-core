@@ -164,8 +164,7 @@ public abstract class WebserverAPI extends HttpServlet {
         return true;
     }
 
-    private void assertThatAPIKeyCheckPasses(HttpServletRequest req) throws ServletException,
-            TenantOrAppNotFoundException {
+    private String getApiKeyFromRequest(HttpServletRequest req) {
         String apiKey = req.getHeader("api-key");
 
         if (apiKey == null) {
@@ -178,6 +177,12 @@ public abstract class WebserverAPI extends HttpServlet {
                 apiKey = authHeader.substring(BEARER_PREFIX.length());
             }
         }
+        return apiKey;
+    }
+
+    private void assertThatAPIKeyCheckPasses(HttpServletRequest req) throws ServletException,
+            TenantOrAppNotFoundException {
+        String apiKey = getApiKeyFromRequest(req);
 
         // first we try the normal API key
         String[] keys = Config.getConfig(
@@ -217,7 +222,7 @@ public abstract class WebserverAPI extends HttpServlet {
     }
 
     protected boolean shouldProtectProtectedConfig(HttpServletRequest req) throws TenantOrAppNotFoundException {
-        String apiKey = req.getHeader("api-key");
+        String apiKey = getApiKeyFromRequest(req);
         String superTokensSaaSSecret = Config.getConfig(
                         new TenantIdentifier(null, null, null), this.main)
                 .getSuperTokensSaaSSecret();
