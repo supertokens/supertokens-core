@@ -30,7 +30,6 @@ import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
