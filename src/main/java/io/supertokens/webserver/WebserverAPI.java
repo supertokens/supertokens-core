@@ -180,44 +180,47 @@ public abstract class WebserverAPI extends HttpServlet {
         return apiKey;
     }
 
-    private void assertThatAPIKeyCheckPasses(HttpServletRequest req) throws ServletException,
-            TenantOrAppNotFoundException {
-        String apiKey = getApiKeyFromRequest(req);
+    private void assertThatAPIKeyCheckPasses(HttpServletRequest req) throws ServletException {
+        try {
+            String apiKey = getApiKeyFromRequest(req);
 
-        // first we try the normal API key
-        String[] keys = Config.getConfig(
-                new TenantIdentifier(getConnectionUriDomain(req), getAppId(req), getTenantId(req)),
-                this.main).getAPIKeys();
-        if (keys != null) {
-            if (apiKey == null) {
+            // first we try the normal API key
+            String[] keys = Config.getConfig(
+                    new TenantIdentifier(getConnectionUriDomain(req), getAppId(req), getTenantId(req)),
+                    this.main).getAPIKeys();
+            if (keys != null) {
+                if (apiKey == null) {
+                    throw new ServletException(new APIKeyUnauthorisedException());
+                }
+                apiKey = apiKey.trim();
+                boolean isAuthorised = false;
+                for (String key : keys) {
+                    isAuthorised = isAuthorised || key.equals(apiKey);
+                }
+                if (isAuthorised) {
+                    return;
+                }
+            }
+
+            // if the normal API key did not exist, or did not match the api key from the header, we try the
+            // supertokens_saas_secret
+            String superTokensSaaSSecret = Config.getConfig(new TenantIdentifier(null, null, null), this.main)
+                    .getSuperTokensSaaSSecret();
+            if (superTokensSaaSSecret != null) {
+                if (apiKey == null) {
+                    throw new ServletException(new APIKeyUnauthorisedException());
+                }
+                if (apiKey.equals(superTokensSaaSSecret)) {
+                    return;
+                }
+            }
+
+            // if either were defined, and both failed, we throw an exception
+            if (superTokensSaaSSecret != null || keys != null) {
                 throw new ServletException(new APIKeyUnauthorisedException());
             }
-            apiKey = apiKey.trim();
-            boolean isAuthorised = false;
-            for (String key : keys) {
-                isAuthorised = isAuthorised || key.equals(apiKey);
-            }
-            if (isAuthorised) {
-                return;
-            }
-        }
-
-        // if the normal API key did not exist, or did not match the api key from the header, we try the
-        // supertokens_saas_secret
-        String superTokensSaaSSecret = Config.getConfig(new TenantIdentifier(null, null, null), this.main)
-                .getSuperTokensSaaSSecret();
-        if (superTokensSaaSSecret != null) {
-            if (apiKey == null) {
-                throw new ServletException(new APIKeyUnauthorisedException());
-            }
-            if (apiKey.equals(superTokensSaaSSecret)) {
-                return;
-            }
-        }
-
-        // if either were defined, and both failed, we throw an exception
-        if (superTokensSaaSSecret != null || keys != null) {
-            throw new ServletException(new APIKeyUnauthorisedException());
+        } catch (TenantOrAppNotFoundException e) {
+            // ignore as the tenant doesn't exist, we expect API to handle this issue
         }
     }
 
@@ -398,8 +401,13 @@ public abstract class WebserverAPI extends HttpServlet {
     }
 
     protected boolean checkIPAccess(HttpServletRequest req, HttpServletResponse resp)
-            throws TenantOrAppNotFoundException, ServletException, IOException {
-        CoreConfig config = Config.getConfig(getTenantIdentifierWithoutVerifying(req), main);
+            throws ServletException, IOException {
+        CoreConfig config = null;
+        try {
+            config = Config.getConfig(getTenantIdentifierWithoutVerifying(req), main);
+        } catch (TenantOrAppNotFoundException e) {
+            return true; // tenant not found, so no IP access control
+        }
         String allow = config.getIpAllowRegex();
         String deny = config.getIpDenyRegex();
         if (allow == null && deny == null) {
