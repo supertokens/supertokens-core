@@ -120,7 +120,7 @@ public class TestTenantCreationBehaviour {
             assertEquals("public", tenant.get("tenantId").getAsString());
             assertTrue(tenant.has("thirdParty"));
             // firstFactors and requiredSecondaryFactors should be null
-            assertFalse( tenant.get("thirdParty").getAsJsonObject().has("providers"));
+            assertTrue( tenant.get("thirdParty").getAsJsonObject().has("providers"));
         }
 
         createTenant_3_0(process.getProcess(), new TenantIdentifier(null, "a1", null), "t1", null, null, null, new JsonObject());
@@ -161,7 +161,7 @@ public class TestTenantCreationBehaviour {
             assertTrue(tenant.has("thirdParty"));
             assertEquals(new JsonArray(), tenant.get("firstFactors").getAsJsonArray());
             // requiredSecondaryFactors should be null
-            assertFalse( tenant.get("thirdParty").getAsJsonObject().has("providers"));
+            assertTrue( tenant.get("thirdParty").getAsJsonObject().has("providers"));
         }
     }
 
@@ -207,7 +207,7 @@ public class TestTenantCreationBehaviour {
             assertEquals("public", tenant.get("tenantId").getAsString());
             assertTrue(tenant.has("thirdParty"));
             // firstFactors and requiredSecondaryFactors should be null
-            assertFalse( tenant.get("thirdParty").getAsJsonObject().has("providers"));
+            assertTrue( tenant.get("thirdParty").getAsJsonObject().has("providers"));
         }
 
         createTenant_5_0(process.getProcess(), new TenantIdentifier(null, "a1", null), "t1", null, null, null, false, null, false, null, new JsonObject());
@@ -248,7 +248,7 @@ public class TestTenantCreationBehaviour {
             assertTrue(tenant.has("thirdParty"));
             assertEquals(new JsonArray(), tenant.get("firstFactors").getAsJsonArray());
             // requiredSecondaryFactors should be null
-            assertFalse( tenant.get("thirdParty").getAsJsonObject().has("providers"));
+            assertTrue( tenant.get("thirdParty").getAsJsonObject().has("providers"));
         }
     }
 
@@ -294,7 +294,7 @@ public class TestTenantCreationBehaviour {
             assertEquals("public", tenant.get("tenantId").getAsString());
             assertTrue(tenant.has("thirdParty"));
             // firstFactors and requiredSecondaryFactors should be null
-            assertFalse( tenant.get("thirdParty").getAsJsonObject().has("providers"));
+            assertTrue( tenant.get("thirdParty").getAsJsonObject().has("providers"));
         }
 
         createTenant_5_1(process.getProcess(), new TenantIdentifier(null, "a1", null), "t1", false, null, false, null, new JsonObject());
@@ -387,7 +387,7 @@ public class TestTenantCreationBehaviour {
             assertTrue(tenant.has("firstFactors"));
             assertEquals(2, tenant.get("firstFactors").getAsJsonArray().size());
             // requiredSecondaryFactors should be null
-            assertFalse( tenant.get("thirdParty").getAsJsonObject().has("providers"));
+            assertTrue( tenant.get("thirdParty").getAsJsonObject().has("providers"));
         }
 
         createTenant_5_1(process.getProcess(), new TenantIdentifier(null, "a1", null), "t1", true, new String[]{"emailpassword", "otp-phone"}, false, null, new JsonObject());
@@ -486,7 +486,7 @@ public class TestTenantCreationBehaviour {
             assertTrue(tenant.has("firstFactors"));
             assertEquals(2, tenant.get("firstFactors").getAsJsonArray().size());
             // requiredSecondaryFactors should be null
-            assertFalse(tenant.get("thirdParty").getAsJsonObject().has("providers"));
+            assertTrue(tenant.get("thirdParty").getAsJsonObject().has("providers"));
         }
     }
 
