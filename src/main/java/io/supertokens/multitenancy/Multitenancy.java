@@ -16,7 +16,6 @@
 
 package io.supertokens.multitenancy;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
@@ -28,6 +27,7 @@ import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.exception.*;
+import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
@@ -45,6 +45,7 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateTenantExc
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateThirdPartyIdException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.multitenancy.sqlStorage.MultitenancySQLStorage;
+import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.passwordless.exception.DuplicatePhoneNumberException;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
 import io.supertokens.storageLayer.StorageLayer;
@@ -603,5 +604,29 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
     public static TenantConfig[] getAllTenants(Main main) {
         MultitenancyHelper.getInstance(main).refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(true);
         return MultitenancyHelper.getInstance(main).getAllTenants();
+    }
+
+    public static void saveWebsiteAndAPIDomainForApp(Storage storage, AppIdentifier appIdentifier, String websiteDomain, String apiDomain)
+            throws StorageQueryException, TenantOrAppNotFoundException {
+        if (websiteDomain != null) {
+            storage.setKeyValue(appIdentifier.getAsPublicTenantIdentifier(), "websiteDomain",
+                    new KeyValueInfo(websiteDomain, System.currentTimeMillis()));
+        }
+        if (apiDomain != null) {
+            storage.setKeyValue(appIdentifier.getAsPublicTenantIdentifier(), "apiDomain",
+                    new KeyValueInfo(apiDomain, System.currentTimeMillis()));
+        }
+    }
+
+    public static String getWebsiteDomain(Storage storage, AppIdentifier appIdentifier)
+            throws StorageQueryException, TenantOrAppNotFoundException {
+        KeyValueInfo websiteDomain = storage.getKeyValue(appIdentifier.getAsPublicTenantIdentifier(), "websiteDomain");
+        return websiteDomain == null ? null : websiteDomain.value;
+    }
+
+    public static String getAPIDomain(Storage storage, AppIdentifier appIdentifier)
+            throws StorageQueryException, TenantOrAppNotFoundException {
+        KeyValueInfo apiDomain = storage.getKeyValue(appIdentifier.getAsPublicTenantIdentifier(), "apiDomain");
+        return apiDomain == null ? null : apiDomain.value;
     }
 }

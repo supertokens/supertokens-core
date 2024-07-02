@@ -84,7 +84,7 @@ public class CreateCodeAPI extends WebserverAPI {
                     tenantIdentifier,
                     this.getTenantStorage(req), main, email,
                     phoneNumber, deviceId,
-                    userInputCode);
+                    userInputCode, getVersionFromRequest(req));
             long passwordlessCodeLifetime = Config.getConfig(tenantIdentifier, main)
                     .getPasswordlessCodeLifetime();
 

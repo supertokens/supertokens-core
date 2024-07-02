@@ -144,7 +144,7 @@ public class SignInUpAPI extends WebserverAPI {
                 Storage storage = getTenantStorage(req);
                 ThirdParty.SignInUpResponse response = ThirdParty.signInUp(
                         tenantIdentifier, storage, super.main, thirdPartyId, thirdPartyUserId,
-                        email, isEmailVerified);
+                        email, isEmailVerified, getVersionFromRequest(req));
                 UserIdMapping.populateExternalUserIdForUsers(tenantIdentifier.toAppIdentifier(), storage,
                         new AuthRecipeUserInfo[]{response.user});
 

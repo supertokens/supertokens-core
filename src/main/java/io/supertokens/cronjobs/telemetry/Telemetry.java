@@ -28,6 +28,7 @@ import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.dashboard.Dashboard;
 import io.supertokens.httpRequest.HttpRequest;
 import io.supertokens.httpRequest.HttpRequestMocking;
+import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.ActiveUsersStorage;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
@@ -135,6 +136,20 @@ public class Telemetry extends CronTask {
 
                 json.add("maus", mauArr);
             }
+
+            { // website and API domains
+                String websiteDomain = Multitenancy.getWebsiteDomain(
+                        StorageLayer.getStorage(app.getAsPublicTenantIdentifier(), main), app);
+                String apiDomain = Multitenancy.getAPIDomain(
+                        StorageLayer.getStorage(app.getAsPublicTenantIdentifier(), main), app);
+
+                if (websiteDomain != null) {
+                    json.addProperty("websiteDomain", websiteDomain);
+                }
+                if (apiDomain != null) {
+                    json.addProperty("apiDomain", apiDomain);
+                }
+            }
         } else {
             json.addProperty("usersCount", -1);
             json.add("dashboardUserEmails", new JsonArray());
@@ -147,7 +162,7 @@ public class Telemetry extends CronTask {
         // wants
         // to use this)
         if (!Main.isTesting || HttpRequestMocking.getInstance(main).getMockURL(REQUEST_ID, url) != null) {
-            HttpRequest.sendJsonPOSTRequest(main, REQUEST_ID, url, json, 10000, 10000, 5);
+            HttpRequest.sendJsonPOSTRequest(main, REQUEST_ID, url, json, 10000, 10000, 6);
             ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.SENT_TELEMETRY, null);
         }
     }

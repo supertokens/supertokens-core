@@ -182,6 +182,10 @@ public class VerifyTotpAPITest {
 
             Thread.sleep(1100);
 
+            body.addProperty("totp", "123456789");
+            e = verifyTotpCodeRequest(process, body);
+            checkResponseErrorContains(e, "totp cannot be longer than 8 characters");
+
             // test totp of length 8:
             body.addProperty("totp", "12345678");
             verifyTotpRequestThatReturnsInvalidCode(process, body);

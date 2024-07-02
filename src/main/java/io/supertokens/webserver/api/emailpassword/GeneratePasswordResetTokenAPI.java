@@ -80,10 +80,12 @@ public class GeneratePasswordResetTokenAPI extends WebserverAPI {
             if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0)) {
                 String email = InputParser.parseStringOrThrowError(input, "email", false);
                 token = EmailPassword.generatePasswordResetToken(
-                        tenantIdentifier, storageAndUserIdMapping.storage, super.main, userId, email);
+                        tenantIdentifier, storageAndUserIdMapping.storage, super.main, userId, email,
+                        getVersionFromRequest(req));
             } else {
                 token = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(
-                        tenantIdentifier, storageAndUserIdMapping.storage, super.main, userId);
+                        tenantIdentifier, storageAndUserIdMapping.storage, super.main, userId,
+                        getVersionFromRequest(req));
             }
 
             JsonObject result = new JsonObject();

@@ -284,9 +284,12 @@ public class LoggingTest {
             stdOutput.reset();
             errorOutput.reset();
 
+            JsonObject body = new JsonObject();
+            body.addProperty("email", "test@example.com");
+            body.addProperty("password", "abcd");
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/tenant2/recipe/signin", new JsonObject(), 1000, 1000, null,
+                        "http://localhost:3567/tenant2/recipe/signin", body, 1000, 1000, null,
                         Utils.getCdiVersionStringLatestForTests(), "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {

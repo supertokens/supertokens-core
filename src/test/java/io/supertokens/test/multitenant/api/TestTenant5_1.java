@@ -257,6 +257,17 @@ public class TestTenant5_1 {
     }
 
     @Test
+    public void testUnknownTenantError() throws Exception {
+        JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                HttpRequestForTesting.getMultitenantUrl(new TenantIdentifier(null, null, "unknown"), "/recipe" +
+                        "/multitenancy" +
+                        "/tenant/v2"),
+                null, 1000, 1000, null,
+                SemVer.v5_1.get(), "multitenancy");
+        assertEquals("TENANT_NOT_FOUND_ERROR", response.get("status").getAsString());
+    }
+
+    @Test
     public void testDifferentValuesForTenantIdThatShouldWork() throws Exception {
 
         Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {

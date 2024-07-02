@@ -62,9 +62,9 @@ public class CreateOrUpdateTenantOrGetTenantAPI extends BaseCreateOrUpdate {
         }
 
         super.handle(
-                req, sourceTenantIdentifier,
+                req, resp, sourceTenantIdentifier,
                 new TenantIdentifier(sourceTenantIdentifier.getConnectionUriDomain(), sourceTenantIdentifier.getAppId(), tenantId),
-                input, resp);
+                input, false);
     }
 
     @Override

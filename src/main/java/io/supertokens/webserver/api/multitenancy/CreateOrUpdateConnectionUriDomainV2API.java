@@ -57,9 +57,8 @@ public class CreateOrUpdateConnectionUriDomainV2API extends BaseCreateOrUpdate {
             throw new ServletException(e);
         }
 
-        super.handle_v2(
-                req, sourceTenantIdentifier,
-                new TenantIdentifier(connectionUriDomain, null, null), input, resp);
-
+        super.handle(
+                req, resp, sourceTenantIdentifier,
+                new TenantIdentifier(connectionUriDomain, null, null), input, true);
     }
 }

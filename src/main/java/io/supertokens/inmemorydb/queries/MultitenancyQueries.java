@@ -48,7 +48,6 @@ public class MultitenancyQueries {
                 + "passwordless_enabled BOOLEAN,"
                 + "third_party_enabled BOOLEAN,"
                 + "is_first_factors_null BOOLEAN,"
-                + "is_third_party_providers_null BOOLEAN,"
                 + "PRIMARY KEY (connection_uri_domain, app_id, tenant_id)"
                 + ");";
         // @formatter:on
