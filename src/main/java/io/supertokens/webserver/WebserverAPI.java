@@ -82,10 +82,15 @@ public abstract class WebserverAPI extends HttpServlet {
     }
 
     public SemVer getLatestCDIVersionForRequest(HttpServletRequest req)
-            throws ServletException, TenantOrAppNotFoundException {
+            throws ServletException {
         SemVer maxCDIVersion = getLatestCDIVersion();
-        String maxCDIVersionStr = Config.getConfig(
-                getAppIdentifierWithoutVerifying(req).getAsPublicTenantIdentifier(), main).getMaxCDIVersion();
+        String maxCDIVersionStr = null;
+        try {
+            maxCDIVersionStr = Config.getConfig(
+                    getAppIdentifierWithoutVerifying(req).getAsPublicTenantIdentifier(), main).getMaxCDIVersion();
+        } catch (TenantOrAppNotFoundException e) {
+            // ignore missing app
+        }
         if (maxCDIVersionStr != null) {
             maxCDIVersion = new SemVer(maxCDIVersionStr);
         }
@@ -534,25 +539,21 @@ public abstract class WebserverAPI extends HttpServlet {
     }
 
     protected SemVer getVersionFromRequest(HttpServletRequest req) throws ServletException {
-        try {
-            SemVer maxCDIVersion = getLatestCDIVersionForRequest(req);
-            String version = req.getHeader("cdi-version");
+        SemVer maxCDIVersion = getLatestCDIVersionForRequest(req);
+        String version = req.getHeader("cdi-version");
 
-            if (version != null) {
-                SemVer versionFromRequest = new SemVer(version);
+        if (version != null) {
+            SemVer versionFromRequest = new SemVer(version);
 
-                if (versionFromRequest.greaterThan(maxCDIVersion)) {
-                    throw new ServletException(
-                            new BadRequestException("cdi-version " + versionFromRequest + " not supported"));
-                }
-
-                return versionFromRequest;
+            if (versionFromRequest.greaterThan(maxCDIVersion)) {
+                throw new ServletException(
+                        new BadRequestException("cdi-version " + versionFromRequest + " not supported"));
             }
 
-            return maxCDIVersion;
-        } catch (TenantOrAppNotFoundException e) {
-            throw new ServletException(e);
+            return versionFromRequest;
         }
+
+        return maxCDIVersion;
     }
 
     public static class BadRequestException extends Exception {
