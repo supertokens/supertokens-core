@@ -28,6 +28,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.utils.SemVer;
+import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 
 import jakarta.servlet.ServletException;
@@ -56,15 +57,12 @@ public class ApiVersionAPI extends WebserverAPI {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject result = new JsonObject();
         JsonArray versions = new JsonArray();
+        String websiteDomain = InputParser.getQueryParamOrThrowError(req, "websiteDomain", true);
+        String apiDomain = InputParser.getQueryParamOrThrowError(req, "apiDomain", true);
 
         try {
             AppIdentifier appIdentifier = getAppIdentifier(req);
             Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
-
-            String websiteDomain = req.getParameter("websiteDomain");
-            String apiDomain = req.getParameter("apiDomain");
-
-            Multitenancy.saveWebsiteAndAPIDomainForApp(storage, appIdentifier, websiteDomain, apiDomain);
 
             SemVer maxCDIVersion = getLatestCDIVersionForRequest(req);
 
@@ -75,9 +73,13 @@ public class ApiVersionAPI extends WebserverAPI {
             }
             result.add("versions", versions);
             super.sendJsonResponse(200, result, resp);
+
+            try {
+                Multitenancy.saveWebsiteAndAPIDomainForApp(storage, appIdentifier, websiteDomain, apiDomain);
+            } catch (Exception e) {
+                // ignore errors
+            }
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
-            throw new ServletException(e);
-        } catch (StorageQueryException e) {
             throw new ServletException(e);
         }
     }

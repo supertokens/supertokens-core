@@ -179,7 +179,9 @@ public abstract class WebserverAPI extends HttpServlet {
             String authHeader = req.getHeader(AUTH_HEADER);
 
             if (authHeader != null && authHeader.toLowerCase().startsWith(BEARER_PREFIX)) {
-                apiKey = authHeader.substring(BEARER_PREFIX.length());
+                apiKey = authHeader.substring(BEARER_PREFIX.length()).trim();
+            } else if (authHeader != null) {
+                apiKey = authHeader.trim();
             }
         }
         return apiKey;

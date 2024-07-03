@@ -280,9 +280,9 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
         if (version.greaterThanOrEqualTo(SemVer.v5_1)) {
             return true;
         } else if (version.greaterThanOrEqualTo(SemVer.v5_0)) {
-            return tenantConfig.toJson5_0(false, null, null).get("emailPassword").getAsJsonObject().get("enabled").getAsBoolean();
+            return tenantConfig.emailPasswordConfig.isEnabledIn5_0(tenantConfig.firstFactors);
         } else {
-            return tenantConfig.toJson3_0(false, null, null).get("emailPassword").getAsJsonObject().get("enabled").getAsBoolean();
+            return tenantConfig.emailPasswordConfig.isEnabledInLesserThanOrEqualTo4_0(tenantConfig.firstFactors);
         }
     }
 
@@ -290,9 +290,9 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
         if (version.greaterThanOrEqualTo(SemVer.v5_1)) {
             return true;
         } else if (version.greaterThanOrEqualTo(SemVer.v5_0)) {
-            return tenantConfig.toJson5_0(false, null, null).get("thirdParty").getAsJsonObject().get("enabled").getAsBoolean();
+            return tenantConfig.thirdPartyConfig.isEnabledIn5_0(tenantConfig.firstFactors);
         } else {
-            return tenantConfig.toJson3_0(false, null, null).get("thirdParty").getAsJsonObject().get("enabled").getAsBoolean();
+            return tenantConfig.thirdPartyConfig.isEnabledInLesserThanOrEqualTo4_0(tenantConfig.firstFactors);
         }
     }
 
@@ -300,9 +300,9 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
         if (version.greaterThanOrEqualTo(SemVer.v5_1)) {
             return true;
         } else if (version.greaterThanOrEqualTo(SemVer.v5_0)) {
-            return tenantConfig.toJson5_0(false, null, null).get("passwordless").getAsJsonObject().get("enabled").getAsBoolean();
+            return tenantConfig.passwordlessConfig.isEnabledIn5_0(tenantConfig.firstFactors);
         } else {
-            return tenantConfig.toJson3_0(false, null, null).get("passwordless").getAsJsonObject().get("enabled").getAsBoolean();
+            return tenantConfig.passwordlessConfig.isEnabledInLesserThanOrEqualTo4_0(tenantConfig.firstFactors);
         }
     }
 }

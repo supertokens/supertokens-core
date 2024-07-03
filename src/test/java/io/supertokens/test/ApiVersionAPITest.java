@@ -21,6 +21,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.ProcessState;
+import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.WebserverAPI;
@@ -32,6 +35,8 @@ import org.junit.rules.TestRule;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 import static org.junit.Assert.*;
@@ -152,4 +157,37 @@ public class ApiVersionAPITest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    @Test
+    public void testThatWebsiteAndAPIDomainAreSaved() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        {
+            Map<String,String> params = new HashMap<>();
+            params.put("websiteDomain", "https://example.com");
+
+            HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/apiversion", params, 1000, 1000, null, null, "");
+
+            assertEquals("https://example.com", Multitenancy.getWebsiteDomain(StorageLayer.getBaseStorage(process.getProcess()),
+                    new AppIdentifier(null,
+                            null)));
+        }
+        {
+            Map<String,String> params = new HashMap<>();
+            params.put("apiDomain", "https://api.example.com");
+
+            HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/apiversion", params, 1000, 1000, null, null, "");
+
+            assertEquals("https://api.example.com", Multitenancy.getAPIDomain(StorageLayer.getBaseStorage(process.getProcess()),
+                    new AppIdentifier(null,
+                            null)));
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }
