@@ -80,11 +80,13 @@ public class CreateCodeAPI extends WebserverAPI {
 
         try {
             TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+            io.supertokens.webserver.api.passwordless.Utils.checkIfPasswordlessIsEnabledForTenant(main,
+                    tenantIdentifier, getVersionFromRequest(req));
             CreateCodeResponse createCodeResponse = Passwordless.createCode(
                     tenantIdentifier,
                     this.getTenantStorage(req), main, email,
                     phoneNumber, deviceId,
-                    userInputCode, getVersionFromRequest(req));
+                    userInputCode);
             long passwordlessCodeLifetime = Config.getConfig(tenantIdentifier, main)
                     .getPasswordlessCodeLifetime();
 

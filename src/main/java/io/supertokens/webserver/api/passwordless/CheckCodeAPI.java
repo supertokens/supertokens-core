@@ -80,12 +80,14 @@ public class CheckCodeAPI extends WebserverAPI {
 
         try {
             TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+            io.supertokens.webserver.api.passwordless.Utils.checkIfPasswordlessIsEnabledForTenant(main,
+                    tenantIdentifier, getVersionFromRequest(req));
             Storage storage = this.getTenantStorage(req);
             PasswordlessDevice consumedDevice = Passwordless.checkCodeAndReturnDevice(
                     tenantIdentifier,
                     storage, main,
                     deviceId, deviceIdHash,
-                    userInputCode, linkCode, false, getVersionFromRequest(req));
+                    userInputCode, linkCode, false);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

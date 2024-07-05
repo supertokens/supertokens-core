@@ -69,6 +69,8 @@ public class GeneratePasswordResetTokenAPI extends WebserverAPI {
         }
 
         try {
+            io.supertokens.webserver.api.emailpassword.Utils.checkIfEmailPasswordIsEnabledForTenant(main, tenantIdentifier, getVersionFromRequest(req));
+
             StorageAndUserIdMapping storageAndUserIdMapping =
                     getStorageAndUserIdMappingForTenantSpecificApi(req, userId, UserIdType.ANY);
             // if a userIdMapping exists, pass the superTokensUserId to the generatePasswordResetToken
@@ -80,12 +82,10 @@ public class GeneratePasswordResetTokenAPI extends WebserverAPI {
             if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0)) {
                 String email = InputParser.parseStringOrThrowError(input, "email", false);
                 token = EmailPassword.generatePasswordResetToken(
-                        tenantIdentifier, storageAndUserIdMapping.storage, super.main, userId, email,
-                        getVersionFromRequest(req));
+                        tenantIdentifier, storageAndUserIdMapping.storage, super.main, userId, email);
             } else {
                 token = EmailPassword.generatePasswordResetTokenBeforeCdi4_0(
-                        tenantIdentifier, storageAndUserIdMapping.storage, super.main, userId,
-                        getVersionFromRequest(req));
+                        tenantIdentifier, storageAndUserIdMapping.storage, super.main, userId);
             }
 
             JsonObject result = new JsonObject();

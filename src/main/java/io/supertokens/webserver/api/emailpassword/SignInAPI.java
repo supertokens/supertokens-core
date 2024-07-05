@@ -77,8 +77,10 @@ public class SignInAPI extends WebserverAPI {
         }
 
         try {
+            io.supertokens.webserver.api.emailpassword.Utils.checkIfEmailPasswordIsEnabledForTenant(main, tenantIdentifier, getVersionFromRequest(req));
+
             AuthRecipeUserInfo user = EmailPassword.signIn(tenantIdentifier, storage, super.main, normalisedEmail,
-                    password, getVersionFromRequest(req));
+                    password);
             io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(
                     tenantIdentifier.toAppIdentifier(), storage, new AuthRecipeUserInfo[]{user});
 

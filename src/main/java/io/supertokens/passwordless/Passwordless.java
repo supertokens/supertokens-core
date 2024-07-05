@@ -45,7 +45,6 @@ import io.supertokens.pluginInterface.passwordless.PasswordlessDevice;
 import io.supertokens.pluginInterface.passwordless.exception.*;
 import io.supertokens.pluginInterface.passwordless.sqlStorage.PasswordlessSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
-import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import org.jetbrains.annotations.TestOnly;
 
@@ -76,13 +75,12 @@ public class Passwordless {
             Storage storage = StorageLayer.getStorage(main);
             return createCode(
                     new TenantIdentifier(null, null, null), storage,
-                    main, email, phoneNumber, deviceId, userInputCode, SemVer.v5_0);
+                    main, email, phoneNumber, deviceId, userInputCode);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
         }
     }
 
-    @TestOnly
     public static CreateCodeResponse createCode(TenantIdentifier tenantIdentifier, Storage storage, Main main,
                                                 String email,
                                                 String phoneNumber, @Nullable String deviceId,
@@ -90,23 +88,10 @@ public class Passwordless {
             throws RestartFlowException, DuplicateLinkCodeHashException,
             StorageQueryException, NoSuchAlgorithmException, InvalidKeyException, IOException, Base64EncodingException,
             TenantOrAppNotFoundException, BadPermissionException {
-        return createCode(tenantIdentifier, storage, main, email, phoneNumber, deviceId, userInputCode, SemVer.v5_0);
-    }
-
-    public static CreateCodeResponse createCode(TenantIdentifier tenantIdentifier, Storage storage, Main main,
-                                                String email,
-                                                String phoneNumber, @Nullable String deviceId,
-                                                @Nullable String userInputCode, SemVer version)
-            throws RestartFlowException, DuplicateLinkCodeHashException,
-            StorageQueryException, NoSuchAlgorithmException, InvalidKeyException, IOException, Base64EncodingException,
-            TenantOrAppNotFoundException, BadPermissionException {
 
         TenantConfig config = Multitenancy.getTenantInfo(main, tenantIdentifier);
         if (config == null) {
             throw new TenantOrAppNotFoundException(tenantIdentifier);
-        }
-        if (!MultitenancyHelper.isPasswordlessEnabled(config, version)) {
-            throw new BadPermissionException("Passwordless login not enabled for tenant");
         }
 
         PasswordlessSQLStorage passwordlessStorage = StorageUtils.getPasswordlessStorage(storage);
@@ -265,7 +250,7 @@ public class Passwordless {
             Storage storage = StorageLayer.getStorage(main);
             return consumeCode(
                     new TenantIdentifier(null, null, null), storage,
-                    main, deviceId, deviceIdHashFromUser, userInputCode, linkCode, false, SemVer.v5_0);
+                    main, deviceId, deviceIdHashFromUser, userInputCode, linkCode, false);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
         }
@@ -282,7 +267,7 @@ public class Passwordless {
             Storage storage = StorageLayer.getStorage(main);
             return consumeCode(
                     new TenantIdentifier(null, null, null), storage,
-                    main, deviceId, deviceIdHashFromUser, userInputCode, linkCode, setEmailVerified, SemVer.v5_0);
+                    main, deviceId, deviceIdHashFromUser, userInputCode, linkCode, setEmailVerified);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
         }
@@ -297,13 +282,13 @@ public class Passwordless {
             StorageQueryException, NoSuchAlgorithmException, InvalidKeyException, IOException, Base64EncodingException,
             TenantOrAppNotFoundException, BadPermissionException {
         return consumeCode(tenantIdentifier, storage, main, deviceId, deviceIdHashFromUser, userInputCode, linkCode,
-                false, SemVer.v5_0);
+                false);
     }
 
     public static PasswordlessDevice checkCodeAndReturnDevice(TenantIdentifier tenantIdentifier, Storage storage, Main main,
                                                               String deviceId, String deviceIdHashFromUser,
                                                               String userInputCode, String linkCode,
-                                                              boolean deleteCodeOnSuccess, SemVer version)
+                                                              boolean deleteCodeOnSuccess)
             throws RestartFlowException, ExpiredUserInputCodeException,
             IncorrectUserInputCodeException, DeviceIdHashMismatchException, StorageTransactionLogicException,
             StorageQueryException, NoSuchAlgorithmException, InvalidKeyException, IOException, Base64EncodingException,
@@ -312,9 +297,6 @@ public class Passwordless {
         TenantConfig config = Multitenancy.getTenantInfo(main, tenantIdentifier);
         if (config == null) {
             throw new TenantOrAppNotFoundException(tenantIdentifier);
-        }
-        if (!MultitenancyHelper.isPasswordlessEnabled(config, version)) {
-            throw new BadPermissionException("Passwordless login not enabled for tenant");
         }
 
         PasswordlessSQLStorage passwordlessStorage = StorageUtils.getPasswordlessStorage(storage);
@@ -428,8 +410,7 @@ public class Passwordless {
 
     public static ConsumeCodeResponse consumeCode(TenantIdentifier tenantIdentifier, Storage storage, Main main,
                                                   String deviceId, String deviceIdHashFromUser,
-                                                  String userInputCode, String linkCode, boolean setEmailVerified,
-                                                  SemVer version)
+                                                  String userInputCode, String linkCode, boolean setEmailVerified)
             throws RestartFlowException, ExpiredUserInputCodeException,
             IncorrectUserInputCodeException, DeviceIdHashMismatchException, StorageTransactionLogicException,
             StorageQueryException, NoSuchAlgorithmException, InvalidKeyException, IOException, Base64EncodingException,
@@ -438,7 +419,7 @@ public class Passwordless {
         PasswordlessSQLStorage passwordlessStorage = StorageUtils.getPasswordlessStorage(storage);
 
         PasswordlessDevice consumedDevice = checkCodeAndReturnDevice(tenantIdentifier, storage, main, deviceId, deviceIdHashFromUser,
-                userInputCode, linkCode, true, version);
+                userInputCode, linkCode, true);
 
         // Getting here means that we successfully consumed the code
         AuthRecipeUserInfo user = null;

@@ -78,6 +78,7 @@ public class SignInUpAPI extends WebserverAPI {
 
             try {
                 TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+
                 Storage storage = getTenantStorage(req);
                 ThirdParty.SignInUpResponse response = ThirdParty.signInUp2_7(
                         tenantIdentifier, storage,
@@ -141,10 +142,12 @@ public class SignInUpAPI extends WebserverAPI {
 
             try {
                 TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+                io.supertokens.webserver.api.thirdparty.Utils.checkIfThirdPartyIsEnabledForTenant(main,
+                        tenantIdentifier, getVersionFromRequest(req));
                 Storage storage = getTenantStorage(req);
                 ThirdParty.SignInUpResponse response = ThirdParty.signInUp(
                         tenantIdentifier, storage, super.main, thirdPartyId, thirdPartyUserId,
-                        email, isEmailVerified, getVersionFromRequest(req));
+                        email, isEmailVerified);
                 UserIdMapping.populateExternalUserIdForUsers(tenantIdentifier.toAppIdentifier(), storage,
                         new AuthRecipeUserInfo[]{response.user});
 

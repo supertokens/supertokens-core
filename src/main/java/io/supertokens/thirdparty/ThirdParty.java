@@ -19,7 +19,6 @@ package io.supertokens.thirdparty;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
 import io.supertokens.multitenancy.Multitenancy;
-import io.supertokens.multitenancy.MultitenancyHelper;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
@@ -37,7 +36,6 @@ import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUs
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateUserIdException;
 import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
-import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import org.jetbrains.annotations.TestOnly;
 
@@ -125,7 +123,7 @@ public class ThirdParty {
             Storage storage = StorageLayer.getStorage(main);
             return signInUp(
                     new TenantIdentifier(null, null, null), storage, main,
-                    thirdPartyId, thirdPartyUserId, email, false, SemVer.v5_0);
+                    thirdPartyId, thirdPartyUserId, email, false);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
         }
@@ -138,7 +136,7 @@ public class ThirdParty {
             Storage storage = StorageLayer.getStorage(main);
             return signInUp(
                     new TenantIdentifier(null, null, null), storage, main,
-                    thirdPartyId, thirdPartyUserId, email, isEmailVerified, SemVer.v5_0);
+                    thirdPartyId, thirdPartyUserId, email, isEmailVerified);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
         }
@@ -150,22 +148,18 @@ public class ThirdParty {
                                             String thirdPartyUserId, String email)
             throws StorageQueryException, TenantOrAppNotFoundException, BadPermissionException,
             EmailChangeNotAllowedException {
-        return signInUp(tenantIdentifier, storage, main, thirdPartyId, thirdPartyUserId, email, false, SemVer.v5_0);
+        return signInUp(tenantIdentifier, storage, main, thirdPartyId, thirdPartyUserId, email, false);
     }
 
     public static SignInUpResponse signInUp(TenantIdentifier tenantIdentifier, Storage storage, Main main,
                                             String thirdPartyId,
-                                            String thirdPartyUserId, String email, boolean isEmailVerified,
-                                            SemVer version)
+                                            String thirdPartyUserId, String email, boolean isEmailVerified)
             throws StorageQueryException, TenantOrAppNotFoundException, BadPermissionException,
             EmailChangeNotAllowedException {
 
         TenantConfig config = Multitenancy.getTenantInfo(main, tenantIdentifier);
         if (config == null) {
             throw new TenantOrAppNotFoundException(tenantIdentifier);
-        }
-        if (!MultitenancyHelper.isThirdPartyEnabled(config, version)) {
-            throw new BadPermissionException("Third Party login not enabled for tenant");
         }
 
         SignInUpResponse response = signInUpHelper(tenantIdentifier, storage, thirdPartyId, thirdPartyUserId,
