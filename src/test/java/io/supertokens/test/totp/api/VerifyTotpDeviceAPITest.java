@@ -156,10 +156,6 @@ public class VerifyTotpDeviceAPITest {
             body.addProperty("deviceName", device.deviceName);
             requestWithInvalidCode(process, body);
 
-            body.addProperty("totp", "123456789");
-            e = updateDeviceRequest(process, body);
-            checkResponseErrorContains(e, "totp cannot be longer than 8 characters");
-
             Thread.sleep(1100);
 
             // test totp of length 5:
@@ -170,6 +166,12 @@ public class VerifyTotpDeviceAPITest {
 
             // test totp of length 8:
             body.addProperty("totp", "12345678");
+            requestWithInvalidCode(process, body);
+
+            Thread.sleep(1100);
+
+            // test totp of more than length 8:
+            body.addProperty("totp", "123456781234");
             requestWithInvalidCode(process, body);
 
             Thread.sleep(1100);

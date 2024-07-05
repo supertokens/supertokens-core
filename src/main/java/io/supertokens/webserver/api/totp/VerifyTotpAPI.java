@@ -47,10 +47,6 @@ public class VerifyTotpAPI extends WebserverAPI {
             throw new ServletException(new BadRequestException("userId cannot be empty"));
         }
 
-        if (totp.length() > 8) {
-            throw new ServletException(new BadRequestException("totp cannot be longer than 8 characters"));
-        }
-
         JsonObject result = new JsonObject();
 
         try {

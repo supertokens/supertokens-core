@@ -39,6 +39,7 @@ import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.jetbrains.annotations.TestOnly;
 
 import java.io.IOException;
 import java.util.*;
@@ -58,7 +59,8 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
             // Try fetching the existing tenant config
 
             TenantConfig tenantConfig = Multitenancy.getTenantInfo(main,
-                    new TenantIdentifier(targetTenantIdentifier.getConnectionUriDomain(), targetTenantIdentifier.getAppId(),
+                    new TenantIdentifier(targetTenantIdentifier.getConnectionUriDomain(),
+                            targetTenantIdentifier.getAppId(),
                             targetTenantIdentifier.getTenantId()));
 
             boolean createdNew = false;
@@ -72,9 +74,13 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
             { // common to all versions
                 CoreConfig baseConfig = Config.getBaseConfig(main);
                 if (baseConfig.getSuperTokensLoadOnlyCUD() != null) {
-                    if (!(targetTenantIdentifier.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI) || targetTenantIdentifier.getConnectionUriDomain().equals(baseConfig.getSuperTokensLoadOnlyCUD()))) {
-                        throw new ServletException(new BadRequestException("Creation of connection uri domain or app or " +
-                                "tenant is disallowed"));
+                    if (!(targetTenantIdentifier.getConnectionUriDomain()
+                            .equals(TenantIdentifier.DEFAULT_CONNECTION_URI) ||
+                            targetTenantIdentifier.getConnectionUriDomain()
+                                    .equals(baseConfig.getSuperTokensLoadOnlyCUD()))) {
+                        throw new ServletException(
+                                new BadRequestException("Creation of connection uri domain or app or " +
+                                        "tenant is disallowed"));
                     }
                 }
 
@@ -105,7 +111,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
             result.addProperty("createdNew", createdNew);
             super.sendJsonResponse(200, result, resp);
         } catch (BadPermissionException | StorageQueryException | FeatureNotEnabledException
-                | TenantOrAppNotFoundException e) {
+                 | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         } catch (CannotModifyBaseConfigException e) {
             throw new ServletException(new BadRequestException("Cannot modify base config"));
@@ -116,7 +122,14 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
         }
     }
 
-    private TenantConfig createBaseConfigForVersion(SemVer version, TenantIdentifier tenantIdentifier, boolean isV2) {
+    @TestOnly
+    public static TenantConfig createBaseConfigForVersionForTest(SemVer version, TenantIdentifier tenantIdentifier,
+                                                                 boolean isV2) {
+        return createBaseConfigForVersion(version, tenantIdentifier, isV2);
+    }
+
+    private static TenantConfig createBaseConfigForVersion(SemVer version, TenantIdentifier tenantIdentifier,
+                                                           boolean isV2) {
         if (!isV2) {
             // Deprecated API implementations
             if (version.greaterThanOrEqualTo(SemVer.v5_0)) {
@@ -189,7 +202,16 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
         }
     }
 
-    private TenantConfig applyTenantUpdates(
+    @TestOnly
+    public static TenantConfig applyTenantUpdatesForTest(
+            TenantConfig tenantConfig,
+            SemVer version,
+            boolean isV2,
+            JsonObject input) throws ServletException, InvalidConfigException {
+        return applyTenantUpdates(tenantConfig, version, isV2, input);
+    }
+
+    private static TenantConfig applyTenantUpdates(
             TenantConfig tenantConfig,
             SemVer version,
             boolean isV2,
@@ -212,7 +234,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
         return tenantConfig;
     }
 
-    private TenantConfig applyTenantUpdates_3_0(TenantConfig tenantConfig, JsonObject input) throws ServletException {
+    private static TenantConfig applyTenantUpdates_3_0(TenantConfig tenantConfig, JsonObject input) throws ServletException {
         Boolean emailPasswordEnabled = InputParser.parseBooleanOrThrowError(input, "emailPasswordEnabled", true);
         Boolean thirdPartyEnabled = InputParser.parseBooleanOrThrowError(input, "thirdPartyEnabled", true);
         Boolean passwordlessEnabled = InputParser.parseBooleanOrThrowError(input, "passwordlessEnabled", true);
@@ -220,7 +242,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
         Set<String> firstFactors = tenantConfig.firstFactors == null ? null : new HashSet<>(Set.of(tenantConfig.firstFactors));
 
         // Enabling recipes
-        if (Boolean.TRUE.equals(emailPasswordEnabled)) {
+        if (Boolean.TRUE.equals(emailPasswordEnabled) && !tenantConfig.emailPasswordConfig.isEnabledInLesserThanOrEqualTo4_0(tenantConfig.firstFactors)) {
             tenantConfig = new TenantConfig(
                     tenantConfig.tenantIdentifier,
                     new EmailPasswordConfig(true),
@@ -235,7 +257,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                 firstFactors.add("emailpassword");
             }
         }
-        if (Boolean.TRUE.equals(thirdPartyEnabled)) {
+        if (Boolean.TRUE.equals(thirdPartyEnabled) && !tenantConfig.thirdPartyConfig.isEnabledInLesserThanOrEqualTo4_0(tenantConfig.firstFactors)) {
             tenantConfig = new TenantConfig(
                     tenantConfig.tenantIdentifier,
                     tenantConfig.emailPasswordConfig,
@@ -250,7 +272,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                 firstFactors.add("thirdparty");
             }
         }
-        if (Boolean.TRUE.equals(passwordlessEnabled)) {
+        if (Boolean.TRUE.equals(passwordlessEnabled) && !tenantConfig.passwordlessConfig.isEnabledInLesserThanOrEqualTo4_0(tenantConfig.firstFactors)) {
             tenantConfig = new TenantConfig(
                     tenantConfig.tenantIdentifier,
                     tenantConfig.emailPasswordConfig,
@@ -284,43 +306,43 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
         }
 
         if (tenantConfig.emailPasswordConfig.enabled == false || Boolean.FALSE.equals(emailPasswordEnabled)) {
-            tenantConfig = new TenantConfig(
-                    tenantConfig.tenantIdentifier,
-                    new EmailPasswordConfig(false),
-                    tenantConfig.thirdPartyConfig,
-                    tenantConfig.passwordlessConfig,
-                    tenantConfig.firstFactors,
-                    tenantConfig.requiredSecondaryFactors,
-                    tenantConfig.coreConfig
-            );
+//            tenantConfig = new TenantConfig(
+//                    tenantConfig.tenantIdentifier,
+//                    new EmailPasswordConfig(false),
+//                    tenantConfig.thirdPartyConfig,
+//                    tenantConfig.passwordlessConfig,
+//                    tenantConfig.firstFactors,
+//                    tenantConfig.requiredSecondaryFactors,
+//                    tenantConfig.coreConfig
+//            );
 
             firstFactors.remove("emailpassword");
         }
 
         if (tenantConfig.thirdPartyConfig.enabled == false || Boolean.FALSE.equals(thirdPartyEnabled)) {
-            tenantConfig = new TenantConfig(
-                    tenantConfig.tenantIdentifier,
-                    tenantConfig.emailPasswordConfig,
-                    new ThirdPartyConfig(false, tenantConfig.thirdPartyConfig.providers),
-                    tenantConfig.passwordlessConfig,
-                    tenantConfig.firstFactors,
-                    tenantConfig.requiredSecondaryFactors,
-                    tenantConfig.coreConfig
-            );
+//            tenantConfig = new TenantConfig(
+//                    tenantConfig.tenantIdentifier,
+//                    tenantConfig.emailPasswordConfig,
+//                    new ThirdPartyConfig(tenantConfig.thirdPartyConfig.enabled, tenantConfig.thirdPartyConfig.providers),
+//                    tenantConfig.passwordlessConfig,
+//                    tenantConfig.firstFactors,
+//                    tenantConfig.requiredSecondaryFactors,
+//                    tenantConfig.coreConfig
+//            );
 
             firstFactors.remove("thirdparty");
         }
 
         if (tenantConfig.passwordlessConfig.enabled == false || Boolean.FALSE.equals(passwordlessEnabled)) {
-            tenantConfig = new TenantConfig(
-                    tenantConfig.tenantIdentifier,
-                    tenantConfig.emailPasswordConfig,
-                    tenantConfig.thirdPartyConfig,
-                    new PasswordlessConfig(false),
-                    tenantConfig.firstFactors,
-                    tenantConfig.requiredSecondaryFactors,
-                    tenantConfig.coreConfig
-            );
+//            tenantConfig = new TenantConfig(
+//                    tenantConfig.tenantIdentifier,
+//                    tenantConfig.emailPasswordConfig,
+//                    tenantConfig.thirdPartyConfig,
+//                    new PasswordlessConfig(false),
+//                    tenantConfig.firstFactors,
+//                    tenantConfig.requiredSecondaryFactors,
+//                    tenantConfig.coreConfig
+//            );
 
             firstFactors.remove("otp-phone");
             firstFactors.remove("otp-email");
@@ -342,7 +364,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
         return tenantConfig;
     }
 
-    private TenantConfig applyTenantUpdates_5_0(TenantConfig tenantConfig, JsonObject input)
+    private static TenantConfig applyTenantUpdates_5_0(TenantConfig tenantConfig, JsonObject input)
             throws ServletException, InvalidConfigException {
         Boolean emailPasswordEnabled = InputParser.parseBooleanOrThrowError(input, "emailPasswordEnabled", true);
         Boolean thirdPartyEnabled = InputParser.parseBooleanOrThrowError(input, "thirdPartyEnabled", true);
@@ -356,15 +378,18 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
             JsonArray firstFactorsArr = InputParser.parseArrayOrThrowError(input, "firstFactors", true);
             firstFactors = new String[firstFactorsArr.size()];
             for (int i = 0; i < firstFactors.length; i++) {
-                firstFactors[i] = InputParser.parseStringFromElementOrThrowError(firstFactorsArr.get(i), "firstFactors", false);
+                firstFactors[i] = InputParser.parseStringFromElementOrThrowError(firstFactorsArr.get(i), "firstFactors",
+                        false);
             }
             if (firstFactors.length != new HashSet<>(Arrays.asList(firstFactors)).size()) {
-                throw new ServletException(new BadRequestException("firstFactors input should not contain duplicate values"));
+                throw new ServletException(
+                        new BadRequestException("firstFactors input should not contain duplicate values"));
             }
         }
 
         if (hasFirstFactors && firstFactors != null && firstFactors.length == 0) {
-            throw new ServletException(new BadRequestException("firstFactors cannot be empty. Set null instead to remove all first factors."));
+            throw new ServletException(new BadRequestException(
+                    "firstFactors cannot be empty. Set null instead to remove all first factors."));
         }
 
         // required secondary factors
@@ -372,18 +397,22 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
         boolean hasRequiredSecondaryFactors;
         hasRequiredSecondaryFactors = input.has("requiredSecondaryFactors");
         if (hasRequiredSecondaryFactors && !input.get("requiredSecondaryFactors").isJsonNull()) {
-            JsonArray requiredSecondaryFactorsArr = InputParser.parseArrayOrThrowError(input, "requiredSecondaryFactors", true);
+            JsonArray requiredSecondaryFactorsArr = InputParser.parseArrayOrThrowError(input,
+                    "requiredSecondaryFactors", true);
             requiredSecondaryFactors = new String[requiredSecondaryFactorsArr.size()];
             for (int i = 0; i < requiredSecondaryFactors.length; i++) {
-                requiredSecondaryFactors[i] = InputParser.parseStringFromElementOrThrowError(requiredSecondaryFactorsArr.get(i), "requiredSecondaryFactors", false);
+                requiredSecondaryFactors[i] = InputParser.parseStringFromElementOrThrowError(
+                        requiredSecondaryFactorsArr.get(i), "requiredSecondaryFactors", false);
             }
             if (requiredSecondaryFactors.length != new HashSet<>(Arrays.asList(requiredSecondaryFactors)).size()) {
-                throw new ServletException(new BadRequestException("requiredSecondaryFactors input should not contain duplicate values"));
+                throw new ServletException(
+                        new BadRequestException("requiredSecondaryFactors input should not contain duplicate values"));
             }
         }
 
         if (hasRequiredSecondaryFactors && requiredSecondaryFactors != null && requiredSecondaryFactors.length == 0) {
-            throw new ServletException(new BadRequestException("requiredSecondaryFactors cannot be empty. Set null instead to remove all required secondary factors."));
+            throw new ServletException(new BadRequestException(
+                    "requiredSecondaryFactors cannot be empty. Set null instead to remove all required secondary factors."));
         }
 
         // check for conflicting updates
@@ -434,190 +463,423 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
 
         // All validation done, continuing with updates
 
-        Set<String> updatedFirstFactors = tenantConfig.firstFactors == null ? null : new HashSet<>(Set.of(tenantConfig.firstFactors));
-
-        if (hasFirstFactors) {
-            updatedFirstFactors = firstFactors == null ? null : new HashSet<>(Set.of(firstFactors));
-        }
-
-        // While updating requiredSecondaryFactors, we might need to enable certain recipes automatically.
-        // but we don't want to affect first factors while doing so. So, if the firstFactors was null to begin with,
-        // we will determine the set of firstFactors based on current set of boolean states.
-        if (updatedFirstFactors == null && hasRequiredSecondaryFactors && requiredSecondaryFactors != null) {
-            if (tenantConfig.requiredSecondaryFactors != null && Set.of(List.of(tenantConfig.requiredSecondaryFactors)).equals(Set.of(List.of(requiredSecondaryFactors)))) {
-                // no change in requiredSecondaryFactors, so no need to update firstFactors
-            } else {
-                updatedFirstFactors = new HashSet<>();
-                if (Boolean.TRUE.equals(emailPasswordEnabled)) {
-                    updatedFirstFactors.add("emailpassword");
-                }
-                if (Boolean.TRUE.equals(thirdPartyEnabled)) {
-                    updatedFirstFactors.add("thirdparty");
-                }
-                if (Boolean.TRUE.equals(passwordlessEnabled)) {
-                    updatedFirstFactors.add("otp-phone");
-                    updatedFirstFactors.add("otp-email");
-                    updatedFirstFactors.add("link-phone");
-                    updatedFirstFactors.add("link-email");
-                }
-                if (updatedFirstFactors.size() == 6) {
-                    updatedFirstFactors = null; // everything is on
-                }
+        if (Boolean.FALSE.equals(emailPasswordEnabled)) {
+            if (hasFirstFactors && firstFactors != null && List.of(firstFactors).contains("emailpassword")) {
+                throw new InvalidConfigException(
+                        "firstFactors should not contain 'emailpassword' because emailPassword is disabled for the tenant.");
+            }
+            if (hasRequiredSecondaryFactors && requiredSecondaryFactors != null &&
+                    List.of(requiredSecondaryFactors).contains("emailpassword")) {
+                throw new InvalidConfigException(
+                        "requiredSecondaryFactors should not contain 'emailpassword' because emailPassword is disabled for the tenant.");
             }
         }
 
-        Set<String> updatedRequiredSecondaryFactors = tenantConfig.requiredSecondaryFactors == null ? null : new HashSet<>(Set.of(tenantConfig.requiredSecondaryFactors));
-        if (hasRequiredSecondaryFactors) {
-            updatedRequiredSecondaryFactors = requiredSecondaryFactors == null ? null :
-                    new HashSet<>(Set.of(requiredSecondaryFactors));
+        if (Boolean.FALSE.equals(thirdPartyEnabled)) {
+            if (hasFirstFactors && firstFactors != null && List.of(firstFactors).contains("thirdparty")) {
+                throw new InvalidConfigException(
+                        "firstFactors should not contain 'thirdparty' because thirdParty is disabled for the tenant.");
+            }
+            if (hasRequiredSecondaryFactors && requiredSecondaryFactors != null &&
+                    List.of(requiredSecondaryFactors).contains("thirdparty")) {
+                throw new InvalidConfigException(
+                        "requiredSecondaryFactors should not contain 'thirdparty' because thirdParty is disabled for the tenant.");
+            }
         }
 
-        // Enabling recipes from booleans
+        if (Boolean.FALSE.equals(passwordlessEnabled)) {
+            if (hasFirstFactors && firstFactors != null && List.of(firstFactors).contains("otp-phone")) {
+                throw new InvalidConfigException(
+                        "firstFactors should not contain 'otp-phone' because passwordless is disabled for the tenant.");
+            }
+            if (hasFirstFactors && firstFactors != null && List.of(firstFactors).contains("otp-email")) {
+                throw new InvalidConfigException(
+                        "firstFactors should not contain 'otp-email' because passwordless is disabled for the tenant.");
+            }
+            if (hasFirstFactors && firstFactors != null && List.of(firstFactors).contains("link-phone")) {
+                throw new InvalidConfigException(
+                        "firstFactors should not contain 'link-phone' because passwordless is disabled for the tenant.");
+            }
+            if (hasFirstFactors && firstFactors != null && List.of(firstFactors).contains("link-email")) {
+                throw new InvalidConfigException(
+                        "firstFactors should not contain 'link-email' because passwordless is disabled for the tenant.");
+            }
+            if (hasRequiredSecondaryFactors && requiredSecondaryFactors != null &&
+                    List.of(requiredSecondaryFactors).contains("otp-phone")) {
+                throw new InvalidConfigException(
+                        "requiredSecondaryFactors should not contain 'otp-phone' because passwordless is disabled for the tenant.");
+            }
+            if (hasRequiredSecondaryFactors && requiredSecondaryFactors != null &&
+                    List.of(requiredSecondaryFactors).contains("otp-email")) {
+                throw new InvalidConfigException(
+                        "requiredSecondaryFactors should not contain 'otp-email' because passwordless is disabled for the tenant.");
+            }
+            if (hasRequiredSecondaryFactors && requiredSecondaryFactors != null &&
+                    List.of(requiredSecondaryFactors).contains("link-phone")) {
+                throw new InvalidConfigException(
+                        "requiredSecondaryFactors should not contain 'link-phone' because passwordless is disabled for the tenant.");
+            }
+            if (hasRequiredSecondaryFactors && requiredSecondaryFactors != null &&
+                    List.of(requiredSecondaryFactors).contains("link-email")) {
+                throw new InvalidConfigException(
+                        "requiredSecondaryFactors should not contain 'link-email' because passwordless is disabled for the tenant.");
+            }
+        }
 
-        // but before that, check if we are going to enable any of the recipe, if firstFactors is [], we convert that
-        // state into null and set all recipes enabled to false in the booleans. This ensures that the recipe gets
-        // gets enabled for both first and secondary factors
-        if (updatedFirstFactors != null && updatedFirstFactors.size() == 0) {
-            if (Boolean.TRUE.equals(emailPasswordEnabled) || Boolean.TRUE.equals(thirdPartyEnabled) || Boolean.TRUE.equals(passwordlessEnabled)) {
-                updatedFirstFactors = null;
+        List<String> updateKeys = new ArrayList<>();
+        List<Object> updateValues = new ArrayList<>();
+
+        if ((Boolean.TRUE.equals(emailPasswordEnabled) && !tenantConfig.emailPasswordConfig.isEnabledIn5_0(tenantConfig.firstFactors)) ||
+                (Boolean.TRUE.equals(thirdPartyEnabled) && !tenantConfig.thirdPartyConfig.isEnabledIn5_0(tenantConfig.firstFactors)) ||
+                (Boolean.TRUE.equals(passwordlessEnabled) && !tenantConfig.passwordlessConfig.isEnabledIn5_0(tenantConfig.firstFactors))
+        ) {
+            if (tenantConfig.firstFactors != null && tenantConfig.firstFactors.length == 0) {
                 tenantConfig = new TenantConfig(
                         tenantConfig.tenantIdentifier,
                         new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, tenantConfig.thirdPartyConfig.providers),
                         new PasswordlessConfig(false),
                         null,
-                        null,
+                        tenantConfig.requiredSecondaryFactors,
                         tenantConfig.coreConfig
                 );
             }
         }
 
-        // now enabling booleans as per input
         if (Boolean.TRUE.equals(emailPasswordEnabled)) {
-            tenantConfig = new TenantConfig(
-                    tenantConfig.tenantIdentifier,
-                    new EmailPasswordConfig(true),
-                    tenantConfig.thirdPartyConfig,
-                    tenantConfig.passwordlessConfig,
-                    tenantConfig.firstFactors,
-                    tenantConfig.requiredSecondaryFactors,
-                    tenantConfig.coreConfig
-            );
+            updateKeys.add("emailPasswordEnabled");
+            updateValues.add(true);
         }
 
         if (Boolean.TRUE.equals(thirdPartyEnabled)) {
-            tenantConfig = new TenantConfig(
-                    tenantConfig.tenantIdentifier,
-                    tenantConfig.emailPasswordConfig,
-                    new ThirdPartyConfig(true, tenantConfig.thirdPartyConfig.providers),
-                    tenantConfig.passwordlessConfig,
-                    tenantConfig.firstFactors,
-                    tenantConfig.requiredSecondaryFactors,
-                    tenantConfig.coreConfig
-            );
+            updateKeys.add("thirdPartyEnabled");
+            updateValues.add(true);
         }
 
         if (Boolean.TRUE.equals(passwordlessEnabled)) {
-            tenantConfig = new TenantConfig(
-                    tenantConfig.tenantIdentifier,
-                    tenantConfig.emailPasswordConfig,
-                    tenantConfig.thirdPartyConfig,
-                    new PasswordlessConfig(true),
-                    tenantConfig.firstFactors,
-                    tenantConfig.requiredSecondaryFactors,
-                    tenantConfig.coreConfig
-            );
+            updateKeys.add("passwordlessEnabled");
+            updateValues.add(true);
         }
 
-        // Disabling recipes
-        boolean disabledARecipe = false;
         if (Boolean.FALSE.equals(emailPasswordEnabled)) {
-            tenantConfig = new TenantConfig(
-                    tenantConfig.tenantIdentifier,
-                    new EmailPasswordConfig(false),
-                    tenantConfig.thirdPartyConfig,
-                    tenantConfig.passwordlessConfig,
-                    tenantConfig.firstFactors,
-                    tenantConfig.requiredSecondaryFactors,
-                    tenantConfig.coreConfig
-            );
-            disabledARecipe = true;
+            updateKeys.add("emailPasswordEnabled");
+            updateValues.add(false);
         }
 
         if (Boolean.FALSE.equals(thirdPartyEnabled)) {
-            tenantConfig = new TenantConfig(
-                    tenantConfig.tenantIdentifier,
-                    tenantConfig.emailPasswordConfig,
-                    new ThirdPartyConfig(false, tenantConfig.thirdPartyConfig.providers),
-                    tenantConfig.passwordlessConfig,
-                    tenantConfig.firstFactors,
-                    tenantConfig.requiredSecondaryFactors,
-                    tenantConfig.coreConfig
-            );
-            disabledARecipe = true;
+            updateKeys.add("thirdPartyEnabled");
+            updateValues.add(false);
         }
 
         if (Boolean.FALSE.equals(passwordlessEnabled)) {
-            tenantConfig = new TenantConfig(
-                    tenantConfig.tenantIdentifier,
-                    tenantConfig.emailPasswordConfig,
-                    tenantConfig.thirdPartyConfig,
-                    new PasswordlessConfig(false),
-                    tenantConfig.firstFactors,
-                    tenantConfig.requiredSecondaryFactors,
-                    tenantConfig.coreConfig
-            );
-            disabledARecipe = true;
+            updateKeys.add("passwordlessEnabled");
+            updateValues.add(false);
         }
 
-        if (disabledARecipe) {
-            if (Boolean.FALSE.equals(emailPasswordEnabled)) {
-                if (updatedFirstFactors != null) {
-                    updatedFirstFactors.remove("emailpassword");
+        if (Boolean.FALSE.equals(emailPasswordEnabled) || Boolean.FALSE.equals(thirdPartyEnabled) || Boolean.FALSE.equals(passwordlessEnabled)) {
+            if (tenantConfig.firstFactors != null && !hasFirstFactors) {
+                Set<String> firstFactorsSet = new HashSet<>(Set.of(tenantConfig.firstFactors));
+
+                if (Boolean.FALSE.equals(emailPasswordEnabled)) {
+                    firstFactorsSet.remove("emailpassword");
                 }
-                if (updatedRequiredSecondaryFactors != null) {
-                    updatedRequiredSecondaryFactors.remove("emailpassword");
+
+                if (Boolean.FALSE.equals(thirdPartyEnabled)) {
+                    firstFactorsSet.remove("thirdparty");
+                }
+
+                if (Boolean.FALSE.equals(passwordlessEnabled)) {
+                    firstFactorsSet.remove("otp-phone");
+                    firstFactorsSet.remove("otp-email");
+                    firstFactorsSet.remove("link-phone");
+                    firstFactorsSet.remove("link-email");
+                }
+
+                if (!Set.of(tenantConfig.firstFactors).equals(firstFactorsSet)) {
+                    updateKeys.add("firstFactors");
+                    updateValues.add(firstFactorsSet.toArray(new String[0]));
                 }
             }
-            if (Boolean.FALSE.equals(thirdPartyEnabled)) {
-                if (updatedFirstFactors != null) {
-                    updatedFirstFactors.remove("thirdparty");
+
+            if (!hasRequiredSecondaryFactors && tenantConfig.requiredSecondaryFactors != null) {
+                Set<String> requiredSecondaryFactorsSet = new HashSet<>(Set.of(tenantConfig.requiredSecondaryFactors));
+
+                if (Boolean.FALSE.equals(emailPasswordEnabled)) {
+                    requiredSecondaryFactorsSet.remove("emailpassword");
                 }
-                if (updatedRequiredSecondaryFactors != null) {
-                    updatedRequiredSecondaryFactors.remove("thirdparty");
+
+                if (Boolean.FALSE.equals(thirdPartyEnabled)) {
+                    requiredSecondaryFactorsSet.remove("thirdparty");
                 }
-            }
-            if (Boolean.FALSE.equals(passwordlessEnabled)) {
-                if (updatedFirstFactors != null) {
-                    updatedFirstFactors.remove("otp-phone");
-                    updatedFirstFactors.remove("otp-email");
-                    updatedFirstFactors.remove("link-phone");
-                    updatedFirstFactors.remove("link-email");
+
+                if (Boolean.FALSE.equals(passwordlessEnabled)) {
+                    requiredSecondaryFactorsSet.remove("otp-phone");
+                    requiredSecondaryFactorsSet.remove("otp-email");
+                    requiredSecondaryFactorsSet.remove("link-phone");
+                    requiredSecondaryFactorsSet.remove("link-email");
                 }
-                if (updatedRequiredSecondaryFactors != null) {
-                    updatedRequiredSecondaryFactors.remove("otp-phone");
-                    updatedRequiredSecondaryFactors.remove("otp-email");
-                    updatedRequiredSecondaryFactors.remove("link-phone");
-                    updatedRequiredSecondaryFactors.remove("link-email");
+
+                if (!Set.of(tenantConfig.requiredSecondaryFactors).equals(requiredSecondaryFactorsSet)) {
+                    updateKeys.add("requiredSecondaryFactors");
+                    updateValues.add(requiredSecondaryFactorsSet.toArray(new String[0]));
                 }
             }
         }
 
-        // finally, set the updated first factors and required secondary factors
-        tenantConfig = new TenantConfig(
-                tenantConfig.tenantIdentifier,
-                tenantConfig.emailPasswordConfig,
-                tenantConfig.thirdPartyConfig,
-                tenantConfig.passwordlessConfig,
-                updatedFirstFactors == null ? null : updatedFirstFactors.toArray(new String[0]),
-                updatedRequiredSecondaryFactors == null ? null : updatedRequiredSecondaryFactors.toArray(new String[0]),
-                tenantConfig.coreConfig
-        );
+        if (hasFirstFactors) {
+            if (firstFactors == null) {
+                updateKeys.add("firstFactors");
+                updateValues.add(null);
+            } else {
+                updateKeys.add("firstFactors");
+                updateValues.add(firstFactors);
+
+                for (String factor : firstFactors) {
+                    if (factor.equals("emailpassword") && !tenantConfig.emailPasswordConfig.isEnabledIn5_0(tenantConfig.firstFactors)) {
+                        updateKeys.add("emailPasswordEnabled");
+                        updateValues.add(true);
+                    }
+                    if (factor.equals("thirdparty") && !tenantConfig.thirdPartyConfig.isEnabledIn5_0(tenantConfig.firstFactors)) {
+                        updateKeys.add("thirdPartyEnabled");
+                        updateValues.add(true);
+                    }
+                    if ((factor.equals("otp-phone") || factor.equals("otp-email") || factor.equals("link-phone") || factor.equals("link-email")) &&
+                            !tenantConfig.passwordlessConfig.isEnabledIn5_0(tenantConfig.firstFactors)) {
+                        updateKeys.add("passwordlessEnabled");
+                        updateValues.add(true);
+                    }
+                }
+            }
+        }
+
+        if (hasRequiredSecondaryFactors) {
+            if (requiredSecondaryFactors == null) {
+                updateKeys.add("requiredSecondaryFactors");
+                updateValues.add(null);
+            } else {
+                updateKeys.add("requiredSecondaryFactors");
+                updateValues.add(requiredSecondaryFactors);
+
+                for (String factor : requiredSecondaryFactors) {
+                    boolean enablingSomeRecipe = false;
+                    if (factor.equals("emailpassword") && !tenantConfig.emailPasswordConfig.isEnabledIn5_0(tenantConfig.firstFactors)) {
+                        updateKeys.add("emailPasswordEnabled");
+                        updateValues.add(true);
+                        if (!Boolean.TRUE.equals(emailPasswordEnabled)) {
+                            enablingSomeRecipe = true;
+                        }
+                    }
+                    if (factor.equals("thirdparty") && !tenantConfig.thirdPartyConfig.isEnabledIn5_0(tenantConfig.firstFactors)) {
+                        updateKeys.add("thirdPartyEnabled");
+                        updateValues.add(true);
+                        if (!Boolean.TRUE.equals(thirdPartyEnabled)) {
+                            enablingSomeRecipe = true;
+                        }
+                    }
+                    if ((factor.equals("otp-phone") || factor.equals("otp-email") || factor.equals("link-phone") || factor.equals("link-email")) &&
+                            !tenantConfig.passwordlessConfig.isEnabledIn5_0(tenantConfig.firstFactors)) {
+                        updateKeys.add("passwordlessEnabled");
+                        updateValues.add(true);
+                        if (!Boolean.TRUE.equals(passwordlessEnabled)) {
+                            enablingSomeRecipe = true;
+                        }
+                    }
+
+                    if (!hasFirstFactors && enablingSomeRecipe == true && tenantConfig.firstFactors == null) {
+                        Set<String> firstFactorsSet = new HashSet<>();
+
+                        if ((tenantConfig.emailPasswordConfig.enabled || Boolean.TRUE.equals(emailPasswordEnabled)) && !Boolean.FALSE.equals(emailPasswordEnabled)) {
+                            firstFactorsSet.add("emailpassword");
+                        }
+                        if ((tenantConfig.thirdPartyConfig.enabled || Boolean.TRUE.equals(thirdPartyEnabled)) && !Boolean.FALSE.equals(thirdPartyEnabled)) {
+                            firstFactorsSet.add("thirdparty");
+                        }
+                        if ((tenantConfig.passwordlessConfig.enabled || Boolean.TRUE.equals(passwordlessEnabled)) && !Boolean.FALSE.equals(passwordlessEnabled)) {
+                            firstFactorsSet.add("otp-phone");
+                            firstFactorsSet.add("otp-email");
+                            firstFactorsSet.add("link-phone");
+                            firstFactorsSet.add("link-email");
+                        }
+
+                        if (firstFactorsSet.size() < 6) {
+                            updateKeys.add("firstFactors");
+                            updateValues.add(firstFactorsSet.toArray(new String[0]));
+                        }
+                    }
+                }
+            }
+        }
+
+        // Check for conflicting updates
+        Map<String, Object> finalUpdates = new HashMap<>();
+        for (int idx = 0; idx < updateKeys.size(); idx++) {
+            String key = updateKeys.get(idx);
+            Object value = updateValues.get(idx);
+
+            if (!finalUpdates.containsKey(key)) {
+                finalUpdates.put(key, value);
+                continue;
+            }
+
+            if (key.equals("firstFactors") || key.equals("requiredSecondaryFactors")) {
+                if (value == null || finalUpdates.get(key) == null) {
+                    if (Objects.equals(value, finalUpdates.get(key))) {
+                        continue;
+                    } else {
+                        throw new IllegalStateException("should never come here");
+                    }
+                }
+                Set<String> existingSet = new HashSet<>(Arrays.asList((String[]) finalUpdates.get(key)));
+                Set<String> newSet = new HashSet<>(Arrays.asList((String[]) value));
+
+                if (existingSet.equals(newSet)) {
+                    continue;
+                }
+
+                throw new IllegalStateException("should never come here");
+            } else {
+                if (!finalUpdates.get(key).equals(value)) {
+                    throw new IllegalStateException("should never come here");
+                }
+            }
+        }
+
+        // Apply the updates
+        for (Map.Entry keyValue : finalUpdates.entrySet()) {
+            if (keyValue.getKey().equals("emailPasswordEnabled")) {
+                tenantConfig = new TenantConfig(
+                        tenantConfig.tenantIdentifier,
+                        new EmailPasswordConfig((Boolean) keyValue.getValue()),
+                        tenantConfig.thirdPartyConfig,
+                        tenantConfig.passwordlessConfig,
+                        tenantConfig.firstFactors,
+                        tenantConfig.requiredSecondaryFactors,
+                        tenantConfig.coreConfig
+                );
+            } else if (keyValue.getKey().equals("thirdPartyEnabled")) {
+                tenantConfig = new TenantConfig(
+                        tenantConfig.tenantIdentifier,
+                        tenantConfig.emailPasswordConfig,
+                        new ThirdPartyConfig((Boolean) keyValue.getValue(), tenantConfig.thirdPartyConfig.providers),
+                        tenantConfig.passwordlessConfig,
+                        tenantConfig.firstFactors,
+                        tenantConfig.requiredSecondaryFactors,
+                        tenantConfig.coreConfig
+                );
+            } else if (keyValue.getKey().equals("passwordlessEnabled")) {
+                tenantConfig = new TenantConfig(
+                        tenantConfig.tenantIdentifier,
+                        tenantConfig.emailPasswordConfig,
+                        tenantConfig.thirdPartyConfig,
+                        new PasswordlessConfig((Boolean) keyValue.getValue()),
+                        tenantConfig.firstFactors,
+                        tenantConfig.requiredSecondaryFactors,
+                        tenantConfig.coreConfig
+                );
+            } else if (keyValue.getKey().equals("firstFactors")) {
+                tenantConfig = new TenantConfig(
+                        tenantConfig.tenantIdentifier,
+                        tenantConfig.emailPasswordConfig,
+                        tenantConfig.thirdPartyConfig,
+                        tenantConfig.passwordlessConfig,
+                        (String[]) keyValue.getValue(),
+                        tenantConfig.requiredSecondaryFactors,
+                        tenantConfig.coreConfig
+                );
+            } else if (keyValue.getKey().equals("requiredSecondaryFactors")) {
+                tenantConfig = new TenantConfig(
+                        tenantConfig.tenantIdentifier,
+                        tenantConfig.emailPasswordConfig,
+                        tenantConfig.thirdPartyConfig,
+                        tenantConfig.passwordlessConfig,
+                        tenantConfig.firstFactors,
+                        (String[]) keyValue.getValue(),
+                        tenantConfig.coreConfig
+                );
+            }
+        }
+
+        // if firstFactors or requiredSecondaryFactors are set, make sure
+        // appropriate recipes are enabled
+        if (tenantConfig.firstFactors != null) {
+            for (String factor: tenantConfig.firstFactors) {
+                if (factor.equals("emailpassword")) {
+                    tenantConfig = new TenantConfig(
+                            tenantConfig.tenantIdentifier,
+                            new EmailPasswordConfig(true),
+                            tenantConfig.thirdPartyConfig,
+                            tenantConfig.passwordlessConfig,
+                            tenantConfig.firstFactors,
+                            tenantConfig.requiredSecondaryFactors,
+                            tenantConfig.coreConfig
+                    );
+                }
+                if (factor.equals("thirdparty")) {
+                    tenantConfig = new TenantConfig(
+                            tenantConfig.tenantIdentifier,
+                            tenantConfig.emailPasswordConfig,
+                            new ThirdPartyConfig(true, tenantConfig.thirdPartyConfig.providers),
+                            tenantConfig.passwordlessConfig,
+                            tenantConfig.firstFactors,
+                            tenantConfig.requiredSecondaryFactors,
+                            tenantConfig.coreConfig
+                    );
+                }
+                if (factor.equals("otp-phone") || factor.equals("otp-email") || factor.equals("link-phone") || factor.equals("link-email")) {
+                    tenantConfig = new TenantConfig(
+                            tenantConfig.tenantIdentifier,
+                            tenantConfig.emailPasswordConfig,
+                            tenantConfig.thirdPartyConfig,
+                            new PasswordlessConfig(true),
+                            tenantConfig.firstFactors,
+                            tenantConfig.requiredSecondaryFactors,
+                            tenantConfig.coreConfig
+                    );
+                }
+            }
+        }
+        if (tenantConfig.requiredSecondaryFactors != null) {
+            for (String factor: tenantConfig.requiredSecondaryFactors) {
+                if (factor.equals("emailpassword")) {
+                    tenantConfig = new TenantConfig(
+                            tenantConfig.tenantIdentifier,
+                            new EmailPasswordConfig(true),
+                            tenantConfig.thirdPartyConfig,
+                            tenantConfig.passwordlessConfig,
+                            tenantConfig.firstFactors,
+                            tenantConfig.requiredSecondaryFactors,
+                            tenantConfig.coreConfig
+                    );
+                }
+                if (factor.equals("thirdparty")) {
+                    tenantConfig = new TenantConfig(
+                            tenantConfig.tenantIdentifier,
+                            tenantConfig.emailPasswordConfig,
+                            new ThirdPartyConfig(true, tenantConfig.thirdPartyConfig.providers),
+                            tenantConfig.passwordlessConfig,
+                            tenantConfig.firstFactors,
+                            tenantConfig.requiredSecondaryFactors,
+                            tenantConfig.coreConfig
+                    );
+                }
+                if (factor.equals("otp-phone") || factor.equals("otp-email") || factor.equals("link-phone") || factor.equals("link-email")) {
+                    tenantConfig = new TenantConfig(
+                            tenantConfig.tenantIdentifier,
+                            tenantConfig.emailPasswordConfig,
+                            tenantConfig.thirdPartyConfig,
+                            new PasswordlessConfig(true),
+                            tenantConfig.firstFactors,
+                            tenantConfig.requiredSecondaryFactors,
+                            tenantConfig.coreConfig
+                    );
+                }
+            }
+        }
 
         return tenantConfig;
     }
 
-    private TenantConfig applyV2TenantUpdates_5_1(TenantConfig tenantConfig, JsonObject input) throws ServletException {
+    private static TenantConfig applyV2TenantUpdates_5_1(TenantConfig tenantConfig, JsonObject input) throws ServletException {
         if (input.has("emailPasswordEnabled")) {
             throw new ServletException(new BadRequestException("emailPasswordEnabled is not a valid input for this API"));
         }
@@ -658,10 +920,6 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
             }
         }
 
-        if (hasRequiredSecondaryFactors && requiredSecondaryFactors != null && requiredSecondaryFactors.length == 0) {
-            throw new ServletException(new BadRequestException("requiredSecondaryFactors cannot be empty. Set null instead to remove all required secondary factors."));
-        }
-
         if (hasFirstFactors || hasRequiredSecondaryFactors) {
             // in v2, we like to have all booleans enabled. So, if the firstFactors is null, we apply the existing
             // boolean states on to the first factors
@@ -698,7 +956,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                         new ThirdPartyConfig(true, tenantConfig.thirdPartyConfig.providers),
                         new PasswordlessConfig(true),
                         tenantConfig.firstFactors,
-                        requiredSecondaryFactors,
+                        tenantConfig.requiredSecondaryFactors,
                         tenantConfig.coreConfig
                 );
             }

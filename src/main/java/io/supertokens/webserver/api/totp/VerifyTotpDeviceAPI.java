@@ -50,9 +50,6 @@ public class VerifyTotpDeviceAPI extends WebserverAPI {
         if (deviceName.isEmpty()) {
             throw new ServletException(new BadRequestException("deviceName cannot be empty"));
         }
-        if (totp.length() > 8) {
-            throw new ServletException(new BadRequestException("totp cannot be longer than 8 characters"));
-        }
 
         JsonObject result = new JsonObject();
 
