@@ -199,12 +199,15 @@ public class SigningKeys extends ResourceDistributor.SingletonResource {
             UnsupportedJWTSigningAlgorithmException {
         CoreConfig config = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main);
 
+        List<KeyInfo> dynamicKeys = getDynamicKeys();
+        KeyInfo latest = dynamicKeys.get(0);
+
         long timeLeftForNewKeyCreation = (
-                getLatestIssuedDynamicKey().createdAtTime
+                latest.createdAtTime
                         + config.getAccessTokenDynamicSigningKeyUpdateInterval()
                         - AccessTokenSigningKey.getInstance(appIdentifier, main).getDynamicSigningKeyOverlapMS()
                         - System.currentTimeMillis()) / 1000;
-        return Math.max(timeLeftForNewKeyCreation, 0);
+        return Math.max(timeLeftForNewKeyCreation, 1); // minimum 1 second of cache
     }
 
     public long getDynamicSigningKeyExpiryTime()
