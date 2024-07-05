@@ -116,7 +116,7 @@ public class RefreshToken {
         String token = encryptedPayload + "." + nonce + "." + TYPE.FREE_OPTIMISED.toString();
         long now = System.currentTimeMillis();
         return new TokenInfo(token,
-                now + Config.getConfig(tenantIdentifier, main).getRefreshTokenValidity(),
+                now + Config.getConfig(tenantIdentifier, main).getRefreshTokenValidityInMillis(),
                 now);
     }
 

@@ -131,7 +131,7 @@ public class RefreshTokenTest {
         assertSame(infoFromToken.type, TYPE.FREE_OPTIMISED);
         // -5000 for some grace period for creation and checking above
         assertTrue(tokenInfo.expiry > System.currentTimeMillis()
-                + Config.getConfig(process.getProcess()).getRefreshTokenValidity() - 5000);
+                + Config.getConfig(process.getProcess()).getRefreshTokenValidityInMillis() - 5000);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));

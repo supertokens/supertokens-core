@@ -150,7 +150,7 @@ public class VerifySessionAPITest3_0 {
         assert issued.isBefore(Instant.now().plusMillis(1500));
 
         Instant expires = decodedJWT.getExpiresAtAsInstant();
-        long validityInMS = Config.getConfig(process.getProcess()).getAccessTokenValidity();
+        long validityInMS = Config.getConfig(process.getProcess()).getAccessTokenValidityInMillis();
 
         assert expires.isAfter(Instant.now().plusMillis(validityInMS).minusMillis(1500));
         assert expires.isBefore(Instant.now().plusMillis(validityInMS).plusMillis(1500));
@@ -240,7 +240,7 @@ public class VerifySessionAPITest3_0 {
         assert issued.isBefore(Instant.now().plusMillis(1500));
 
         Instant expires = decodedJWT.getExpiresAtAsInstant();
-        long validityInMS = Config.getConfig(process.getProcess()).getAccessTokenValidity();
+        long validityInMS = Config.getConfig(process.getProcess()).getAccessTokenValidityInMillis();
 
         assert expires.isAfter(Instant.now().plusMillis(validityInMS).minusMillis(1500));
         assert expires.isBefore(Instant.now().plusMillis(validityInMS).plusMillis(1500));

@@ -55,7 +55,7 @@ public class ConfigTest2_21 {
 
         CoreConfig config = Config.getConfig(process.getProcess());
 
-        long refreshValidity = config.getAccessTokenDynamicSigningKeyUpdateInterval();
+        long refreshValidity = config.getAccessTokenDynamicSigningKeyUpdateIntervalInMillis();
 
         Assert.assertEquals(refreshValidity, 2 * 60 * 60 * 1000);
 
@@ -77,7 +77,7 @@ public class ConfigTest2_21 {
 
         CoreConfig config = Config.getConfig(process.getProcess());
 
-        long refreshValidity = config.getAccessTokenDynamicSigningKeyUpdateInterval();
+        long refreshValidity = config.getAccessTokenDynamicSigningKeyUpdateIntervalInMillis();
 
         Assert.assertEquals(refreshValidity, 2 * 60 * 60 * 1000);
 

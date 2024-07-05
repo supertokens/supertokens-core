@@ -89,7 +89,7 @@ public class ConfigTest {
 
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LOADING_ALL_TENANT_CONFIG));
 
-        Assert.assertEquals(Config.getConfig(process.getProcess()).getRefreshTokenValidity(),
+        Assert.assertEquals(Config.getConfig(process.getProcess()).getRefreshTokenValidityInMillis(),
                 (long) 144001 * 60 * 1000);
         Assert.assertEquals(Config.getConfig(process.getProcess()).getAccessTokenSigningKeyDynamic(),
                 false);
@@ -159,7 +159,7 @@ public class ConfigTest {
                         new PasswordlessConfig(false),
                         null, null, tenantConfig)}, new ArrayList<>());
 
-        Assert.assertEquals(Config.getConfig(process.getProcess()).getRefreshTokenValidity(),
+        Assert.assertEquals(Config.getConfig(process.getProcess()).getRefreshTokenValidityInMillis(),
                 (long) 144001 * 60 * 1000);
         Assert.assertEquals(Config.getConfig(process.getProcess()).getPasswordResetTokenLifetime(),
                 3600000);
@@ -169,7 +169,7 @@ public class ConfigTest {
                 false);
 
         Assert.assertEquals(Config.getConfig(new TenantIdentifier("abc", null, null), process.getProcess())
-                        .getRefreshTokenValidity(),
+                        .getRefreshTokenValidityInMillis(),
                 (long) 144002 * 60 * 1000);
         Assert.assertEquals(Config.getConfig(new TenantIdentifier("abc", null, null), process.getProcess())
                         .getPasswordResetTokenLifetime(),
