@@ -459,7 +459,8 @@ public class Session {
             while (true) {
                 try {
 
-                    io.supertokens.pluginInterface.session.noSqlStorage.SessionInfoWithLastUpdated sessionInfo = sessionStorage
+                    io.supertokens.pluginInterface.session.noSqlStorage.SessionInfoWithLastUpdated sessionInfo =
+                            sessionStorage
                             .getSessionInfo_Transaction(accessToken.sessionHandle);
 
                     if (sessionInfo == null) {
@@ -539,7 +540,8 @@ public class Session {
     public static SessionInformationHolder refreshSession(AppIdentifier appIdentifier, Main main,
                                                           @Nonnull String refreshToken,
                                                           @Nullable String antiCsrfToken, boolean enableAntiCsrf,
-                                                          AccessToken.VERSION accessTokenVersion, Boolean shouldUseStaticKey)
+                                                          AccessToken.VERSION accessTokenVersion,
+                                                          Boolean shouldUseStaticKey)
             throws StorageTransactionLogicException,
             UnauthorisedException, StorageQueryException, TokenTheftDetectedException,
             UnsupportedJWTSigningAlgorithmException, AccessTokenPayloadError, TenantOrAppNotFoundException {
@@ -556,7 +558,8 @@ public class Session {
         TenantIdentifier tenantIdentifier = refreshTokenInfo.tenantIdentifier;
         Storage storage = StorageLayer.getStorage(refreshTokenInfo.tenantIdentifier, main);
         return refreshSessionHelper(
-                tenantIdentifier, storage, main, refreshToken, refreshTokenInfo, enableAntiCsrf, accessTokenVersion, shouldUseStaticKey);
+                tenantIdentifier, storage, main, refreshToken, refreshTokenInfo, enableAntiCsrf, accessTokenVersion,
+                shouldUseStaticKey);
     }
 
     private static SessionInformationHolder refreshSessionHelper(
@@ -587,7 +590,8 @@ public class Session {
                             sessionStorage.commitTransaction(con);
                             throw new UnauthorisedException("Session missing in db or has expired");
                         }
-                        boolean useStaticKey = shouldUseStaticKey != null ? shouldUseStaticKey : sessionInfo.useStaticKey;
+                        boolean useStaticKey =
+                                shouldUseStaticKey != null ? shouldUseStaticKey : sessionInfo.useStaticKey;
 
                         if (sessionInfo.refreshTokenHash2.equals(Utils.hashSHA256(Utils.hashSHA256(refreshToken)))) {
                             if (useStaticKey != sessionInfo.useStaticKey) {
@@ -631,7 +635,8 @@ public class Session {
                                 .equals(sessionInfo.refreshTokenHash2))) {
                             sessionStorage.updateSessionInfo_Transaction(tenantIdentifier, con, sessionHandle,
                                     Utils.hashSHA256(Utils.hashSHA256(refreshToken)),
-                                    System.currentTimeMillis() + config.getRefreshTokenValidityInMillis(), useStaticKey);
+                                    System.currentTimeMillis() + config.getRefreshTokenValidityInMillis(),
+                                    useStaticKey);
 
                             sessionStorage.commitTransaction(con);
 
@@ -679,7 +684,8 @@ public class Session {
             while (true) {
                 try {
                     String sessionHandle = refreshTokenInfo.sessionHandle;
-                    io.supertokens.pluginInterface.session.noSqlStorage.SessionInfoWithLastUpdated sessionInfo = sessionStorage
+                    io.supertokens.pluginInterface.session.noSqlStorage.SessionInfoWithLastUpdated sessionInfo =
+                            sessionStorage
                             .getSessionInfo_Transaction(sessionHandle);
 
                     if (sessionInfo == null || sessionInfo.expiry < System.currentTimeMillis()) {

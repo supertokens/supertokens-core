@@ -54,8 +54,10 @@ public class JWTTest {
         {
             TestInput input = new TestInput("value");
             io.supertokens.utils.Utils.PubPriKey rsa = io.supertokens.utils.Utils.generateNewPubPriKey();
-            String token = JWT.createAndSignLegacyAccessToken(new Gson().toJsonTree(input), rsa.privateKey, AccessToken.VERSION.V1);
-            TestInput output = new Gson().fromJson(JWT.verifyJWTAndGetPayload(JWT.preParseJWTInfo(token), rsa.publicKey).payload,
+            String token = JWT.createAndSignLegacyAccessToken(new Gson().toJsonTree(input), rsa.privateKey,
+                    AccessToken.VERSION.V1);
+            TestInput output = new Gson().fromJson(
+                    JWT.verifyJWTAndGetPayload(JWT.preParseJWTInfo(token), rsa.publicKey).payload,
                     TestInput.class);
             assertEquals(input, output);
         }
@@ -63,8 +65,10 @@ public class JWTTest {
         {
             TestInput input = new TestInput("value");
             io.supertokens.utils.Utils.PubPriKey rsa = io.supertokens.utils.Utils.generateNewPubPriKey();
-            String token = JWT.createAndSignLegacyAccessToken(new Gson().toJsonTree(input), rsa.privateKey, AccessToken.VERSION.V2);
-            TestInput output = new Gson().fromJson(JWT.verifyJWTAndGetPayload(JWT.preParseJWTInfo(token), rsa.publicKey).payload,
+            String token = JWT.createAndSignLegacyAccessToken(new Gson().toJsonTree(input), rsa.privateKey,
+                    AccessToken.VERSION.V2);
+            TestInput output = new Gson().fromJson(
+                    JWT.verifyJWTAndGetPayload(JWT.preParseJWTInfo(token), rsa.publicKey).payload,
                     TestInput.class);
             assertEquals(input, output);
         }
@@ -76,7 +80,8 @@ public class JWTTest {
         {
             TestInput input = new TestInput("value");
             io.supertokens.utils.Utils.PubPriKey rsa = io.supertokens.utils.Utils.generateNewPubPriKey();
-            String token = JWT.createAndSignLegacyAccessToken(new Gson().toJsonTree(input), rsa.privateKey, AccessToken.VERSION.V1);
+            String token = JWT.createAndSignLegacyAccessToken(new Gson().toJsonTree(input), rsa.privateKey,
+                    AccessToken.VERSION.V1);
             try {
                 JWT.verifyJWTAndGetPayload(JWT.preParseJWTInfo(token), "signingKey2");
                 fail();
@@ -88,7 +93,8 @@ public class JWTTest {
         {
             TestInput input = new TestInput("value");
             io.supertokens.utils.Utils.PubPriKey rsa = io.supertokens.utils.Utils.generateNewPubPriKey();
-            String token = JWT.createAndSignLegacyAccessToken(new Gson().toJsonTree(input), rsa.privateKey, AccessToken.VERSION.V2);
+            String token = JWT.createAndSignLegacyAccessToken(new Gson().toJsonTree(input), rsa.privateKey,
+                    AccessToken.VERSION.V2);
             try {
                 JWT.verifyJWTAndGetPayload(JWT.preParseJWTInfo(token), "signingKey2");
                 fail();

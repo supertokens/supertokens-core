@@ -200,7 +200,8 @@ public class DashboardUserAPI extends WebserverAPI {
             response.addProperty("status", "UNKNOWN_USER_ERROR");
             super.sendJsonResponse(200, response, resp);
             return;
-        } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException | BadPermissionException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException |
+                 BadPermissionException e) {
             throw new ServletException(e);
         }
         // Both email and userId are null

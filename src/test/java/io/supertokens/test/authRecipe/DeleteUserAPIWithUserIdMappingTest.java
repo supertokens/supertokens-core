@@ -54,7 +54,7 @@ public class DeleteUserAPIWithUserIdMappingTest {
 
     @Test
     public void createAUserMapTheirIdCreateMetadataWithExternalIdAndDelete() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -113,7 +113,7 @@ public class DeleteUserAPIWithUserIdMappingTest {
     // test intermediate state behavior, deleting superTokensUserId_1
     @Test
     public void testDeleteUserBehaviorInIntermediateStateWithUser_1sUserId() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -134,7 +134,8 @@ public class DeleteUserAPIWithUserIdMappingTest {
                 "test123@example.com");
 
         // force create a mapping between the thirdParty user and EmailPassword user
-        UserIdMapping.createUserIdMapping(process.main, userInfo_2.user.getSupertokensUserId(), userInfo_1.getSupertokensUserId(), null, true);
+        UserIdMapping.createUserIdMapping(process.main, userInfo_2.user.getSupertokensUserId(),
+                userInfo_1.getSupertokensUserId(), null, true);
 
         // delete User with EmailPassword userId
         {
@@ -173,7 +174,7 @@ public class DeleteUserAPIWithUserIdMappingTest {
     // test intermediate state behavior, deleting superTokensUserId_2
     @Test
     public void testDeleteUserBehaviorInIntermediateStateWithUser_2sUserId() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -194,7 +195,8 @@ public class DeleteUserAPIWithUserIdMappingTest {
                 "test123@example.com");
 
         // force create a mapping between the thirdParty user and EmailPassword user
-        UserIdMapping.createUserIdMapping(process.main, userInfo_2.user.getSupertokensUserId(), userInfo_1.getSupertokensUserId(), null, true);
+        UserIdMapping.createUserIdMapping(process.main, userInfo_2.user.getSupertokensUserId(),
+                userInfo_1.getSupertokensUserId(), null, true);
 
         // delete User with ThirdParty users id
         {

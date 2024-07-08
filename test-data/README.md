@@ -3,8 +3,8 @@
 This folder contains test cases for the test: `io.supertokens.test.multitenant.api.TestTenantCreationBehaviour.
 testCrossVersionCreateAndUpdateCases`.
 
-The create / update tenant APIs have different inputs between CDI version 3.0-4.0, 5.0 and v2 API has been introduced 
-in 5.1. We created a playground to test how the input / output fares cross versions. Code for that is included in 
+The create / update tenant APIs have different inputs between CDI version 3.0-4.0, 5.0 and v2 API has been introduced
+in 5.1. We created a playground to test how the input / output fares cross versions. Code for that is included in
 this folder.
 
 All the json files here constitute all possible test cases for the test mentioned above.

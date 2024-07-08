@@ -68,7 +68,8 @@ public class SigningKeys extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public static void loadForAllTenants(Main main, List<AppIdentifier> apps, List<TenantIdentifier> tenantsThatChanged) {
+    public static void loadForAllTenants(Main main, List<AppIdentifier> apps,
+                                         List<TenantIdentifier> tenantsThatChanged) {
         try {
             main.getResourceDistributor().withResourceDistributorLock(() -> {
                 Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingResources =
@@ -185,7 +186,8 @@ public class SigningKeys extends ResourceDistributor.SingletonResource {
                         AccessTokenSigningKey.getInstance(appIdentifier, main).getDynamicSigningKeyOverlapMS() >
                         System.currentTimeMillis() &&  // the latest isn't old enough
                 System.currentTimeMillis() < dynamicKeys.get(1).createdAtTime +
-                        config.getAccessTokenDynamicSigningKeyUpdateIntervalInMillis() // the one before can still be used to
+                        config.getAccessTokenDynamicSigningKeyUpdateIntervalInMillis() // the one before can still be
+            // used to
             // sign
         ) {
             return dynamicKeys.get(1);
@@ -358,7 +360,7 @@ public class SigningKeys extends ResourceDistributor.SingletonResource {
      * @param bigInt The big integer to be converted. Must not be
      *               {@code null}.
      * @return A byte array representation of the big integer, without the
-     *         sign bit.
+     * sign bit.
      */
     private static byte[] toBytesUnsigned(final BigInteger bigInt) {
 

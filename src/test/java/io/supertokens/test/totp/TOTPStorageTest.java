@@ -125,7 +125,8 @@ public class TOTPStorageTest {
 
         TOTPDevice device1 = new TOTPDevice("user", "d1", "secret", 30, 1, false, System.currentTimeMillis());
         TOTPDevice device2 = new TOTPDevice("user", "d2", "secret", 30, 1, true, System.currentTimeMillis());
-        TOTPDevice device2Duplicate = new TOTPDevice("user", "d2", "new-secret", 30, 1, false, System.currentTimeMillis());
+        TOTPDevice device2Duplicate = new TOTPDevice("user", "d2", "new-secret", 30, 1, false,
+                System.currentTimeMillis());
 
         storage.createDevice(new AppIdentifier(null, null), device1);
 
@@ -335,7 +336,8 @@ public class TOTPStorageTest {
 
         // Try to create a new device and rename it to the same name as an existing
         // device:
-        TOTPDevice newDevice = new TOTPDevice("user", "new-device", "secretKey", 30, 1, false, System.currentTimeMillis());
+        TOTPDevice newDevice = new TOTPDevice("user", "new-device", "secretKey", 30, 1, false,
+                System.currentTimeMillis());
         storage.createDevice(new AppIdentifier(null, null), newDevice);
 
         assertThrows(DeviceAlreadyExistsException.class,
@@ -413,7 +415,8 @@ public class TOTPStorageTest {
 
         // Try to insert code after user has atleast one device (i.e. TOTP enabled)
         {
-            TOTPDevice newDevice = new TOTPDevice("user", "new-device", "secretKey", 30, 1, false, System.currentTimeMillis());
+            TOTPDevice newDevice = new TOTPDevice("user", "new-device", "secretKey", 30, 1, false,
+                    System.currentTimeMillis());
             storage.createDevice(new AppIdentifier(null, null), newDevice);
             insertUsedCodesUtil(
                     storage,

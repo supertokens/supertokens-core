@@ -234,15 +234,18 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
         return tenantConfig;
     }
 
-    private static TenantConfig applyTenantUpdates_3_0(TenantConfig tenantConfig, JsonObject input) throws ServletException {
+    private static TenantConfig applyTenantUpdates_3_0(TenantConfig tenantConfig, JsonObject input)
+            throws ServletException {
         Boolean emailPasswordEnabled = InputParser.parseBooleanOrThrowError(input, "emailPasswordEnabled", true);
         Boolean thirdPartyEnabled = InputParser.parseBooleanOrThrowError(input, "thirdPartyEnabled", true);
         Boolean passwordlessEnabled = InputParser.parseBooleanOrThrowError(input, "passwordlessEnabled", true);
 
-        Set<String> firstFactors = tenantConfig.firstFactors == null ? null : new HashSet<>(Set.of(tenantConfig.firstFactors));
+        Set<String> firstFactors =
+                tenantConfig.firstFactors == null ? null : new HashSet<>(Set.of(tenantConfig.firstFactors));
 
         // Enabling recipes
-        if (Boolean.TRUE.equals(emailPasswordEnabled) && !tenantConfig.emailPasswordConfig.isEnabledInLesserThanOrEqualTo4_0(tenantConfig.firstFactors)) {
+        if (Boolean.TRUE.equals(emailPasswordEnabled) &&
+                !tenantConfig.emailPasswordConfig.isEnabledInLesserThanOrEqualTo4_0(tenantConfig.firstFactors)) {
             tenantConfig = new TenantConfig(
                     tenantConfig.tenantIdentifier,
                     new EmailPasswordConfig(true),
@@ -257,7 +260,8 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                 firstFactors.add("emailpassword");
             }
         }
-        if (Boolean.TRUE.equals(thirdPartyEnabled) && !tenantConfig.thirdPartyConfig.isEnabledInLesserThanOrEqualTo4_0(tenantConfig.firstFactors)) {
+        if (Boolean.TRUE.equals(thirdPartyEnabled) &&
+                !tenantConfig.thirdPartyConfig.isEnabledInLesserThanOrEqualTo4_0(tenantConfig.firstFactors)) {
             tenantConfig = new TenantConfig(
                     tenantConfig.tenantIdentifier,
                     tenantConfig.emailPasswordConfig,
@@ -272,7 +276,8 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                 firstFactors.add("thirdparty");
             }
         }
-        if (Boolean.TRUE.equals(passwordlessEnabled) && !tenantConfig.passwordlessConfig.isEnabledInLesserThanOrEqualTo4_0(tenantConfig.firstFactors)) {
+        if (Boolean.TRUE.equals(passwordlessEnabled) &&
+                !tenantConfig.passwordlessConfig.isEnabledInLesserThanOrEqualTo4_0(tenantConfig.firstFactors)) {
             tenantConfig = new TenantConfig(
                     tenantConfig.tenantIdentifier,
                     tenantConfig.emailPasswordConfig,
@@ -294,15 +299,16 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
         // Disabling recipes
         if (firstFactors == null && (
                 tenantConfig.emailPasswordConfig.enabled == false ||
-                tenantConfig.thirdPartyConfig.enabled == false ||
-                tenantConfig.passwordlessConfig.enabled == false ||
-                Boolean.FALSE.equals(emailPasswordEnabled) ||
-                Boolean.FALSE.equals(thirdPartyEnabled) ||
-                Boolean.FALSE.equals(passwordlessEnabled)
+                        tenantConfig.thirdPartyConfig.enabled == false ||
+                        tenantConfig.passwordlessConfig.enabled == false ||
+                        Boolean.FALSE.equals(emailPasswordEnabled) ||
+                        Boolean.FALSE.equals(thirdPartyEnabled) ||
+                        Boolean.FALSE.equals(passwordlessEnabled)
         )) {
             // since the boolean states corresponds to the first factors
             // setting it to all factors now, and later we will remove the disabled ones
-            firstFactors = new HashSet<>(Set.of("emailpassword", "thirdparty", "otp-phone", "otp-email", "link-phone", "link-email"));
+            firstFactors = new HashSet<>(
+                    Set.of("emailpassword", "thirdparty", "otp-phone", "otp-email", "link-phone", "link-email"));
         }
 
         if (tenantConfig.emailPasswordConfig.enabled == false || Boolean.FALSE.equals(emailPasswordEnabled)) {
@@ -323,7 +329,8 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
 //            tenantConfig = new TenantConfig(
 //                    tenantConfig.tenantIdentifier,
 //                    tenantConfig.emailPasswordConfig,
-//                    new ThirdPartyConfig(tenantConfig.thirdPartyConfig.enabled, tenantConfig.thirdPartyConfig.providers),
+//                    new ThirdPartyConfig(tenantConfig.thirdPartyConfig.enabled, tenantConfig.thirdPartyConfig
+//                    .providers),
 //                    tenantConfig.passwordlessConfig,
 //                    tenantConfig.firstFactors,
 //                    tenantConfig.requiredSecondaryFactors,
@@ -412,66 +419,22 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
 
         if (hasRequiredSecondaryFactors && requiredSecondaryFactors != null && requiredSecondaryFactors.length == 0) {
             throw new ServletException(new BadRequestException(
-                    "requiredSecondaryFactors cannot be empty. Set null instead to remove all required secondary factors."));
+                    "requiredSecondaryFactors cannot be empty. Set null instead to remove all required secondary " +
+                            "factors."));
         }
 
         // check for conflicting updates
         if (Boolean.FALSE.equals(emailPasswordEnabled)) {
             if (hasFirstFactors && firstFactors != null && List.of(firstFactors).contains("emailpassword")) {
-                throw new InvalidConfigException("firstFactors should not contain 'emailpassword' because emailPassword is disabled for the tenant.");
-            }
-            if (hasRequiredSecondaryFactors && requiredSecondaryFactors != null && List.of(requiredSecondaryFactors).contains("emailpassword")) {
-                throw new InvalidConfigException("requiredSecondaryFactors should not contain 'emailpassword' because emailPassword is disabled for the tenant.");
-            }
-        }
-
-        if (Boolean.FALSE.equals(thirdPartyEnabled)) {
-            if (hasFirstFactors && firstFactors != null && List.of(firstFactors).contains("thirdparty")) {
-                throw new InvalidConfigException("firstFactors should not contain 'thirdparty' because thirdParty is disabled for the tenant.");
-            }
-            if (hasRequiredSecondaryFactors && requiredSecondaryFactors != null && List.of(requiredSecondaryFactors).contains("thirdparty")) {
-                throw new InvalidConfigException("requiredSecondaryFactors should not contain 'thirdparty' because thirdParty is disabled for the tenant.");
-            }
-        }
-
-        if (Boolean.FALSE.equals(passwordlessEnabled)) {
-            if (hasFirstFactors && firstFactors != null && List.of(firstFactors).contains("otp-phone")) {
-                throw new InvalidConfigException("firstFactors should not contain 'otp-phone' because passwordless is disabled for the tenant.");
-            }
-            if (hasFirstFactors && firstFactors != null && List.of(firstFactors).contains("otp-email")) {
-                throw new InvalidConfigException("firstFactors should not contain 'otp-email' because passwordless is disabled for the tenant.");
-            }
-            if (hasFirstFactors && firstFactors != null && List.of(firstFactors).contains("link-phone")) {
-                throw new InvalidConfigException("firstFactors should not contain 'link-phone' because passwordless is disabled for the tenant.");
-            }
-            if (hasFirstFactors && firstFactors != null && List.of(firstFactors).contains("link-email")) {
-                throw new InvalidConfigException("firstFactors should not contain 'link-email' because passwordless is disabled for the tenant.");
-            }
-            if (hasRequiredSecondaryFactors && requiredSecondaryFactors != null && List.of(requiredSecondaryFactors).contains("otp-phone")) {
-                throw new InvalidConfigException("requiredSecondaryFactors should not contain 'otp-phone' because passwordless is disabled for the tenant.");
-            }
-            if (hasRequiredSecondaryFactors && requiredSecondaryFactors != null && List.of(requiredSecondaryFactors).contains("otp-email")) {
-                throw new InvalidConfigException("requiredSecondaryFactors should not contain 'otp-email' because passwordless is disabled for the tenant.");
-            }
-            if (hasRequiredSecondaryFactors && requiredSecondaryFactors != null && List.of(requiredSecondaryFactors).contains("link-phone")) {
-                throw new InvalidConfigException("requiredSecondaryFactors should not contain 'link-phone' because passwordless is disabled for the tenant.");
-            }
-            if (hasRequiredSecondaryFactors && requiredSecondaryFactors != null && List.of(requiredSecondaryFactors).contains("link-email")) {
-                throw new InvalidConfigException("requiredSecondaryFactors should not contain 'link-email' because passwordless is disabled for the tenant.");
-            }
-        }
-
-        // All validation done, continuing with updates
-
-        if (Boolean.FALSE.equals(emailPasswordEnabled)) {
-            if (hasFirstFactors && firstFactors != null && List.of(firstFactors).contains("emailpassword")) {
                 throw new InvalidConfigException(
-                        "firstFactors should not contain 'emailpassword' because emailPassword is disabled for the tenant.");
+                        "firstFactors should not contain 'emailpassword' because emailPassword is disabled for the " +
+                                "tenant.");
             }
             if (hasRequiredSecondaryFactors && requiredSecondaryFactors != null &&
                     List.of(requiredSecondaryFactors).contains("emailpassword")) {
                 throw new InvalidConfigException(
-                        "requiredSecondaryFactors should not contain 'emailpassword' because emailPassword is disabled for the tenant.");
+                        "requiredSecondaryFactors should not contain 'emailpassword' because emailPassword is " +
+                                "disabled for the tenant.");
             }
         }
 
@@ -483,7 +446,8 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
             if (hasRequiredSecondaryFactors && requiredSecondaryFactors != null &&
                     List.of(requiredSecondaryFactors).contains("thirdparty")) {
                 throw new InvalidConfigException(
-                        "requiredSecondaryFactors should not contain 'thirdparty' because thirdParty is disabled for the tenant.");
+                        "requiredSecondaryFactors should not contain 'thirdparty' because thirdParty is disabled for " +
+                                "the tenant.");
             }
         }
 
@@ -498,40 +462,123 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
             }
             if (hasFirstFactors && firstFactors != null && List.of(firstFactors).contains("link-phone")) {
                 throw new InvalidConfigException(
-                        "firstFactors should not contain 'link-phone' because passwordless is disabled for the tenant.");
+                        "firstFactors should not contain 'link-phone' because passwordless is disabled for the tenant" +
+                                ".");
             }
             if (hasFirstFactors && firstFactors != null && List.of(firstFactors).contains("link-email")) {
                 throw new InvalidConfigException(
-                        "firstFactors should not contain 'link-email' because passwordless is disabled for the tenant.");
+                        "firstFactors should not contain 'link-email' because passwordless is disabled for the tenant" +
+                                ".");
             }
             if (hasRequiredSecondaryFactors && requiredSecondaryFactors != null &&
                     List.of(requiredSecondaryFactors).contains("otp-phone")) {
                 throw new InvalidConfigException(
-                        "requiredSecondaryFactors should not contain 'otp-phone' because passwordless is disabled for the tenant.");
+                        "requiredSecondaryFactors should not contain 'otp-phone' because passwordless is disabled for" +
+                                " the tenant.");
             }
             if (hasRequiredSecondaryFactors && requiredSecondaryFactors != null &&
                     List.of(requiredSecondaryFactors).contains("otp-email")) {
                 throw new InvalidConfigException(
-                        "requiredSecondaryFactors should not contain 'otp-email' because passwordless is disabled for the tenant.");
+                        "requiredSecondaryFactors should not contain 'otp-email' because passwordless is disabled for" +
+                                " the tenant.");
             }
             if (hasRequiredSecondaryFactors && requiredSecondaryFactors != null &&
                     List.of(requiredSecondaryFactors).contains("link-phone")) {
                 throw new InvalidConfigException(
-                        "requiredSecondaryFactors should not contain 'link-phone' because passwordless is disabled for the tenant.");
+                        "requiredSecondaryFactors should not contain 'link-phone' because passwordless is disabled " +
+                                "for the tenant.");
             }
             if (hasRequiredSecondaryFactors && requiredSecondaryFactors != null &&
                     List.of(requiredSecondaryFactors).contains("link-email")) {
                 throw new InvalidConfigException(
-                        "requiredSecondaryFactors should not contain 'link-email' because passwordless is disabled for the tenant.");
+                        "requiredSecondaryFactors should not contain 'link-email' because passwordless is disabled " +
+                                "for the tenant.");
+            }
+        }
+
+        // All validation done, continuing with updates
+
+        if (Boolean.FALSE.equals(emailPasswordEnabled)) {
+            if (hasFirstFactors && firstFactors != null && List.of(firstFactors).contains("emailpassword")) {
+                throw new InvalidConfigException(
+                        "firstFactors should not contain 'emailpassword' because emailPassword is disabled for the " +
+                                "tenant.");
+            }
+            if (hasRequiredSecondaryFactors && requiredSecondaryFactors != null &&
+                    List.of(requiredSecondaryFactors).contains("emailpassword")) {
+                throw new InvalidConfigException(
+                        "requiredSecondaryFactors should not contain 'emailpassword' because emailPassword is " +
+                                "disabled for the tenant.");
+            }
+        }
+
+        if (Boolean.FALSE.equals(thirdPartyEnabled)) {
+            if (hasFirstFactors && firstFactors != null && List.of(firstFactors).contains("thirdparty")) {
+                throw new InvalidConfigException(
+                        "firstFactors should not contain 'thirdparty' because thirdParty is disabled for the tenant.");
+            }
+            if (hasRequiredSecondaryFactors && requiredSecondaryFactors != null &&
+                    List.of(requiredSecondaryFactors).contains("thirdparty")) {
+                throw new InvalidConfigException(
+                        "requiredSecondaryFactors should not contain 'thirdparty' because thirdParty is disabled for " +
+                                "the tenant.");
+            }
+        }
+
+        if (Boolean.FALSE.equals(passwordlessEnabled)) {
+            if (hasFirstFactors && firstFactors != null && List.of(firstFactors).contains("otp-phone")) {
+                throw new InvalidConfigException(
+                        "firstFactors should not contain 'otp-phone' because passwordless is disabled for the tenant.");
+            }
+            if (hasFirstFactors && firstFactors != null && List.of(firstFactors).contains("otp-email")) {
+                throw new InvalidConfigException(
+                        "firstFactors should not contain 'otp-email' because passwordless is disabled for the tenant.");
+            }
+            if (hasFirstFactors && firstFactors != null && List.of(firstFactors).contains("link-phone")) {
+                throw new InvalidConfigException(
+                        "firstFactors should not contain 'link-phone' because passwordless is disabled for the tenant" +
+                                ".");
+            }
+            if (hasFirstFactors && firstFactors != null && List.of(firstFactors).contains("link-email")) {
+                throw new InvalidConfigException(
+                        "firstFactors should not contain 'link-email' because passwordless is disabled for the tenant" +
+                                ".");
+            }
+            if (hasRequiredSecondaryFactors && requiredSecondaryFactors != null &&
+                    List.of(requiredSecondaryFactors).contains("otp-phone")) {
+                throw new InvalidConfigException(
+                        "requiredSecondaryFactors should not contain 'otp-phone' because passwordless is disabled for" +
+                                " the tenant.");
+            }
+            if (hasRequiredSecondaryFactors && requiredSecondaryFactors != null &&
+                    List.of(requiredSecondaryFactors).contains("otp-email")) {
+                throw new InvalidConfigException(
+                        "requiredSecondaryFactors should not contain 'otp-email' because passwordless is disabled for" +
+                                " the tenant.");
+            }
+            if (hasRequiredSecondaryFactors && requiredSecondaryFactors != null &&
+                    List.of(requiredSecondaryFactors).contains("link-phone")) {
+                throw new InvalidConfigException(
+                        "requiredSecondaryFactors should not contain 'link-phone' because passwordless is disabled " +
+                                "for the tenant.");
+            }
+            if (hasRequiredSecondaryFactors && requiredSecondaryFactors != null &&
+                    List.of(requiredSecondaryFactors).contains("link-email")) {
+                throw new InvalidConfigException(
+                        "requiredSecondaryFactors should not contain 'link-email' because passwordless is disabled " +
+                                "for the tenant.");
             }
         }
 
         List<String> updateKeys = new ArrayList<>();
         List<Object> updateValues = new ArrayList<>();
 
-        if ((Boolean.TRUE.equals(emailPasswordEnabled) && !tenantConfig.emailPasswordConfig.isEnabledIn5_0(tenantConfig.firstFactors)) ||
-                (Boolean.TRUE.equals(thirdPartyEnabled) && !tenantConfig.thirdPartyConfig.isEnabledIn5_0(tenantConfig.firstFactors)) ||
-                (Boolean.TRUE.equals(passwordlessEnabled) && !tenantConfig.passwordlessConfig.isEnabledIn5_0(tenantConfig.firstFactors))
+        if ((Boolean.TRUE.equals(emailPasswordEnabled) &&
+                !tenantConfig.emailPasswordConfig.isEnabledIn5_0(tenantConfig.firstFactors)) ||
+                (Boolean.TRUE.equals(thirdPartyEnabled) &&
+                        !tenantConfig.thirdPartyConfig.isEnabledIn5_0(tenantConfig.firstFactors)) ||
+                (Boolean.TRUE.equals(passwordlessEnabled) &&
+                        !tenantConfig.passwordlessConfig.isEnabledIn5_0(tenantConfig.firstFactors))
         ) {
             if (tenantConfig.firstFactors != null && tenantConfig.firstFactors.length == 0) {
                 tenantConfig = new TenantConfig(
@@ -576,7 +623,8 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
             updateValues.add(false);
         }
 
-        if (Boolean.FALSE.equals(emailPasswordEnabled) || Boolean.FALSE.equals(thirdPartyEnabled) || Boolean.FALSE.equals(passwordlessEnabled)) {
+        if (Boolean.FALSE.equals(emailPasswordEnabled) || Boolean.FALSE.equals(thirdPartyEnabled) ||
+                Boolean.FALSE.equals(passwordlessEnabled)) {
             if (tenantConfig.firstFactors != null && !hasFirstFactors) {
                 Set<String> firstFactorsSet = new HashSet<>(Set.of(tenantConfig.firstFactors));
 
@@ -635,15 +683,18 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                 updateValues.add(firstFactors);
 
                 for (String factor : firstFactors) {
-                    if (factor.equals("emailpassword") && !tenantConfig.emailPasswordConfig.isEnabledIn5_0(tenantConfig.firstFactors)) {
+                    if (factor.equals("emailpassword") &&
+                            !tenantConfig.emailPasswordConfig.isEnabledIn5_0(tenantConfig.firstFactors)) {
                         updateKeys.add("emailPasswordEnabled");
                         updateValues.add(true);
                     }
-                    if (factor.equals("thirdparty") && !tenantConfig.thirdPartyConfig.isEnabledIn5_0(tenantConfig.firstFactors)) {
+                    if (factor.equals("thirdparty") &&
+                            !tenantConfig.thirdPartyConfig.isEnabledIn5_0(tenantConfig.firstFactors)) {
                         updateKeys.add("thirdPartyEnabled");
                         updateValues.add(true);
                     }
-                    if ((factor.equals("otp-phone") || factor.equals("otp-email") || factor.equals("link-phone") || factor.equals("link-email")) &&
+                    if ((factor.equals("otp-phone") || factor.equals("otp-email") || factor.equals("link-phone") ||
+                            factor.equals("link-email")) &&
                             !tenantConfig.passwordlessConfig.isEnabledIn5_0(tenantConfig.firstFactors)) {
                         updateKeys.add("passwordlessEnabled");
                         updateValues.add(true);
@@ -662,21 +713,24 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
 
                 for (String factor : requiredSecondaryFactors) {
                     boolean enablingSomeRecipe = false;
-                    if (factor.equals("emailpassword") && !tenantConfig.emailPasswordConfig.isEnabledIn5_0(tenantConfig.firstFactors)) {
+                    if (factor.equals("emailpassword") &&
+                            !tenantConfig.emailPasswordConfig.isEnabledIn5_0(tenantConfig.firstFactors)) {
                         updateKeys.add("emailPasswordEnabled");
                         updateValues.add(true);
                         if (!Boolean.TRUE.equals(emailPasswordEnabled)) {
                             enablingSomeRecipe = true;
                         }
                     }
-                    if (factor.equals("thirdparty") && !tenantConfig.thirdPartyConfig.isEnabledIn5_0(tenantConfig.firstFactors)) {
+                    if (factor.equals("thirdparty") &&
+                            !tenantConfig.thirdPartyConfig.isEnabledIn5_0(tenantConfig.firstFactors)) {
                         updateKeys.add("thirdPartyEnabled");
                         updateValues.add(true);
                         if (!Boolean.TRUE.equals(thirdPartyEnabled)) {
                             enablingSomeRecipe = true;
                         }
                     }
-                    if ((factor.equals("otp-phone") || factor.equals("otp-email") || factor.equals("link-phone") || factor.equals("link-email")) &&
+                    if ((factor.equals("otp-phone") || factor.equals("otp-email") || factor.equals("link-phone") ||
+                            factor.equals("link-email")) &&
                             !tenantConfig.passwordlessConfig.isEnabledIn5_0(tenantConfig.firstFactors)) {
                         updateKeys.add("passwordlessEnabled");
                         updateValues.add(true);
@@ -688,13 +742,16 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                     if (!hasFirstFactors && enablingSomeRecipe == true && tenantConfig.firstFactors == null) {
                         Set<String> firstFactorsSet = new HashSet<>();
 
-                        if ((tenantConfig.emailPasswordConfig.enabled || Boolean.TRUE.equals(emailPasswordEnabled)) && !Boolean.FALSE.equals(emailPasswordEnabled)) {
+                        if ((tenantConfig.emailPasswordConfig.enabled || Boolean.TRUE.equals(emailPasswordEnabled)) &&
+                                !Boolean.FALSE.equals(emailPasswordEnabled)) {
                             firstFactorsSet.add("emailpassword");
                         }
-                        if ((tenantConfig.thirdPartyConfig.enabled || Boolean.TRUE.equals(thirdPartyEnabled)) && !Boolean.FALSE.equals(thirdPartyEnabled)) {
+                        if ((tenantConfig.thirdPartyConfig.enabled || Boolean.TRUE.equals(thirdPartyEnabled)) &&
+                                !Boolean.FALSE.equals(thirdPartyEnabled)) {
                             firstFactorsSet.add("thirdparty");
                         }
-                        if ((tenantConfig.passwordlessConfig.enabled || Boolean.TRUE.equals(passwordlessEnabled)) && !Boolean.FALSE.equals(passwordlessEnabled)) {
+                        if ((tenantConfig.passwordlessConfig.enabled || Boolean.TRUE.equals(passwordlessEnabled)) &&
+                                !Boolean.FALSE.equals(passwordlessEnabled)) {
                             firstFactorsSet.add("otp-phone");
                             firstFactorsSet.add("otp-email");
                             firstFactorsSet.add("link-phone");
@@ -802,7 +859,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
         // if firstFactors or requiredSecondaryFactors are set, make sure
         // appropriate recipes are enabled
         if (tenantConfig.firstFactors != null) {
-            for (String factor: tenantConfig.firstFactors) {
+            for (String factor : tenantConfig.firstFactors) {
                 if (factor.equals("emailpassword")) {
                     tenantConfig = new TenantConfig(
                             tenantConfig.tenantIdentifier,
@@ -825,7 +882,8 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                             tenantConfig.coreConfig
                     );
                 }
-                if (factor.equals("otp-phone") || factor.equals("otp-email") || factor.equals("link-phone") || factor.equals("link-email")) {
+                if (factor.equals("otp-phone") || factor.equals("otp-email") || factor.equals("link-phone") ||
+                        factor.equals("link-email")) {
                     tenantConfig = new TenantConfig(
                             tenantConfig.tenantIdentifier,
                             tenantConfig.emailPasswordConfig,
@@ -839,7 +897,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
             }
         }
         if (tenantConfig.requiredSecondaryFactors != null) {
-            for (String factor: tenantConfig.requiredSecondaryFactors) {
+            for (String factor : tenantConfig.requiredSecondaryFactors) {
                 if (factor.equals("emailpassword")) {
                     tenantConfig = new TenantConfig(
                             tenantConfig.tenantIdentifier,
@@ -862,7 +920,8 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                             tenantConfig.coreConfig
                     );
                 }
-                if (factor.equals("otp-phone") || factor.equals("otp-email") || factor.equals("link-phone") || factor.equals("link-email")) {
+                if (factor.equals("otp-phone") || factor.equals("otp-email") || factor.equals("link-phone") ||
+                        factor.equals("link-email")) {
                     tenantConfig = new TenantConfig(
                             tenantConfig.tenantIdentifier,
                             tenantConfig.emailPasswordConfig,
@@ -879,9 +938,11 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
         return tenantConfig;
     }
 
-    private static TenantConfig applyV2TenantUpdates_5_1(TenantConfig tenantConfig, JsonObject input) throws ServletException {
+    private static TenantConfig applyV2TenantUpdates_5_1(TenantConfig tenantConfig, JsonObject input)
+            throws ServletException {
         if (input.has("emailPasswordEnabled")) {
-            throw new ServletException(new BadRequestException("emailPasswordEnabled is not a valid input for this API"));
+            throw new ServletException(
+                    new BadRequestException("emailPasswordEnabled is not a valid input for this API"));
         }
         if (input.has("thirdPartyEnabled")) {
             throw new ServletException(new BadRequestException("thirdParty is not a valid input for this API"));
@@ -898,10 +959,12 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
             JsonArray firstFactorsArr = InputParser.parseArrayOrThrowError(input, "firstFactors", true);
             firstFactors = new String[firstFactorsArr.size()];
             for (int i = 0; i < firstFactors.length; i++) {
-                firstFactors[i] = InputParser.parseStringFromElementOrThrowError(firstFactorsArr.get(i), "firstFactors", false);
+                firstFactors[i] = InputParser.parseStringFromElementOrThrowError(firstFactorsArr.get(i), "firstFactors",
+                        false);
             }
             if (firstFactors.length != new HashSet<>(Arrays.asList(firstFactors)).size()) {
-                throw new ServletException(new BadRequestException("firstFactors input should not contain duplicate values"));
+                throw new ServletException(
+                        new BadRequestException("firstFactors input should not contain duplicate values"));
             }
         }
 
@@ -910,13 +973,16 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
         boolean hasRequiredSecondaryFactors;
         hasRequiredSecondaryFactors = input.has("requiredSecondaryFactors");
         if (hasRequiredSecondaryFactors && !input.get("requiredSecondaryFactors").isJsonNull()) {
-            JsonArray requiredSecondaryFactorsArr = InputParser.parseArrayOrThrowError(input, "requiredSecondaryFactors", true);
+            JsonArray requiredSecondaryFactorsArr = InputParser.parseArrayOrThrowError(input,
+                    "requiredSecondaryFactors", true);
             requiredSecondaryFactors = new String[requiredSecondaryFactorsArr.size()];
             for (int i = 0; i < requiredSecondaryFactors.length; i++) {
-                requiredSecondaryFactors[i] = InputParser.parseStringFromElementOrThrowError(requiredSecondaryFactorsArr.get(i), "requiredSecondaryFactors", false);
+                requiredSecondaryFactors[i] = InputParser.parseStringFromElementOrThrowError(
+                        requiredSecondaryFactorsArr.get(i), "requiredSecondaryFactors", false);
             }
             if (requiredSecondaryFactors.length != new HashSet<>(Arrays.asList(requiredSecondaryFactors)).size()) {
-                throw new ServletException(new BadRequestException("requiredSecondaryFactors input should not contain duplicate values"));
+                throw new ServletException(
+                        new BadRequestException("requiredSecondaryFactors input should not contain duplicate values"));
             }
         }
 

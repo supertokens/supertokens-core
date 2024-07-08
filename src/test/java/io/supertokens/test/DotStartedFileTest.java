@@ -24,7 +24,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import java.io.*;
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
@@ -46,7 +46,7 @@ public class DotStartedFileTest {
 
     @Test
     public void fiveProcessInParallelDotStartedFileTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process1 = TestingProcessManager.start(args);
         assertNotNull(process1.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -119,7 +119,7 @@ public class DotStartedFileTest {
 
     @Test
     public void dotStartedFileNameAndContentTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         String host = "localhost";
         String port = "8081";
         String hostPortNameCheck = host + "-" + port;
@@ -171,7 +171,7 @@ public class DotStartedFileTest {
 
     @Test
     public void processFailToStartDotStartedFileTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         String installDir = "../";
 
         Utils.setValueInConfig("access_token_validity", "-1");

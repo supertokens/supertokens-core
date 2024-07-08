@@ -163,7 +163,7 @@ public class TestHelloAPIRateLimiting {
         createApps(process);
 
         // Call 5 requests rapidly
-        for (int i=0; i < 5; i++) {
+        for (int i = 0; i < 5; i++) {
             assertTrue(callHello(new TenantIdentifier(null, "a1", null), process.getProcess()));
         }
 
@@ -195,7 +195,7 @@ public class TestHelloAPIRateLimiting {
         createApps(process);
 
         // Call 5 requests rapidly
-        for (int i=0; i < 5; i++) {
+        for (int i = 0; i < 5; i++) {
             assertTrue(callHello(new TenantIdentifier(null, "a1", null), process.getProcess()));
         }
 
@@ -203,7 +203,7 @@ public class TestHelloAPIRateLimiting {
         assertFalse(callHello(new TenantIdentifier(null, "a1", null), process.getProcess()));
 
         // But it should work for a different app
-        for (int i=0; i < 5; i++) {
+        for (int i = 0; i < 5; i++) {
             assertTrue(callHello(new TenantIdentifier(null, "a2", null), process.getProcess()));
             assertTrue(callHello(new TenantIdentifier(null, "a3", null), process.getProcess()));
         }
@@ -239,7 +239,7 @@ public class TestHelloAPIRateLimiting {
         createApps(process);
 
         // Call 5 requests rapidly
-        for (int i=0; i < 5; i++) {
+        for (int i = 0; i < 5; i++) {
             assertTrue(callHello2(new TenantIdentifier(null, null, null), process.getProcess()));
         }
 

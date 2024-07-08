@@ -10,24 +10,25 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [9.1.0] - 2024-05-24
 
 - Adds new core API for fetching all the core properties for a tenant
-  - GET `/appid-<appid>/<tenantid>/recipe/dashboard/tenant/core-config`
+    - GET `/appid-<appid>/<tenantid>/recipe/dashboard/tenant/core-config`
 - Deprecated the following APIs
-  - PUT `/recipe/multitenancy/connectionuridomain`
-  - GET `/recipe/multitenancy/connectionuridomain/list`
-  - PUT `/recipe/multitenancy/app`
-  - GET `/recipe/multitenancy/app/list`
-  - PUT `/appid-<appid>/recipe/multitenancy/tenant`
-  - GET `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant`
-  - GET `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant/list`
+    - PUT `/recipe/multitenancy/connectionuridomain`
+    - GET `/recipe/multitenancy/connectionuridomain/list`
+    - PUT `/recipe/multitenancy/app`
+    - GET `/recipe/multitenancy/app/list`
+    - PUT `/appid-<appid>/recipe/multitenancy/tenant`
+    - GET `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant`
+    - GET `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant/list`
 - Adds the following APIs to replace the deprecated APIs
-  - PUT `/recipe/multitenancy/connectionuridomain/v2`
-  - GET `/recipe/multitenancy/connectionuridomain/list/v2`
-  - PUT `/recipe/multitenancy/app/v2`
-  - GET `/recipe/multitenancy/app/list/v2`
-  - PUT `/appid-<appid>/recipe/multitenancy/tenant/v2`
-  - GET `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant/v2`
-  - GET `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant/list/v2`
-- Backward compatible recipe enabled boolean computations based on - https://github.com/supertokens/supertokens-core/issues/979#issuecomment-2099971371
+    - PUT `/recipe/multitenancy/connectionuridomain/v2`
+    - GET `/recipe/multitenancy/connectionuridomain/list/v2`
+    - PUT `/recipe/multitenancy/app/v2`
+    - GET `/recipe/multitenancy/app/list/v2`
+    - PUT `/appid-<appid>/recipe/multitenancy/tenant/v2`
+    - GET `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant/v2`
+    - GET `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant/list/v2`
+- Backward compatible recipe enabled boolean computations based
+  on - https://github.com/supertokens/supertokens-core/issues/979#issuecomment-2099971371
 
 ## [9.0.2] - 2024-04-17
 
@@ -54,20 +55,22 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   Tenant APIs
 - Adds `deviceName` in the response of `CreateOrUpdateTotpDeviceAPI` `POST`
 - `VerifyTOTPAPI` changes
-  - Removes `allowUnverifiedDevices` from request body and unverified devices are not allowed
-  - Adds `currentNumberOfFailedAttempts` and `maxNumberOfFailedAttempts` in response when status is 
-    `INVALID_TOTP_ERROR` or `LIMIT_REACHED_ERROR`
-  - Adds status `UNKNOWN_USER_ID_ERROR`
+    - Removes `allowUnverifiedDevices` from request body and unverified devices are not allowed
+    - Adds `currentNumberOfFailedAttempts` and `maxNumberOfFailedAttempts` in response when status is
+      `INVALID_TOTP_ERROR` or `LIMIT_REACHED_ERROR`
+    - Adds status `UNKNOWN_USER_ID_ERROR`
 - `VerifyTotpDeviceAPI` changes
-  - Adds `currentNumberOfFailedAttempts` and `maxNumberOfFailedAttempts` in response when status is
-    `INVALID_TOTP_ERROR` or `LIMIT_REACHED_ERROR`
+    - Adds `currentNumberOfFailedAttempts` and `maxNumberOfFailedAttempts` in response when status is
+      `INVALID_TOTP_ERROR` or `LIMIT_REACHED_ERROR`
 - Adds `consumedDevice` in the success response of the `ConsumeCodeAPI`
 - Adds `preAuthSessionId` input to `DeleteCodeAPI` to be able to delete codes for a device
 - Adds a new `useDynamicSigningKey` into the request body of `RefreshSessionAPI`
-  - This enables smooth switching between `useDynamicAccessTokenSigningKey` settings by allowing refresh calls to change the signing key type of a session
-  - This is available after CDI3.0
-  - This is required in&after CDI5.0 and optional before
-- Adds optional `firstFactors` and `requiredSecondaryFactors` to the create or update connectionUriDomain, app and tenant APIs
+    - This enables smooth switching between `useDynamicAccessTokenSigningKey` settings by allowing refresh calls to
+      change the signing key type of a session
+    - This is available after CDI3.0
+    - This is required in&after CDI5.0 and optional before
+- Adds optional `firstFactors` and `requiredSecondaryFactors` to the create or update connectionUriDomain, app and
+  tenant APIs
 - Updates Last active while linking accounts
 - Marks fake email in email password sign up as verified
 - Fixes slow down in useridmapping queries
@@ -105,23 +108,26 @@ DROP INDEX all_auth_recipe_users_pagination_index4 ON all_auth_recipe_users;
 
 ### Breaking changes
 
-- The following app specific APIs return a 403 when they are called with a tenant ID other than the `public` one. For example, if the path is `/users/count/active`,  and you call it with `/tenant1/users/count/active`, it will return a 403. But if you call it with `/public/users/count/active`, or just `/users/count/active`, it will work.
-  - GET `/recipe/accountlinking/user/primary/check`
-  - GET `/recipe/accountlinking/user/link/check`
-  - POST `/recipe/accountlinking/user/primary`
-  - POST `/recipe/accountlinking/user/link`
-  - POST `/recipe/accountlinking/user/unlink`
-  - GET `/users/count/active`
-  - POST `/user/remove`
-  - GET `/ee/featureflag`
-  - GET `/user/id`
-  - PUT `/ee/license`
-  - DELETE `/ee/license`
-  - GET `/ee/license`
-  - GET `/requests/stats`
-  - GET `/recipe/user` when querying by `userId`
-  - GET `/recipe/jwt/jwks`
-  - POST `/recipe/jwt`
+- The following app specific APIs return a 403 when they are called with a tenant ID other than the `public` one. For
+  example, if the path is `/users/count/active`, and you call it with `/tenant1/users/count/active`, it will return a
+    403. But if you call it with `/public/users/count/active`, or just `/users/count/active`, it will work.
+
+    - GET `/recipe/accountlinking/user/primary/check`
+    - GET `/recipe/accountlinking/user/link/check`
+    - POST `/recipe/accountlinking/user/primary`
+    - POST `/recipe/accountlinking/user/link`
+    - POST `/recipe/accountlinking/user/unlink`
+    - GET `/users/count/active`
+    - POST `/user/remove`
+    - GET `/ee/featureflag`
+    - GET `/user/id`
+    - PUT `/ee/license`
+    - DELETE `/ee/license`
+    - GET `/ee/license`
+    - GET `/requests/stats`
+    - GET `/recipe/user` when querying by `userId`
+    - GET `/recipe/jwt/jwks`
+    - POST `/recipe/jwt`
 
 ### Fixes
 
@@ -130,11 +136,13 @@ DROP INDEX all_auth_recipe_users_pagination_index4 ON all_auth_recipe_users;
 ### Migration
 
 For Postgresql:
+
 ```sql
 ALTER TABLE user_roles DROP CONSTRAINT IF EXISTS user_roles_role_fkey;
 ```
 
 For MySQL:
+
 ```sql
 ALTER TABLE user_roles DROP FOREIGN KEY user_roles_ibfk_1;
 ALTER TABLE user_roles DROP FOREIGN KEY user_roles_ibfk_2;
@@ -152,7 +160,8 @@ ALTER TABLE user_roles
 ## [7.0.17] - 2024-02-06
 
 - Fixes issue where error logs were printed to StdOut instead of StdErr.
-- Adds new config `supertokens_saas_load_only_cud` that makes the core instance load a particular CUD only, irrespective of the CUDs present in the db.
+- Adds new config `supertokens_saas_load_only_cud` that makes the core instance load a particular CUD only, irrespective
+  of the CUDs present in the db.
 - Fixes connection pool handling when connection pool size changes for a tenant.
 
 ## [7.0.16] - 2023-12-04
@@ -190,19 +199,26 @@ CREATE INDEX IF NOT EXISTS app_id_to_user_id_primary_user_id_index ON app_id_to_
 
 ## [7.0.12] - 2023-11-16
 
-In this release, the core API routes have been updated to incorporate phone number normalization before processing. Consequently, existing entries in the database also need to undergo normalization. To facilitate this, we have included a migration script to normalize phone numbers for all the existing entries.
+In this release, the core API routes have been updated to incorporate phone number normalization before processing.
+Consequently, existing entries in the database also need to undergo normalization. To facilitate this, we have included
+a migration script to normalize phone numbers for all the existing entries.
 
 **NOTE**: You can skip the migration if you are not using passwordless via phone number.
 
 ### Migration steps
 
-This script updates the `phone_number` column in the `passwordless_users`, `passwordless_user_to_tenant`, and `passwordless_devices` tables with their respective normalized values. This script is idempotent and can be run multiple times without any issue. Follow the steps below to run the script: 
+This script updates the `phone_number` column in the `passwordless_users`, `passwordless_user_to_tenant`,
+and `passwordless_devices` tables with their respective normalized values. This script is idempotent and can be run
+multiple times without any issue. Follow the steps below to run the script:
 
 1. Ensure that the core is already upgraded to version 7.0.12 (CDI version 4.0)
 2. Run the migration script
 
-    Make sure your Node.js version is 16 or above to run the script. Locate the migration script at `supertokens-core/migration_scripts/to_version_7_0_12/index.js`. Modify the script by updating the `DB_HOST`, `DB_USER`, `DB_PASSWORD`, and `DB_NAME` variables with the correct values. Subsequently, run the following commands to initiate the script:
-    
+   Make sure your Node.js version is 16 or above to run the script. Locate the migration script
+   at `supertokens-core/migration_scripts/to_version_7_0_12/index.js`. Modify the script by updating
+   the `DB_HOST`, `DB_USER`, `DB_PASSWORD`, and `DB_NAME` variables with the correct values. Subsequently, run the
+   following commands to initiate the script:
+
     ```bash
        $ git clone https://github.com/supertokens/supertokens-core.git
        $ cd supertokens-core/migration_scripts/to_version_7_0_12
@@ -210,7 +226,9 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
        $ npm start
     ```
 
-    Performance Note: On average, the script takes 19s for every 1000 rows with a maximum of 1 connection, 4.7s with a maximum of 5 connections (default), and 4.5s with a maximum of 10 connections. Increasing the `MAX_POOL_SIZE` allows the script to leverage more connections simultaneously, potentially improving execution speed.
+   Performance Note: On average, the script takes 19s for every 1000 rows with a maximum of 1 connection, 4.7s with a
+   maximum of 5 connections (default), and 4.5s with a maximum of 10 connections. Increasing the `MAX_POOL_SIZE` allows
+   the script to leverage more connections simultaneously, potentially improving execution speed.
 
 ## [7.0.11] - 2023-11-10
 
@@ -256,7 +274,8 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
 
 ## [7.0.1] - 2023-10-04
 
-- Remove padding from link codes and pre-auth session ids in passwordless, but keep support for old format that included padding (`=` signs)
+- Remove padding from link codes and pre-auth session ids in passwordless, but keep support for old format that included
+  padding (`=` signs)
 
 ## [7.0.0] - 2023-09-19
 
@@ -265,17 +284,19 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
 
 ### Session recipe changes
 
-- New access token version: v5, which contains a required prop: `rsub`. This contains the recipe user ID that belongs to the login method that the user used to login. The `sub` claim in the access token payload is now the primary user ID.
+- New access token version: v5, which contains a required prop: `rsub`. This contains the recipe user ID that belongs to
+  the login method that the user used to login. The `sub` claim in the access token payload is now the primary user ID.
 - APIs that return `SessionInformation` (like GET `/recipe/session`) contains userId, recipeUserId in the response.
 - Apis that create / modify / refresh a session return the `recipeUserId` in the `session` object in the response.
 - Token theft detected response returns userId and recipeUserId
 
 ### Db Schema changes
 
-- Adds columns `primary_or_recipe_user_id`, `is_linked_or_is_a_primary_user` and `primary_or_recipe_user_time_joined` to `all_auth_recipe_users` table
+- Adds columns `primary_or_recipe_user_id`, `is_linked_or_is_a_primary_user` and `primary_or_recipe_user_time_joined`
+  to `all_auth_recipe_users` table
 - Adds columns `primary_or_recipe_user_id` and `is_linked_or_is_a_primary_user` to `app_id_to_user_id` table
-- Removes index `all_auth_recipe_users_pagination_index` and addes `all_auth_recipe_users_pagination_index1`, 
-  `all_auth_recipe_users_pagination_index2`, `all_auth_recipe_users_pagination_index3` and 
+- Removes index `all_auth_recipe_users_pagination_index` and addes `all_auth_recipe_users_pagination_index1`,
+  `all_auth_recipe_users_pagination_index2`, `all_auth_recipe_users_pagination_index3` and
   `all_auth_recipe_users_pagination_index4` indexes instead on `all_auth_recipe_users` table
 - Adds `all_auth_recipe_users_recipe_id_index` on `all_auth_recipe_users` table
 - Adds `all_auth_recipe_users_primary_user_id_index` on `all_auth_recipe_users` table
@@ -458,7 +479,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
 
 ## [6.0.9] - 2023-08-14
 
-- Now using decimal notation to add numbers into the access token payload (instead of scientific notation) 
+- Now using decimal notation to add numbers into the access token payload (instead of scientific notation)
 
 ## [6.0.8] - 2023-08-01
 
@@ -2308,9 +2329,9 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
       from session_access_token_signing_keys;
     ```
 - If using `access_token_signing_key_dynamic` true or not set:
-  - ```sql
-    ALTER TABLE session_info ADD COLUMN use_static_key BOOLEAN NOT NULL DEFAULT(false);
-    ALTER TABLE session_info ALTER COLUMN use_static_key DROP DEFAULT;
+    - ```sql
+  ALTER TABLE session_info ADD COLUMN use_static_key BOOLEAN NOT NULL DEFAULT(false);
+  ALTER TABLE session_info ALTER COLUMN use_static_key DROP DEFAULT;
     ```
 
 #### Migration steps for MongoDB

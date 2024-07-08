@@ -102,7 +102,7 @@ public class UserRoles {
                 return wasANewRoleCreated;
             });
         } catch (StorageTransactionLogicException e) {
-            if (e.actualException instanceof  TenantOrAppNotFoundException) {
+            if (e.actualException instanceof TenantOrAppNotFoundException) {
                 throw (TenantOrAppNotFoundException) e.actualException;
             }
             throw e;

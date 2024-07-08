@@ -17,21 +17,15 @@
 package io.supertokens.test;
 
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import io.supertokens.Main;
 import io.supertokens.ProcessState;
-import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.httpRequest.HttpRequest;
-import io.supertokens.httpRequest.HttpResponseException;
-import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -55,13 +49,14 @@ public class JWKSPublicAPITest {
 
     @Test
     public void testSuccessOutput() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         // check regular output
-        JsonObject response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/.well-known/jwks.json", null,
+        JsonObject response = HttpRequest.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/.well-known/jwks.json", null,
                 1000, 1000, null);
 
         assertEquals(response.entrySet().size(), 1);
@@ -76,7 +71,7 @@ public class JWKSPublicAPITest {
 
     @Test
     public void testCacheControlValue() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         Utils.setValueInConfig("access_token_dynamic_signing_key_update_interval", "1");
@@ -85,7 +80,8 @@ public class JWKSPublicAPITest {
 
         // check regular output
         Map<String, String> responseHeaders = new HashMap<>();
-        JsonObject response = HttpRequest.sendGETRequestWithResponseHeaders(process.getProcess(), "", "http://localhost:3567/.well-known/jwks.json", null,
+        JsonObject response = HttpRequest.sendGETRequestWithResponseHeaders(process.getProcess(), "",
+                "http://localhost:3567/.well-known/jwks.json", null,
                 1000, 1000, null, responseHeaders);
 
         assertEquals(response.entrySet().size(), 1);
@@ -99,7 +95,8 @@ public class JWKSPublicAPITest {
 
         Thread.sleep(2000);
 
-        response = HttpRequest.sendGETRequestWithResponseHeaders(process.getProcess(), "", "http://localhost:3567/.well-known/jwks.json", null,
+        response = HttpRequest.sendGETRequestWithResponseHeaders(process.getProcess(), "",
+                "http://localhost:3567/.well-known/jwks.json", null,
                 1000, 1000, null, responseHeaders);
 
         assertEquals(response.entrySet().size(), 1);

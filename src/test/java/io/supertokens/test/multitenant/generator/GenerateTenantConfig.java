@@ -119,6 +119,7 @@ public class GenerateTenantConfig {
 
     public static ConfigGenerator.GeneratedValueAndExpectation generate_coreConfig() {
         // TODO:
-        return new ConfigGenerator.GeneratedValueAndExpectation(new JsonObject(),  new ConfigGenerator.Expectation("ok", new JsonObject()));
+        return new ConfigGenerator.GeneratedValueAndExpectation(new JsonObject(),
+                new ConfigGenerator.Expectation("ok", new JsonObject()));
     }
 }

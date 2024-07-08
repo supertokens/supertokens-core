@@ -50,7 +50,7 @@ public class SessionGetJWTDataTest {
     // * handle -> check this is reflected
     @Test
     public void testVerifyJWTPayloadChangePayloadUsingSessionHandle() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -71,7 +71,8 @@ public class SessionGetJWTDataTest {
         // change JWT payload using session handle
         JsonObject newUserDataInJwt = new JsonObject();
         newUserDataInJwt.addProperty("key", "value2");
-        Session.updateSession(process.getProcess(), sessionInfo.session.handle, null, newUserDataInJwt, AccessToken.getLatestVersion());
+        Session.updateSession(process.getProcess(), sessionInfo.session.handle, null, newUserDataInJwt,
+                AccessToken.getLatestVersion());
 
         // check that this change is reflected
 
@@ -87,7 +88,7 @@ public class SessionGetJWTDataTest {
     // * session handle -> check this is reflected
     @Test
     public void testVerifyJWTPayloadChangeToEmptyPayloadUsingSessionHandle() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -107,7 +108,8 @@ public class SessionGetJWTDataTest {
 
         // change JWT payload to be empty using session handle
         JsonObject emptyUserDataInJwt = new JsonObject();
-        Session.updateSession(process.getProcess(), sessionInfo.session.handle, null, emptyUserDataInJwt, AccessToken.getLatestVersion());
+        Session.updateSession(process.getProcess(), sessionInfo.session.handle, null, emptyUserDataInJwt,
+                AccessToken.getLatestVersion());
 
         // check this is reflected
         assertEquals(Session.getSession(process.getProcess(), sessionInfo.session.handle).userDataInJWT,
@@ -122,7 +124,7 @@ public class SessionGetJWTDataTest {
     // * function -> check that JWT payload has not changed is reflected
     @Test
     public void testVerifyJWTPayloadSetPayloadToNullUsingSessionHandle() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -141,7 +143,8 @@ public class SessionGetJWTDataTest {
         assertEquals(sessionInfo.session.userDataInJWT, userDataInJWT);
 
         // change JWT payload to be null
-        Session.updateSession(process.getProcess(), sessionInfo.session.handle, userDataInDatabase, null, AccessToken.getLatestVersion());
+        Session.updateSession(process.getProcess(), sessionInfo.session.handle, userDataInDatabase, null,
+                AccessToken.getLatestVersion());
 
         // check that jwtData does not change
         assertEquals(Session.getSession(process.getProcess(), sessionInfo.session.handle).userDataInJWT, userDataInJWT);
@@ -154,7 +157,7 @@ public class SessionGetJWTDataTest {
     @Test
     public void testExpireSessionCallGetAndCheckUnauthorised() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         Utils.setValueInConfig("refresh_token_validity", "" + 1.0 / 60);// 1 second validity (value in mins)
 
@@ -190,7 +193,7 @@ public class SessionGetJWTDataTest {
     @Test
     public void testRevokedSessionCallGetAndCheckUnauthorised() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -206,7 +209,7 @@ public class SessionGetJWTDataTest {
                 userDataInDatabase);
 
         // Revoke the session
-        String[] sessionHandles = { sessionInfo.session.handle };
+        String[] sessionHandles = {sessionInfo.session.handle};
         Session.revokeSessionUsingSessionHandles(process.getProcess(), sessionHandles);
 
         // call update function
@@ -223,7 +226,7 @@ public class SessionGetJWTDataTest {
 
     @Test
     public void testGetSessionWithExpiredAccessTokenDoesNotThrowError() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         Utils.setValueInConfig("access_token_validity", "1");// 1 second validity
 

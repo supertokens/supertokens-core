@@ -79,7 +79,8 @@ public class SignUpAPI extends WebserverAPI {
         }
 
         try {
-            io.supertokens.webserver.api.emailpassword.Utils.assertIfEmailPasswordIsEnabledForTenant(main, tenantIdentifier, getVersionFromRequest(req));
+            io.supertokens.webserver.api.emailpassword.Utils.assertIfEmailPasswordIsEnabledForTenant(main,
+                    tenantIdentifier, getVersionFromRequest(req));
 
             AuthRecipeUserInfo user = EmailPassword.signUp(tenantIdentifier, storage, super.main, normalisedEmail,
                     password);

@@ -110,7 +110,8 @@ public class NotFoundOrHelloAPI extends WebserverAPI {
         } else {
             super.sendTextResponse(404, "Not found", resp);
 
-            Logging.error(main, appIdentifier.getAsPublicTenantIdentifier(), "Unknown API called: " + req.getRequestURL(),
+            Logging.error(main, appIdentifier.getAsPublicTenantIdentifier(),
+                    "Unknown API called: " + req.getRequestURL(),
                     false);
         }
     }

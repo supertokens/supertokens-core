@@ -54,7 +54,8 @@ public class GetTenantCoreConfigForDashboardAPI extends WebserverAPI {
             ArrayList<ConfigFieldInfo> config = new ArrayList<>();
             List<ConfigFieldInfo> coreConfigFields = CoreConfig.getConfigFieldsInfoForDashboard(main,
                     getTenantIdentifier(req));
-            List<ConfigFieldInfo> storageFields = StorageUtils.getDashboardStorage(getTenantStorage(req)).getPluginConfigFieldsInfo();
+            List<ConfigFieldInfo> storageFields = StorageUtils.getDashboardStorage(getTenantStorage(req))
+                    .getPluginConfigFieldsInfo();
 
             config.addAll(coreConfigFields);
             config.addAll(storageFields);
@@ -73,7 +74,8 @@ public class GetTenantCoreConfigForDashboardAPI extends WebserverAPI {
                         .getProtectedConfigsFromSuperTokensSaaSUsers();
                 for (JsonElement field : configJson) {
                     String fieldName = field.getAsJsonObject().get("key").getAsString();
-                    if (!Arrays.asList(protectedPluginFields).contains(fieldName) && !Arrays.asList(CoreConfig.PROTECTED_CONFIGS).contains(fieldName)) {
+                    if (!Arrays.asList(protectedPluginFields).contains(fieldName) &&
+                            !Arrays.asList(CoreConfig.PROTECTED_CONFIGS).contains(fieldName)) {
                         configWithoutProtectedFields.add(field);
                     }
                 }

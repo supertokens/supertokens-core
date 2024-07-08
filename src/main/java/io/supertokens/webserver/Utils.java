@@ -39,16 +39,20 @@ public class Utils {
         return normalizeAndValidateConnectionUriDomain(connectionUriDomain, true);
     }
 
-    public static String normalizeAndValidateConnectionUriDomain(String connectionUriDomain, boolean throwExceptionIfInvalid) throws ServletException {
+    public static String normalizeAndValidateConnectionUriDomain(String connectionUriDomain,
+                                                                 boolean throwExceptionIfInvalid)
+            throws ServletException {
         connectionUriDomain = connectionUriDomain.trim();
         connectionUriDomain = connectionUriDomain.toLowerCase();
 
         if (connectionUriDomain.length() == 0) {
-            throw new ServletException(new WebserverAPI.BadRequestException("connectionUriDomain should not be an empty String"));
+            throw new ServletException(
+                    new WebserverAPI.BadRequestException("connectionUriDomain should not be an empty String"));
         }
 
         String hostnameRegex = "^[a-z0-9-]+(\\.[a-z0-9-]+)*(:[0-9]+)?$";
-        String ipRegex = "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(:[0-9]+)?$";
+        String ipRegex = "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}" +
+                "([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(:[0-9]+)?$";
 
         if (!connectionUriDomain.matches(hostnameRegex) && !connectionUriDomain.matches(ipRegex)) {
             if (throwExceptionIfInvalid) {
@@ -86,7 +90,8 @@ public class Utils {
         }
 
         if (!appId.matches("^[a-z0-9-]+$")) {
-            throw new ServletException(new WebserverAPI.BadRequestException("appId can only contain letters, numbers and hyphens"));
+            throw new ServletException(
+                    new WebserverAPI.BadRequestException("appId can only contain letters, numbers and hyphens"));
         }
 
         return appId;
@@ -101,7 +106,8 @@ public class Utils {
         }
 
         if (INVALID_WORDS_FOR_TENANTID.contains(tenantId)) {
-            throw new ServletException(new WebserverAPI.BadRequestException("Cannot use '" + tenantId + "'" + " as a tenantId"));
+            throw new ServletException(
+                    new WebserverAPI.BadRequestException("Cannot use '" + tenantId + "'" + " as a tenantId"));
         }
 
         if (tenantId.startsWith("appid-")) {
@@ -109,7 +115,8 @@ public class Utils {
         }
 
         if (!tenantId.matches("^[a-z0-9-]+$")) {
-            throw new ServletException(new WebserverAPI.BadRequestException("tenantId can only contain letters, numbers and hyphens"));
+            throw new ServletException(
+                    new WebserverAPI.BadRequestException("tenantId can only contain letters, numbers and hyphens"));
         }
 
         return tenantId;

@@ -57,7 +57,7 @@ public class SessionRemoveAPITest2_7 {
 
     @Test
     public void activeUsersTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -68,46 +68,46 @@ public class SessionRemoveAPITest2_7 {
 
         // Case where we don't have userId:
         {
-        // create sessions s1, s2
-        String userId = "userId";
-        JsonObject userDataInJWT = new JsonObject();
-        userDataInJWT.addProperty("key", "value");
-        JsonObject userDataInDatabase = new JsonObject();
-        userDataInDatabase.addProperty("key", "value");
+            // create sessions s1, s2
+            String userId = "userId";
+            JsonObject userDataInJWT = new JsonObject();
+            userDataInJWT.addProperty("key", "value");
+            JsonObject userDataInDatabase = new JsonObject();
+            userDataInDatabase.addProperty("key", "value");
 
-        JsonObject sessionRequest = new JsonObject();
-        sessionRequest.addProperty("userId", userId);
-        sessionRequest.add("userDataInJWT", userDataInJWT);
-        sessionRequest.add("userDataInDatabase", userDataInDatabase);
-        sessionRequest.addProperty("enableAntiCsrf", false);
+            JsonObject sessionRequest = new JsonObject();
+            sessionRequest.addProperty("userId", userId);
+            sessionRequest.add("userDataInJWT", userDataInJWT);
+            sessionRequest.add("userDataInDatabase", userDataInDatabase);
+            sessionRequest.addProperty("enableAntiCsrf", false);
 
-        // create session s1
-        JsonObject s1Info = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", sessionRequest, 1000, 1000, 2, SemVer.v2_7.get(),
-                "session");
-        assertEquals(s1Info.get("status").getAsString(), "OK");
+            // create session s1
+            JsonObject s1Info = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/session", sessionRequest, 1000, 1000, 2, SemVer.v2_7.get(),
+                    "session");
+            assertEquals(s1Info.get("status").getAsString(), "OK");
 
-        // create session s2
-        JsonObject s2Info = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", sessionRequest, 1000, 1000, 2, SemVer.v2_7.get(),
-                "session");
-        assertEquals(s2Info.get("status").getAsString(), "OK");
+            // create session s2
+            JsonObject s2Info = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/session", sessionRequest, 1000, 1000, 2, SemVer.v2_7.get(),
+                    "session");
+            assertEquals(s2Info.get("status").getAsString(), "OK");
 
-        // remove s2 and make sure they are returned
-        Thread.sleep(1); // ensures a unique timestamp
-        long checkpoint1 = System.currentTimeMillis();
+            // remove s2 and make sure they are returned
+            Thread.sleep(1); // ensures a unique timestamp
+            long checkpoint1 = System.currentTimeMillis();
 
-        JsonObject sessionRemoveBody = new JsonObject();
-        JsonArray sessionHandles = new JsonArray();
-        sessionHandles.add(new JsonPrimitive(s2Info.get("session").getAsJsonObject().get("handle").getAsString()));
-        sessionRemoveBody.add("sessionHandles", sessionHandles);
+            JsonObject sessionRemoveBody = new JsonObject();
+            JsonArray sessionHandles = new JsonArray();
+            sessionHandles.add(new JsonPrimitive(s2Info.get("session").getAsJsonObject().get("handle").getAsString()));
+            sessionRemoveBody.add("sessionHandles", sessionHandles);
 
-        HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session/remove", sessionRemoveBody, 1000, 1000, null,
-                SemVer.v2_7.get(), "session");
+            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/session/remove", sessionRemoveBody, 1000, 1000, null,
+                    SemVer.v2_7.get(), "session");
 
-        int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), checkpoint1);
-        assert (activeUsers == 0); // user ID is not set so not counted as active (we don't have userId)
+            int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), checkpoint1);
+            assert (activeUsers == 0); // user ID is not set so not counted as active (we don't have userId)
         }
 
         // Case where we have UserId:
@@ -166,7 +166,7 @@ public class SessionRemoveAPITest2_7 {
     // * only s1 and s3 are returned.
     @Test
     public void testRemovingMultipleSessionsGivesCorrectOutput() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -255,7 +255,7 @@ public class SessionRemoveAPITest2_7 {
 
     @Test
     public void testRevoking1SessionUsingSessionHandle() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -309,7 +309,7 @@ public class SessionRemoveAPITest2_7 {
 
     @Test
     public void testRemovingSessionByUserId() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
