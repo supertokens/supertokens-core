@@ -232,6 +232,7 @@ If you think this is a project you could use in the future, please :star2: this 
   <tr>
 <td align="center"><a href="https://github.com/Lehoczky"><img src="https://avatars.githubusercontent.com/u/31937175?v=4" width="100px;" alt=""/><br /><sub><b>Lehoczky Zoltán</b></sub></a></td>
 <td align="center"><a href="https://github.com/virajkanwade"><img src="https://avatars.githubusercontent.com/u/316111?v=4" width="100px;" alt=""/><br /><sub><b>Viraj Kanwade</b></sub></a></td>
+<td align="center"><a href="https://github.com/anuragmerndev"><img src="https://avatars.githubusercontent.com/u/144275260?v=4" width="100px;" alt=""/><br /><sub><b>Anurag Srivastava</b></sub></a></td>
   </tr>
 </table>
 
