@@ -63,8 +63,6 @@ public class CoreConfig {
     @ConfigDescription("Time in seconds for how long an access token is valid for. [Default: 3600 (1 hour)]")
     private long access_token_validity = 3600; // in seconds
 
-    private long access_token_validity_ms = 0;
-
     @NotConflictingInApp
     @JsonProperty
     @ConfigDescription("Deprecated, please see changelog. Only used in CDI<=2.18 If true, allows for immediate revocation of any access token. Keep in mind that setting this to true will result in a db query for each API call that requires authentication. (Default: false)")
@@ -74,8 +72,6 @@ public class CoreConfig {
     @JsonProperty
     @ConfigDescription("Time in mins for how long a refresh token is valid for. [Default: 60 * 2400 (100 days)]")
     private double refresh_token_validity = 60 * 2400; // in mins
-
-    private double refresh_token_validity_ms = 0;
 
     @IgnoreForAnnotationCheck
     @JsonProperty
@@ -130,7 +126,6 @@ public class CoreConfig {
     @JsonAlias({ "access_token_dynamic_signing_key_update_interval", "access_token_signing_key_update_interval" })
     @ConfigDescription("Time in hours for how frequently the dynamic signing key will change. [Default: 168 (1 week)]")
     private double access_token_dynamic_signing_key_update_interval = 168; // in hours
-    private double access_token_dynamic_signing_key_update_interval_ms = 0;
 
     @ConfigYamlOnly
     @JsonProperty
@@ -356,7 +351,7 @@ public class CoreConfig {
     }
 
     public long getAccessTokenValidityInMillis() {
-        return access_token_validity_ms;
+        return access_token_validity * 1000;
     }
 
     public boolean getAccessTokenBlacklisting() {
@@ -364,7 +359,7 @@ public class CoreConfig {
     }
 
     public long getRefreshTokenValidityInMillis() {
-        return (long) (refresh_token_validity_ms);
+        return (long) (refresh_token_validity * 60 * 1000);
     }
 
     public long getPasswordResetTokenLifetime() {
@@ -411,7 +406,7 @@ public class CoreConfig {
     }
 
     public long getAccessTokenDynamicSigningKeyUpdateIntervalInMillis() {
-        return (long) (access_token_dynamic_signing_key_update_interval_ms);
+        return (long) (access_token_dynamic_signing_key_update_interval * 3600 * 1000);
     }
 
     public String[] getAPIKeys() {
@@ -750,11 +745,6 @@ public class CoreConfig {
                 throw new InvalidConfigException("supertokens_saas_load_only_cud is invalid");
             }
         }
-
-        access_token_validity_ms = access_token_validity * 1000;
-        access_token_dynamic_signing_key_update_interval_ms = access_token_dynamic_signing_key_update_interval * 3600
-                * 1000;
-        refresh_token_validity_ms = refresh_token_validity * 60 * 1000;
 
         isNormalizedAndValid = true;
     }
