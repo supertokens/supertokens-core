@@ -39,13 +39,15 @@ import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdExce
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.pluginInterface.multitenancy.*;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.MultitenancyStorage;
+import io.supertokens.pluginInterface.multitenancy.TenantConfig;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateClientTypeException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateTenantException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateThirdPartyIdException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.multitenancy.sqlStorage.MultitenancySQLStorage;
-import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.passwordless.exception.DuplicatePhoneNumberException;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
 import io.supertokens.storageLayer.StorageLayer;
@@ -459,7 +461,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                     for (String phoneNumber : phoneNumbers) {
                         AuthRecipeUserInfo[] usersWithSamePhoneNumber =
                                 authRecipeStorage.listPrimaryUsersByPhoneNumber_Transaction(
-                                tenantIdentifier.toAppIdentifier(), con, phoneNumber);
+                                        tenantIdentifier.toAppIdentifier(), con, phoneNumber);
                         for (AuthRecipeUserInfo userWithSamePhoneNumber : usersWithSamePhoneNumber) {
                             if (userWithSamePhoneNumber.getSupertokensUserId()
                                     .equals(userToAssociate.getSupertokensUserId())) {
@@ -489,7 +491,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                     for (LoginMethod.ThirdParty tp : thirdParties) {
                         AuthRecipeUserInfo[] usersWithSameThirdPartyInfo =
                                 authRecipeStorage.listPrimaryUsersByThirdPartyInfo_Transaction(
-                                tenantIdentifier.toAppIdentifier(), con, tp.id, tp.userId);
+                                        tenantIdentifier.toAppIdentifier(), con, tp.id, tp.userId);
                         for (AuthRecipeUserInfo userWithSameThirdPartyInfo : usersWithSameThirdPartyInfo) {
                             if (userWithSameThirdPartyInfo.getSupertokensUserId()
                                     .equals(userToAssociate.getSupertokensUserId())) {

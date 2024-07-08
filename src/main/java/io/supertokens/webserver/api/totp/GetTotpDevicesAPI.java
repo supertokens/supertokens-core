@@ -55,7 +55,7 @@ public class GetTotpDevicesAPI extends WebserverAPI {
                 // Try to find the appIdentifier with right storage based on the userId
                 StorageAndUserIdMapping storageAndUserIdMapping =
                         enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
-                        req, userId, UserIdType.ANY, false);
+                                req, userId, UserIdType.ANY, false);
                 storage = storageAndUserIdMapping.storage;
             } catch (UnknownUserIdException e) {
                 throw new IllegalStateException("should never happen");

@@ -291,8 +291,8 @@ public class EmailVerificationQueries {
 
         HashMap<String, String> supertokensUserIdToExternalUserIdMap =
                 UserIdMappingQueries.getUserIdMappingWithUserIds_Transaction(
-                start,
-                sqlCon, appIdentifier, supertokensUserIds);
+                        start,
+                        sqlCon, appIdentifier, supertokensUserIds);
         HashMap<String, String> externalUserIdToSupertokensUserIdMap = new HashMap<>();
 
         List<String> supertokensOrExternalUserIdsToQuery = new ArrayList<>();

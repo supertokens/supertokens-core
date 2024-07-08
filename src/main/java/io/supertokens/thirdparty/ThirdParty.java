@@ -29,9 +29,11 @@ import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage
 import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerificationSQLStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.pluginInterface.multitenancy.*;
-import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateUserIdException;
 import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
@@ -271,9 +273,9 @@ public class ThirdParty {
 
                             AuthRecipeUserInfo[] usersFromDb1 =
                                     authRecipeStorage.listPrimaryUsersByThirdPartyInfo_Transaction(
-                                    appIdentifier,
-                                    con,
-                                    thirdPartyId, thirdPartyUserId);
+                                            appIdentifier,
+                                            con,
+                                            thirdPartyId, thirdPartyUserId);
                             for (AuthRecipeUserInfo user : usersFromDb1) {
                                 if (user.tenantIds.contains(tenantIdentifier.getTenantId())) {
                                     if (userFromDb1 != null) {

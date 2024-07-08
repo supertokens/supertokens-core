@@ -239,7 +239,7 @@ public class MultitenancyQueries {
             // Map (tenantIdentifier) -> thirdPartyId -> provider
             HashMap<TenantIdentifier, HashMap<String, ThirdPartyConfig.Provider>> providerMap =
                     ThirdPartyProviderSQLHelper.selectAll(
-                    start, providerClientsMap);
+                            start, providerClientsMap);
 
             // Map (tenantIdentifier) -> firstFactors
             HashMap<TenantIdentifier, String[]> firstFactorsMap = MfaSqlHelper.selectAllFirstFactors(start);
@@ -247,7 +247,7 @@ public class MultitenancyQueries {
             // Map (tenantIdentifier) -> requiredSecondaryFactors
             HashMap<TenantIdentifier, String[]> requiredSecondaryFactorsMap =
                     MfaSqlHelper.selectAllRequiredSecondaryFactors(
-                    start);
+                            start);
 
             return TenantConfigSQLHelper.selectAll(start, providerMap, firstFactorsMap, requiredSecondaryFactorsMap);
         } catch (SQLException throwables) {

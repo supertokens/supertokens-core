@@ -503,7 +503,8 @@ public class MultitenantAPITest {
         } catch (HttpResponseException e) {
             assertEquals(400, e.statusCode);
             assertEquals(
-                    "Http error. Status Code: 400. Message: Cannot create a userId mapping where the externalId is also a SuperTokens userID",
+                    "Http error. Status Code: 400. Message: Cannot create a userId mapping where the externalId is " +
+                            "also a SuperTokens userID",
                     e.getMessage());
         }
     }

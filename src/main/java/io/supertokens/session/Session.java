@@ -35,7 +35,9 @@ import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.pluginInterface.multitenancy.*;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantConfig;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.session.noSqlStorage.SessionNoSQLStorage_1;
@@ -461,7 +463,7 @@ public class Session {
 
                     io.supertokens.pluginInterface.session.noSqlStorage.SessionInfoWithLastUpdated sessionInfo =
                             sessionStorage
-                            .getSessionInfo_Transaction(accessToken.sessionHandle);
+                                    .getSessionInfo_Transaction(accessToken.sessionHandle);
 
                     if (sessionInfo == null) {
                         throw new UnauthorisedException("Session missing in db");
@@ -686,7 +688,7 @@ public class Session {
                     String sessionHandle = refreshTokenInfo.sessionHandle;
                     io.supertokens.pluginInterface.session.noSqlStorage.SessionInfoWithLastUpdated sessionInfo =
                             sessionStorage
-                            .getSessionInfo_Transaction(sessionHandle);
+                                    .getSessionInfo_Transaction(sessionHandle);
 
                     if (sessionInfo == null || sessionInfo.expiry < System.currentTimeMillis()) {
                         throw new UnauthorisedException("Session missing in db or has expired");

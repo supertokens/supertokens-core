@@ -226,7 +226,7 @@ public class UserIdMapping {
 
         io.supertokens.pluginInterface.useridmapping.UserIdMapping[] userIdMappings =
                 uidMappingStorage.getUserIdMapping_Transaction(
-                con, appIdentifier, userId);
+                        con, appIdentifier, userId);
 
         if (userIdMappings.length == 0) {
             return null;

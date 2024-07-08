@@ -78,7 +78,7 @@ public class ImportTotpDeviceAPI extends WebserverAPI {
             try {
                 StorageAndUserIdMapping mappingAndStorage =
                         enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
-                        req, userId, UserIdType.ANY, false);
+                                req, userId, UserIdType.ANY, false);
                 storage = mappingAndStorage.storage;
             } catch (UnknownUserIdException e) {
                 throw new IllegalStateException("should never happen");
