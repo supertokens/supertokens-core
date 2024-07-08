@@ -151,3 +151,6 @@ disable_telemetry: true
 # (OPTIONAL | Default: null) string value. If specified, the supertokens service will only load the specified CUD even
 # if there are more CUDs in the database and block all other CUDs from being used from this instance.
 # supertokens_saas_load_only_cud:
+
+# (OPTIONAL | Default: null) string value. If specified, the core uses this URL to connect to the OAuth provider service.
+# oauth_provider_service_url:
