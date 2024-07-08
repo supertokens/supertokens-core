@@ -16,13 +16,14 @@
 
 package io.supertokens.test;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.google.gson.*;
 import io.supertokens.ProcessState;
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.multitenancy.Multitenancy;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.multitenancy.MultitenancyHelper;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.utils.SemVer;
@@ -188,6 +189,53 @@ public class ApiVersionAPITest {
         }
 
         process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testAPIVersionWorksEvenIfThereIsAnException() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        if (StorageLayer.isInMemDb(process.getProcess())) {
+            return;
+        }
+
+        JsonObject tenantConfigJson = new JsonObject();
+        tenantConfigJson.add("postgresql_connection_uri",
+                new JsonPrimitive("postgresql://root:root@localhost:5432/random"));
+        tenantConfigJson.add("mysql_connection_uri",
+                new JsonPrimitive("mysql://root:root@localhost:3306/random"));
+
+        TenantIdentifier tid = new TenantIdentifier(null, "a1", null);
+
+        TenantConfig tenantConfig = new TenantConfig(tid,
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                new PasswordlessConfig(false),
+                null, null,
+                tenantConfigJson);
+        StorageLayer.getMultitenancyStorage(process.getProcess()).createTenant(tenantConfig);
+        MultitenancyHelper.getInstance(process.getProcess()).refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(true);
+
+        Map<String,String> params = new HashMap<>();
+        params.put("websiteDomain", "https://example.com");
+        params.put("apiDomain", "https://api.example.com");
+
+        // Should not throw any exception
+        HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/appid-a1/apiversion", params, 1000, 1000, null, null, "");
+
+        process.kill(false);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 }
