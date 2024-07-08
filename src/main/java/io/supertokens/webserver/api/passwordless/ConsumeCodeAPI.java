@@ -84,7 +84,7 @@ public class ConsumeCodeAPI extends WebserverAPI {
 
         try {
             TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
-            io.supertokens.webserver.api.passwordless.Utils.checkIfPasswordlessIsEnabledForTenant(main,
+            io.supertokens.webserver.api.passwordless.Utils.assertIfPasswordlessIsEnabledForTenant(main,
                     tenantIdentifier, getVersionFromRequest(req));
             Storage storage = this.getTenantStorage(req);
             ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(

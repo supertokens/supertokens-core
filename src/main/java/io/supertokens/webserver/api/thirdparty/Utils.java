@@ -26,8 +26,8 @@ import io.supertokens.utils.SemVer;
 import jakarta.servlet.ServletException;
 
 public class Utils {
-    public static void checkIfThirdPartyIsEnabledForTenant(Main main, TenantIdentifier tenantIdentifier,
-                                                              SemVer version) throws ServletException {
+    public static void assertIfThirdPartyIsEnabledForTenant(Main main, TenantIdentifier tenantIdentifier,
+                                                            SemVer version) throws ServletException {
         TenantConfig config = Multitenancy.getTenantInfo(main, tenantIdentifier);
         if (!MultitenancyHelper.isThirdPartyEnabled(config, version)) {
             throw new ServletException(new BadPermissionException("ThirdParty login not enabled for tenant"));

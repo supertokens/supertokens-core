@@ -26,8 +26,8 @@ import io.supertokens.utils.SemVer;
 import jakarta.servlet.ServletException;
 
 public class Utils {
-    public static void checkIfEmailPasswordIsEnabledForTenant(Main main, TenantIdentifier tenantIdentifier,
-                                                              SemVer version) throws ServletException {
+    public static void assertIfEmailPasswordIsEnabledForTenant(Main main, TenantIdentifier tenantIdentifier,
+                                                               SemVer version) throws ServletException {
         TenantConfig config = Multitenancy.getTenantInfo(main, tenantIdentifier);
         if (!MultitenancyHelper.isEmailPasswordEnabled(config, version)) {
             throw new ServletException(new BadPermissionException("Email password login not enabled for tenant"));

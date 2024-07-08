@@ -80,7 +80,7 @@ public class CreateCodeAPI extends WebserverAPI {
 
         try {
             TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
-            io.supertokens.webserver.api.passwordless.Utils.checkIfPasswordlessIsEnabledForTenant(main,
+            io.supertokens.webserver.api.passwordless.Utils.assertIfPasswordlessIsEnabledForTenant(main,
                     tenantIdentifier, getVersionFromRequest(req));
             CreateCodeResponse createCodeResponse = Passwordless.createCode(
                     tenantIdentifier,

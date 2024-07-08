@@ -23,7 +23,6 @@ import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
-import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
@@ -69,7 +68,7 @@ public class GeneratePasswordResetTokenAPI extends WebserverAPI {
         }
 
         try {
-            io.supertokens.webserver.api.emailpassword.Utils.checkIfEmailPasswordIsEnabledForTenant(main, tenantIdentifier, getVersionFromRequest(req));
+            io.supertokens.webserver.api.emailpassword.Utils.assertIfEmailPasswordIsEnabledForTenant(main, tenantIdentifier, getVersionFromRequest(req));
 
             StorageAndUserIdMapping storageAndUserIdMapping =
                     getStorageAndUserIdMappingForTenantSpecificApi(req, userId, UserIdType.ANY);

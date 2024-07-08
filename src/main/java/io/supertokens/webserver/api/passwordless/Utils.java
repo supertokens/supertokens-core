@@ -26,7 +26,7 @@ import io.supertokens.utils.SemVer;
 import jakarta.servlet.ServletException;
 
 public class Utils {
-    public static void checkIfPasswordlessIsEnabledForTenant(Main main, TenantIdentifier tenantIdentifier,
+    public static void assertIfPasswordlessIsEnabledForTenant(Main main, TenantIdentifier tenantIdentifier,
                                                               SemVer version) throws ServletException {
         TenantConfig config = Multitenancy.getTenantInfo(main, tenantIdentifier);
         if (!MultitenancyHelper.isPasswordlessEnabled(config, version)) {
