@@ -146,7 +146,8 @@ public class LogTest {
             uniqueLines.add(line);
         }
 
-        assertEquals(uniqueLines.size(), lines.length - 1); // we have 1 repeating line which initialises connection pool
+        assertEquals(uniqueLines.size(),
+                lines.length - 1); // we have 1 repeating line which initialises connection pool
 
         assertEquals(7, Multitenancy.getAllTenants(process.getProcess()).length);
 

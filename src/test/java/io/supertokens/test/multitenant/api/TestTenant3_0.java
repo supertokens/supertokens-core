@@ -290,8 +290,10 @@ public class TestTenant3_0 {
             }
         });
 
-        String[] valueForCreate = new String[]{"a1", "a-1", "a-B-1", "CAPS1", "MixedCase", "capsinquery", "mixedcaseinquery"};
-        String[] valueForQuery  = new String[]{"a1", "a-1", "A-b-1", "CAPS1", "MixedCase", "CAPSINQUERY", "MixedCaseInQuery"};
+        String[] valueForCreate = new String[]{"a1", "a-1", "a-B-1", "CAPS1", "MixedCase", "capsinquery",
+                "mixedcaseinquery"};
+        String[] valueForQuery = new String[]{"a1", "a-1", "A-b-1", "CAPS1", "MixedCase", "CAPSINQUERY",
+                "MixedCaseInQuery"};
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
@@ -318,7 +320,8 @@ public class TestTenant3_0 {
             return;
         }
 
-        String[] valueForCreate = new String[]{"a_b", "1", "1a", "appid-hello", "AppId-Hello", "recipe", "reCipe", "CONFIG", "users", "Users"};
+        String[] valueForCreate = new String[]{"a_b", "1", "1a", "appid-hello", "AppId-Hello", "recipe", "reCipe",
+                "CONFIG", "users", "Users"};
         for (int i = 0; i < valueForCreate.length; i++) {
             try {
                 createTenant(
@@ -359,9 +362,9 @@ public class TestTenant3_0 {
     }
 
     private static JsonObject createTenant(Main main, TenantIdentifier sourceTenant, String tenantId,
-                                     Boolean emailPasswordEnabled,
-                                          Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
-                                          JsonObject coreConfig) throws HttpResponseException, IOException {
+                                           Boolean emailPasswordEnabled,
+                                           Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
+                                           JsonObject coreConfig) throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("tenantId", tenantId);
         if (emailPasswordEnabled != null) {

@@ -117,10 +117,11 @@ public class TestTenantCreationBehaviour {
             assertEquals("public", tenant.get("tenantId").getAsString());
             assertTrue(tenant.has("thirdParty"));
             // firstFactors and requiredSecondaryFactors should be null
-            assertFalse( tenant.get("thirdParty").getAsJsonObject().has("providers"));
+            assertFalse(tenant.get("thirdParty").getAsJsonObject().has("providers"));
         }
 
-        createTenant_3_0(process.getProcess(), new TenantIdentifier(null, "a1", null), "t1", null, null, null, new JsonObject());
+        createTenant_3_0(process.getProcess(), new TenantIdentifier(null, "a1", null), "t1", null, null, null,
+                new JsonObject());
 
         {
             // Get using CDI 3.0
@@ -157,7 +158,7 @@ public class TestTenantCreationBehaviour {
             assertEquals("t1", tenant.get("tenantId").getAsString());
             assertTrue(tenant.has("thirdParty"));
             // firstFactors and requiredSecondaryFactors should be null
-            assertFalse( tenant.get("thirdParty").getAsJsonObject().has("providers"));
+            assertFalse(tenant.get("thirdParty").getAsJsonObject().has("providers"));
         }
     }
 
@@ -167,7 +168,8 @@ public class TestTenantCreationBehaviour {
             return;
         }
 
-        createApp_5_0(process.getProcess(), TenantIdentifier.BASE_TENANT, "a1", null, null, null, false, null, false, null, new JsonObject());
+        createApp_5_0(process.getProcess(), TenantIdentifier.BASE_TENANT, "a1", null, null, null, false, null, false,
+                null, new JsonObject());
         {
             // Get using CDI 3.0
             JsonObject tenant = getTenant_3_0(new TenantIdentifier(null, "a1", null), process.getProcess());
@@ -203,10 +205,11 @@ public class TestTenantCreationBehaviour {
             assertEquals("public", tenant.get("tenantId").getAsString());
             assertTrue(tenant.has("thirdParty"));
             // firstFactors and requiredSecondaryFactors should be null
-            assertFalse( tenant.get("thirdParty").getAsJsonObject().has("providers"));
+            assertFalse(tenant.get("thirdParty").getAsJsonObject().has("providers"));
         }
 
-        createTenant_5_0(process.getProcess(), new TenantIdentifier(null, "a1", null), "t1", null, null, null, false, null, false, null, new JsonObject());
+        createTenant_5_0(process.getProcess(), new TenantIdentifier(null, "a1", null), "t1", null, null, null, false,
+                null, false, null, new JsonObject());
 
         {
             // Get using CDI 3.0
@@ -243,7 +246,7 @@ public class TestTenantCreationBehaviour {
             assertEquals("t1", tenant.get("tenantId").getAsString());
             assertTrue(tenant.has("thirdParty"));
             // firstFactors and requiredSecondaryFactors should be null
-            assertFalse( tenant.get("thirdParty").getAsJsonObject().has("providers"));
+            assertFalse(tenant.get("thirdParty").getAsJsonObject().has("providers"));
         }
     }
 
@@ -253,7 +256,8 @@ public class TestTenantCreationBehaviour {
             return;
         }
 
-        createApp_5_1(process.getProcess(), TenantIdentifier.BASE_TENANT, "a1", false, null, false, null, new JsonObject());
+        createApp_5_1(process.getProcess(), TenantIdentifier.BASE_TENANT, "a1", false, null, false, null,
+                new JsonObject());
         {
             // Get using CDI 3.0
             JsonObject tenant = getTenant_3_0(new TenantIdentifier(null, "a1", null), process.getProcess());
@@ -289,10 +293,11 @@ public class TestTenantCreationBehaviour {
             assertEquals("public", tenant.get("tenantId").getAsString());
             assertTrue(tenant.has("thirdParty"));
             // firstFactors and requiredSecondaryFactors should be null
-            assertFalse( tenant.get("thirdParty").getAsJsonObject().has("providers"));
+            assertFalse(tenant.get("thirdParty").getAsJsonObject().has("providers"));
         }
 
-        createTenant_5_1(process.getProcess(), new TenantIdentifier(null, "a1", null), "t1", false, null, false, null, new JsonObject());
+        createTenant_5_1(process.getProcess(), new TenantIdentifier(null, "a1", null), "t1", false, null, false, null,
+                new JsonObject());
 
         {
             // Get using CDI 3.0
@@ -331,7 +336,7 @@ public class TestTenantCreationBehaviour {
             assertTrue(tenant.has("firstFactors"));
             assertEquals(0, tenant.get("firstFactors").getAsJsonArray().size());
             // requiredSecondaryFactors should be null
-            assertTrue( tenant.get("thirdParty").getAsJsonObject().has("providers"));
+            assertTrue(tenant.get("thirdParty").getAsJsonObject().has("providers"));
         }
     }
 
@@ -341,7 +346,8 @@ public class TestTenantCreationBehaviour {
             return;
         }
 
-        createApp_5_1(process.getProcess(), TenantIdentifier.BASE_TENANT, "a1", true, new String[]{"emailpassword", "otp-phone"}, false, null, new JsonObject());
+        createApp_5_1(process.getProcess(), TenantIdentifier.BASE_TENANT, "a1", true,
+                new String[]{"emailpassword", "otp-phone"}, false, null, new JsonObject());
 
         {
             // Get using CDI 3.0
@@ -382,10 +388,11 @@ public class TestTenantCreationBehaviour {
             assertTrue(tenant.has("firstFactors"));
             assertEquals(2, tenant.get("firstFactors").getAsJsonArray().size());
             // requiredSecondaryFactors should be null
-            assertFalse( tenant.get("thirdParty").getAsJsonObject().has("providers"));
+            assertFalse(tenant.get("thirdParty").getAsJsonObject().has("providers"));
         }
 
-        createTenant_5_1(process.getProcess(), new TenantIdentifier(null, "a1", null), "t1", true, new String[]{"emailpassword", "otp-phone"}, false, null, new JsonObject());
+        createTenant_5_1(process.getProcess(), new TenantIdentifier(null, "a1", null), "t1", true,
+                new String[]{"emailpassword", "otp-phone"}, false, null, new JsonObject());
 
         {
             // Get using CDI 3.0
@@ -439,7 +446,8 @@ public class TestTenantCreationBehaviour {
         createTenant_3_0(process.getProcess(), TenantIdentifier.BASE_TENANT, "t1", null, null, null, new JsonObject());
 
         // Enable emailpassword and passwordless using firstFactors input
-        createTenant_5_1(process.getProcess(), TenantIdentifier.BASE_TENANT, "t1", true, new String[]{"emailpassword", "otp-phone"}, false, null, new JsonObject());
+        createTenant_5_1(process.getProcess(), TenantIdentifier.BASE_TENANT, "t1", true,
+                new String[]{"emailpassword", "otp-phone"}, false, null, new JsonObject());
 
         {
             // Get using CDI 3.0
@@ -484,9 +492,9 @@ public class TestTenantCreationBehaviour {
     }
 
     private static JsonObject createApp_3_0(Main main, TenantIdentifier sourceTenant, String appId,
-                                         Boolean emailPasswordEnabled,
-                                        Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
-                                        JsonObject coreConfig) throws HttpResponseException, IOException {
+                                            Boolean emailPasswordEnabled,
+                                            Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
+                                            JsonObject coreConfig) throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("appId", appId);
         if (emailPasswordEnabled != null) {
@@ -628,9 +636,9 @@ public class TestTenantCreationBehaviour {
     }
 
     private static JsonObject createTenant_3_0(Main main, TenantIdentifier sourceTenant, String tenantId,
-                                           Boolean emailPasswordEnabled,
-                                           Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
-                                           JsonObject coreConfig) throws HttpResponseException, IOException {
+                                               Boolean emailPasswordEnabled,
+                                               Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
+                                               JsonObject coreConfig) throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("tenantId", tenantId);
         if (emailPasswordEnabled != null) {

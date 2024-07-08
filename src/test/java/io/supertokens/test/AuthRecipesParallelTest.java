@@ -20,15 +20,9 @@ import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
-import io.supertokens.featureflag.EE_FEATURES;
-import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
-import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.storageLayer.StorageLayer;
-import io.supertokens.test.TestingProcessManager;
-import io.supertokens.test.Utils;
 import io.supertokens.thirdparty.ThirdParty;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -79,7 +73,7 @@ public class AuthRecipesParallelTest {
             long st = System.currentTimeMillis();
             for (int i = 0; i < numberOfThreads; i++) {
                 ex.execute(() -> {
-                    while(true) {
+                    while (true) {
                         try {
                             EmailPassword.signIn(process.getProcess(), "test@example.com", "password");
                             counter.incrementAndGet();
@@ -97,7 +91,9 @@ public class AuthRecipesParallelTest {
             ex.shutdown();
 
             ex.awaitTermination(2, TimeUnit.MINUTES);
-            System.out.println("Time taken for " + numberOfThreads + " sign in parallel: " + (System.currentTimeMillis() - st) + "ms");
+            System.out.println(
+                    "Time taken for " + numberOfThreads + " sign in parallel: " + (System.currentTimeMillis() - st) +
+                            "ms");
             System.out.println("Retry counter: " + retryCounter.get());
             assertEquals(counter.get(), numberOfThreads);
 
@@ -143,7 +139,7 @@ public class AuthRecipesParallelTest {
         long st = System.currentTimeMillis();
         for (int i = 0; i < numberOfThreads; i++) {
             ex.execute(() -> {
-                while(true) {
+                while (true) {
                     try {
                         ThirdParty.signInUp(process.getProcess(), "google", "google-user", "test@example.com");
                         counter.incrementAndGet();
@@ -161,9 +157,10 @@ public class AuthRecipesParallelTest {
         ex.shutdown();
 
         ex.awaitTermination(2, TimeUnit.MINUTES);
-        System.out.println("Time taken for " + numberOfThreads + " sign in parallel: " + (System.currentTimeMillis() - st) + "ms");
+        System.out.println(
+                "Time taken for " + numberOfThreads + " sign in parallel: " + (System.currentTimeMillis() - st) + "ms");
         System.out.println("Retry counter: " + retryCounter.get());
-        assertEquals (counter.get(), numberOfThreads);
+        assertEquals(counter.get(), numberOfThreads);
         assertEquals(0, retryCounter.get());
 
         process.kill();

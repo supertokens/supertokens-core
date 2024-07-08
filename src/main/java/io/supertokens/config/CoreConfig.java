@@ -48,7 +48,7 @@ import java.util.regex.PatternSyntaxException;
 public class CoreConfig {
 
     @IgnoreForAnnotationCheck
-    public static final String[] PROTECTED_CONFIGS = new String[] {
+    public static final String[] PROTECTED_CONFIGS = new String[]{
             "ip_allow_regex",
             "ip_deny_regex",
     };
@@ -65,7 +65,10 @@ public class CoreConfig {
 
     @NotConflictingInApp
     @JsonProperty
-    @ConfigDescription("Deprecated, please see changelog. Only used in CDI<=2.18 If true, allows for immediate revocation of any access token. Keep in mind that setting this to true will result in a db query for each API call that requires authentication. (Default: false)")
+    @ConfigDescription(
+            "Deprecated, please see changelog. Only used in CDI<=2.18 If true, allows for immediate revocation of any" +
+                    " access token. Keep in mind that setting this to true will result in a db query for each API " +
+                    "call that requires authentication. (Default: false)")
     private boolean access_token_blacklisting = false;
 
     @NotConflictingInApp
@@ -75,22 +78,27 @@ public class CoreConfig {
 
     @IgnoreForAnnotationCheck
     @JsonProperty
-    @ConfigDescription("Time in milliseconds for how long a password reset token / link is valid for. [Default: 3600000 (1 hour)]")
+    @ConfigDescription(
+            "Time in milliseconds for how long a password reset token / link is valid for. [Default: 3600000 (1 hour)]")
     private long password_reset_token_lifetime = 3600000; // in MS
 
     @IgnoreForAnnotationCheck
     @JsonProperty
-    @ConfigDescription("Time in milliseconds for how long an email verification token / link is valid for. [Default: 24 * 3600 * 1000 (1 day)]")
+    @ConfigDescription(
+            "Time in milliseconds for how long an email verification token / link is valid for. [Default: 24 * 3600 *" +
+                    " 1000 (1 day)]")
     private long email_verification_token_lifetime = 24 * 3600 * 1000; // in MS
 
     @IgnoreForAnnotationCheck
     @JsonProperty
-    @ConfigDescription("The maximum number of code input attempts per login before the user needs to restart. (Default: 5)")
+    @ConfigDescription(
+            "The maximum number of code input attempts per login before the user needs to restart. (Default: 5)")
     private int passwordless_max_code_input_attempts = 5;
 
     @IgnoreForAnnotationCheck
     @JsonProperty
-    @ConfigDescription("Time in milliseconds for how long a passwordless code is valid for. [Default: 900000 (15 mins)]")
+    @ConfigDescription(
+            "Time in milliseconds for how long a passwordless code is valid for. [Default: 900000 (15 mins)]")
     private long passwordless_code_lifetime = 900000; // in MS
 
     @IgnoreForAnnotationCheck
@@ -100,7 +108,9 @@ public class CoreConfig {
 
     @IgnoreForAnnotationCheck
     @JsonProperty
-    @ConfigDescription("The time in seconds for which the user will be rate limited once totp_max_attempts is crossed. [Default: 900 (15 mins)]")
+    @ConfigDescription(
+            "The time in seconds for which the user will be rate limited once totp_max_attempts is crossed. [Default:" +
+                    " 900 (15 mins)]")
     private int totp_rate_limit_cooldown_sec = 900; // in seconds (Default 15 mins)
 
     @IgnoreForAnnotationCheck
@@ -108,22 +118,30 @@ public class CoreConfig {
 
     @ConfigYamlOnly
     @JsonProperty
-    @ConfigDescription("Give the path to a file (on your local system) in which the SuperTokens service can write INFO logs to. Set it to \"null\" if you want it to log to standard output instead. (Default: installation directory/logs/info.log)")
+    @ConfigDescription(
+            "Give the path to a file (on your local system) in which the SuperTokens service can write INFO logs to. " +
+                    "Set it to \"null\" if you want it to log to standard output instead. (Default: installation " +
+                    "directory/logs/info.log)")
     private String info_log_path = logDefault;
 
     @ConfigYamlOnly
     @JsonProperty
-    @ConfigDescription("Give the path to a file (on your local system) in which the SuperTokens service can write ERROR logs to. Set it to \"null\" if you want it to log to standard error instead. (Default: installation directory/logs/error.log)")
+    @ConfigDescription(
+            "Give the path to a file (on your local system) in which the SuperTokens service can write ERROR logs to." +
+                    " Set it to \"null\" if you want it to log to standard error instead. (Default: installation " +
+                    "directory/logs/error.log)")
     private String error_log_path = logDefault;
 
     @NotConflictingInApp
     @JsonProperty
-    @ConfigDescription("Deprecated, please see changelog. If this is set to true, the access tokens created using CDI<=2.18 will be signed using a static signing key. (Default: true)")
+    @ConfigDescription(
+            "Deprecated, please see changelog. If this is set to true, the access tokens created using CDI<=2.18 will" +
+                    " be signed using a static signing key. (Default: true)")
     private boolean access_token_signing_key_dynamic = true;
 
     @NotConflictingInApp
     @JsonProperty("access_token_dynamic_signing_key_update_interval")
-    @JsonAlias({ "access_token_dynamic_signing_key_update_interval", "access_token_signing_key_update_interval" })
+    @JsonAlias({"access_token_dynamic_signing_key_update_interval", "access_token_signing_key_update_interval"})
     @ConfigDescription("Time in hours for how frequently the dynamic signing key will change. [Default: 168 (1 week)]")
     private double access_token_dynamic_signing_key_update_interval = 168; // in hours
 
@@ -134,7 +152,9 @@ public class CoreConfig {
 
     @ConfigYamlOnly
     @JsonProperty
-    @ConfigDescription("The host on which SuperTokens service runs. Values here can be localhost, example.com, 0.0.0.0 or any IP address associated with your machine. (Default: localhost)")
+    @ConfigDescription(
+            "The host on which SuperTokens service runs. Values here can be localhost, example.com, 0.0.0.0 or any IP" +
+                    " address associated with your machine. (Default: localhost)")
     private String host = "localhost";
 
     @ConfigYamlOnly
@@ -144,18 +164,23 @@ public class CoreConfig {
 
     @NotConflictingInApp
     @JsonProperty
-    @ConfigDescription("The API keys to query an instance using this config file. The format is \"key1,key2,key3\". Keys can only contain '=', '-' and alpha-numeric (including capital) chars. Each key must have a minimum length of 20 chars. (Default: null)")
+    @ConfigDescription(
+            "The API keys to query an instance using this config file. The format is \"key1,key2,key3\". Keys can " +
+                    "only contain '=', '-' and alpha-numeric (including capital) chars. Each key must have a minimum " +
+                    "length of 20 chars. (Default: null)")
     private String api_keys = null;
 
     @NotConflictingInApp
     @JsonProperty
-    @ConfigDescription("Learn more about Telemetry here: https://github.com/supertokens/supertokens-core/wiki/Telemetry. (Default: false)")
+    @ConfigDescription(
+            "Learn more about Telemetry here: https://github.com/supertokens/supertokens-core/wiki/Telemetry. " +
+                    "(Default: false)")
     private boolean disable_telemetry = false;
 
     @NotConflictingInApp
     @JsonProperty
     @ConfigDescription("The password hashing algorithm to use. Values are \"ARGON2\" | \"BCRYPT\". (Default: BCRYPT)")
-    @EnumProperty({ "ARGON2", "BCRYPT" })
+    @EnumProperty({"ARGON2", "BCRYPT"})
     private String password_hashing_alg = "BCRYPT";
 
     @ConfigYamlOnly
@@ -175,12 +200,16 @@ public class CoreConfig {
 
     @ConfigYamlOnly
     @JsonProperty
-    @ConfigDescription("Number of concurrent argon2 hashes that can happen at the same time for sign up or sign in requests. (Default: 1)")
+    @ConfigDescription(
+            "Number of concurrent argon2 hashes that can happen at the same time for sign up or sign in requests. " +
+                    "(Default: 1)")
     private int argon2_hashing_pool_size = 1;
 
     @ConfigYamlOnly
     @JsonProperty
-    @ConfigDescription("Number of concurrent firebase scrypt hashes that can happen at the same time for sign in requests. (Default: 1)")
+    @ConfigDescription(
+            "Number of concurrent firebase scrypt hashes that can happen at the same time for sign in requests. " +
+                    "(Default: 1)")
     private int firebase_password_hashing_pool_size = 1;
 
     @ConfigYamlOnly
@@ -207,8 +236,10 @@ public class CoreConfig {
 
     @ConfigYamlOnly
     @JsonProperty
-    @ConfigDescription("Logging level for the core. Values are \"DEBUG\" | \"INFO\" | \"WARN\" | \"ERROR\" | \"NONE\". (Default: INFO)")
-    @EnumProperty({ "DEBUG", "INFO", "WARN", "ERROR", "NONE" })
+    @ConfigDescription(
+            "Logging level for the core. Values are \"DEBUG\" | \"INFO\" | \"WARN\" | \"ERROR\" | \"NONE\". (Default:" +
+                    " INFO)")
+    @EnumProperty({"DEBUG", "INFO", "WARN", "ERROR", "NONE"})
     private String log_level = "INFO";
 
     @NotConflictingInApp
@@ -218,27 +249,40 @@ public class CoreConfig {
 
     @IgnoreForAnnotationCheck
     @JsonProperty
-    @ConfigDescription("Regex for allowing requests from IP addresses that match with the value. For example, use the value of 127\\.\\d+\\.\\d+\\.\\d+|::1|0:0:0:0:0:0:0:1 to allow only localhost to query the core")
+    @ConfigDescription(
+            "Regex for allowing requests from IP addresses that match with the value. For example, use the value of " +
+                    "127\\.\\d+\\.\\d+\\.\\d+|::1|0:0:0:0:0:0:0:1 to allow only localhost to query the core")
     private String ip_allow_regex = null;
 
     @IgnoreForAnnotationCheck
     @JsonProperty
-    @ConfigDescription("Regex for denying requests from IP addresses that match with the value. Comment this value to deny no IP address.")
+    @ConfigDescription(
+            "Regex for denying requests from IP addresses that match with the value. Comment this value to deny no IP" +
+                    " address.")
     private String ip_deny_regex = null;
 
     @ConfigYamlOnly
     @JsonProperty
-    @ConfigDescription("This is used when deploying the core in SuperTokens SaaS infrastructure. If set, limits what database information is shown to / modifiable by the dev when they query the core to get the information about their tenants. It only exposes that information when this key is used instead of the regular api_keys config.")
+    @ConfigDescription(
+            "This is used when deploying the core in SuperTokens SaaS infrastructure. If set, limits what database " +
+                    "information is shown to / modifiable by the dev when they query the core to get the information " +
+                    "about their tenants. It only exposes that information when this key is used instead of the " +
+                    "regular api_keys config.")
     private String supertokens_saas_secret = null;
 
     @NotConflictingInApp
     @JsonProperty
-    @ConfigDescription("This is used when the core needs to assume a specific CDI version when CDI version is not specified in the request. When set to null, the core will assume the latest version of the CDI. (Default: null)")
+    @ConfigDescription(
+            "This is used when the core needs to assume a specific CDI version when CDI version is not specified in " +
+                    "the request. When set to null, the core will assume the latest version of the CDI. (Default: " +
+                    "null)")
     private String supertokens_max_cdi_version = null;
 
     @ConfigYamlOnly
     @JsonProperty
-    @ConfigDescription("If specified, the supertokens service will only load the specified CUD even if there are more CUDs in the database and block all other CUDs from being used from this instance.")
+    @ConfigDescription(
+            "If specified, the supertokens service will only load the specified CUD even if there are more CUDs in " +
+                    "the database and block all other CUDs from being used from this instance.")
     private String supertokens_saas_load_only_cud = null;
 
     @IgnoreForAnnotationCheck
@@ -636,7 +680,8 @@ public class CoreConfig {
                     String[] allowedValues = field.getAnnotation(EnumProperty.class).value();
                     try {
                         String value = field.get(this) != null ? field.get(this).toString() : null;
-                        if (!Arrays.asList(Arrays.stream(allowedValues).map(str -> str.toLowerCase()).toArray()).contains(value.toLowerCase())) {
+                        if (!Arrays.asList(Arrays.stream(allowedValues).map(str -> str.toLowerCase()).toArray())
+                                .contains(value.toLowerCase())) {
                             throw new InvalidConfigException(
                                     fieldId + " property is not set correctly. It must be one of "
                                             + Arrays.toString(allowedValues));
@@ -791,7 +836,8 @@ public class CoreConfig {
         }
     }
 
-    public static ArrayList<ConfigFieldInfo> getConfigFieldsInfoForDashboard(Main main, TenantIdentifier tenantIdentifier)
+    public static ArrayList<ConfigFieldInfo> getConfigFieldsInfoForDashboard(Main main,
+                                                                             TenantIdentifier tenantIdentifier)
             throws IOException, TenantOrAppNotFoundException {
         JsonObject tenantConfig = new Gson().toJsonTree(Config.getConfig(tenantIdentifier, main)).getAsJsonObject();
 
@@ -804,7 +850,7 @@ public class CoreConfig {
                 Field field = CoreConfig.class.getDeclaredField(fieldId);
                 // If fieldId is not annotated with JsonProperty
                 // or is annotated with ConfigYamlOnly, then skip
-                if ( !field.isAnnotationPresent(JsonProperty.class)
+                if (!field.isAnnotationPresent(JsonProperty.class)
                         || field.isAnnotationPresent(ConfigYamlOnly.class)
                         || fieldId.equals("core_config_version")) {
                     continue;

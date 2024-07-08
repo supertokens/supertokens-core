@@ -224,7 +224,8 @@ public class AppTenantUserTest {
                 continue;
             }
 
-            AuthRecipeUserInfo user = EmailPassword.signUp(app, appStorage, process.getProcess(), "test@example.com", "password");
+            AuthRecipeUserInfo user = EmailPassword.signUp(app, appStorage, process.getProcess(), "test@example.com",
+                    "password");
             String userId = user.getSupertokensUserId();
 
             Multitenancy.addUserIdToTenant(process.getProcess(), tenant, tenantStorage, userId);
@@ -292,7 +293,8 @@ public class AppTenantUserTest {
         Storage tenantStorage = (
                 StorageLayer.getStorage(tenant, process.getProcess()));
 
-        AuthRecipeUserInfo user = EmailPassword.signUp(tenant, tenantStorage, process.getProcess(), "test@example.com", "password");
+        AuthRecipeUserInfo user = EmailPassword.signUp(tenant, tenantStorage, process.getProcess(), "test@example.com",
+                "password");
         String userId = user.getSupertokensUserId();
 
         Multitenancy.deleteTenant(tenant, process.getProcess());

@@ -92,10 +92,12 @@ public class CreateOrUpdateThirdPartyConfigAPI extends WebserverAPI {
                     // Loop through all the existing thirdParty providers in the db
 
                     if (!provider.thirdPartyId.equals(thirdPartyId)) {
-                        // if the thirdPartyId is not the same as the one we are trying to update, add it to the new list
+                        // if the thirdPartyId is not the same as the one we are trying to update, add it to the new
+                        // list
                         newProviders.add(provider);
                     } else {
-                        // if the thirdPartyId is the same as the one we are trying to update, add the one from json input
+                        // if the thirdPartyId is the same as the one we are trying to update, add the one from json
+                        // input
                         // to the new list
                         ThirdPartyConfig.Provider newProvider = new Gson().fromJson(config,
                                 ThirdPartyConfig.Provider.class);

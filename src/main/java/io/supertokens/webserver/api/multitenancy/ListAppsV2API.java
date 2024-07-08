@@ -77,9 +77,9 @@ public class ListAppsV2API extends WebserverAPI {
             boolean shouldProtect = shouldProtectProtectedConfig(req);
             JsonArray appsArray = new JsonArray();
             for (Map.Entry<String, List<TenantConfig>> entry : appsToTenants.entrySet()) {
-               String appId = entry.getKey();
-               JsonObject appObject = new JsonObject();
-               appObject.addProperty("appId", appId);
+                String appId = entry.getKey();
+                JsonObject appObject = new JsonObject();
+                appObject.addProperty("appId", appId);
                 JsonArray tenantsArray = new JsonArray();
                 for (TenantConfig tenantConfig : entry.getValue()) {
                     JsonObject tenantConfigJson = tenantConfig.toJson_v2(shouldProtect, storage,

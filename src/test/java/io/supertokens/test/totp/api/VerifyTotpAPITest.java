@@ -90,7 +90,7 @@ public class VerifyTotpAPITest {
 
     @Test
     public void testApi() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         // Trigger rate limiting on 1 wrong attempts:
         Utils.setValueInConfig("totp_max_attempts", "2");

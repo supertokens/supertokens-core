@@ -125,11 +125,11 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
 
                     Map<ResourceDistributor.KeyClass, JsonObject> normalizedTenantsFromDb =
                             Config.getNormalisedConfigsForAllTenants(
-                            filteredTenantsFromDb, Config.getBaseConfigAsJsonObject(main));
+                                    filteredTenantsFromDb, Config.getBaseConfigAsJsonObject(main));
 
                     Map<ResourceDistributor.KeyClass, JsonObject> normalizedTenantsFromMemory =
                             Config.getNormalisedConfigsForAllTenants(
-                            this.tenantConfigs, Config.getBaseConfigAsJsonObject(main));
+                                    this.tenantConfigs, Config.getBaseConfigAsJsonObject(main));
 
                     List<TenantIdentifier> tenantsThatChanged = new ArrayList<>();
 
@@ -267,7 +267,8 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
 
         return Arrays.stream(inputTenantConfigs)
                 .filter(tenantConfig -> tenantConfig.tenantIdentifier.getConnectionUriDomain().equals(loadOnlyCUD)
-                        || tenantConfig.tenantIdentifier.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI))
+                        || tenantConfig.tenantIdentifier.getConnectionUriDomain()
+                        .equals(TenantIdentifier.DEFAULT_CONNECTION_URI))
                 .toArray(TenantConfig[]::new);
     }
 

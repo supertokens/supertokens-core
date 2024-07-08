@@ -55,7 +55,7 @@ public class RemovePermissionsForRoleAPITest {
 
     @Test
     public void testBadInput() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -79,7 +79,7 @@ public class RemovePermissionsForRoleAPITest {
 
         {
             // role is missing
-            String[] permissions = new String[] { "testPermission" };
+            String[] permissions = new String[]{"testPermission"};
             String permissionsString = "{ permissions : " + Arrays.toString(permissions) + " }";
 
             JsonObject request = new JsonParser().parse(permissionsString).getAsJsonObject();
@@ -97,7 +97,7 @@ public class RemovePermissionsForRoleAPITest {
 
         {
             // role is a number
-            String[] permissions = new String[] { "testPermission" };
+            String[] permissions = new String[]{"testPermission"};
             String permissionsString = "{ permissions : " + Arrays.toString(permissions) + " }";
             JsonObject request = new JsonParser().parse(permissionsString).getAsJsonObject();
             request.addProperty("role", 1);
@@ -165,7 +165,7 @@ public class RemovePermissionsForRoleAPITest {
 
     @Test
     public void deletePermissionsFromRoleTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -175,13 +175,13 @@ public class RemovePermissionsForRoleAPITest {
         }
 
         // create a role with permissions
-        String[] permissions = new String[] { "permission1", "permission2", "permission3" };
+        String[] permissions = new String[]{"permission1", "permission2", "permission3"};
         String role = "role";
 
         UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, permissions);
 
         // call api to remove some permissions
-        String[] permissionsToRemove = new String[] { "permission1", "permission2" };
+        String[] permissionsToRemove = new String[]{"permission1", "permission2"};
         String permissionsString = "{ permissions : " + Arrays.toString(permissionsToRemove) + " }";
         JsonObject requestBody = new JsonParser().parse(permissionsString).getAsJsonObject();
 
@@ -205,7 +205,7 @@ public class RemovePermissionsForRoleAPITest {
 
     @Test
     public void deleteAllPermissionsFromRoleTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -215,7 +215,7 @@ public class RemovePermissionsForRoleAPITest {
         }
 
         // create a role with permissions
-        String[] permissions = new String[] { "permission1", "permission2", "permission3" };
+        String[] permissions = new String[]{"permission1", "permission2", "permission3"};
         String role = "role";
 
         UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, permissions);
@@ -242,7 +242,7 @@ public class RemovePermissionsForRoleAPITest {
 
     @Test
     public void deletePermissionsFromAnUnknownRole() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -252,7 +252,7 @@ public class RemovePermissionsForRoleAPITest {
         }
 
         // call api to remove some permissions from an unknownRole
-        String[] permissionsToRemove = new String[] { "testPermission" };
+        String[] permissionsToRemove = new String[]{"testPermission"};
         String permissionsString = "{ permissions : " + Arrays.toString(permissionsToRemove) + " }";
         JsonObject requestBody = new JsonParser().parse(permissionsString).getAsJsonObject();
 

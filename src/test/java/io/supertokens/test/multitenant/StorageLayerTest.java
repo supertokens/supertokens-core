@@ -40,7 +40,10 @@ import org.junit.*;
 import org.junit.rules.TestRule;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -779,7 +782,8 @@ public class StorageLayerTest {
                                     "https://auth.example.com",
                                     true,
                                     new ThirdPartyConfig.UserInfoMap(
-                                            new ThirdPartyConfig.UserInfoMapKeyValue("id1", "email1", "email_verified1"),
+                                            new ThirdPartyConfig.UserInfoMapKeyValue("id1", "email1",
+                                                    "email_verified1"),
                                             new ThirdPartyConfig.UserInfoMapKeyValue("id2", "email2", "email_verified2")
                                     )
                             )
@@ -889,7 +893,8 @@ public class StorageLayerTest {
                                     "https://auth.example.com",
                                     true,
                                     new ThirdPartyConfig.UserInfoMap(
-                                            new ThirdPartyConfig.UserInfoMapKeyValue("id1", "email1", "email_verified1"),
+                                            new ThirdPartyConfig.UserInfoMapKeyValue("id1", "email1",
+                                                    "email_verified1"),
                                             new ThirdPartyConfig.UserInfoMapKeyValue("id2", "email2", "email_verified2")
                                     )
                             )
@@ -964,7 +969,8 @@ public class StorageLayerTest {
                                     "https://auth.example.com",
                                     true,
                                     new ThirdPartyConfig.UserInfoMap(
-                                            new ThirdPartyConfig.UserInfoMapKeyValue("id1", "email1", "email_verified1"),
+                                            new ThirdPartyConfig.UserInfoMapKeyValue("id1", "email1",
+                                                    "email_verified1"),
                                             new ThirdPartyConfig.UserInfoMapKeyValue("id2", "email2", "email_verified2")
                                     )
                             ),
@@ -992,7 +998,8 @@ public class StorageLayerTest {
                                     "https://auth.example.com",
                                     true,
                                     new ThirdPartyConfig.UserInfoMap(
-                                            new ThirdPartyConfig.UserInfoMapKeyValue("id1", "email1", "email_verified1"),
+                                            new ThirdPartyConfig.UserInfoMapKeyValue("id1", "email1",
+                                                    "email_verified1"),
                                             new ThirdPartyConfig.UserInfoMapKeyValue("id2", "email2", "email_verified2")
                                     )
                             )
@@ -1068,7 +1075,8 @@ public class StorageLayerTest {
                                     "https://auth.example.com",
                                     true,
                                     new ThirdPartyConfig.UserInfoMap(
-                                            new ThirdPartyConfig.UserInfoMapKeyValue("id1", "email1", "email_verified1"),
+                                            new ThirdPartyConfig.UserInfoMapKeyValue("id1", "email1",
+                                                    "email_verified1"),
                                             new ThirdPartyConfig.UserInfoMapKeyValue("id2", "email2", "email_verified2")
                                     )
                             )
@@ -1109,7 +1117,8 @@ public class StorageLayerTest {
                                     "https://auth.example.com",
                                     true,
                                     new ThirdPartyConfig.UserInfoMap(
-                                            new ThirdPartyConfig.UserInfoMapKeyValue("id1", "email1", "email_verified1"),
+                                            new ThirdPartyConfig.UserInfoMapKeyValue("id1", "email1",
+                                                    "email_verified1"),
                                             new ThirdPartyConfig.UserInfoMapKeyValue("id2", "email2", "email_verified2")
                                     )
                             ),
@@ -1137,7 +1146,8 @@ public class StorageLayerTest {
                                     "https://auth.example.com",
                                     true,
                                     new ThirdPartyConfig.UserInfoMap(
-                                            new ThirdPartyConfig.UserInfoMapKeyValue("id1", "email1", "email_verified1"),
+                                            new ThirdPartyConfig.UserInfoMapKeyValue("id1", "email1",
+                                                    "email_verified1"),
                                             new ThirdPartyConfig.UserInfoMapKeyValue("id2", "email2", "email_verified2")
                                     )
                             )
@@ -1213,7 +1223,8 @@ public class StorageLayerTest {
                                     "https://auth.example.com",
                                     true,
                                     new ThirdPartyConfig.UserInfoMap(
-                                            new ThirdPartyConfig.UserInfoMapKeyValue("id1", "email1", "email_verified1"),
+                                            new ThirdPartyConfig.UserInfoMapKeyValue("id1", "email1",
+                                                    "email_verified1"),
                                             new ThirdPartyConfig.UserInfoMapKeyValue("id2", "email2", "email_verified2")
                                     )
                             )
@@ -1262,7 +1273,8 @@ public class StorageLayerTest {
                                     "https://auth.example.com",
                                     true,
                                     new ThirdPartyConfig.UserInfoMap(
-                                            new ThirdPartyConfig.UserInfoMapKeyValue("id1", "email1", "email_verified1"),
+                                            new ThirdPartyConfig.UserInfoMapKeyValue("id1", "email1",
+                                                    "email_verified1"),
                                             new ThirdPartyConfig.UserInfoMapKeyValue("id2", "email2", "email_verified2")
                                     )
                             )
@@ -1346,7 +1358,8 @@ public class StorageLayerTest {
                                     "https://auth.example.com",
                                     true,
                                     new ThirdPartyConfig.UserInfoMap(
-                                            new ThirdPartyConfig.UserInfoMapKeyValue("id1", "email1", "email_verified1"),
+                                            new ThirdPartyConfig.UserInfoMapKeyValue("id1", "email1",
+                                                    "email_verified1"),
                                             new ThirdPartyConfig.UserInfoMapKeyValue("id2", "email2", "email_verified2")
                                     )
                             ),
@@ -1374,7 +1387,8 @@ public class StorageLayerTest {
                                     "https://auth.example.com",
                                     true,
                                     new ThirdPartyConfig.UserInfoMap(
-                                            new ThirdPartyConfig.UserInfoMapKeyValue("id1", "email1", "email_verified1"),
+                                            new ThirdPartyConfig.UserInfoMapKeyValue("id1", "email1",
+                                                    "email_verified1"),
                                             new ThirdPartyConfig.UserInfoMapKeyValue("id2", "email2", "email_verified2")
                                     )
                             )
@@ -1450,7 +1464,8 @@ public class StorageLayerTest {
                                     "https://auth.example.com",
                                     true,
                                     new ThirdPartyConfig.UserInfoMap(
-                                            new ThirdPartyConfig.UserInfoMapKeyValue("id1", "email1", "email_verified1"),
+                                            new ThirdPartyConfig.UserInfoMapKeyValue("id1", "email1",
+                                                    "email_verified1"),
                                             new ThirdPartyConfig.UserInfoMapKeyValue("id2", "email2", "email_verified2")
                                     )
                             ),
@@ -1478,7 +1493,8 @@ public class StorageLayerTest {
                                     "https://auth.example.com",
                                     true,
                                     new ThirdPartyConfig.UserInfoMap(
-                                            new ThirdPartyConfig.UserInfoMapKeyValue("id1", "email1", "email_verified1"),
+                                            new ThirdPartyConfig.UserInfoMapKeyValue("id1", "email1",
+                                                    "email_verified1"),
                                             new ThirdPartyConfig.UserInfoMapKeyValue("id2", "email2", "email_verified2")
                                     )
                             )
@@ -1562,7 +1578,8 @@ public class StorageLayerTest {
                                     "https://auth.example.com",
                                     true,
                                     new ThirdPartyConfig.UserInfoMap(
-                                            new ThirdPartyConfig.UserInfoMapKeyValue("id1", "email1", "email_verified1"),
+                                            new ThirdPartyConfig.UserInfoMapKeyValue("id1", "email1",
+                                                    "email_verified1"),
                                             new ThirdPartyConfig.UserInfoMapKeyValue("id2", "email2", "email_verified2")
                                     )
                             ),
@@ -1590,7 +1607,8 @@ public class StorageLayerTest {
                                     "https://auth.example.com",
                                     true,
                                     new ThirdPartyConfig.UserInfoMap(
-                                            new ThirdPartyConfig.UserInfoMapKeyValue("id1", "email1", "email_verified1"),
+                                            new ThirdPartyConfig.UserInfoMapKeyValue("id1", "email1",
+                                                    "email_verified1"),
                                             new ThirdPartyConfig.UserInfoMapKeyValue("id2", "email2", "email_verified2")
                                     )
                             )
@@ -1689,7 +1707,9 @@ public class StorageLayerTest {
                         ));
                         break;
                     } catch (Exception e) {
-                        if (e.getMessage().toLowerCase().contains("request timed out") || e.getMessage().contains("concurrent delete") || e.getMessage().contains("concurrent update")) {
+                        if (e.getMessage().toLowerCase().contains("request timed out") ||
+                                e.getMessage().contains("concurrent delete") ||
+                                e.getMessage().contains("concurrent update")) {
                             // retry, because connection was timed out, or
                             // in case of postgres, number of retries may not be enough, we retry here anyway
                             continue;
@@ -1962,12 +1982,14 @@ public class StorageLayerTest {
         ), false);
 
 
-        String userPoolId = StorageLayer.getStorage(new TenantIdentifier(null, null, "t1"), process.getProcess()).getUserPoolId();
+        String userPoolId = StorageLayer.getStorage(new TenantIdentifier(null, null, "t1"), process.getProcess())
+                .getUserPoolId();
 
         {
             Set<String> userPoolIds = new HashSet<>();
-            Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingStorages = process.getProcess()
-                    .getResourceDistributor().getAllResourcesWithResourceKey(StorageLayer.RESOURCE_KEY);
+            Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingStorages =
+                    process.getProcess()
+                            .getResourceDistributor().getAllResourcesWithResourceKey(StorageLayer.RESOURCE_KEY);
 
             for (ResourceDistributor.SingletonResource sl : existingStorages.values()) {
                 userPoolIds.add(((StorageLayer) sl).getUnderlyingStorage().getUserPoolId());
@@ -1976,12 +1998,14 @@ public class StorageLayerTest {
         }
 
         Multitenancy.deleteTenant(new TenantIdentifier(null, null, "t1"), process.getProcess());
-        MultitenancyHelper.getInstance(process.getProcess()).refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(true);
+        MultitenancyHelper.getInstance(process.getProcess())
+                .refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(true);
 
         {
             Set<String> userPoolIds = new HashSet<>();
-            Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingStorages = process.getProcess()
-                    .getResourceDistributor().getAllResourcesWithResourceKey(StorageLayer.RESOURCE_KEY);
+            Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingStorages =
+                    process.getProcess()
+                            .getResourceDistributor().getAllResourcesWithResourceKey(StorageLayer.RESOURCE_KEY);
 
             for (ResourceDistributor.SingletonResource sl : existingStorages.values()) {
                 userPoolIds.add(((StorageLayer) sl).getUnderlyingStorage().getUserPoolId());
@@ -1990,12 +2014,14 @@ public class StorageLayerTest {
         }
 
         Multitenancy.deleteTenant(new TenantIdentifier(null, null, "t2"), process.getProcess());
-        MultitenancyHelper.getInstance(process.getProcess()).refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(true);
+        MultitenancyHelper.getInstance(process.getProcess())
+                .refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(true);
 
         {
             Set<String> userPoolIds = new HashSet<>();
-            Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingStorages = process.getProcess()
-                    .getResourceDistributor().getAllResourcesWithResourceKey(StorageLayer.RESOURCE_KEY);
+            Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingStorages =
+                    process.getProcess()
+                            .getResourceDistributor().getAllResourcesWithResourceKey(StorageLayer.RESOURCE_KEY);
 
             for (ResourceDistributor.SingletonResource sl : existingStorages.values()) {
                 userPoolIds.add(((StorageLayer) sl).getUnderlyingStorage().getUserPoolId());
@@ -2008,7 +2034,8 @@ public class StorageLayerTest {
     }
 
     @Test
-    public void testThatOriginalStorageIsNotClosedIfTheStorageForATenantChangesAndTheOriginalStorageIsUsedByAnotherTenant() throws Exception {
+    public void testThatOriginalStorageIsNotClosedIfTheStorageForATenantChangesAndTheOriginalStorageIsUsedByAnotherTenant()
+            throws Exception {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);

@@ -206,7 +206,8 @@ public class Main {
 
             if (!StorageLayer.isInMemDb(this)) {
                 // we want to init storage connection once again so that the base storage also contains the right
-                // tenant identifier set passed to the init. So we call the resetPostConnectCallbackForBaseTenantStorage.
+                // tenant identifier set passed to the init. So we call the
+                // resetPostConnectCallbackForBaseTenantStorage.
                 StorageLayer.getBaseStorage(this).close();
             }
 

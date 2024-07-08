@@ -292,8 +292,10 @@ public class TestTenant5_0 {
             }
         });
 
-        String[] valueForCreate = new String[]{"a1", "a-1", "a-B-1", "CAPS1", "MixedCase", "capsinquery", "mixedcaseinquery"};
-        String[] valueForQuery  = new String[]{"a1", "a-1", "A-b-1", "CAPS1", "MixedCase", "CAPSINQUERY", "MixedCaseInQuery"};
+        String[] valueForCreate = new String[]{"a1", "a-1", "a-B-1", "CAPS1", "MixedCase", "capsinquery",
+                "mixedcaseinquery"};
+        String[] valueForQuery = new String[]{"a1", "a-1", "A-b-1", "CAPS1", "MixedCase", "CAPSINQUERY",
+                "MixedCaseInQuery"};
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
@@ -320,7 +322,8 @@ public class TestTenant5_0 {
             return;
         }
 
-        String[] valueForCreate = new String[]{"a_b", "1", "1a", "appid-hello", "AppId-Hello", "recipe", "reCipe", "CONFIG", "users", "Users"};
+        String[] valueForCreate = new String[]{"a_b", "1", "1a", "appid-hello", "AppId-Hello", "recipe", "reCipe",
+                "CONFIG", "users", "Users"};
         for (int i = 0; i < valueForCreate.length; i++) {
             try {
                 createTenant(
@@ -448,7 +451,8 @@ public class TestTenant5_0 {
         assertEquals(7, tenant.entrySet().size());
         assertTrue(tenant.get("firstFactors").isJsonArray());
         assertEquals(4, tenant.get("firstFactors").getAsJsonArray().size());
-        assertEquals(Set.of(firstFactors), Set.of(new Gson().fromJson(tenant.get("firstFactors").getAsJsonArray(), String[].class)));
+        assertEquals(Set.of(firstFactors),
+                Set.of(new Gson().fromJson(tenant.get("firstFactors").getAsJsonArray(), String[].class)));
 
         response = createTenant(
                 process.getProcess(),
@@ -501,7 +505,8 @@ public class TestTenant5_0 {
         assertEquals(7, tenant.entrySet().size());
         assertTrue(tenant.get("requiredSecondaryFactors").isJsonArray());
         assertEquals(1, tenant.get("requiredSecondaryFactors").getAsJsonArray().size());
-        assertEquals(requiredSecondaryFactors, new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class));
+        assertEquals(requiredSecondaryFactors,
+                new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class));
 
         response = createTenant(
                 process.getProcess(),
@@ -516,7 +521,8 @@ public class TestTenant5_0 {
         assertEquals(7, tenant.entrySet().size());
         assertTrue(tenant.get("requiredSecondaryFactors").isJsonArray());
         assertEquals(1, tenant.get("requiredSecondaryFactors").getAsJsonArray().size());
-        assertEquals(requiredSecondaryFactors, new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class));
+        assertEquals(requiredSecondaryFactors,
+                new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class));
 
         // custom factors
         requiredSecondaryFactors = new String[]{"biometric"};
@@ -533,7 +539,8 @@ public class TestTenant5_0 {
         assertEquals(7, tenant.entrySet().size());
         assertTrue(tenant.get("requiredSecondaryFactors").isJsonArray());
         assertEquals(1, tenant.get("requiredSecondaryFactors").getAsJsonArray().size());
-        assertEquals(requiredSecondaryFactors, new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class));
+        assertEquals(requiredSecondaryFactors,
+                new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class));
 
         // test both
         requiredSecondaryFactors = new String[]{"otp-phone", "emailpassword", "biometric", "custom"};
@@ -550,7 +557,8 @@ public class TestTenant5_0 {
         assertEquals(7, tenant.entrySet().size());
         assertTrue(tenant.get("requiredSecondaryFactors").isJsonArray());
         assertEquals(4, tenant.get("requiredSecondaryFactors").getAsJsonArray().size());
-        assertEquals(Set.of(requiredSecondaryFactors), Set.of(new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class)));
+        assertEquals(Set.of(requiredSecondaryFactors),
+                Set.of(new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class)));
 
         response = createTenant(
                 process.getProcess(),
@@ -586,7 +594,9 @@ public class TestTenant5_0 {
             fail();
         } catch (HttpResponseException e) {
             assertEquals(400, e.statusCode);
-            assertEquals("Http error. Status Code: 400. Message: firstFactors input should not contain duplicate values", e.getMessage());
+            assertEquals(
+                    "Http error. Status Code: 400. Message: firstFactors input should not contain duplicate values",
+                    e.getMessage());
         }
 
         try {
@@ -599,7 +609,10 @@ public class TestTenant5_0 {
             fail();
         } catch (HttpResponseException e) {
             assertEquals(400, e.statusCode);
-            assertEquals("Http error. Status Code: 400. Message: requiredSecondaryFactors input should not contain duplicate values", e.getMessage());
+            assertEquals(
+                    "Http error. Status Code: 400. Message: requiredSecondaryFactors input should not contain " +
+                            "duplicate values",
+                    e.getMessage());
         }
     }
 
@@ -612,11 +625,11 @@ public class TestTenant5_0 {
     }
 
     private static JsonObject createTenant(Main main, TenantIdentifier sourceTenant, String tenantId,
-                                     Boolean emailPasswordEnabled,
-                                          Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
+                                           Boolean emailPasswordEnabled,
+                                           Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
                                            boolean setFirstFactors, String[] firstFactors,
                                            boolean setRequiredSecondaryFactors, String[] requiredSecondaryFactors,
-                                          JsonObject coreConfig) throws HttpResponseException, IOException {
+                                           JsonObject coreConfig) throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("tenantId", tenantId);
         if (emailPasswordEnabled != null) {

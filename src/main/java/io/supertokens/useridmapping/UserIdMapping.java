@@ -59,7 +59,9 @@ public class UserIdMapping {
     }
 
     @TestOnly
-    public static void createUserIdMapping(Main main, AppIdentifier appIdentifier, Storage storage, String supertokensUserId, String externalUserId, String externalUserIdInfo, boolean force)
+    public static void createUserIdMapping(Main main, AppIdentifier appIdentifier, Storage storage,
+                                           String supertokensUserId, String externalUserId, String externalUserIdInfo,
+                                           boolean force)
             throws ServletException, UnknownSuperTokensUserIdException, UserIdMappingAlreadyExistsException,
             StorageQueryException, TenantOrAppNotFoundException {
         createUserIdMapping(
@@ -70,7 +72,8 @@ public class UserIdMapping {
 
     public static void createUserIdMapping(AppIdentifier appIdentifier, Storage[] storages,
                                            String superTokensUserId, String externalUserId,
-                                           String externalUserIdInfo, boolean force, boolean makeExceptionForEmailVerification)
+                                           String externalUserIdInfo, boolean force,
+                                           boolean makeExceptionForEmailVerification)
             throws UnknownSuperTokensUserIdException,
             UserIdMappingAlreadyExistsException, StorageQueryException, ServletException,
             TenantOrAppNotFoundException {
@@ -127,16 +130,22 @@ public class UserIdMapping {
                 // check that none of the non-auth recipes are using the superTokensUserId
                 List<String> storageClasses = findNonAuthStoragesWhereUserIdIsUsedOrAssertIfUsed(appIdentifier,
                         userStorage, superTokensUserId, false);
-                if (storageClasses.size() == 1 && storageClasses.get(0).equals(EmailVerificationStorage.class.getName())) {
-                    // if the userId is used in email verification, then we do an exception and update the isEmailVerified
-                    // to the externalUserId. We do this because we automatically set the isEmailVerified to true for passwordless
-                    // and third party sign in up when the user info from provider says the email is verified and If we don't make
-                    // an exception, then the creation of userIdMapping for the user will be blocked. And, to overcome that the
-                    // email will have to be unverified first, then the userIdMapping should be created and then the email must be
+                if (storageClasses.size() == 1 &&
+                        storageClasses.get(0).equals(EmailVerificationStorage.class.getName())) {
+                    // if the userId is used in email verification, then we do an exception and update the
+                    // isEmailVerified
+                    // to the externalUserId. We do this because we automatically set the isEmailVerified to true for
+                    // passwordless
+                    // and third party sign in up when the user info from provider says the email is verified and If
+                    // we don't make
+                    // an exception, then the creation of userIdMapping for the user will be blocked. And, to
+                    // overcome that the
+                    // email will have to be unverified first, then the userIdMapping should be created and then the
+                    // email must be
                     // verified again on the externalUserId, which is not a good user experience.
                     StorageUtils.getEmailVerificationStorage(userStorage).updateIsEmailVerifiedToExternalUserId(
                             appIdentifier, superTokensUserId, externalUserId);
-                } else  if (storageClasses.size() > 0) {
+                } else if (storageClasses.size() > 0) {
                     String recipeName = storageClasses.get(0);
                     String[] parts = recipeName.split("[.]");
                     recipeName = parts[parts.length - 1];
@@ -166,7 +175,8 @@ public class UserIdMapping {
     @TestOnly
     public static void createUserIdMapping(Main main,
                                            String superTokensUserId, String externalUserId,
-                                           String externalUserIdInfo, boolean force, boolean makeExceptionForEmailVerification)
+                                           String externalUserIdInfo, boolean force,
+                                           boolean makeExceptionForEmailVerification)
             throws UnknownSuperTokensUserIdException,
             UserIdMappingAlreadyExistsException, StorageQueryException, ServletException, UnknownUserIdException {
         try {
@@ -214,8 +224,9 @@ public class UserIdMapping {
             return uidMappingStorage.getUserIdMapping_Transaction(con, appIdentifier, userId, false);
         }
 
-        io.supertokens.pluginInterface.useridmapping.UserIdMapping[] userIdMappings = uidMappingStorage.getUserIdMapping_Transaction(
-                con, appIdentifier, userId);
+        io.supertokens.pluginInterface.useridmapping.UserIdMapping[] userIdMappings =
+                uidMappingStorage.getUserIdMapping_Transaction(
+                        con, appIdentifier, userId);
 
         if (userIdMappings.length == 0) {
             return null;
@@ -400,7 +411,8 @@ public class UserIdMapping {
                 result.add(EmailVerificationStorage.class.getName());
                 if (assertIfUsed) {
                     throw new ServletException(
-                            new WebserverAPI.BadRequestException("UserId is already in use in EmailVerification recipe"));
+                            new WebserverAPI.BadRequestException(
+                                    "UserId is already in use in EmailVerification recipe"));
                 }
             }
         }

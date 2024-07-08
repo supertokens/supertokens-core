@@ -94,7 +94,8 @@ public class VerifyEmailAPI extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", "EMAIL_VERIFICATION_INVALID_TOKEN_ERROR");
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | NoSuchAlgorithmException | StorageTransactionLogicException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | NoSuchAlgorithmException | StorageTransactionLogicException |
+                 TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
 
@@ -112,8 +113,9 @@ public class VerifyEmailAPI extends WebserverAPI {
             AppIdentifier appIdentifier = getAppIdentifier(req);
             Storage storage;
             try {
-                StorageAndUserIdMapping storageAndUserIdMapping = enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
-                        req, userId, UserIdType.ANY, false);
+                StorageAndUserIdMapping storageAndUserIdMapping =
+                        enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
+                                req, userId, UserIdType.ANY, false);
                 storage = storageAndUserIdMapping.storage;
             } catch (UnknownUserIdException e) {
                 throw new IllegalStateException("should never happen");

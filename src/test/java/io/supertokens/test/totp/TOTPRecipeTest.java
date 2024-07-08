@@ -351,9 +351,11 @@ public class TOTPRecipeTest {
         InvalidTotpException invalidTotpException = assertThrows(InvalidTotpException.class,
                 () -> Totp.verifyCode(main, "user", "invalid0"));
         assertEquals(1, invalidTotpException.currentAttempts);
-        invalidTotpException = assertThrows(InvalidTotpException.class, () -> Totp.verifyCode(main, "user", "invalid0"));
+        invalidTotpException = assertThrows(InvalidTotpException.class,
+                () -> Totp.verifyCode(main, "user", "invalid0"));
         assertEquals(2, invalidTotpException.currentAttempts);
-        invalidTotpException = assertThrows(InvalidTotpException.class, () -> Totp.verifyCode(main, "user", "invalid0"));
+        invalidTotpException = assertThrows(InvalidTotpException.class,
+                () -> Totp.verifyCode(main, "user", "invalid0"));
         assertEquals(3, invalidTotpException.currentAttempts);
 
         // This triggered rate limiting again. So even valid codes will fail for
@@ -368,9 +370,11 @@ public class TOTPRecipeTest {
         invalidTotpException = assertThrows(InvalidTotpException.class,
                 () -> Totp.verifyCode(main, "user", "invalid0"));
         assertEquals(1, invalidTotpException.currentAttempts);
-        invalidTotpException = assertThrows(InvalidTotpException.class, () -> Totp.verifyCode(main, "user", "invalid0"));
+        invalidTotpException = assertThrows(InvalidTotpException.class,
+                () -> Totp.verifyCode(main, "user", "invalid0"));
         assertEquals(2, invalidTotpException.currentAttempts);
-        invalidTotpException = assertThrows(InvalidTotpException.class, () -> Totp.verifyCode(main, "user", "invalid0"));
+        invalidTotpException = assertThrows(InvalidTotpException.class,
+                () -> Totp.verifyCode(main, "user", "invalid0"));
         assertEquals(3, invalidTotpException.currentAttempts);
 
         Thread.sleep(1100);
@@ -590,7 +594,8 @@ public class TOTPRecipeTest {
 
         TOTPDevice[] devices = Totp.getDevices(main, "user");
         assert (devices.length == 2);
-        assert (devices[0].equals(device1) && devices[1].equals(device2)) || (devices[1].equals(device1) && devices[0].equals(device2));
+        assert (devices[0].equals(device1) && devices[1].equals(device2)) ||
+                (devices[1].equals(device1) && devices[0].equals(device2));
     }
 
     @Test

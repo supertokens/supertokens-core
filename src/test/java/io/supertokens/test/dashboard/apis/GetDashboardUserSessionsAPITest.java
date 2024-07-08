@@ -59,7 +59,7 @@ public class GetDashboardUserSessionsAPITest {
 
     @Test
     public void BadInputTests() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -104,7 +104,7 @@ public class GetDashboardUserSessionsAPITest {
 
     @Test
     public void testRetrievingSessionsForUser() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -134,7 +134,7 @@ public class GetDashboardUserSessionsAPITest {
         assertEquals("OK", response.get("status").getAsString());
 
         JsonArray sessions = response.get("sessions").getAsJsonArray();
-        
+
         assertNotNull(sessions);
         assertEquals(1, sessions.size());
 

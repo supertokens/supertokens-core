@@ -60,7 +60,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
                 this.handle5_0(req, sourceTenantIdentifier, targetTenantIdentifier, input, resp);
             }
         } catch (BadPermissionException | StorageQueryException | FeatureNotEnabledException
-                | TenantOrAppNotFoundException e) {
+                 | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         } catch (CannotModifyBaseConfigException e) {
             throw new ServletException(new BadRequestException("Cannot modify base config"));
@@ -72,8 +72,8 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
     }
 
     protected void handle_v2(HttpServletRequest req, TenantIdentifier sourceTenantIdentifier,
-                          TenantIdentifier targetTenantIdentifier,
-                          JsonObject input, HttpServletResponse resp)
+                             TenantIdentifier targetTenantIdentifier,
+                             JsonObject input, HttpServletResponse resp)
             throws ServletException, IOException {
 
         try {
@@ -180,13 +180,14 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
     }
 
     private void handle_v2_5_1(HttpServletRequest req, TenantIdentifier sourceTenantIdentifier,
-                           TenantIdentifier targetTenantIdentifier, JsonObject input, HttpServletResponse resp)
+                               TenantIdentifier targetTenantIdentifier, JsonObject input, HttpServletResponse resp)
             throws ServletException, IOException, InvalidProviderConfigException, StorageQueryException,
             FeatureNotEnabledException, TenantOrAppNotFoundException, InvalidConfigException,
             CannotModifyBaseConfigException, BadPermissionException {
 
         if (input.has("emailPasswordEnabled")) {
-            throw new ServletException(new BadRequestException("emailPasswordEnabled is not allowed in this API version"));
+            throw new ServletException(
+                    new BadRequestException("emailPasswordEnabled is not allowed in this API version"));
         }
 
         if (input.has("thirdPartyEnabled")) {
@@ -194,7 +195,8 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
         }
 
         if (input.has("passwordlessEnabled")) {
-            throw new ServletException(new BadRequestException("passwordlessEnabled is not allowed in this API version"));
+            throw new ServletException(
+                    new BadRequestException("passwordlessEnabled is not allowed in this API version"));
         }
 
         JsonObject coreConfig = InputParser.parseJsonObjectOrThrowError(input, "coreConfig", true);
@@ -209,31 +211,39 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
             JsonArray firstFactorsArr = InputParser.parseArrayOrThrowError(input, "firstFactors", true);
             firstFactors = new String[firstFactorsArr.size()];
             for (int i = 0; i < firstFactors.length; i++) {
-                firstFactors[i] = InputParser.parseStringFromElementOrThrowError(firstFactorsArr.get(i), "firstFactors", false);
+                firstFactors[i] = InputParser.parseStringFromElementOrThrowError(firstFactorsArr.get(i), "firstFactors",
+                        false);
             }
             if (firstFactors.length != new HashSet<>(Arrays.asList(firstFactors)).size()) {
-                throw new ServletException(new BadRequestException("firstFactors input should not contain duplicate values"));
+                throw new ServletException(
+                        new BadRequestException("firstFactors input should not contain duplicate values"));
             }
         }
         hasRequiredSecondaryFactors = input.has("requiredSecondaryFactors");
         if (hasRequiredSecondaryFactors && !input.get("requiredSecondaryFactors").isJsonNull()) {
-            JsonArray requiredSecondaryFactorsArr = InputParser.parseArrayOrThrowError(input, "requiredSecondaryFactors", true);
+            JsonArray requiredSecondaryFactorsArr = InputParser.parseArrayOrThrowError(input,
+                    "requiredSecondaryFactors", true);
             requiredSecondaryFactors = new String[requiredSecondaryFactorsArr.size()];
             for (int i = 0; i < requiredSecondaryFactors.length; i++) {
-                requiredSecondaryFactors[i] = InputParser.parseStringFromElementOrThrowError(requiredSecondaryFactorsArr.get(i), "requiredSecondaryFactors", false);
+                requiredSecondaryFactors[i] = InputParser.parseStringFromElementOrThrowError(
+                        requiredSecondaryFactorsArr.get(i), "requiredSecondaryFactors", false);
             }
             if (requiredSecondaryFactors.length != new HashSet<>(Arrays.asList(requiredSecondaryFactors)).size()) {
-                throw new ServletException(new BadRequestException("requiredSecondaryFactors input should not contain duplicate values"));
+                throw new ServletException(
+                        new BadRequestException("requiredSecondaryFactors input should not contain duplicate values"));
             }
         }
 
         if (hasRequiredSecondaryFactors && requiredSecondaryFactors != null && requiredSecondaryFactors.length == 0) {
-            throw new ServletException(new BadRequestException("requiredSecondaryFactors cannot be empty. Set null instead to remove all required secondary factors."));
+            throw new ServletException(new BadRequestException(
+                    "requiredSecondaryFactors cannot be empty. Set null instead to remove all required secondary " +
+                            "factors."));
         }
 
         CoreConfig baseConfig = Config.getBaseConfig(main);
         if (baseConfig.getSuperTokensLoadOnlyCUD() != null) {
-            if (!(targetTenantIdentifier.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI) || targetTenantIdentifier.getConnectionUriDomain().equals(baseConfig.getSuperTokensLoadOnlyCUD()))) {
+            if (!(targetTenantIdentifier.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI) ||
+                    targetTenantIdentifier.getConnectionUriDomain().equals(baseConfig.getSuperTokensLoadOnlyCUD()))) {
                 throw new ServletException(new BadRequestException("Creation of connection uri domain or app or " +
                         "tenant is disallowed"));
             }
@@ -307,35 +317,44 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
             JsonArray firstFactorsArr = InputParser.parseArrayOrThrowError(input, "firstFactors", true);
             firstFactors = new String[firstFactorsArr.size()];
             for (int i = 0; i < firstFactors.length; i++) {
-                firstFactors[i] = InputParser.parseStringFromElementOrThrowError(firstFactorsArr.get(i), "firstFactors", false);
+                firstFactors[i] = InputParser.parseStringFromElementOrThrowError(firstFactorsArr.get(i), "firstFactors",
+                        false);
             }
             if (firstFactors.length != new HashSet<>(Arrays.asList(firstFactors)).size()) {
-                throw new ServletException(new BadRequestException("firstFactors input should not contain duplicate values"));
+                throw new ServletException(
+                        new BadRequestException("firstFactors input should not contain duplicate values"));
             }
         }
         hasRequiredSecondaryFactors = input.has("requiredSecondaryFactors");
         if (hasRequiredSecondaryFactors && !input.get("requiredSecondaryFactors").isJsonNull()) {
-            JsonArray requiredSecondaryFactorsArr = InputParser.parseArrayOrThrowError(input, "requiredSecondaryFactors", true);
+            JsonArray requiredSecondaryFactorsArr = InputParser.parseArrayOrThrowError(input,
+                    "requiredSecondaryFactors", true);
             requiredSecondaryFactors = new String[requiredSecondaryFactorsArr.size()];
             for (int i = 0; i < requiredSecondaryFactors.length; i++) {
-                requiredSecondaryFactors[i] = InputParser.parseStringFromElementOrThrowError(requiredSecondaryFactorsArr.get(i), "requiredSecondaryFactors", false);
+                requiredSecondaryFactors[i] = InputParser.parseStringFromElementOrThrowError(
+                        requiredSecondaryFactorsArr.get(i), "requiredSecondaryFactors", false);
             }
             if (requiredSecondaryFactors.length != new HashSet<>(Arrays.asList(requiredSecondaryFactors)).size()) {
-                throw new ServletException(new BadRequestException("requiredSecondaryFactors input should not contain duplicate values"));
+                throw new ServletException(
+                        new BadRequestException("requiredSecondaryFactors input should not contain duplicate values"));
             }
         }
 
         if (hasFirstFactors && firstFactors != null && firstFactors.length == 0) {
-            throw new ServletException(new BadRequestException("firstFactors cannot be empty. Set null instead to remove all first factors."));
+            throw new ServletException(new BadRequestException(
+                    "firstFactors cannot be empty. Set null instead to remove all first factors."));
         }
 
         if (hasRequiredSecondaryFactors && requiredSecondaryFactors != null && requiredSecondaryFactors.length == 0) {
-            throw new ServletException(new BadRequestException("requiredSecondaryFactors cannot be empty. Set null instead to remove all required secondary factors."));
+            throw new ServletException(new BadRequestException(
+                    "requiredSecondaryFactors cannot be empty. Set null instead to remove all required secondary " +
+                            "factors."));
         }
 
         CoreConfig baseConfig = Config.getBaseConfig(main);
         if (baseConfig.getSuperTokensLoadOnlyCUD() != null) {
-            if (!(targetTenantIdentifier.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI) || targetTenantIdentifier.getConnectionUriDomain().equals(baseConfig.getSuperTokensLoadOnlyCUD()))) {
+            if (!(targetTenantIdentifier.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI) ||
+                    targetTenantIdentifier.getConnectionUriDomain().equals(baseConfig.getSuperTokensLoadOnlyCUD()))) {
                 throw new ServletException(new BadRequestException("Creation of connection uri domain or app or " +
                         "tenant is disallowed"));
             }
@@ -445,7 +464,8 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
 
         CoreConfig baseConfig = Config.getBaseConfig(main);
         if (baseConfig.getSuperTokensLoadOnlyCUD() != null) {
-            if (!(targetTenantIdentifier.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI) || targetTenantIdentifier.getConnectionUriDomain().equals(baseConfig.getSuperTokensLoadOnlyCUD()))) {
+            if (!(targetTenantIdentifier.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI) ||
+                    targetTenantIdentifier.getConnectionUriDomain().equals(baseConfig.getSuperTokensLoadOnlyCUD()))) {
                 throw new ServletException(new BadRequestException("Creation of connection uri domain or app or " +
                         "tenant is disallowed"));
             }

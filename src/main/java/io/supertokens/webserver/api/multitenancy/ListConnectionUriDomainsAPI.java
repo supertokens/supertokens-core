@@ -60,7 +60,8 @@ public class ListConnectionUriDomainsAPI extends WebserverAPI {
 
             if (!tenantIdentifier.equals(new TenantIdentifier(null, null, null))) {
                 throw new BadPermissionException(
-                        "Only the public tenantId, public appId and default connectionUriDomain is allowed to list all " +
+                        "Only the public tenantId, public appId and default connectionUriDomain is allowed to list " +
+                                "all " +
                                 "connectionUriDomains and appIds associated with this " +
                                 "core");
             }
@@ -99,9 +100,11 @@ public class ListConnectionUriDomainsAPI extends WebserverAPI {
                         JsonObject tenantConfigJson;
 
                         if (getVersionFromRequest(req).lesserThan(SemVer.v5_0)) {
-                            tenantConfigJson = tenantConfig.toJson3_0(shouldProtect, storage, CoreConfig.PROTECTED_CONFIGS);
+                            tenantConfigJson = tenantConfig.toJson3_0(shouldProtect, storage,
+                                    CoreConfig.PROTECTED_CONFIGS);
                         } else {
-                            tenantConfigJson = tenantConfig.toJson5_0(shouldProtect, storage, CoreConfig.PROTECTED_CONFIGS);
+                            tenantConfigJson = tenantConfig.toJson5_0(shouldProtect, storage,
+                                    CoreConfig.PROTECTED_CONFIGS);
                         }
 
                         tenantsArray.add(tenantConfigJson);

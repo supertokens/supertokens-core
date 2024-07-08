@@ -55,7 +55,7 @@ public class ApiVersionAPITest {
     // * being returned by this API.
     @Test
     public void testThatCoreDriverInterfaceSupportedVersionsAreBeingReturnedByTheAPI() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -88,7 +88,7 @@ public class ApiVersionAPITest {
     // - no version needed for this API.
     @Test
     public void testThatNoVersionIsNeededForThisAPI() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -101,7 +101,8 @@ public class ApiVersionAPITest {
 
         // with setting cdi-version header
         apiVersionResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/apiversion", null, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), "");
+                "http://localhost:3567/apiversion", null, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
+                "");
         assertNotNull(apiVersionResponse.getAsJsonArray("versions"));
         assertTrue(apiVersionResponse.getAsJsonArray("versions").size() >= 1);
 
@@ -113,7 +114,7 @@ public class ApiVersionAPITest {
     // - test that all returned versions are correct based on WebserverAPI's supportedVersions set
     @Test
     public void testThatApiVersionsAreBasedOnWebserverAPIsSupportedVersions() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -136,7 +137,7 @@ public class ApiVersionAPITest {
     // - check that all returned versions have X.Y format
     @Test
     public void testThatAllReturnedVersionsHaveXYFormat() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

@@ -69,7 +69,8 @@ public class UserAPI extends WebserverAPI {
         // logic based on: https://app.code2flow.com/flowcharts/617a9aafdc97ee415448db74
         String userId = InputParser.getQueryParamOrThrowError(req, "userId", true);
         String email = InputParser.getQueryParamOrThrowError(req, "email", true);
-        String phoneNumber = Utils.normalizeIfPhoneNumber(InputParser.getQueryParamOrThrowError(req, "phoneNumber", true));
+        String phoneNumber = Utils.normalizeIfPhoneNumber(
+                InputParser.getQueryParamOrThrowError(req, "phoneNumber", true));
 
         if (Stream.of(userId, email, phoneNumber).filter(Objects::nonNull).count() != 1) {
             throw new ServletException(

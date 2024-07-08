@@ -59,7 +59,8 @@ public class ListConnectionUriDomainsV2API extends WebserverAPI {
 
             if (!tenantIdentifier.equals(new TenantIdentifier(null, null, null))) {
                 throw new BadPermissionException(
-                        "Only the public tenantId, public appId and default connectionUriDomain is allowed to list all " +
+                        "Only the public tenantId, public appId and default connectionUriDomain is allowed to list " +
+                                "all " +
                                 "connectionUriDomains and appIds associated with this " +
                                 "core");
             }

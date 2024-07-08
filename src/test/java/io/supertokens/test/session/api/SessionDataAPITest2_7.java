@@ -51,7 +51,7 @@ public class SessionDataAPITest2_7 {
 
     @Test
     public void inputErrorsInSessionUserAPITest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -132,7 +132,7 @@ public class SessionDataAPITest2_7 {
 
     @Test
     public void getRequestSuccessOutputCheckTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         String sessionJsonInput = "{\n" + "\t\"userId\": \"UserID\",\n" + "\t\"userDataInJWT\": {\n"
                 + "\t\t\"userData1\": \"temp1\",\n" + "\t\t\"userData2\": \"temp2\"\n" + "\t},\n"
@@ -183,7 +183,7 @@ public class SessionDataAPITest2_7 {
 
     @Test
     public void putRequestSuccessOutputCheckTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         String sessionJsonInput = "{\n" + "\t\"userId\": \"UserID\",\n" + "\t\"userDataInJWT\": {\n"
                 + "\t\t\"userData1\": \"temp1\",\n" + "\t\t\"userData2\": \"temp2\"\n" + "\t},\n"

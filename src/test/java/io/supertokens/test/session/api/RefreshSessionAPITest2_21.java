@@ -47,7 +47,7 @@ public class RefreshSessionAPITest2_21 {
 
     @Test
     public void checkRefreshWithProtectedFieldInPayload() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -75,8 +75,8 @@ public class RefreshSessionAPITest2_21 {
         sessionRefreshBody.addProperty("enableAntiCsrf", false);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/session/refresh", sessionRefreshBody, 1000, 1000, null,
-                    SemVer.v2_21.get(), "session");
+                "http://localhost:3567/recipe/session/refresh", sessionRefreshBody, 1000, 1000, null,
+                SemVer.v2_21.get(), "session");
 
         assertEquals(response.entrySet().size(), 2);
         assertEquals(response.get("status").getAsString(), "UNAUTHORISED");
@@ -85,7 +85,7 @@ public class RefreshSessionAPITest2_21 {
 
     @Test
     public void successOutputWithValidRefreshTokenTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -125,7 +125,7 @@ public class RefreshSessionAPITest2_21 {
     }
 
     private static void checkRefreshSessionResponse(JsonObject response, TestingProcessManager.TestingProcess process,
-            String userId, JsonObject userDataInJWT, boolean hasAntiCsrf) {
+                                                    String userId, JsonObject userDataInJWT, boolean hasAntiCsrf) {
 
         assertNotNull(response.get("session").getAsJsonObject().get("handle").getAsString());
         assertEquals(response.get("session").getAsJsonObject().get("userId").getAsString(), userId);

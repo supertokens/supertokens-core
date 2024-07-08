@@ -344,8 +344,10 @@ public class TestApp5_0 {
             }
         });
 
-        String[] valueForCreate = new String[]{"a1", "a-1", "a-B-1", "CAPS1", "MixedCase", "capsinquery", "mixedcaseinquery"};
-        String[] valueForQuery  = new String[]{"a1", "a-1", "A-b-1", "CAPS1", "MixedCase", "CAPSINQUERY", "MixedCaseInQuery"};
+        String[] valueForCreate = new String[]{"a1", "a-1", "a-B-1", "CAPS1", "MixedCase", "capsinquery",
+                "mixedcaseinquery"};
+        String[] valueForQuery = new String[]{"a1", "a-1", "A-b-1", "CAPS1", "MixedCase", "CAPSINQUERY",
+                "MixedCaseInQuery"};
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
@@ -381,7 +383,8 @@ public class TestApp5_0 {
                         valueForCreate[i], true, true, true,
                         new JsonObject());
             } catch (HttpResponseException e) {
-                assertTrue(e.getMessage().contains("appId can only contain letters, numbers and hyphens") || e.getMessage().contains("appId must not start with 'appid-'"));
+                assertTrue(e.getMessage().contains("appId can only contain letters, numbers and hyphens") ||
+                        e.getMessage().contains("appId must not start with 'appid-'"));
             }
         }
     }
@@ -551,13 +554,25 @@ public class TestApp5_0 {
         };
 
         String[] expectedErrorMessages = new String[]{
-                "Http error. Status Code: 400. Message: Invalid core config: 'access_token_validity' must be of type long", // access_token_validity
-                "Http error. Status Code: 400. Message: Invalid core config: 'access_token_validity' must be of type long", // access_token_validity
-                "Http error. Status Code: 400. Message: Invalid core config: 'access_token_validity' must be of type long", // access_token_validity
+                "Http error. Status Code: 400. Message: Invalid core config: 'access_token_validity' must be of type " +
+                        "long",
+                // access_token_validity
+                "Http error. Status Code: 400. Message: Invalid core config: 'access_token_validity' must be of type " +
+                        "long",
+                // access_token_validity
+                "Http error. Status Code: 400. Message: Invalid core config: 'access_token_validity' must be of type " +
+                        "long",
+                // access_token_validity
                 null,
-                "Http error. Status Code: 400. Message: Invalid core config: 'disable_telemetry' must be of type boolean", // disable_telemetry
-                "Http error. Status Code: 400. Message: Invalid core config: 'postgresql_connection_pool_size' must be of type int", // postgresql_connection_pool_size
-                "Http error. Status Code: 400. Message: Invalid core config: 'mysql_connection_pool_size' must be of type int", // mysql_connection_pool_size
+                "Http error. Status Code: 400. Message: Invalid core config: 'disable_telemetry' must be of type " +
+                        "boolean",
+                // disable_telemetry
+                "Http error. Status Code: 400. Message: Invalid core config: 'postgresql_connection_pool_size' must " +
+                        "be of type int",
+                // postgresql_connection_pool_size
+                "Http error. Status Code: 400. Message: Invalid core config: 'mysql_connection_pool_size' must be of " +
+                        "type int",
+                // mysql_connection_pool_size
         };
 
         for (int i = 0; i < properties.length; i++) {
@@ -566,8 +581,7 @@ public class TestApp5_0 {
                 JsonObject config = new JsonObject();
                 if (values[i] == null) {
                     config.add(properties[i], null);
-                }
-                else if (values[i] instanceof String) {
+                } else if (values[i] instanceof String) {
                     config.addProperty(properties[i], (String) values[i]);
                 } else if (values[i] instanceof Boolean) {
                     config.addProperty(properties[i], (Boolean) values[i]);
@@ -618,7 +632,10 @@ public class TestApp5_0 {
                 fail();
             } catch (HttpResponseException e) {
                 assertEquals(400, e.statusCode);
-                assertEquals("Http error. Status Code: 400. Message: Invalid core config: 'refresh_token_validity' must be strictly greater than 'access_token_validity'.", e.getMessage());
+                assertEquals(
+                        "Http error. Status Code: 400. Message: Invalid core config: 'refresh_token_validity' must be" +
+                                " strictly greater than 'access_token_validity'.",
+                        e.getMessage());
             }
         }
     }
@@ -708,7 +725,8 @@ public class TestApp5_0 {
         assertEquals(7, tenant.entrySet().size());
         assertTrue(tenant.get("firstFactors").isJsonArray());
         assertEquals(4, tenant.get("firstFactors").getAsJsonArray().size());
-        assertEquals(Set.of(firstFactors), Set.of(new Gson().fromJson(tenant.get("firstFactors").getAsJsonArray(), String[].class)));
+        assertEquals(Set.of(firstFactors),
+                Set.of(new Gson().fromJson(tenant.get("firstFactors").getAsJsonArray(), String[].class)));
 
         response = createApp(
                 process.getProcess(),
@@ -760,7 +778,8 @@ public class TestApp5_0 {
         assertEquals(7, tenant.entrySet().size());
         assertTrue(tenant.get("requiredSecondaryFactors").isJsonArray());
         assertEquals(1, tenant.get("requiredSecondaryFactors").getAsJsonArray().size());
-        assertEquals(requiredSecondaryFactors, new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class));
+        assertEquals(requiredSecondaryFactors,
+                new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class));
 
         response = createApp(
                 process.getProcess(),
@@ -775,7 +794,8 @@ public class TestApp5_0 {
         assertEquals(7, tenant.entrySet().size());
         assertTrue(tenant.get("requiredSecondaryFactors").isJsonArray());
         assertEquals(1, tenant.get("requiredSecondaryFactors").getAsJsonArray().size());
-        assertEquals(requiredSecondaryFactors, new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class));
+        assertEquals(requiredSecondaryFactors,
+                new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class));
 
         // custom factors
         requiredSecondaryFactors = new String[]{"biometric"};
@@ -792,7 +812,8 @@ public class TestApp5_0 {
         assertEquals(7, tenant.entrySet().size());
         assertTrue(tenant.get("requiredSecondaryFactors").isJsonArray());
         assertEquals(1, tenant.get("requiredSecondaryFactors").getAsJsonArray().size());
-        assertEquals(requiredSecondaryFactors, new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class));
+        assertEquals(requiredSecondaryFactors,
+                new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class));
 
         // test both
         requiredSecondaryFactors = new String[]{"otp-phone", "emailpassword", "biometric", "custom"};
@@ -809,7 +830,8 @@ public class TestApp5_0 {
         assertEquals(7, tenant.entrySet().size());
         assertTrue(tenant.get("requiredSecondaryFactors").isJsonArray());
         assertEquals(4, tenant.get("requiredSecondaryFactors").getAsJsonArray().size());
-        assertEquals(Set.of(requiredSecondaryFactors), Set.of(new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class)));
+        assertEquals(Set.of(requiredSecondaryFactors),
+                Set.of(new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class)));
 
         response = createApp(
                 process.getProcess(),
@@ -845,7 +867,9 @@ public class TestApp5_0 {
             fail();
         } catch (HttpResponseException e) {
             assertEquals(400, e.statusCode);
-            assertEquals("Http error. Status Code: 400. Message: firstFactors input should not contain duplicate values", e.getMessage());
+            assertEquals(
+                    "Http error. Status Code: 400. Message: firstFactors input should not contain duplicate values",
+                    e.getMessage());
         }
 
         try {
@@ -858,7 +882,10 @@ public class TestApp5_0 {
             fail();
         } catch (HttpResponseException e) {
             assertEquals(400, e.statusCode);
-            assertEquals("Http error. Status Code: 400. Message: requiredSecondaryFactors input should not contain duplicate values", e.getMessage());
+            assertEquals(
+                    "Http error. Status Code: 400. Message: requiredSecondaryFactors input should not contain " +
+                            "duplicate values",
+                    e.getMessage());
         }
     }
 
@@ -872,11 +899,11 @@ public class TestApp5_0 {
         StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
 
         createApp(
-            process.getProcess(),
-            new TenantIdentifier(null, null, null),
-            "a1", true, true, true,
-            false, null, false, null,
-            config);
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                "a1", true, true, true,
+                false, null, false, null,
+                config);
 
         {
             try {
@@ -890,7 +917,8 @@ public class TestApp5_0 {
             } catch (HttpResponseException e) {
                 assertEquals(400, e.statusCode);
                 assertEquals(
-                        "Http error. Status Code: 400. Message: firstFactors cannot be empty. Set null instead to remove all first factors.",
+                        "Http error. Status Code: 400. Message: firstFactors cannot be empty. Set null instead to " +
+                                "remove all first factors.",
                         e.getMessage());
             }
         }
@@ -907,7 +935,10 @@ public class TestApp5_0 {
                 fail();
             } catch (HttpResponseException e) {
                 assertEquals(400, e.statusCode);
-                assertEquals("Http error. Status Code: 400. Message: Invalid core config: firstFactors should not contain 'emailpassword' because emailPassword is disabled for the tenant.", e.getMessage());
+                assertEquals(
+                        "Http error. Status Code: 400. Message: Invalid core config: firstFactors should not contain " +
+                                "'emailpassword' because emailPassword is disabled for the tenant.",
+                        e.getMessage());
             }
 
             {
@@ -929,7 +960,10 @@ public class TestApp5_0 {
                 fail();
             } catch (HttpResponseException e) {
                 assertEquals(400, e.statusCode);
-                assertEquals("Http error. Status Code: 400. Message: Invalid core config: firstFactors should not contain 'emailpassword' because emailPassword is disabled for the tenant.", e.getMessage());
+                assertEquals(
+                        "Http error. Status Code: 400. Message: Invalid core config: firstFactors should not contain " +
+                                "'emailpassword' because emailPassword is disabled for the tenant.",
+                        e.getMessage());
             }
         }
 
@@ -945,7 +979,10 @@ public class TestApp5_0 {
                 fail();
             } catch (HttpResponseException e) {
                 assertEquals(400, e.statusCode);
-                assertEquals("Http error. Status Code: 400. Message: Invalid core config: firstFactors should not contain 'otp-email' because passwordless is disabled for the tenant.", e.getMessage());
+                assertEquals(
+                        "Http error. Status Code: 400. Message: Invalid core config: firstFactors should not contain " +
+                                "'otp-email' because passwordless is disabled for the tenant.",
+                        e.getMessage());
             }
 
             {
@@ -967,7 +1004,10 @@ public class TestApp5_0 {
                 fail();
             } catch (HttpResponseException e) {
                 assertEquals(400, e.statusCode);
-                assertEquals("Http error. Status Code: 400. Message: Invalid core config: firstFactors should not contain 'otp-email' because passwordless is disabled for the tenant.", e.getMessage());
+                assertEquals(
+                        "Http error. Status Code: 400. Message: Invalid core config: firstFactors should not contain " +
+                                "'otp-email' because passwordless is disabled for the tenant.",
+                        e.getMessage());
             }
         }
 
@@ -983,7 +1023,10 @@ public class TestApp5_0 {
                 fail();
             } catch (HttpResponseException e) {
                 assertEquals(400, e.statusCode);
-                assertEquals("Http error. Status Code: 400. Message: Invalid core config: firstFactors should not contain 'thirdparty' because thirdParty is disabled for the tenant.", e.getMessage());
+                assertEquals(
+                        "Http error. Status Code: 400. Message: Invalid core config: firstFactors should not contain " +
+                                "'thirdparty' because thirdParty is disabled for the tenant.",
+                        e.getMessage());
             }
 
             {
@@ -1005,7 +1048,10 @@ public class TestApp5_0 {
                 fail();
             } catch (HttpResponseException e) {
                 assertEquals(400, e.statusCode);
-                assertEquals("Http error. Status Code: 400. Message: Invalid core config: firstFactors should not contain 'thirdparty' because thirdParty is disabled for the tenant.", e.getMessage());
+                assertEquals(
+                        "Http error. Status Code: 400. Message: Invalid core config: firstFactors should not contain " +
+                                "'thirdparty' because thirdParty is disabled for the tenant.",
+                        e.getMessage());
             }
         }
 
@@ -1039,7 +1085,8 @@ public class TestApp5_0 {
             } catch (HttpResponseException e) {
                 assertEquals(400, e.statusCode);
                 assertEquals(
-                        "Http error. Status Code: 400. Message: requiredSecondaryFactors cannot be empty. Set null instead to remove all required secondary factors.",
+                        "Http error. Status Code: 400. Message: requiredSecondaryFactors cannot be empty. Set null " +
+                                "instead to remove all required secondary factors.",
                         e.getMessage());
             }
         }
@@ -1056,7 +1103,10 @@ public class TestApp5_0 {
                 fail();
             } catch (HttpResponseException e) {
                 assertEquals(400, e.statusCode);
-                assertEquals("Http error. Status Code: 400. Message: Invalid core config: requiredSecondaryFactors should not contain 'emailpassword' because emailPassword is disabled for the tenant.", e.getMessage());
+                assertEquals(
+                        "Http error. Status Code: 400. Message: Invalid core config: requiredSecondaryFactors should " +
+                                "not contain 'emailpassword' because emailPassword is disabled for the tenant.",
+                        e.getMessage());
             }
 
             {
@@ -1078,7 +1128,10 @@ public class TestApp5_0 {
                 fail();
             } catch (HttpResponseException e) {
                 assertEquals(400, e.statusCode);
-                assertEquals("Http error. Status Code: 400. Message: Invalid core config: requiredSecondaryFactors should not contain 'emailpassword' because emailPassword is disabled for the tenant.", e.getMessage());
+                assertEquals(
+                        "Http error. Status Code: 400. Message: Invalid core config: requiredSecondaryFactors should " +
+                                "not contain 'emailpassword' because emailPassword is disabled for the tenant.",
+                        e.getMessage());
             }
         }
 
@@ -1094,7 +1147,10 @@ public class TestApp5_0 {
                 fail();
             } catch (HttpResponseException e) {
                 assertEquals(400, e.statusCode);
-                assertEquals("Http error. Status Code: 400. Message: Invalid core config: requiredSecondaryFactors should not contain 'otp-email' because passwordless is disabled for the tenant.", e.getMessage());
+                assertEquals(
+                        "Http error. Status Code: 400. Message: Invalid core config: requiredSecondaryFactors should " +
+                                "not contain 'otp-email' because passwordless is disabled for the tenant.",
+                        e.getMessage());
             }
 
             {
@@ -1116,7 +1172,10 @@ public class TestApp5_0 {
                 fail();
             } catch (HttpResponseException e) {
                 assertEquals(400, e.statusCode);
-                assertEquals("Http error. Status Code: 400. Message: Invalid core config: requiredSecondaryFactors should not contain 'otp-email' because passwordless is disabled for the tenant.", e.getMessage());
+                assertEquals(
+                        "Http error. Status Code: 400. Message: Invalid core config: requiredSecondaryFactors should " +
+                                "not contain 'otp-email' because passwordless is disabled for the tenant.",
+                        e.getMessage());
             }
         }
 
@@ -1132,7 +1191,10 @@ public class TestApp5_0 {
                 fail();
             } catch (HttpResponseException e) {
                 assertEquals(400, e.statusCode);
-                assertEquals("Http error. Status Code: 400. Message: Invalid core config: requiredSecondaryFactors should not contain 'thirdparty' because thirdParty is disabled for the tenant.", e.getMessage());
+                assertEquals(
+                        "Http error. Status Code: 400. Message: Invalid core config: requiredSecondaryFactors should " +
+                                "not contain 'thirdparty' because thirdParty is disabled for the tenant.",
+                        e.getMessage());
             }
 
             {
@@ -1154,20 +1216,25 @@ public class TestApp5_0 {
                 fail();
             } catch (HttpResponseException e) {
                 assertEquals(400, e.statusCode);
-                assertEquals("Http error. Status Code: 400. Message: Invalid core config: requiredSecondaryFactors should not contain 'thirdparty' because thirdParty is disabled for the tenant.", e.getMessage());
+                assertEquals(
+                        "Http error. Status Code: 400. Message: Invalid core config: requiredSecondaryFactors should " +
+                                "not contain 'thirdparty' because thirdParty is disabled for the tenant.",
+                        e.getMessage());
             }
         }
     }
 
-    private static JsonObject createApp(Main main, TenantIdentifier sourceTenant, String appId, Boolean emailPasswordEnabled,
+    private static JsonObject createApp(Main main, TenantIdentifier sourceTenant, String appId,
+                                        Boolean emailPasswordEnabled,
                                         Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
                                         JsonObject coreConfig) throws HttpResponseException, IOException {
         return createApp(main, sourceTenant, appId, emailPasswordEnabled, thirdPartyEnabled, passwordlessEnabled,
                 false, null, false, null, coreConfig);
     }
 
-    private static JsonObject createApp(Main main, TenantIdentifier sourceTenant, String appId, Boolean emailPasswordEnabled,
-                                       Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
+    private static JsonObject createApp(Main main, TenantIdentifier sourceTenant, String appId,
+                                        Boolean emailPasswordEnabled,
+                                        Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
                                         boolean setFirstFactors, String[] firstFactors,
                                         boolean setRequiredSecondaryFactors, String[] requiredSecondaryFactors,
                                         JsonObject coreConfig) throws HttpResponseException, IOException {

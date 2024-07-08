@@ -113,7 +113,8 @@ public class UserIdMappingTest {
             // duplicate exception with both supertokensUserId and externalUserId
             Exception error = null;
             try {
-                UserIdMapping.createUserIdMapping(process.main, userInfo.getSupertokensUserId(), externalUserId, null, false);
+                UserIdMapping.createUserIdMapping(process.main, userInfo.getSupertokensUserId(), externalUserId, null,
+                        false);
             } catch (Exception e) {
                 error = e;
             }
@@ -130,7 +131,8 @@ public class UserIdMappingTest {
             // duplicate exception with superTokensUserId
             Exception error = null;
             try {
-                UserIdMapping.createUserIdMapping(process.main, userInfo.getSupertokensUserId(), "newExternalId", null, false);
+                UserIdMapping.createUserIdMapping(process.main, userInfo.getSupertokensUserId(), "newExternalId", null,
+                        false);
             } catch (Exception e) {
                 error = e;
             }
@@ -150,7 +152,8 @@ public class UserIdMappingTest {
             AuthRecipeUserInfo newUser = EmailPassword.signUp(process.main, "test2@example.com", "testPass123");
             Exception error = null;
             try {
-                UserIdMapping.createUserIdMapping(process.main, newUser.getSupertokensUserId(), externalUserId, null, false);
+                UserIdMapping.createUserIdMapping(process.main, newUser.getSupertokensUserId(), externalUserId, null,
+                        false);
             } catch (Exception e) {
                 error = e;
             }
@@ -187,7 +190,8 @@ public class UserIdMappingTest {
         String externalUserIdInfo = "external-info";
 
         // create a userId mapping
-        UserIdMapping.createUserIdMapping(process.getProcess(), userInfo.getSupertokensUserId(), externalUserId, externalUserIdInfo, false);
+        UserIdMapping.createUserIdMapping(process.getProcess(), userInfo.getSupertokensUserId(), externalUserId,
+                externalUserIdInfo, false);
 
         // check that the mapping exists
         io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = storage.getUserIdMapping(
@@ -791,7 +795,8 @@ public class UserIdMappingTest {
             return;
         }
 
-        FeatureFlagTestContent.getInstance(process.main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[] { EE_FEATURES.MFA });
+        FeatureFlagTestContent.getInstance(process.main)
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MFA});
 
         // this list contains the package names for recipes which dont use UserIdMapping
         ArrayList<String> nonAuthRecipesWhichDontNeedUserIdMapping = new ArrayList<>(
@@ -812,7 +817,8 @@ public class UserIdMappingTest {
             String userId = user.getSupertokensUserId();
 
             // create entry in nonAuth table
-            StorageLayer.getStorage(process.main).addInfoToNonAuthRecipesBasedOnUserId(TenantIdentifier.BASE_TENANT, className, userId);
+            StorageLayer.getStorage(process.main)
+                    .addInfoToNonAuthRecipesBasedOnUserId(TenantIdentifier.BASE_TENANT, className, userId);
             // try to create the mapping with superTokensId
             String errorMessage = null;
             try {
@@ -851,7 +857,8 @@ public class UserIdMappingTest {
 
         Exception error = null;
         try {
-            StorageLayer.getStorage(process.main).addInfoToNonAuthRecipesBasedOnUserId(TenantIdentifier.BASE_TENANT, "unknownRecipe", "testUserId");
+            StorageLayer.getStorage(process.main)
+                    .addInfoToNonAuthRecipesBasedOnUserId(TenantIdentifier.BASE_TENANT, "unknownRecipe", "testUserId");
         } catch (IllegalStateException e) {
             error = e;
         }
@@ -893,12 +900,14 @@ public class UserIdMappingTest {
             UserIdMapping.createUserIdMapping(process.main, user.getSupertokensUserId(), externalId, null, false);
 
             // create entry in nonAuth table with externalId
-            StorageLayer.getStorage(process.main).addInfoToNonAuthRecipesBasedOnUserId(TenantIdentifier.BASE_TENANT, className, externalId);
+            StorageLayer.getStorage(process.main)
+                    .addInfoToNonAuthRecipesBasedOnUserId(TenantIdentifier.BASE_TENANT, className, externalId);
 
             // try to delete UserIdMapping
             String errorMessage = null;
             try {
-                UserIdMapping.deleteUserIdMapping(process.main, user.getSupertokensUserId(), UserIdType.SUPERTOKENS, false);
+                UserIdMapping.deleteUserIdMapping(process.main, user.getSupertokensUserId(), UserIdType.SUPERTOKENS,
+                        false);
             } catch (ServletException e) {
                 errorMessage = e.getRootCause().getMessage();
             }
@@ -942,7 +951,8 @@ public class UserIdMappingTest {
         // try and map user_2 to user_1s superTokensUserId
         String errorMessage = null;
         try {
-            UserIdMapping.createUserIdMapping(process.main, user_2.getSupertokensUserId(), user_1.getSupertokensUserId(), null, false);
+            UserIdMapping.createUserIdMapping(process.main, user_2.getSupertokensUserId(),
+                    user_1.getSupertokensUserId(), null, false);
         } catch (ServletException e) {
             errorMessage = e.getRootCause().getMessage();
         }
@@ -970,12 +980,14 @@ public class UserIdMappingTest {
         AuthRecipeUserInfo user_2 = EmailPassword.signUp(process.main, "test123@example.com", "testPass123");
 
         // create a mapping between User_1 and User_2 with force
-        UserIdMapping.createUserIdMapping(process.main, user_1.getSupertokensUserId(), user_2.getSupertokensUserId(), null, true);
+        UserIdMapping.createUserIdMapping(process.main, user_1.getSupertokensUserId(), user_2.getSupertokensUserId(),
+                null, true);
 
         // try and create a mapping between User_2 and User_1 without force
         String errorMessage = null;
         try {
-            UserIdMapping.createUserIdMapping(process.main, user_2.getSupertokensUserId(), user_1.getSupertokensUserId(), null, false);
+            UserIdMapping.createUserIdMapping(process.main, user_2.getSupertokensUserId(),
+                    user_1.getSupertokensUserId(), null, false);
         } catch (ServletException e) {
             errorMessage = e.getRootCause().getMessage();
         }
@@ -1006,7 +1018,8 @@ public class UserIdMappingTest {
         AuthRecipeUserInfo user_2 = EmailPassword.signUp(process.main, "test123@exmaple.com", "testPass123");
 
         // create a mapping between User_2 and User_1 with force
-        UserIdMapping.createUserIdMapping(process.main, user_2.getSupertokensUserId(), user_1.getSupertokensUserId(), null, true);
+        UserIdMapping.createUserIdMapping(process.main, user_2.getSupertokensUserId(), user_1.getSupertokensUserId(),
+                null, true);
 
         // check that mapping exists
         {
@@ -1018,7 +1031,8 @@ public class UserIdMappingTest {
         }
 
         // delete mapping with User_1s Id and UserIdType set to ANY, it should delete the mapping
-        assertTrue(UserIdMapping.deleteUserIdMapping(process.main, user_1.getSupertokensUserId(), UserIdType.ANY, false));
+        assertTrue(
+                UserIdMapping.deleteUserIdMapping(process.main, user_1.getSupertokensUserId(), UserIdType.ANY, false));
 
         // check that mapping is deleted
         {
@@ -1050,7 +1064,8 @@ public class UserIdMappingTest {
         AuthRecipeUserInfo user_2 = EmailPassword.signUp(process.main, "test123@exmaple.com", "testPass123");
 
         // create a mapping between User_2 and User_1 with force
-        UserIdMapping.createUserIdMapping(process.main, user_2.getSupertokensUserId(), user_1.getSupertokensUserId(), null, true);
+        UserIdMapping.createUserIdMapping(process.main, user_2.getSupertokensUserId(), user_1.getSupertokensUserId(),
+                null, true);
 
         // check that mapping exists
         {
@@ -1062,7 +1077,9 @@ public class UserIdMappingTest {
         }
 
         // delete mapping with User_1s Id and UserIdType set to ANY, it should delete the mapping
-        assertTrue(UserIdMapping.deleteUserIdMapping(process.main, user_1.getSupertokensUserId(), UserIdType.SUPERTOKENS, false));
+        assertTrue(
+                UserIdMapping.deleteUserIdMapping(process.main, user_1.getSupertokensUserId(), UserIdType.SUPERTOKENS,
+                        false));
 
         // check that mapping is deleted
         {

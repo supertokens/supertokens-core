@@ -53,7 +53,7 @@ public class GetPermissionsForRoleAPITest {
 
     @Test
     public void badInputTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -112,7 +112,7 @@ public class GetPermissionsForRoleAPITest {
 
     @Test
     public void testRetrievingThePermissionsForARole() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -123,7 +123,7 @@ public class GetPermissionsForRoleAPITest {
 
         // create a role with permissions
         String role = "role";
-        String[] permissions = new String[] { "permission1", "permission2", "permission3" };
+        String[] permissions = new String[]{"permission1", "permission2", "permission3"};
         UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, permissions);
 
         HashMap<String, String> QUERY_PARAM = new HashMap<>();
@@ -148,7 +148,7 @@ public class GetPermissionsForRoleAPITest {
 
     @Test
     public void testRetrievingThePermissionsForAnUnknownRole() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

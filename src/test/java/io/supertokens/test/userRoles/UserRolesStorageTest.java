@@ -226,7 +226,8 @@ public class UserRolesStorageTest {
             }
             // delete the newly created role
             try {
-                boolean wasRoleDeleted = storage.deleteAllUserRoleAssociationsForRole(new AppIdentifier(null, null), role);
+                boolean wasRoleDeleted = storage.deleteAllUserRoleAssociationsForRole(new AppIdentifier(null, null),
+                        role);
                 wasRoleDeleted = storage.deleteRole(new AppIdentifier(null, null), role) || wasRoleDeleted;
                 r2_success.set(true);
             } catch (StorageQueryException e) {
@@ -474,7 +475,7 @@ public class UserRolesStorageTest {
         try {
             UserRoles.addRoleToUser(
                     process.getProcess(), new TenantIdentifier(null, null, null),
-                    StorageLayer.getBaseStorage(process.getProcess()),  "userId", "unknownRole");
+                    StorageLayer.getBaseStorage(process.getProcess()), "userId", "unknownRole");
         } catch (Exception e) {
             error = e;
         }

@@ -55,7 +55,8 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         return storage;
     }
 
-    public static Storage getNewStorageInstance(Main main, JsonObject config, TenantIdentifier tenantIdentifier, boolean doNotLog) throws InvalidConfigException {
+    public static Storage getNewStorageInstance(Main main, JsonObject config, TenantIdentifier tenantIdentifier,
+                                                boolean doNotLog) throws InvalidConfigException {
         Storage result;
         if (StorageLayer.ucl == null) {
             result = new Start(main);
@@ -208,7 +209,8 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
             Map<String, Storage> idToStorageMap = new HashMap<>();
             for (ResourceDistributor.KeyClass key : normalisedConfigs.keySet()) {
                 // setting doNotLog to true so that plugin loading is not logged here
-                Storage storage = StorageLayer.getNewStorageInstance(main, normalisedConfigs.get(key), key.getTenantIdentifier(), true);
+                Storage storage = StorageLayer.getNewStorageInstance(main, normalisedConfigs.get(key),
+                        key.getTenantIdentifier(), true);
                 String userPoolId = storage.getUserPoolId();
                 String connectionPoolId = storage.getConnectionPoolId();
                 String uniqueId = userPoolId + "~" + connectionPoolId;
@@ -290,14 +292,16 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                     if (storageToTenantIdentifiersMap.get(((StorageLayer) resources.get(key)).storage) == null) {
                         storageToTenantIdentifiersMap.put(((StorageLayer) resources.get(key)).storage, new HashSet<>());
                     }
-                    storageToTenantIdentifiersMap.get(((StorageLayer) resources.get(key)).storage).add(key.getTenantIdentifier());
+                    storageToTenantIdentifiersMap.get(((StorageLayer) resources.get(key)).storage)
+                            .add(key.getTenantIdentifier());
                 }
 
                 for (ResourceDistributor.KeyClass key : resources.keySet()) {
                     ResourceDistributor.SingletonResource resource = resources.get(key);
 
                     try {
-                        ((StorageLayer) resource).storage.initStorage(false, new ArrayList<>(storageToTenantIdentifiersMap.get(((StorageLayer) resource).storage)));
+                        ((StorageLayer) resource).storage.initStorage(false,
+                                new ArrayList<>(storageToTenantIdentifiersMap.get(((StorageLayer) resource).storage)));
                         ((StorageLayer) resource).storage.initFileLogging(
                                 Config.getBaseConfig(main).getInfoLogPath(main),
                                 Config.getBaseConfig(main).getErrorLogPath(main));

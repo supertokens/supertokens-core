@@ -97,7 +97,7 @@ public class StartHandler extends CommandHandler {
                 pb.redirectErrorStream(true);
                 Process process = pb.start();
                 try (InputStreamReader in = new InputStreamReader(process.getInputStream());
-                        BufferedReader reader = new BufferedReader(in)) {
+                     BufferedReader reader = new BufferedReader(in)) {
                     String line;
                     boolean success = false;
                     while ((line = reader.readLine()) != null) {

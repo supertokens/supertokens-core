@@ -144,13 +144,14 @@ public class HelloAPITest {
                 "http://localhost:3567/hello", // baseUrl + /
                 "http://localhost:3567/hello/", // baseUrl + /
                 "http://localhost:3567/hello/hello", // baseUrl + /hello
-                "http://localhost:3567/hello/hello/", // baseUrl + (hello tenant) + / : works because the hello api doesn't check if that tenant exists
+                "http://localhost:3567/hello/hello/",
+                // baseUrl + (hello tenant) + / : works because the hello api doesn't check if that tenant exists
                 "http://localhost:3567/hello/appid-hello/hello", // baseUrl + app + /hello
                 "http://localhost:3567/hello/appid-hello/hello/", // baseUrl + app + /hello
                 "http://localhost:3567/hello/appid-hello/test/hello", // baseUrl + app + tenant + /hello
         };
 
-        for (String helloUrl: HELLO_ROUTES) {
+        for (String helloUrl : HELLO_ROUTES) {
             System.out.println(helloUrl);
             String res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     helloUrl, null, 1000, 1000,
@@ -230,13 +231,14 @@ public class HelloAPITest {
                 "http://localhost:3567/hello", // baseUrl + /
                 "http://localhost:3567/hello/", // baseUrl + /
                 "http://localhost:3567/hello/hello", // baseUrl + /hello
-                "http://localhost:3567/hello/hello/", // baseUrl + (hello tenant) + / : works because the hello api doesn't check if that tenant exists
+                "http://localhost:3567/hello/hello/",
+                // baseUrl + (hello tenant) + / : works because the hello api doesn't check if that tenant exists
                 "http://localhost:3567/hello/appid-hello/hello", // baseUrl + app + /hello
                 "http://localhost:3567/hello/appid-hello/hello/", // baseUrl + app + /hello
                 "http://localhost:3567/hello/appid-hello/test/hello", // baseUrl + app + tenant + /hello
         };
 
-        for (String helloUrl: HELLO_ROUTES) {
+        for (String helloUrl : HELLO_ROUTES) {
             System.out.println(helloUrl);
             String res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     helloUrl, null, 1000, 1000,
@@ -317,13 +319,14 @@ public class HelloAPITest {
                 "http://localhost:3567", // /
                 "http://localhost:3567/", // /
                 "http://localhost:3567/hello", // /hello
-                "http://localhost:3567/hello/", // (hello tenant) + / : works because the hello api doesn't check if that tenant exists
+                "http://localhost:3567/hello/",
+                // (hello tenant) + / : works because the hello api doesn't check if that tenant exists
                 "http://localhost:3567/appid-hello/hello", // app + /hello
                 "http://localhost:3567/appid-hello/hello/", // app + /hello
                 "http://localhost:3567/appid-hello/test/hello", // app + tenant + /hello
         };
 
-        for (String helloUrl: HELLO_ROUTES) {
+        for (String helloUrl : HELLO_ROUTES) {
             System.out.println(helloUrl);
             String res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     helloUrl, null, 1000, 1000,
