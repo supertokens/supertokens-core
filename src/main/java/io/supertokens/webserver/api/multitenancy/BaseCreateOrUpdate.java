@@ -54,16 +54,20 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
             throws ServletException, IOException {
 
         if (hasFirstFactors && firstFactors != null && firstFactors.length == 0) {
-            throw new ServletException(new BadRequestException("firstFactors cannot be empty. Set null instead to remove all first factors."));
+            throw new ServletException(new BadRequestException(
+                    "firstFactors cannot be empty. Set null instead to remove all first factors."));
         }
 
         if (hasRequiredSecondaryFactors && requiredSecondaryFactors != null && requiredSecondaryFactors.length == 0) {
-            throw new ServletException(new BadRequestException("requiredSecondaryFactors cannot be empty. Set null instead to remove all required secondary factors."));
+            throw new ServletException(new BadRequestException(
+                    "requiredSecondaryFactors cannot be empty. Set null instead to remove all required secondary " +
+                            "factors."));
         }
 
         CoreConfig baseConfig = Config.getBaseConfig(main);
         if (baseConfig.getSuperTokensLoadOnlyCUD() != null) {
-            if (!(targetTenantIdentifier.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI) || targetTenantIdentifier.getConnectionUriDomain().equals(baseConfig.getSuperTokensLoadOnlyCUD()))) {
+            if (!(targetTenantIdentifier.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI) ||
+                    targetTenantIdentifier.getConnectionUriDomain().equals(baseConfig.getSuperTokensLoadOnlyCUD()))) {
                 throw new ServletException(new BadRequestException("Creation of connection uri domain or app or " +
                         "tenant is disallowed"));
             }

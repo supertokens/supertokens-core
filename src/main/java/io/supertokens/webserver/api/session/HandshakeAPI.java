@@ -72,7 +72,8 @@ public class HandshakeAPI extends WebserverAPI {
                     Config.getConfig(tenantIdentifier, main)
                             .getRefreshTokenValidity());
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException | UnsupportedJWTSigningAlgorithmException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException |
+                 UnsupportedJWTSigningAlgorithmException e) {
             throw new ServletException(e);
         }
     }

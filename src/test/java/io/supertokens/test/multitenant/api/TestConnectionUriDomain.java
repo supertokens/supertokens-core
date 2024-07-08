@@ -102,7 +102,8 @@ public class TestConnectionUriDomain {
                 "127.0.0.1:3567", true, true, true,
                 coreConfig);
 
-        JsonObject result = TestMultitenancyAPIHelper.listConnectionUriDomains(new TenantIdentifier(null, null, null), process.getProcess());
+        JsonObject result = TestMultitenancyAPIHelper.listConnectionUriDomains(new TenantIdentifier(null, null, null),
+                process.getProcess());
         assertTrue(result.has("connectionUriDomains"));
 
         boolean found = false;
@@ -160,7 +161,8 @@ public class TestConnectionUriDomain {
                 "127.0.0.1:3567", true, true, true,
                 newConfig);
 
-        JsonObject result = TestMultitenancyAPIHelper.listConnectionUriDomains(new TenantIdentifier(null, null, null), process.getProcess());
+        JsonObject result = TestMultitenancyAPIHelper.listConnectionUriDomains(new TenantIdentifier(null, null, null),
+                process.getProcess());
         assertTrue(result.has("connectionUriDomains"));
 
         boolean found = false;
@@ -218,7 +220,8 @@ public class TestConnectionUriDomain {
                 "127.0.0.1", true, true, true,
                 newConfig);
 
-        JsonObject result = TestMultitenancyAPIHelper.listConnectionUriDomains(new TenantIdentifier(null, null, null), process.getProcess());
+        JsonObject result = TestMultitenancyAPIHelper.listConnectionUriDomains(new TenantIdentifier(null, null, null),
+                process.getProcess());
         assertTrue(result.has("connectionUriDomains"));
 
         boolean found = false;
@@ -277,7 +280,8 @@ public class TestConnectionUriDomain {
                 "127.0.0.1:3567", true, true, true,
                 newConfig);
 
-        JsonObject result = TestMultitenancyAPIHelper.listConnectionUriDomains(new TenantIdentifier(null, null, null), process.getProcess());
+        JsonObject result = TestMultitenancyAPIHelper.listConnectionUriDomains(new TenantIdentifier(null, null, null),
+                process.getProcess());
         assertTrue(result.has("connectionUriDomains"));
 
         boolean found = false;
@@ -323,15 +327,18 @@ public class TestConnectionUriDomain {
                 "127.0.0.1:3567", true, true, true,
                 coreConfig);
 
-        JsonObject result = TestMultitenancyAPIHelper.listConnectionUriDomains(new TenantIdentifier(null, null, null), process.getProcess());
+        JsonObject result = TestMultitenancyAPIHelper.listConnectionUriDomains(new TenantIdentifier(null, null, null),
+                process.getProcess());
         assertTrue(result.has("connectionUriDomains"));
         assertEquals(2, result.get("connectionUriDomains").getAsJsonArray().size());
 
-        JsonObject response = TestMultitenancyAPIHelper.deleteConnectionUriDomain(new TenantIdentifier(null, null, null),
+        JsonObject response = TestMultitenancyAPIHelper.deleteConnectionUriDomain(
+                new TenantIdentifier(null, null, null),
                 "127.0.0.1:3567", process.getProcess());
         assertTrue(response.get("didExist").getAsBoolean());
 
-        result = TestMultitenancyAPIHelper.listConnectionUriDomains(new TenantIdentifier(null, null, null), process.getProcess());
+        result = TestMultitenancyAPIHelper.listConnectionUriDomains(new TenantIdentifier(null, null, null),
+                process.getProcess());
         assertTrue(result.has("connectionUriDomains"));
         assertEquals(1, result.get("connectionUriDomains").getAsJsonArray().size());
 
@@ -343,7 +350,7 @@ public class TestConnectionUriDomain {
     @Test
     public void testDifferentValuesForCUDThatShouldWork() throws Exception {
         String[] valueForCreate = new String[]{"localhost:3567", "LOCALHOST:3567", "loCalHost:3567", "127.0.0.1:3567"};
-        String[] valueForQuery  = new String[]{"localhost:3567", "LOCALHOST:3567", "LOCALhoST:3567", "127.0.0.1:3567"};
+        String[] valueForQuery = new String[]{"localhost:3567", "LOCALHOST:3567", "LOCALhoST:3567", "127.0.0.1:3567"};
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
@@ -412,7 +419,8 @@ public class TestConnectionUriDomain {
 
     @Test
     public void testCUDsThatAreSame() throws Exception {
-        String[] valueForCreate = new String[]{"localhost:3567", "LOCALHOST:3567", "loCalHost:3567", "localhost", "localhost:12345"};
+        String[] valueForCreate = new String[]{"localhost:3567", "LOCALHOST:3567", "loCalHost:3567", "localhost",
+                "localhost:12345"};
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
@@ -577,7 +585,8 @@ public class TestConnectionUriDomain {
                 process.getProcess(), SemVer.v5_0);
         assertTrue(tenant.get("firstFactors").isJsonArray());
         assertEquals(4, tenant.get("firstFactors").getAsJsonArray().size());
-        assertEquals(Set.of(firstFactors), Set.of(new Gson().fromJson(tenant.get("firstFactors").getAsJsonArray(), String[].class)));
+        assertEquals(Set.of(firstFactors),
+                Set.of(new Gson().fromJson(tenant.get("firstFactors").getAsJsonArray(), String[].class)));
 
         response = TestMultitenancyAPIHelper.createConnectionUriDomain(
                 process.getProcess(),
@@ -631,7 +640,8 @@ public class TestConnectionUriDomain {
                 process.getProcess(), SemVer.v5_0);
         assertTrue(tenant.get("requiredSecondaryFactors").isJsonArray());
         assertEquals(1, tenant.get("requiredSecondaryFactors").getAsJsonArray().size());
-        assertEquals(requiredSecondaryFactors, new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class));
+        assertEquals(requiredSecondaryFactors,
+                new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class));
 
         response = TestMultitenancyAPIHelper.createConnectionUriDomain(
                 process.getProcess(),
@@ -645,7 +655,8 @@ public class TestConnectionUriDomain {
                 process.getProcess(), SemVer.v5_0);
         assertTrue(tenant.get("requiredSecondaryFactors").isJsonArray());
         assertEquals(1, tenant.get("requiredSecondaryFactors").getAsJsonArray().size());
-        assertEquals(requiredSecondaryFactors, new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class));
+        assertEquals(requiredSecondaryFactors,
+                new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class));
 
         // custom factors
         requiredSecondaryFactors = new String[]{"biometric"};
@@ -661,7 +672,8 @@ public class TestConnectionUriDomain {
                 process.getProcess(), SemVer.v5_0);
         assertTrue(tenant.get("requiredSecondaryFactors").isJsonArray());
         assertEquals(1, tenant.get("requiredSecondaryFactors").getAsJsonArray().size());
-        assertEquals(requiredSecondaryFactors, new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class));
+        assertEquals(requiredSecondaryFactors,
+                new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class));
 
         // test both
         requiredSecondaryFactors = new String[]{"otp-phone", "emailpassword", "biometric", "custom"};
@@ -677,7 +689,8 @@ public class TestConnectionUriDomain {
                 process.getProcess(), SemVer.v5_0);
         assertTrue(tenant.get("requiredSecondaryFactors").isJsonArray());
         assertEquals(4, tenant.get("requiredSecondaryFactors").getAsJsonArray().size());
-        assertEquals(Set.of(requiredSecondaryFactors), Set.of(new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class)));
+        assertEquals(Set.of(requiredSecondaryFactors),
+                Set.of(new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class)));
 
         response = TestMultitenancyAPIHelper.createConnectionUriDomain(
                 process.getProcess(),
@@ -712,7 +725,9 @@ public class TestConnectionUriDomain {
             fail();
         } catch (HttpResponseException e) {
             assertEquals(400, e.statusCode);
-            assertEquals("Http error. Status Code: 400. Message: firstFactors input should not contain duplicate values", e.getMessage());
+            assertEquals(
+                    "Http error. Status Code: 400. Message: firstFactors input should not contain duplicate values",
+                    e.getMessage());
         }
 
         try {
@@ -725,7 +740,10 @@ public class TestConnectionUriDomain {
             fail();
         } catch (HttpResponseException e) {
             assertEquals(400, e.statusCode);
-            assertEquals("Http error. Status Code: 400. Message: requiredSecondaryFactors input should not contain duplicate values", e.getMessage());
+            assertEquals(
+                    "Http error. Status Code: 400. Message: requiredSecondaryFactors input should not contain " +
+                            "duplicate values",
+                    e.getMessage());
         }
 
     }

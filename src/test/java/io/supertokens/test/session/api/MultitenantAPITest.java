@@ -419,13 +419,15 @@ public class MultitenantAPITest {
 
         {
             JsonObject session = createSession(t1, "userid", new JsonObject(), new JsonObject());
-            JWT.JWTInfo accessTokenInfo = JWT.getPayloadWithoutVerifying(session.get("accessToken").getAsJsonObject().get("token").getAsString());
+            JWT.JWTInfo accessTokenInfo = JWT.getPayloadWithoutVerifying(
+                    session.get("accessToken").getAsJsonObject().get("token").getAsString());
             assertEquals(t1.getTenantId(), accessTokenInfo.payload.get("tId").getAsString());
         }
 
         {
             JsonObject session = createSession(t2, "userid", new JsonObject(), new JsonObject());
-            JWT.JWTInfo accessTokenInfo = JWT.getPayloadWithoutVerifying(session.get("accessToken").getAsJsonObject().get("token").getAsString());
+            JWT.JWTInfo accessTokenInfo = JWT.getPayloadWithoutVerifying(
+                    session.get("accessToken").getAsJsonObject().get("token").getAsString());
             assertEquals(t2.getTenantId(), accessTokenInfo.payload.get("tId").getAsString());
         }
     }
@@ -544,7 +546,7 @@ public class MultitenantAPITest {
             assertEquals(1, allSessionHandles.length);
             assertEquals(sessionHandles.get(2), allSessionHandles[0]);
         }
-        
+
         // Revoke sessions
         {
             String[] revokedSessionHandles = revokeAllUserSessionsAcrossAllTenants(t1, "userid", false);
@@ -568,7 +570,9 @@ public class MultitenantAPITest {
         assertEquals(0, allSessionHandles.length);
     }
 
-    private String[] getAllUserSessionsAcrossAllTenants(TenantIdentifier tenantIdentifier, String userid, Boolean fetchAcrossAllTenants) throws HttpResponseException, IOException {
+    private String[] getAllUserSessionsAcrossAllTenants(TenantIdentifier tenantIdentifier, String userid,
+                                                        Boolean fetchAcrossAllTenants)
+            throws HttpResponseException, IOException {
         Map<String, String> params = new HashMap<>();
         if (fetchAcrossAllTenants != null) {
             params.put("fetchAcrossAllTenants", fetchAcrossAllTenants.toString());
@@ -588,7 +592,9 @@ public class MultitenantAPITest {
         return sessionHandles;
     }
 
-    private String[] revokeAllUserSessionsAcrossAllTenants(TenantIdentifier tenantIdentifier, String userid, Boolean revokeAcrossAllTenants) throws HttpResponseException, IOException {
+    private String[] revokeAllUserSessionsAcrossAllTenants(TenantIdentifier tenantIdentifier, String userid,
+                                                           Boolean revokeAcrossAllTenants)
+            throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("userId", userid);
         if (revokeAcrossAllTenants != null) {

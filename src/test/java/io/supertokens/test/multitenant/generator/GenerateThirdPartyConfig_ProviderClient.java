@@ -71,8 +71,8 @@ public class GenerateThirdPartyConfig_ProviderClient {
 
             JsonObject jsonObject = JsonObjectGenerator.generate();
             return new ConfigGenerator.GeneratedValueAndExpectation(
-                jsonObject,
-                new ConfigGenerator.Expectation("ok", jsonObject)    
+                    jsonObject,
+                    new ConfigGenerator.Expectation("ok", jsonObject)
             );
         }
 
@@ -87,7 +87,8 @@ public class GenerateThirdPartyConfig_ProviderClient {
                         new ConfigGenerator.Expectation("ok", result)
                 );
             } else {
-                String EXPECTED_ERROR = "a non empty string value must be specified for keyId, teamId and privateKey in the additionalConfig for Apple provider";
+                String EXPECTED_ERROR = "a non empty string value must be specified for keyId, teamId and privateKey " +
+                        "in the additionalConfig for Apple provider";
                 int option = new Random().nextInt(3);
                 String[] PROPERTIES = new String[]{"keyId", "teamId", "privateKey"};
                 Random rand = new Random();
@@ -116,7 +117,7 @@ public class GenerateThirdPartyConfig_ProviderClient {
                     default:
                         result = new JsonObject();
                         String invalidProperty = PROPERTIES[rand.nextInt(PROPERTIES.length)];
-                        for (String prop: PROPERTIES) {
+                        for (String prop : PROPERTIES) {
                             if (prop.equals(invalidProperty)) {
                                 result.add(prop, new JsonPrimitive(100));
                             } else {
@@ -191,7 +192,8 @@ public class GenerateThirdPartyConfig_ProviderClient {
                         new ConfigGenerator.Expectation("ok", result)
                 );
             } else {
-                String EXPECTED_ERROR = "a non empty string value must be specified for boxyURL in the additionalConfig for Boxy SAML provider";
+                String EXPECTED_ERROR = "a non empty string value must be specified for boxyURL in the " +
+                        "additionalConfig for Boxy SAML provider";
                 int option = new Random().nextInt(5);
                 switch (option) {
                     case 0:

@@ -95,7 +95,7 @@ public class EmailPassword {
     }
 
     public static AuthRecipeUserInfo signUp(TenantIdentifier tenantIdentifier, Storage storage, Main main,
-                                  @Nonnull String email, @Nonnull String password)
+                                            @Nonnull String email, @Nonnull String password)
             throws DuplicateEmailException, StorageQueryException, TenantOrAppNotFoundException,
             BadPermissionException {
 
@@ -124,7 +124,7 @@ public class EmailPassword {
                         evStorage.startTransaction(con -> {
                             try {
                                 evStorage.updateIsEmailVerified_Transaction(tenantIdentifier.toAppIdentifier(), con,
-                                                newUser.getSupertokensUserId(), email, true);
+                                        newUser.getSupertokensUserId(), email, true);
                                 evStorage.commitTransaction(con);
 
                                 return null;
@@ -201,7 +201,8 @@ public class EmailPassword {
                 LoginMethod loginMethod = null;
                 for (AuthRecipeUserInfo currUser : allUsers) {
                     for (LoginMethod currLM : currUser.loginMethods) {
-                        if (currLM.email.equals(email) && currLM.recipeId == RECIPE_ID.EMAIL_PASSWORD && currLM.tenantIds.contains(tenantIdentifier.getTenantId())) {
+                        if (currLM.email.equals(email) && currLM.recipeId == RECIPE_ID.EMAIL_PASSWORD &&
+                                currLM.tenantIds.contains(tenantIdentifier.getTenantId())) {
                             userInfoToBeUpdated = currUser;
                             loginMethod = currLM;
                             break;
@@ -270,7 +271,8 @@ public class EmailPassword {
         LoginMethod lM = null;
         for (AuthRecipeUserInfo currUser : users) {
             for (LoginMethod currLM : currUser.loginMethods) {
-                if (currLM.recipeId == RECIPE_ID.EMAIL_PASSWORD && currLM.email.equals(email) && currLM.tenantIds.contains(tenantIdentifier.getTenantId())) {
+                if (currLM.recipeId == RECIPE_ID.EMAIL_PASSWORD && currLM.email.equals(email) &&
+                        currLM.tenantIds.contains(tenantIdentifier.getTenantId())) {
                     user = currUser;
                     lM = currLM;
                 }
@@ -633,7 +635,8 @@ public class EmailPassword {
                                     if (!userWithSameEmail.tenantIds.contains(tenantId)) {
                                         continue;
                                     }
-                                    if (userWithSameEmail.isPrimaryUser && !userWithSameEmail.getSupertokensUserId().equals(user.getSupertokensUserId())) {
+                                    if (userWithSameEmail.isPrimaryUser && !userWithSameEmail.getSupertokensUserId()
+                                            .equals(user.getSupertokensUserId())) {
                                         throw new StorageTransactionLogicException(
                                                 new EmailChangeNotAllowedException());
                                     }

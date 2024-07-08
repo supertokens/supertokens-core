@@ -105,7 +105,7 @@ public class ResourceDistributor {
     }
 
     public synchronized SingletonResource removeResource(TenantIdentifier tenantIdentifier,
-                                                      @Nonnull String key) {
+                                                         @Nonnull String key) {
         SingletonResource singletonResource = resources.get(new KeyClass(tenantIdentifier, key));
         if (singletonResource == null) {
             return null;

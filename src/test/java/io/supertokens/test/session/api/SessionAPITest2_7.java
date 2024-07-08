@@ -52,7 +52,7 @@ public class SessionAPITest2_7 {
 
     @Test
     public void successOutputCheckWithAntiCsrfWithCookieDomain() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         Utils.setValueInConfig("cookie_domain", "localhost");
 
@@ -84,7 +84,7 @@ public class SessionAPITest2_7 {
 
     @Test
     public void successOutputCheckWithAntiCsrf() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -115,7 +115,7 @@ public class SessionAPITest2_7 {
 
     @Test
     public void successOutputCheckWithNoAntiCsrf() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -145,7 +145,7 @@ public class SessionAPITest2_7 {
     @Test
     public void badInputTest() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -247,7 +247,7 @@ public class SessionAPITest2_7 {
     }
 
     public static void checkSessionResponse(JsonObject response, TestingProcessManager.TestingProcess process,
-            String userId, JsonObject userDataInJWT) {
+                                            String userId, JsonObject userDataInJWT) {
         assertNotNull(response.get("session").getAsJsonObject().get("handle").getAsString());
         assertEquals(response.get("session").getAsJsonObject().get("userId").getAsString(), userId);
         assertEquals(response.get("session").getAsJsonObject().get("userDataInJWT").getAsJsonObject().toString(),

@@ -115,7 +115,8 @@ public class IpAllowDenyRegexTest extends Mockito {
             TestingProcess process = TestingProcessManager.start(args);
             ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
             assertNotNull(e);
-            assertTrue(e.exception.getMessage().contains("Provided regular expression is invalid for ip_allow_regex config"));
+            assertTrue(e.exception.getMessage()
+                    .contains("Provided regular expression is invalid for ip_allow_regex config"));
 
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
@@ -130,7 +131,8 @@ public class IpAllowDenyRegexTest extends Mockito {
             TestingProcess process = TestingProcessManager.start(args);
             ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
             assertNotNull(e);
-            assertTrue(e.exception.getMessage().contains("Provided regular expression is invalid for ip_deny_regex config"));
+            assertTrue(e.exception.getMessage()
+                    .contains("Provided regular expression is invalid for ip_deny_regex config"));
 
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));

@@ -95,7 +95,8 @@ public class SignInAPI extends WebserverAPI {
             result.add("user", userJson);
             if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0)) {
                 for (LoginMethod loginMethod : user.loginMethods) {
-                    if (loginMethod.recipeId.equals(RECIPE_ID.EMAIL_PASSWORD) && normalisedEmail.equals(loginMethod.email)) {
+                    if (loginMethod.recipeId.equals(RECIPE_ID.EMAIL_PASSWORD) &&
+                            normalisedEmail.equals(loginMethod.email)) {
                         result.addProperty("recipeUserId", loginMethod.getSupertokensOrExternalUserId());
                         break;
                     }

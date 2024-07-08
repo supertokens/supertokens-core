@@ -39,7 +39,8 @@ public class ActiveUsersQueries {
         });
     }
 
-    public static int countUsersActiveSinceAndHasMoreThanOneLoginMethod(Start start, AppIdentifier appIdentifier, long sinceTime)
+    public static int countUsersActiveSinceAndHasMoreThanOneLoginMethod(Start start, AppIdentifier appIdentifier,
+                                                                        long sinceTime)
             throws SQLException, StorageQueryException {
         // TODO: Active users are present only on public tenant and MFA users may be present on different storages
         String QUERY = "SELECT count(1) as c FROM ("
@@ -90,7 +91,9 @@ public class ActiveUsersQueries {
         });
     }
 
-    public static int countUsersThatHaveMoreThanOneLoginMethodOrTOTPEnabledAndActiveSince(Start start, AppIdentifier appIdentifier, long sinceTime)
+    public static int countUsersThatHaveMoreThanOneLoginMethodOrTOTPEnabledAndActiveSince(Start start,
+                                                                                          AppIdentifier appIdentifier,
+                                                                                          long sinceTime)
             throws SQLException, StorageQueryException {
         // TODO: Active users are present only on public tenant and MFA users may be present on different storages
         String QUERY =

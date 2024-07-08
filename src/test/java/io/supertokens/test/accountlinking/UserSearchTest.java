@@ -76,12 +76,15 @@ public class UserSearchTest {
 
         Passwordless.CreateCodeResponse code1 = Passwordless.createCode(process.getProcess(), "test3@example.com", null,
                 null, null);
-        AuthRecipeUserInfo user3 = Passwordless.consumeCode(process.getProcess(), code1.deviceId, code1.deviceIdHash, code1.userInputCode, null).user;
+        AuthRecipeUserInfo user3 = Passwordless.consumeCode(process.getProcess(), code1.deviceId, code1.deviceIdHash,
+                code1.userInputCode, null).user;
         Passwordless.CreateCodeResponse code2 = Passwordless.createCode(process.getProcess(), null, "+919876543210",
                 null, null);
-        AuthRecipeUserInfo user4 = Passwordless.consumeCode(process.getProcess(), code2.deviceId, code2.deviceIdHash, code2.userInputCode, null).user;
+        AuthRecipeUserInfo user4 = Passwordless.consumeCode(process.getProcess(), code2.deviceId, code2.deviceIdHash,
+                code2.userInputCode, null).user;
 
-        AuthRecipeUserInfo user5 = ThirdParty.signInUp(process.getProcess(), "google", "googleid", "test4@example.com").user;
+        AuthRecipeUserInfo user5 = ThirdParty.signInUp(process.getProcess(), "google", "googleid",
+                "test4@example.com").user;
 
         AuthRecipe.createPrimaryUser(process.getProcess(), user5.getSupertokensUserId());
         AuthRecipe.linkAccounts(process.getProcess(), user1.getSupertokensUserId(), user5.getSupertokensUserId());

@@ -82,7 +82,9 @@ public class TestSkipValidationInCreateThirdParty {
                     ), process.getProcess());
             fail();
         } catch (HttpResponseException e) {
-            assertTrue(e.getMessage().contains("a non empty string value must be specified for boxyURL in the additionalConfig for Boxy SAML provider"));
+            assertTrue(e.getMessage().contains(
+                    "a non empty string value must be specified for boxyURL in the additionalConfig for Boxy SAML " +
+                            "provider"));
         }
 
         TestMultitenancyAPIHelper.addOrUpdateThirdPartyProviderConfig(new TenantIdentifier(null, "a1", null),

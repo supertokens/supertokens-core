@@ -71,7 +71,8 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
             this.transferLegacyKeyToNewTable();
             this.getOrCreateAndGetSigningKeys();
         } catch (StorageQueryException | StorageTransactionLogicException e) {
-            Logging.error(main, appIdentifier.getAsPublicTenantIdentifier(), "Error while fetching access token signing key", false, e);
+            Logging.error(main, appIdentifier.getAsPublicTenantIdentifier(),
+                    "Error while fetching access token signing key", false, e);
         }
     }
 
@@ -90,7 +91,8 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
         }
     }
 
-    public static void loadForAllTenants(Main main, List<AppIdentifier> apps, List<TenantIdentifier> tenantsThatChanged) {
+    public static void loadForAllTenants(Main main, List<AppIdentifier> apps,
+                                         List<TenantIdentifier> tenantsThatChanged) {
         try {
             main.getResourceDistributor().withResourceDistributorLock(() -> {
                 Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingResources =

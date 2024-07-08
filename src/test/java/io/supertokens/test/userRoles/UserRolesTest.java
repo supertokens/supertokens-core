@@ -1026,7 +1026,8 @@ public class UserRolesTest {
             assertEquals(0, retrievedRoles.length);
 
             // check that the mapping for user role doesnt exist
-            String[] roleUserMapping = storage.getRolesForUser(new TenantIdentifier(null, null, null), userInfo.getSupertokensUserId());
+            String[] roleUserMapping = storage.getRolesForUser(new TenantIdentifier(null, null, null),
+                    userInfo.getSupertokensUserId());
             assertEquals(0, roleUserMapping.length);
         }
 

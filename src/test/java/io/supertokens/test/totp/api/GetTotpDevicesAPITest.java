@@ -39,7 +39,7 @@ public class GetTotpDevicesAPITest {
     }
 
     private Exception getDevicesRequestException(TestingProcessManager.TestingProcess process,
-            HashMap<String, String> params) {
+                                                 HashMap<String, String> params) {
 
         return assertThrows(
                 io.supertokens.test.httpRequest.HttpResponseException.class,
@@ -72,12 +72,13 @@ public class GetTotpDevicesAPITest {
 
     @Test
     public void testApi() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        FeatureFlagTestContent.getInstance(process.main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[] { EE_FEATURES.MFA });
+        FeatureFlagTestContent.getInstance(process.main)
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MFA});
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;

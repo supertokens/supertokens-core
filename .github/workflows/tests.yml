@@ -4,11 +4,11 @@ on:
     inputs:
       pluginRepoOwnerName:
         description: 'supertokens-plugin-interface repo owner name'
-        default: supertokens 
+        default: supertokens
         required: true
       pluginInterfaceBranch:
         description: 'supertokens-plugin-interface repos branch name'
-        default: master 
+        default: master
         required: true
 
 jobs:

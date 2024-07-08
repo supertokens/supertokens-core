@@ -273,8 +273,10 @@ public class FeatureFlagTest {
             JsonObject user2 = Utils.signUpRequest_2_5(process, "test2@gmail.com", "validPass123");
             assert signUpResponse2.get("status").getAsString().equals("OK");
 
-            AuthRecipe.createPrimaryUser(process.getProcess(), user1.get("user").getAsJsonObject().get("id").getAsString());
-            AuthRecipe.linkAccounts(process.getProcess(), user2.get("user").getAsJsonObject().get("id").getAsString(), user1.get("user").getAsJsonObject().get("id").getAsString());
+            AuthRecipe.createPrimaryUser(process.getProcess(),
+                    user1.get("user").getAsJsonObject().get("id").getAsString());
+            AuthRecipe.linkAccounts(process.getProcess(), user2.get("user").getAsJsonObject().get("id").getAsString(),
+                    user1.get("user").getAsJsonObject().get("id").getAsString());
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/ee/featureflag",
@@ -365,7 +367,7 @@ public class FeatureFlagTest {
                     process.getProcess(),
                     new TenantIdentifier(null, null, "t1"), (StorageLayer.getStorage(process.getProcess())),
                     signUpResponse.get("user").getAsJsonObject().get("id").getAsString()
-                );
+            );
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/ee/featureflag",
                     null, 1000, 1000, null, WebserverAPI.getLatestCDIVersion().get(), "");
@@ -392,7 +394,9 @@ public class FeatureFlagTest {
         Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    private final static String OPAQUE_KEY_WITH_MFA_FEATURE = "Qk8olVa=v-9PU=snnUFMF4ihMCx4zVBOO6Jd7Nrg6Cg5YyFliEj252ADgpwEpDLfFowA0U5OyVo3XL=U4FMft2HDHCDGg9hWD4iwQQiyjMRi6Mu03CVbAxIkNGaXtJ53";
+    private final static String OPAQUE_KEY_WITH_MFA_FEATURE = "Qk8olVa=v-9PU" +
+            "=snnUFMF4ihMCx4zVBOO6Jd7Nrg6Cg5YyFliEj252ADgpwEpDLfFowA0U5OyVo3XL" +
+            "=U4FMft2HDHCDGg9hWD4iwQQiyjMRi6Mu03CVbAxIkNGaXtJ53";
 
 
     private final String OPAQUE_KEY_WITH_MULTITENANCY_FEATURE = "ijaleljUd2kU9XXWLiqFYv5br8nutTxbyBqWypQdv2N-" +
@@ -944,7 +948,8 @@ public class FeatureFlagTest {
             process = TestingProcessManager.start(args);
             process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-            ProcessState.EventAndException event = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL);
+            ProcessState.EventAndException event = process.checkOrWaitForEvent(
+                    ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL);
             assertNotNull(event);
             assertNotNull(event.data);
 

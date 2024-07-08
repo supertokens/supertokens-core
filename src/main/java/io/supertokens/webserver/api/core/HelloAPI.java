@@ -80,7 +80,8 @@ public class HelloAPI extends WebserverAPI {
 
         try {
             AppIdentifier appIdentifier = getAppIdentifier(req);
-            Storage[] storages = StorageLayer.getStoragesForApp(main, appIdentifier); // throws tenantOrAppNotFoundException
+            Storage[] storages = StorageLayer.getStoragesForApp(main,
+                    appIdentifier); // throws tenantOrAppNotFoundException
 
             RateLimiter rateLimiter = RateLimiter.getInstance(appIdentifier, super.main, 200);
             if (!rateLimiter.checkRequest()) {

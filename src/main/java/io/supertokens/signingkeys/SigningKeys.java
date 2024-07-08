@@ -68,7 +68,8 @@ public class SigningKeys extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public static void loadForAllTenants(Main main, List<AppIdentifier> apps, List<TenantIdentifier> tenantsThatChanged) {
+    public static void loadForAllTenants(Main main, List<AppIdentifier> apps,
+                                         List<TenantIdentifier> tenantsThatChanged) {
         try {
             main.getResourceDistributor().withResourceDistributorLock(() -> {
                 Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingResources =
@@ -342,7 +343,7 @@ public class SigningKeys extends ResourceDistributor.SingletonResource {
      * @param bigInt The big integer to be converted. Must not be
      *               {@code null}.
      * @return A byte array representation of the big integer, without the
-     *         sign bit.
+     * sign bit.
      */
     private static byte[] toBytesUnsigned(final BigInteger bigInt) {
 

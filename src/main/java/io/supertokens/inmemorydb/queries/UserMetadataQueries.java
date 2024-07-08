@@ -89,7 +89,8 @@ public class UserMetadataQueries {
     public static JsonObject getUserMetadata_Transaction(Start start, Connection con, AppIdentifier appIdentifier,
                                                          String userId)
             throws SQLException, StorageQueryException {
-        ((ConnectionWithLocks) con).lock(appIdentifier.getAppId() + "~" + userId + Config.getConfig(start).getUserMetadataTable());
+        ((ConnectionWithLocks) con).lock(
+                appIdentifier.getAppId() + "~" + userId + Config.getConfig(start).getUserMetadataTable());
 
         String QUERY = "SELECT user_metadata FROM " + getConfig(start).getUserMetadataTable()
                 + " WHERE app_id = ? AND user_id = ?";

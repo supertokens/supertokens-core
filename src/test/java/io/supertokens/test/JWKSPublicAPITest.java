@@ -53,13 +53,14 @@ public class JWKSPublicAPITest {
 
     @Test
     public void testSuccessOutput() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         // check regular output
-        JsonObject response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/.well-known/jwks.json", null,
+        JsonObject response = HttpRequest.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/.well-known/jwks.json", null,
                 1000, 1000, null);
 
         assertEquals(response.entrySet().size(), 1);

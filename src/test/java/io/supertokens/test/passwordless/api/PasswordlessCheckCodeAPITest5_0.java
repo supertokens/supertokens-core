@@ -53,7 +53,7 @@ public class PasswordlessCheckCodeAPITest5_0 {
 
     @Test
     public void testBadInput() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -101,7 +101,8 @@ public class PasswordlessCheckCodeAPITest5_0 {
             assertNotNull(error);
             assertEquals(400, error.statusCode);
             assertEquals(
-                    "Http error. Status Code: 400. Message: Please provide exactly one of linkCode or deviceId+userInputCode",
+                    "Http error. Status Code: 400. Message: Please provide exactly one of linkCode or " +
+                            "deviceId+userInputCode",
                     error.getMessage());
         }
 
@@ -124,7 +125,8 @@ public class PasswordlessCheckCodeAPITest5_0 {
             assertNotNull(error);
             assertEquals(400, error.statusCode);
             assertEquals(
-                    "Http error. Status Code: 400. Message: Please provide exactly one of linkCode or deviceId+userInputCode",
+                    "Http error. Status Code: 400. Message: Please provide exactly one of linkCode or " +
+                            "deviceId+userInputCode",
                     error.getMessage());
         }
 
@@ -146,7 +148,8 @@ public class PasswordlessCheckCodeAPITest5_0 {
             assertNotNull(error);
             assertEquals(400, error.statusCode);
             assertEquals(
-                    "Http error. Status Code: 400. Message: Please provide exactly one of linkCode or deviceId+userInputCode",
+                    "Http error. Status Code: 400. Message: Please provide exactly one of linkCode or " +
+                            "deviceId+userInputCode",
                     error.getMessage());
         }
         {
@@ -166,7 +169,8 @@ public class PasswordlessCheckCodeAPITest5_0 {
             assertNotNull(error);
             assertEquals(400, error.statusCode);
             assertEquals(
-                    "Http error. Status Code: 400. Message: Please provide exactly one of linkCode or deviceId+userInputCode",
+                    "Http error. Status Code: 400. Message: Please provide exactly one of linkCode or " +
+                            "deviceId+userInputCode",
                     error.getMessage());
         }
         {
@@ -186,7 +190,8 @@ public class PasswordlessCheckCodeAPITest5_0 {
             assertNotNull(error);
             assertEquals(400, error.statusCode);
             assertEquals(
-                    "Http error. Status Code: 400. Message: Please provide exactly one of linkCode or deviceId+userInputCode",
+                    "Http error. Status Code: 400. Message: Please provide exactly one of linkCode or " +
+                            "deviceId+userInputCode",
                     error.getMessage());
         }
 
@@ -274,7 +279,8 @@ public class PasswordlessCheckCodeAPITest5_0 {
             assertNotNull(error);
             assertEquals(400, error.statusCode);
             assertEquals(
-                    "Http error. Status Code: 400. Message: Please provide exactly one of linkCode or deviceId+userInputCode",
+                    "Http error. Status Code: 400. Message: Please provide exactly one of linkCode or " +
+                            "deviceId+userInputCode",
                     error.getMessage());
         }
 
@@ -287,7 +293,7 @@ public class PasswordlessCheckCodeAPITest5_0 {
 
     @Test
     public void testLinkCode() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -320,7 +326,7 @@ public class PasswordlessCheckCodeAPITest5_0 {
 
     @Test
     public void testExpiredLinkCode() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         Utils.setValueInConfig("passwordless_code_lifetime", "100");
 
@@ -355,7 +361,7 @@ public class PasswordlessCheckCodeAPITest5_0 {
 
     @Test
     public void testUserInputCode() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -389,7 +395,7 @@ public class PasswordlessCheckCodeAPITest5_0 {
 
     @Test
     public void testUserInputCodeDoesNotDeleteTheCode() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -430,7 +436,7 @@ public class PasswordlessCheckCodeAPITest5_0 {
 
     @Test
     public void testExpiredUserInputCode() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         Utils.setValueInConfig("passwordless_code_lifetime", "100");
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -466,7 +472,7 @@ public class PasswordlessCheckCodeAPITest5_0 {
 
     @Test
     public void testIncorrectUserInputCode() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         Utils.setValueInConfig("passwordless_max_code_input_attempts", "2"); // Only 2 code entries permitted (1 retry)
 
@@ -506,7 +512,7 @@ public class PasswordlessCheckCodeAPITest5_0 {
 
     @Test
     public void testConsumeCodeWithoutCreatingUser() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -535,7 +541,8 @@ public class PasswordlessCheckCodeAPITest5_0 {
         int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
         assert (activeUsers == 0);
 
-        assertEquals(0, AuthRecipe.getUsersCount(process.getProcess(), null)); // ensure that no user was actually created
+        assertEquals(0,
+                AuthRecipe.getUsersCount(process.getProcess(), null)); // ensure that no user was actually created
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -543,7 +550,7 @@ public class PasswordlessCheckCodeAPITest5_0 {
 
     @Test
     public void testVerifyCodeReturnsUserIfItAlreadyExists() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -582,7 +589,7 @@ public class PasswordlessCheckCodeAPITest5_0 {
 
     @Test
     public void testBadInputWithoutCreatingUser() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -631,7 +638,8 @@ public class PasswordlessCheckCodeAPITest5_0 {
             assertNotNull(error);
             assertEquals(400, error.statusCode);
             assertEquals(
-                    "Http error. Status Code: 400. Message: Please provide exactly one of linkCode or deviceId+userInputCode",
+                    "Http error. Status Code: 400. Message: Please provide exactly one of linkCode or " +
+                            "deviceId+userInputCode",
                     error.getMessage());
         }
 
@@ -655,7 +663,8 @@ public class PasswordlessCheckCodeAPITest5_0 {
             assertNotNull(error);
             assertEquals(400, error.statusCode);
             assertEquals(
-                    "Http error. Status Code: 400. Message: Please provide exactly one of linkCode or deviceId+userInputCode",
+                    "Http error. Status Code: 400. Message: Please provide exactly one of linkCode or " +
+                            "deviceId+userInputCode",
                     error.getMessage());
         }
 
@@ -678,7 +687,8 @@ public class PasswordlessCheckCodeAPITest5_0 {
             assertNotNull(error);
             assertEquals(400, error.statusCode);
             assertEquals(
-                    "Http error. Status Code: 400. Message: Please provide exactly one of linkCode or deviceId+userInputCode",
+                    "Http error. Status Code: 400. Message: Please provide exactly one of linkCode or " +
+                            "deviceId+userInputCode",
                     error.getMessage());
         }
         {
@@ -699,7 +709,8 @@ public class PasswordlessCheckCodeAPITest5_0 {
             assertNotNull(error);
             assertEquals(400, error.statusCode);
             assertEquals(
-                    "Http error. Status Code: 400. Message: Please provide exactly one of linkCode or deviceId+userInputCode",
+                    "Http error. Status Code: 400. Message: Please provide exactly one of linkCode or " +
+                            "deviceId+userInputCode",
                     error.getMessage());
         }
         {
@@ -720,7 +731,8 @@ public class PasswordlessCheckCodeAPITest5_0 {
             assertNotNull(error);
             assertEquals(400, error.statusCode);
             assertEquals(
-                    "Http error. Status Code: 400. Message: Please provide exactly one of linkCode or deviceId+userInputCode",
+                    "Http error. Status Code: 400. Message: Please provide exactly one of linkCode or " +
+                            "deviceId+userInputCode",
                     error.getMessage());
         }
 
@@ -812,7 +824,8 @@ public class PasswordlessCheckCodeAPITest5_0 {
             assertNotNull(error);
             assertEquals(400, error.statusCode);
             assertEquals(
-                    "Http error. Status Code: 400. Message: Please provide exactly one of linkCode or deviceId+userInputCode",
+                    "Http error. Status Code: 400. Message: Please provide exactly one of linkCode or " +
+                            "deviceId+userInputCode",
                     error.getMessage());
         }
 
@@ -825,7 +838,7 @@ public class PasswordlessCheckCodeAPITest5_0 {
 
     @Test
     public void testLinkCodeWithoutCreatingUser() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -858,7 +871,7 @@ public class PasswordlessCheckCodeAPITest5_0 {
 
     @Test
     public void testExpiredLinkCodeWithoutCreatingUser() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         Utils.setValueInConfig("passwordless_code_lifetime", "100");
 
@@ -894,7 +907,7 @@ public class PasswordlessCheckCodeAPITest5_0 {
 
     @Test
     public void testExpiredUserInputCodeWithoutCreatingUser() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         Utils.setValueInConfig("passwordless_code_lifetime", "100");
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -931,7 +944,7 @@ public class PasswordlessCheckCodeAPITest5_0 {
 
     @Test
     public void testIncorrectUserInputCodeWithoutCreatingUser() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         Utils.setValueInConfig("passwordless_max_code_input_attempts", "2"); // Only 2 code entries permitted (1 retry)
 

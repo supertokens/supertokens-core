@@ -68,7 +68,8 @@ public class ProcessState extends ResourceDistributor.SingletonResource {
     /**
      * INIT: Initialization started INIT_FAILURE: Initialization failed
      * STARTED: Initialized successfully SHUTTING_DOWN: Shut down signal received STOPPED
-     * RETRYING_ACCESS_TOKEN_JWT_VERIFICATION: When access token verification fails due to change in signing key, so we retry it
+     * RETRYING_ACCESS_TOKEN_JWT_VERIFICATION: When access token verification fails due to change in signing key, so
+     * we retry it
      * CRON_TASK_ERROR_LOGGING: When an exception is thrown from a Cronjob
      * DEVICE_DRIVER_INFO_LOGGED:When program is saving deviceDriverInfo into ping
      * SERVER_PING: When program is pinging the server with information

@@ -87,7 +87,7 @@ public class Main {
             installationDir = args[1];
 
             if (args.length == 2) {
-                args = new String[] { args[0], args[1], "--help" };
+                args = new String[]{args[0], args[1], "--help"};
             }
 
             command = args[2];

@@ -219,13 +219,13 @@ public class ConnectionWithLocks implements Connection {
 
     @Override
     public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency,
-            int resultSetHoldability) throws SQLException {
+                                              int resultSetHoldability) throws SQLException {
         return con.prepareStatement(sql, resultSetType, resultSetConcurrency, resultSetHoldability);
     }
 
     @Override
     public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency,
-            int resultSetHoldability) throws SQLException {
+                                         int resultSetHoldability) throws SQLException {
         return con.prepareCall(sql, resultSetType, resultSetConcurrency, resultSetHoldability);
     }
 

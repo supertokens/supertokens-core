@@ -33,11 +33,13 @@ public class MfaSqlHelper {
             throws SQLException, StorageQueryException {
         String QUERY = "SELECT connection_uri_domain, app_id, tenant_id, factor_id FROM "
                 + Config.getConfig(start).getTenantFirstFactorsTable() + ";";
-        return execute(start, QUERY, pst -> {}, result -> {
+        return execute(start, QUERY, pst -> {
+        }, result -> {
             HashMap<TenantIdentifier, List<String>> firstFactors = new HashMap<>();
 
             while (result.next()) {
-                TenantIdentifier tenantIdentifier = new TenantIdentifier(result.getString("connection_uri_domain"), result.getString("app_id"), result.getString("tenant_id"));
+                TenantIdentifier tenantIdentifier = new TenantIdentifier(result.getString("connection_uri_domain"),
+                        result.getString("app_id"), result.getString("tenant_id"));
                 if (!firstFactors.containsKey(tenantIdentifier)) {
                     firstFactors.put(tenantIdentifier, new ArrayList<>());
                 }
@@ -58,7 +60,8 @@ public class MfaSqlHelper {
             throws SQLException, StorageQueryException {
         String QUERY = "SELECT connection_uri_domain, app_id, tenant_id, factor_id FROM "
                 + Config.getConfig(start).getTenantRequiredSecondaryFactorsTable() + ";";
-        return execute(start, QUERY, pst -> {}, result -> {
+        return execute(start, QUERY, pst -> {
+        }, result -> {
             HashMap<TenantIdentifier, List<String>> defaultRequiredFactors = new HashMap<>();
 
             while (result.next()) {
@@ -80,13 +83,15 @@ public class MfaSqlHelper {
         });
     }
 
-    public static void createFirstFactors(Start start, Connection sqlCon, TenantIdentifier tenantIdentifier, String[] firstFactors)
+    public static void createFirstFactors(Start start, Connection sqlCon, TenantIdentifier tenantIdentifier,
+                                          String[] firstFactors)
             throws SQLException, StorageQueryException {
         if (firstFactors == null || firstFactors.length == 0) {
             return;
         }
 
-        String QUERY = "INSERT INTO " + Config.getConfig(start).getTenantFirstFactorsTable() + "(connection_uri_domain, app_id, tenant_id, factor_id) VALUES (?, ?, ?, ?);";
+        String QUERY = "INSERT INTO " + Config.getConfig(start).getTenantFirstFactorsTable() +
+                "(connection_uri_domain, app_id, tenant_id, factor_id) VALUES (?, ?, ?, ?);";
         for (String factorId : new HashSet<>(Arrays.asList(firstFactors))) {
             update(sqlCon, QUERY, pst -> {
                 pst.setString(1, tenantIdentifier.getConnectionUriDomain());
@@ -97,13 +102,15 @@ public class MfaSqlHelper {
         }
     }
 
-    public static void createRequiredSecondaryFactors(Start start, Connection sqlCon, TenantIdentifier tenantIdentifier, String[] requiredSecondaryFactors)
+    public static void createRequiredSecondaryFactors(Start start, Connection sqlCon, TenantIdentifier tenantIdentifier,
+                                                      String[] requiredSecondaryFactors)
             throws SQLException, StorageQueryException {
         if (requiredSecondaryFactors == null || requiredSecondaryFactors.length == 0) {
             return;
         }
 
-        String QUERY = "INSERT INTO " + Config.getConfig(start).getTenantRequiredSecondaryFactorsTable() + "(connection_uri_domain, app_id, tenant_id, factor_id) VALUES (?, ?, ?, ?);";
+        String QUERY = "INSERT INTO " + Config.getConfig(start).getTenantRequiredSecondaryFactorsTable() +
+                "(connection_uri_domain, app_id, tenant_id, factor_id) VALUES (?, ?, ?, ?);";
         for (String factorId : requiredSecondaryFactors) {
             update(sqlCon, QUERY, pst -> {
                 pst.setString(1, tenantIdentifier.getConnectionUriDomain());

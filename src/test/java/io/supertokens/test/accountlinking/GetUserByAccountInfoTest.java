@@ -126,7 +126,7 @@ public class GetUserByAccountInfoTest {
         assertEquals(RECIPE_ID.EMAIL_PASSWORD, userToTest.loginMethods[0].recipeId);
         assertEquals(user1.getSupertokensUserId(), userToTest.loginMethods[0].getSupertokensUserId());
         assertFalse(userToTest.loginMethods[0].verified);
-        assert(userToTest.loginMethods[0].timeJoined > 0);
+        assert (userToTest.loginMethods[0].timeJoined > 0);
 
         // test for result
         assertEquals(user1, AuthRecipe.getUsersByAccountInfo(TenantIdentifier.BASE_TENANT, storage
@@ -256,9 +256,11 @@ public class GetUserByAccountInfoTest {
 
         AuthRecipeUserInfo user1 = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password1");
         Thread.sleep(50);
-        AuthRecipeUserInfo user2 = ThirdParty.signInUp(process.getProcess(), "google", "userid1", "test2@example.com").user;
+        AuthRecipeUserInfo user2 = ThirdParty.signInUp(process.getProcess(), "google", "userid1",
+                "test2@example.com").user;
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId()).user;
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(),
+                user1.getSupertokensUserId()).user;
         AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), primaryUser.getSupertokensUserId());
 
         Storage storage = (
@@ -304,7 +306,8 @@ public class GetUserByAccountInfoTest {
         Thread.sleep(50);
         AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "password2");
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId()).user;
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(),
+                user1.getSupertokensUserId()).user;
         AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), primaryUser.getSupertokensUserId());
 
         Storage storage = (
@@ -341,7 +344,8 @@ public class GetUserByAccountInfoTest {
         Thread.sleep(50);
         AuthRecipeUserInfo user2 = createPasswordlessUserWithEmail(process.getProcess(), "test2@example.com");
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId()).user;
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(),
+                user1.getSupertokensUserId()).user;
         AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), primaryUser.getSupertokensUserId());
 
         Storage storage = (
@@ -378,7 +382,8 @@ public class GetUserByAccountInfoTest {
         Thread.sleep(50);
         AuthRecipeUserInfo user2 = createPasswordlessUserWithPhone(process.getProcess(), "+919876543210");
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId()).user;
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(),
+                user1.getSupertokensUserId()).user;
         AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), primaryUser.getSupertokensUserId());
 
         Storage storage = (
@@ -418,7 +423,8 @@ public class GetUserByAccountInfoTest {
         Thread.sleep(50);
         AuthRecipeUserInfo user2 = createThirdPartyUser(process.getProcess(), "google", "userid1", "test2@example.com");
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId()).user;
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(),
+                user1.getSupertokensUserId()).user;
         AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), primaryUser.getSupertokensUserId());
 
         Storage storage = (
@@ -466,10 +472,12 @@ public class GetUserByAccountInfoTest {
         Thread.sleep(50);
         Passwordless.CreateCodeResponse code = Passwordless.createCode(process.getProcess(), null, "+919876543210",
                 null, null);
-        AuthRecipeUserInfo user3 = Passwordless.consumeCode(process.getProcess(), code.deviceId, code.deviceIdHash, code.userInputCode, null).user;
+        AuthRecipeUserInfo user3 = Passwordless.consumeCode(process.getProcess(), code.deviceId, code.deviceIdHash,
+                code.userInputCode, null).user;
 
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId()).user;
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(),
+                user1.getSupertokensUserId()).user;
         AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), primaryUser.getSupertokensUserId());
         AuthRecipe.linkAccounts(process.getProcess(), user3.getSupertokensUserId(), primaryUser.getSupertokensUserId());
 
@@ -519,7 +527,8 @@ public class GetUserByAccountInfoTest {
         Thread.sleep(50);
         Passwordless.CreateCodeResponse code = Passwordless.createCode(process.getProcess(), null, "+919876543210",
                 null, null);
-        AuthRecipeUserInfo user3 = Passwordless.consumeCode(process.getProcess(), code.deviceId, code.deviceIdHash, code.userInputCode, null).user;
+        AuthRecipeUserInfo user3 = Passwordless.consumeCode(process.getProcess(), code.deviceId, code.deviceIdHash,
+                code.userInputCode, null).user;
         Thread.sleep(50);
         AuthRecipeUserInfo user4 = createEmailPasswordUser(process.getProcess(), "test2@example.com", "password1");
         Thread.sleep(50);

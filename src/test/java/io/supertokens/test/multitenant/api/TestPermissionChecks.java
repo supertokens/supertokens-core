@@ -88,15 +88,18 @@ public class TestPermissionChecks {
         TestCase[] testCases = new TestCase[]{
                 new TestCase(
                         new TenantIdentifier("127.0.0.1", null, null), null,
-                        "Only the public tenantId, public appId and default connectionUriDomain is allowed to list all connectionUriDomains and appIds associated with this core"
+                        "Only the public tenantId, public appId and default connectionUriDomain is allowed to list " +
+                                "all connectionUriDomains and appIds associated with this core"
                 ),
                 new TestCase(
                         new TenantIdentifier(null, "a1", null), null,
-                        "Only the public tenantId, public appId and default connectionUriDomain is allowed to list all connectionUriDomains and appIds associated with this core"
+                        "Only the public tenantId, public appId and default connectionUriDomain is allowed to list " +
+                                "all connectionUriDomains and appIds associated with this core"
                 ),
                 new TestCase(
                         new TenantIdentifier(null, null, "t1"), null,
-                        "Only the public tenantId, public appId and default connectionUriDomain is allowed to list all connectionUriDomains and appIds associated with this core"
+                        "Only the public tenantId, public appId and default connectionUriDomain is allowed to list " +
+                                "all connectionUriDomains and appIds associated with this core"
                 ),
                 new TestCase(
                         new TenantIdentifier(null, null, null), null, null
@@ -147,19 +150,23 @@ public class TestPermissionChecks {
         TestCase[] testCases = new TestCase[]{
                 new TestCase(
                         new TenantIdentifier("127.0.0.1", "a1", null), null,
-                        "Only the public tenantId and public appId is allowed to list all apps associated with this connection uri domain"
+                        "Only the public tenantId and public appId is allowed to list all apps associated with this " +
+                                "connection uri domain"
                 ),
                 new TestCase(
                         new TenantIdentifier("127.0.0.1", null, "t1"), null,
-                        "Only the public tenantId and public appId is allowed to list all apps associated with this connection uri domain"
+                        "Only the public tenantId and public appId is allowed to list all apps associated with this " +
+                                "connection uri domain"
                 ),
                 new TestCase(
                         new TenantIdentifier(null, "a1", null), null,
-                        "Only the public tenantId and public appId is allowed to list all apps associated with this connection uri domain"
+                        "Only the public tenantId and public appId is allowed to list all apps associated with this " +
+                                "connection uri domain"
                 ),
                 new TestCase(
                         new TenantIdentifier(null, null, "t1"), null,
-                        "Only the public tenantId and public appId is allowed to list all apps associated with this connection uri domain"
+                        "Only the public tenantId and public appId is allowed to list all apps associated with this " +
+                                "connection uri domain"
                 ),
                 new TestCase(
                         new TenantIdentifier(null, null, null), null, null
@@ -518,7 +525,8 @@ public class TestPermissionChecks {
         }
 
         assertEquals("abccom", io.supertokens.webserver.Utils.normalizeAndValidateConnectionUriDomain("abccom", false));
-        assertEquals("local_host", io.supertokens.webserver.Utils.normalizeAndValidateConnectionUriDomain("local_host", false));
+        assertEquals("local_host",
+                io.supertokens.webserver.Utils.normalizeAndValidateConnectionUriDomain("local_host", false));
     }
 
     @Test
@@ -581,7 +589,9 @@ public class TestPermissionChecks {
             }
 
             if (StorageLayer.isInMemDb(process.getProcess())) {
-                if (!testCase.sourceTenant.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI) || !testCase.targetTenant.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
+                if (!testCase.sourceTenant.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI) ||
+                        !testCase.targetTenant.getConnectionUriDomain()
+                                .equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
                     process.kill();
                     assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
@@ -751,7 +761,9 @@ public class TestPermissionChecks {
             }
 
             if (StorageLayer.isInMemDb(process.getProcess())) {
-                if (!testCase.sourceTenant.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI) || !testCase.targetTenant.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
+                if (!testCase.sourceTenant.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI) ||
+                        !testCase.targetTenant.getConnectionUriDomain()
+                                .equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
                     process.kill();
                     assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
@@ -872,7 +884,8 @@ public class TestPermissionChecks {
                 new TestCase(
                         new TenantIdentifier("127.0.0.1", null, null),
                         new TenantIdentifier("127.0.0.1", null, null),
-                        "Only the public tenantId, public appId and default connectionUriDomain is allowed to delete a connectionUriDomain"
+                        "Only the public tenantId, public appId and default connectionUriDomain is allowed to delete " +
+                                "a connectionUriDomain"
                 ),
         };
 
@@ -971,7 +984,9 @@ public class TestPermissionChecks {
             }
 
             if (StorageLayer.isInMemDb(process.getProcess())) {
-                if (!testCase.sourceTenant.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI) || !testCase.targetTenant.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
+                if (!testCase.sourceTenant.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI) ||
+                        !testCase.targetTenant.getConnectionUriDomain()
+                                .equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
                     process.kill();
                     assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
@@ -1081,7 +1096,9 @@ public class TestPermissionChecks {
             }
 
             if (StorageLayer.isInMemDb(process.getProcess())) {
-                if (!testCase.sourceTenant.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI) || !testCase.targetTenant.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
+                if (!testCase.sourceTenant.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI) ||
+                        !testCase.targetTenant.getConnectionUriDomain()
+                                .equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
                     process.kill();
                     assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 

@@ -82,7 +82,7 @@ public class EmailVerificationTest {
 
     @Test
     public void testPasswordlessLoginSetsEmailVerified_v3_0() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -95,7 +95,8 @@ public class EmailVerificationTest {
 
         {
             // Email verification is not set for CDI < 4.0
-            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), email, null, null, null);
+            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), email, null,
+                    null, null);
             JsonObject consumeCodeRequestBody = new JsonObject();
             consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
             consumeCodeRequestBody.addProperty("linkCode", createResp.linkCode);
@@ -114,7 +115,7 @@ public class EmailVerificationTest {
 
     @Test
     public void testPasswordlessLoginSetsEmailVerified_v4_0() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -127,7 +128,8 @@ public class EmailVerificationTest {
 
         {
             // Email verification is set for CDI >= 4.0
-            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), email, null, null, null);
+            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), email, null,
+                    null, null);
             JsonObject consumeCodeRequestBody = new JsonObject();
             consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
             consumeCodeRequestBody.addProperty("linkCode", createResp.linkCode);
@@ -144,7 +146,8 @@ public class EmailVerificationTest {
 
         {
             // Email verification is set for CDI >= 4.0, for returning user
-            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), email, null, null, null);
+            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), email, null,
+                    null, null);
             JsonObject consumeCodeRequestBody = new JsonObject();
             consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
             consumeCodeRequestBody.addProperty("linkCode", createResp.linkCode);
@@ -185,7 +188,8 @@ public class EmailVerificationTest {
         EmailVerification.unverifyEmail(process.getProcess(), user2.getSupertokensUserId(), "test@example.com");
 
         {
-            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), "test@example.com", null, null, null);
+            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(),
+                    "test@example.com", null, null, null);
             JsonObject consumeCodeRequestBody = new JsonObject();
             consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
             consumeCodeRequestBody.addProperty("linkCode", createResp.linkCode);
@@ -194,8 +198,11 @@ public class EmailVerificationTest {
                     "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
                     SemVer.v4_0.get(), "passwordless");
 
-            assertTrue(EmailVerification.isEmailVerified(process.getProcess(), user2.getSupertokensUserId(), "test@example.com"));
-            assertTrue(response.get("user").getAsJsonObject().get("loginMethods").getAsJsonArray().get(1).getAsJsonObject().get("verified").getAsBoolean());
+            assertTrue(EmailVerification.isEmailVerified(process.getProcess(), user2.getSupertokensUserId(),
+                    "test@example.com"));
+            assertTrue(
+                    response.get("user").getAsJsonObject().get("loginMethods").getAsJsonArray().get(1).getAsJsonObject()
+                            .get("verified").getAsBoolean());
         }
 
         process.kill();

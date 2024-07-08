@@ -83,7 +83,8 @@ public class ThirdParty {
                         // account linking was not available. So loginMethod length will always be 1.
                         assert (finalResponse.user.loginMethods.length == 1);
                         evStorage.updateIsEmailVerified_Transaction(tenantIdentifier.toAppIdentifier(), con,
-                                        finalResponse.user.getSupertokensUserId(), finalResponse.user.loginMethods[0].email, true);
+                                finalResponse.user.getSupertokensUserId(), finalResponse.user.loginMethods[0].email,
+                                true);
                         evStorage.commitTransaction(con);
                         return null;
                     } catch (TenantOrAppNotFoundException e) {
@@ -129,7 +130,8 @@ public class ThirdParty {
     }
 
     @TestOnly
-    public static SignInUpResponse signInUp(Main main, String thirdPartyId, String thirdPartyUserId, String email, boolean isEmailVerified)
+    public static SignInUpResponse signInUp(Main main, String thirdPartyId, String thirdPartyUserId, String email,
+                                            boolean isEmailVerified)
             throws StorageQueryException, EmailChangeNotAllowedException {
         try {
             Storage storage = StorageLayer.getStorage(main);
@@ -169,13 +171,14 @@ public class ThirdParty {
 
         if (isEmailVerified) {
             for (LoginMethod lM : response.user.loginMethods) {
-                if (lM.thirdParty != null && lM.thirdParty.id.equals(thirdPartyId) && lM.thirdParty.userId.equals(thirdPartyUserId)) {
+                if (lM.thirdParty != null && lM.thirdParty.id.equals(thirdPartyId) &&
+                        lM.thirdParty.userId.equals(thirdPartyUserId)) {
                     try {
                         EmailVerificationSQLStorage evStorage = StorageUtils.getEmailVerificationStorage(storage);
                         evStorage.startTransaction(con -> {
                             try {
                                 evStorage.updateIsEmailVerified_Transaction(tenantIdentifier.toAppIdentifier(), con,
-                                                lM.getSupertokensUserId(), lM.email, true);
+                                        lM.getSupertokensUserId(), lM.email, true);
                                 evStorage.commitTransaction(con);
 
                                 return null;
@@ -268,10 +271,11 @@ public class ThirdParty {
                         tpStorage.startTransaction(con -> {
                             AuthRecipeUserInfo userFromDb1 = null;
 
-                            AuthRecipeUserInfo[] usersFromDb1 = authRecipeStorage.listPrimaryUsersByThirdPartyInfo_Transaction(
-                                    appIdentifier,
-                                    con,
-                                    thirdPartyId, thirdPartyUserId);
+                            AuthRecipeUserInfo[] usersFromDb1 =
+                                    authRecipeStorage.listPrimaryUsersByThirdPartyInfo_Transaction(
+                                            appIdentifier,
+                                            con,
+                                            thirdPartyId, thirdPartyUserId);
                             for (AuthRecipeUserInfo user : usersFromDb1) {
                                 if (user.tenantIds.contains(tenantIdentifier.getTenantId())) {
                                     if (userFromDb1 != null) {
@@ -313,7 +317,8 @@ public class ThirdParty {
                                                 continue;
                                             }
                                             if (userWithSameEmail.isPrimaryUser &&
-                                                    !userWithSameEmail.getSupertokensUserId().equals(userFromDb1.getSupertokensUserId())) {
+                                                    !userWithSameEmail.getSupertokensUserId()
+                                                            .equals(userFromDb1.getSupertokensUserId())) {
                                                 throw new StorageTransactionLogicException(
                                                         new EmailChangeNotAllowedException());
                                             }

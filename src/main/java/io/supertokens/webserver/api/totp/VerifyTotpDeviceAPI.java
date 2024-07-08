@@ -55,7 +55,8 @@ public class VerifyTotpDeviceAPI extends WebserverAPI {
 
         try {
             TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
-            Storage storage = getTenantStorage(req);;
+            Storage storage = getTenantStorage(req);
+            ;
             boolean isNewlyVerified = Totp.verifyDevice(tenantIdentifier, storage, main, userId, deviceName, totp);
 
             result.addProperty("status", "OK");

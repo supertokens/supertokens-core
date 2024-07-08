@@ -65,7 +65,8 @@ public class RefreshTokenTest {
             throws InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException,
             InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException {
         String key = "1000"
-                + ":79a6cbeb2066a3ab80f951037b90cc52bc216d9507998454184daeb3ef47cf387aab9c65e5fc69209fa6f0f67aee486c9d292cfc159a41c4b02415ba669f3219:d305504825a1b109";
+                +
+                ":79a6cbeb2066a3ab80f951037b90cc52bc216d9507998454184daeb3ef47cf387aab9c65e5fc69209fa6f0f67aee486c9d292cfc159a41c4b02415ba669f3219:d305504825a1b109";
         String message = "I am to be encrypted and then decrypted";
         String enc = io.supertokens.utils.Utils.encrypt(message, key);
         String dec = io.supertokens.utils.Utils.decrypt(enc, key);
@@ -77,7 +78,8 @@ public class RefreshTokenTest {
             throws InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException,
             InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException {
         String key = "1000"
-                + ":79a6cbeb2066a3ab80f951037b90cc52bc216d9507998454184daeb3ef47cf387aab9c65e5fc69209fa6f0f67aee486c9d292cfc159a41c4b02415ba669f3219:d305504825a1b109";
+                +
+                ":79a6cbeb2066a3ab80f951037b90cc52bc216d9507998454184daeb3ef47cf387aab9c65e5fc69209fa6f0f67aee486c9d292cfc159a41c4b02415ba669f3219:d305504825a1b109";
         String message = "I am to be encrypted and then decrypted";
         String enc = io.supertokens.utils.Utils.encrypt(message, key);
         try {
@@ -104,7 +106,7 @@ public class RefreshTokenTest {
             throws InterruptedException, InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException,
             NoSuchPaddingException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException,
             StorageQueryException, StorageTransactionLogicException, UnauthorisedException {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
@@ -143,7 +145,7 @@ public class RefreshTokenTest {
             throws InterruptedException, InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException,
             NoSuchPaddingException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException,
             StorageQueryException, StorageTransactionLogicException {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 

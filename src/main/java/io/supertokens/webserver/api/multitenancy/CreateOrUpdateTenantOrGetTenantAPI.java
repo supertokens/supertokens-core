@@ -72,21 +72,26 @@ public class CreateOrUpdateTenantOrGetTenantAPI extends BaseCreateOrUpdate {
                 JsonArray firstFactorsArr = InputParser.parseArrayOrThrowError(input, "firstFactors", true);
                 firstFactors = new String[firstFactorsArr.size()];
                 for (int i = 0; i < firstFactors.length; i++) {
-                    firstFactors[i] = InputParser.parseStringFromElementOrThrowError(firstFactorsArr.get(i), "firstFactors", false);
+                    firstFactors[i] = InputParser.parseStringFromElementOrThrowError(firstFactorsArr.get(i),
+                            "firstFactors", false);
                 }
                 if (firstFactors.length != new HashSet<>(Arrays.asList(firstFactors)).size()) {
-                    throw new ServletException(new BadRequestException("firstFactors input should not contain duplicate values"));
+                    throw new ServletException(
+                            new BadRequestException("firstFactors input should not contain duplicate values"));
                 }
             }
             hasRequiredSecondaryFactors = input.has("requiredSecondaryFactors");
             if (hasRequiredSecondaryFactors && !input.get("requiredSecondaryFactors").isJsonNull()) {
-                JsonArray requiredSecondaryFactorsArr = InputParser.parseArrayOrThrowError(input, "requiredSecondaryFactors", true);
+                JsonArray requiredSecondaryFactorsArr = InputParser.parseArrayOrThrowError(input,
+                        "requiredSecondaryFactors", true);
                 requiredSecondaryFactors = new String[requiredSecondaryFactorsArr.size()];
                 for (int i = 0; i < requiredSecondaryFactors.length; i++) {
-                    requiredSecondaryFactors[i] = InputParser.parseStringFromElementOrThrowError(requiredSecondaryFactorsArr.get(i), "requiredSecondaryFactors", false);
+                    requiredSecondaryFactors[i] = InputParser.parseStringFromElementOrThrowError(
+                            requiredSecondaryFactorsArr.get(i), "requiredSecondaryFactors", false);
                 }
                 if (requiredSecondaryFactors.length != new HashSet<>(Arrays.asList(requiredSecondaryFactors)).size()) {
-                    throw new ServletException(new BadRequestException("requiredSecondaryFactors input should not contain duplicate values"));
+                    throw new ServletException(new BadRequestException(
+                            "requiredSecondaryFactors input should not contain duplicate values"));
                 }
             }
         }
@@ -100,7 +105,8 @@ public class CreateOrUpdateTenantOrGetTenantAPI extends BaseCreateOrUpdate {
 
         super.handle(
                 req, sourceTenantIdentifier,
-                new TenantIdentifier(sourceTenantIdentifier.getConnectionUriDomain(), sourceTenantIdentifier.getAppId(), tenantId),
+                new TenantIdentifier(sourceTenantIdentifier.getConnectionUriDomain(), sourceTenantIdentifier.getAppId(),
+                        tenantId),
                 emailPasswordEnabled, thirdPartyEnabled, passwordlessEnabled,
                 hasFirstFactors, firstFactors, hasRequiredSecondaryFactors, requiredSecondaryFactors,
                 coreConfig, resp);

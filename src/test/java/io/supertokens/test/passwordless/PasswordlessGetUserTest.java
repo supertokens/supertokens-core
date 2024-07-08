@@ -70,7 +70,8 @@ public class PasswordlessGetUserTest {
 
         Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, EMAIL, null);
 
-        AuthRecipeUserInfo user = Passwordless.getUserById(process.getProcess(), consumeCodeResponse.user.getSupertokensUserId());
+        AuthRecipeUserInfo user = Passwordless.getUserById(process.getProcess(),
+                consumeCodeResponse.user.getSupertokensUserId());
         assertNotNull(user);
         assertEquals(user.loginMethods[0].email, EMAIL);
 
@@ -97,7 +98,8 @@ public class PasswordlessGetUserTest {
 
         Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, null, PHONE_NUMBER);
 
-        AuthRecipeUserInfo user = Passwordless.getUserById(process.getProcess(), consumeCodeResponse.user.getSupertokensUserId());
+        AuthRecipeUserInfo user = Passwordless.getUserById(process.getProcess(),
+                consumeCodeResponse.user.getSupertokensUserId());
         assertNotNull(user);
         assertEquals(user.loginMethods[0].phoneNumber, PHONE_NUMBER);
 
@@ -124,7 +126,8 @@ public class PasswordlessGetUserTest {
 
         Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, EMAIL, PHONE_NUMBER);
 
-        AuthRecipeUserInfo user = Passwordless.getUserById(process.getProcess(), consumeCodeResponse.user.getSupertokensUserId());
+        AuthRecipeUserInfo user = Passwordless.getUserById(process.getProcess(),
+                consumeCodeResponse.user.getSupertokensUserId());
         assertNotNull(user);
         assertEquals(user.loginMethods[0].email, EMAIL);
         assertEquals(user.loginMethods[0].phoneNumber, PHONE_NUMBER);
@@ -152,7 +155,8 @@ public class PasswordlessGetUserTest {
 
         Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, EMAIL, null);
 
-        AuthRecipeUserInfo user = Passwordless.getUserById(process.getProcess(), consumeCodeResponse.user.getSupertokensUserId() + "1");
+        AuthRecipeUserInfo user = Passwordless.getUserById(process.getProcess(),
+                consumeCodeResponse.user.getSupertokensUserId() + "1");
         assertNull(user);
 
         process.kill();

@@ -276,8 +276,7 @@ public class ConfigMapperTest {
                 JsonObject config = new JsonObject();
                 if (values[i] == null) {
                     config.add(properties[i], null);
-                }
-                else if (values[i] instanceof String) {
+                } else if (values[i] instanceof String) {
                     config.addProperty(properties[i], (String) values[i]);
                 } else if (values[i] instanceof Boolean) {
                     config.addProperty(properties[i], (Boolean) values[i]);

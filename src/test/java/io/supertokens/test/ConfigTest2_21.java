@@ -46,7 +46,7 @@ public class ConfigTest2_21 {
     public void testThatDeprecatedConfigStillWorks() throws Exception {
         Utils.setValueInConfig("access_token_signing_key_update_interval", "2");
 
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcess process = TestingProcessManager.start(args);
 
@@ -68,7 +68,7 @@ public class ConfigTest2_21 {
     public void testThatNewConfigWorks() throws Exception {
         Utils.setValueInConfig("access_token_dynamic_signing_key_update_interval", "2");
 
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcess process = TestingProcessManager.start(args);
 
@@ -90,14 +90,17 @@ public class ConfigTest2_21 {
     public void testCoreConfigTypeValidationInConfigYaml() throws Exception {
         Utils.setValueInConfig("access_token_validity", "abcd");
 
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcess process = TestingProcessManager.start(args);
 
         EventAndException startEvent = process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
         assertNotNull(startEvent);
 
-        assertEquals("io.supertokens.pluginInterface.exceptions.InvalidConfigException: 'access_token_validity' must be of type long", startEvent.exception.getMessage());
+        assertEquals(
+                "io.supertokens.pluginInterface.exceptions.InvalidConfigException: 'access_token_validity' must be of" +
+                        " type long",
+                startEvent.exception.getMessage());
 
         process.kill();
         EventAndException stopEvent = process.checkOrWaitForEvent(PROCESS_STATE.STOPPED);

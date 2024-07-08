@@ -419,7 +419,7 @@ public class CoreConfig {
             throw new InvalidConfigException(
                     "'access_token_validity' must be between 1 and 86400000 seconds inclusive." +
                             (includeConfigFilePath ? " The config file can be"
-                            + " found here: " + getConfigFileLocation(main) : ""));
+                                    + " found here: " + getConfigFileLocation(main) : ""));
         }
         Boolean validityTesting = CoreConfigTestContent.getInstance(main)
                 .getValue(CoreConfigTestContent.VALIDITY_TESTING);
@@ -566,7 +566,8 @@ public class CoreConfig {
                 try {
                     filter.setAllow(ip_allow_regex);
                 } catch (PatternSyntaxException e) {
-                    throw new InvalidConfigException("Provided regular expression is invalid for ip_allow_regex config");
+                    throw new InvalidConfigException(
+                            "Provided regular expression is invalid for ip_allow_regex config");
                 }
             }
             if (ip_deny_regex != null) {
@@ -687,7 +688,8 @@ public class CoreConfig {
         }
 
         access_token_validity = access_token_validity * 1000;
-        access_token_dynamic_signing_key_update_interval = access_token_dynamic_signing_key_update_interval * 3600 * 1000;
+        access_token_dynamic_signing_key_update_interval =
+                access_token_dynamic_signing_key_update_interval * 3600 * 1000;
         refresh_token_validity = refresh_token_validity * 60 * 1000;
 
         isNormalizedAndValid = true;
@@ -722,7 +724,8 @@ public class CoreConfig {
         for (Field field : CoreConfig.class.getDeclaredFields()) {
             if (field.isAnnotationPresent(ConfigYamlOnly.class)) {
                 if (config.has(field.getName())) {
-                    throw new InvalidConfigException(field.getName() + " can only be set via the core's base config setting");
+                    throw new InvalidConfigException(
+                            field.getName() + " can only be set via the core's base config setting");
                 }
             }
         }

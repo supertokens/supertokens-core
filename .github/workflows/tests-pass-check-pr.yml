@@ -1,24 +1,24 @@
 name: "Check if \"Run tests\" action succeeded"
 
 on:
-    pull_request:
-        types:
-            - opened
-            - reopened
-            - edited
-            - synchronize
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - edited
+      - synchronize
 
 jobs:
-    pr-run-test-action:
-        name: Check if "Run tests" action succeeded
-        timeout-minutes: 60
-        concurrency:
-          group: ${{ github.head_ref }}
-          cancel-in-progress: true
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v2
-            - name: node install
-              run: cd ./.github/helpers && npm i
-            - name: Calling github API
-              run: cd ./.github/helpers && GITHUB_TOKEN=${{ github.token }} REPO=${{ github.repository }} RUN_ID=${{ github.run_id }} BRANCH=${{ github.head_ref }} JOB_ID=${{ github.job }} SOURCE_OWNER=${{ github.event.pull_request.head.repo.owner.login }} CURRENT_SHA=${{ github.event.pull_request.head.sha }} node node_modules/github-workflow-helpers/test-pass-check-pr.js
+  pr-run-test-action:
+    name: Check if "Run tests" action succeeded
+    timeout-minutes: 60
+    concurrency:
+      group: ${{ github.head_ref }}
+      cancel-in-progress: true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: node install
+        run: cd ./.github/helpers && npm i
+      - name: Calling github API
+        run: cd ./.github/helpers && GITHUB_TOKEN=${{ github.token }} REPO=${{ github.repository }} RUN_ID=${{ github.run_id }} BRANCH=${{ github.head_ref }} JOB_ID=${{ github.job }} SOURCE_OWNER=${{ github.event.pull_request.head.repo.owner.login }} CURRENT_SHA=${{ github.event.pull_request.head.sha }} node node_modules/github-workflow-helpers/test-pass-check-pr.js

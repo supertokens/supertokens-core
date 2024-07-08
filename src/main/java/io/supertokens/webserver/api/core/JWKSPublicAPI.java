@@ -67,7 +67,7 @@ public class JWKSPublicAPI extends WebserverAPI {
             reply.add("keys", jwksJsonArray);
             super.sendJsonResponse(200, reply, resp);
         } catch (StorageQueryException | StorageTransactionLogicException | NoSuchAlgorithmException
-                | InvalidKeySpecException | TenantOrAppNotFoundException | UnsupportedJWTSigningAlgorithmException e) {
+                 | InvalidKeySpecException | TenantOrAppNotFoundException | UnsupportedJWTSigningAlgorithmException e) {
             throw new ServletException(e);
         }
     }

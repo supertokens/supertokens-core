@@ -127,7 +127,7 @@ public class JWTSigningFunctions {
         headerClaims.put("kid", keyToUse.keyId);
 
         // Add relevant claims to the payload, note we only add/override ones that we absolutely need to.
-        if (jwksDomain != null && !payload.has("iss")){
+        if (jwksDomain != null && !payload.has("iss")) {
             payload.addProperty("iss", jwksDomain);
         }
 

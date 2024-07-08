@@ -49,7 +49,7 @@ public class APITestsWithTrailingSlash {
 
     @Test
     public void testTrailingSlashesWorks() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -109,7 +109,7 @@ public class APITestsWithTrailingSlash {
 
     @Test
     public void testThatAPISWorkWithTrailingSlashes() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

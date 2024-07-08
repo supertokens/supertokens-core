@@ -82,7 +82,7 @@ public class SessionUserAPI extends WebserverAPI {
                 try {
                     StorageAndUserIdMapping storageAndUserIdMapping =
                             enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
-                            req, userId, UserIdType.ANY, false);
+                                    req, userId, UserIdType.ANY, false);
                     storage = storageAndUserIdMapping.storage;
                 } catch (UnknownUserIdException e) {
                     throw new IllegalStateException("should never happen");

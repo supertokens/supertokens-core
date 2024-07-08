@@ -287,9 +287,11 @@ public class Passwordless {
                 false);
     }
 
-    public static PasswordlessDevice checkCodeAndReturnDevice(TenantIdentifier tenantIdentifier, Storage storage, Main main,
+    public static PasswordlessDevice checkCodeAndReturnDevice(TenantIdentifier tenantIdentifier, Storage storage,
+                                                              Main main,
                                                               String deviceId, String deviceIdHashFromUser,
-                                                              String userInputCode, String linkCode, boolean deleteCodeOnSuccess)
+                                                              String userInputCode, String linkCode,
+                                                              boolean deleteCodeOnSuccess)
             throws RestartFlowException, ExpiredUserInputCodeException,
             IncorrectUserInputCodeException, DeviceIdHashMismatchException, StorageTransactionLogicException,
             StorageQueryException, NoSuchAlgorithmException, InvalidKeyException, IOException, Base64EncodingException,
@@ -422,7 +424,8 @@ public class Passwordless {
 
         PasswordlessSQLStorage passwordlessStorage = StorageUtils.getPasswordlessStorage(storage);
 
-        PasswordlessDevice consumedDevice = checkCodeAndReturnDevice(tenantIdentifier, storage, main, deviceId, deviceIdHashFromUser,
+        PasswordlessDevice consumedDevice = checkCodeAndReturnDevice(tenantIdentifier, storage, main, deviceId,
+                deviceIdHashFromUser,
                 userInputCode, linkCode, true);
 
         // Getting here means that we successfully consumed the code
@@ -433,7 +436,9 @@ public class Passwordless {
                     consumedDevice.email);
             for (AuthRecipeUserInfo currUser : users) {
                 for (LoginMethod currLM : currUser.loginMethods) {
-                    if (currLM.recipeId == RECIPE_ID.PASSWORDLESS && currLM.email != null && currLM.email.equals(consumedDevice.email) && currLM.tenantIds.contains(tenantIdentifier.getTenantId())) {
+                    if (currLM.recipeId == RECIPE_ID.PASSWORDLESS && currLM.email != null &&
+                            currLM.email.equals(consumedDevice.email) &&
+                            currLM.tenantIds.contains(tenantIdentifier.getTenantId())) {
                         user = currUser;
                         loginMethod = currLM;
                         break;
@@ -446,7 +451,8 @@ public class Passwordless {
             for (AuthRecipeUserInfo currUser : users) {
                 for (LoginMethod currLM : currUser.loginMethods) {
                     if (currLM.recipeId == RECIPE_ID.PASSWORDLESS &&
-                            currLM.phoneNumber != null && currLM.phoneNumber.equals(consumedDevice.phoneNumber) && currLM.tenantIds.contains(tenantIdentifier.getTenantId())) {
+                            currLM.phoneNumber != null && currLM.phoneNumber.equals(consumedDevice.phoneNumber) &&
+                            currLM.tenantIds.contains(tenantIdentifier.getTenantId())) {
                         user = currUser;
                         loginMethod = currLM;
                         break;
@@ -472,7 +478,7 @@ public class Passwordless {
                             evStorage.startTransaction(con -> {
                                 try {
                                     evStorage.updateIsEmailVerified_Transaction(tenantIdentifier.toAppIdentifier(), con,
-                                                    finalUser.getSupertokensUserId(), consumedDevice.email, true);
+                                            finalUser.getSupertokensUserId(), consumedDevice.email, true);
                                     evStorage.commitTransaction(con);
 
                                     return null;
@@ -489,7 +495,8 @@ public class Passwordless {
                         }
                     }
 
-                    return new ConsumeCodeResponse(true, user, consumedDevice.email, consumedDevice.phoneNumber, consumedDevice);
+                    return new ConsumeCodeResponse(true, user, consumedDevice.email, consumedDevice.phoneNumber,
+                            consumedDevice);
                 } catch (DuplicateEmailException | DuplicatePhoneNumberException e) {
                     // Getting these would mean that between getting the user and trying creating it:
                     // 1. the user managed to do a full create+consume flow
@@ -737,7 +744,8 @@ public class Passwordless {
         }
 
         LoginMethod lM = Arrays.stream(user.loginMethods)
-                .filter(currlM -> currlM.getSupertokensUserId().equals(recipeUserId) && currlM.recipeId == RECIPE_ID.PASSWORDLESS)
+                .filter(currlM -> currlM.getSupertokensUserId().equals(recipeUserId) &&
+                        currlM.recipeId == RECIPE_ID.PASSWORDLESS)
                 .findFirst().orElse(null);
 
         if (lM == null) {
@@ -765,7 +773,8 @@ public class Passwordless {
                                 if (!userWithSameEmail.tenantIds.contains(tenantId)) {
                                     continue;
                                 }
-                                if (userWithSameEmail.isPrimaryUser && !userWithSameEmail.getSupertokensUserId().equals(user.getSupertokensUserId())) {
+                                if (userWithSameEmail.isPrimaryUser &&
+                                        !userWithSameEmail.getSupertokensUserId().equals(user.getSupertokensUserId())) {
                                     throw new StorageTransactionLogicException(
                                             new EmailChangeNotAllowedException());
                                 }
@@ -799,7 +808,9 @@ public class Passwordless {
                                 if (!userWithSamePhoneNumber.tenantIds.contains(tenantId)) {
                                     continue;
                                 }
-                                if (userWithSamePhoneNumber.isPrimaryUser && !userWithSamePhoneNumber.getSupertokensUserId().equals(user.getSupertokensUserId())) {
+                                if (userWithSamePhoneNumber.isPrimaryUser &&
+                                        !userWithSamePhoneNumber.getSupertokensUserId()
+                                                .equals(user.getSupertokensUserId())) {
                                     throw new StorageTransactionLogicException(
                                             new PhoneNumberChangeNotAllowedException());
                                 }
@@ -898,7 +909,8 @@ public class Passwordless {
 
         public PasswordlessDevice consumedDevice;
 
-        public ConsumeCodeResponse(boolean createdNewUser, @Nullable AuthRecipeUserInfo user, String email, String phoneNumber, PasswordlessDevice consumedDevice) {
+        public ConsumeCodeResponse(boolean createdNewUser, @Nullable AuthRecipeUserInfo user, String email,
+                                   String phoneNumber, PasswordlessDevice consumedDevice) {
             this.createdNewUser = createdNewUser;
             this.user = user;
             this.email = email;
