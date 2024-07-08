@@ -421,7 +421,8 @@ public class MultitenantEmailPasswordTest {
                 process.getProcess(), user3.getSupertokensUserId(), null, "newpassword3");
 
         {
-            t1storage = StorageLayer.findStorageAndUserIdMappingForUser(process.getProcess(), t1, user1.getSupertokensUserId(),
+            t1storage = StorageLayer.findStorageAndUserIdMappingForUser(process.getProcess(), t1,
+                    user1.getSupertokensUserId(),
                     UserIdType.SUPERTOKENS).storage;
             AuthRecipeUserInfo userInfo = EmailPassword.signIn(t1, t1storage, process.getProcess(), "user@example.com",
                     "newpassword1");

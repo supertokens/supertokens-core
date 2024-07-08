@@ -62,7 +62,8 @@ public class CreateOrUpdateTenantOrGetTenantV2API extends BaseCreateOrUpdate {
 
         super.handle(
                 req, resp, sourceTenantIdentifier,
-                new TenantIdentifier(sourceTenantIdentifier.getConnectionUriDomain(), sourceTenantIdentifier.getAppId(), tenantId),
+                new TenantIdentifier(sourceTenantIdentifier.getConnectionUriDomain(), sourceTenantIdentifier.getAppId(),
+                        tenantId),
                 input, true);
     }
 
@@ -75,7 +76,8 @@ public class CreateOrUpdateTenantOrGetTenantV2API extends BaseCreateOrUpdate {
                 throw new TenantOrAppNotFoundException(tenantIdentifier);
             }
             boolean shouldProtect = shouldProtectProtectedConfig(req);
-            JsonObject result = config.toJson_v2_5_1(shouldProtect, getTenantStorage(req), CoreConfig.PROTECTED_CONFIGS);
+            JsonObject result = config.toJson_v2_5_1(shouldProtect, getTenantStorage(req),
+                    CoreConfig.PROTECTED_CONFIGS);
 
             result.addProperty("status", "OK");
 

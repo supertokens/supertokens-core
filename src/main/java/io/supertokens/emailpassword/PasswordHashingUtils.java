@@ -51,7 +51,7 @@ public class PasswordHashingUtils {
     public static void assertSuperTokensSupportInputPasswordHashFormat(AppIdentifier appIdentifier,
                                                                        Main main, String passwordHash,
                                                                        @Nullable
-                                                                               CoreConfig.PASSWORD_HASHING_ALG hashingAlgorithm)
+                                                                       CoreConfig.PASSWORD_HASHING_ALG hashingAlgorithm)
             throws UnsupportedPasswordHashingFormatException, TenantOrAppNotFoundException {
         if (hashingAlgorithm == null) {
             if (ParsedFirebaseSCryptResponse.fromHashString(passwordHash) != null) {

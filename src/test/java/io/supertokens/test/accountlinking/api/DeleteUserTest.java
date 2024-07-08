@@ -97,7 +97,8 @@ public class DeleteUserTest {
 
         AuthRecipe.createPrimaryUser(process.main, r2.getSupertokensUserId());
 
-        assert (!AuthRecipe.linkAccounts(process.main, r1.getSupertokensUserId(), r2.getSupertokensUserId()).wasAlreadyLinked);
+        assert (!AuthRecipe.linkAccounts(process.main, r1.getSupertokensUserId(),
+                r2.getSupertokensUserId()).wasAlreadyLinked);
 
         deleteUserAPICall(process.main, r1.getSupertokensUserId(), false);
 
@@ -134,7 +135,8 @@ public class DeleteUserTest {
 
         AuthRecipe.createPrimaryUser(process.main, r2.getSupertokensUserId());
 
-        assert (!AuthRecipe.linkAccounts(process.main, r1.getSupertokensUserId(), r2.getSupertokensUserId()).wasAlreadyLinked);
+        assert (!AuthRecipe.linkAccounts(process.main, r1.getSupertokensUserId(),
+                r2.getSupertokensUserId()).wasAlreadyLinked);
 
         deleteUserAPICall(process.main, r2.getSupertokensUserId(), false);
 
@@ -172,7 +174,8 @@ public class DeleteUserTest {
 
         AuthRecipe.createPrimaryUser(process.main, r2.getSupertokensUserId());
 
-        assert (!AuthRecipe.linkAccounts(process.main, r1.getSupertokensUserId(), r2.getSupertokensUserId()).wasAlreadyLinked);
+        assert (!AuthRecipe.linkAccounts(process.main, r1.getSupertokensUserId(),
+                r2.getSupertokensUserId()).wasAlreadyLinked);
 
         deleteUserAPICall(process.main, r2.getSupertokensUserId());
 
@@ -207,7 +210,8 @@ public class DeleteUserTest {
 
         AuthRecipe.createPrimaryUser(process.main, r2.getSupertokensUserId());
 
-        assert (!AuthRecipe.linkAccounts(process.main, r1.getSupertokensUserId(), r2.getSupertokensUserId()).wasAlreadyLinked);
+        assert (!AuthRecipe.linkAccounts(process.main, r1.getSupertokensUserId(),
+                r2.getSupertokensUserId()).wasAlreadyLinked);
 
         deleteUserAPICall(process.main, r1.getSupertokensUserId());
 
@@ -252,7 +256,8 @@ public class DeleteUserTest {
 
         AuthRecipe.createPrimaryUser(process.main, r2.getSupertokensUserId());
 
-        assert (!AuthRecipe.linkAccounts(process.main, r1.getSupertokensUserId(), r2.getSupertokensUserId()).wasAlreadyLinked);
+        assert (!AuthRecipe.linkAccounts(process.main, r1.getSupertokensUserId(),
+                r2.getSupertokensUserId()).wasAlreadyLinked);
 
         deleteUserAPICall(process.main, r1.getSupertokensUserId(), false);
 
@@ -266,8 +271,10 @@ public class DeleteUserTest {
         assertEquals(UserMetadata.getUserMetadata(process.main, r1.getSupertokensUserId()), new JsonObject());
         assertEquals(UserMetadata.getUserMetadata(process.main, "e2"), metadata);
         assertEquals(UserMetadata.getUserMetadata(process.main, r2.getSupertokensUserId()), new JsonObject());
-        assert (UserIdMapping.getUserIdMapping(process.main, r2.getSupertokensUserId(), UserIdType.SUPERTOKENS) != null);
-        assert (UserIdMapping.getUserIdMapping(process.main, r1.getSupertokensUserId(), UserIdType.SUPERTOKENS) == null);
+        assert (UserIdMapping.getUserIdMapping(process.main, r2.getSupertokensUserId(), UserIdType.SUPERTOKENS) !=
+                null);
+        assert (UserIdMapping.getUserIdMapping(process.main, r1.getSupertokensUserId(), UserIdType.SUPERTOKENS) ==
+                null);
 
 
         process.kill();
@@ -304,7 +311,8 @@ public class DeleteUserTest {
 
         AuthRecipe.createPrimaryUser(process.main, r2.getSupertokensUserId());
 
-        assert (!AuthRecipe.linkAccounts(process.main, r1.getSupertokensUserId(), r2.getSupertokensUserId()).wasAlreadyLinked);
+        assert (!AuthRecipe.linkAccounts(process.main, r1.getSupertokensUserId(),
+                r2.getSupertokensUserId()).wasAlreadyLinked);
 
         deleteUserAPICall(process.main, r1.getSupertokensUserId());
 
@@ -318,8 +326,10 @@ public class DeleteUserTest {
         assertEquals(UserMetadata.getUserMetadata(process.main, r1.getSupertokensUserId()), new JsonObject());
         assertEquals(UserMetadata.getUserMetadata(process.main, "e2"), new JsonObject());
         assertEquals(UserMetadata.getUserMetadata(process.main, r2.getSupertokensUserId()), new JsonObject());
-        assert (UserIdMapping.getUserIdMapping(process.main, r2.getSupertokensUserId(), UserIdType.SUPERTOKENS) == null);
-        assert (UserIdMapping.getUserIdMapping(process.main, r1.getSupertokensUserId(), UserIdType.SUPERTOKENS) == null);
+        assert (UserIdMapping.getUserIdMapping(process.main, r2.getSupertokensUserId(), UserIdType.SUPERTOKENS) ==
+                null);
+        assert (UserIdMapping.getUserIdMapping(process.main, r1.getSupertokensUserId(), UserIdType.SUPERTOKENS) ==
+                null);
 
 
         process.kill();
@@ -362,8 +372,10 @@ public class DeleteUserTest {
 
         AuthRecipe.createPrimaryUser(process.main, r2.getSupertokensUserId());
 
-        assert (!AuthRecipe.linkAccounts(process.main, r1.getSupertokensUserId(), r2.getSupertokensUserId()).wasAlreadyLinked);
-        assert (!AuthRecipe.linkAccounts(process.main, r3.getSupertokensUserId(), r1.getSupertokensUserId()).wasAlreadyLinked);
+        assert (!AuthRecipe.linkAccounts(process.main, r1.getSupertokensUserId(),
+                r2.getSupertokensUserId()).wasAlreadyLinked);
+        assert (!AuthRecipe.linkAccounts(process.main, r3.getSupertokensUserId(),
+                r1.getSupertokensUserId()).wasAlreadyLinked);
 
         deleteUserAPICall(process.main, r1.getSupertokensUserId(), false);
 
@@ -379,9 +391,12 @@ public class DeleteUserTest {
             assert (userR2.loginMethods.length == 2);
             assertEquals(UserMetadata.getUserMetadata(process.main, "e2"), metadata);
             assertEquals(UserMetadata.getUserMetadata(process.main, "e3"), metadata);
-            assert (UserIdMapping.getUserIdMapping(process.main, r2.getSupertokensUserId(), UserIdType.SUPERTOKENS) != null);
-            assert (UserIdMapping.getUserIdMapping(process.main, r3.getSupertokensUserId(), UserIdType.SUPERTOKENS) != null);
-            assert (UserIdMapping.getUserIdMapping(process.main, r1.getSupertokensUserId(), UserIdType.SUPERTOKENS) == null);
+            assert (UserIdMapping.getUserIdMapping(process.main, r2.getSupertokensUserId(), UserIdType.SUPERTOKENS) !=
+                    null);
+            assert (UserIdMapping.getUserIdMapping(process.main, r3.getSupertokensUserId(), UserIdType.SUPERTOKENS) !=
+                    null);
+            assert (UserIdMapping.getUserIdMapping(process.main, r1.getSupertokensUserId(), UserIdType.SUPERTOKENS) ==
+                    null);
         }
 
         deleteUserAPICall(process.main, r2.getSupertokensUserId(), false);
@@ -393,9 +408,12 @@ public class DeleteUserTest {
             assert (userR2.loginMethods.length == 1);
             assertEquals(UserMetadata.getUserMetadata(process.main, "e2"), metadata);
             assertEquals(UserMetadata.getUserMetadata(process.main, "e3"), metadata);
-            assert (UserIdMapping.getUserIdMapping(process.main, r2.getSupertokensUserId(), UserIdType.SUPERTOKENS) != null);
-            assert (UserIdMapping.getUserIdMapping(process.main, r3.getSupertokensUserId(), UserIdType.SUPERTOKENS) != null);
-            assert (UserIdMapping.getUserIdMapping(process.main, r1.getSupertokensUserId(), UserIdType.SUPERTOKENS) == null);
+            assert (UserIdMapping.getUserIdMapping(process.main, r2.getSupertokensUserId(), UserIdType.SUPERTOKENS) !=
+                    null);
+            assert (UserIdMapping.getUserIdMapping(process.main, r3.getSupertokensUserId(), UserIdType.SUPERTOKENS) !=
+                    null);
+            assert (UserIdMapping.getUserIdMapping(process.main, r1.getSupertokensUserId(), UserIdType.SUPERTOKENS) ==
+                    null);
         }
 
         deleteUserAPICall(process.main, r3.getSupertokensUserId(), false);
@@ -406,9 +424,12 @@ public class DeleteUserTest {
             assert (userR2 == null && userR3 == null);
             assertEquals(UserMetadata.getUserMetadata(process.main, "e2"), new JsonObject());
             assertEquals(UserMetadata.getUserMetadata(process.main, "e3"), new JsonObject());
-            assert (UserIdMapping.getUserIdMapping(process.main, r2.getSupertokensUserId(), UserIdType.SUPERTOKENS) == null);
-            assert (UserIdMapping.getUserIdMapping(process.main, r3.getSupertokensUserId(), UserIdType.SUPERTOKENS) == null);
-            assert (UserIdMapping.getUserIdMapping(process.main, r1.getSupertokensUserId(), UserIdType.SUPERTOKENS) == null);
+            assert (UserIdMapping.getUserIdMapping(process.main, r2.getSupertokensUserId(), UserIdType.SUPERTOKENS) ==
+                    null);
+            assert (UserIdMapping.getUserIdMapping(process.main, r3.getSupertokensUserId(), UserIdType.SUPERTOKENS) ==
+                    null);
+            assert (UserIdMapping.getUserIdMapping(process.main, r1.getSupertokensUserId(), UserIdType.SUPERTOKENS) ==
+                    null);
         }
 
         process.kill();

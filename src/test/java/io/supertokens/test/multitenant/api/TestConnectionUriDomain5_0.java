@@ -359,7 +359,7 @@ public class TestConnectionUriDomain5_0 {
     @Test
     public void testDifferentValuesForCUDThatShouldWork() throws Exception {
         String[] valueForCreate = new String[]{"localhost:3567", "LOCALHOST:3567", "loCalHost:3567", "127.0.0.1:3567"};
-        String[] valueForQuery  = new String[]{"localhost:3567", "LOCALHOST:3567", "LOCALhoST:3567", "127.0.0.1:3567"};
+        String[] valueForQuery = new String[]{"localhost:3567", "LOCALHOST:3567", "LOCALhoST:3567", "127.0.0.1:3567"};
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
@@ -428,7 +428,8 @@ public class TestConnectionUriDomain5_0 {
 
     @Test
     public void testCUDsThatAreSame() throws Exception {
-        String[] valueForCreate = new String[]{"localhost:3567", "LOCALHOST:3567", "loCalHost:3567", "localhost", "localhost:12345"};
+        String[] valueForCreate = new String[]{"localhost:3567", "LOCALHOST:3567", "loCalHost:3567", "localhost",
+                "localhost:12345"};
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
@@ -598,7 +599,8 @@ public class TestConnectionUriDomain5_0 {
         assertEquals(7, tenant.entrySet().size());
         assertTrue(tenant.get("firstFactors").isJsonArray());
         assertEquals(4, tenant.get("firstFactors").getAsJsonArray().size());
-        assertEquals(Set.of(firstFactors), Set.of(new Gson().fromJson(tenant.get("firstFactors").getAsJsonArray(), String[].class)));
+        assertEquals(Set.of(firstFactors),
+                Set.of(new Gson().fromJson(tenant.get("firstFactors").getAsJsonArray(), String[].class)));
 
         response = createConnectionUriDomain(
                 process.getProcess(),
@@ -654,7 +656,8 @@ public class TestConnectionUriDomain5_0 {
         assertEquals(7, tenant.entrySet().size());
         assertTrue(tenant.get("requiredSecondaryFactors").isJsonArray());
         assertEquals(1, tenant.get("requiredSecondaryFactors").getAsJsonArray().size());
-        assertEquals(requiredSecondaryFactors, new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class));
+        assertEquals(requiredSecondaryFactors,
+                new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class));
 
         response = createConnectionUriDomain(
                 process.getProcess(),
@@ -669,7 +672,8 @@ public class TestConnectionUriDomain5_0 {
         assertEquals(7, tenant.entrySet().size());
         assertTrue(tenant.get("requiredSecondaryFactors").isJsonArray());
         assertEquals(1, tenant.get("requiredSecondaryFactors").getAsJsonArray().size());
-        assertEquals(requiredSecondaryFactors, new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class));
+        assertEquals(requiredSecondaryFactors,
+                new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class));
 
         // custom factors
         requiredSecondaryFactors = new String[]{"biometric"};
@@ -686,7 +690,8 @@ public class TestConnectionUriDomain5_0 {
         assertEquals(7, tenant.entrySet().size());
         assertTrue(tenant.get("requiredSecondaryFactors").isJsonArray());
         assertEquals(1, tenant.get("requiredSecondaryFactors").getAsJsonArray().size());
-        assertEquals(requiredSecondaryFactors, new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class));
+        assertEquals(requiredSecondaryFactors,
+                new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class));
 
         // test both
         requiredSecondaryFactors = new String[]{"otp-phone", "emailpassword", "biometric", "custom"};
@@ -703,7 +708,8 @@ public class TestConnectionUriDomain5_0 {
         assertEquals(7, tenant.entrySet().size());
         assertTrue(tenant.get("requiredSecondaryFactors").isJsonArray());
         assertEquals(4, tenant.get("requiredSecondaryFactors").getAsJsonArray().size());
-        assertEquals(Set.of(requiredSecondaryFactors), Set.of(new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class)));
+        assertEquals(Set.of(requiredSecondaryFactors),
+                Set.of(new Gson().fromJson(tenant.get("requiredSecondaryFactors").getAsJsonArray(), String[].class)));
 
         response = createConnectionUriDomain(
                 process.getProcess(),
@@ -739,7 +745,9 @@ public class TestConnectionUriDomain5_0 {
             fail();
         } catch (HttpResponseException e) {
             assertEquals(400, e.statusCode);
-            assertEquals("Http error. Status Code: 400. Message: firstFactors input should not contain duplicate values", e.getMessage());
+            assertEquals(
+                    "Http error. Status Code: 400. Message: firstFactors input should not contain duplicate values",
+                    e.getMessage());
         }
 
         try {
@@ -752,15 +760,20 @@ public class TestConnectionUriDomain5_0 {
             fail();
         } catch (HttpResponseException e) {
             assertEquals(400, e.statusCode);
-            assertEquals("Http error. Status Code: 400. Message: requiredSecondaryFactors input should not contain duplicate values", e.getMessage());
+            assertEquals(
+                    "Http error. Status Code: 400. Message: requiredSecondaryFactors input should not contain " +
+                            "duplicate values",
+                    e.getMessage());
         }
     }
 
     private static JsonObject createConnectionUriDomain(Main main, TenantIdentifier sourceTenant,
                                                         String connectionUriDomain, Boolean emailPasswordEnabled,
                                                         Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
-                                                        JsonObject coreConfig) throws HttpResponseException, IOException {
-        return createConnectionUriDomain(main, sourceTenant, connectionUriDomain, emailPasswordEnabled, thirdPartyEnabled,
+                                                        JsonObject coreConfig)
+            throws HttpResponseException, IOException {
+        return createConnectionUriDomain(main, sourceTenant, connectionUriDomain, emailPasswordEnabled,
+                thirdPartyEnabled,
                 passwordlessEnabled, false, null, false, null, coreConfig);
     }
 
@@ -768,8 +781,10 @@ public class TestConnectionUriDomain5_0 {
                                                         String connectionUriDomain, Boolean emailPasswordEnabled,
                                                         Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
                                                         boolean setFirstFactors, String[] firstFactors,
-                                                        boolean setRequiredSecondaryFactors, String[] requiredSecondaryFactors,
-                                                        JsonObject coreConfig) throws HttpResponseException, IOException {
+                                                        boolean setRequiredSecondaryFactors,
+                                                        String[] requiredSecondaryFactors,
+                                                        JsonObject coreConfig)
+            throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
         if (connectionUriDomain != null) {
             requestBody.addProperty("connectionUriDomain", connectionUriDomain);
@@ -814,13 +829,14 @@ public class TestConnectionUriDomain5_0 {
     }
 
     private static JsonObject deleteConnectionUriDomain(TenantIdentifier sourceTenant, String connectionUriDomain,
-                                                       Main main)
+                                                        Main main)
             throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("connectionUriDomain", connectionUriDomain);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
-                HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/connectionuridomain/remove"),
+                HttpRequestForTesting.getMultitenantUrl(sourceTenant,
+                        "/recipe/multitenancy/connectionuridomain/remove"),
                 requestBody, 1000, 2500, null,
                 SemVer.v5_0.get(), "multitenancy");
 

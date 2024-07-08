@@ -86,8 +86,10 @@ public class AuthRecipe {
                 if (primaryUser.getSupertokensUserId().equals(recipeUserId)) {
                     // we are trying to unlink the user ID which is the same as the primary one.
                     if (primaryUser.loginMethods.length == 1) {
-                        authRecipeStorage.unlinkAccounts_Transaction(appIdentifier, con, primaryUser.getSupertokensUserId(), recipeUserId);
-                        return new UnlinkResult(mappingResult == null ? recipeUserId : mappingResult.externalUserId, false);
+                        authRecipeStorage.unlinkAccounts_Transaction(appIdentifier, con,
+                                primaryUser.getSupertokensUserId(), recipeUserId);
+                        return new UnlinkResult(mappingResult == null ? recipeUserId : mappingResult.externalUserId,
+                                false);
                     } else {
                         // Here we delete the recipe user id cause if we just unlink, then there will be two
                         // distinct users with the same ID - which is a broken state.
@@ -95,10 +97,12 @@ public class AuthRecipe {
                         // We need to make sure that it only deletes sessions for recipeUserId and not other linked
                         // users who have their sessions for primaryUserId (that is equal to the recipeUserId)
                         deleteUserHelper(con, appIdentifier, storage, recipeUserId, false, mappingResult);
-                        return new UnlinkResult(mappingResult == null ? recipeUserId : mappingResult.externalUserId, true);
+                        return new UnlinkResult(mappingResult == null ? recipeUserId : mappingResult.externalUserId,
+                                true);
                     }
                 } else {
-                    authRecipeStorage.unlinkAccounts_Transaction(appIdentifier, con, primaryUser.getSupertokensUserId(), recipeUserId);
+                    authRecipeStorage.unlinkAccounts_Transaction(appIdentifier, con, primaryUser.getSupertokensUserId(),
+                            recipeUserId);
                     return new UnlinkResult(mappingResult == null ? recipeUserId : mappingResult.externalUserId, false);
                 }
             });
@@ -153,7 +157,8 @@ public class AuthRecipe {
             throws StorageQueryException, UnknownUserIdException, InputUserIdIsNotAPrimaryUserException,
             RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException,
             AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException {
-        return canLinkAccounts(new AppIdentifier(null, null), StorageLayer.getStorage(main), recipeUserId, primaryUserId);
+        return canLinkAccounts(new AppIdentifier(null, null), StorageLayer.getStorage(main), recipeUserId,
+                primaryUserId);
     }
 
     public static CanLinkAccountsResult canLinkAccounts(AppIdentifier appIdentifier, Storage storage,
@@ -218,7 +223,8 @@ public class AuthRecipe {
 
         if (recipeUser.isPrimaryUser) {
             if (recipeUser.getSupertokensUserId().equals(primaryUser.getSupertokensUserId())) {
-                return new CanLinkAccountsResult(recipeUser.getSupertokensUserId(), primaryUser.getSupertokensUserId(), true);
+                return new CanLinkAccountsResult(recipeUser.getSupertokensUserId(), primaryUser.getSupertokensUserId(),
+                        true);
             } else {
                 throw new RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException(recipeUser,
                         "The input recipe user ID is already linked to another user ID");
@@ -261,7 +267,8 @@ public class AuthRecipe {
                         continue;
                     }
                     if (user.isPrimaryUser && !user.getSupertokensUserId().equals(primaryUser.getSupertokensUserId())) {
-                        throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(user.getSupertokensUserId(),
+                        throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(
+                                user.getSupertokensUserId(),
                                 "This user's email is already associated with another user ID");
                     }
                 }
@@ -276,7 +283,8 @@ public class AuthRecipe {
                         continue;
                     }
                     if (user.isPrimaryUser && !user.getSupertokensUserId().equals(primaryUser.getSupertokensUserId())) {
-                        throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(user.getSupertokensUserId(),
+                        throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(
+                                user.getSupertokensUserId(),
                                 "This user's phone number is already associated with another user" +
                                         " ID");
                     }
@@ -342,7 +350,8 @@ public class AuthRecipe {
                             authRecipeStorage, _recipeUserId, _primaryUserId);
 
                     if (canLinkAccounts.alreadyLinked) {
-                        return new LinkAccountsResult(getUserById(appIdentifier, authRecipeStorage, canLinkAccounts.primaryUserId), true);
+                        return new LinkAccountsResult(
+                                getUserById(appIdentifier, authRecipeStorage, canLinkAccounts.primaryUserId), true);
                     }
                     // now we can link accounts in the db.
                     authRecipeStorage.linkAccounts_Transaction(appIdentifier, con, canLinkAccounts.recipeUserId,
@@ -350,7 +359,8 @@ public class AuthRecipe {
 
                     authRecipeStorage.commitTransaction(con);
 
-                    return new LinkAccountsResult(getUserById(appIdentifier, authRecipeStorage, canLinkAccounts.primaryUserId), false);
+                    return new LinkAccountsResult(
+                            getUserById(appIdentifier, authRecipeStorage, canLinkAccounts.primaryUserId), false);
                 } catch (UnknownUserIdException | InputUserIdIsNotAPrimaryUserException |
                          RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException |
                          AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException e) {
@@ -468,7 +478,8 @@ public class AuthRecipe {
                         continue;
                     }
                     if (user.isPrimaryUser) {
-                        throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(user.getSupertokensUserId(),
+                        throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(
+                                user.getSupertokensUserId(),
                                 "This user's email is already associated with another user ID");
                     }
                 }
@@ -483,7 +494,8 @@ public class AuthRecipe {
                         continue;
                     }
                     if (user.isPrimaryUser) {
-                        throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(user.getSupertokensUserId(),
+                        throw new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException(
+                                user.getSupertokensUserId(),
                                 "This user's phone number is already associated with another user" +
                                         " ID");
                     }
@@ -548,7 +560,8 @@ public class AuthRecipe {
                     if (result.wasAlreadyAPrimaryUser) {
                         return result;
                     }
-                    authRecipeStorage.makePrimaryUser_Transaction(appIdentifier, con, result.user.getSupertokensUserId());
+                    authRecipeStorage.makePrimaryUser_Transaction(appIdentifier, con,
+                            result.user.getSupertokensUserId());
 
                     authRecipeStorage.commitTransaction(con);
 
@@ -863,13 +876,14 @@ public class AuthRecipe {
             }
         } else {
             for (LoginMethod lM : userToDelete.loginMethods) {
-                io.supertokens.pluginInterface.useridmapping.UserIdMapping mappingResult = lM.getSupertokensUserId().equals(
-                        userIdToDeleteForAuthRecipe) ? userIdMapping :
-                        io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                                con,
-                                appIdentifier,
-                                storage,
-                                lM.getSupertokensUserId(), UserIdType.SUPERTOKENS);
+                io.supertokens.pluginInterface.useridmapping.UserIdMapping mappingResult =
+                        lM.getSupertokensUserId().equals(
+                                userIdToDeleteForAuthRecipe) ? userIdMapping :
+                                io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+                                        con,
+                                        appIdentifier,
+                                        storage,
+                                        lM.getSupertokensUserId(), UserIdType.SUPERTOKENS);
                 deleteUserHelper(con, appIdentifier, storage, lM.getSupertokensUserId(), false, mappingResult);
             }
         }

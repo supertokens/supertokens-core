@@ -120,7 +120,8 @@ public class ConfigGenerator {
 
         // Take just the class name and load the generator class from `io.supertokens.test.multitenant.generator`
         String[] classNameParts = type.getName().split("\\.");
-        Class<?> generatorClass = Class.forName("io.supertokens.test.multitenant.generator.Generate" + classNameParts[classNameParts.length-1].replace('$', '_'));
+        Class<?> generatorClass = Class.forName("io.supertokens.test.multitenant.generator.Generate" +
+                classNameParts[classNameParts.length - 1].replace('$', '_'));
 
         // Use the first constructor
         // Also expecting declared fields are the parameters to the constructor
@@ -129,14 +130,14 @@ public class ConfigGenerator {
         Parameter[] parameters = constructor.getParameters();
         Field[] fields = type.getDeclaredFields();
 
-        assert(parameters.length == fields.length); // Expecting same number of declared fields and constructor params
+        assert (parameters.length == fields.length); // Expecting same number of declared fields and constructor params
         Object[] constructorParamValues = new Object[parameters.length];
         HashMap<String, Expectation> expectations = new HashMap<>(); // Map for field to Expectation
 
         for (int i = 0; i < parameters.length; i++) {
             Parameter parameter = parameters[i];
             Field field = fields[i];
-            assert(parameter.getType() == field.getType());
+            assert (parameter.getType() == field.getType());
 
             Class<?>[] paramTypes = new Class[generateParams.length];
             for (int paramIdx = 0; paramIdx < generateParams.length; paramIdx++) {

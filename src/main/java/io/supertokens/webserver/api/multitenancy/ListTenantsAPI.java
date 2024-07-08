@@ -68,7 +68,8 @@ public class ListTenantsAPI extends WebserverAPI {
                 JsonObject tenantConfigJson;
 
                 if (getVersionFromRequest(req).lesserThan(SemVer.v5_0)) {
-                    tenantConfigJson = tenantConfig.toJsonLesserThanOrEqualTo4_0(shouldProtect, storage, CoreConfig.PROTECTED_CONFIGS);
+                    tenantConfigJson = tenantConfig.toJsonLesserThanOrEqualTo4_0(shouldProtect, storage,
+                            CoreConfig.PROTECTED_CONFIGS);
                 } else {
                     tenantConfigJson = tenantConfig.toJson5_0(shouldProtect, storage, CoreConfig.PROTECTED_CONFIGS);
                 }

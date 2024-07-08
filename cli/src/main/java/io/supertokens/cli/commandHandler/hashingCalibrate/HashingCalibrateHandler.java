@@ -109,7 +109,8 @@ public class HashingCalibrateHandler extends CommandHandler {
     @Override
     public String getUsage() {
         return "supertokens hashingCalibrate --with_alg=<argon2 | bcrypt> [--with_argon2_hashing_pool_size=1] "
-                + "[--with_argon2_max_memory_mb=1024] [--with_argon2_parallelism=<value>] [--with_time_per_hash_ms=300]";
+                +
+                "[--with_argon2_max_memory_mb=1024] [--with_argon2_parallelism=<value>] [--with_time_per_hash_ms=300]";
     }
 
     @Override

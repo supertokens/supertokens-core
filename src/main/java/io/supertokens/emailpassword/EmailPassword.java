@@ -262,7 +262,8 @@ public class EmailPassword {
         LoginMethod lM = null;
         for (AuthRecipeUserInfo currUser : users) {
             for (LoginMethod currLM : currUser.loginMethods) {
-                if (currLM.recipeId == RECIPE_ID.EMAIL_PASSWORD && currLM.email.equals(email) && currLM.tenantIds.contains(tenantIdentifier.getTenantId())) {
+                if (currLM.recipeId == RECIPE_ID.EMAIL_PASSWORD && currLM.email.equals(email) &&
+                        currLM.tenantIds.contains(tenantIdentifier.getTenantId())) {
                     user = currUser;
                     lM = currLM;
                 }
@@ -622,7 +623,8 @@ public class EmailPassword {
                                     if (!userWithSameEmail.tenantIds.contains(tenantId)) {
                                         continue;
                                     }
-                                    if (userWithSameEmail.isPrimaryUser && !userWithSameEmail.getSupertokensUserId().equals(user.getSupertokensUserId())) {
+                                    if (userWithSameEmail.isPrimaryUser && !userWithSameEmail.getSupertokensUserId()
+                                            .equals(user.getSupertokensUserId())) {
                                         throw new StorageTransactionLogicException(
                                                 new EmailChangeNotAllowedException());
                                     }

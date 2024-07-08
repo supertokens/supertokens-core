@@ -107,7 +107,8 @@ public class GetUserByAccountInfoTest {
         return response.get("user").getAsJsonObject();
     }
 
-    private JsonArray getUsersByAccountInfo(Main main, boolean doUnionOfAccountInfo, String email, String phoneNumber, String thirdPartyId, String thirdPartyUserId) throws Exception {
+    private JsonArray getUsersByAccountInfo(Main main, boolean doUnionOfAccountInfo, String email, String phoneNumber,
+                                            String thirdPartyId, String thirdPartyUserId) throws Exception {
         Map<String, String> params = new HashMap<>();
         params.put("doUnionOfAccountInfo", String.valueOf(doUnionOfAccountInfo));
         if (email != null) {
@@ -153,19 +154,31 @@ public class GetUserByAccountInfoTest {
         JsonObject user4json = getUserById(process.getProcess(), user4.getSupertokensUserId());
 
         // test for result
-        assertEquals(user1json, getUsersByAccountInfo(process.getProcess(), false, "test1@example.com", null, null, null).get(0));
-        assertEquals(user2json, getUsersByAccountInfo(process.getProcess(), false, null, null, "google", "userid1").get(0));
-        assertEquals(user2json, getUsersByAccountInfo(process.getProcess(), false, "test2@example.com", null, "google", "userid1").get(0));
-        assertEquals(user3json, getUsersByAccountInfo(process.getProcess(), false, "test3@example.com", null, null, null).get(0));
-        assertEquals(user4json, getUsersByAccountInfo(process.getProcess(), false, null, "+919876543210", null, null).get(0));
+        assertEquals(user1json,
+                getUsersByAccountInfo(process.getProcess(), false, "test1@example.com", null, null, null).get(0));
+        assertEquals(user2json,
+                getUsersByAccountInfo(process.getProcess(), false, null, null, "google", "userid1").get(0));
+        assertEquals(user2json,
+                getUsersByAccountInfo(process.getProcess(), false, "test2@example.com", null, "google", "userid1").get(
+                        0));
+        assertEquals(user3json,
+                getUsersByAccountInfo(process.getProcess(), false, "test3@example.com", null, null, null).get(0));
+        assertEquals(user4json,
+                getUsersByAccountInfo(process.getProcess(), false, null, "+919876543210", null, null).get(0));
 
         // test for no result
-        assertEquals(0, getUsersByAccountInfo(process.getProcess(), false, "test1@example.com", "+919876543210", null, null).size());
-        assertEquals(0, getUsersByAccountInfo(process.getProcess(), false, "test2@example.com", "+919876543210", null, null).size());
-        assertEquals(0, getUsersByAccountInfo(process.getProcess(), false, "test3@example.com", "+919876543210", null, null).size());
-        assertEquals(0, getUsersByAccountInfo(process.getProcess(), false, null, "+919876543210", "google", "userid1").size());
-        assertEquals(0, getUsersByAccountInfo(process.getProcess(), false, "test1@gmail.com", null, "google", "userid1").size());
-        assertEquals(0, getUsersByAccountInfo(process.getProcess(), false, "test3@gmail.com", null, "google", "userid1").size());
+        assertEquals(0, getUsersByAccountInfo(process.getProcess(), false, "test1@example.com", "+919876543210", null,
+                null).size());
+        assertEquals(0, getUsersByAccountInfo(process.getProcess(), false, "test2@example.com", "+919876543210", null,
+                null).size());
+        assertEquals(0, getUsersByAccountInfo(process.getProcess(), false, "test3@example.com", "+919876543210", null,
+                null).size());
+        assertEquals(0,
+                getUsersByAccountInfo(process.getProcess(), false, null, "+919876543210", "google", "userid1").size());
+        assertEquals(0, getUsersByAccountInfo(process.getProcess(), false, "test1@gmail.com", null, "google",
+                "userid1").size());
+        assertEquals(0, getUsersByAccountInfo(process.getProcess(), false, "test3@gmail.com", null, "google",
+                "userid1").size());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -192,7 +205,8 @@ public class GetUserByAccountInfoTest {
 
         JsonObject userJSON = getUserById(process.getProcess(), user.getSupertokensUserId());
 
-        assertEquals(userJSON, getUsersByAccountInfo(process.getProcess(), false, null, phoneNumber, null, null).get(0));
+        assertEquals(userJSON,
+                getUsersByAccountInfo(process.getProcess(), false, null, phoneNumber, null, null).get(0));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -223,25 +237,29 @@ public class GetUserByAccountInfoTest {
         JsonObject user4json = getUserById(process.getProcess(), user4.getSupertokensUserId());
 
         {
-            JsonArray users = getUsersByAccountInfo(process.getProcess(), true, "test1@example.com", "+919876543210", null, null);
+            JsonArray users = getUsersByAccountInfo(process.getProcess(), true, "test1@example.com", "+919876543210",
+                    null, null);
             assertEquals(2, users.size());
             users.contains(user1json);
             users.contains(user4json);
         }
         {
-            JsonArray users = getUsersByAccountInfo(process.getProcess(), true, "test1@example.com", null, "google", "userid1");
+            JsonArray users = getUsersByAccountInfo(process.getProcess(), true, "test1@example.com", null, "google",
+                    "userid1");
             assertEquals(2, users.size());
             users.contains(user1json);
             users.contains(user2json);
         }
         {
-            JsonArray users = getUsersByAccountInfo(process.getProcess(), true, null, "+919876543210", "google", "userid1");
+            JsonArray users = getUsersByAccountInfo(process.getProcess(), true, null, "+919876543210", "google",
+                    "userid1");
             assertEquals(2, users.size());
             users.contains(user4json);
             users.contains(user2json);
         }
         {
-            JsonArray users = getUsersByAccountInfo(process.getProcess(), true, "test1@example.com", "+919876543210", "google", "userid1");
+            JsonArray users = getUsersByAccountInfo(process.getProcess(), true, "test1@example.com", "+919876543210",
+                    "google", "userid1");
             assertEquals(3, users.size());
             users.contains(user1json);
             users.contains(user2json);
@@ -266,9 +284,11 @@ public class GetUserByAccountInfoTest {
             return;
         }
 
-        assertEquals(0, getUsersByAccountInfo(process.getProcess(), false, "test1@example.com", null, null, null).size());
+        assertEquals(0,
+                getUsersByAccountInfo(process.getProcess(), false, "test1@example.com", null, null, null).size());
         assertEquals(0, getUsersByAccountInfo(process.getProcess(), false, null, null, "google", "userid1").size());
-        assertEquals(0, getUsersByAccountInfo(process.getProcess(), false, "test3@example.com", null, null, null).size());
+        assertEquals(0,
+                getUsersByAccountInfo(process.getProcess(), false, "test3@example.com", null, null, null).size());
         assertEquals(0, getUsersByAccountInfo(process.getProcess(), false, null, "+919876543210", null, null).size());
 
         process.kill();
@@ -291,9 +311,11 @@ public class GetUserByAccountInfoTest {
 
         AuthRecipeUserInfo user1 = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password1");
         Thread.sleep(50);
-        AuthRecipeUserInfo user2 = ThirdParty.signInUp(process.getProcess(), "google", "userid1", "test2@example.com").user;
+        AuthRecipeUserInfo user2 = ThirdParty.signInUp(process.getProcess(), "google", "userid1",
+                "test2@example.com").user;
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId()).user;
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(),
+                user1.getSupertokensUserId()).user;
         AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), primaryUser.getSupertokensUserId());
 
         JsonObject primaryUserJson = getUserById(process.getProcess(), user1.getSupertokensUserId());
@@ -331,7 +353,8 @@ public class GetUserByAccountInfoTest {
         Thread.sleep(50);
         AuthRecipeUserInfo user2 = EmailPassword.signUp(process.getProcess(), "test2@example.com", "password2");
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId()).user;
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(),
+                user1.getSupertokensUserId()).user;
         AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), primaryUser.getSupertokensUserId());
 
         JsonObject primaryUserJson = getUserById(process.getProcess(), user1.getSupertokensUserId());
@@ -363,7 +386,8 @@ public class GetUserByAccountInfoTest {
         Thread.sleep(50);
         AuthRecipeUserInfo user2 = createPasswordlessUserWithEmail(process.getProcess(), "test2@example.com");
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId()).user;
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(),
+                user1.getSupertokensUserId()).user;
         AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), primaryUser.getSupertokensUserId());
 
         JsonObject primaryUserJson = getUserById(process.getProcess(), user1.getSupertokensUserId());
@@ -395,7 +419,8 @@ public class GetUserByAccountInfoTest {
         Thread.sleep(50);
         AuthRecipeUserInfo user2 = createPasswordlessUserWithPhone(process.getProcess(), "+919876543210");
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId()).user;
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(),
+                user1.getSupertokensUserId()).user;
         AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), primaryUser.getSupertokensUserId());
 
         JsonObject primaryUserJson = getUserById(process.getProcess(), user1.getSupertokensUserId());
@@ -429,7 +454,8 @@ public class GetUserByAccountInfoTest {
         Thread.sleep(50);
         AuthRecipeUserInfo user2 = createThirdPartyUser(process.getProcess(), "google", "userid1", "test2@example.com");
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId()).user;
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(),
+                user1.getSupertokensUserId()).user;
         AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), primaryUser.getSupertokensUserId());
 
         JsonObject primaryUserJson = getUserById(process.getProcess(), user1.getSupertokensUserId());
@@ -475,16 +501,23 @@ public class GetUserByAccountInfoTest {
         UserIdMapping.createUserIdMapping(process.getProcess(), user2.getSupertokensUserId(), "ext2", "", false);
         UserIdMapping.createUserIdMapping(process.getProcess(), user3.getSupertokensUserId(), "ext3", "", false);
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId()).user;
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(),
+                user1.getSupertokensUserId()).user;
         AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), primaryUser.getSupertokensUserId());
         AuthRecipe.linkAccounts(process.getProcess(), user3.getSupertokensUserId(), primaryUser.getSupertokensUserId());
         AuthRecipe.linkAccounts(process.getProcess(), user4.getSupertokensUserId(), primaryUser.getSupertokensUserId());
 
         JsonObject primaryUserInfo = getUsersByAccountInfo(process.getProcess(), false,
                 "test@example.com", null, null, null).get(0).getAsJsonObject();
-        assertEquals("ext1", primaryUserInfo.get("loginMethods").getAsJsonArray().get(0).getAsJsonObject().get("recipeUserId").getAsString());
-        assertEquals("ext2", primaryUserInfo.get("loginMethods").getAsJsonArray().get(1).getAsJsonObject().get("recipeUserId").getAsString());
-        assertEquals("ext3", primaryUserInfo.get("loginMethods").getAsJsonArray().get(2).getAsJsonObject().get("recipeUserId").getAsString());
+        assertEquals("ext1",
+                primaryUserInfo.get("loginMethods").getAsJsonArray().get(0).getAsJsonObject().get("recipeUserId")
+                        .getAsString());
+        assertEquals("ext2",
+                primaryUserInfo.get("loginMethods").getAsJsonArray().get(1).getAsJsonObject().get("recipeUserId")
+                        .getAsString());
+        assertEquals("ext3",
+                primaryUserInfo.get("loginMethods").getAsJsonArray().get(2).getAsJsonObject().get("recipeUserId")
+                        .getAsString());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

@@ -70,7 +70,7 @@ public class SessionTest3 {
 
     @Test
     public void revokeSessionWithBlacklistingRefreshSessionAndGetSessionThrows() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -137,7 +137,8 @@ public class SessionTest3 {
         assertEquals(Session.revokeSessionUsingSessionHandles(process.getProcess(),
                 new String[]{sessionInfo.session.handle})[0], sessionInfo.session.handle);
 
-        Session.getSession(process.getProcess(), sessionInfo.accessToken.token, sessionInfo.antiCsrfToken, false, true, false);
+        Session.getSession(process.getProcess(), sessionInfo.accessToken.token, sessionInfo.antiCsrfToken, false, true,
+                false);
 
         Thread.sleep(2500);
 
@@ -200,7 +201,8 @@ public class SessionTest3 {
         assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
                 .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
 
-        Session.getSession(process.getProcess(), sessionInfo.accessToken.token, sessionInfo.antiCsrfToken, false, true, false);
+        Session.getSession(process.getProcess(), sessionInfo.accessToken.token, sessionInfo.antiCsrfToken, false, true,
+                false);
         Session.getSession(process.getProcess(), sessionInfo2.accessToken.token, sessionInfo2.antiCsrfToken, false,
                 true, false);
         Session.getSession(process.getProcess(), sessionInfo3.accessToken.token, sessionInfo3.antiCsrfToken, false,

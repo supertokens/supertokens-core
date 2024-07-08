@@ -96,7 +96,8 @@ public class TestTenantCreationAndRecipeEnabledChecksAcrossVersions {
         assertTrue(checkPasswordlessSignIn(new TenantIdentifier(null, "a1", null), SemVer.v5_1));
         assertTrue(checkThirdPartySignInUp(new TenantIdentifier(null, "a1", null), SemVer.v5_1));
 
-        createTenant_3_0(process.getProcess(), new TenantIdentifier(null, "a1", null), "t1", null, null, null, new JsonObject());
+        createTenant_3_0(process.getProcess(), new TenantIdentifier(null, "a1", null), "t1", null, null, null,
+                new JsonObject());
         assertFalse(checkEmailPasswordSignIn(new TenantIdentifier(null, "a1", "t1"), SemVer.v3_0));
         assertFalse(checkPasswordlessSignIn(new TenantIdentifier(null, "a1", "t1"), SemVer.v3_0));
         assertFalse(checkThirdPartySignInUp(new TenantIdentifier(null, "a1", "t1"), SemVer.v3_0));
@@ -116,7 +117,8 @@ public class TestTenantCreationAndRecipeEnabledChecksAcrossVersions {
             return;
         }
 
-        createApp_5_0(process.getProcess(), TenantIdentifier.BASE_TENANT, "a1", null, null, null, false, null, false, null, new JsonObject());
+        createApp_5_0(process.getProcess(), TenantIdentifier.BASE_TENANT, "a1", null, null, null, false, null, false,
+                null, new JsonObject());
         assertTrue(checkEmailPasswordSignIn(new TenantIdentifier(null, "a1", null), SemVer.v3_0));
         assertTrue(checkPasswordlessSignIn(new TenantIdentifier(null, "a1", null), SemVer.v3_0));
         assertTrue(checkThirdPartySignInUp(new TenantIdentifier(null, "a1", null), SemVer.v3_0));
@@ -129,7 +131,8 @@ public class TestTenantCreationAndRecipeEnabledChecksAcrossVersions {
         assertTrue(checkPasswordlessSignIn(new TenantIdentifier(null, "a1", null), SemVer.v5_1));
         assertTrue(checkThirdPartySignInUp(new TenantIdentifier(null, "a1", null), SemVer.v5_1));
 
-        createTenant_5_0(process.getProcess(), new TenantIdentifier(null, "a1", null), "t1", null, null, null, false, null, false, null, new JsonObject());
+        createTenant_5_0(process.getProcess(), new TenantIdentifier(null, "a1", null), "t1", null, null, null, false,
+                null, false, null, new JsonObject());
         assertFalse(checkEmailPasswordSignIn(new TenantIdentifier(null, "a1", "t1"), SemVer.v3_0));
         assertFalse(checkPasswordlessSignIn(new TenantIdentifier(null, "a1", "t1"), SemVer.v3_0));
         assertFalse(checkThirdPartySignInUp(new TenantIdentifier(null, "a1", "t1"), SemVer.v3_0));
@@ -149,7 +152,8 @@ public class TestTenantCreationAndRecipeEnabledChecksAcrossVersions {
             return;
         }
 
-        createApp_5_1(process.getProcess(), TenantIdentifier.BASE_TENANT, "a1", false, null, false, null, new JsonObject());
+        createApp_5_1(process.getProcess(), TenantIdentifier.BASE_TENANT, "a1", false, null, false, null,
+                new JsonObject());
         assertTrue(checkEmailPasswordSignIn(new TenantIdentifier(null, "a1", null), SemVer.v3_0));
         assertTrue(checkPasswordlessSignIn(new TenantIdentifier(null, "a1", null), SemVer.v3_0));
         assertTrue(checkThirdPartySignInUp(new TenantIdentifier(null, "a1", null), SemVer.v3_0));
@@ -162,7 +166,8 @@ public class TestTenantCreationAndRecipeEnabledChecksAcrossVersions {
         assertTrue(checkPasswordlessSignIn(new TenantIdentifier(null, "a1", null), SemVer.v5_1));
         assertTrue(checkThirdPartySignInUp(new TenantIdentifier(null, "a1", null), SemVer.v5_1));
 
-        createTenant_5_1(process.getProcess(), new TenantIdentifier(null, "a1", null), "t1", false, null, false, null, new JsonObject());
+        createTenant_5_1(process.getProcess(), new TenantIdentifier(null, "a1", null), "t1", false, null, false, null,
+                new JsonObject());
         assertFalse(checkEmailPasswordSignIn(new TenantIdentifier(null, "a1", "t1"), SemVer.v3_0));
         assertFalse(checkPasswordlessSignIn(new TenantIdentifier(null, "a1", "t1"), SemVer.v3_0));
         assertFalse(checkThirdPartySignInUp(new TenantIdentifier(null, "a1", "t1"), SemVer.v3_0));
@@ -229,7 +234,8 @@ public class TestTenantCreationAndRecipeEnabledChecksAcrossVersions {
             return;
         }
 
-        createApp_5_0(process.getProcess(), TenantIdentifier.BASE_TENANT, "a1", false, null, null, false, null, false, null, new JsonObject());
+        createApp_5_0(process.getProcess(), TenantIdentifier.BASE_TENANT, "a1", false, null, null, false, null, false,
+                null, new JsonObject());
         assertFalse(checkEmailPasswordSignIn(new TenantIdentifier(null, "a1", null), SemVer.v3_0));
         assertTrue(checkPasswordlessSignIn(new TenantIdentifier(null, "a1", null), SemVer.v3_0));
         assertTrue(checkThirdPartySignInUp(new TenantIdentifier(null, "a1", null), SemVer.v3_0));
@@ -242,7 +248,8 @@ public class TestTenantCreationAndRecipeEnabledChecksAcrossVersions {
         assertTrue(checkPasswordlessSignIn(new TenantIdentifier(null, "a1", null), SemVer.v5_1));
         assertTrue(checkThirdPartySignInUp(new TenantIdentifier(null, "a1", null), SemVer.v5_1));
 
-        createApp_5_0(process.getProcess(), TenantIdentifier.BASE_TENANT, "a2", null, false, null, false, null, false, null, new JsonObject());
+        createApp_5_0(process.getProcess(), TenantIdentifier.BASE_TENANT, "a2", null, false, null, false, null, false,
+                null, new JsonObject());
         assertTrue(checkEmailPasswordSignIn(new TenantIdentifier(null, "a2", null), SemVer.v3_0));
         assertTrue(checkPasswordlessSignIn(new TenantIdentifier(null, "a2", null), SemVer.v3_0));
         assertFalse(checkThirdPartySignInUp(new TenantIdentifier(null, "a2", null), SemVer.v3_0));
@@ -255,7 +262,8 @@ public class TestTenantCreationAndRecipeEnabledChecksAcrossVersions {
         assertTrue(checkPasswordlessSignIn(new TenantIdentifier(null, "a2", null), SemVer.v5_1));
         assertTrue(checkThirdPartySignInUp(new TenantIdentifier(null, "a2", null), SemVer.v5_1));
 
-        createApp_5_0(process.getProcess(), TenantIdentifier.BASE_TENANT, "a3", null, null, false, false, null, false, null, new JsonObject());
+        createApp_5_0(process.getProcess(), TenantIdentifier.BASE_TENANT, "a3", null, null, false, false, null, false,
+                null, new JsonObject());
         assertTrue(checkEmailPasswordSignIn(new TenantIdentifier(null, "a3", null), SemVer.v3_0));
         assertFalse(checkPasswordlessSignIn(new TenantIdentifier(null, "a3", null), SemVer.v3_0));
         assertTrue(checkThirdPartySignInUp(new TenantIdentifier(null, "a3", null), SemVer.v3_0));
@@ -276,17 +284,20 @@ public class TestTenantCreationAndRecipeEnabledChecksAcrossVersions {
             return;
         }
 
-        createApp_5_0(process.getProcess(), TenantIdentifier.BASE_TENANT, "a1", null, null, null, true, new String[]{"emailpassword"}, false, null, new JsonObject());
+        createApp_5_0(process.getProcess(), TenantIdentifier.BASE_TENANT, "a1", null, null, null, true,
+                new String[]{"emailpassword"}, false, null, new JsonObject());
         assertTrue(checkEmailPasswordSignIn(new TenantIdentifier(null, "a1", null), SemVer.v3_0));
         assertFalse(checkPasswordlessSignIn(new TenantIdentifier(null, "a1", null), SemVer.v3_0));
         assertFalse(checkThirdPartySignInUp(new TenantIdentifier(null, "a1", null), SemVer.v3_0));
 
-        createApp_5_0(process.getProcess(), TenantIdentifier.BASE_TENANT, "a2", null, null, null, true, new String[]{"thirdparty"}, false, null, new JsonObject());
+        createApp_5_0(process.getProcess(), TenantIdentifier.BASE_TENANT, "a2", null, null, null, true,
+                new String[]{"thirdparty"}, false, null, new JsonObject());
         assertFalse(checkEmailPasswordSignIn(new TenantIdentifier(null, "a2", null), SemVer.v3_0));
         assertFalse(checkPasswordlessSignIn(new TenantIdentifier(null, "a2", null), SemVer.v3_0));
         assertTrue(checkThirdPartySignInUp(new TenantIdentifier(null, "a2", null), SemVer.v3_0));
 
-        createApp_5_0(process.getProcess(), TenantIdentifier.BASE_TENANT, "a3", null, null, null, true, new String[]{"otp-email"}, false, null, new JsonObject());
+        createApp_5_0(process.getProcess(), TenantIdentifier.BASE_TENANT, "a3", null, null, null, true,
+                new String[]{"otp-email"}, false, null, new JsonObject());
         assertFalse(checkEmailPasswordSignIn(new TenantIdentifier(null, "a3", null), SemVer.v3_0));
         assertTrue(checkPasswordlessSignIn(new TenantIdentifier(null, "a3", null), SemVer.v3_0));
         assertFalse(checkThirdPartySignInUp(new TenantIdentifier(null, "a3", null), SemVer.v3_0));
@@ -296,7 +307,8 @@ public class TestTenantCreationAndRecipeEnabledChecksAcrossVersions {
 
     private boolean checkEmailPasswordSignIn(TenantIdentifier tenantIdentifier, SemVer version) throws IOException {
         try {
-            TestMultitenancyAPIHelper.epSignUpAndGetResponse(tenantIdentifier, "user"+(userCount++)+"@example.com", "password123!", process.getProcess(), version);
+            TestMultitenancyAPIHelper.epSignUpAndGetResponse(tenantIdentifier, "user" + (userCount++) + "@example.com",
+                    "password123!", process.getProcess(), version);
         } catch (HttpResponseException e) {
             if (e.statusCode == 403) {
                 return false;
@@ -308,7 +320,8 @@ public class TestTenantCreationAndRecipeEnabledChecksAcrossVersions {
 
     private boolean checkPasswordlessSignIn(TenantIdentifier tenantIdentifier, SemVer version) throws IOException {
         try {
-            TestMultitenancyAPIHelper.plSignInUpWithEmailOTP(tenantIdentifier, "user"+(userCount++)+"@example.com", process.getProcess(), version);
+            TestMultitenancyAPIHelper.plSignInUpWithEmailOTP(tenantIdentifier, "user" + (userCount++) + "@example.com",
+                    process.getProcess(), version);
         } catch (HttpResponseException e) {
             if (e.statusCode == 403) {
                 return false;
@@ -320,7 +333,8 @@ public class TestTenantCreationAndRecipeEnabledChecksAcrossVersions {
 
     private boolean checkThirdPartySignInUp(TenantIdentifier tenantIdentifier, SemVer version) throws IOException {
         try {
-            TestMultitenancyAPIHelper.tpSignInUpAndGetResponse(tenantIdentifier, "google", "googleid"+(userCount), "user"+userCount+"@example.com", process.getProcess(), version);
+            TestMultitenancyAPIHelper.tpSignInUpAndGetResponse(tenantIdentifier, "google", "googleid" + (userCount),
+                    "user" + userCount + "@example.com", process.getProcess(), version);
             userCount++;
         } catch (HttpResponseException e) {
             if (e.statusCode == 403) {
@@ -332,9 +346,9 @@ public class TestTenantCreationAndRecipeEnabledChecksAcrossVersions {
     }
 
     private static JsonObject createApp_3_0(Main main, TenantIdentifier sourceTenant, String appId,
-                                         Boolean emailPasswordEnabled,
-                                        Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
-                                        JsonObject coreConfig) throws HttpResponseException, IOException {
+                                            Boolean emailPasswordEnabled,
+                                            Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
+                                            JsonObject coreConfig) throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("appId", appId);
         if (emailPasswordEnabled != null) {
@@ -405,7 +419,7 @@ public class TestTenantCreationAndRecipeEnabledChecksAcrossVersions {
     }
 
     private static JsonObject createOrUpdateApp_5_0(Main main, TenantIdentifier sourceTenant, String appId,
-                                            JsonObject requestBody) throws HttpResponseException, IOException {
+                                                    JsonObject requestBody) throws HttpResponseException, IOException {
         requestBody.addProperty("appId", appId);
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
@@ -441,7 +455,7 @@ public class TestTenantCreationAndRecipeEnabledChecksAcrossVersions {
     }
 
     private static JsonObject createOrUpdateApp_5_1(Main main, TenantIdentifier sourceTenant, String appId,
-                                            JsonObject requestBody) throws HttpResponseException, IOException {
+                                                    JsonObject requestBody) throws HttpResponseException, IOException {
         requestBody.addProperty("appId", appId);
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
@@ -529,9 +543,9 @@ public class TestTenantCreationAndRecipeEnabledChecksAcrossVersions {
     }
 
     private static JsonObject createTenant_3_0(Main main, TenantIdentifier sourceTenant, String tenantId,
-                                           Boolean emailPasswordEnabled,
-                                           Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
-                                           JsonObject coreConfig) throws HttpResponseException, IOException {
+                                               Boolean emailPasswordEnabled,
+                                               Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
+                                               JsonObject coreConfig) throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("tenantId", tenantId);
         if (emailPasswordEnabled != null) {
@@ -556,7 +570,8 @@ public class TestTenantCreationAndRecipeEnabledChecksAcrossVersions {
     }
 
     private static JsonObject createOrUpdateTenant_3_0(Main main, TenantIdentifier sourceTenant, String tenantId,
-                                           JsonObject requestBody) throws HttpResponseException, IOException {
+                                                       JsonObject requestBody)
+            throws HttpResponseException, IOException {
         requestBody.addProperty("tenantId", tenantId);
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
@@ -604,7 +619,8 @@ public class TestTenantCreationAndRecipeEnabledChecksAcrossVersions {
     }
 
     private static JsonObject createOrUpdateTenant_5_0(Main main, TenantIdentifier sourceTenant, String tenantId,
-                                               JsonObject requestBody) throws HttpResponseException, IOException {
+                                                       JsonObject requestBody)
+            throws HttpResponseException, IOException {
         requestBody.addProperty("tenantId", tenantId);
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
@@ -641,7 +657,8 @@ public class TestTenantCreationAndRecipeEnabledChecksAcrossVersions {
     }
 
     private static JsonObject createOrUpdateTenant_5_1(Main main, TenantIdentifier sourceTenant, String tenantId,
-                                               JsonObject requestBody) throws HttpResponseException, IOException {
+                                                       JsonObject requestBody)
+            throws HttpResponseException, IOException {
         requestBody.addProperty("tenantId", tenantId);
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
@@ -671,6 +688,7 @@ public class TestTenantCreationAndRecipeEnabledChecksAcrossVersions {
         private static enum OperationType {
             CREATE_APP, CREATE_TENANT, UPDATE_APP, UPDATE_TENANT
         }
+
         SemVer version;
         OperationType operation;
         JsonObject body;

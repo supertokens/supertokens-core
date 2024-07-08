@@ -359,7 +359,7 @@ public class TestConnectionUriDomain3_0 {
     @Test
     public void testDifferentValuesForCUDThatShouldWork() throws Exception {
         String[] valueForCreate = new String[]{"localhost:3567", "LOCALHOST:3567", "loCalHost:3567", "127.0.0.1:3567"};
-        String[] valueForQuery  = new String[]{"localhost:3567", "LOCALHOST:3567", "LOCALhoST:3567", "127.0.0.1:3567"};
+        String[] valueForQuery = new String[]{"localhost:3567", "LOCALHOST:3567", "LOCALhoST:3567", "127.0.0.1:3567"};
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
@@ -428,7 +428,8 @@ public class TestConnectionUriDomain3_0 {
 
     @Test
     public void testCUDsThatAreSame() throws Exception {
-        String[] valueForCreate = new String[]{"localhost:3567", "LOCALHOST:3567", "loCalHost:3567", "localhost", "localhost:12345"};
+        String[] valueForCreate = new String[]{"localhost:3567", "LOCALHOST:3567", "loCalHost:3567", "localhost",
+                "localhost:12345"};
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
@@ -511,7 +512,8 @@ public class TestConnectionUriDomain3_0 {
     private static JsonObject createConnectionUriDomain(Main main, TenantIdentifier sourceTenant,
                                                         String connectionUriDomain, Boolean emailPasswordEnabled,
                                                         Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
-                                                        JsonObject coreConfig) throws HttpResponseException, IOException {
+                                                        JsonObject coreConfig)
+            throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
         if (connectionUriDomain != null) {
             requestBody.addProperty("connectionUriDomain", connectionUriDomain);
@@ -550,13 +552,14 @@ public class TestConnectionUriDomain3_0 {
     }
 
     private static JsonObject deleteConnectionUriDomain(TenantIdentifier sourceTenant, String connectionUriDomain,
-                                                       Main main)
+                                                        Main main)
             throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("connectionUriDomain", connectionUriDomain);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
-                HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/connectionuridomain/remove"),
+                HttpRequestForTesting.getMultitenantUrl(sourceTenant,
+                        "/recipe/multitenancy/connectionuridomain/remove"),
                 requestBody, 1000, 2500, null,
                 SemVer.v3_0.get(), "multitenancy");
 

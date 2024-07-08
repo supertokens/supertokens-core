@@ -342,8 +342,10 @@ public class TestApp3_0 {
             }
         });
 
-        String[] valueForCreate = new String[]{"a1", "a-1", "a-B-1", "CAPS1", "MixedCase", "capsinquery", "mixedcaseinquery"};
-        String[] valueForQuery  = new String[]{"a1", "a-1", "A-b-1", "CAPS1", "MixedCase", "CAPSINQUERY", "MixedCaseInQuery"};
+        String[] valueForCreate = new String[]{"a1", "a-1", "a-B-1", "CAPS1", "MixedCase", "capsinquery",
+                "mixedcaseinquery"};
+        String[] valueForQuery = new String[]{"a1", "a-1", "A-b-1", "CAPS1", "MixedCase", "CAPSINQUERY",
+                "MixedCaseInQuery"};
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
@@ -379,7 +381,8 @@ public class TestApp3_0 {
                         valueForCreate[i], true, true, true,
                         new JsonObject());
             } catch (HttpResponseException e) {
-                assertTrue(e.getMessage().contains("appId can only contain letters, numbers and hyphens") || e.getMessage().contains("appId must not start with 'appid-'"));
+                assertTrue(e.getMessage().contains("appId can only contain letters, numbers and hyphens") ||
+                        e.getMessage().contains("appId must not start with 'appid-'"));
             }
         }
     }
@@ -549,13 +552,25 @@ public class TestApp3_0 {
         };
 
         String[] expectedErrorMessages = new String[]{
-                "Http error. Status Code: 400. Message: Invalid core config: 'access_token_validity' must be of type long", // access_token_validity
-                "Http error. Status Code: 400. Message: Invalid core config: 'access_token_validity' must be of type long", // access_token_validity
-                "Http error. Status Code: 400. Message: Invalid core config: 'access_token_validity' must be of type long", // access_token_validity
+                "Http error. Status Code: 400. Message: Invalid core config: 'access_token_validity' must be of type " +
+                        "long",
+                // access_token_validity
+                "Http error. Status Code: 400. Message: Invalid core config: 'access_token_validity' must be of type " +
+                        "long",
+                // access_token_validity
+                "Http error. Status Code: 400. Message: Invalid core config: 'access_token_validity' must be of type " +
+                        "long",
+                // access_token_validity
                 null,
-                "Http error. Status Code: 400. Message: Invalid core config: 'disable_telemetry' must be of type boolean", // disable_telemetry
-                "Http error. Status Code: 400. Message: Invalid core config: 'postgresql_connection_pool_size' must be of type int", // postgresql_connection_pool_size
-                "Http error. Status Code: 400. Message: Invalid core config: 'mysql_connection_pool_size' must be of type int", // mysql_connection_pool_size
+                "Http error. Status Code: 400. Message: Invalid core config: 'disable_telemetry' must be of type " +
+                        "boolean",
+                // disable_telemetry
+                "Http error. Status Code: 400. Message: Invalid core config: 'postgresql_connection_pool_size' must " +
+                        "be of type int",
+                // postgresql_connection_pool_size
+                "Http error. Status Code: 400. Message: Invalid core config: 'mysql_connection_pool_size' must be of " +
+                        "type int",
+                // mysql_connection_pool_size
         };
 
         for (int i = 0; i < properties.length; i++) {
@@ -564,8 +579,7 @@ public class TestApp3_0 {
                 JsonObject config = new JsonObject();
                 if (values[i] == null) {
                     config.add(properties[i], null);
-                }
-                else if (values[i] instanceof String) {
+                } else if (values[i] instanceof String) {
                     config.addProperty(properties[i], (String) values[i]);
                 } else if (values[i] instanceof Boolean) {
                     config.addProperty(properties[i], (Boolean) values[i]);
@@ -616,14 +630,18 @@ public class TestApp3_0 {
                 fail();
             } catch (HttpResponseException e) {
                 assertEquals(400, e.statusCode);
-                assertEquals("Http error. Status Code: 400. Message: Invalid core config: 'refresh_token_validity' must be strictly greater than 'access_token_validity'.", e.getMessage());
+                assertEquals(
+                        "Http error. Status Code: 400. Message: Invalid core config: 'refresh_token_validity' must be" +
+                                " strictly greater than 'access_token_validity'.",
+                        e.getMessage());
             }
         }
     }
 
-    private static JsonObject createApp(Main main, TenantIdentifier sourceTenant, String appId, Boolean emailPasswordEnabled,
-                                       Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
-                                       JsonObject coreConfig) throws HttpResponseException, IOException {
+    private static JsonObject createApp(Main main, TenantIdentifier sourceTenant, String appId,
+                                        Boolean emailPasswordEnabled,
+                                        Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
+                                        JsonObject coreConfig) throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("appId", appId);
         if (emailPasswordEnabled != null) {

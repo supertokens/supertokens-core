@@ -128,10 +128,11 @@ public class TestTenantCreationBehaviour {
             assertEquals("public", tenant.get("tenantId").getAsString());
             assertTrue(tenant.has("thirdParty"));
             // firstFactors and requiredSecondaryFactors should be null
-            assertTrue( tenant.get("thirdParty").getAsJsonObject().has("providers"));
+            assertTrue(tenant.get("thirdParty").getAsJsonObject().has("providers"));
         }
 
-        createTenant_3_0(process.getProcess(), new TenantIdentifier(null, "a1", null), "t1", null, null, null, new JsonObject());
+        createTenant_3_0(process.getProcess(), new TenantIdentifier(null, "a1", null), "t1", null, null, null,
+                new JsonObject());
 
         {
             // Get using CDI 3.0
@@ -169,7 +170,7 @@ public class TestTenantCreationBehaviour {
             assertTrue(tenant.has("thirdParty"));
             assertEquals(new JsonArray(), tenant.get("firstFactors").getAsJsonArray());
             // requiredSecondaryFactors should be null
-            assertTrue( tenant.get("thirdParty").getAsJsonObject().has("providers"));
+            assertTrue(tenant.get("thirdParty").getAsJsonObject().has("providers"));
         }
     }
 
@@ -179,7 +180,8 @@ public class TestTenantCreationBehaviour {
             return;
         }
 
-        createApp_5_0(process.getProcess(), TenantIdentifier.BASE_TENANT, "a1", null, null, null, false, null, false, null, new JsonObject());
+        createApp_5_0(process.getProcess(), TenantIdentifier.BASE_TENANT, "a1", null, null, null, false, null, false,
+                null, new JsonObject());
         {
             // Get using CDI 3.0
             JsonObject tenant = getTenant_3_0(new TenantIdentifier(null, "a1", null), process.getProcess());
@@ -215,10 +217,11 @@ public class TestTenantCreationBehaviour {
             assertEquals("public", tenant.get("tenantId").getAsString());
             assertTrue(tenant.has("thirdParty"));
             // firstFactors and requiredSecondaryFactors should be null
-            assertTrue( tenant.get("thirdParty").getAsJsonObject().has("providers"));
+            assertTrue(tenant.get("thirdParty").getAsJsonObject().has("providers"));
         }
 
-        createTenant_5_0(process.getProcess(), new TenantIdentifier(null, "a1", null), "t1", null, null, null, false, null, false, null, new JsonObject());
+        createTenant_5_0(process.getProcess(), new TenantIdentifier(null, "a1", null), "t1", null, null, null, false,
+                null, false, null, new JsonObject());
 
         {
             // Get using CDI 3.0
@@ -256,7 +259,7 @@ public class TestTenantCreationBehaviour {
             assertTrue(tenant.has("thirdParty"));
             assertEquals(new JsonArray(), tenant.get("firstFactors").getAsJsonArray());
             // requiredSecondaryFactors should be null
-            assertTrue( tenant.get("thirdParty").getAsJsonObject().has("providers"));
+            assertTrue(tenant.get("thirdParty").getAsJsonObject().has("providers"));
         }
     }
 
@@ -266,7 +269,8 @@ public class TestTenantCreationBehaviour {
             return;
         }
 
-        createApp_5_1(process.getProcess(), TenantIdentifier.BASE_TENANT, "a1", false, null, false, null, new JsonObject());
+        createApp_5_1(process.getProcess(), TenantIdentifier.BASE_TENANT, "a1", false, null, false, null,
+                new JsonObject());
         {
             // Get using CDI 3.0
             JsonObject tenant = getTenant_3_0(new TenantIdentifier(null, "a1", null), process.getProcess());
@@ -302,10 +306,11 @@ public class TestTenantCreationBehaviour {
             assertEquals("public", tenant.get("tenantId").getAsString());
             assertTrue(tenant.has("thirdParty"));
             // firstFactors and requiredSecondaryFactors should be null
-            assertTrue( tenant.get("thirdParty").getAsJsonObject().has("providers"));
+            assertTrue(tenant.get("thirdParty").getAsJsonObject().has("providers"));
         }
 
-        createTenant_5_1(process.getProcess(), new TenantIdentifier(null, "a1", null), "t1", false, null, false, null, new JsonObject());
+        createTenant_5_1(process.getProcess(), new TenantIdentifier(null, "a1", null), "t1", false, null, false, null,
+                new JsonObject());
 
         {
             // Get using CDI 3.0
@@ -344,7 +349,7 @@ public class TestTenantCreationBehaviour {
             assertTrue(tenant.has("firstFactors"));
             assertEquals(0, tenant.get("firstFactors").getAsJsonArray().size());
             // requiredSecondaryFactors should be null
-            assertTrue( tenant.get("thirdParty").getAsJsonObject().has("providers"));
+            assertTrue(tenant.get("thirdParty").getAsJsonObject().has("providers"));
         }
     }
 
@@ -354,7 +359,8 @@ public class TestTenantCreationBehaviour {
             return;
         }
 
-        createApp_5_1(process.getProcess(), TenantIdentifier.BASE_TENANT, "a1", true, new String[]{"emailpassword", "otp-phone"}, false, null, new JsonObject());
+        createApp_5_1(process.getProcess(), TenantIdentifier.BASE_TENANT, "a1", true,
+                new String[]{"emailpassword", "otp-phone"}, false, null, new JsonObject());
 
         {
             // Get using CDI 3.0
@@ -395,12 +401,14 @@ public class TestTenantCreationBehaviour {
             assertTrue(tenant.has("firstFactors"));
             assertEquals(2, tenant.get("firstFactors").getAsJsonArray().size());
             // requiredSecondaryFactors should be null
-            assertTrue( tenant.get("thirdParty").getAsJsonObject().has("providers"));
+            assertTrue(tenant.get("thirdParty").getAsJsonObject().has("providers"));
         }
 
-        createTenant_5_1(process.getProcess(), new TenantIdentifier(null, "a1", null), "t1", true, new String[]{"emailpassword", "otp-phone"}, false, null, new JsonObject());
+        createTenant_5_1(process.getProcess(), new TenantIdentifier(null, "a1", null), "t1", true,
+                new String[]{"emailpassword", "otp-phone"}, false, null, new JsonObject());
         TestMultitenancyAPIHelper.addOrUpdateThirdPartyProviderConfig(new TenantIdentifier(null, "a1", "t1"),
-                new ThirdPartyConfig.Provider("google", "name", null, null, null, null, null, null, null, null, null, null, null, null), process.getProcess());
+                new ThirdPartyConfig.Provider("google", "name", null, null, null, null, null, null, null, null, null,
+                        null, null, null), process.getProcess());
 
         {
             // Get using CDI 3.0
@@ -454,7 +462,8 @@ public class TestTenantCreationBehaviour {
         createTenant_3_0(process.getProcess(), TenantIdentifier.BASE_TENANT, "t1", null, null, null, new JsonObject());
 
         // Enable emailpassword and passwordless using firstFactors input
-        createTenant_5_1(process.getProcess(), TenantIdentifier.BASE_TENANT, "t1", true, new String[]{"emailpassword", "otp-phone"}, false, null, new JsonObject());
+        createTenant_5_1(process.getProcess(), TenantIdentifier.BASE_TENANT, "t1", true,
+                new String[]{"emailpassword", "otp-phone"}, false, null, new JsonObject());
 
         {
             // Get using CDI 3.0
@@ -544,7 +553,8 @@ public class TestTenantCreationBehaviour {
                         } else {
                             throw new Exception("Invalid version");
                         }
-                        tenantConfig = BaseCreateOrUpdate.createBaseConfigForVersionForTest(version, tenantIdentifier, isV2);
+                        tenantConfig = BaseCreateOrUpdate.createBaseConfigForVersionForTest(version, tenantIdentifier,
+                                isV2);
                         tenantConfig = BaseCreateOrUpdate.applyTenantUpdatesForTest(tenantConfig, version, isV2,
                                 jsonObject.get("cbody").getAsJsonObject());
 
@@ -595,7 +605,8 @@ public class TestTenantCreationBehaviour {
         System.out.println(c);
     }
 
-    private void validateState(JsonObject jsonObject, TenantConfig tenantConfig, JsonObject jsonLesserThanOrEqualTo40, JsonObject json50, JsonObject jsonV251) {
+    private void validateState(JsonObject jsonObject, TenantConfig tenantConfig, JsonObject jsonLesserThanOrEqualTo40,
+                               JsonObject json50, JsonObject jsonV251) {
         JsonObject state = jsonObject.get("tenantState").getAsJsonObject();
         JsonObject g4 = jsonObject.get("g4").getAsJsonObject();
         JsonObject g5 = jsonObject.get("g5").getAsJsonObject();
@@ -606,8 +617,10 @@ public class TestTenantCreationBehaviour {
             assertEquals(state.get("emailPasswordEnabled").getAsBoolean(), tenantConfig.emailPasswordConfig.enabled);
             assertEquals(state.get("thirdPartyEnabled").getAsBoolean(), tenantConfig.thirdPartyConfig.enabled);
             assertEquals(state.get("passwordlessEnabled").getAsBoolean(), tenantConfig.passwordlessConfig.enabled);
-            assertEquals(jsonArrayToStringSet(state.get("firstFactors")), stringArrayToStringSet(tenantConfig.firstFactors));
-            assertEquals(jsonArrayToStringSet(state.get("requiredSecondaryFactors")), stringArrayToStringSet(tenantConfig.requiredSecondaryFactors));
+            assertEquals(jsonArrayToStringSet(state.get("firstFactors")),
+                    stringArrayToStringSet(tenantConfig.firstFactors));
+            assertEquals(jsonArrayToStringSet(state.get("requiredSecondaryFactors")),
+                    stringArrayToStringSet(tenantConfig.requiredSecondaryFactors));
         }
     }
 
@@ -634,9 +647,9 @@ public class TestTenantCreationBehaviour {
     }
 
     private static JsonObject createApp_3_0(Main main, TenantIdentifier sourceTenant, String appId,
-                                         Boolean emailPasswordEnabled,
-                                        Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
-                                        JsonObject coreConfig) throws HttpResponseException, IOException {
+                                            Boolean emailPasswordEnabled,
+                                            Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
+                                            JsonObject coreConfig) throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("appId", appId);
         if (emailPasswordEnabled != null) {
@@ -707,7 +720,7 @@ public class TestTenantCreationBehaviour {
     }
 
     private static JsonObject createOrUpdateApp_5_0(Main main, TenantIdentifier sourceTenant, String appId,
-                                            JsonObject requestBody) throws HttpResponseException, IOException {
+                                                    JsonObject requestBody) throws HttpResponseException, IOException {
         requestBody.addProperty("appId", appId);
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
@@ -743,7 +756,7 @@ public class TestTenantCreationBehaviour {
     }
 
     private static JsonObject createOrUpdateApp_5_1(Main main, TenantIdentifier sourceTenant, String appId,
-                                            JsonObject requestBody) throws HttpResponseException, IOException {
+                                                    JsonObject requestBody) throws HttpResponseException, IOException {
         requestBody.addProperty("appId", appId);
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
@@ -831,9 +844,9 @@ public class TestTenantCreationBehaviour {
     }
 
     private static JsonObject createTenant_3_0(Main main, TenantIdentifier sourceTenant, String tenantId,
-                                           Boolean emailPasswordEnabled,
-                                           Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
-                                           JsonObject coreConfig) throws HttpResponseException, IOException {
+                                               Boolean emailPasswordEnabled,
+                                               Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
+                                               JsonObject coreConfig) throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("tenantId", tenantId);
         if (emailPasswordEnabled != null) {
@@ -858,7 +871,8 @@ public class TestTenantCreationBehaviour {
     }
 
     private static JsonObject createOrUpdateTenant_3_0(Main main, TenantIdentifier sourceTenant, String tenantId,
-                                           JsonObject requestBody) throws HttpResponseException, IOException {
+                                                       JsonObject requestBody)
+            throws HttpResponseException, IOException {
         requestBody.addProperty("tenantId", tenantId);
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
@@ -906,7 +920,8 @@ public class TestTenantCreationBehaviour {
     }
 
     private static JsonObject createOrUpdateTenant_5_0(Main main, TenantIdentifier sourceTenant, String tenantId,
-                                               JsonObject requestBody) throws HttpResponseException, IOException {
+                                                       JsonObject requestBody)
+            throws HttpResponseException, IOException {
         requestBody.addProperty("tenantId", tenantId);
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
@@ -943,7 +958,8 @@ public class TestTenantCreationBehaviour {
     }
 
     private static JsonObject createOrUpdateTenant_5_1(Main main, TenantIdentifier sourceTenant, String tenantId,
-                                               JsonObject requestBody) throws HttpResponseException, IOException {
+                                                       JsonObject requestBody)
+            throws HttpResponseException, IOException {
         requestBody.addProperty("tenantId", tenantId);
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
@@ -973,6 +989,7 @@ public class TestTenantCreationBehaviour {
         private static enum OperationType {
             CREATE_APP, CREATE_TENANT, UPDATE_APP, UPDATE_TENANT
         }
+
         SemVer version;
         OperationType operation;
         JsonObject body;

@@ -61,7 +61,7 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
 
     private static List<JsonObject> licenseCheckRequests = new ArrayList<>();
 
-    private static final String[] ENTERPRISE_THIRD_PARTY_IDS = new String[] {
+    private static final String[] ENTERPRISE_THIRD_PARTY_IDS = new String[]{
             "google-workspaces",
             "okta",
             "active-directory",
@@ -106,7 +106,8 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         try {
             this.syncFeatureFlagWithLicenseKey();
         } catch (HttpResponseException | IOException e) {
-            Logging.error(main, appIdentifier.getAsPublicTenantIdentifier(), "API Error during constructor sync", false, e);
+            Logging.error(main, appIdentifier.getAsPublicTenantIdentifier(), "API Error during constructor sync", false,
+                    e);
             // server request failed. we ignore for now as later on it will sync up anyway.
         } catch (InvalidLicenseKeyException ignored) {
             // the license key that was in the db was invalid. If this error is thrown,
@@ -179,7 +180,8 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
 
     private JsonObject getDashboardLoginStats() throws TenantOrAppNotFoundException, StorageQueryException {
         JsonObject stats = new JsonObject();
-        int userCount = ((DashboardSQLStorage) StorageLayer.getStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main))
+        int userCount = ((DashboardSQLStorage) StorageLayer.getStorage(this.appIdentifier.getAsPublicTenantIdentifier(),
+                main))
                 .getAllDashboardUsers(this.appIdentifier).length;
         stats.addProperty("user_count", userCount);
         return stats;
@@ -242,7 +244,8 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
                 Storage storage = StorageLayer.getStorage(tenantConfig.tenantIdentifier, main);
                 long usersCount = ((AuthRecipeStorage) storage).getUsersCount(tenantConfig.tenantIdentifier, null);
                 boolean hasUsersOrSessions = (usersCount > 0);
-                hasUsersOrSessions = hasUsersOrSessions || ((SessionSQLStorage) storage).getNumberOfSessions(tenantConfig.tenantIdentifier) > 0;
+                hasUsersOrSessions = hasUsersOrSessions ||
+                        ((SessionSQLStorage) storage).getNumberOfSessions(tenantConfig.tenantIdentifier) > 0;
                 tenantStat.addProperty("usersCount", usersCount);
                 tenantStat.addProperty("hasUsersOrSessions", hasUsersOrSessions);
                 if (tenantConfig.firstFactors != null) {
@@ -295,7 +298,7 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         boolean usesAccountLinking = false;
 
         for (Storage storage : storages) {
-            if (((AuthRecipeStorage)storage).checkIfUsesAccountLinking(this.appIdentifier)) {
+            if (((AuthRecipeStorage) storage).checkIfUsesAccountLinking(this.appIdentifier)) {
                 usesAccountLinking = true;
                 break;
             }
@@ -318,13 +321,15 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         long now = System.currentTimeMillis();
 
         for (Storage storage : storages) {
-            totalUserCountWithMoreThanOneLoginMethod += ((AuthRecipeStorage)storage).getUsersCountWithMoreThanOneLoginMethod(this.appIdentifier);
+            totalUserCountWithMoreThanOneLoginMethod += ((AuthRecipeStorage) storage).getUsersCountWithMoreThanOneLoginMethod(
+                    this.appIdentifier);
 
             for (int i = 1; i <= 31; i++) {
                 long timestamp = now - (i * 24 * 60 * 60 * 1000L);
 
                 // `maus[i-1]` because i starts from 1
-                maus[i-1] += ((ActiveUsersStorage)storage).countUsersThatHaveMoreThanOneLoginMethodAndActiveSince(appIdentifier, timestamp);
+                maus[i - 1] += ((ActiveUsersStorage) storage).countUsersThatHaveMoreThanOneLoginMethodAndActiveSince(
+                        appIdentifier, timestamp);
             }
         }
 
@@ -351,16 +356,18 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
     public JsonObject getPaidFeatureStats() throws StorageQueryException, TenantOrAppNotFoundException {
         JsonObject usageStats = new JsonObject();
 
-        if (StorageLayer.getStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main).getType() != STORAGE_TYPE.SQL) {
+        if (StorageLayer.getStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main).getType() !=
+                STORAGE_TYPE.SQL) {
             return usageStats;
         }
 
         EE_FEATURES[] features = getEnabledEEFeaturesFromDbOrCache();
 
-        if (!this.appIdentifier.equals(new AppIdentifier(null, null)) && !Arrays.asList(features).contains(EE_FEATURES.MULTI_TENANCY)) { // Check for multitenancy on the base app
+        if (!this.appIdentifier.equals(new AppIdentifier(null, null)) && !Arrays.asList(features)
+                .contains(EE_FEATURES.MULTI_TENANCY)) { // Check for multitenancy on the base app
             EE_FEATURES[] baseFeatures = FeatureFlag.getInstance(main, new AppIdentifier(null, null))
                     .getEnabledFeatures();
-            for (EE_FEATURES feature: baseFeatures) {
+            for (EE_FEATURES feature : baseFeatures) {
                 if (feature == EE_FEATURES.MULTI_TENANCY) {
                     features = Arrays.copyOf(features, features.length + 1);
                     features[features.length - 1] = EE_FEATURES.MULTI_TENANCY;
@@ -456,7 +463,8 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
             throws StorageQueryException, HttpResponseException, IOException, InvalidLicenseKeyException,
             TenantOrAppNotFoundException {
         try {
-            Logging.debug(main, appIdentifier.getAsPublicTenantIdentifier(), "Making API call to server with licenseKey: " + licenseKey);
+            Logging.debug(main, appIdentifier.getAsPublicTenantIdentifier(),
+                    "Making API call to server with licenseKey: " + licenseKey);
             JsonObject json = new JsonObject();
             KeyValueInfo info = Telemetry.getTelemetryId(main, this.appIdentifier);
             String telemetryId = info == null ? null : info.value;
@@ -470,7 +478,8 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
             if (Main.isTesting) {
                 licenseCheckRequests.add(json);
             }
-            ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL, null, json);
+            ProcessState.getInstance(main)
+                    .addState(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL, null, json);
             JsonObject licenseCheckResponse = HttpRequest.sendJsonPOSTRequest(this.main, REQUEST_ID,
                     "https://api.supertokens.io/0/st/license/check",
                     json, 10000, 10000, 0);
@@ -502,7 +511,8 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
             throws StorageQueryException, TenantOrAppNotFoundException {
         JsonArray json = new JsonArray();
         Arrays.stream(features).forEach(ee_features -> json.add(new JsonPrimitive(ee_features.toString())));
-        Logging.debug(main, appIdentifier.getAsPublicTenantIdentifier(), "Saving new feature flag in database: " + json);
+        Logging.debug(main, appIdentifier.getAsPublicTenantIdentifier(),
+                "Saving new feature flag in database: " + json);
         StorageLayer.getStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main)
                 .setKeyValue(this.appIdentifier.getAsPublicTenantIdentifier(), FEATURE_FLAG_KEY_IN_DB,
                         new KeyValueInfo(json.toString()));

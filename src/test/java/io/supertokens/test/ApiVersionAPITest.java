@@ -61,7 +61,7 @@ public class ApiVersionAPITest {
     // * being returned by this API.
     @Test
     public void testThatCoreDriverInterfaceSupportedVersionsAreBeingReturnedByTheAPI() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -94,7 +94,7 @@ public class ApiVersionAPITest {
     // - no version needed for this API.
     @Test
     public void testThatNoVersionIsNeededForThisAPI() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -107,7 +107,8 @@ public class ApiVersionAPITest {
 
         // with setting cdi-version header
         apiVersionResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/apiversion", null, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), "");
+                "http://localhost:3567/apiversion", null, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
+                "");
         assertNotNull(apiVersionResponse.getAsJsonArray("versions"));
         assertTrue(apiVersionResponse.getAsJsonArray("versions").size() >= 1);
 
@@ -119,7 +120,7 @@ public class ApiVersionAPITest {
     // - test that all returned versions are correct based on WebserverAPI's supportedVersions set
     @Test
     public void testThatApiVersionsAreBasedOnWebserverAPIsSupportedVersions() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -142,7 +143,7 @@ public class ApiVersionAPITest {
     // - check that all returned versions have X.Y format
     @Test
     public void testThatAllReturnedVersionsHaveXYFormat() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -160,32 +161,34 @@ public class ApiVersionAPITest {
 
     @Test
     public void testThatWebsiteAndAPIDomainAreSaved() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         {
-            Map<String,String> params = new HashMap<>();
+            Map<String, String> params = new HashMap<>();
             params.put("websiteDomain", "https://example.com");
 
             HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/apiversion", params, 1000, 1000, null, null, "");
 
-            assertEquals("https://example.com", Multitenancy.getWebsiteDomain(StorageLayer.getBaseStorage(process.getProcess()),
-                    new AppIdentifier(null,
-                            null)));
+            assertEquals("https://example.com",
+                    Multitenancy.getWebsiteDomain(StorageLayer.getBaseStorage(process.getProcess()),
+                            new AppIdentifier(null,
+                                    null)));
         }
         {
-            Map<String,String> params = new HashMap<>();
+            Map<String, String> params = new HashMap<>();
             params.put("apiDomain", "https://api.example.com");
 
             HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/apiversion", params, 1000, 1000, null, null, "");
 
-            assertEquals("https://api.example.com", Multitenancy.getAPIDomain(StorageLayer.getBaseStorage(process.getProcess()),
-                    new AppIdentifier(null,
-                            null)));
+            assertEquals("https://api.example.com",
+                    Multitenancy.getAPIDomain(StorageLayer.getBaseStorage(process.getProcess()),
+                            new AppIdentifier(null,
+                                    null)));
         }
 
         process.kill();
@@ -194,7 +197,7 @@ public class ApiVersionAPITest {
 
     @Test
     public void testAPIVersionWorksEvenIfThereIsAnException() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         FeatureFlagTestContent.getInstance(process.getProcess())
@@ -225,9 +228,10 @@ public class ApiVersionAPITest {
                 null, null,
                 tenantConfigJson);
         StorageLayer.getMultitenancyStorage(process.getProcess()).createTenant(tenantConfig);
-        MultitenancyHelper.getInstance(process.getProcess()).refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(true);
+        MultitenancyHelper.getInstance(process.getProcess())
+                .refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(true);
 
-        Map<String,String> params = new HashMap<>();
+        Map<String, String> params = new HashMap<>();
         params.put("websiteDomain", "https://example.com");
         params.put("apiDomain", "https://api.example.com");
 

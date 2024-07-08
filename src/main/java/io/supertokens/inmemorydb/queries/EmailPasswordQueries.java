@@ -154,8 +154,8 @@ public class EmailPasswordQueries {
                                                                                String userId)
             throws StorageQueryException, SQLException {
         String QUERY =
-                 "SELECT user_id, token, token_expiry, email FROM " + getConfig(start).getPasswordResetTokensTable()
-                + " WHERE app_id = ? AND user_id = ?";
+                "SELECT user_id, token, token_expiry, email FROM " + getConfig(start).getPasswordResetTokensTable()
+                        + " WHERE app_id = ? AND user_id = ?";
 
         return execute(start, QUERY, pst -> {
             pst.setString(1, appIdentifier.getAppId());
@@ -206,8 +206,8 @@ public class EmailPasswordQueries {
                                                                    String token)
             throws SQLException, StorageQueryException {
         String QUERY =
-                 "SELECT user_id, token, token_expiry, email FROM " + getConfig(start).getPasswordResetTokensTable()
-                + " WHERE app_id = ? AND token = ?";
+                "SELECT user_id, token, token_expiry, email FROM " + getConfig(start).getPasswordResetTokensTable()
+                        + " WHERE app_id = ? AND token = ?";
         return execute(start, QUERY, pst -> {
             pst.setString(1, appIdentifier.getAppId());
             pst.setString(2, token);
@@ -265,7 +265,9 @@ public class EmailPasswordQueries {
 
                 { // all_auth_recipe_users
                     String QUERY = "INSERT INTO " + getConfig(start).getUsersTable()
-                            + "(app_id, tenant_id, user_id, primary_or_recipe_user_id, recipe_id, time_joined, primary_or_recipe_user_time_joined)" +
+                            +
+                            "(app_id, tenant_id, user_id, primary_or_recipe_user_id, recipe_id, time_joined, " +
+                            "primary_or_recipe_user_time_joined)" +
                             " VALUES(?, ?, ?, ?, ?, ?, ?)";
                     update(sqlCon, QUERY, pst -> {
                         pst.setString(1, tenantIdentifier.getAppId());
@@ -315,7 +317,7 @@ public class EmailPasswordQueries {
     }
 
     public static void deleteUser_Transaction(Connection sqlCon, Start start, AppIdentifier appIdentifier,
-                                               String userId, boolean deleteUserIdMappingToo)
+                                              String userId, boolean deleteUserIdMappingToo)
             throws StorageQueryException, SQLException {
         if (deleteUserIdMappingToo) {
             String QUERY = "DELETE FROM " + getConfig(start).getAppIdToUserIdTable()
@@ -355,10 +357,12 @@ public class EmailPasswordQueries {
         }
     }
 
-    private static UserInfoPartial getUserInfoUsingId_Transaction(Start start, Connection sqlCon, AppIdentifier appIdentifier,
-                                                     String id) throws SQLException, StorageQueryException {
+    private static UserInfoPartial getUserInfoUsingId_Transaction(Start start, Connection sqlCon,
+                                                                  AppIdentifier appIdentifier,
+                                                                  String id)
+            throws SQLException, StorageQueryException {
         // we don't need a FOR UPDATE here because this is already part of a transaction, and locked on
-         // app_id_to_user_id table
+        // app_id_to_user_id table
         String QUERY = "SELECT user_id, email, password_hash, time_joined FROM "
                 + getConfig(start).getEmailPasswordUsersTable() + " WHERE app_id = ? AND user_id = ?";
 
@@ -380,8 +384,8 @@ public class EmailPasswordQueries {
             // No need to filter based on tenantId because the id list is already filtered for a tenant
             String QUERY = "SELECT user_id, email,  password_hash, time_joined "
                     + "FROM " + getConfig(start).getEmailPasswordUsersTable()
-                     + " WHERE user_id IN (" + Utils.generateCommaSeperatedQuestionMarks(ids.size()) +
-                     " ) AND app_id = ?";
+                    + " WHERE user_id IN (" + Utils.generateCommaSeperatedQuestionMarks(ids.size()) +
+                    " ) AND app_id = ?";
 
             List<UserInfoPartial> userInfos = execute(start, QUERY, pst -> {
                 int index = 1;
@@ -436,10 +440,11 @@ public class EmailPasswordQueries {
         }
         return Collections.emptyList();
     }
+
     public static String lockEmail_Transaction(Start start, Connection con,
-                                                AppIdentifier appIdentifier,
+                                               AppIdentifier appIdentifier,
                                                String email)
-             throws StorageQueryException, SQLException {
+            throws StorageQueryException, SQLException {
         String QUERY = "SELECT user_id FROM " + getConfig(start).getEmailPasswordUsersTable() +
                 " WHERE app_id = ? AND email = ?";
         return execute(con, QUERY, pst -> {
@@ -474,8 +479,9 @@ public class EmailPasswordQueries {
         });
     }
 
-    public static List<String> getPrimaryUserIdsUsingEmail_Transaction(Start start, Connection con, AppIdentifier appIdentifier,
-                                                           String email)
+    public static List<String> getPrimaryUserIdsUsingEmail_Transaction(Start start, Connection con,
+                                                                       AppIdentifier appIdentifier,
+                                                                       String email)
             throws StorageQueryException, SQLException {
         String QUERY = "SELECT DISTINCT all_users.primary_or_recipe_user_id AS user_id "
                 + "FROM " + getConfig(start).getEmailPasswordUsersTable() + " AS ep" +
@@ -505,11 +511,14 @@ public class EmailPasswordQueries {
             throw new UnknownUserIdException();
         }
 
-        GeneralQueries.AccountLinkingInfo accountLinkingInfo = GeneralQueries.getAccountLinkingInfo_Transaction(start, sqlCon, tenantIdentifier.toAppIdentifier(), userId);
+        GeneralQueries.AccountLinkingInfo accountLinkingInfo = GeneralQueries.getAccountLinkingInfo_Transaction(start,
+                sqlCon, tenantIdentifier.toAppIdentifier(), userId);
 
         { // all_auth_recipe_users
             String QUERY = "INSERT INTO " + getConfig(start).getUsersTable()
-                    + "(app_id, tenant_id, user_id, primary_or_recipe_user_id, is_linked_or_is_a_primary_user, recipe_id, time_joined, primary_or_recipe_user_time_joined)"
+                    +
+                    "(app_id, tenant_id, user_id, primary_or_recipe_user_id, is_linked_or_is_a_primary_user, " +
+                    "recipe_id, time_joined, primary_or_recipe_user_time_joined)"
                     + " VALUES(?, ?, ?, ?, ?, ?, ?, ?)" + " ON CONFLICT DO NOTHING";
             GeneralQueries.AccountLinkingInfo finalAccountLinkingInfo = accountLinkingInfo;
 
@@ -524,7 +533,8 @@ public class EmailPasswordQueries {
                 pst.setLong(8, userInfo.timeJoined);
             });
 
-            GeneralQueries.updateTimeJoinedForPrimaryUser_Transaction(start, sqlCon, tenantIdentifier.toAppIdentifier(), finalAccountLinkingInfo.primaryUserId);
+            GeneralQueries.updateTimeJoinedForPrimaryUser_Transaction(start, sqlCon, tenantIdentifier.toAppIdentifier(),
+                    finalAccountLinkingInfo.primaryUserId);
         }
 
         { // emailpassword_user_to_tenant
@@ -590,27 +600,27 @@ public class EmailPasswordQueries {
         return userInfos;
     }
 
-     private static List<UserInfoPartial> fillUserInfoWithVerified(Start start,
-                                                                   AppIdentifier appIdentifier,
-                                                                   List<UserInfoPartial> userInfos)
-             throws SQLException, StorageQueryException {
-         List<EmailVerificationQueries.UserIdAndEmail> userIdsAndEmails = new ArrayList<>();
-         for (UserInfoPartial userInfo : userInfos) {
-             userIdsAndEmails.add(new EmailVerificationQueries.UserIdAndEmail(userInfo.id, userInfo.email));
-         }
-         List<String> userIdsThatAreVerified = EmailVerificationQueries.isEmailVerified(start,
-                 appIdentifier,
-                 userIdsAndEmails);
-         Set<String> verifiedUserIdsSet = new HashSet<>(userIdsThatAreVerified);
-         for (UserInfoPartial userInfo : userInfos) {
-             if (verifiedUserIdsSet.contains(userInfo.id)) {
-                 userInfo.verified = true;
-             } else {
-                 userInfo.verified = false;
-             }
-         }
-         return userInfos;
-     }
+    private static List<UserInfoPartial> fillUserInfoWithVerified(Start start,
+                                                                  AppIdentifier appIdentifier,
+                                                                  List<UserInfoPartial> userInfos)
+            throws SQLException, StorageQueryException {
+        List<EmailVerificationQueries.UserIdAndEmail> userIdsAndEmails = new ArrayList<>();
+        for (UserInfoPartial userInfo : userInfos) {
+            userIdsAndEmails.add(new EmailVerificationQueries.UserIdAndEmail(userInfo.id, userInfo.email));
+        }
+        List<String> userIdsThatAreVerified = EmailVerificationQueries.isEmailVerified(start,
+                appIdentifier,
+                userIdsAndEmails);
+        Set<String> verifiedUserIdsSet = new HashSet<>(userIdsThatAreVerified);
+        for (UserInfoPartial userInfo : userInfos) {
+            if (verifiedUserIdsSet.contains(userInfo.id)) {
+                userInfo.verified = true;
+            } else {
+                userInfo.verified = false;
+            }
+        }
+        return userInfos;
+    }
 
     private static UserInfoPartial fillUserInfoWithTenantIds_transaction(Start start, Connection sqlCon,
                                                                          AppIdentifier appIdentifier,

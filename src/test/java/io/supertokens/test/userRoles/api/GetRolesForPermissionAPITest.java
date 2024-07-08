@@ -54,7 +54,7 @@ public class GetRolesForPermissionAPITest {
 
     @Test
     public void badInputTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -112,7 +112,7 @@ public class GetRolesForPermissionAPITest {
 
     @Test
     public void testRetrievingRolesForAPermission() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -122,15 +122,15 @@ public class GetRolesForPermissionAPITest {
         }
 
         // create two roles, assign [permission1] to role1 and [permission1, permission2] to role2
-        String[] roles = new String[] { "role1", "role2" };
+        String[] roles = new String[]{"role1", "role2"};
         String permission1 = "permission1";
         String permission2 = "permission2";
 
         // create role1 with permission [permission1]
-        UserRoles.createNewRoleOrModifyItsPermissions(process.main, roles[0], new String[] { permission1 });
+        UserRoles.createNewRoleOrModifyItsPermissions(process.main, roles[0], new String[]{permission1});
         // create role2 with permissions [permission1, permission2]
         UserRoles.createNewRoleOrModifyItsPermissions(process.main, roles[1],
-                new String[] { permission1, permission2 });
+                new String[]{permission1, permission2});
 
         {
             // retrieve roles for permission1

@@ -494,8 +494,8 @@ public class APIKeysTest {
     }
 
     private static <T> T sendJsonRequest(Main main, String url, JsonElement requestBody,
-                                        int connectionTimeoutMS, int readTimeoutMS, String method,
-                                        Map<String, String> headers) throws IOException,
+                                         int connectionTimeoutMS, int readTimeoutMS, String method,
+                                         Map<String, String> headers) throws IOException,
             io.supertokens.test.httpRequest.HttpResponseException {
         URL obj = getURL(main, "", url);
         InputStream inputStream = null;

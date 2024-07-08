@@ -56,7 +56,7 @@ public class SessionGetSessionDataTest {
     @Test
     public void updateSessionInfo() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -79,7 +79,8 @@ public class SessionGetSessionDataTest {
         JsonArray arr = new JsonArray();
         userDataInDatabase2.add("key3", arr);
 
-        Session.updateSession(process.getProcess(), sessionInfo.session.handle, userDataInDatabase2, null, AccessToken.getLatestVersion());
+        Session.updateSession(process.getProcess(), sessionInfo.session.handle, userDataInDatabase2, null,
+                AccessToken.getLatestVersion());
 
         JsonObject sessionDataAfterUpdate = Session.getSession(process.getProcess(),
                 sessionInfo.session.handle).userDataInDatabase;
@@ -95,7 +96,7 @@ public class SessionGetSessionDataTest {
     @Test
     public void gettingAndUpdatingSessionDataForNonExistentSession() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -107,7 +108,8 @@ public class SessionGetSessionDataTest {
         }
 
         try {
-            Session.updateSession(process.getProcess(), "random", new JsonObject(), null, AccessToken.getLatestVersion());
+            Session.updateSession(process.getProcess(), "random", new JsonObject(), null,
+                    AccessToken.getLatestVersion());
             fail();
         } catch (UnauthorisedException e) {
             assertEquals(e.getMessage(), "Session does not exist.");

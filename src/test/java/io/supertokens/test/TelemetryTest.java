@@ -61,7 +61,7 @@ public class TelemetryTest extends Mockito {
 
     @Test
     public void testThatDisablingTelemetryDoesNotSendOne() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         Utils.setValueInConfig("disable_telemetry", "true");
 
@@ -76,7 +76,7 @@ public class TelemetryTest extends Mockito {
 
     @Test
     public void testThatTelemetryDoesNotSendOneIfInMemDb() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -93,7 +93,7 @@ public class TelemetryTest extends Mockito {
 
     @Test
     public void testThatTelemetryDoesNotSendOneIfInMemDbButActualDBThere() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();
@@ -113,7 +113,7 @@ public class TelemetryTest extends Mockito {
 
     @Test
     public void testThatTelemetryWorks() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcess process = TestingProcessManager.start(args, false);
         process.startProcess();
@@ -176,7 +176,8 @@ public class TelemetryTest extends Mockito {
 
         if (StorageLayer.getBaseStorage(process.getProcess()).getType() == STORAGE_TYPE.SQL) {
             assertEquals(1, telemetryData.get("dashboardUserEmails").getAsJsonArray().size());
-            assertEquals("test@example.com", telemetryData.get("dashboardUserEmails").getAsJsonArray().get(0).getAsString());
+            assertEquals("test@example.com",
+                    telemetryData.get("dashboardUserEmails").getAsJsonArray().get(0).getAsString());
             assertEquals(31, telemetryData.get("maus").getAsJsonArray().size());
             assertEquals(0, telemetryData.get("usersCount").getAsInt());
         } else {
@@ -191,7 +192,7 @@ public class TelemetryTest extends Mockito {
 
     @Test
     public void testThatTelemetryWorksWithApiDomainAndWebsiteDomainSet() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcess process = TestingProcessManager.start(args, false);
         process.startProcess();
@@ -259,7 +260,8 @@ public class TelemetryTest extends Mockito {
 
         if (StorageLayer.getBaseStorage(process.getProcess()).getType() == STORAGE_TYPE.SQL) {
             assertEquals(1, telemetryData.get("dashboardUserEmails").getAsJsonArray().size());
-            assertEquals("test@example.com", telemetryData.get("dashboardUserEmails").getAsJsonArray().get(0).getAsString());
+            assertEquals("test@example.com",
+                    telemetryData.get("dashboardUserEmails").getAsJsonArray().get(0).getAsString());
             assertEquals(31, telemetryData.get("maus").getAsJsonArray().size());
             assertEquals(0, telemetryData.get("usersCount").getAsInt());
         } else {
@@ -276,7 +278,7 @@ public class TelemetryTest extends Mockito {
     public void testThatTelemetryIdDoesNotChange() throws Exception {
         String telemetryId = null;
         {
-            String[] args = { "../" };
+            String[] args = {"../"};
 
             TestingProcess process = TestingProcessManager.start(args, false);
 
@@ -325,7 +327,7 @@ public class TelemetryTest extends Mockito {
         }
 
         {
-            String[] args = { "../" };
+            String[] args = {"../"};
 
             TestingProcess process = TestingProcessManager.start(args, false);
 
@@ -380,7 +382,7 @@ public class TelemetryTest extends Mockito {
 
     @Test
     public void testThatTelemetryWillNotGoIfTestingAndNoMockRequest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

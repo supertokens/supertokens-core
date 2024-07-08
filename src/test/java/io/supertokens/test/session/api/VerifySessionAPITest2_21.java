@@ -49,7 +49,7 @@ public class VerifySessionAPITest2_21 {
 
     @Test
     public void successOutputCheckV2AccessToken() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -95,7 +95,7 @@ public class VerifySessionAPITest2_21 {
 
     @Test
     public void successOutputCheckV3AccessToken() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -140,7 +140,7 @@ public class VerifySessionAPITest2_21 {
 
     @Test
     public void successOutputCheckNewAccessTokenUpgradeToV3() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -199,7 +199,7 @@ public class VerifySessionAPITest2_21 {
 
     @Test
     public void checkDatabaseParamTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -243,7 +243,8 @@ public class VerifySessionAPITest2_21 {
         }
         {
             JsonObject request = new JsonObject();
-            request.addProperty("accessToken", sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString());
+            request.addProperty("accessToken",
+                    sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString());
             request.addProperty("doAntiCsrfCheck", true);
             request.addProperty("enableAntiCsrf", false);
             request.addProperty("checkDatabase", false);

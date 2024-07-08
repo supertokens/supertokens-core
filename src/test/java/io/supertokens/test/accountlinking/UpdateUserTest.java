@@ -65,13 +65,15 @@ public class UpdateUserTest {
         }
 
         AuthRecipeUserInfo user1 = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
-        AuthRecipeUserInfo user2 = ThirdParty.signInUp(process.getProcess(), "google", "googleid1", "test2@example.com").user;
+        AuthRecipeUserInfo user2 = ThirdParty.signInUp(process.getProcess(), "google", "googleid1",
+                "test2@example.com").user;
 
         AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId());
         AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), user1.getSupertokensUserId());
 
         try {
-            EmailPassword.updateUsersEmailOrPassword(process.getProcess(), user2.getSupertokensUserId(), "test3@example.com", null);
+            EmailPassword.updateUsersEmailOrPassword(process.getProcess(), user2.getSupertokensUserId(),
+                    "test3@example.com", null);
             fail();
         } catch (UnknownUserIdException e) {
             // ignore

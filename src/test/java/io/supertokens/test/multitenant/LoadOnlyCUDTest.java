@@ -231,11 +231,14 @@ public class LoadOnlyCUDTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        List<List<TenantIdentifier>> uniqueUserPoolIdsTenants = StorageLayer.getTenantsWithUniqueUserPoolId(process.getProcess());
-        Cronjobs.addCronjob(process.getProcess(), LoadOnlyCUDTest.PerAppCronjob.getInstance(process.getProcess(), uniqueUserPoolIdsTenants));
+        List<List<TenantIdentifier>> uniqueUserPoolIdsTenants = StorageLayer.getTenantsWithUniqueUserPoolId(
+                process.getProcess());
+        Cronjobs.addCronjob(process.getProcess(),
+                LoadOnlyCUDTest.PerAppCronjob.getInstance(process.getProcess(), uniqueUserPoolIdsTenants));
 
         Thread.sleep(3000);
-        Set<AppIdentifier> appIdentifiersFromCron = PerAppCronjob.getInstance(process.getProcess(), uniqueUserPoolIdsTenants).appIdentifiers;
+        Set<AppIdentifier> appIdentifiersFromCron = PerAppCronjob.getInstance(process.getProcess(),
+                uniqueUserPoolIdsTenants).appIdentifiers;
         assertEquals(2, appIdentifiersFromCron.size());
         for (AppIdentifier app : appIdentifiersFromCron) {
             assertNotEquals("localhost.org", app.getConnectionUriDomain());
@@ -256,10 +259,12 @@ public class LoadOnlyCUDTest {
 
         public static LoadOnlyCUDTest.PerAppCronjob getInstance(Main main, List<List<TenantIdentifier>> tenantsInfo) {
             try {
-                return (LoadOnlyCUDTest.PerAppCronjob) main.getResourceDistributor().getResource(new TenantIdentifier(null, null, null), RESOURCE_ID);
+                return (LoadOnlyCUDTest.PerAppCronjob) main.getResourceDistributor()
+                        .getResource(new TenantIdentifier(null, null, null), RESOURCE_ID);
             } catch (TenantOrAppNotFoundException e) {
                 return (LoadOnlyCUDTest.PerAppCronjob) main.getResourceDistributor()
-                        .setResource(new TenantIdentifier(null, null, null), RESOURCE_ID, new LoadOnlyCUDTest.PerAppCronjob(main, tenantsInfo));
+                        .setResource(new TenantIdentifier(null, null, null), RESOURCE_ID,
+                                new LoadOnlyCUDTest.PerAppCronjob(main, tenantsInfo));
             }
         }
 

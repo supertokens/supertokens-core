@@ -72,7 +72,7 @@ public class VersionTest {
 
     @Test
     public void testVerifySessionAcrossVersions() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -107,7 +107,8 @@ public class VersionTest {
                 { // Session verify
                     // Should be verified as is without the need for refresh
                     JsonObject request = new JsonObject();
-                    request.addProperty("accessToken", sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString());
+                    request.addProperty("accessToken",
+                            sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString());
                     request.addProperty("doAntiCsrfCheck", true);
                     request.addProperty("enableAntiCsrf", false);
                     request.addProperty("checkDatabase", false);
@@ -118,12 +119,17 @@ public class VersionTest {
                     junit.framework.TestCase.assertEquals(response.get("status").getAsString(), "OK");
 
                     assertNotNull(response.get("session").getAsJsonObject().get("handle").getAsString());
-                    junit.framework.TestCase.assertEquals(response.get("session").getAsJsonObject().get("userId").getAsString(), userId);
-                    junit.framework.TestCase.assertEquals(response.get("session").getAsJsonObject().get("userDataInJWT").getAsJsonObject(), userDataInJWT);
+                    junit.framework.TestCase.assertEquals(
+                            response.get("session").getAsJsonObject().get("userId").getAsString(), userId);
+                    junit.framework.TestCase.assertEquals(
+                            response.get("session").getAsJsonObject().get("userDataInJWT").getAsJsonObject(),
+                            userDataInJWT);
                     if (getCDIVersionForAccessTokenVersion(updateVersion).lesserThan(SemVer.v3_0)) {
-                        junit.framework.TestCase.assertEquals(response.get("session").getAsJsonObject().entrySet().size(), 3);
+                        junit.framework.TestCase.assertEquals(
+                                response.get("session").getAsJsonObject().entrySet().size(), 3);
                     } else {
-                        junit.framework.TestCase.assertEquals(response.get("session").getAsJsonObject().entrySet().size(), 4);
+                        junit.framework.TestCase.assertEquals(
+                                response.get("session").getAsJsonObject().entrySet().size(), 4);
                     }
                 }
             }
@@ -135,7 +141,7 @@ public class VersionTest {
 
     @Test
     public void testRegenerateAcrossVersions() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -167,20 +173,26 @@ public class VersionTest {
                     newUserDataInJWT.addProperty("key2", "value2");
                     newUserDataInJWT.add("nullProp", JsonNull.INSTANCE);
                     JsonObject sessionRegenerateRequest = new JsonObject();
-                    sessionRegenerateRequest.addProperty("accessToken", sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString());
+                    sessionRegenerateRequest.addProperty("accessToken",
+                            sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString());
                     sessionRegenerateRequest.add("userDataInJWT", newUserDataInJWT);
 
                     String accessToken = sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString();
 
-                    AccessToken.AccessTokenInfo accessTokenInfoBefore = AccessToken.getInfoFromAccessToken(process.getProcess(),
+                    AccessToken.AccessTokenInfo accessTokenInfoBefore = AccessToken.getInfoFromAccessToken(
+                            process.getProcess(),
                             accessToken, false);
 
-                    JsonObject sessionRegenerateResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                            "http://localhost:3567/recipe/session/regenerate", sessionRegenerateRequest, 1000, 1000, null,
+                    JsonObject sessionRegenerateResponse = HttpRequestForTesting.sendJsonPOSTRequest(
+                            process.getProcess(), "",
+                            "http://localhost:3567/recipe/session/regenerate", sessionRegenerateRequest, 1000, 1000,
+                            null,
                             getCDIVersionForAccessTokenVersion(updateVersion).get(), "session");
 
-                    AccessToken.AccessTokenInfo accessTokenInfoAfter = AccessToken.getInfoFromAccessToken(process.getProcess(),
-                            sessionRegenerateResponse.get("accessToken").getAsJsonObject().get("token").getAsString(), false);
+                    AccessToken.AccessTokenInfo accessTokenInfoAfter = AccessToken.getInfoFromAccessToken(
+                            process.getProcess(),
+                            sessionRegenerateResponse.get("accessToken").getAsJsonObject().get("token").getAsString(),
+                            false);
 
                     assertEquals(accessTokenInfoBefore.version, accessTokenInfoAfter.version);
                 }
@@ -193,7 +205,7 @@ public class VersionTest {
 
     @Test
     public void testSessionRefreshAcrossVersions() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -222,17 +234,21 @@ public class VersionTest {
                 { // Session regenerate
                     // Should not update the version
                     JsonObject sessionRefreshRequest = new JsonObject();
-                    sessionRefreshRequest.addProperty("refreshToken", sessionInfo.get("refreshToken").getAsJsonObject().get("token").getAsString());
+                    sessionRefreshRequest.addProperty("refreshToken",
+                            sessionInfo.get("refreshToken").getAsJsonObject().get("token").getAsString());
                     sessionRefreshRequest.addProperty("enableAntiCsrf", false);
 
                     String accessToken = sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString();
 
-                    JsonObject sessionRefreshResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    JsonObject sessionRefreshResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(),
+                            "",
                             "http://localhost:3567/recipe/session/refresh", sessionRefreshRequest, 1000, 1000, null,
                             getCDIVersionForAccessTokenVersion(updateVersion).get(), "session");
 
-                    AccessToken.AccessTokenInfo accessTokenInfoAfter = AccessToken.getInfoFromAccessToken(process.getProcess(),
-                            sessionRefreshResponse.get("accessToken").getAsJsonObject().get("token").getAsString(), false);
+                    AccessToken.AccessTokenInfo accessTokenInfoAfter = AccessToken.getInfoFromAccessToken(
+                            process.getProcess(),
+                            sessionRefreshResponse.get("accessToken").getAsJsonObject().get("token").getAsString(),
+                            false);
 
                     assertEquals(AccessToken.getVersionFromString(updateVersion), accessTokenInfoAfter.version);
                 }
@@ -245,7 +261,7 @@ public class VersionTest {
 
     @Test
     public void testUpdateSessionDataAcrossVersions() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -276,7 +292,8 @@ public class VersionTest {
                     newUserDataInDatabase.addProperty("key2", "value2");
 
                     JsonObject putRequestBody = new JsonObject();
-                    putRequestBody.addProperty("sessionHandle", sessionInfo.get("session").getAsJsonObject().get("handle").getAsString());
+                    putRequestBody.addProperty("sessionHandle",
+                            sessionInfo.get("session").getAsJsonObject().get("handle").getAsString());
                     putRequestBody.add("userDataInDatabase", newUserDataInDatabase);
 
                     JsonObject sessionDataResponse = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
@@ -285,7 +302,8 @@ public class VersionTest {
 
                     assertEquals("OK", sessionDataResponse.get("status").getAsString());
 
-                    JsonObject newSessionInfo = getSession(process.getProcess(), updateVersion, sessionInfo.get("session").getAsJsonObject().get("handle").getAsString());
+                    JsonObject newSessionInfo = getSession(process.getProcess(), updateVersion,
+                            sessionInfo.get("session").getAsJsonObject().get("handle").getAsString());
                     assertEquals(newUserDataInDatabase, newSessionInfo.get("userDataInDatabase").getAsJsonObject());
                 }
             }
@@ -297,7 +315,7 @@ public class VersionTest {
 
     @Test
     public void testUpdateJWTDataAcrossVersions() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -328,7 +346,8 @@ public class VersionTest {
                     newUserDataInDatabase.addProperty("key2", "value2");
 
                     JsonObject putRequestBody = new JsonObject();
-                    putRequestBody.addProperty("sessionHandle", sessionInfo.get("session").getAsJsonObject().get("handle").getAsString());
+                    putRequestBody.addProperty("sessionHandle",
+                            sessionInfo.get("session").getAsJsonObject().get("handle").getAsString());
                     putRequestBody.add("userDataInJWT", newUserDataInDatabase);
 
                     JsonObject sessionDataResponse = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
@@ -337,7 +356,8 @@ public class VersionTest {
 
                     assertEquals("OK", sessionDataResponse.get("status").getAsString());
 
-                    JsonObject newSessionInfo = getSession(process.getProcess(), updateVersion, sessionInfo.get("session").getAsJsonObject().get("handle").getAsString());
+                    JsonObject newSessionInfo = getSession(process.getProcess(), updateVersion,
+                            sessionInfo.get("session").getAsJsonObject().get("handle").getAsString());
                     assertEquals(newUserDataInDatabase, newSessionInfo.get("userDataInJWT").getAsJsonObject());
                 }
             }

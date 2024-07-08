@@ -60,7 +60,7 @@ public class GetTenantCoreConfigForDashboardAPITest {
 
     @Test
     public void testRetrievingConfigProperties() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -77,7 +77,8 @@ public class GetTenantCoreConfigForDashboardAPITest {
         JsonArray result = response.get("config").getAsJsonArray();
 
         try {
-            String[] fields = new String[]{"key", "valueType", "value", "description", "isDifferentAcrossTenants", "possibleValues", "isNullable", "defaultValue", "isPluginProperty", "isPluginPropertyEditable"};
+            String[] fields = new String[]{"key", "valueType", "value", "description", "isDifferentAcrossTenants",
+                    "possibleValues", "isNullable", "defaultValue", "isPluginProperty", "isPluginPropertyEditable"};
 
             for (int i = 0; i < result.size(); i++) {
                 JsonObject config = result.get(i).getAsJsonObject();
@@ -112,7 +113,7 @@ public class GetTenantCoreConfigForDashboardAPITest {
 
     @Test
     public void testMatchConfigPropertiesDescription() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -122,8 +123,8 @@ public class GetTenantCoreConfigForDashboardAPITest {
         // we don't have a description for core_config_version
         // and webserver_https_enabled is not present in the config.yaml file
         // so we skip these properties.
-        String[] ignoredProperties = { "access_token_signing_key_update_interval", "core_config_version",
-                "webserver_https_enabled" };
+        String[] ignoredProperties = {"access_token_signing_key_update_interval", "core_config_version",
+                "webserver_https_enabled"};
 
         // Match the descriptions in the config.yaml file with the descriptions in the
         // CoreConfig class

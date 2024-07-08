@@ -33,6 +33,7 @@ import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 public class ApiVersionAPI extends WebserverAPI {
@@ -76,7 +77,8 @@ public class ApiVersionAPI extends WebserverAPI {
             try {
                 Multitenancy.saveWebsiteAndAPIDomainForApp(storage, appIdentifier, websiteDomain, apiDomain);
             } catch (Exception e) {
-                Logging.warn(main, appIdentifier.getAsPublicTenantIdentifier(), "Error while saving website/API domain: " + e.toString());
+                Logging.warn(main, appIdentifier.getAsPublicTenantIdentifier(),
+                        "Error while saving website/API domain: " + e.toString());
             }
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);

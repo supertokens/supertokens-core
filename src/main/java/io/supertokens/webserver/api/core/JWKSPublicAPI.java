@@ -69,7 +69,7 @@ public class JWKSPublicAPI extends WebserverAPI {
             resp.setHeader("Cache-Control", "max-age=" + signingKeys.getCacheDurationInSeconds() + ", must-revalidate");
             super.sendJsonResponse(200, reply, resp);
         } catch (StorageQueryException | StorageTransactionLogicException | NoSuchAlgorithmException
-                | InvalidKeySpecException | TenantOrAppNotFoundException | UnsupportedJWTSigningAlgorithmException e) {
+                 | InvalidKeySpecException | TenantOrAppNotFoundException | UnsupportedJWTSigningAlgorithmException e) {
             throw new ServletException(e);
         }
     }

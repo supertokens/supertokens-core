@@ -38,7 +38,7 @@ public class DeleteLicenseKeyAPITest {
 
     @Test
     public void testDeletingLicenseKeyWhenItIsNotSet() throws Exception {
-        String[] args = { "../../" };
+        String[] args = {"../../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         Assert.assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -69,7 +69,7 @@ public class DeleteLicenseKeyAPITest {
 
     @Test
     public void testDeletingLicenseKey() throws Exception {
-        String[] args = { "../../" };
+        String[] args = {"../../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         Assert.assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
