@@ -512,12 +512,12 @@ public class TestTenantCreationBehaviour {
         Gson gson = new Gson();
 
         String[] testFiles = new String[]{
-                "test-data/tenant-cdi-test-cases_1.json",
-                "test-data/tenant-cdi-test-cases_2.json",
-                "test-data/tenant-cdi-test-cases_3.json",
-                "test-data/tenant-cdi-test-cases_4.json",
-                "test-data/tenant-cdi-test-cases_5.json",
-                "test-data/tenant-cdi-test-cases_6.json",
+                "test-data/tenant-cdi-test-cases_1.jsonl",
+                "test-data/tenant-cdi-test-cases_2.jsonl",
+                "test-data/tenant-cdi-test-cases_3.jsonl",
+                "test-data/tenant-cdi-test-cases_4.jsonl",
+                "test-data/tenant-cdi-test-cases_5.jsonl",
+                "test-data/tenant-cdi-test-cases_6.jsonl",
         };
 
         int c = 0;
@@ -525,6 +525,9 @@ public class TestTenantCreationBehaviour {
             try (BufferedReader reader = new BufferedReader(new FileReader(testFile))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
+                    if (line.trim().isEmpty()) {
+                        continue;
+                    }
                     c++;
 
                     JsonObject jsonObject = gson.fromJson(line, JsonObject.class);
@@ -599,6 +602,8 @@ public class TestTenantCreationBehaviour {
                         throw e;
                     }
                 }
+            } catch (Exception e) {
+                throw e;
             }
         }
 
