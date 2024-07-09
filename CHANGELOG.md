@@ -48,6 +48,24 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Adds correct `max-age` for `JWKSPublicAPI` based on dynamic key generation interval.
 - Fixes `500` error when using TOTP code longer than 8 characters.
 
+### Migration
+
+Make sure the core is already upgraded to version 9.0.2 before migrating
+
+If using PostgreSQL
+
+```sql
+ALTER TABLE tenant_configs ADD COLUMN IF NOT EXISTS is_first_factors_null BOOLEAN DEFAULT TRUE;
+ALTER TABLE tenant_configs ALTER COLUMN is_first_factors_null DROP DEFAULT;
+```
+
+If using MySQL
+
+```sql
+ALTER TABLE tenant_configs ADD COLUMN is_first_factors_null BOOLEAN DEFAULT TRUE;
+ALTER TABLE tenant_configs ALTER COLUMN is_first_factors_null DROP DEFAULT;
+```
+
 ## [9.0.2] - 2024-04-17
 
 - Fixes issue with core startup when creation of CUD/app/tenant has partial failure
