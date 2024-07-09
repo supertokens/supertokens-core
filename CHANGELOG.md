@@ -15,26 +15,62 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [9.1.0] - 2024-05-24
 
-- Adds new core API for fetching all the core properties for a tenant
-    - GET `/appid-<appid>/<tenantid>/recipe/dashboard/tenant/core-config`
-- Deprecated the following APIs
-    - PUT `/recipe/multitenancy/connectionuridomain`
-    - GET `/recipe/multitenancy/connectionuridomain/list`
-    - PUT `/recipe/multitenancy/app`
-    - GET `/recipe/multitenancy/app/list`
-    - PUT `/appid-<appid>/recipe/multitenancy/tenant`
-    - GET `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant`
-    - GET `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant/list`
-- Adds the following APIs to replace the deprecated APIs
-    - PUT `/recipe/multitenancy/connectionuridomain/v2`
-    - GET `/recipe/multitenancy/connectionuridomain/list/v2`
-    - PUT `/recipe/multitenancy/app/v2`
-    - GET `/recipe/multitenancy/app/list/v2`
-    - PUT `/appid-<appid>/recipe/multitenancy/tenant/v2`
-    - GET `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant/v2`
-    - GET `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant/list/v2`
-- Backward compatible recipe enabled boolean computations based
-  on - https://github.com/supertokens/supertokens-core/issues/979#issuecomment-2099971371
+### Changes
+
+- Adds support for CDI 3.1 and 5.1
+- Adds annotations to properties `CoreConfig` to aid dashboard API.
+- Updates `ApiVersionAPI` to optionally accept `websiteDomain` and `apiDomain` for telemetry.
+- Adds GET `/recipe/dashboard/tenant/core-config` to fetch the core properties with metadata for dashboard.
+- Reports `websiteDomain` and `apiDomain` for each app in telemetry.
+- API Key can now be passed using the `Authorization` header: `Authorization: <api-key>`
+
+### Breaking changes
+
+- CUD/App/Tenant Management APIs are deprecated and v2 versions have been added
+  - Adds new core API for fetching all the core properties for a tenant
+      - GET `/appid-<appid>/<tenantid>/recipe/dashboard/tenant/core-config`
+  - Deprecated the following APIs
+      - PUT `/recipe/multitenancy/connectionuridomain`
+      - GET `/recipe/multitenancy/connectionuridomain/list`
+      - PUT `/recipe/multitenancy/app`
+      - GET `/recipe/multitenancy/app/list`
+      - PUT `/appid-<appid>/recipe/multitenancy/tenant`
+      - GET `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant`
+      - GET `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant/list`
+  - Adds the following APIs to replace the deprecated APIs
+      - PUT `/recipe/multitenancy/connectionuridomain/v2`
+      - GET `/recipe/multitenancy/connectionuridomain/list/v2`
+      - PUT `/recipe/multitenancy/app/v2`
+      - GET `/recipe/multitenancy/app/list/v2`
+      - PUT `/appid-<appid>/recipe/multitenancy/tenant/v2`
+      - GET `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant/v2`
+      - GET `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant/list/v2`
+
+- In CDI 5.1, the auth recipe APIs such as emailpassword signIn, thirdParty signInUp, etc would not be blocked if the recipe was disabled using the deprecated APIs. They will be enforced if CDI version <= 5.0 is being passed in the header.
+
+### Fixes
+
+- Updates descriptions in the config.yaml to be consistent with the annotations.
+- Adds correct `max-age` for `JWKSPublicAPI` based on dynamic key generation interval.
+- Fixes `500` error when using TOTP code longer than 8 characters.
+
+### Migration
+
+Make sure the core is already upgraded to version 9.0.2 before migrating
+
+If using PostgreSQL
+
+```sql
+ALTER TABLE tenant_configs ADD COLUMN IF NOT EXISTS is_first_factors_null BOOLEAN DEFAULT TRUE;
+ALTER TABLE tenant_configs ALTER COLUMN is_first_factors_null DROP DEFAULT;
+```
+
+If using MySQL
+
+```sql
+ALTER TABLE tenant_configs ADD COLUMN is_first_factors_null BOOLEAN DEFAULT TRUE;
+ALTER TABLE tenant_configs ALTER COLUMN is_first_factors_null DROP DEFAULT;
+```
 
 ## [9.0.2] - 2024-04-17
 
