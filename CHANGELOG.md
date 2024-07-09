@@ -16,6 +16,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Updates `ApiVersionAPI` to optionally accept `websiteDomain` and `apiDomain` for telemetry.
 - Adds GET `/recipe/dashboard/tenant/core-config` to fetch the core properties with metadata for dashboard.
 - Reports `websiteDomain` and `apiDomain` for each app in telemetry.
+- API Key can now be passed using the `Authorization` header: `Authorization: <api-key>`
 
 ### Breaking changes
 
