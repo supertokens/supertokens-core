@@ -319,11 +319,17 @@ public class CoreConfig {
         return validFields;
     }
 
-    public String getOAuthProviderPublicServiceUrl() {
+    public String getOAuthProviderPublicServiceUrl() throws InvalidConfigException {
+        if (oauth_provider_public_service_url == null) {
+            throw new InvalidConfigException("oauth_provider_public_service_url is not set");
+        }
         return oauth_provider_public_service_url;
     }
 
-    public String getOAuthProviderAdminServiceUrl() {
+    public String getOAuthProviderAdminServiceUrl() throws InvalidConfigException {
+        if (oauth_provider_admin_service_url == null) {
+            throw new InvalidConfigException("oauth_provider_public_service_url is not set");
+        }
         return oauth_provider_admin_service_url;
     }
 

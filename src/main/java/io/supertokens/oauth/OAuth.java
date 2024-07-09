@@ -16,12 +16,40 @@
 
 package io.supertokens.oauth;
 
+import io.supertokens.Main;
+import io.supertokens.config.Config;
+import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.StorageUtils;
+import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.oauth.OAuthStorage;
+
 public class OAuth {
 
-    public static void authorization() {
+    public static void getAuthorizationUrl(Main main, AppIdentifier appIdentifier, Storage storage, String clientId,
+                                           String redirectURI, String responseType, String scope, String state)
+            throws InvalidConfigException {
         // TODO:
-        // if redirectTo has localhost:3000, it means we are going to apiDomain
-        // else if it is taking to localhost:4444, then its some error with the input like client_id is wrong
-        // else it is back to the client.
+        // - validate that client_id is present for this tenant
+        // - call hydra
+        // - if location header is:
+        //     - localhost:3000, then we redirect to apiDomain
+        //     - public url for hydra, then we throw a 400 error with the right json
+        //     - else we redirect back to the client
+
+        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+
+        String redirectTo = null;
+
+        if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientId)) {
+            redirectTo = Config.getBaseConfig(main).getOAuthProviderPublicServiceUrl() +
+                    "/oauth2/fallbacks/error?error=invalid_client&error_description=Client+authentication+failed+%28e" +
+                    ".g.%2C+unknown+client%2C+no+client+authentication+included%2C+or+unsupported+authentication" +
+                    "+method%29.+The+requested+OAuth+2.0+Client+does+not+exist.";
+        } else {
+            // we query hydra
+        }
+
+        // TODO: parse url resposne and send appropriate reply from this API.
     }
 }
