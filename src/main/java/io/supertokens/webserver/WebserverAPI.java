@@ -72,6 +72,7 @@ public abstract class WebserverAPI extends HttpServlet {
         supportedVersions.add(SemVer.v2_20);
         supportedVersions.add(SemVer.v2_21);
         supportedVersions.add(SemVer.v3_0);
+        supportedVersions.add(SemVer.v3_1);
         supportedVersions.add(SemVer.v4_0);
         supportedVersions.add(SemVer.v5_0);
         supportedVersions.add(SemVer.v5_1);
