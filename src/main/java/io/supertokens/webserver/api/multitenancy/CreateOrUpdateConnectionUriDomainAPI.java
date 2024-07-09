@@ -63,8 +63,8 @@ public class CreateOrUpdateConnectionUriDomainAPI extends BaseCreateOrUpdate {
         }
 
         super.handle(
-                req, sourceTenantIdentifier,
-                new TenantIdentifier(connectionUriDomain, null, null), input, resp);
+                req, resp, sourceTenantIdentifier,
+                new TenantIdentifier(connectionUriDomain, null, null), input, false);
 
     }
 }

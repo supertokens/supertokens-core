@@ -116,7 +116,7 @@ public class TestApp5_1 {
                     JsonObject tenantObj = tenant.getAsJsonObject();
                     assertEquals(4, tenantObj.entrySet().size());
                     assertEquals("public", tenantObj.get("tenantId").getAsString());
-                    assertEquals(0, tenantObj.get("thirdParty").getAsJsonObject().entrySet().size());
+                    assertEquals(1, tenantObj.get("thirdParty").getAsJsonObject().entrySet().size());
                     assertEquals(3, tenantObj.get("firstFactors").getAsJsonArray().size());
                     assertEquals(coreConfig, tenantObj.get("coreConfig").getAsJsonObject());
                 }
@@ -170,7 +170,7 @@ public class TestApp5_1 {
                     JsonObject tenantObj = tenant.getAsJsonObject();
                     assertEquals(4, tenantObj.entrySet().size());
                     assertEquals("public", tenantObj.get("tenantId").getAsString());
-                    assertEquals(0, tenantObj.get("thirdParty").getAsJsonObject().entrySet().size());
+                    assertEquals(1, tenantObj.get("thirdParty").getAsJsonObject().entrySet().size());
                     assertEquals(3, tenantObj.get("firstFactors").getAsJsonArray().size());
                     assertEquals(coreConfig, tenantObj.get("coreConfig").getAsJsonObject());
                 }

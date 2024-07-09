@@ -62,10 +62,10 @@ public class CreateOrUpdateTenantOrGetTenantAPI extends BaseCreateOrUpdate {
         }
 
         super.handle(
-                req, sourceTenantIdentifier,
+                req, resp, sourceTenantIdentifier,
                 new TenantIdentifier(sourceTenantIdentifier.getConnectionUriDomain(), sourceTenantIdentifier.getAppId(),
                         tenantId),
-                input, resp);
+                input, false);
     }
 
     @Override
@@ -79,7 +79,8 @@ public class CreateOrUpdateTenantOrGetTenantAPI extends BaseCreateOrUpdate {
             boolean shouldProtect = shouldProtectProtectedConfig(req);
             JsonObject result;
             if (getVersionFromRequest(req).lesserThan(SemVer.v5_0)) {
-                result = config.toJson3_0(shouldProtect, getTenantStorage(req), CoreConfig.PROTECTED_CONFIGS);
+                result = config.toJsonLesserThanOrEqualTo4_0(shouldProtect, getTenantStorage(req),
+                        CoreConfig.PROTECTED_CONFIGS);
             } else {
                 result = config.toJson5_0(shouldProtect, getTenantStorage(req), CoreConfig.PROTECTED_CONFIGS);
             }

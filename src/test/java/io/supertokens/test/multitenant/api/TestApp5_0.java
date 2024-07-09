@@ -954,7 +954,7 @@ public class TestApp5_0 {
                 createApp(
                         process.getProcess(),
                         new TenantIdentifier(null, null, null),
-                        "a1", null, null, null,
+                        "a1", false, null, null,
                         true, factors, false, null,
                         config);
                 fail();
@@ -998,7 +998,7 @@ public class TestApp5_0 {
                 createApp(
                         process.getProcess(),
                         new TenantIdentifier(null, null, null),
-                        "a1", null, null, null,
+                        "a1", null, null, false,
                         true, factors, false, null,
                         config);
                 fail();
@@ -1042,7 +1042,7 @@ public class TestApp5_0 {
                 createApp(
                         process.getProcess(),
                         new TenantIdentifier(null, null, null),
-                        "a1", null, null, null,
+                        "a1", null, false, null,
                         true, factors, false, null,
                         config);
                 fail();
@@ -1122,7 +1122,7 @@ public class TestApp5_0 {
                 createApp(
                         process.getProcess(),
                         new TenantIdentifier(null, null, null),
-                        "a1", null, null, null,
+                        "a1", false, null, null,
                         false, null, true, factors,
                         config);
                 fail();
@@ -1166,7 +1166,7 @@ public class TestApp5_0 {
                 createApp(
                         process.getProcess(),
                         new TenantIdentifier(null, null, null),
-                        "a1", null, null, null,
+                        "a1", null, null, false,
                         false, null, true, factors,
                         config);
                 fail();
@@ -1210,7 +1210,7 @@ public class TestApp5_0 {
                 createApp(
                         process.getProcess(),
                         new TenantIdentifier(null, null, null),
-                        "a1", null, null, null,
+                        "a1", null, false, null,
                         false, null, true, factors,
                         config);
                 fail();

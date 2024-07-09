@@ -172,6 +172,12 @@ public class VerifyTotpDeviceAPITest {
 
             Thread.sleep(1100);
 
+            // test totp of more than length 8:
+            body.addProperty("totp", "123456781234");
+            requestWithInvalidCode(process, body);
+
+            Thread.sleep(1100);
+
             // test totp of length alphabets:
             body.addProperty("totp", "abcd");
             requestWithInvalidCode(process, body);

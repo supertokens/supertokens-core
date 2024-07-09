@@ -27,7 +27,6 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -96,7 +95,7 @@ public class ListConnectionUriDomainsV2API extends WebserverAPI {
                     appObject.addProperty("appId", appId);
                     JsonArray tenantsArray = new JsonArray();
                     for (TenantConfig tenantConfig : entry2.getValue()) {
-                        JsonObject tenantConfigJson = tenantConfig.toJson_v2(shouldProtect, storage,
+                        JsonObject tenantConfigJson = tenantConfig.toJson_v2_5_1(shouldProtect, storage,
                                 CoreConfig.PROTECTED_CONFIGS);
 
                         tenantsArray.add(tenantConfigJson);

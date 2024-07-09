@@ -480,7 +480,7 @@ public class TestTenant5_0 {
         JsonObject response = createTenant(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "t1", null, null, null,
+                "t1", true, true, true,
                 config);
 
         assertTrue(response.get("createdNew").getAsBoolean());
@@ -495,7 +495,7 @@ public class TestTenant5_0 {
         response = createTenant(
                 process.getProcess(),
                 new TenantIdentifier(null, null, null),
-                "t1", null, null, true,
+                "t1", null, null, null,
                 false, null, true, new String[]{"otp-phone"},
                 config);
         assertFalse(response.get("createdNew").getAsBoolean());

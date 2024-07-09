@@ -1,0 +1,91 @@
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    padding: 2rem;
+}
+
+code {
+    font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+.row {
+    display: flex;
+    justify-content: space-between;
+}
+
+.row > div {
+    width: 32%;
+}
+
+textarea {
+    display: block;
+    width: 100%;
+    height: 10rem;
+}
+
+button {
+    background-color: white;
+    color: black;
+    border: 2px solid #008CBA;
+    padding: 0.5rem 1rem;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;
+    transition-duration: 0.2s;
+    border-radius: 4px;
+}
+
+button:hover {
+    border: 2px solid #008CBA;
+    background-color: #008CBA; /* Blue */
+    color: white;
+}
+
+button:active {
+    transform: translateY(2px);
+}
+
+span.clickable {
+    cursor: pointer;
+    color: #008CBA;
+    display: inline-block;
+    margin-left: 0.25rem;
+    padding: 0.1rem 0.25rem;
+    border: #008CBA 1px solid;
+    border-radius: 4px;
+    transition: all 0.2s;
+    font-size: 0.85rem;
+}
+
+span.clickable:hover {
+    background-color: #008CBA;
+    color: #eee;
+}
+
+span.clickable:active {
+    transform: translateY(2px);
+}
+
+.shortcuts {
+}
+
+.shortcuts p {
+    font-size: 0.85rem;
+    margin: 0.25rem 0;
+}
+
+pre {
+    white-space: pre-wrap;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+    font-size: 0.85rem;
+}

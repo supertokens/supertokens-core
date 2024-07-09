@@ -138,7 +138,7 @@ public class SigningKeys extends ResourceDistributor.SingletonResource {
                 // or if we should generate a key we can use after dynamicSigningKeyOverlapMS
                 System.currentTimeMillis() +
                         AccessTokenSigningKey.getInstance(appIdentifier, main).getDynamicSigningKeyOverlapMS() >
-                        res.get(0).createdAtTime + config.getAccessTokenDynamicSigningKeyUpdateInterval()
+                        res.get(0).createdAtTime + config.getAccessTokenDynamicSigningKeyUpdateIntervalInMillis()
         ) {
             updateKeyCacheIfNotChanged(
                     res.stream().map(Utils::getJWTSigningKeyInfoFromKeyInfo).collect(Collectors.toList()));
@@ -186,7 +186,8 @@ public class SigningKeys extends ResourceDistributor.SingletonResource {
                         AccessTokenSigningKey.getInstance(appIdentifier, main).getDynamicSigningKeyOverlapMS() >
                         System.currentTimeMillis() &&  // the latest isn't old enough
                 System.currentTimeMillis() < dynamicKeys.get(1).createdAtTime +
-                        config.getAccessTokenDynamicSigningKeyUpdateInterval() // the one before can still be used to
+                        config.getAccessTokenDynamicSigningKeyUpdateIntervalInMillis() // the one before can still be
+            // used to
             // sign
         ) {
             return dynamicKeys.get(1);
@@ -195,12 +196,28 @@ public class SigningKeys extends ResourceDistributor.SingletonResource {
         }
     }
 
+    public long getCacheDurationInSeconds()
+            throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException,
+            UnsupportedJWTSigningAlgorithmException {
+        CoreConfig config = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main);
+
+        List<KeyInfo> dynamicKeys = getDynamicKeys();
+        KeyInfo latest = dynamicKeys.get(0);
+
+        long timeLeftForNewKeyCreation = (
+                latest.createdAtTime
+                        + config.getAccessTokenDynamicSigningKeyUpdateIntervalInMillis()
+                        - AccessTokenSigningKey.getInstance(appIdentifier, main).getDynamicSigningKeyOverlapMS()
+                        - System.currentTimeMillis()) / 1000;
+        return Math.max(timeLeftForNewKeyCreation, 1); // minimum 1 second of cache
+    }
+
     public long getDynamicSigningKeyExpiryTime()
             throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException,
             UnsupportedJWTSigningAlgorithmException {
         long createdAtTime = getLatestIssuedDynamicKey().createdAtTime;
         return createdAtTime + Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main)
-                .getAccessTokenDynamicSigningKeyUpdateInterval();
+                .getAccessTokenDynamicSigningKeyUpdateIntervalInMillis();
     }
 
     // This function is synchronized because we only want a single function to clear (and refresh) the key cache.

@@ -243,6 +243,11 @@ public class Totp {
                         invalidOutOfN = 0;
                     }
 
+                    if (code.length() > 8) {
+                        throw new StorageTransactionLogicException(
+                                new InvalidTotpException((int) invalidOutOfN + 1, N));
+                    }
+
                     // Check if the code is valid for any device:
                     boolean isValid = false;
                     TOTPDevice matchingDevice = null;

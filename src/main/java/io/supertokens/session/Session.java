@@ -35,7 +35,9 @@ import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.LoginMethod;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.pluginInterface.multitenancy.*;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantConfig;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.session.noSqlStorage.SessionNoSQLStorage_1;
@@ -398,7 +400,7 @@ public class Session {
                                         accessToken.sessionHandle,
                                         Utils.hashSHA256(accessToken.refreshTokenHash1),
                                         System.currentTimeMillis() +
-                                                config.getRefreshTokenValidity(), sessionInfo.useStaticKey);
+                                                config.getRefreshTokenValidityInMillis(), sessionInfo.useStaticKey);
                             }
                             sessionStorage.commitTransaction(con);
 
@@ -475,7 +477,7 @@ public class Session {
                             boolean success = sessionStorage.updateSessionInfo_Transaction(accessToken.sessionHandle,
                                     Utils.hashSHA256(accessToken.refreshTokenHash1),
                                     System.currentTimeMillis() + Config.getConfig(tenantIdentifier, main)
-                                            .getRefreshTokenValidity(),
+                                            .getRefreshTokenValidityInMillis(),
                                     sessionInfo.lastUpdatedSign, sessionInfo.useStaticKey);
                             if (!success) {
                                 continue;
@@ -635,7 +637,8 @@ public class Session {
                                 .equals(sessionInfo.refreshTokenHash2))) {
                             sessionStorage.updateSessionInfo_Transaction(tenantIdentifier, con, sessionHandle,
                                     Utils.hashSHA256(Utils.hashSHA256(refreshToken)),
-                                    System.currentTimeMillis() + config.getRefreshTokenValidity(), useStaticKey);
+                                    System.currentTimeMillis() + config.getRefreshTokenValidityInMillis(),
+                                    useStaticKey);
 
                             sessionStorage.commitTransaction(con);
 
@@ -735,7 +738,7 @@ public class Session {
                         boolean success = sessionStorage.updateSessionInfo_Transaction(sessionHandle,
                                 Utils.hashSHA256(Utils.hashSHA256(refreshToken)),
                                 System.currentTimeMillis() +
-                                        Config.getConfig(tenantIdentifier, main).getRefreshTokenValidity(),
+                                        Config.getConfig(tenantIdentifier, main).getRefreshTokenValidityInMillis(),
                                 sessionInfo.lastUpdatedSign, useStaticKey);
                         if (!success) {
                             continue;

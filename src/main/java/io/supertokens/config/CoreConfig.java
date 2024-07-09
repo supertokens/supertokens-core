@@ -47,6 +47,16 @@ import java.util.regex.PatternSyntaxException;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CoreConfig {
 
+    // Annotations and their meaning
+    // @ConfigDescription: This is a description of the config field. Note that this description should match with the
+    // description in the config.yaml and devConfig.yaml file.
+    // @EnumProperty: The property has fixed set of values (like an enum)
+    // @ConfigYamlOnly: The property is configurable only from the config.yaml file.
+    // @NotConflictingInApp: The property cannot have different values for tenants within an app
+    // @IgnoreForAnnotationCheck: Set this if the property is neither @ConfigYamlOnly nor @NotConflictingInApp, or should
+    // simply be ignored by the test (if the property is just an internal member and not an exposed config) that checks
+    // for annotations on all properties.
+
     @IgnoreForAnnotationCheck
     public static final String[] PROTECTED_CONFIGS = new String[]{
             "ip_allow_regex",
@@ -394,16 +404,16 @@ public class CoreConfig {
         return core_config_version;
     }
 
-    public long getAccessTokenValidity() {
-        return access_token_validity;
+    public long getAccessTokenValidityInMillis() {
+        return access_token_validity * 1000;
     }
 
     public boolean getAccessTokenBlacklisting() {
         return access_token_blacklisting;
     }
 
-    public long getRefreshTokenValidity() {
-        return (long) (refresh_token_validity);
+    public long getRefreshTokenValidityInMillis() {
+        return (long) (refresh_token_validity * 60 * 1000);
     }
 
     public long getPasswordResetTokenLifetime() {
@@ -449,8 +459,8 @@ public class CoreConfig {
         return access_token_signing_key_dynamic;
     }
 
-    public long getAccessTokenDynamicSigningKeyUpdateInterval() {
-        return (long) (access_token_dynamic_signing_key_update_interval);
+    public long getAccessTokenDynamicSigningKeyUpdateIntervalInMillis() {
+        return (long) (access_token_dynamic_signing_key_update_interval * 3600 * 1000);
     }
 
     public String[] getAPIKeys() {
@@ -790,11 +800,6 @@ public class CoreConfig {
                 throw new InvalidConfigException("supertokens_saas_load_only_cud is invalid");
             }
         }
-
-        access_token_validity = access_token_validity * 1000;
-        access_token_dynamic_signing_key_update_interval = access_token_dynamic_signing_key_update_interval * 3600
-                * 1000;
-        refresh_token_validity = refresh_token_validity * 60 * 1000;
 
         isNormalizedAndValid = true;
     }
