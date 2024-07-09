@@ -9,6 +9,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changes
 
+- Added new feature in license key: `OAUTH`
 - Adds new core config:
     - `oauth_provider_service_url`
 

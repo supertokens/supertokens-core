@@ -262,7 +262,7 @@ public class CoreConfig {
                     " address.")
     private String ip_deny_regex = null;
 
-    @IgnoreForAnnotationCheck
+    @ConfigYamlOnly
     @JsonProperty
     @ConfigDescription(
             "If specified, the core uses this URL to connect to the OAuth provider service.")
@@ -310,6 +310,10 @@ public class CoreConfig {
         // Adding the aliases
         validFields.add("access_token_signing_key_update_interval");
         return validFields;
+    }
+
+    public String getOAuthProviderServiceUrl() {
+        return oauth_provider_service_url;
     }
 
     public String getIpAllowRegex() {
