@@ -20,5 +20,8 @@ public class OAuth {
 
     public static void authorization() {
         // TODO:
+        // if redirectTo has localhost:3000, it means we are going to apiDomain
+        // else if it is taking to localhost:4444, then its some error with the input like client_id is wrong
+        // else it is back to the client.
     }
 }

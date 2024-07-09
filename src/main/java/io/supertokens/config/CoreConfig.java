@@ -51,7 +51,8 @@ public class CoreConfig {
     public static final String[] PROTECTED_CONFIGS = new String[]{
             "ip_allow_regex",
             "ip_deny_regex",
-            "oauth_provider_service_url"
+            "oauth_provider_public_service_url",
+            "oauth_provider_admin_service_url"
     };
 
     @IgnoreForAnnotationCheck
@@ -265,8 +266,14 @@ public class CoreConfig {
     @ConfigYamlOnly
     @JsonProperty
     @ConfigDescription(
-            "If specified, the core uses this URL to connect to the OAuth provider service.")
-    private String oauth_provider_service_url = null;
+            "If specified, the core uses this URL to connect to the OAuth provider public service.")
+    private String oauth_provider_public_service_url = null;
+
+    @ConfigYamlOnly
+    @JsonProperty
+    @ConfigDescription(
+            "If specified, the core uses this URL to connect to the OAuth provider admin service.")
+    private String oauth_provider_admin_service_url = null;
 
     @ConfigYamlOnly
     @JsonProperty
@@ -312,8 +319,12 @@ public class CoreConfig {
         return validFields;
     }
 
-    public String getOAuthProviderServiceUrl() {
-        return oauth_provider_service_url;
+    public String getOAuthProviderPublicServiceUrl() {
+        return oauth_provider_public_service_url;
+    }
+
+    public String getOAuthProviderAdminServiceUrl() {
+        return oauth_provider_admin_service_url;
     }
 
     public String getIpAllowRegex() {
