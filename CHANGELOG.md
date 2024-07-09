@@ -7,6 +7,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+### Changes
+
+- Adds new core config:
+    - `oauth_provider_service_url`
+
 ## [9.1.0] - 2024-05-24
 
 - Adds new core API for fetching all the core properties for a tenant
@@ -85,17 +90,19 @@ Make sure the core is already upgraded to version 8.0.0 before migrating
 If using PostgreSQL
 
 ```sql
-ALTER TABLE totp_user_devices ADD COLUMN IF NOT EXISTS created_at BIGINT default 0;
-ALTER TABLE totp_user_devices 
-  ALTER COLUMN created_at DROP DEFAULT;
+ALTER TABLE totp_user_devices
+    ADD COLUMN IF NOT EXISTS created_at BIGINT default 0;
+ALTER TABLE totp_user_devices
+    ALTER COLUMN created_at DROP DEFAULT;
 ```
 
 If using MySQL
 
 ```sql
-ALTER TABLE totp_user_devices ADD COLUMN created_at BIGINT UNSIGNED default 0;
-ALTER TABLE totp_user_devices 
-  ALTER COLUMN created_at DROP DEFAULT;
+ALTER TABLE totp_user_devices
+    ADD COLUMN created_at BIGINT UNSIGNED default 0;
+ALTER TABLE totp_user_devices
+    ALTER COLUMN created_at DROP DEFAULT;
 DROP INDEX all_auth_recipe_users_pagination_index2 ON all_auth_recipe_users;
 DROP INDEX all_auth_recipe_users_pagination_index4 ON all_auth_recipe_users;
 ```
@@ -147,8 +154,8 @@ For MySQL:
 ALTER TABLE user_roles DROP FOREIGN KEY user_roles_ibfk_1;
 ALTER TABLE user_roles DROP FOREIGN KEY user_roles_ibfk_2;
 ALTER TABLE user_roles
-  ADD FOREIGN KEY (app_id, tenant_id)
-    REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE;
+    ADD FOREIGN KEY (app_id, tenant_id)
+        REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE;
 ```
 
 ## [7.0.18] - 2024-02-19
