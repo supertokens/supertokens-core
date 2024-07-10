@@ -134,6 +134,7 @@ do
           cd ../../
           git clone git@github.com:supertokens/supertokens-root.git
           cd supertokens-root
+          rm gradle.properties
 
           update-alternatives --install "/usr/bin/java" "java" "/usr/java/jdk-15.0.1/bin/java" 2
           update-alternatives --install "/usr/bin/javac" "javac" "/usr/java/jdk-15.0.1/bin/javac" 2
