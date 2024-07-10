@@ -54,8 +54,8 @@ labels:
 - [ ] [supertokens-flutter:X.Y](https://github.com/supertokens/supertokens-flutter/X.Y)
     - [ ] check FDI list
 - [ ] [supertokens-dashboard](https://github.com/supertokens/dashboard)
-    - [ ] Tested all items mentioned in
-      this? https://github.com/supertokens/dashboard/blob/master/.github/PULL_REQUEST_TEMPLATE.md
+    - [ ] Tested all items mentioned in this? https://github.com/supertokens/dashboard/blob/master/.github/PULL_REQUEST_TEMPLATE.md
+    - [ ] Make sure no loop to the core on the frontend or in the backend dashboard apis.
 - [ ]  Test day with team. Get people in the team to read the docs and implement something with the new feature.
 
 ### Others
