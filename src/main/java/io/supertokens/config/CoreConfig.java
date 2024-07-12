@@ -56,6 +56,7 @@ public class CoreConfig {
     // @IgnoreForAnnotationCheck: Set this if the property is neither @ConfigYamlOnly nor @NotConflictingInApp, or should
     // simply be ignored by the test (if the property is just an internal member and not an exposed config) that checks
     // for annotations on all properties.
+    // @HideFromDashboard: The property should not be shown in the dashboard
 
     @IgnoreForAnnotationCheck
     public static final String[] PROTECTED_CONFIGS = new String[]{
