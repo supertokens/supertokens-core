@@ -27,6 +27,7 @@ labels:
         - [ ] check plugin interface list
 - [ ] [supertokens-node:X.Y](https://github.com/supertokens/supertokens-node/tree/X.Y)
     - [ ] check CDI, FDI list
+    - [ ] Make sure all PR checks are passing - specifically example apps checks should all be passing
 - [ ] [supertokens-golang:X.Y](https://github.com/supertokens/supertokens-golang/tree/X.Y)
     - [ ] check CDI, FDI list
 - [ ] [supertokens-python:X.Y](https://github.com/supertokens/supertokens-python/tree/X.Y)
@@ -45,6 +46,7 @@ labels:
     - [ ] Mobile responsiveness
     - [ ] Make sure using with-typescript example that types are correct for every new configs exposed to users
     - [ ] Make sure frontend login UI shows even if backend is not working.
+    - [ ] Make sure all PR checks are passing - specifically example apps checks should all be passing
 - [ ] [supertokens-react-native:X.Y](https://github.com/supertokens/supertokens-react-native/X.Y)
     - [ ] check FDI list
 - [ ] [supertokens-android:X.Y](https://github.com/supertokens/supertokens-android/X.Y)
