@@ -56,6 +56,7 @@ public class CoreConfig {
     // @IgnoreForAnnotationCheck: Set this if the property is neither @ConfigYamlOnly nor @NotConflictingInApp, or should
     // simply be ignored by the test (if the property is just an internal member and not an exposed config) that checks
     // for annotations on all properties.
+    // @HideFromDashboard: The property should not be shown in the dashboard
 
     @IgnoreForAnnotationCheck
     public static final String[] PROTECTED_CONFIGS = new String[]{
@@ -174,6 +175,7 @@ public class CoreConfig {
 
     @NotConflictingInApp
     @JsonProperty
+    @HideFromDashboard
     @ConfigDescription(
             "The API keys to query an instance using this config file. The format is \"key1,key2,key3\". Keys can " +
                     "only contain '=', '-' and alpha-numeric (including capital) chars. Each key must have a minimum " +
@@ -273,6 +275,7 @@ public class CoreConfig {
 
     @ConfigYamlOnly
     @JsonProperty
+    @HideFromDashboard
     @ConfigDescription(
             "This is used when deploying the core in SuperTokens SaaS infrastructure. If set, limits what database " +
                     "information is shown to / modifiable by the dev when they query the core to get the information " +
@@ -282,6 +285,7 @@ public class CoreConfig {
 
     @NotConflictingInApp
     @JsonProperty
+    @HideFromDashboard
     @ConfigDescription(
             "This is used when the core needs to assume a specific CDI version when CDI version is not specified in " +
                     "the request. When set to null, the core will assume the latest version of the CDI. (Default: " +
@@ -857,6 +861,7 @@ public class CoreConfig {
                 // or is annotated with ConfigYamlOnly, then skip
                 if (!field.isAnnotationPresent(JsonProperty.class)
                         || field.isAnnotationPresent(ConfigYamlOnly.class)
+                        || field.isAnnotationPresent(HideFromDashboard.class)
                         || fieldId.equals("core_config_version")) {
                     continue;
                 }
