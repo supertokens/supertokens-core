@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     container: rishabhpoddar/supertokens_core_testing
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v2
       - name: Cloning supertokens-root
         run: cd ../ && git clone https://github.com/supertokens/supertokens-root.git
       - name: Update Java 1
