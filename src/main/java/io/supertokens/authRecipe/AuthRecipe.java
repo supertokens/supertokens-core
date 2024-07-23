@@ -234,12 +234,25 @@ public class AuthRecipe {
         // now we know that the recipe user ID is not a primary user, so we can focus on it's one
         // login method
         assert (recipeUser.loginMethods.length == 1);
-        LoginMethod recipeUserIdLM = recipeUser.loginMethods[0];
-
+        
         Set<String> tenantIds = new HashSet<>();
         tenantIds.addAll(recipeUser.tenantIds);
         tenantIds.addAll(primaryUser.tenantIds);
 
+        checkIfLoginMethodCanBeLinkedOnTenant(con, appIdentifier, authRecipeStorage, tenantIds, recipeUser.loginMethods[0], primaryUser);
+
+        for (LoginMethod currLoginMethod : primaryUser.loginMethods) {
+            checkIfLoginMethodCanBeLinkedOnTenant(con, appIdentifier, authRecipeStorage, tenantIds, currLoginMethod, primaryUser);
+        }
+
+        return new CanLinkAccountsResult(recipeUser.getSupertokensUserId(), primaryUser.getSupertokensUserId(), false);
+    }
+
+    private static void checkIfLoginMethodCanBeLinkedOnTenant(TransactionConnection con, AppIdentifier appIdentifier,
+                                                              AuthRecipeSQLStorage authRecipeStorage,
+                                                              Set<String> tenantIds, LoginMethod currLoginMethod,
+                                                              AuthRecipeUserInfo primaryUser)
+            throws StorageQueryException, AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException {
         // we loop through the union of both the user's tenantIds and check that the criteria for
         // linking accounts is not violated in any of them. We do a union and not an intersection
         // cause if we did an intersection, and that yields that account linking is allowed, it could
@@ -251,17 +264,14 @@ public class AuthRecipe {
         // intersection, we will get an empty set, but if we do a union, we will get both the tenants and
         // do the checks in both.
         for (String tenantId : tenantIds) {
-            TenantIdentifier tenantIdentifier = new TenantIdentifier(
-                    appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(),
-                    tenantId);
             // we do not bother with getting the storage for each tenant here because
             // we get the tenants from the user itself, and the user can only be shared across
             // tenants of the same storage - therefore, the storage will be the same.
 
-            if (recipeUserIdLM.email != null) {
+            if (currLoginMethod.email != null) {
                 AuthRecipeUserInfo[] usersWithSameEmail = authRecipeStorage
                         .listPrimaryUsersByEmail_Transaction(appIdentifier, con,
-                                recipeUserIdLM.email);
+                                currLoginMethod.email);
                 for (AuthRecipeUserInfo user : usersWithSameEmail) {
                     if (!user.tenantIds.contains(tenantId)) {
                         continue;
@@ -274,10 +284,10 @@ public class AuthRecipe {
                 }
             }
 
-            if (recipeUserIdLM.phoneNumber != null) {
+            if (currLoginMethod.phoneNumber != null) {
                 AuthRecipeUserInfo[] usersWithSamePhoneNumber = authRecipeStorage
                         .listPrimaryUsersByPhoneNumber_Transaction(appIdentifier, con,
-                                recipeUserIdLM.phoneNumber);
+                                currLoginMethod.phoneNumber);
                 for (AuthRecipeUserInfo user : usersWithSamePhoneNumber) {
                     if (!user.tenantIds.contains(tenantId)) {
                         continue;
@@ -291,10 +301,10 @@ public class AuthRecipe {
                 }
             }
 
-            if (recipeUserIdLM.thirdParty != null) {
+            if (currLoginMethod.thirdParty != null) {
                 AuthRecipeUserInfo[] usersWithSameThirdParty = authRecipeStorage
                         .listPrimaryUsersByThirdPartyInfo_Transaction(appIdentifier, con,
-                                recipeUserIdLM.thirdParty.id, recipeUserIdLM.thirdParty.userId);
+                                currLoginMethod.thirdParty.id, currLoginMethod.thirdParty.userId);
                 for (AuthRecipeUserInfo userWithSameThirdParty : usersWithSameThirdParty) {
                     if (!userWithSameThirdParty.tenantIds.contains(tenantId)) {
                         continue;
@@ -310,8 +320,6 @@ public class AuthRecipe {
 
             }
         }
-
-        return new CanLinkAccountsResult(recipeUser.getSupertokensUserId(), primaryUser.getSupertokensUserId(), false);
     }
 
     @TestOnly
