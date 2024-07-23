@@ -238,7 +238,7 @@ public class EmailVerificationTest {
             String verifyToken = EmailVerification.generateEmailVerificationToken(process.getProcess(),
                     user.getSupertokensUserId(),
                     user.loginMethods[0].email);
-            assertEquals(verifyToken.length(), 128);
+            assertEquals(128, verifyToken.length());
             assertFalse(verifyToken.contains("+"));
             assertFalse(verifyToken.contains("="));
             assertFalse(verifyToken.contains("/"));
