@@ -518,6 +518,69 @@ public class LinkAccountsTest {
     }
 
     @Test
+    public void linkAccountFailureCauseAccountInfoAssociatedWithAPrimaryUserEvenIfInDifferentTenant2() throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{
+                        EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        Multitenancy.addNewOrUpdateAppOrTenant(process.main, new TenantIdentifier(null, null, null),
+                new TenantConfig(new TenantIdentifier(null, null, "t1"), new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, null), new PasswordlessConfig(true),
+                        null, null, new JsonObject()));
+
+        Multitenancy.addNewOrUpdateAppOrTenant(process.main, new TenantIdentifier(null, null, null),
+                new TenantConfig(new TenantIdentifier(null, null, "t2"), new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, null), new PasswordlessConfig(true),
+                        null, null, new JsonObject()));
+
+        Storage storage = (StorageLayer.getStorage(process.main));
+
+        AuthRecipeUserInfo conflictingUser =
+                EmailPassword.signUp(new TenantIdentifier(null, null, "t2"), storage,
+                        process.getProcess(),
+                        "test@example.com", "password");
+        assert (!conflictingUser.isPrimaryUser);
+        AuthRecipe.createPrimaryUser(process.main, conflictingUser.getSupertokensUserId());
+
+        Thread.sleep(50);
+
+        AuthRecipeUserInfo user1 =
+                EmailPassword.signUp(new TenantIdentifier(null, null, "t1"), storage,
+                        process.getProcess(),
+                        "test@example.com", "password");
+        assert (!user1.isPrimaryUser);
+
+        AuthRecipeUserInfo user2 =
+                EmailPassword.signUp(new TenantIdentifier(null, null, "t2"), storage,
+                        process.getProcess(),
+                        "test2@example.com", "password");
+        assert (!user1.isPrimaryUser);
+
+
+        AuthRecipe.createPrimaryUser(process.main, user1.getSupertokensUserId());
+
+        try {
+            AuthRecipe.linkAccounts(process.main, user2.getSupertokensUserId(),
+                    user1.getSupertokensUserId());
+            assert (false);
+        } catch (AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException e) {
+            assert (e.primaryUserId.equals(conflictingUser.getSupertokensUserId()));
+            assert (e.getMessage().equals("This user's email is already associated with another user ID"));
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
     public void linkAccountSuccessAcrossTenants() throws Exception {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
