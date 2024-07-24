@@ -7,6 +7,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+
+## [9.1.2] - 2024-07-24
+
+### Fixes
+
+- Simplifying email verification token creation
+
 ## [9.1.0] - 2024-05-24
 
 ### Changes
