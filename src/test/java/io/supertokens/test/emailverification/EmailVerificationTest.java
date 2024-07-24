@@ -316,6 +316,36 @@ public class EmailVerificationTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    @Test
+    public void verifyEmailWithOldTokenAfterTokenGenerationChanged() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
+
+        assert (!EmailVerification.isEmailVerified(process.getProcess(), user.getSupertokensUserId(),
+                user.loginMethods[0].email));
+
+        String token = EmailVerification.generateEmailVerificationTokenTheOldWay(process.getProcess(),
+                user.getSupertokensUserId(), user.loginMethods[0].email);
+
+        assert (token != null);
+
+        EmailVerification.verifyEmail(process.getProcess(), token);
+
+        assert (EmailVerification.isEmailVerified(process.getProcess(), user.getSupertokensUserId(),
+                user.loginMethods[0].email));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
     // Verify the email successfully, then unverify and check that its unverified
     @Test
     public void testVerifyingEmailAndThenUnverify() throws Exception {
