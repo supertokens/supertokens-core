@@ -65,6 +65,8 @@ If using PostgreSQL
 ```sql
 ALTER TABLE tenant_configs ADD COLUMN IF NOT EXISTS is_first_factors_null BOOLEAN DEFAULT TRUE;
 ALTER TABLE tenant_configs ALTER COLUMN is_first_factors_null DROP DEFAULT;
+ALTER TABLE tenant_configs ADD COLUMN IF NOT EXISTS is_third_party_providers_null BOOLEAN DEFAULT TRUE;
+ALTER TABLE tenant_configs ALTER COLUMN is_third_party_providers_null DROP DEFAULT;
 ```
 
 If using MySQL
@@ -72,6 +74,8 @@ If using MySQL
 ```sql
 ALTER TABLE tenant_configs ADD COLUMN is_first_factors_null BOOLEAN DEFAULT TRUE;
 ALTER TABLE tenant_configs ALTER COLUMN is_first_factors_null DROP DEFAULT;
+ALTER TABLE tenant_configs ADD COLUMN is_third_party_providers_null BOOLEAN DEFAULT TRUE;
+ALTER TABLE tenant_configs ALTER COLUMN is_third_party_providers_null DROP DEFAULT;
 ```
 
 ## [9.0.2] - 2024-04-17
