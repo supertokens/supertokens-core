@@ -275,14 +275,14 @@ public class CoreConfig {
                     " address.")
     private String ip_deny_regex = null;
 
-    @ConfigYamlOnly
+    @NotConflictingInApp
     @JsonProperty
     @HideFromDashboard
     @ConfigDescription(
             "If specified, the core uses this URL to connect to the OAuth provider public service.")
     private String oauth_provider_public_service_url = null;
 
-    @ConfigYamlOnly
+    @NotConflictingInApp
     @JsonProperty
     @ConfigDescription(
             "If specified, the core uses this URL to connect to the OAuth provider admin service.")
