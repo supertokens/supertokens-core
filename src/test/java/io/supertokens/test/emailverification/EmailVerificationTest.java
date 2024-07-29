@@ -238,7 +238,7 @@ public class EmailVerificationTest {
             String verifyToken = EmailVerification.generateEmailVerificationToken(process.getProcess(),
                     user.getSupertokensUserId(),
                     user.loginMethods[0].email);
-            assertEquals(verifyToken.length(), 128);
+            assertEquals(128, verifyToken.length());
             assertFalse(verifyToken.contains("+"));
             assertFalse(verifyToken.contains("="));
             assertFalse(verifyToken.contains("/"));
@@ -303,6 +303,36 @@ public class EmailVerificationTest {
                 user.loginMethods[0].email));
 
         String token = EmailVerification.generateEmailVerificationToken(process.getProcess(),
+                user.getSupertokensUserId(), user.loginMethods[0].email);
+
+        assert (token != null);
+
+        EmailVerification.verifyEmail(process.getProcess(), token);
+
+        assert (EmailVerification.isEmailVerified(process.getProcess(), user.getSupertokensUserId(),
+                user.loginMethods[0].email));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void verifyEmailWithOldTokenAfterTokenGenerationChanged() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
+
+        assert (!EmailVerification.isEmailVerified(process.getProcess(), user.getSupertokensUserId(),
+                user.loginMethods[0].email));
+
+        String token = EmailVerification.generateEmailVerificationTokenTheOldWay(process.getProcess(),
                 user.getSupertokensUserId(), user.loginMethods[0].email);
 
         assert (token != null);

@@ -27,6 +27,7 @@ labels:
         - [ ] check plugin interface list
 - [ ] [supertokens-node:X.Y](https://github.com/supertokens/supertokens-node/tree/X.Y)
     - [ ] check CDI, FDI list
+    - [ ] Make sure all PR checks are passing - specifically example apps checks should all be passing
 - [ ] [supertokens-golang:X.Y](https://github.com/supertokens/supertokens-golang/tree/X.Y)
     - [ ] check CDI, FDI list
 - [ ] [supertokens-python:X.Y](https://github.com/supertokens/supertokens-python/tree/X.Y)
@@ -45,6 +46,7 @@ labels:
     - [ ] Mobile responsiveness
     - [ ] Make sure using with-typescript example that types are correct for every new configs exposed to users
     - [ ] Make sure frontend login UI shows even if backend is not working.
+    - [ ] Make sure all PR checks are passing - specifically example apps checks should all be passing
 - [ ] [supertokens-react-native:X.Y](https://github.com/supertokens/supertokens-react-native/X.Y)
     - [ ] check FDI list
 - [ ] [supertokens-android:X.Y](https://github.com/supertokens/supertokens-android/X.Y)
@@ -54,8 +56,8 @@ labels:
 - [ ] [supertokens-flutter:X.Y](https://github.com/supertokens/supertokens-flutter/X.Y)
     - [ ] check FDI list
 - [ ] [supertokens-dashboard](https://github.com/supertokens/dashboard)
-    - [ ] Tested all items mentioned in
-      this? https://github.com/supertokens/dashboard/blob/master/.github/PULL_REQUEST_TEMPLATE.md
+    - [ ] Tested all items mentioned in this? https://github.com/supertokens/dashboard/blob/master/.github/PULL_REQUEST_TEMPLATE.md
+    - [ ] Make sure no loop to the core on the frontend or in the backend dashboard apis.
 - [ ]  Test day with team. Get people in the team to read the docs and implement something with the new feature.
 
 ### Others
@@ -185,84 +187,7 @@ labels:
 ### Contents of running try.supertokens.com script:
 
 ```bash
-docker run -d \
-    --restart=always \
-    --name try-supertokens \
-    --label name=try-supertokens \
-    --label type=session-service \
-    --label mode=production \
-    --log-driver=awslogs --log-opt awslogs-region=ap-south-1 --log-opt awslogs-group=try-supertokens --log-opt awslogs-stream=try-supertokens \
-    -e DISABLE_TELEMETRY=true \
-    --publish 9999:3567 \
-    supertokens/supertokens-postgresql:6.0
-
-sleep 7
-
-curl --location --request POST 'https://try.supertokens.com/recipe/dashboard/user' \
---header 'rid: dashboard' \
---header 'api-key: <YOUR-API-KEY>' \
---header 'Content-Type: application/json' \
---data-raw '{"email": "demo@supertokens.com","password": "abcd1234"}'
-
-curl --location --request PUT 'https://try.supertokens.com/recipe/multitenancy/tenant' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "tenantId": "tenant1",
-    "emailPasswordEnabled": true,
-    "thirdPartyEnabled": true,
-    "passwordlessEnabled": false
-}'
-
-curl --location --request PUT 'https://try.supertokens.com/tenant1/recipe/multitenancy/config/thirdparty' \
---header 'Content-Type: application/json' \
---data-raw '{
-  "config": {
-    "thirdPartyId": "google-workspaces",
-    "name": "Google Workspaces",
-    "clients": [
-      {
-        "clientId": "1060725074195-kmeum4crr01uirfl2op9kd5acmi9jutn.apps.googleusercontent.com",
-        "clientSecret": "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",
-        "additionalConfig": {
-            "hd": "*"
-        }
-      }
-    ]
-  }
-}'
-
-
-curl --location --request PUT 'https://try.supertokens.com/recipe/multitenancy/tenant' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "tenantId": "tenant2",
-    "emailPasswordEnabled": true,
-    "thirdPartyEnabled": false,
-    "passwordlessEnabled": false
-}'
-
-curl --location --request PUT 'https://try.supertokens.com/recipe/multitenancy/tenant' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "tenantId": "tenant3",
-    "emailPasswordEnabled": false,
-    "thirdPartyEnabled": true,
-    "passwordlessEnabled": true
-}'
-
-
-curl --location --request PUT 'https://try.supertokens.com/tenant3/recipe/multitenancy/config/thirdparty' \
---header 'Content-Type: application/json' \
---data-raw '{
-  "config": {
-    "thirdPartyId": "github",
-    "name": "GitHub",
-    "clients": [
-      {
-        "clientId": "467101b197249757c71f",
-        "clientSecret": "e97051221f4b6426e8fe8d51486396703012f5bd"
-      }
-    ]
-  }
-}'
+git clone github.com/supertokens/backend
+cd backend/scripts/demo-dashboard
+./addData.sh
 ```

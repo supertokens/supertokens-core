@@ -82,22 +82,11 @@ public class EmailVerification {
         while (true) {
 
             // we first generate a email verification token
-            byte[] random = new byte[64];
-            byte[] salt = new byte[64];
+            byte[] random = new byte[48];
 
             new SecureRandom().nextBytes(random);
-            new SecureRandom().nextBytes(salt);
 
-            int iterations = 1000;
-            String token = Utils
-                    .toHex(Utils.pbkdf2(Utils.bytesToString(random).toCharArray(), salt, iterations, 64 * 6));
-
-            // we make it URL safe:
-            token = Utils.convertToBase64(token);
-            token = token.replace("=", "");
-            token = token.replace("/", "");
-            token = token.replace("+", "");
-
+            String token = Utils.convertToBase64Url(Utils.bytesToString(random));
             String hashedToken = getHashedToken(token);
 
             try {
@@ -232,6 +221,42 @@ public class EmailVerification {
                                      String email) throws StorageQueryException, TenantOrAppNotFoundException {
         StorageUtils.getEmailVerificationStorage(storage)
                 .unverifyEmail(appIdentifier, userId, email);
+    }
+
+    @TestOnly
+    public static String generateEmailVerificationTokenTheOldWay(Main main, String userId, String email)
+            throws NoSuchAlgorithmException, InvalidKeySpecException, StorageQueryException,
+            TenantOrAppNotFoundException {
+        while(true) {
+            // we first generate a email verification token
+            byte[] random = new byte[64];
+            byte[] salt = new byte[64];
+
+            new SecureRandom().nextBytes(random);
+            new SecureRandom().nextBytes(salt);
+
+            int iterations = 1000;
+            String token = io.supertokens.utils.Utils
+                    .toHex(io.supertokens.utils.Utils.pbkdf2(io.supertokens.utils.Utils.bytesToString(random).toCharArray(), salt, iterations, 64 * 6));
+
+            // we make it URL safe:
+            token = io.supertokens.utils.Utils.convertToBase64(token);
+            token = token.replace("=", "");
+            token = token.replace("/", "");
+            token = token.replace("+", "");
+
+            String hashedToken = EmailVerification.getHashedToken(token);
+
+            try {
+                StorageUtils.getEmailVerificationStorage(StorageLayer.getStorage(main))
+                        .addEmailVerificationToken(new TenantIdentifier(null, null, null),
+                                new EmailVerificationTokenInfo(userId, hashedToken,
+                                        System.currentTimeMillis() +
+                                                EmailVerification.getEmailVerificationTokenLifetimeForTests(main), email));
+                return token;
+            } catch (DuplicateEmailVerificationTokenException ignored) {
+            }
+        }
     }
 
     private static String getHashedToken(String token) throws NoSuchAlgorithmException {

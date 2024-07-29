@@ -13,6 +13,15 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Adds new core config:
     - `oauth_provider_public_service_url`
 
+
+## [9.1.1] -2024-07-24
+
+### Fixes
+
+- Account linking now properly checks if the login methods of the primary user can be shared with the tenants of the 
+  recipe user we are trying to link
+- Simplifying email verification token creation
+
 ## [9.1.0] - 2024-05-24
 
 ### Changes

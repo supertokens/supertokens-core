@@ -99,6 +99,20 @@ public class Telemetry extends CronTask {
         json.addProperty("appId", app.getAppId());
         json.addProperty("connectionUriDomain", app.getConnectionUriDomain());
 
+        { // website and API domains
+            String websiteDomain = Multitenancy.getWebsiteDomain(
+                    StorageLayer.getStorage(app.getAsPublicTenantIdentifier(), main), app);
+            String apiDomain = Multitenancy.getAPIDomain(
+                    StorageLayer.getStorage(app.getAsPublicTenantIdentifier(), main), app);
+
+            if (websiteDomain != null) {
+                json.addProperty("websiteDomain", websiteDomain);
+            }
+            if (apiDomain != null) {
+                json.addProperty("apiDomain", apiDomain);
+            }
+        }
+
         if (StorageLayer.getBaseStorage(main).getType() == STORAGE_TYPE.SQL) {
             { // Users count across all tenants
                 Storage[] storages = StorageLayer.getStoragesForApp(main, app);
@@ -137,19 +151,6 @@ public class Telemetry extends CronTask {
                 json.add("maus", mauArr);
             }
 
-            { // website and API domains
-                String websiteDomain = Multitenancy.getWebsiteDomain(
-                        StorageLayer.getStorage(app.getAsPublicTenantIdentifier(), main), app);
-                String apiDomain = Multitenancy.getAPIDomain(
-                        StorageLayer.getStorage(app.getAsPublicTenantIdentifier(), main), app);
-
-                if (websiteDomain != null) {
-                    json.addProperty("websiteDomain", websiteDomain);
-                }
-                if (apiDomain != null) {
-                    json.addProperty("apiDomain", apiDomain);
-                }
-            }
         } else {
             json.addProperty("usersCount", -1);
             json.add("dashboardUserEmails", new JsonArray());
