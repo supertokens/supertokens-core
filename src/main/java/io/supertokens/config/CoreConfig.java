@@ -284,6 +284,7 @@ public class CoreConfig {
 
     @NotConflictingInApp
     @JsonProperty
+    @HideFromDashboard
     @ConfigDescription(
             "If specified, the core uses this URL to connect to the OAuth provider admin service.")
     private String oauth_provider_admin_service_url = null;
