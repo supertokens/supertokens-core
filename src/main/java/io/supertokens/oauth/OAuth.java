@@ -68,7 +68,7 @@ public class OAuth {
             Map<String, String> responseHeaders = new HashMap<>();
             HttpRequest.sendGETRequestWithResponseHeaders(main, null, Config.getBaseConfig(main).getOAuthProviderPublicServiceUrl(), queryParamsForHydra, 20, 400, null, responseHeaders); // TODO is there some kind of config for the timeouts?
 
-            if(null != responseHeaders && responseHeaders.keySet().contains(LOCATION_HEADER_NAME)) {
+            if(!responseHeaders.isEmpty() && responseHeaders.containsKey(LOCATION_HEADER_NAME)) {
                 String locationHeaderValue = responseHeaders.get(LOCATION_HEADER_NAME);
 
                 if (locationHeaderValue.equals(publicOAuthProviderServiceUrl)){
@@ -83,7 +83,7 @@ public class OAuth {
             }
             if(responseHeaders.containsKey(COOKIES_HEADER_NAME)){
                 String allCookies = responseHeaders.get(COOKIES_HEADER_NAME);
-                cookies = Arrays.asList(allCookies.split(";"));
+                cookies = Arrays.asList(allCookies.split("; "));
             }
         }
 

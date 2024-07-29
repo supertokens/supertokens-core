@@ -25,14 +25,19 @@ import io.supertokens.httpRequest.HttpResponseException;
 import io.supertokens.oauth.OAuth;
 import io.supertokens.oauth.exceptions.OAuthException;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.oauth.OAuthAuthResponse;
+import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.apache.catalina.Store;
 
 import java.io.IOException;
 import java.io.Serial;
@@ -53,27 +58,41 @@ public class OAuthAPI extends WebserverAPI {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         // TODO Work in progress!
+
+        JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
+        String clientId = InputParser.parseStringOrThrowError(input, "clientId", false);
+        String redirectUri = InputParser.parseStringOrThrowError(input, "redirectUri", false);
+        String responseType = InputParser.parseStringOrThrowError(input, "responseType", false);
+        String scope = InputParser.parseStringOrThrowError(input, "scope", false);
+        String state = InputParser.parseStringOrThrowError(input, "state", false);
+
         try {
-            OAuthAuthResponse authResponse = OAuth.getAuthorizationUrl(null, null,null, "a685663d-1b5d-4a70-b7f7-025ff2e2d7a4", "http://localhost.com:3031/auth/callback/ory", "code", "profile", "%EF%BF%BD%EF%BF%BD%EF%BF%BD%EF%BF%BD%EF%BF%BD%EF%BF%BDv%EF%BF%BD%EF%BF%BD%EF%BF%BD%EF%BF%BD%EF%BF%BD");
+            AppIdentifier appIdentifier = getAppIdentifier(req);
+            Storage storage = getTenantStorage(req);
+
+            OAuthAuthResponse authResponse = OAuth.getAuthorizationUrl(super.main, appIdentifier, storage,
+                    clientId, redirectUri, responseType, scope, state);
             JsonObject response = new JsonObject();
             response.addProperty("redirectTo", authResponse.redirectTo);
 
-            if(authResponse.cookies != null) {
+            if (authResponse.cookies != null) {
                 Gson gson = new Gson();
                 String cookiesAsJson = gson.toJson(authResponse.cookies);
                 response.addProperty("cookies", cookiesAsJson);
             }
 
-        } catch (InvalidConfigException e) {
-            throw new RuntimeException(e);
-        } catch (HttpResponseException e) {
-            throw new RuntimeException(e);
+            super.sendJsonResponse(200, response, resp);
+
         } catch (OAuthException e) {
-            throw new RuntimeException(e);
-        } catch (StorageQueryException e) {
-            throw new RuntimeException(e);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new RuntimeException(e);
+
+            JsonObject errorResponse = new JsonObject();
+            //TODO what is a good content here?
+
+            super.sendJsonResponse(400, errorResponse, resp);
+
+        } catch (TenantOrAppNotFoundException | InvalidConfigException | HttpResponseException |
+                 StorageQueryException e) {
+            throw new ServletException(e);
         }
     }
 }
