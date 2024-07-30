@@ -27,11 +27,6 @@ public class OAuthQueries {
         return "CREATE TABLE IF NOT EXISTS " + oAuth2ClientTable + " ("
                 + "app_id VARCHAR(64) DEFAULT 'public',"
                 + "client_id VARCHAR(128) NOT NULL,"
-                + "name TEXT NOT NULL,"
-                + "client_secret_hash  VARCHAR(128) NOT NULL,"
-                + "redirect_uris  TEXT NOT NULL,"
-                + "created_at_ms  BIGINT NOT NULL,"
-                + "updated_at_ms BIGINT NOT NULL,"
                 + " PRIMARY KEY (app_id, client_id),"
                 + " FOREIGN KEY(app_id) REFERENCES " + Config.getConfig(start).getAppsTable() + "(app_id) ON DELETE CASCADE);";
         // @formatter:on
