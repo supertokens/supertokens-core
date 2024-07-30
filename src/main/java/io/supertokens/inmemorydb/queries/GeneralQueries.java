@@ -427,27 +427,6 @@ public class GeneralQueries {
             getInstance(main).addState(CREATING_NEW_TABLE, null);
             update(start, OAuthQueries.getQueryToCreateOAuthClientTable(start), NO_OP_SETTER);
         }
-
-        if (!doesTableExists(start, Config.getConfig(start).getOAuthAuthcodeTable())) {
-            getInstance(main).addState(CREATING_NEW_TABLE, null);
-            update(start, OAuthQueries.getQueryToCreateOAuthAuthcodeTable(start), NO_OP_SETTER);
-        }
-
-        if (!doesTableExists(start, Config.getConfig(start).getOAuthScopesTable())) {
-            getInstance(main).addState(CREATING_NEW_TABLE, null);
-            update(start, OAuthQueries.getQueryToCreateOAuthScopesTable(start), NO_OP_SETTER);
-        }
-
-        if (!doesTableExists(start, Config.getConfig(start).getOAuthTokenTable())) {
-            getInstance(main).addState(CREATING_NEW_TABLE, null);
-            update(start, OAuthQueries.getQueryToCreateOAuthTokenTable(start), NO_OP_SETTER);
-        }
-
-        if (!doesTableExists(start, Config.getConfig(start).getOAuthClientAllowedScopesTable())) {
-            getInstance(main).addState(CREATING_NEW_TABLE, null);
-            update(start, OAuthQueries.getQueryToCreateOAuthClientAllowedScopesTable(start), NO_OP_SETTER);
-        }
-
     }
 
 

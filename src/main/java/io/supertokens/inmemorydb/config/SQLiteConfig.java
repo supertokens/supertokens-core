@@ -166,12 +166,4 @@ public class SQLiteConfig {
     }
 
     public String getOAuthClientTable(){ return "oauth_clients"; }
-
-    public String getOAuthScopesTable() { return "oauth_scopes"; }
-
-    public String getOAuthClientAllowedScopesTable() { return "oauth_client_allowed_scopes"; }
-
-    public String getOAuthAuthcodeTable() { return "oauth_auth_codes"; }
-
-    public String getOAuthTokenTable() { return "oauth_tokens"; }
 }
