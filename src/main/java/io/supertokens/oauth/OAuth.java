@@ -16,13 +16,11 @@
 
 package io.supertokens.oauth;
 
-import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.config.Config;
 import io.supertokens.httpRequest.HttpRequest;
 import io.supertokens.httpRequest.HttpResponseException;
-import io.supertokens.multitenancy.Multitenancy;
-import io.supertokens.oauth.exceptions.OAuthException;
+import io.supertokens.oauth.exceptions.OAuthAuthException;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
@@ -42,10 +40,13 @@ public class OAuth {
 
     private static final String LOCATION_HEADER_NAME = "Location";
     private static final String COOKIES_HEADER_NAME = "Set-Cookie";
+    private static final String ERROR_LITERAL = "error=";
+    private static final String ERROR_DESCRIPTION_LITERAL = "error_description=";
+
 
     public static OAuthAuthResponse getAuthorizationUrl(Main main, AppIdentifier appIdentifier, Storage storage, String clientId,
                                                         String redirectURI, String responseType, String scope, String state)
-            throws InvalidConfigException, HttpResponseException, IOException, OAuthException, StorageQueryException,
+            throws InvalidConfigException, HttpResponseException, IOException, OAuthAuthException, StorageQueryException,
             TenantOrAppNotFoundException {
         // TODO:
         // - validate that client_id is present for this tenant
@@ -55,7 +56,7 @@ public class OAuth {
         String redirectTo = null;
         List<String> cookies = null;
 
-        String publicOAuthProviderServiceUrl = Config.getBaseConfig(main).getOAuthProviderPublicServiceUrl();
+        String publicOAuthProviderServiceUrl = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderPublicServiceUrl();
 
         if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientId)) {
             redirectTo =  publicOAuthProviderServiceUrl +
@@ -64,25 +65,30 @@ public class OAuth {
                     "+method%29.+The+requested+OAuth+2.0+Client+does+not+exist.";
         } else {
             // we query hydra
-            Map<String, String> queryParamsForHydra = constructHydraRequestParams(clientId, redirectURI, responseType, scope, state);
+            Map<String, String> queryParamsForHydra = constructHydraRequestParamsForAuthorizationGETAPICall(clientId, redirectURI, responseType, scope, state);
             Map<String, String> responseHeaders = new HashMap<>();
-            HttpRequest.sendGETRequestWithResponseHeaders(main, null, Config.getBaseConfig(main).getOAuthProviderPublicServiceUrl(), queryParamsForHydra, 20, 400, null, responseHeaders); // TODO is there some kind of config for the timeouts?
+
+            //TODO maybe check response status code? Have to modify sendGetRequest.. for that
+            HttpRequest.sendGETRequestWithResponseHeaders(main, "", Config.getBaseConfig(main).getOAuthProviderPublicServiceUrl(), queryParamsForHydra, 10000, 10000, null, responseHeaders);
 
             if(!responseHeaders.isEmpty() && responseHeaders.containsKey(LOCATION_HEADER_NAME)) {
                 String locationHeaderValue = responseHeaders.get(LOCATION_HEADER_NAME);
 
-                if (locationHeaderValue.equals(publicOAuthProviderServiceUrl)){
-                    throw new OAuthException();
+                if (locationHeaderValue.contains(publicOAuthProviderServiceUrl)){
+                    String error = getValueOfQueryParam(locationHeaderValue, ERROR_LITERAL);
+                    String errorDescription = getValueOfQueryParam(locationHeaderValue, ERROR_DESCRIPTION_LITERAL);
+                    throw new OAuthAuthException(error, errorDescription);
                 }
 
-                if (locationHeaderValue.equals("localhost:3000")) {
-                    redirectTo = Multitenancy.getAPIDomain(storage, appIdentifier);
+                if (locationHeaderValue.contains("localhost:3000")) {
+                    redirectTo = locationHeaderValue.replace("localhost:3000", "{apiDomain}");
                 } else {
                     redirectTo = locationHeaderValue;
                 }
             }
             if(responseHeaders.containsKey(COOKIES_HEADER_NAME)){
                 String allCookies = responseHeaders.get(COOKIES_HEADER_NAME);
+
                 cookies = Arrays.asList(allCookies.split("; "));
             }
         }
@@ -90,8 +96,8 @@ public class OAuth {
         return new OAuthAuthResponse(redirectTo, cookies);
     }
 
-    private static Map<String, String> constructHydraRequestParams(String clientId,
-                                                            String redirectURI, String responseType, String scope, String state) {
+    private static Map<String, String> constructHydraRequestParamsForAuthorizationGETAPICall(String clientId,
+                                                                                             String redirectURI, String responseType, String scope, String state) {
         Map<String, String> queryParamsForHydra = new HashMap<>();
         queryParamsForHydra.put("clientId", clientId);
         queryParamsForHydra.put("redirectURI", redirectURI);
@@ -99,5 +105,15 @@ public class OAuth {
         queryParamsForHydra.put("responseType", responseType);
         queryParamsForHydra.put("state", state);
         return  queryParamsForHydra;
+    }
+
+    private static String getValueOfQueryParam(String url, String queryParam){
+        String valueOfQueryParam = "";
+        if(!queryParam.endsWith("=")){
+            queryParam = queryParam + "=";
+        }
+        int startIndex = url.indexOf(queryParam) + queryParam.length(); // start after the '=' sign
+        valueOfQueryParam = url.substring(startIndex, url.indexOf("&", startIndex)); // substring the url from the '=' to the next '&'
+        return  valueOfQueryParam;
     }
 }

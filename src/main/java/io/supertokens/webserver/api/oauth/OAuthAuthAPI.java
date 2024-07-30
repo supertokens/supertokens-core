@@ -16,20 +16,17 @@
 
 package io.supertokens.webserver.api.oauth;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
+import com.google.gson.*;
 import io.supertokens.Main;
 import io.supertokens.httpRequest.HttpResponseException;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.oauth.OAuth;
-import io.supertokens.oauth.exceptions.OAuthException;
+import io.supertokens.oauth.exceptions.OAuthAuthException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.oauth.OAuthAuthResponse;
 import io.supertokens.webserver.InputParser;
@@ -37,22 +34,21 @@ import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.apache.catalina.Store;
 
 import java.io.IOException;
 import java.io.Serial;
 
-public class OAuthAPI extends WebserverAPI {
+public class OAuthAuthAPI extends WebserverAPI {
     @Serial
     private static final long serialVersionUID = -8734479943734920904L;
 
-    public OAuthAPI(Main main) {
+    public OAuthAuthAPI(Main main) {
         super(main, RECIPE_ID.OAUTH.toString());
     }
 
     @Override
     public String getPath() {
-        return "oauth/auth";
+        return "recipe/oauth/auth";
     }
 
     @Override
@@ -68,30 +64,33 @@ public class OAuthAPI extends WebserverAPI {
 
         try {
             AppIdentifier appIdentifier = getAppIdentifier(req);
-            Storage storage = getTenantStorage(req);
+            Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
 
             OAuthAuthResponse authResponse = OAuth.getAuthorizationUrl(super.main, appIdentifier, storage,
                     clientId, redirectUri, responseType, scope, state);
             JsonObject response = new JsonObject();
             response.addProperty("redirectTo", authResponse.redirectTo);
 
+            JsonArray jsonCookies = new JsonArray();
             if (authResponse.cookies != null) {
-                Gson gson = new Gson();
-                String cookiesAsJson = gson.toJson(authResponse.cookies);
-                response.addProperty("cookies", cookiesAsJson);
+                for(String cookie : authResponse.cookies){
+                    jsonCookies.add(new JsonPrimitive(cookie));
+                }
             }
+            response.add("cookies", jsonCookies);
 
             super.sendJsonResponse(200, response, resp);
 
-        } catch (OAuthException e) {
+        } catch (OAuthAuthException authException) {
 
             JsonObject errorResponse = new JsonObject();
-            //TODO what is a good content here?
+            errorResponse.addProperty("error", authException.error);
+            errorResponse.addProperty("error_description", authException.errorDescription);
 
             super.sendJsonResponse(400, errorResponse, resp);
 
         } catch (TenantOrAppNotFoundException | InvalidConfigException | HttpResponseException |
-                 StorageQueryException e) {
+                 StorageQueryException | BadPermissionException e) {
             throw new ServletException(e);
         }
     }

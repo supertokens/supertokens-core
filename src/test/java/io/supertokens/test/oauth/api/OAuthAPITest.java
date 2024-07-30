@@ -21,17 +21,17 @@ import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.httpRequest.HttpResponseException;
 import io.supertokens.oauth.OAuth;
-import io.supertokens.oauth.exceptions.OAuthException;
+import io.supertokens.oauth.exceptions.OAuthAuthException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.oauth.OAuthAuthResponse;
 import io.supertokens.pluginInterface.oauth.OAuthStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
-import io.supertokens.webserver.InputParser;
 import org.junit.*;
 import org.junit.rules.TestRule;
 
@@ -72,9 +72,10 @@ public class OAuthAPITest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    // TODO rename this!
     @Test
-    public void test()
-            throws StorageQueryException, OAuthException, HttpResponseException, TenantOrAppNotFoundException,
+    public void testHappyPath()
+            throws StorageQueryException, OAuthAuthException, HttpResponseException, TenantOrAppNotFoundException,
             InvalidConfigException, IOException {
 
         String clientId = "a685663d-1b5d-4a70-b7f7-025ff2e2d7a4";
@@ -85,14 +86,10 @@ public class OAuthAPITest {
 
         OAuthStorage oAuthStorage = (OAuthStorage) StorageLayer.getStorage(process.getProcess());
 
-        OAuthAuthResponse response = OAuth.getAuthorizationUrl(process.getProcess(), null, oAuthStorage,  clientId, redirectUri, responseType, scope, state);
+        OAuthAuthResponse response = OAuth.getAuthorizationUrl(process.getProcess(), new AppIdentifier(null, null), oAuthStorage,  clientId, redirectUri, responseType, scope, state);
 
         System.out.println(response);
         System.out.println(response.redirectTo);
-
-        for(String cooke : response.cookies){
-            System.out.println(cooke);
-        }
 
         assertNotNull(response);
         assertNotNull(response.redirectTo);

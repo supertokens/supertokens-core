@@ -157,7 +157,7 @@ public class HttpRequest {
 
             con.getHeaderFields().forEach((key, value) -> {
                 if (key != null) {
-                    responseHeaders.put(key, value.get(0));
+                    responseHeaders.put(key, value.get(0)); // TODO why the first element only? What happens with Set-Cookie headers? (Those are repeated if there are multiple cookies)
                 }
             });
 
