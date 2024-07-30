@@ -152,7 +152,7 @@ public class HttpRequest {
             if (version != null) {
                 con.setRequestProperty("api-version", version + "");
             }
-
+            con.setInstanceFollowRedirects(false);
             int responseCode = con.getResponseCode();
 
             con.getHeaderFields().forEach((key, value) -> {

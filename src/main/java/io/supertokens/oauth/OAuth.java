@@ -31,10 +31,9 @@ import io.supertokens.pluginInterface.oauth.OAuthAuthResponse;
 import io.supertokens.pluginInterface.oauth.OAuthStorage;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 
 public class OAuth {
 
@@ -48,8 +47,6 @@ public class OAuth {
                                                         String redirectURI, String responseType, String scope, String state)
             throws InvalidConfigException, HttpResponseException, IOException, OAuthAuthException, StorageQueryException,
             TenantOrAppNotFoundException {
-        // TODO:
-        // - validate that client_id is present for this tenant
 
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
 
@@ -59,17 +56,14 @@ public class OAuth {
         String publicOAuthProviderServiceUrl = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderPublicServiceUrl();
 
         if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientId)) {
-            redirectTo =  publicOAuthProviderServiceUrl +
-                    "/oauth2/fallbacks/error?error=invalid_client&error_description=Client+authentication+failed+%28e" +
-                    ".g.%2C+unknown+client%2C+no+client+authentication+included%2C+or+unsupported+authentication" +
-                    "+method%29.+The+requested+OAuth+2.0+Client+does+not+exist.";
+            throw new OAuthAuthException("invalid_client", "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method). The requested OAuth 2.0 Client does not exist.");
         } else {
             // we query hydra
             Map<String, String> queryParamsForHydra = constructHydraRequestParamsForAuthorizationGETAPICall(clientId, redirectURI, responseType, scope, state);
             Map<String, String> responseHeaders = new HashMap<>();
 
             //TODO maybe check response status code? Have to modify sendGetRequest.. for that
-            HttpRequest.sendGETRequestWithResponseHeaders(main, "", Config.getBaseConfig(main).getOAuthProviderPublicServiceUrl(), queryParamsForHydra, 10000, 10000, null, responseHeaders);
+            HttpRequest.sendGETRequestWithResponseHeaders(main, "", Config.getBaseConfig(main).getOAuthProviderPublicServiceUrl() + "/oauth2/auth", queryParamsForHydra, 10000, 10000, null, responseHeaders);
 
             if(!responseHeaders.isEmpty() && responseHeaders.containsKey(LOCATION_HEADER_NAME)) {
                 String locationHeaderValue = responseHeaders.get(LOCATION_HEADER_NAME);
@@ -80,8 +74,8 @@ public class OAuth {
                     throw new OAuthAuthException(error, errorDescription);
                 }
 
-                if (locationHeaderValue.contains("localhost:3000")) {
-                    redirectTo = locationHeaderValue.replace("localhost:3000", "{apiDomain}");
+                if (locationHeaderValue.contains("localhost:3000") || locationHeaderValue.contains("127.0.0.1:3000")) {
+                    redirectTo = locationHeaderValue.replace("localhost:3000", "{apiDomain}").replace("127.0.0.1:3000", "{apiDomain}");
                 } else {
                     redirectTo = locationHeaderValue;
                 }
@@ -89,7 +83,7 @@ public class OAuth {
             if(responseHeaders.containsKey(COOKIES_HEADER_NAME)){
                 String allCookies = responseHeaders.get(COOKIES_HEADER_NAME);
 
-                cookies = Arrays.asList(allCookies.split("; "));
+                cookies = Collections.singletonList(allCookies);
             }
         }
 
@@ -99,10 +93,10 @@ public class OAuth {
     private static Map<String, String> constructHydraRequestParamsForAuthorizationGETAPICall(String clientId,
                                                                                              String redirectURI, String responseType, String scope, String state) {
         Map<String, String> queryParamsForHydra = new HashMap<>();
-        queryParamsForHydra.put("clientId", clientId);
-        queryParamsForHydra.put("redirectURI", redirectURI);
+        queryParamsForHydra.put("client_id", clientId);
+        queryParamsForHydra.put("redirect_uri", redirectURI);
         queryParamsForHydra.put("scope", scope);
-        queryParamsForHydra.put("responseType", responseType);
+        queryParamsForHydra.put("response_type", responseType);
         queryParamsForHydra.put("state", state);
         return  queryParamsForHydra;
     }
@@ -113,7 +107,11 @@ public class OAuth {
             queryParam = queryParam + "=";
         }
         int startIndex = url.indexOf(queryParam) + queryParam.length(); // start after the '=' sign
-        valueOfQueryParam = url.substring(startIndex, url.indexOf("&", startIndex)); // substring the url from the '=' to the next '&'
-        return  valueOfQueryParam;
+        int endIndex = url.indexOf("&", startIndex);
+        if (endIndex == -1){
+            endIndex = url.length();
+        }
+        valueOfQueryParam = url.substring(startIndex, endIndex); // substring the url from the '=' to the next '&' or to the end of the url if there are no more &s
+        return URLDecoder.decode(valueOfQueryParam, StandardCharsets.UTF_8);
     }
 }
