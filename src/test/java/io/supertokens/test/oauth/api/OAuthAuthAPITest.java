@@ -88,7 +88,7 @@ public class OAuthAuthAPITest {
         assertNotNull(response);
         assertNotNull(response.redirectTo);
         assertNotNull(response.cookies);
-        
+
         assertTrue(response.redirectTo.startsWith("{apiDomain}/login?login_challenge="));
         assertTrue(response.cookies.get(0).startsWith("ory_hydra_login_csrf_dev_134972871="));
     }
