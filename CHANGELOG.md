@@ -18,6 +18,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Adds POST `/recipe/oauth/auth` for OAuth2 auth flow support
 - Creates new table `oauth_clients`
 
+### Migration
+TODO: after plugin support
 
 ## [9.1.1] -2024-07-24
 
