@@ -22,6 +22,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
+import java.net.MalformedURLException;
+
 import static org.junit.Assert.*;
 
 public class UtilsTest {
@@ -104,4 +106,63 @@ public class UtilsTest {
         String inputPhoneNumber = "   ";
         assertEquals("", io.supertokens.utils.Utils.normalizeIfPhoneNumber(inputPhoneNumber));
     }
+
+    @Test
+    public void testUrlContainsWithoutSlash() throws MalformedURLException {
+        String itShouldContain = "http://127.0.0.1/fallback/error?somerandom=123";
+        String thisShouldBeContained = "http://127.0.0.1";
+
+        assertTrue(io.supertokens.utils.Utils.containsUrl(itShouldContain,thisShouldBeContained, true));
+    }
+
+    @Test
+    public void testUrlContainsWithSlash() throws MalformedURLException {
+        String itShouldContain = "http://127.0.0.1/fallback/error?somerandom=123";
+        String thisShouldBeContained = "http://127.0.0.1/";
+
+        assertTrue(io.supertokens.utils.Utils.containsUrl(itShouldContain,thisShouldBeContained, true));
+    }
+
+    @Test
+    public void testUrlContainsWithPort() throws MalformedURLException {
+        String itShouldContain = "http://127.0.0.1:3000/fallback/error?somerandom=123";
+        String thisShouldBeContained = "http://127.0.0.1:3000/";
+
+        assertTrue(io.supertokens.utils.Utils.containsUrl(itShouldContain,thisShouldBeContained, true));
+    }
+
+    @Test
+    public void testUrlContainsWithAndWithoutPort() throws MalformedURLException {
+        String itShouldContain = "http://127.0.0.1:3000/fallback/error?somerandom=123";
+        String thisShouldBeContained = "http://127.0.0.1";
+
+        assertFalse(io.supertokens.utils.Utils.containsUrl(itShouldContain,thisShouldBeContained, true));
+    }
+
+    @Test
+    public void testUrlContainsWithoutAndWithPort() throws MalformedURLException {
+        String itShouldContain = "http://127.0.0.1/fallback/error?somerandom=123";
+        String thisShouldBeContained = "http://127.0.0.1:4444";
+
+        assertFalse(io.supertokens.utils.Utils.containsUrl(itShouldContain,thisShouldBeContained, true));
+    }
+
+    @Test
+    public void testUrlContainsWhenProtocolDoesntMatter() throws MalformedURLException {
+        String itShouldContain = "https://127.0.0.1/fallback/error?somerandom=123";
+        String thisShouldBeContained = "http://127.0.0.1";
+
+        assertTrue(io.supertokens.utils.Utils.containsUrl(itShouldContain,thisShouldBeContained, false));
+    }
+
+    @Test
+    public void testUrlContainsCaseSensitive() throws MalformedURLException {
+        String itShouldContain = "http://littlecat/fallback/error?somerandom=123";
+        String thisShouldBeContained = "http://littleCat";
+
+        assertFalse(io.supertokens.utils.Utils.containsUrl(itShouldContain,thisShouldBeContained, false));
+    }
+
+
+
 }
