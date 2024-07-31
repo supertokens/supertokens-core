@@ -53,8 +53,6 @@ public class OAuthAuthAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        // TODO Work in progress!
-
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String clientId = InputParser.parseStringOrThrowError(input, "clientId", false);
         String redirectUri = InputParser.parseStringOrThrowError(input, "redirectUri", false);

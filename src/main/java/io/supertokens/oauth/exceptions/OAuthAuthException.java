@@ -23,6 +23,7 @@ public class OAuthAuthException extends Exception{
     public final String errorDescription;
 
     public OAuthAuthException(String error, String errorDescription) {
+        super(error);
         this.error = error;
         this.errorDescription = errorDescription;
     }

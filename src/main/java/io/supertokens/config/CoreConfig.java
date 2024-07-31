@@ -892,7 +892,10 @@ public class CoreConfig {
             }
         }
 
-        if(oauth_provider_url_configured_in_hydra != null) {
+
+        if(oauth_provider_url_configured_in_hydra == null) {
+            oauth_provider_url_configured_in_hydra = oauth_provider_public_service_url;
+        } else {
             try {
                 URL url = new URL(oauth_provider_url_configured_in_hydra);
             } catch (MalformedURLException malformedURLException){

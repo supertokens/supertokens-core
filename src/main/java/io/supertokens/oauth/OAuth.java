@@ -28,6 +28,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.oauth.OAuthStorage;
+import io.supertokens.utils.Utils;
 
 import java.io.IOException;
 import java.net.URLDecoder;
@@ -41,6 +42,8 @@ public class OAuth {
     private static final String ERROR_LITERAL = "error=";
     private static final String ERROR_DESCRIPTION_LITERAL = "error_description=";
 
+    private static final String HYDRA_AUTH_ENDPOINT = "/oauth2/auth";
+
 
     public static OAuthAuthResponse getAuthorizationUrl(Main main, AppIdentifier appIdentifier, Storage storage, String clientId,
                                                         String redirectURI, String responseType, String scope, String state)
@@ -53,6 +56,8 @@ public class OAuth {
         List<String> cookies = null;
 
         String publicOAuthProviderServiceUrl = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderPublicServiceUrl();
+        String hydraInternalAddress = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOauthProviderUrlConfiguredInHydra();
+        String hydraBaseUrlForConsentAndLogin = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOauthProviderConsentLoginBaseUrl();
 
         if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientId)) {
             throw new OAuthAuthException("invalid_client", "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method). The requested OAuth 2.0 Client does not exist.");
@@ -62,19 +67,18 @@ public class OAuth {
             Map<String, String> responseHeaders = new HashMap<>();
 
             //TODO maybe check response status code? Have to modify sendGetRequest.. for that
-            HttpRequest.sendGETRequestWithResponseHeaders(main, "", Config.getBaseConfig(main).getOAuthProviderPublicServiceUrl() + "/oauth2/auth", queryParamsForHydra, 10000, 10000, null, responseHeaders, false);
+            HttpRequest.sendGETRequestWithResponseHeaders(main, "", Config.getBaseConfig(main).getOAuthProviderPublicServiceUrl() + HYDRA_AUTH_ENDPOINT, queryParamsForHydra, 10000, 10000, null, responseHeaders, false);
 
             if(!responseHeaders.isEmpty() && responseHeaders.containsKey(LOCATION_HEADER_NAME)) {
                 String locationHeaderValue = responseHeaders.get(LOCATION_HEADER_NAME);
-
-                if (locationHeaderValue.contains(publicOAuthProviderServiceUrl)){
+                if(Utils.containsUrl(locationHeaderValue, hydraInternalAddress, true)){
                     String error = getValueOfQueryParam(locationHeaderValue, ERROR_LITERAL);
                     String errorDescription = getValueOfQueryParam(locationHeaderValue, ERROR_DESCRIPTION_LITERAL);
                     throw new OAuthAuthException(error, errorDescription);
                 }
 
-                if (locationHeaderValue.contains("localhost:3000") || locationHeaderValue.contains("127.0.0.1:3000")) {
-                    redirectTo = locationHeaderValue.replace("localhost:3000", "{apiDomain}").replace("127.0.0.1:3000", "{apiDomain}");
+                if(Utils.containsUrl(locationHeaderValue, hydraBaseUrlForConsentAndLogin, true)){
+                    redirectTo = locationHeaderValue.replace(hydraBaseUrlForConsentAndLogin, "{apiDomain}");
                 } else {
                     redirectTo = locationHeaderValue;
                 }
@@ -113,4 +117,4 @@ public class OAuth {
         valueOfQueryParam = url.substring(startIndex, endIndex); // substring the url from the '=' to the next '&' or to the end of the url if there are no more &s
         return URLDecoder.decode(valueOfQueryParam, StandardCharsets.UTF_8);
     }
-}
+;}
