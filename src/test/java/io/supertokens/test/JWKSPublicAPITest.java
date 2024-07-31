@@ -27,6 +27,7 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -79,7 +80,7 @@ public class JWKSPublicAPITest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         // check regular output
-        Map<String, String> responseHeaders = new HashMap<>();
+        Map<String, List<String>> responseHeaders = new HashMap<>();
         JsonObject response = HttpRequest.sendGETRequestWithResponseHeaders(process.getProcess(), "",
                 "http://localhost:3567/.well-known/jwks.json", null,
                 1000, 1000, null, responseHeaders, true);
@@ -90,7 +91,7 @@ public class JWKSPublicAPITest {
         JsonArray keys = response.get("keys").getAsJsonArray();
         assertEquals(keys.size(), 2);
 
-        long maxAge = getMaxAgeValue(responseHeaders.get("Cache-Control"));
+        long maxAge = getMaxAgeValue(responseHeaders.get("Cache-Control").get(0));
         assertTrue(maxAge >= 3538 && maxAge <= 3540);
 
         Thread.sleep(2000);
@@ -105,7 +106,7 @@ public class JWKSPublicAPITest {
         keys = response.get("keys").getAsJsonArray();
         assertEquals(keys.size(), 2);
 
-        long newMaxAge = getMaxAgeValue(responseHeaders.get("Cache-Control"));
+        long newMaxAge = getMaxAgeValue(responseHeaders.get("Cache-Control").get(0));
         assertTrue(maxAge - newMaxAge >= 2 && maxAge - newMaxAge <= 3);
 
         process.kill();

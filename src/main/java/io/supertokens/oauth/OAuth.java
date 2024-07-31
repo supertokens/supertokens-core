@@ -64,13 +64,13 @@ public class OAuth {
         } else {
             // we query hydra
             Map<String, String> queryParamsForHydra = constructHydraRequestParamsForAuthorizationGETAPICall(clientId, redirectURI, responseType, scope, state);
-            Map<String, String> responseHeaders = new HashMap<>();
+            Map<String, List<String>> responseHeaders = new HashMap<>();
 
             //TODO maybe check response status code? Have to modify sendGetRequest.. for that
             HttpRequest.sendGETRequestWithResponseHeaders(main, "", Config.getBaseConfig(main).getOAuthProviderPublicServiceUrl() + HYDRA_AUTH_ENDPOINT, queryParamsForHydra, 10000, 10000, null, responseHeaders, false);
 
             if(!responseHeaders.isEmpty() && responseHeaders.containsKey(LOCATION_HEADER_NAME)) {
-                String locationHeaderValue = responseHeaders.get(LOCATION_HEADER_NAME);
+                String locationHeaderValue = responseHeaders.get(LOCATION_HEADER_NAME).get(0);
                 if(Utils.containsUrl(locationHeaderValue, hydraInternalAddress, true)){
                     String error = getValueOfQueryParam(locationHeaderValue, ERROR_LITERAL);
                     String errorDescription = getValueOfQueryParam(locationHeaderValue, ERROR_DESCRIPTION_LITERAL);
@@ -84,9 +84,7 @@ public class OAuth {
                 }
             }
             if(responseHeaders.containsKey(COOKIES_HEADER_NAME)){
-                String allCookies = responseHeaders.get(COOKIES_HEADER_NAME);
-
-                cookies = Collections.singletonList(allCookies);
+                cookies = responseHeaders.get(COOKIES_HEADER_NAME);
             }
         }
 

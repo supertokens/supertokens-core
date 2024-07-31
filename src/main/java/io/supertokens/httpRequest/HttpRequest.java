@@ -26,6 +26,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
 
 public class HttpRequest {
@@ -126,7 +127,7 @@ public class HttpRequest {
     public static <T> T sendGETRequestWithResponseHeaders(Main main, String requestID, String url,
                                                           Map<String, String> params,
                                                           int connectionTimeoutMS, int readTimeoutMS, Integer version,
-                                                          Map<String, String> responseHeaders, boolean followRedirects)
+                                                          Map<String, List<String>> responseHeaders, boolean followRedirects)
             throws IOException, HttpResponseException {
         StringBuilder paramBuilder = new StringBuilder();
 
@@ -157,7 +158,7 @@ public class HttpRequest {
 
             con.getHeaderFields().forEach((key, value) -> {
                 if (key != null) {
-                    responseHeaders.put(key, value.get(0)); // TODO why the first element only? What happens with Set-Cookie headers? (Those are repeated if there are multiple cookies)
+                    responseHeaders.put(key, value);
                 }
             });
 
