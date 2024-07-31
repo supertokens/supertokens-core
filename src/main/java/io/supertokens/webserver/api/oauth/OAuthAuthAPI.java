@@ -28,7 +28,7 @@ import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.oauth.OAuthAuthResponse;
+import io.supertokens.oauth.OAuthAuthResponse;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -48,7 +48,7 @@ public class OAuthAuthAPI extends WebserverAPI {
 
     @Override
     public String getPath() {
-        return "recipe/oauth/auth";
+        return "/recipe/oauth/auth";
     }
 
     @Override

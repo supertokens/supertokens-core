@@ -27,7 +27,6 @@ import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.oauth.OAuthAuthResponse;
 import io.supertokens.pluginInterface.oauth.OAuthStorage;
 
 import java.io.IOException;

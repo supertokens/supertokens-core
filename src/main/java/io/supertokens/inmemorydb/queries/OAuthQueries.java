@@ -36,7 +36,7 @@ public class OAuthQueries {
         String oAuth2ClientTable = Config.getConfig(start).getOAuthClientTable();
         // @formatter:off
         return "CREATE TABLE IF NOT EXISTS " + oAuth2ClientTable + " ("
-                + "app_id VARCHAR(64) DEFAULT 'public',"
+                + "app_id VARCHAR(64),"
                 + "client_id VARCHAR(128) NOT NULL,"
                 + " PRIMARY KEY (app_id, client_id),"
                 + " FOREIGN KEY(app_id) REFERENCES " + Config.getConfig(start).getAppsTable() + "(app_id) ON DELETE CASCADE);";

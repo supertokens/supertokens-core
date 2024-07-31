@@ -22,12 +22,11 @@ import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.httpRequest.HttpResponseException;
 import io.supertokens.oauth.OAuth;
 import io.supertokens.oauth.exceptions.OAuthAuthException;
-import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.oauth.OAuthAuthResponse;
+import io.supertokens.oauth.OAuthAuthResponse;
 import io.supertokens.pluginInterface.oauth.sqlStorage.OAuthSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -36,7 +35,6 @@ import org.junit.*;
 import org.junit.rules.TestRule;
 
 import java.io.IOException;
-import java.util.Collections;
 
 import static org.junit.Assert.*;
 
