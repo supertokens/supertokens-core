@@ -16,12 +16,18 @@
 
 package io.supertokens.test.oauth.api;
 
+import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
+import io.supertokens.authRecipe.AuthRecipe;
+import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.httpRequest.HttpResponseException;
 import io.supertokens.oauth.OAuth;
 import io.supertokens.oauth.exceptions.OAuthAuthException;
+import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
@@ -32,6 +38,10 @@ import io.supertokens.pluginInterface.oauth.sqlStorage.OAuthSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.useridmapping.UserIdMapping;
+import io.supertokens.useridmapping.UserIdType;
+import io.supertokens.utils.SemVer;
 import org.junit.*;
 import org.junit.rules.TestRule;
 
@@ -70,7 +80,8 @@ public class OAuthAuthAPITest {
     @Test
     public void testLocalhostChangedToApiDomain()
             throws StorageQueryException, OAuthAuthException, HttpResponseException, TenantOrAppNotFoundException,
-            InvalidConfigException, IOException, ClientAlreadyExistsForAppException {
+            InvalidConfigException, IOException, ClientAlreadyExistsForAppException,
+            io.supertokens.test.httpRequest.HttpResponseException {
 
         String clientId = "6030f07e-c8ef-4289-80c9-c18e0bf4f679";
         String redirectUri = "http://localhost.com:3031/auth/callback/ory";
@@ -91,11 +102,32 @@ public class OAuthAuthAPITest {
 
         assertTrue(response.redirectTo.startsWith("{apiDomain}/login?login_challenge="));
         assertTrue(response.cookies.get(0).startsWith("ory_hydra_login_csrf_dev_134972871="));
+
+
+        {
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("clientId", clientId);
+            requestBody.addProperty("redirectUri", redirectUri);
+            requestBody.addProperty("responseType", responseType);
+            requestBody.addProperty("scope", scope);
+            requestBody.addProperty("state", state);
+
+            JsonObject actualResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/oauth/auth", requestBody, 1000, 1000, null,
+                    null, RECIPE_ID.OAUTH.toString());
+
+
+            assertTrue(actualResponse.has("redirectTo"));
+            assertTrue(actualResponse.has("cookies"));
+            assertTrue(actualResponse.get("redirectTo").getAsString().startsWith("{apiDomain}/login?login_challenge="));
+            assertEquals(1, actualResponse.getAsJsonArray("cookies").size());
+            assertTrue(actualResponse.getAsJsonArray("cookies").get(0).getAsString().startsWith("ory_hydra_login_csrf_dev_134972871="));
+        }
     }
 
     @Test
     public void testCalledWithWrongClientIdNotInST_exceptionThrown()
-            throws StorageQueryException, ClientAlreadyExistsForAppException {
+            throws StorageQueryException, ClientAlreadyExistsForAppException, IOException {
 
         String clientId = "Not-Existing-In-Client-App-Table";
         String redirectUri = "http://localhost.com:3031/auth/callback/ory";
@@ -118,6 +150,26 @@ public class OAuthAuthAPITest {
 
         assertEquals(expectedError, thrown.error);
         assertEquals(expectedDescription, thrown.errorDescription);
+
+        {
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("clientId", clientId);
+            requestBody.addProperty("redirectUri", redirectUri);
+            requestBody.addProperty("responseType", responseType);
+            requestBody.addProperty("scope", scope);
+            requestBody.addProperty("state", state);
+
+            assertThrows(io.supertokens.test.httpRequest.HttpResponseException.class, () -> {
+            JsonObject actualResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/oauth/auth", requestBody, 1000, 1000, null,
+                    null, RECIPE_ID.OAUTH.toString());
+
+                assertTrue(actualResponse.has("error"));
+                assertTrue(actualResponse.has("error_description"));
+                assertEquals(expectedError,actualResponse.get("error").getAsString());
+                assertEquals(expectedDescription, actualResponse.get("error_description").getAsString());
+            });
+        }
     }
 
     @Test
@@ -145,6 +197,26 @@ public class OAuthAuthAPITest {
 
         assertEquals(expectedError, thrown.error);
         assertEquals(expectedDescription, thrown.errorDescription);
+
+        {
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("clientId", clientId);
+            requestBody.addProperty("redirectUri", redirectUri);
+            requestBody.addProperty("responseType", responseType);
+            requestBody.addProperty("scope", scope);
+            requestBody.addProperty("state", state);
+
+            assertThrows(io.supertokens.test.httpRequest.HttpResponseException.class, () -> {
+                JsonObject actualResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/oauth/auth", requestBody, 1000, 1000, null,
+                        null, RECIPE_ID.OAUTH.toString());
+
+                assertTrue(actualResponse.has("error"));
+                assertTrue(actualResponse.has("error_description"));
+                assertEquals(expectedError,actualResponse.get("error").getAsString());
+                assertEquals(expectedDescription, actualResponse.get("error_description").getAsString());
+            });
+        }
     }
 
     @Test
@@ -172,6 +244,26 @@ public class OAuthAuthAPITest {
 
         assertEquals(expectedError, thrown.error);
         assertEquals(expectedDescription, thrown.errorDescription);
+
+        {
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("clientId", clientId);
+            requestBody.addProperty("redirectUri", redirectUri);
+            requestBody.addProperty("responseType", responseType);
+            requestBody.addProperty("scope", scope);
+            requestBody.addProperty("state", state);
+
+            assertThrows(io.supertokens.test.httpRequest.HttpResponseException.class, () -> {
+                JsonObject actualResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/oauth/auth", requestBody, 1000, 1000, null,
+                        null, RECIPE_ID.OAUTH.toString());
+
+                assertTrue(actualResponse.has("error"));
+                assertTrue(actualResponse.has("error_description"));
+                assertEquals(expectedError,actualResponse.get("error").getAsString());
+                assertEquals(expectedDescription, actualResponse.get("error_description").getAsString());
+            });
+        }
     }
 
 }
