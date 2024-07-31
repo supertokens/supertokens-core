@@ -27,6 +27,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.oauth.OAuthAuthResponse;
+import io.supertokens.pluginInterface.oauth.exceptions.ClientAlreadyExistsForAppException;
 import io.supertokens.pluginInterface.oauth.sqlStorage.OAuthSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -70,7 +71,7 @@ public class OAuthAuthAPITest {
     @Test
     public void testLocalhostChangedToApiDomain()
             throws StorageQueryException, OAuthAuthException, HttpResponseException, TenantOrAppNotFoundException,
-            InvalidConfigException, IOException {
+            InvalidConfigException, IOException, ClientAlreadyExistsForAppException {
 
         String clientId = "6030f07e-c8ef-4289-80c9-c18e0bf4f679";
         String redirectUri = "http://localhost.com:3031/auth/callback/ory";
@@ -95,7 +96,7 @@ public class OAuthAuthAPITest {
 
     @Test
     public void testCalledWithWrongClientIdNotInST_exceptionThrown()
-            throws StorageQueryException {
+            throws StorageQueryException, ClientAlreadyExistsForAppException {
 
         String clientId = "Not-Existing-In-Client-App-Table";
         String redirectUri = "http://localhost.com:3031/auth/callback/ory";
@@ -122,7 +123,7 @@ public class OAuthAuthAPITest {
 
     @Test
     public void testCalledWithWrongClientIdNotInHydraButInST_exceptionThrown()
-            throws StorageQueryException {
+            throws StorageQueryException, ClientAlreadyExistsForAppException {
 
         String clientId = "6030f07e-c8ef-4289-80c9-c18e0bf4f679NotInHydra";
         String redirectUri = "http://localhost.com:3031/auth/callback/ory";

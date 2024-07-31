@@ -62,7 +62,7 @@ public class OAuth {
             Map<String, String> responseHeaders = new HashMap<>();
 
             //TODO maybe check response status code? Have to modify sendGetRequest.. for that
-            HttpRequest.sendGETRequestWithResponseHeaders(main, "", Config.getBaseConfig(main).getOAuthProviderPublicServiceUrl() + "/oauth2/auth", queryParamsForHydra, 10000, 10000, null, responseHeaders);
+            HttpRequest.sendGETRequestWithResponseHeaders(main, "", Config.getBaseConfig(main).getOAuthProviderPublicServiceUrl() + "/oauth2/auth", queryParamsForHydra, 10000, 10000, null, responseHeaders, false);
 
             if(!responseHeaders.isEmpty() && responseHeaders.containsKey(LOCATION_HEADER_NAME)) {
                 String locationHeaderValue = responseHeaders.get(LOCATION_HEADER_NAME);

@@ -55,6 +55,7 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateTenantExc
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateThirdPartyIdException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.multitenancy.sqlStorage.MultitenancySQLStorage;
+import io.supertokens.pluginInterface.oauth.exceptions.ClientAlreadyExistsForAppException;
 import io.supertokens.pluginInterface.oauth.sqlStorage.OAuthSQLStorage;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
 import io.supertokens.pluginInterface.passwordless.PasswordlessDevice;
@@ -3020,10 +3021,19 @@ public class Start
     }
 
     @Override
-    public void addClientForApp(AppIdentifier appIdentifier, String clientId) throws StorageQueryException {
+    public void addClientForApp(AppIdentifier appIdentifier, String clientId)
+            throws StorageQueryException, ClientAlreadyExistsForAppException {
         try {
             OAuthQueries.insertClientIdForAppId(this, clientId, appIdentifier);
         } catch (SQLException e) {
+
+            SQLiteConfig config = Config.getConfig(this);
+            String serverErrorMessage = e.getMessage();
+
+            if (isPrimaryKeyError(serverErrorMessage, config.getOAuthClientTable(),
+                    new String[]{"app_id", "client_id"})) {
+                throw new ClientAlreadyExistsForAppException();
+            }
             throw new StorageQueryException(e);
         }
     }
