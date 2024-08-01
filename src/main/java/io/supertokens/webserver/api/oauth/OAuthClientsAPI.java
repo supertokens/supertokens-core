@@ -110,6 +110,31 @@ public class OAuthClientsAPI extends WebserverAPI {
         }
     }
 
+    @Override
+    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        JsonObject requestBody = InputParser.parseJsonObjectOrThrowError(req);
+
+        String clientId = InputParser.parseStringOrThrowError(requestBody, "clientId", false);
+
+        try {
+            AppIdentifier appIdentifier = getAppIdentifier(req);
+            Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
+
+            OAuth.deleteOAuthClient(main, appIdentifier, storage, clientId);
+            JsonObject responseBody = new JsonObject();
+            responseBody.addProperty("status", "OK");
+            sendJsonResponse(200, responseBody, resp);
+
+        }  catch (OAuthClientException e) {
+            JsonObject errorResponse = createJsonFromException(e);
+            sendJsonResponse(400, errorResponse, resp);
+
+        } catch (TenantOrAppNotFoundException | InvalidConfigException | BadPermissionException
+                 | StorageQueryException e){
+            throw new ServletException(e);
+        }
+    }
+
     private JsonObject createJsonFromException(OAuthException exception){
         JsonObject errorResponse = new JsonObject();
         errorResponse.addProperty("error", exception.error);

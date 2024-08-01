@@ -61,6 +61,16 @@ public class OAuthQueries {
         });
     }
 
+    public static void deleteClientIdForAppId(Start start, String clientId, AppIdentifier appIdentifier)
+            throws SQLException, StorageQueryException {
+        String DELETE = "DELETE FROM " + Config.getConfig(start).getOAuthClientTable()
+                + " WHERE app_id = ? AND client_id = ?";
+        update(start, DELETE, pst -> {
+            pst.setString(1, appIdentifier.getAppId());
+            pst.setString(2, clientId);
+        });
+    }
+
     public static boolean isClientIdAlreadyExists(Start start, String clientId)
             throws SQLException, StorageQueryException {
         String QUERY = "SELECT client_id  FROM " + Config.getConfig(start).getOAuthClientTable() +

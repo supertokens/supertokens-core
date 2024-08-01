@@ -18,6 +18,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Adds POST `/recipe/oauth/auth` for OAuth2 auth flow support
 - Adds POST `/recipe/oauth/clients` for OAuth2 client registration
 - Adds GET `/recipe/oauth/clients?clientId=example_id` for loading OAuth2 client
+- Adds DELETE `/recipe/oauth/clients` for deleting OAuth2 Clients
 - Creates new table `oauth_clients`
 
 ### Migration

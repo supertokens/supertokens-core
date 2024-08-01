@@ -164,6 +164,31 @@ public class OAuth {
         }
     }
 
+    public static void deleteOAuthClient(Main main, AppIdentifier appIdentifier, Storage storage, String clientId)
+            throws TenantOrAppNotFoundException, OAuthClientException, InvalidConfigException, StorageQueryException,
+            IOException {
+        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+
+        String adminOAuthProviderServiceUrl = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderAdminServiceUrl();
+
+        if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientId)) {
+            throw new OAuthClientException("Unable to locate the resource", "");
+        } else {
+            try {
+                HttpRequest.sendJsonDELETERequest(main, "", adminOAuthProviderServiceUrl + HYDRA_CLIENTS_ENDPOINT + "/" + clientId, null, 10000, 10000, null);
+
+                oauthStorage.removeAppClientAssociation(appIdentifier, clientId);
+            } catch (HttpResponseException e) {
+                try {
+                    throw createCustomExceptionFromHttpResponseException(e, OAuthClientException.class);
+                } catch (NoSuchMethodException | InvocationTargetException | InstantiationException |
+                         IllegalAccessException ex) {
+                    throw new RuntimeException("Something went really wrong!");
+                }
+            }
+        }
+    }
+
     private static <T extends OAuthException> T createCustomExceptionFromHttpResponseException(HttpResponseException exception, Class<T> customExceptionClass)
             throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         String errorMessage = exception.rawMessage;

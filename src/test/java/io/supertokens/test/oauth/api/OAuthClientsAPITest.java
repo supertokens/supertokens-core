@@ -109,6 +109,18 @@ public class OAuthClientsAPITest {
             assertFalse(loadedClient.has("clientSecret")); //this should only be sent when registering
             assertEquals(clientId, loadedClient.get("clientId").getAsString());
 
+            {//delete client
+                JsonObject deleteRequestBody = new JsonObject();
+                deleteRequestBody.addProperty("clientId", clientId);
+                JsonObject deleteResponse = HttpRequestForTesting.sendJsonDELETERequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/oauth/clients", deleteRequestBody, 1000, 1000, null,
+                        null, RECIPE_ID.OAUTH.toString());
+
+                assertTrue(deleteResponse.isJsonObject());
+                assertEquals("OK", deleteResponse.get("status").getAsString()); //empty response
+
+            }
+
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
         }

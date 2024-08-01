@@ -3046,4 +3046,13 @@ public class Start
             throw new StorageQueryException(e);
         }
     }
+
+    @Override
+    public void removeAppClientAssociation(AppIdentifier appIdentifier, String clientId) throws StorageQueryException {
+        try {
+            OAuthQueries.deleteClientIdForAppId(this, clientId, appIdentifier);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
 }
