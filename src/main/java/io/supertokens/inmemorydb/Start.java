@@ -3037,4 +3037,13 @@ public class Start
             throw new StorageQueryException(e);
         }
     }
+
+    @Override
+    public boolean isClientIdAlreadyExists(String clientId) throws StorageQueryException {
+        try {
+            return OAuthQueries.isClientIdAlreadyExists(this, clientId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
 }

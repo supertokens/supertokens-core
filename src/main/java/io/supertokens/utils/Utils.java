@@ -57,6 +57,7 @@ import java.util.Base64.Decoder;
 import java.util.Base64.Encoder;
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 public class Utils {
 
@@ -443,5 +444,22 @@ public class Utils {
         }
 
         return originalHost.equals(wantedHost);
+    }
+
+    public static String camelCaseToSnakeCase(String toSnakeCase) {
+        String regex = "([a-z])([A-Z]+)";
+        String replacement = "$1_$2";
+        toSnakeCase = toSnakeCase
+                .replaceAll(
+                        regex, replacement)
+                .toLowerCase();
+        return toSnakeCase;
+    }
+
+    public static String snakeCaseToCamelCase(String toCamelCase) {
+        toCamelCase = Pattern.compile("_([a-z])")
+                .matcher(toCamelCase)
+                .replaceAll(m -> m.group(1).toUpperCase());
+        return toCamelCase;
     }
 }

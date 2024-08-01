@@ -21,11 +21,8 @@ import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
@@ -62,6 +59,15 @@ public class OAuthQueries {
             pst.setString(1, appIdentifier.getAppId());
             pst.setString(2, clientId);
         });
+    }
+
+    public static boolean isClientIdAlreadyExists(Start start, String clientId)
+            throws SQLException, StorageQueryException {
+        String QUERY = "SELECT client_id  FROM " + Config.getConfig(start).getOAuthClientTable() +
+                " WHERE client_id = ?";
+        return execute(start, QUERY, pst -> {
+            pst.setString(1, clientId);
+        }, ResultSet::next);
     }
 
 }
