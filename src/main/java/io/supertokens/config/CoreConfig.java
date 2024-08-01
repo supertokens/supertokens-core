@@ -305,7 +305,7 @@ public class CoreConfig {
     @HideFromDashboard
     @ConfigDescription(
             "If specified, the core uses this URL to parse responses from the oauth provider when the oauth provider's internal address differs from the known public provider address. Defaults to the oauth_provider_public_service_url")
-    private String oauth_provider_url_configured_in_hydra = oauth_provider_public_service_url;
+    private String oauth_provider_url_configured_in_hydra;
 
 
 
@@ -903,7 +903,10 @@ public class CoreConfig {
             }
         }
 
-
+        List<String> configsTogetherSet = Arrays.asList(oauth_provider_public_service_url, oauth_provider_admin_service_url, oauth_provider_consent_login_base_url);
+        if(isAnySet(configsTogetherSet) && !isAllSet(configsTogetherSet)) {
+            throw new InvalidConfigException("If any of the following is set, all of them has to be set: oauth_provider_public_service_url, oauth_provider_admin_service_url, oauth_provider_consent_login_base_url");
+        }
 
         isNormalizedAndValid = true;
     }
@@ -1034,5 +1037,25 @@ public class CoreConfig {
 
     public String getMaxCDIVersion() {
         return this.supertokens_max_cdi_version;
+    }
+
+    private boolean isAnySet(List<String> configs){
+        for (String config : configs){
+            if(config!=null){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isAllSet(List<String> configs) {
+        boolean foundNotSet = false;
+        for(String config: configs){
+            if(config == null){
+                foundNotSet = true;
+                break;
+            }
+        }
+        return !foundNotSet;
     }
 }
