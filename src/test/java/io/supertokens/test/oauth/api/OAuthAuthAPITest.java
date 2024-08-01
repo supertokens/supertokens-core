@@ -236,7 +236,8 @@ public class OAuthAuthAPITest {
 
         OAuthAuthException thrown = assertThrows(OAuthAuthException.class, () -> {
 
-            OAuthAuthResponse response = OAuth.getAuthorizationUrl(process.getProcess(), new AppIdentifier("", ""), oAuthStorage,  clientId, redirectUri, responseType, scope, state);
+            OAuthAuthResponse response = OAuth.getAuthorizationUrl(process.getProcess(), new AppIdentifier("", ""),
+                    oAuthStorage, clientId, redirectUri, responseType, scope, state);
         });
 
         String expectedError = "invalid_request";
@@ -260,10 +261,9 @@ public class OAuthAuthAPITest {
 
                 assertTrue(actualResponse.has("error"));
                 assertTrue(actualResponse.has("error_description"));
-                assertEquals(expectedError,actualResponse.get("error").getAsString());
+                assertEquals(expectedError, actualResponse.get("error").getAsString());
                 assertEquals(expectedDescription, actualResponse.get("error_description").getAsString());
             });
         }
     }
-
 }

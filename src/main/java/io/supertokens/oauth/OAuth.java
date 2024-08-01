@@ -81,6 +81,8 @@ public class OAuth {
                 } else {
                     redirectTo = locationHeaderValue;
                 }
+            } else {
+                throw new RuntimeException("Unexpected answer from Oauth Provider");
             }
             if(responseHeaders.containsKey(COOKIES_HEADER_NAME)){
                 cookies = responseHeaders.get(COOKIES_HEADER_NAME);
