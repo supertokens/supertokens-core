@@ -21,7 +21,9 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.oauth.OAuth;
+import io.supertokens.oauth.exceptions.OAuthClientException;
 import io.supertokens.oauth.exceptions.OAuthClientRegisterException;
+import io.supertokens.oauth.exceptions.OAuthException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
@@ -41,7 +43,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-public class OAuthRegisterClientAPI extends WebserverAPI {
+public class OAuthClientsAPI extends WebserverAPI {
 
     @Serial
     private static final long serialVersionUID = -4482427281337641246L;
@@ -53,9 +55,9 @@ public class OAuthRegisterClientAPI extends WebserverAPI {
 
     @Override
     public String getPath() {
-        return "/recipe/oauth/registerclient";
+        return "/recipe/oauth/clients";
     }
-    public OAuthRegisterClientAPI(Main main){
+    public OAuthClientsAPI(Main main){
         super(main, RECIPE_ID.OAUTH.toString());
     }
 
@@ -78,10 +80,7 @@ public class OAuthRegisterClientAPI extends WebserverAPI {
 
         } catch (OAuthClientRegisterException registerException) {
 
-            JsonObject errorResponse = new JsonObject();
-            errorResponse.addProperty("error", registerException.error);
-            errorResponse.addProperty("error_description", registerException.errorDescription);
-
+            JsonObject errorResponse = createJsonFromException(registerException);
             sendJsonResponse(400, errorResponse, resp);
 
         } catch (TenantOrAppNotFoundException | InvalidConfigException | BadPermissionException
@@ -90,9 +89,38 @@ public class OAuthRegisterClientAPI extends WebserverAPI {
         }
     }
 
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        String clientId = InputParser.getQueryParamOrThrowError(req, "clientId", false);
+
+        try {
+            AppIdentifier appIdentifier = getAppIdentifier(req);
+            Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
+
+            JsonObject response = OAuth.loadOAuthClient(main, appIdentifier, storage, clientId);
+            sendJsonResponse(200, response, resp);
+
+        }  catch (OAuthClientException e) {
+            JsonObject errorResponse = createJsonFromException(e);
+            sendJsonResponse(400, errorResponse, resp);
+
+        } catch (TenantOrAppNotFoundException | InvalidConfigException | BadPermissionException
+                 | StorageQueryException e){
+            throw new ServletException(e);
+        }
+    }
+
+    private JsonObject createJsonFromException(OAuthException exception){
+        JsonObject errorResponse = new JsonObject();
+        errorResponse.addProperty("error", exception.error);
+        errorResponse.addProperty("error_description", exception.errorDescription);
+
+        return errorResponse;
+    }
+
     private boolean containsAllRequiredFields(JsonObject input){
         boolean foundMissing = false;
-        for(String requiredField : OAuthRegisterClientAPI.REQUIRED_INPUT_FIELDS){
+        for(String requiredField : OAuthClientsAPI.REQUIRED_INPUT_FIELDS){
             if(input.get(requiredField) == null || input.get(requiredField).isJsonNull() ||
                     input.get(requiredField).getAsString().isEmpty()){
                 foundMissing = true;
@@ -105,7 +133,7 @@ public class OAuthRegisterClientAPI extends WebserverAPI {
     private boolean containsMoreThanAllowed(JsonObject input) {
         boolean containsMore = false;
         for(Map.Entry<String, JsonElement> jsonEntry : input.entrySet()){
-            if(!OAuthRegisterClientAPI.ALLOWED_INPUT_FIELDS.contains(jsonEntry.getKey())){
+            if(!OAuthClientsAPI.ALLOWED_INPUT_FIELDS.contains(jsonEntry.getKey())){
                 containsMore = true;
                 break;
             }

@@ -20,6 +20,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.ProcessState;
+import io.supertokens.httpRequest.HttpRequest;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.oauth.sqlStorage.OAuthSQLStorage;
@@ -32,11 +33,13 @@ import org.junit.*;
 import org.junit.rules.TestRule;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertTrue;
 
-public class OAuthRegisterClientAPITest {
+public class OAuthClientsAPITest {
     TestingProcessManager.TestingProcess process;
 
     @Rule
@@ -54,7 +57,8 @@ public class OAuthRegisterClientAPITest {
 
     @Test
     public void testClientRegisteredForApp()
-            throws HttpResponseException, IOException, StorageQueryException, InterruptedException {
+            throws HttpResponseException, IOException, StorageQueryException, InterruptedException,
+            io.supertokens.httpRequest.HttpResponseException {
 
         String[] args = {"../"};
         this.process = TestingProcessManager.start(args);
@@ -82,7 +86,7 @@ public class OAuthRegisterClientAPITest {
             requestBody.add("responseTypes", responseTypes);
 
             JsonObject actualResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/oauth/registerclient", requestBody, 1000, 1000, null,
+                    "http://localhost:3567/recipe/oauth/clients", requestBody, 1000, 1000, null,
                     null, RECIPE_ID.OAUTH.toString());
 
             assertTrue(actualResponse.has("clientSecret"));
@@ -95,6 +99,15 @@ public class OAuthRegisterClientAPITest {
 
             boolean clientShouldntExists = oAuthStorage.isClientIdAlreadyExists(clientId + "someRandomStringHere");
             assertFalse(clientShouldntExists);
+
+            Map<String, String> queryParams = new HashMap<>();
+            queryParams.put("clientId", actualResponse.get("clientId").getAsString());
+            JsonObject loadedClient = HttpRequest.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/oauth/clients", queryParams,10000,10000, null);
+
+            assertTrue(loadedClient.has("clientId"));
+            assertFalse(loadedClient.has("clientSecret")); //this should only be sent when registering
+            assertEquals(clientId, loadedClient.get("clientId").getAsString());
 
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -129,7 +142,7 @@ public class OAuthRegisterClientAPITest {
 
             io.supertokens.test.httpRequest.HttpResponseException expected = assertThrows(io.supertokens.test.httpRequest.HttpResponseException.class, () -> {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/oauth/registerclient", requestBody, 1000, 1000, null,
+                "http://localhost:3567/recipe/oauth/clients", requestBody, 1000, 1000, null,
                 null, RECIPE_ID.OAUTH.toString());
             });
 
@@ -171,7 +184,7 @@ public class OAuthRegisterClientAPITest {
 
             io.supertokens.test.httpRequest.HttpResponseException expected = assertThrows(io.supertokens.test.httpRequest.HttpResponseException.class, () -> {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/oauth/registerclient", requestBody, 1000, 1000, null,
+                        "http://localhost:3567/recipe/oauth/clients", requestBody, 1000, 1000, null,
                         null, RECIPE_ID.OAUTH.toString());
             });
 
@@ -181,5 +194,39 @@ public class OAuthRegisterClientAPITest {
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
         }
+    }
+
+
+    @Test
+    public void testGETClientNotExisting_returnsError()
+            throws StorageQueryException, InterruptedException {
+
+        String[] args = {"../"};
+        this.process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        String clientId = "not-an-existing-one";
+
+        OAuthSQLStorage oAuthStorage = (OAuthSQLStorage) StorageLayer.getStorage(process.getProcess());
+
+
+        boolean isClientAlreadyExists = oAuthStorage.isClientIdAlreadyExists(clientId);
+        assertFalse(isClientAlreadyExists);
+
+        boolean clientShouldntExists = oAuthStorage.isClientIdAlreadyExists(clientId + "someRandomStringHere");
+        assertFalse(clientShouldntExists);
+
+        Map<String, String> queryParams = new HashMap<>();
+        queryParams.put("clientId", clientId);
+        io.supertokens.httpRequest.HttpResponseException expected = assertThrows(io.supertokens.httpRequest.HttpResponseException.class, () -> {
+
+                HttpRequest.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/oauth/clients", queryParams, 10000, 10000, null);
+        });
+        assertEquals(400, expected.statusCode);
+        assertEquals("Http error. Status Code: 400. Message: {\"error\":\"Unable to locate the resource\",\"error_description\":\"\"}", expected.getMessage());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 }

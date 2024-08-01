@@ -24,7 +24,9 @@ import io.supertokens.config.Config;
 import io.supertokens.httpRequest.HttpRequest;
 import io.supertokens.httpRequest.HttpResponseException;
 import io.supertokens.oauth.exceptions.OAuthAuthException;
+import io.supertokens.oauth.exceptions.OAuthClientException;
 import io.supertokens.oauth.exceptions.OAuthClientRegisterException;
+import io.supertokens.oauth.exceptions.OAuthException;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
@@ -36,6 +38,7 @@ import io.supertokens.pluginInterface.oauth.exceptions.OAuth2ClientAlreadyExists
 import io.supertokens.utils.Utils;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
@@ -124,17 +127,50 @@ public class OAuth {
 
                 return formatResponseForSDK(hydraResponse); //sdk expects everything from hydra in camelCase
             } catch (HttpResponseException e) {
-                String errorMessage = e.rawMessage;
-                JsonObject errorResponse = (JsonObject) new JsonParser().parse(errorMessage);
-                String error = errorResponse.get("error").getAsString();
-                String errorDescription = errorResponse.get("error_description").getAsString();
-                throw new OAuthClientRegisterException(error, errorDescription);
+                try {
+                    throw createCustomExceptionFromHttpResponseException(e, OAuthClientRegisterException.class);
+                } catch (NoSuchMethodException | InvocationTargetException | InstantiationException |
+                         IllegalAccessException ex) {
+                    throw new RuntimeException(ex);
+                }
             } catch (OAuth2ClientAlreadyExistsForAppException e) {
                 //in theory, this is unreachable. We are registering new clients here, so this should not happen.
                 throw new RuntimeException(e);
             }
         }
+    }
 
+    public static JsonObject loadOAuthClient(Main main, AppIdentifier appIdentifier, Storage storage, String clientId)
+            throws TenantOrAppNotFoundException, OAuthClientException, InvalidConfigException, StorageQueryException,
+            IOException {
+        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+
+        String adminOAuthProviderServiceUrl = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderAdminServiceUrl();
+
+        if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientId)) {
+            throw new OAuthClientException("Unable to locate the resource", "");
+        } else {
+            try {
+                JsonObject hydraResponse = HttpRequest.sendGETRequest(main, "", adminOAuthProviderServiceUrl + HYDRA_CLIENTS_ENDPOINT + "/" + clientId, null, 10000, 10000, null);
+                return  formatResponseForSDK(hydraResponse);
+            } catch (HttpResponseException e) {
+                try {
+                    throw createCustomExceptionFromHttpResponseException(e, OAuthClientException.class);
+                } catch (NoSuchMethodException | InvocationTargetException | InstantiationException |
+                         IllegalAccessException ex) {
+                    throw new RuntimeException("Something went really wrong!");
+                }
+            }
+        }
+    }
+
+    private static <T extends OAuthException> T createCustomExceptionFromHttpResponseException(HttpResponseException exception, Class<T> customExceptionClass)
+            throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+        String errorMessage = exception.rawMessage;
+        JsonObject errorResponse = (JsonObject) new JsonParser().parse(errorMessage);
+        String error = errorResponse.get("error").getAsString();
+        String errorDescription = errorResponse.get("error_description").getAsString();
+        return customExceptionClass.getDeclaredConstructor(String.class, String.class).newInstance(error, errorDescription);
     }
 
     private static JsonObject constructHydraRequestParamsForRegisterClientPOST(JsonObject paramsFromSdk, String generatedClientId){
