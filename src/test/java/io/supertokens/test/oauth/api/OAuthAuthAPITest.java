@@ -18,30 +18,21 @@ package io.supertokens.test.oauth.api;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
-import io.supertokens.authRecipe.AuthRecipe;
-import io.supertokens.emailpassword.EmailPassword;
-import io.supertokens.featureflag.EE_FEATURES;
-import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.httpRequest.HttpResponseException;
 import io.supertokens.oauth.OAuth;
 import io.supertokens.oauth.exceptions.OAuthAuthException;
 import io.supertokens.pluginInterface.RECIPE_ID;
-import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.oauth.OAuthAuthResponse;
-import io.supertokens.pluginInterface.oauth.exceptions.ClientAlreadyExistsForAppException;
+import io.supertokens.pluginInterface.oauth.exceptions.OAuth2ClientAlreadyExistsForAppException;
 import io.supertokens.pluginInterface.oauth.sqlStorage.OAuthSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
-import io.supertokens.useridmapping.UserIdMapping;
-import io.supertokens.useridmapping.UserIdType;
-import io.supertokens.utils.SemVer;
 import org.junit.*;
 import org.junit.rules.TestRule;
 
@@ -80,7 +71,7 @@ public class OAuthAuthAPITest {
     @Test
     public void testLocalhostChangedToApiDomain()
             throws StorageQueryException, OAuthAuthException, HttpResponseException, TenantOrAppNotFoundException,
-            InvalidConfigException, IOException, ClientAlreadyExistsForAppException,
+            InvalidConfigException, IOException, OAuth2ClientAlreadyExistsForAppException,
             io.supertokens.test.httpRequest.HttpResponseException {
 
         String clientId = "6030f07e-c8ef-4289-80c9-c18e0bf4f679";
@@ -127,7 +118,7 @@ public class OAuthAuthAPITest {
 
     @Test
     public void testCalledWithWrongClientIdNotInST_exceptionThrown()
-            throws StorageQueryException, ClientAlreadyExistsForAppException, IOException {
+            throws StorageQueryException, OAuth2ClientAlreadyExistsForAppException, IOException {
 
         String clientId = "Not-Existing-In-Client-App-Table";
         String redirectUri = "http://localhost.com:3031/auth/callback/ory";
@@ -174,7 +165,7 @@ public class OAuthAuthAPITest {
 
     @Test
     public void testCalledWithWrongClientIdNotInHydraButInST_exceptionThrown()
-            throws StorageQueryException, ClientAlreadyExistsForAppException {
+            throws StorageQueryException, OAuth2ClientAlreadyExistsForAppException {
 
         String clientId = "6030f07e-c8ef-4289-80c9-c18e0bf4f679NotInHydra";
         String redirectUri = "http://localhost.com:3031/auth/callback/ory";
@@ -221,7 +212,7 @@ public class OAuthAuthAPITest {
 
     @Test
     public void testCalledWithWrongRedirectUrl_exceptionThrown()
-            throws StorageQueryException, ClientAlreadyExistsForAppException {
+            throws StorageQueryException, OAuth2ClientAlreadyExistsForAppException {
 
         String clientId = "6030f07e-c8ef-4289-80c9-c18e0bf4f679";
         String redirectUri = "http://localhost.com:3031/auth/callback/ory_not_the_registered_one";
