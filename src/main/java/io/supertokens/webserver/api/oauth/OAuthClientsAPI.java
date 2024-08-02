@@ -21,7 +21,7 @@ import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.oauth.OAuth;
 import io.supertokens.oauth.exceptions.OAuthClientNotFoundException;
-import io.supertokens.oauth.exceptions.OAuthClientRegisterException;
+import io.supertokens.oauth.exceptions.OAuthClientRegisterInvalidInputException;
 import io.supertokens.oauth.exceptions.OAuthException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
@@ -38,7 +38,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.Serial;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -74,7 +73,7 @@ public class OAuthClientsAPI extends WebserverAPI {
             postResponseBody.add("client", response);
             sendJsonResponse(200, postResponseBody, resp);
 
-        } catch (OAuthClientRegisterException registerException) {
+        } catch (OAuthClientRegisterInvalidInputException registerException) {
 
             JsonObject errorResponse = createJsonFromException(registerException);
             errorResponse.addProperty("status", "INVALID_INPUT");

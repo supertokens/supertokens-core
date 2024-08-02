@@ -102,7 +102,8 @@ public class OAuth {
 
     //This more or less acts as a pass-through for the sdks, apart from camelCase <-> snake_case key transformation and setting a few default values
     public static JsonObject registerOAuthClient(Main main, AppIdentifier appIdentifier, Storage storage, JsonObject paramsFromSdk)
-            throws TenantOrAppNotFoundException, InvalidConfigException, IOException, OAuthClientRegisterException,
+            throws TenantOrAppNotFoundException, InvalidConfigException, IOException,
+            OAuthClientRegisterInvalidInputException,
             NoSuchAlgorithmException, StorageQueryException {
 
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
@@ -132,7 +133,7 @@ public class OAuth {
                     } else {
                         //other error from hydra, like invalid content in json. Throw exception
                         throw createCustomExceptionFromHttpResponseException(
-                                e, OAuthClientRegisterException.class);
+                                e, OAuthClientRegisterInvalidInputException.class);
                     }
                 } catch (NoSuchMethodException | InvocationTargetException | InstantiationException |
                          IllegalAccessException ex) {

@@ -18,12 +18,12 @@ package io.supertokens.oauth.exceptions;
 
 import java.io.Serial;
 
-public class OAuthClientRegisterException extends OAuthException{
+public class OAuthClientRegisterInvalidInputException extends OAuthException{
 
     @Serial
     private static final long serialVersionUID = 665027786586190611L;
 
-    public OAuthClientRegisterException(String error, String errorDescription) {
+    public OAuthClientRegisterInvalidInputException(String error, String errorDescription) {
         super(error, errorDescription);
     }
 }
