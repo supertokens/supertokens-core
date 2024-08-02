@@ -89,10 +89,13 @@ public class OAuthClientsAPITest {
                     "http://localhost:3567/recipe/oauth/clients", requestBody, 1000, 1000, null,
                     null, RECIPE_ID.OAUTH.toString());
 
-            assertTrue(actualResponse.has("clientSecret"));
-            assertTrue(actualResponse.has("clientId"));
+            assertTrue(actualResponse.has("client"));
+            JsonObject client = actualResponse.get("client").getAsJsonObject();
 
-            String clientId = actualResponse.get("clientId").getAsString();
+            assertTrue(client.has("clientSecret"));
+            assertTrue(client.has("clientId"));
+
+            String clientId = client.get("clientId").getAsString();
 
             boolean isClientAlreadyExists = oAuthStorage.isClientIdAlreadyExists(clientId);
             assertTrue(isClientAlreadyExists);
@@ -101,13 +104,14 @@ public class OAuthClientsAPITest {
             assertFalse(clientShouldntExists);
 
             Map<String, String> queryParams = new HashMap<>();
-            queryParams.put("clientId", actualResponse.get("clientId").getAsString());
+            queryParams.put("clientId", client.get("clientId").getAsString());
             JsonObject loadedClient = HttpRequest.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/oauth/clients", queryParams,10000,10000, null);
 
-            assertTrue(loadedClient.has("clientId"));
-            assertFalse(loadedClient.has("clientSecret")); //this should only be sent when registering
-            assertEquals(clientId, loadedClient.get("clientId").getAsString());
+            assertTrue(loadedClient.has("client"));
+            JsonObject loadedClientJson = loadedClient.get("client").getAsJsonObject();
+            assertFalse(loadedClientJson.has("clientSecret")); //this should only be sent when registering
+            assertEquals(clientId, loadedClientJson.get("clientId").getAsString());
 
             {//delete client
                 JsonObject deleteRequestBody = new JsonObject();
@@ -136,7 +140,6 @@ public class OAuthClientsAPITest {
         String clientName = "jozef";
         //notice missing 'scope' field!
 
-
         {
             JsonObject requestBody = new JsonObject();
             requestBody.addProperty("clientName", clientName);
@@ -159,7 +162,7 @@ public class OAuthClientsAPITest {
             });
 
             assertEquals(400, expected.statusCode);
-            assertEquals("Http error. Status Code: 400. Message: Invalid Json Input", expected.getMessage());
+            assertEquals("Http error. Status Code: 400. Message: Field name `scope` is missing in JSON input", expected.getMessage());
 
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -167,8 +170,8 @@ public class OAuthClientsAPITest {
     }
 
     @Test
-    public void testMoreFieldThanAllowed_throwsException()
-            throws InterruptedException {
+    public void testMoreFieldAreIgnored()
+            throws InterruptedException, HttpResponseException, IOException {
 
         String[] args = {"../"};
         this.process = TestingProcessManager.start(args);
@@ -194,15 +197,12 @@ public class OAuthClientsAPITest {
             responseTypes.add(new JsonPrimitive("id_token"));
             requestBody.add("responseTypes", responseTypes);
 
-            io.supertokens.test.httpRequest.HttpResponseException expected = assertThrows(io.supertokens.test.httpRequest.HttpResponseException.class, () -> {
-                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/oauth/clients", requestBody, 1000, 1000, null,
                         null, RECIPE_ID.OAUTH.toString());
-            });
 
-            assertEquals(400, expected.statusCode);
-            assertEquals("Http error. Status Code: 400. Message: Invalid Json Input", expected.getMessage());
-
+            assertEquals("OK", response.get("status").getAsString());
+            assertTrue(response.has("client"));
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
         }
@@ -211,7 +211,8 @@ public class OAuthClientsAPITest {
 
     @Test
     public void testGETClientNotExisting_returnsError()
-            throws StorageQueryException, InterruptedException {
+            throws StorageQueryException, InterruptedException, io.supertokens.httpRequest.HttpResponseException,
+            IOException {
 
         String[] args = {"../"};
         this.process = TestingProcessManager.start(args);
@@ -230,13 +231,11 @@ public class OAuthClientsAPITest {
 
         Map<String, String> queryParams = new HashMap<>();
         queryParams.put("clientId", clientId);
-        io.supertokens.httpRequest.HttpResponseException expected = assertThrows(io.supertokens.httpRequest.HttpResponseException.class, () -> {
-
-                HttpRequest.sendGETRequest(process.getProcess(), "",
+        JsonObject response = HttpRequest.sendGETRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/oauth/clients", queryParams, 10000, 10000, null);
-        });
-        assertEquals(400, expected.statusCode);
-        assertEquals("Http error. Status Code: 400. Message: {\"error\":\"Unable to locate the resource\",\"error_description\":\"\"}", expected.getMessage());
+
+        assertEquals("OAUTH2_CLIENT_NOT_FOUND", response.get("status").getAsString());
+        assertEquals("Unable to locate the resource", response.get("error").getAsString());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

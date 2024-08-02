@@ -54,25 +54,19 @@ public class OAuthAuthAPITest {
     @Before
     public void beforeEach() throws InterruptedException {
         Utils.reset();
-
-        String[] args = {"../"};
-
-        this.process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
     }
 
-
-    @After
-    public void afterEach() throws InterruptedException {
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-    }
 
     @Test
     public void testLocalhostChangedToApiDomain()
             throws StorageQueryException, OAuthAuthException, HttpResponseException, TenantOrAppNotFoundException,
             InvalidConfigException, IOException, OAuth2ClientAlreadyExistsForAppException,
-            io.supertokens.test.httpRequest.HttpResponseException {
+            io.supertokens.test.httpRequest.HttpResponseException, InterruptedException {
+
+        String[] args = {"../"};
+
+        this.process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         String clientId = "6030f07e-c8ef-4289-80c9-c18e0bf4f679";
         String redirectUri = "http://localhost.com:3031/auth/callback/ory";
@@ -85,7 +79,15 @@ public class OAuthAuthAPITest {
         AppIdentifier testApp = new AppIdentifier("", "");
         oAuthStorage.addClientForApp(testApp, clientId);
 
-        OAuthAuthResponse response = OAuth.getAuthorizationUrl(process.getProcess(), new AppIdentifier("", ""), oAuthStorage,  clientId, redirectUri, responseType, scope, state);
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("clientId", clientId);
+        requestBody.addProperty("redirectUri", redirectUri);
+        requestBody.addProperty("responseType", responseType);
+        requestBody.addProperty("scope", scope);
+        requestBody.addProperty("state", state);
+
+        OAuthAuthResponse response = OAuth.getAuthorizationUrl(process.getProcess(), new AppIdentifier("", ""),
+                oAuthStorage, requestBody);
 
         assertNotNull(response);
         assertNotNull(response.redirectTo);
@@ -95,30 +97,34 @@ public class OAuthAuthAPITest {
         assertTrue(response.cookies.get(0).startsWith("ory_hydra_login_csrf_dev_134972871="));
 
 
-        {
-            JsonObject requestBody = new JsonObject();
-            requestBody.addProperty("clientId", clientId);
-            requestBody.addProperty("redirectUri", redirectUri);
-            requestBody.addProperty("responseType", responseType);
-            requestBody.addProperty("scope", scope);
-            requestBody.addProperty("state", state);
 
+        {
             JsonObject actualResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/oauth/auth", requestBody, 1000, 1000, null,
                     null, RECIPE_ID.OAUTH.toString());
 
-
+            assertEquals("OK", actualResponse.get("status").getAsString());
             assertTrue(actualResponse.has("redirectTo"));
             assertTrue(actualResponse.has("cookies"));
             assertTrue(actualResponse.get("redirectTo").getAsString().startsWith("{apiDomain}/login?login_challenge="));
             assertEquals(1, actualResponse.getAsJsonArray("cookies").size());
             assertTrue(actualResponse.getAsJsonArray("cookies").get(0).getAsString().startsWith("ory_hydra_login_csrf_dev_134972871="));
         }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     @Test
     public void testCalledWithWrongClientIdNotInST_exceptionThrown()
-            throws StorageQueryException, OAuth2ClientAlreadyExistsForAppException, IOException {
+            throws StorageQueryException, OAuth2ClientAlreadyExistsForAppException, IOException,
+            io.supertokens.test.httpRequest.HttpResponseException, InterruptedException {
+
+
+        String[] args = {"../"};
+
+        this.process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         String clientId = "Not-Existing-In-Client-App-Table";
         String redirectUri = "http://localhost.com:3031/auth/callback/ory";
@@ -126,99 +132,12 @@ public class OAuthAuthAPITest {
         String scope = "profile";
         String state = "%EF%BF%BD%EF%BF%BD%EF%BF%BD%EF%BF%BD%EF%BF%BD%EF%BF%BDv%EF%BF%BD%EF%BF%BD%EF%BF%BD%EF%BF%BD%EF%BF%BD";
 
-        OAuthSQLStorage oAuthStorage = (OAuthSQLStorage) StorageLayer.getStorage(process.getProcess());
-
-        AppIdentifier testApp = new AppIdentifier("", "");
-        oAuthStorage.addClientForApp(testApp, clientId);
-
-        OAuthAuthException thrown = assertThrows(OAuthAuthException.class, () -> {
-
-            OAuthAuthResponse response = OAuth.getAuthorizationUrl(process.getProcess(), new AppIdentifier("", ""), oAuthStorage,  clientId, redirectUri, responseType, scope, state);
-        });
-
-        String expectedError = "invalid_client";
-        String expectedDescription = "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method). The requested OAuth 2.0 Client does not exist.";
-
-        assertEquals(expectedError, thrown.error);
-        assertEquals(expectedDescription, thrown.errorDescription);
-
-        {
-            JsonObject requestBody = new JsonObject();
-            requestBody.addProperty("clientId", clientId);
-            requestBody.addProperty("redirectUri", redirectUri);
-            requestBody.addProperty("responseType", responseType);
-            requestBody.addProperty("scope", scope);
-            requestBody.addProperty("state", state);
-
-            assertThrows(io.supertokens.test.httpRequest.HttpResponseException.class, () -> {
-            JsonObject actualResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/oauth/auth", requestBody, 1000, 1000, null,
-                    null, RECIPE_ID.OAUTH.toString());
-
-                assertTrue(actualResponse.has("error"));
-                assertTrue(actualResponse.has("error_description"));
-                assertEquals(expectedError,actualResponse.get("error").getAsString());
-                assertEquals(expectedDescription, actualResponse.get("error_description").getAsString());
-            });
-        }
-    }
-
-    @Test
-    public void testCalledWithWrongClientIdNotInHydraButInST_exceptionThrown()
-            throws StorageQueryException, OAuth2ClientAlreadyExistsForAppException {
-
-        String clientId = "6030f07e-c8ef-4289-80c9-c18e0bf4f679NotInHydra";
-        String redirectUri = "http://localhost.com:3031/auth/callback/ory";
-        String responseType = "code";
-        String scope = "profile";
-        String state = "%EF%BF%BD%EF%BF%BD%EF%BF%BD%EF%BF%BD%EF%BF%BD%EF%BF%BDv%EF%BF%BD%EF%BF%BD%EF%BF%BD%EF%BF%BD%EF%BF%BD";
-
-        OAuthSQLStorage oAuthStorage = (OAuthSQLStorage) StorageLayer.getStorage(process.getProcess());
-
-        AppIdentifier testApp = new AppIdentifier("", "");
-        oAuthStorage.addClientForApp(testApp, clientId);
-
-        OAuthAuthException thrown = assertThrows(OAuthAuthException.class, () -> {
-
-            OAuthAuthResponse response = OAuth.getAuthorizationUrl(process.getProcess(), new AppIdentifier("", ""), oAuthStorage,  clientId, redirectUri, responseType, scope, state);
-        });
-
-        String expectedError = "invalid_client";
-        String expectedDescription = "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method). The requested OAuth 2.0 Client does not exist.";
-
-        assertEquals(expectedError, thrown.error);
-        assertEquals(expectedDescription, thrown.errorDescription);
-
-        {
-            JsonObject requestBody = new JsonObject();
-            requestBody.addProperty("clientId", clientId);
-            requestBody.addProperty("redirectUri", redirectUri);
-            requestBody.addProperty("responseType", responseType);
-            requestBody.addProperty("scope", scope);
-            requestBody.addProperty("state", state);
-
-            assertThrows(io.supertokens.test.httpRequest.HttpResponseException.class, () -> {
-                JsonObject actualResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/oauth/auth", requestBody, 1000, 1000, null,
-                        null, RECIPE_ID.OAUTH.toString());
-
-                assertTrue(actualResponse.has("error"));
-                assertTrue(actualResponse.has("error_description"));
-                assertEquals(expectedError,actualResponse.get("error").getAsString());
-                assertEquals(expectedDescription, actualResponse.get("error_description").getAsString());
-            });
-        }
-    }
-
-    @Test
-    public void testCalledWithWrongRedirectUrl_exceptionThrown()
-            throws StorageQueryException, OAuth2ClientAlreadyExistsForAppException {
-
-        String clientId = "6030f07e-c8ef-4289-80c9-c18e0bf4f679";
-        String redirectUri = "http://localhost.com:3031/auth/callback/ory_not_the_registered_one";
-        String responseType = "code";
-        String scope = "profile";
-        String state = "%EF%BF%BD%EF%BF%BD%EF%BF%BD%EF%BF%BD%EF%BF%BD%EF%BF%BDv%EF%BF%BD%EF%BF%BD%EF%BF%BD%EF%BF%BD%EF%BF%BD";
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("clientId", clientId);
+        requestBody.addProperty("redirectUri", redirectUri);
+        requestBody.addProperty("responseType", responseType);
+        requestBody.addProperty("scope", scope);
+        requestBody.addProperty("state", state);
 
         OAuthSQLStorage oAuthStorage = (OAuthSQLStorage) StorageLayer.getStorage(process.getProcess());
 
@@ -228,7 +147,122 @@ public class OAuthAuthAPITest {
         OAuthAuthException thrown = assertThrows(OAuthAuthException.class, () -> {
 
             OAuthAuthResponse response = OAuth.getAuthorizationUrl(process.getProcess(), new AppIdentifier("", ""),
-                    oAuthStorage, clientId, redirectUri, responseType, scope, state);
+                    oAuthStorage,  requestBody);
+        });
+
+        String expectedError = "invalid_client";
+        String expectedDescription = "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method). The requested OAuth 2.0 Client does not exist.";
+
+        assertEquals(expectedError, thrown.error);
+        assertEquals(expectedDescription, thrown.errorDescription);
+
+        {
+            JsonObject actualResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/oauth/auth", requestBody, 1000, 1000, null,
+                null, RECIPE_ID.OAUTH.toString());
+
+            assertEquals("OAUTH2_AUTH_ERROR", actualResponse.get("status").getAsString());
+            assertTrue(actualResponse.has("error"));
+            assertTrue(actualResponse.has("errorDescription"));
+            assertEquals(expectedError,actualResponse.get("error").getAsString());
+            assertEquals(expectedDescription, actualResponse.get("errorDescription").getAsString());
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testCalledWithWrongClientIdNotInHydraButInST_exceptionThrown()
+            throws StorageQueryException, OAuth2ClientAlreadyExistsForAppException,
+            io.supertokens.test.httpRequest.HttpResponseException, IOException, InterruptedException {
+
+
+        String[] args = {"../"};
+
+        this.process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        String clientId = "6030f07e-c8ef-4289-80c9-c18e0bf4f679NotInHydra";
+        String redirectUri = "http://localhost.com:3031/auth/callback/ory";
+        String responseType = "code";
+        String scope = "profile";
+        String state = "%EF%BF%BD%EF%BF%BD%EF%BF%BD%EF%BF%BD%EF%BF%BD%EF%BF%BDv%EF%BF%BD%EF%BF%BD%EF%BF%BD%EF%BF%BD%EF%BF%BD";
+
+        OAuthSQLStorage oAuthStorage = (OAuthSQLStorage) StorageLayer.getStorage(process.getProcess());
+
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("clientId", clientId);
+        requestBody.addProperty("redirectUri", redirectUri);
+        requestBody.addProperty("responseType", responseType);
+        requestBody.addProperty("scope", scope);
+        requestBody.addProperty("state", state);
+
+        AppIdentifier testApp = new AppIdentifier("", "");
+        oAuthStorage.addClientForApp(testApp, clientId);
+
+        OAuthAuthException thrown = assertThrows(OAuthAuthException.class, () -> {
+
+            OAuthAuthResponse response = OAuth.getAuthorizationUrl(process.getProcess(), new AppIdentifier("", ""),
+                    oAuthStorage,  requestBody);
+        });
+
+        String expectedError = "invalid_client";
+        String expectedDescription = "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method). The requested OAuth 2.0 Client does not exist.";
+
+        assertEquals(expectedError, thrown.error);
+        assertEquals(expectedDescription, thrown.errorDescription);
+
+        {
+            JsonObject actualResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/oauth/auth", requestBody, 1000, 1000, null,
+                    null, RECIPE_ID.OAUTH.toString());
+
+            assertEquals("OAUTH2_AUTH_ERROR", actualResponse.get("status").getAsString());
+            assertTrue(actualResponse.has("error"));
+            assertTrue(actualResponse.has("errorDescription"));
+            assertEquals(expectedError,actualResponse.get("error").getAsString());
+            assertEquals(expectedDescription, actualResponse.get("errorDescription").getAsString());
+
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testCalledWithWrongRedirectUrl_exceptionThrown()
+            throws StorageQueryException, OAuth2ClientAlreadyExistsForAppException,
+            io.supertokens.test.httpRequest.HttpResponseException, IOException, InterruptedException {
+
+
+        String[] args = {"../"};
+
+        this.process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        String clientId = "6030f07e-c8ef-4289-80c9-c18e0bf4f679";
+        String redirectUri = "http://localhost.com:3031/auth/callback/ory_not_the_registered_one";
+        String responseType = "code";
+        String scope = "profile";
+        String state = "%EF%BF%BD%EF%BF%BD%EF%BF%BD%EF%BF%BD%EF%BF%BD%EF%BF%BDv%EF%BF%BD%EF%BF%BD%EF%BF%BD%EF%BF%BD%EF%BF%BD";
+
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("clientId", clientId);
+        requestBody.addProperty("redirectUri", redirectUri);
+        requestBody.addProperty("responseType", responseType);
+        requestBody.addProperty("scope", scope);
+        requestBody.addProperty("state", state);
+
+        OAuthSQLStorage oAuthStorage = (OAuthSQLStorage) StorageLayer.getStorage(process.getProcess());
+
+        AppIdentifier testApp = new AppIdentifier("", "");
+        oAuthStorage.addClientForApp(testApp, clientId);
+
+        OAuthAuthException thrown = assertThrows(OAuthAuthException.class, () -> {
+
+            OAuthAuthResponse response = OAuth.getAuthorizationUrl(process.getProcess(), new AppIdentifier("", ""),
+                    oAuthStorage, requestBody);
         });
 
         String expectedError = "invalid_request";
@@ -238,23 +272,19 @@ public class OAuthAuthAPITest {
         assertEquals(expectedDescription, thrown.errorDescription);
 
         {
-            JsonObject requestBody = new JsonObject();
-            requestBody.addProperty("clientId", clientId);
-            requestBody.addProperty("redirectUri", redirectUri);
-            requestBody.addProperty("responseType", responseType);
-            requestBody.addProperty("scope", scope);
-            requestBody.addProperty("state", state);
 
-            assertThrows(io.supertokens.test.httpRequest.HttpResponseException.class, () -> {
-                JsonObject actualResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/oauth/auth", requestBody, 1000, 1000, null,
-                        null, RECIPE_ID.OAUTH.toString());
+            JsonObject actualResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/oauth/auth", requestBody, 1000, 1000, null,
+                    null, RECIPE_ID.OAUTH.toString());
 
-                assertTrue(actualResponse.has("error"));
-                assertTrue(actualResponse.has("error_description"));
-                assertEquals(expectedError, actualResponse.get("error").getAsString());
-                assertEquals(expectedDescription, actualResponse.get("error_description").getAsString());
-            });
+            assertEquals("OAUTH2_AUTH_ERROR", actualResponse.get("status").getAsString());
+            assertTrue(actualResponse.has("error"));
+            assertTrue(actualResponse.has("errorDescription"));
+            assertEquals(expectedError, actualResponse.get("error").getAsString());
+            assertEquals(expectedDescription, actualResponse.get("errorDescription").getAsString());
+
         }
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 }

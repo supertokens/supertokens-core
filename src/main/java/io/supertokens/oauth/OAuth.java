@@ -23,10 +23,7 @@ import io.supertokens.Main;
 import io.supertokens.config.Config;
 import io.supertokens.httpRequest.HttpRequest;
 import io.supertokens.httpRequest.HttpResponseException;
-import io.supertokens.oauth.exceptions.OAuthAuthException;
-import io.supertokens.oauth.exceptions.OAuthClientException;
-import io.supertokens.oauth.exceptions.OAuthClientRegisterException;
-import io.supertokens.oauth.exceptions.OAuthException;
+import io.supertokens.oauth.exceptions.*;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
@@ -55,8 +52,7 @@ public class OAuth {
     private static final String HYDRA_AUTH_ENDPOINT = "/oauth2/auth";
     private static final String HYDRA_CLIENTS_ENDPOINT = "/admin/clients";
 
-    public static OAuthAuthResponse getAuthorizationUrl(Main main, AppIdentifier appIdentifier, Storage storage, String clientId,
-                                                        String redirectURI, String responseType, String scope, String state)
+    public static OAuthAuthResponse getAuthorizationUrl(Main main, AppIdentifier appIdentifier, Storage storage, JsonObject paramsFromSdk)
             throws InvalidConfigException, HttpResponseException, IOException, OAuthAuthException, StorageQueryException,
             TenantOrAppNotFoundException {
 
@@ -69,11 +65,13 @@ public class OAuth {
         String hydraInternalAddress = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOauthProviderUrlConfiguredInHydra();
         String hydraBaseUrlForConsentAndLogin = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOauthProviderConsentLoginBaseUrl();
 
+        String clientId = paramsFromSdk.get("clientId").getAsString();
+
         if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientId)) {
             throw new OAuthAuthException("invalid_client", "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method). The requested OAuth 2.0 Client does not exist.");
         } else {
             // we query hydra
-            Map<String, String> queryParamsForHydra = constructHydraRequestParamsForAuthorizationGETAPICall(clientId, redirectURI, responseType, scope, state);
+            Map<String, String> queryParamsForHydra = constructHydraRequestParamsForAuthorizationGETAPICall(paramsFromSdk);
             Map<String, List<String>> responseHeaders = new HashMap<>();
 
             HttpRequest.sendGETRequestWithResponseHeaders(main, "", publicOAuthProviderServiceUrl + HYDRA_AUTH_ENDPOINT, queryParamsForHydra, 10000, 10000, null, responseHeaders, false);
@@ -117,7 +115,7 @@ public class OAuth {
             String clientId = "supertokens_" + Utils.hashSHA256Base64UrlSafe(idBaseBytes);
             try {
                 if(oauthStorage.isClientIdAlreadyExists(clientId)){
-                    continue; // restart
+                    continue; // restart, don't even try with Id which we know exists in hydra
                 }
 
                 JsonObject hydraRequestBody = constructHydraRequestParamsForRegisterClientPOST(paramsFromSdk, clientId);
@@ -128,7 +126,14 @@ public class OAuth {
                 return formatResponseForSDK(hydraResponse); //sdk expects everything from hydra in camelCase
             } catch (HttpResponseException e) {
                 try {
-                    throw createCustomExceptionFromHttpResponseException(e, OAuthClientRegisterException.class);
+                    if (e.statusCode == 409){
+                        //no-op
+                        //client with id already exists, silently retry with different Id
+                    } else {
+                        //other error from hydra, like invalid content in json. Throw exception
+                        throw createCustomExceptionFromHttpResponseException(
+                                e, OAuthClientRegisterException.class);
+                    }
                 } catch (NoSuchMethodException | InvocationTargetException | InstantiationException |
                          IllegalAccessException ex) {
                     throw new RuntimeException(ex);
@@ -141,49 +146,48 @@ public class OAuth {
     }
 
     public static JsonObject loadOAuthClient(Main main, AppIdentifier appIdentifier, Storage storage, String clientId)
-            throws TenantOrAppNotFoundException, OAuthClientException, InvalidConfigException, StorageQueryException,
-            IOException {
+            throws TenantOrAppNotFoundException, InvalidConfigException, StorageQueryException,
+            IOException, OAuthClientNotFoundException {
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
 
         String adminOAuthProviderServiceUrl = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderAdminServiceUrl();
 
         if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientId)) {
-            throw new OAuthClientException("Unable to locate the resource", "");
+            throw new OAuthClientNotFoundException("Unable to locate the resource", "");
         } else {
             try {
                 JsonObject hydraResponse = HttpRequest.sendGETRequest(main, "", adminOAuthProviderServiceUrl + HYDRA_CLIENTS_ENDPOINT + "/" + clientId, null, 10000, 10000, null);
                 return  formatResponseForSDK(hydraResponse);
             } catch (HttpResponseException e) {
                 try {
-                    throw createCustomExceptionFromHttpResponseException(e, OAuthClientException.class);
+                    throw createCustomExceptionFromHttpResponseException(e, OAuthClientNotFoundException.class);
                 } catch (NoSuchMethodException | InvocationTargetException | InstantiationException |
                          IllegalAccessException ex) {
-                    throw new RuntimeException("Something went really wrong!");
+                    throw new RuntimeException(ex);
                 }
             }
         }
     }
 
     public static void deleteOAuthClient(Main main, AppIdentifier appIdentifier, Storage storage, String clientId)
-            throws TenantOrAppNotFoundException, OAuthClientException, InvalidConfigException, StorageQueryException,
-            IOException {
+            throws TenantOrAppNotFoundException, InvalidConfigException, StorageQueryException,
+            IOException, OAuthClientNotFoundException {
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
 
         String adminOAuthProviderServiceUrl = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderAdminServiceUrl();
 
         if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientId)) {
-            throw new OAuthClientException("Unable to locate the resource", "");
+            throw new OAuthClientNotFoundException("Unable to locate the resource", "");
         } else {
             try {
-                HttpRequest.sendJsonDELETERequest(main, "", adminOAuthProviderServiceUrl + HYDRA_CLIENTS_ENDPOINT + "/" + clientId, null, 10000, 10000, null);
-
                 oauthStorage.removeAppClientAssociation(appIdentifier, clientId);
+                HttpRequest.sendJsonDELETERequest(main, "", adminOAuthProviderServiceUrl + HYDRA_CLIENTS_ENDPOINT + "/" + clientId, null, 10000, 10000, null);
             } catch (HttpResponseException e) {
                 try {
-                    throw createCustomExceptionFromHttpResponseException(e, OAuthClientException.class);
+                    throw createCustomExceptionFromHttpResponseException(e, OAuthClientNotFoundException.class);
                 } catch (NoSuchMethodException | InvocationTargetException | InstantiationException |
                          IllegalAccessException ex) {
-                    throw new RuntimeException("Something went really wrong!");
+                    throw new RuntimeException(ex);
                 }
             }
         }
@@ -228,14 +232,11 @@ public class OAuth {
         return formattedResponse;
     }
 
-    private static Map<String, String> constructHydraRequestParamsForAuthorizationGETAPICall(String clientId,
-                                                                                             String redirectURI, String responseType, String scope, String state) {
+    private static Map<String, String> constructHydraRequestParamsForAuthorizationGETAPICall(JsonObject inputFromSdk) {
         Map<String, String> queryParamsForHydra = new HashMap<>();
-        queryParamsForHydra.put("client_id", clientId);
-        queryParamsForHydra.put("redirect_uri", redirectURI);
-        queryParamsForHydra.put("scope", scope);
-        queryParamsForHydra.put("response_type", responseType);
-        queryParamsForHydra.put("state", state);
+        for(Map.Entry<String, JsonElement> jsonElement : inputFromSdk.entrySet()){
+            queryParamsForHydra.put(Utils.camelCaseToSnakeCase(jsonElement.getKey()), jsonElement.getValue().getAsString());
+        }
         return  queryParamsForHydra;
     }
 

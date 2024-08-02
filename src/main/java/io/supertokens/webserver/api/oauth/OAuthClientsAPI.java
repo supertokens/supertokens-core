@@ -16,12 +16,11 @@
 
 package io.supertokens.webserver.api.oauth;
 
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.oauth.OAuth;
-import io.supertokens.oauth.exceptions.OAuthClientException;
+import io.supertokens.oauth.exceptions.OAuthClientNotFoundException;
 import io.supertokens.oauth.exceptions.OAuthClientRegisterException;
 import io.supertokens.oauth.exceptions.OAuthException;
 import io.supertokens.pluginInterface.RECIPE_ID;
@@ -39,19 +38,17 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.Serial;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 public class OAuthClientsAPI extends WebserverAPI {
 
     @Serial
     private static final long serialVersionUID = -4482427281337641246L;
 
-    private static final List<String> ALLOWED_INPUT_FIELDS = Arrays.asList(new String[]{"clientName","scope", "redirectUris", "allowedCorsOrigins", "authorizationCodeGrantAccessTokenLifespan", "authorizationCodeGrantIdTokenLifespan", "authorizationCodeGrantRefreshTokenLifespan",
-        "clientCredentialsGrantAccessTokenLifespan","implicitGrantAccessTokenLifespan","implicitGrantIdTokenLifespan","refreshTokenGrantAccessTokenLifespan","refreshTokenGrantIdTokenLifespan","refreshTokenGrantRefreshTokenLifespan","tokenEndpointAuthMethod","audience",
-        "grantTypes","responseTypes","clientUri","logoUri","policyUri","tosUri","metadata"});
-    private static final List<String> REQUIRED_INPUT_FIELDS = Arrays.asList(new String[]{"clientName", "scope"});
+    private static final List<String> REQUIRED_INPUT_FIELDS_FOR_POST = Arrays.asList(new String[]{"clientName", "scope"});
+    public static final String OAUTH_2_CLIENT_NOT_FOUND = "OAUTH2_CLIENT_NOT_FOUND";
 
     @Override
     public String getPath() {
@@ -63,25 +60,25 @@ public class OAuthClientsAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
-        boolean containsAllRequired = containsAllRequiredFields(input);
-        boolean containsMoreThanAllowed = containsMoreThanAllowed(input);
-        if(!containsAllRequired || containsMoreThanAllowed){
-            throw new ServletException(new WebserverAPI.BadRequestException("Invalid Json Input"));
-        }
+        JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
+        InputParser.collectAllMissingRequiredFieldsAndThrowError(input, REQUIRED_INPUT_FIELDS_FOR_POST);
 
         try {
             AppIdentifier appIdentifier = getAppIdentifier(req);
             Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
 
             JsonObject response = OAuth.registerOAuthClient(super.main, appIdentifier, storage, input);
-            sendJsonResponse(200, response, resp);
+            JsonObject postResponseBody = new JsonObject();
+            postResponseBody.addProperty("status", "OK");
+            postResponseBody.add("client", response);
+            sendJsonResponse(200, postResponseBody, resp);
 
         } catch (OAuthClientRegisterException registerException) {
 
             JsonObject errorResponse = createJsonFromException(registerException);
-            sendJsonResponse(400, errorResponse, resp);
+            errorResponse.addProperty("status", "INVALID_INPUT");
+            sendJsonResponse(200, errorResponse, resp);
 
         } catch (TenantOrAppNotFoundException | InvalidConfigException | BadPermissionException
                  | NoSuchAlgorithmException | StorageQueryException e) {
@@ -97,12 +94,17 @@ public class OAuthClientsAPI extends WebserverAPI {
             AppIdentifier appIdentifier = getAppIdentifier(req);
             Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
 
-            JsonObject response = OAuth.loadOAuthClient(main, appIdentifier, storage, clientId);
+            JsonObject client = OAuth.loadOAuthClient(main, appIdentifier, storage, clientId);
+
+            JsonObject response = new JsonObject();
+            response.addProperty("status", "OK");
+            response.add("client", client);
             sendJsonResponse(200, response, resp);
 
-        }  catch (OAuthClientException e) {
+        }  catch (OAuthClientNotFoundException e) {
             JsonObject errorResponse = createJsonFromException(e);
-            sendJsonResponse(400, errorResponse, resp);
+            errorResponse.addProperty("status", OAUTH_2_CLIENT_NOT_FOUND);
+            sendJsonResponse(200, errorResponse, resp);
 
         } catch (TenantOrAppNotFoundException | InvalidConfigException | BadPermissionException
                  | StorageQueryException e){
@@ -125,9 +127,10 @@ public class OAuthClientsAPI extends WebserverAPI {
             responseBody.addProperty("status", "OK");
             sendJsonResponse(200, responseBody, resp);
 
-        }  catch (OAuthClientException e) {
+        }  catch (OAuthClientNotFoundException e) {
             JsonObject errorResponse = createJsonFromException(e);
-            sendJsonResponse(400, errorResponse, resp);
+            errorResponse.addProperty("status", OAUTH_2_CLIENT_NOT_FOUND);
+            sendJsonResponse(200, errorResponse, resp);
 
         } catch (TenantOrAppNotFoundException | InvalidConfigException | BadPermissionException
                  | StorageQueryException e){
@@ -138,31 +141,8 @@ public class OAuthClientsAPI extends WebserverAPI {
     private JsonObject createJsonFromException(OAuthException exception){
         JsonObject errorResponse = new JsonObject();
         errorResponse.addProperty("error", exception.error);
-        errorResponse.addProperty("error_description", exception.errorDescription);
+        errorResponse.addProperty("errorDescription", exception.errorDescription);
 
         return errorResponse;
-    }
-
-    private boolean containsAllRequiredFields(JsonObject input){
-        boolean foundMissing = false;
-        for(String requiredField : OAuthClientsAPI.REQUIRED_INPUT_FIELDS){
-            if(input.get(requiredField) == null || input.get(requiredField).isJsonNull() ||
-                    input.get(requiredField).getAsString().isEmpty()){
-                foundMissing = true;
-                break;
-            }
-        }
-        return  !foundMissing;
-    }
-
-    private boolean containsMoreThanAllowed(JsonObject input) {
-        boolean containsMore = false;
-        for(Map.Entry<String, JsonElement> jsonEntry : input.entrySet()){
-            if(!OAuthClientsAPI.ALLOWED_INPUT_FIELDS.contains(jsonEntry.getKey())){
-                containsMore = true;
-                break;
-            }
-        }
-        return containsMore;
     }
 }

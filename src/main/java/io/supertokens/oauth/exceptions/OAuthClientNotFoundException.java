@@ -18,12 +18,11 @@ package io.supertokens.oauth.exceptions;
 
 import java.io.Serial;
 
-public class OAuthClientException extends  OAuthException{
-
+public class OAuthClientNotFoundException extends OAuthException{
     @Serial
-    private static final long serialVersionUID = -140335439416174384L;
+    private static final long serialVersionUID = 1412853176388698991L;
 
-    public OAuthClientException(String error, String errorDescription) {
+    public OAuthClientNotFoundException(String error, String errorDescription) {
         super(error, errorDescription);
     }
 }

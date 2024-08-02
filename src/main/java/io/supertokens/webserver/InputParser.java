@@ -21,12 +21,15 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import io.supertokens.webserver.api.oauth.OAuthClientsAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class InputParser {
     public static JsonObject parseJsonObjectOrThrowError(HttpServletRequest request)
@@ -236,4 +239,19 @@ public class InputParser {
 
     }
 
+    public static List<String> collectAllMissingRequiredFieldsAndThrowError(JsonObject input, List<String> requiredFields)
+            throws ServletException {
+        List<String> missingFields = new ArrayList<>();
+        for(String requiredField : requiredFields){
+            if(input.get(requiredField) == null || input.get(requiredField).isJsonNull() ||
+                    input.get(requiredField).getAsString().isEmpty()){
+                missingFields.add(requiredField);
+            }
+        }
+        if(!missingFields.isEmpty()){
+            throw new ServletException(new WebserverAPI.BadRequestException("Field name `" + String.join("','", missingFields)
+                    + "` is missing in JSON input"));
+        }
+        return missingFields;
+    }
 }
