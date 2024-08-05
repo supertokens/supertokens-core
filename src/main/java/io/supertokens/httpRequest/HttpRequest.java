@@ -262,7 +262,6 @@ public class HttpRequest {
         return sendJsonRequest(main, requestID, url, requestBody, connectionTimeoutMS, readTimeoutMS, version, "PUT");
     }
 
-    //TODO: tests!
     public static <T> T sendJsonPATCHRequest(Main main, String url, JsonElement requestBody)
             throws IOException, HttpResponseException, InterruptedException {
 
