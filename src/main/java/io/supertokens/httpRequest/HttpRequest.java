@@ -26,6 +26,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
 
 public class HttpRequest {
@@ -126,7 +127,7 @@ public class HttpRequest {
     public static <T> T sendGETRequestWithResponseHeaders(Main main, String requestID, String url,
                                                           Map<String, String> params,
                                                           int connectionTimeoutMS, int readTimeoutMS, Integer version,
-                                                          Map<String, String> responseHeaders)
+                                                          Map<String, List<String>> responseHeaders, boolean followRedirects)
             throws IOException, HttpResponseException {
         StringBuilder paramBuilder = new StringBuilder();
 
@@ -152,12 +153,12 @@ public class HttpRequest {
             if (version != null) {
                 con.setRequestProperty("api-version", version + "");
             }
-
+            con.setInstanceFollowRedirects(followRedirects);
             int responseCode = con.getResponseCode();
 
             con.getHeaderFields().forEach((key, value) -> {
                 if (key != null) {
-                    responseHeaders.put(key, value.get(0));
+                    responseHeaders.put(key, value);
                 }
             });
 

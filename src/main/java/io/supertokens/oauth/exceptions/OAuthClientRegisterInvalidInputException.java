@@ -1,5 +1,5 @@
 /*
- *    Copyright (c) 2020, VRAI Labs and/or its affiliates. All rights reserved.
+ *    Copyright (c) 2024, VRAI Labs and/or its affiliates. All rights reserved.
  *
  *    This software is licensed under the Apache License, Version 2.0 (the
  *    "License") as published by the Apache Software Foundation.
@@ -14,18 +14,16 @@
  *    under the License.
  */
 
-package io.supertokens.httpRequest;
+package io.supertokens.oauth.exceptions;
 
-public class HttpResponseException extends Exception {
+import java.io.Serial;
 
-    private static final long serialVersionUID = 1L;
+public class OAuthClientRegisterInvalidInputException extends OAuthException{
 
-    public final int statusCode;
-    public final String rawMessage;
+    @Serial
+    private static final long serialVersionUID = 665027786586190611L;
 
-    HttpResponseException(int statusCode, String message) {
-        super("Http error. Status Code: " + statusCode + ". Message: " + message);
-        this.statusCode = statusCode;
-        this.rawMessage = message;
+    public OAuthClientRegisterInvalidInputException(String error, String errorDescription) {
+        super(error, errorDescription);
     }
 }

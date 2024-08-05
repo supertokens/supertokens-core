@@ -12,7 +12,17 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Added new feature in license key: `OAUTH`
 - Adds new core config:
     - `oauth_provider_public_service_url`
+    - `oauth_provider_admin_service_url`
+    - `oauth_provider_consent_login_base_url`
+    - `oauth_provider_url_configured_in_hydra`
+- Adds POST `/recipe/oauth/auth` for OAuth2 auth flow support
+- Adds POST `/recipe/oauth/clients` for OAuth2 client registration
+- Adds GET `/recipe/oauth/clients?clientId=example_id` for loading OAuth2 client
+- Adds DELETE `/recipe/oauth/clients` for deleting OAuth2 Clients
+- Creates new table `oauth_clients`
 
+### Migration
+TODO: after plugin support
 
 ## [9.1.1] -2024-07-24
 

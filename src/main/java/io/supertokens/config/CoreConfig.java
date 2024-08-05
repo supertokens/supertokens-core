@@ -41,6 +41,8 @@ import org.jetbrains.annotations.TestOnly;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.*;
 import java.util.regex.PatternSyntaxException;
 
@@ -63,7 +65,9 @@ public class CoreConfig {
             "ip_allow_regex",
             "ip_deny_regex",
             "oauth_provider_public_service_url",
-            "oauth_provider_admin_service_url"
+            "oauth_provider_admin_service_url",
+            "oauth_provider_consent_login_base_url",
+            "oauth_provider_url_configured_in_hydra"
     };
 
     @IgnoreForAnnotationCheck
@@ -275,18 +279,35 @@ public class CoreConfig {
                     " address.")
     private String ip_deny_regex = null;
 
-    @ConfigYamlOnly
+    @NotConflictingInApp
     @JsonProperty
     @HideFromDashboard
     @ConfigDescription(
             "If specified, the core uses this URL to connect to the OAuth provider public service.")
     private String oauth_provider_public_service_url = null;
 
-    @ConfigYamlOnly
+    @NotConflictingInApp
     @JsonProperty
+    @HideFromDashboard
     @ConfigDescription(
             "If specified, the core uses this URL to connect to the OAuth provider admin service.")
     private String oauth_provider_admin_service_url = null;
+
+    @NotConflictingInApp
+    @JsonProperty
+    @HideFromDashboard
+    @ConfigDescription(
+            "If specified, the core uses this URL replace the default consent and login URLs to {apiDomain}. Defaults to 'http://localhost:3000'")
+    private String oauth_provider_consent_login_base_url = "http://localhost:3000";
+
+    @NotConflictingInApp
+    @JsonProperty
+    @HideFromDashboard
+    @ConfigDescription(
+            "If specified, the core uses this URL to parse responses from the oauth provider when the oauth provider's internal address differs from the known public provider address. Defaults to the oauth_provider_public_service_url")
+    private String oauth_provider_url_configured_in_hydra;
+
+
 
     @ConfigYamlOnly
     @JsonProperty
@@ -345,6 +366,20 @@ public class CoreConfig {
             throw new InvalidConfigException("oauth_provider_public_service_url is not set");
         }
         return oauth_provider_admin_service_url;
+    }
+
+    public String getOauthProviderConsentLoginBaseUrl() throws InvalidConfigException {
+        if(oauth_provider_consent_login_base_url == null){
+            throw new InvalidConfigException("oauth_provider_consent_login_base_url is not set");
+        }
+        return oauth_provider_consent_login_base_url;
+    }
+
+    public String getOauthProviderUrlConfiguredInHydra() throws InvalidConfigException {
+        if(oauth_provider_url_configured_in_hydra == null) {
+            throw new InvalidConfigException("oauth_provider_url_configured_in_hydra is not set");
+        }
+        return oauth_provider_url_configured_in_hydra;
     }
 
     public String getIpAllowRegex() {
@@ -833,6 +868,46 @@ public class CoreConfig {
             }
         }
 
+        if(oauth_provider_public_service_url != null) {
+            try {
+                URL url = new URL(oauth_provider_public_service_url);
+            } catch (MalformedURLException malformedURLException){
+                throw new InvalidConfigException("oauth_provider_public_service_url is not a valid URL");
+            }
+        }
+
+        if(oauth_provider_admin_service_url != null) {
+            try {
+                URL url = new URL(oauth_provider_admin_service_url);
+            } catch (MalformedURLException malformedURLException){
+                throw new InvalidConfigException("oauth_provider_admin_service_url is not a valid URL");
+            }
+        }
+
+        if(oauth_provider_consent_login_base_url != null) {
+            try {
+                URL url = new URL(oauth_provider_consent_login_base_url);
+            } catch (MalformedURLException malformedURLException){
+                throw new InvalidConfigException("oauth_provider_consent_login_base_url is not a valid URL");
+            }
+        }
+
+
+        if(oauth_provider_url_configured_in_hydra == null) {
+            oauth_provider_url_configured_in_hydra = oauth_provider_public_service_url;
+        } else {
+            try {
+                URL url = new URL(oauth_provider_url_configured_in_hydra);
+            } catch (MalformedURLException malformedURLException){
+                throw new InvalidConfigException("oauth_provider_url_configured_in_hydra is not a valid URL");
+            }
+        }
+
+        List<String> configsTogetherSet = Arrays.asList(oauth_provider_public_service_url, oauth_provider_admin_service_url, oauth_provider_consent_login_base_url);
+        if(isAnySet(configsTogetherSet) && !isAllSet(configsTogetherSet)) {
+            throw new InvalidConfigException("If any of the following is set, all of them has to be set: oauth_provider_public_service_url, oauth_provider_admin_service_url, oauth_provider_consent_login_base_url");
+        }
+
         isNormalizedAndValid = true;
     }
 
@@ -962,5 +1037,25 @@ public class CoreConfig {
 
     public String getMaxCDIVersion() {
         return this.supertokens_max_cdi_version;
+    }
+
+    private boolean isAnySet(List<String> configs){
+        for (String config : configs){
+            if(config!=null){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isAllSet(List<String> configs) {
+        boolean foundNotSet = false;
+        for(String config: configs){
+            if(config == null){
+                foundNotSet = true;
+                break;
+            }
+        }
+        return !foundNotSet;
     }
 }
