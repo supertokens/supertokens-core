@@ -23,6 +23,7 @@ import io.supertokens.httpRequest.HttpRequest;
 import io.supertokens.httpRequest.HttpResponseException;
 import io.supertokens.webserver.Webserver;
 import io.supertokens.webserver.WebserverAPI;
+import jakarta.servlet.http.Cookie;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -34,7 +35,10 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -732,6 +736,58 @@ public class HttpRequestTest {
                     "http://localhost:3567/getTestWithoutParams", null, 1000, 1000, null);
             assertEquals(response, "200");
         }
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void getRequestTestWithHeaders() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        // api to check getRequestWithParams
+        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
+
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            protected boolean checkAPIKey(HttpServletRequest req) {
+                return false;
+            }
+
+            @Override
+            public String getPath() {
+                return "/getTestWithHeaders";
+            }
+
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+                Cookie cookie1 = new Cookie("someValue", "value");
+                Cookie cookie2 = new Cookie("someValue2", "value2");
+                resp.setHeader("SomeNameForHeader", "someValueForHeader");
+                resp.addCookie(cookie1);
+                resp.addCookie(cookie2);
+                super.sendTextResponse(200, "200", resp);
+            }
+
+        });
+
+        HashMap<String, List<String>> responseHeaders = new HashMap<>();
+
+        {
+            String response = HttpRequest.sendGETRequestWithResponseHeaders(process.getProcess(), "",
+                    "http://localhost:3567/getTestWithHeaders", null, 1000, 1000, null, responseHeaders, true);
+            assertEquals(response, "200");
+            assertTrue(responseHeaders.containsKey("SomeNameForHeader"));
+            assertEquals(responseHeaders.get("SomeNameForHeader"), Collections.singletonList("someValueForHeader"));
+            assertTrue(responseHeaders.containsKey("Set-Cookie"));
+            assertEquals(2, responseHeaders.get("Set-Cookie").size());
+            assertTrue(responseHeaders.get("Set-Cookie").contains("someValue=value"));
+            assertTrue(responseHeaders.get("Set-Cookie").contains("someValue2=value2"));
+        }
+
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }

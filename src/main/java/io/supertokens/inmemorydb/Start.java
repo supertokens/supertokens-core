@@ -55,6 +55,8 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateTenantExc
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateThirdPartyIdException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.multitenancy.sqlStorage.MultitenancySQLStorage;
+import io.supertokens.pluginInterface.oauth.exceptions.OAuth2ClientAlreadyExistsForAppException;
+import io.supertokens.pluginInterface.oauth.sqlStorage.OAuthSQLStorage;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
 import io.supertokens.pluginInterface.passwordless.PasswordlessDevice;
 import io.supertokens.pluginInterface.passwordless.exception.*;
@@ -102,7 +104,7 @@ public class Start
         implements SessionSQLStorage, EmailPasswordSQLStorage, EmailVerificationSQLStorage, ThirdPartySQLStorage,
         JWTRecipeSQLStorage, PasswordlessSQLStorage, UserMetadataSQLStorage, UserRolesSQLStorage, UserIdMappingStorage,
         UserIdMappingSQLStorage, MultitenancyStorage, MultitenancySQLStorage, TOTPSQLStorage, ActiveUsersStorage,
-        ActiveUsersSQLStorage, DashboardSQLStorage, AuthRecipeSQLStorage {
+        ActiveUsersSQLStorage, DashboardSQLStorage, AuthRecipeSQLStorage, OAuthSQLStorage {
 
     private static final Object appenderLock = new Object();
     private static final String APP_ID_KEY_NAME = "app_id";
@@ -3003,6 +3005,43 @@ public class Start
         try {
             return ActiveUsersQueries.countUsersThatHaveMoreThanOneLoginMethodOrTOTPEnabledAndActiveSince(this,
                     appIdentifier, sinceTime);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public boolean doesClientIdExistForThisApp(AppIdentifier appIdentifier, String clientId)
+            throws StorageQueryException {
+        try {
+            return OAuthQueries.isClientIdForAppId(this, clientId, appIdentifier);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void addClientForApp(AppIdentifier appIdentifier, String clientId)
+            throws StorageQueryException, OAuth2ClientAlreadyExistsForAppException {
+        try {
+            OAuthQueries.insertClientIdForAppId(this, clientId, appIdentifier);
+        } catch (SQLException e) {
+
+            SQLiteConfig config = Config.getConfig(this);
+            String serverErrorMessage = e.getMessage();
+
+            if (isPrimaryKeyError(serverErrorMessage, config.getOAuthClientTable(),
+                    new String[]{"app_id", "client_id"})) {
+                throw new OAuth2ClientAlreadyExistsForAppException();
+            }
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public boolean removeAppClientAssociation(AppIdentifier appIdentifier, String clientId) throws StorageQueryException {
+        try {
+            return OAuthQueries.deleteClientIdForAppId(this, clientId, appIdentifier);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }

@@ -423,6 +423,10 @@ public class GeneralQueries {
             update(start, TOTPQueries.getQueryToCreateUsedCodesExpiryTimeIndex(start), NO_OP_SETTER);
         }
 
+        if (!doesTableExists(start, Config.getConfig(start).getOAuthClientTable())) {
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, OAuthQueries.getQueryToCreateOAuthClientTable(start), NO_OP_SETTER);
+        }
     }
 
 
