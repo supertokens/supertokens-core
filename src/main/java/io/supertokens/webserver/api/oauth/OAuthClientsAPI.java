@@ -66,7 +66,7 @@ public class OAuthClientsAPI extends WebserverAPI {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
 
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-        InputParser.collectAllMissingRequiredFieldsOrThrowError(input, REQUIRED_INPUT_FIELDS_FOR_POST);
+        InputParser.throwErrorOnMissingRequiredField(input, REQUIRED_INPUT_FIELDS_FOR_POST);
 
         try {
             AppIdentifier appIdentifier = getAppIdentifier(req);
@@ -80,8 +80,7 @@ public class OAuthClientsAPI extends WebserverAPI {
 
         } catch (OAuthAPIInvalidInputException registerException) {
 
-            JsonObject errorResponse = createJsonFromException(registerException, INVALID_INPUT_ERROR);
-            sendJsonResponse(400, errorResponse, resp);
+            throw new ServletException(new BadRequestException(registerException.error + " - " + registerException.errorDescription));
 
         } catch (TenantOrAppNotFoundException | InvalidConfigException | BadPermissionException
                  | NoSuchAlgorithmException | StorageQueryException e) {
@@ -142,7 +141,7 @@ public class OAuthClientsAPI extends WebserverAPI {
     @Override
     protected void doPatch(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-        InputParser.collectAllMissingRequiredFieldsOrThrowError(input, REQUIRED_INPUT_FIELDS_FOR_PATCH);
+        InputParser.throwErrorOnMissingRequiredField(input, REQUIRED_INPUT_FIELDS_FOR_PATCH);
 
         try {
             AppIdentifier appIdentifier = getAppIdentifier(req);
@@ -155,9 +154,7 @@ public class OAuthClientsAPI extends WebserverAPI {
             sendJsonResponse(200, postResponseBody, resp);
 
         } catch (OAuthAPIInvalidInputException exception) {
-            JsonObject errorResponse = createJsonFromException(exception, INVALID_INPUT_ERROR);
-            sendJsonResponse(400, errorResponse, resp);
-
+            throw new ServletException(new BadRequestException(exception.error + " - " + exception.errorDescription));
         } catch (OAuthClientUpdateException updateException) {
             //for errors with the update from hydra, which are not invalid input errors
             JsonObject errorResponse = createJsonFromException(updateException, OAUTH2_CLIENT_UPDATE_ERROR);
