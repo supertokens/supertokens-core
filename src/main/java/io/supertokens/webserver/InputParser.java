@@ -21,7 +21,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-import io.supertokens.webserver.api.oauth.OAuthClientsAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -239,7 +238,7 @@ public class InputParser {
 
     }
 
-    public static void collectAllMissingRequiredFieldsOrThrowError(JsonObject input, List<String> requiredFields)
+    public static void throwErrorOnMissingRequiredField(JsonObject input, List<String> requiredFields)
             throws ServletException {
         List<String> missingFields = new ArrayList<>();
         for(String requiredField : requiredFields){
