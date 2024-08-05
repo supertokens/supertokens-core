@@ -156,8 +156,7 @@ public class OAuthClientsAPI extends WebserverAPI {
             throw new ServletException(new BadRequestException(exception.error + " - " + exception.errorDescription));
         } catch (OAuthClientUpdateException updateException) {
             //for errors with the update from hydra, which are not reported back as invalid input errors
-            JsonObject errorResponse = createJsonFromException(updateException, OAUTH2_CLIENT_UPDATE_ERROR);
-            sendJsonResponse(200, errorResponse, resp);
+            throw new ServletException(updateException);
 
         } catch (OAuthClientNotFoundException clientNotFoundException) {
             JsonObject errorResponse = createJsonFromException(clientNotFoundException, OAUTH2_CLIENT_NOT_FOUND_ERROR);

@@ -210,7 +210,7 @@ public class OAuth {
             try {
                 JsonObject updatedClient = HttpRequest.sendJsonPATCHRequest(main, adminOAuthProviderServiceUrl + HYDRA_CLIENTS_ENDPOINT+ "/" + clientId, hydraInput);
                 return formatResponseForSDK(updatedClient);
-            } catch (IOException e) {
+            } catch (IOException | InterruptedException e) {
                 throw new RuntimeException(e);
             } catch (HttpResponseException e) {
                 int responseStatusCode = e.statusCode;
@@ -220,8 +220,6 @@ public class OAuth {
                     case 500 -> throw createCustomExceptionFromHttpResponseException(e, OAuthClientUpdateException.class); // hydra is not so helpful with the error messages at this endpoint..
                     default -> throw new RuntimeException(e);
                 }
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
             }
         }
     }
