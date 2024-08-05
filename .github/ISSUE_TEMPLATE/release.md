@@ -47,6 +47,8 @@ labels:
     - [ ] Make sure using with-typescript example that types are correct for every new configs exposed to users
     - [ ] Make sure frontend login UI shows even if backend is not working.
     - [ ] Make sure all PR checks are passing - specifically example apps checks should all be passing
+- [ ] [prebuiltui:X.Y](https://github.com/supertokens/prebuiltui) (This is based on supertokens-auth-react release)
+    - [ ] If new recipe, then make sure to expose it as a window variable
 - [ ] [supertokens-react-native:X.Y](https://github.com/supertokens/supertokens-react-native/X.Y)
     - [ ] check FDI list
 - [ ] [supertokens-android:X.Y](https://github.com/supertokens/supertokens-android/X.Y)
@@ -146,6 +148,7 @@ labels:
 - [ ] [supertokens-website:X.Y](https://github.com/supertokens/supertokens-website/tree/X.Y)
 - [ ] [supertokens-web-js:X.Y](https://github.com/supertokens/supertokens-web-js/tree/X.Y)
 - [ ] [supertokens-auth-react:X.Y](https://github.com/supertokens/supertokens-auth-react/tree/X.Y)
+- [ ] [prebuiltui:X.Y](https://github.com/supertokens/prebuiltui)
 - [ ] [supertokens-python:X.Y](https://github.com/supertokens/supertokens-python/tree/X.Y)
 - [ ] [supertokens-react-native:X.Y](https://github.com/supertokens/supertokens-react-native/X.Y)
 - [ ] [supertokens-android:X.Y](https://github.com/supertokens/supertokens-android/X.Y)
@@ -178,6 +181,7 @@ labels:
     - [ ] supertokens-website
     - [ ] supertokens-web-js
     - [ ] supertokens-auth-react
+    - [ ] prebuiltui repo
     - [ ] supertokens-react-native
     - [ ] supertokens-android
     - [ ] supertokens-ios
