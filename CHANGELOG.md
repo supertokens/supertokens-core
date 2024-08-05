@@ -20,6 +20,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Adds GET `/recipe/oauth/clients?clientId=example_id` for loading OAuth2 client
 - Adds DELETE `/recipe/oauth/clients` for deleting OAuth2 Clients
 - Creates new table `oauth_clients`
+- Introduces PATCH capabilities for core (receiving and sending PATCH requests)
+- Adds PATCH `/recipe/oauth/clients` for OAuth2 client update
 
 ### Migration
 TODO: after plugin support

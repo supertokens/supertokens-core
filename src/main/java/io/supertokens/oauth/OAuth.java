@@ -16,6 +16,7 @@
 
 package io.supertokens.oauth;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -103,7 +104,7 @@ public class OAuth {
     //This more or less acts as a pass-through for the sdks, apart from camelCase <-> snake_case key transformation and setting a few default values
     public static JsonObject registerOAuthClient(Main main, AppIdentifier appIdentifier, Storage storage, JsonObject paramsFromSdk)
             throws TenantOrAppNotFoundException, InvalidConfigException, IOException,
-            OAuthClientRegisterInvalidInputException,
+            OAuthAPIInvalidInputException,
             NoSuchAlgorithmException, StorageQueryException {
 
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
@@ -130,7 +131,7 @@ public class OAuth {
                     } else {
                         //other error from hydra, like invalid content in json. Throw exception
                         throw createCustomExceptionFromHttpResponseException(
-                                e, OAuthClientRegisterInvalidInputException.class);
+                                e, OAuthAPIInvalidInputException.class);
                     }
                 } catch (NoSuchMethodException | InvocationTargetException | InstantiationException |
                          IllegalAccessException ex) {
@@ -189,6 +190,61 @@ public class OAuth {
                 }
             }
         }
+    }
+
+    public static JsonObject updateOauthClient(Main main, AppIdentifier appIdentifier, Storage storage, JsonObject paramsFromSdk)
+            throws TenantOrAppNotFoundException, InvalidConfigException, StorageQueryException,
+            InvocationTargetException, NoSuchMethodException, InstantiationException,
+            IllegalAccessException, OAuthClientNotFoundException, OAuthAPIInvalidInputException,
+            OAuthClientUpdateException {
+
+        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+        String adminOAuthProviderServiceUrl = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderAdminServiceUrl();
+
+        String clientId = paramsFromSdk.get("clientId").getAsString();
+
+        if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientId)) {
+            throw new OAuthClientNotFoundException("Unable to locate the resource", "");
+        } else {
+            JsonArray hydraInput = translateIncomingDataToHydraUpdateFormat(paramsFromSdk);
+            try {
+                JsonObject updatedClient = HttpRequest.sendJsonPATCHRequest(main, adminOAuthProviderServiceUrl + HYDRA_CLIENTS_ENDPOINT+ "/" + clientId, hydraInput);
+                return formatResponseForSDK(updatedClient);
+            } catch (IOException | InterruptedException e) {
+                throw new RuntimeException(e);
+            } catch (HttpResponseException e) {
+                int responseStatusCode = e.statusCode;
+                switch (responseStatusCode){
+                    case 400 -> throw createCustomExceptionFromHttpResponseException(e, OAuthAPIInvalidInputException.class);
+                    case 404 -> throw createCustomExceptionFromHttpResponseException(e, OAuthClientNotFoundException.class);
+                    case 500 -> throw createCustomExceptionFromHttpResponseException(e, OAuthClientUpdateException.class); // hydra is not so helpful with the error messages at this endpoint..
+                    default -> throw new RuntimeException(e);
+                }
+            }
+        }
+    }
+
+    private static JsonArray translateIncomingDataToHydraUpdateFormat(JsonObject input){
+        JsonArray hydraPatchFormat = new JsonArray();
+        for (Map.Entry<String, JsonElement> changeIt : input.entrySet()) {
+            if (changeIt.getKey().equals("clientId")) {
+                continue; // we are not updating clientIds!
+            }
+            hydraPatchFormat.add(translateToHydraPatch(changeIt.getKey(),changeIt.getValue()));
+        }
+
+        return hydraPatchFormat;
+    }
+
+    private static JsonObject translateToHydraPatch(String elementName, JsonElement newValue){
+        JsonObject patchFormat = new JsonObject();
+        String hydraElementName = Utils.camelCaseToSnakeCase(elementName);
+        patchFormat.addProperty("from", "/" + hydraElementName);
+        patchFormat.addProperty("path", "/" + hydraElementName);
+        patchFormat.addProperty("op", "replace"); // What was sent by the sdk should be handled as a complete new value for the property
+        patchFormat.add("value", newValue);
+
+        return patchFormat;
     }
 
     private static <T extends OAuthException> T createCustomExceptionFromHttpResponseException(HttpResponseException exception, Class<T> customExceptionClass)

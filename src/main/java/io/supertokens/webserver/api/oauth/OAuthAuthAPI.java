@@ -59,7 +59,7 @@ public class OAuthAuthAPI extends WebserverAPI {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
 
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-        InputParser.collectAllMissingRequiredFieldsOrThrowError(input, REQUIRED_FIELDS_FOR_POST);
+        InputParser.throwErrorOnMissingRequiredField(input, REQUIRED_FIELDS_FOR_POST);
 
         try {
             AppIdentifier appIdentifier = getAppIdentifier(req);

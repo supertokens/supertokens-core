@@ -21,7 +21,8 @@ import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.oauth.OAuth;
 import io.supertokens.oauth.exceptions.OAuthClientNotFoundException;
-import io.supertokens.oauth.exceptions.OAuthClientRegisterInvalidInputException;
+import io.supertokens.oauth.exceptions.OAuthAPIInvalidInputException;
+import io.supertokens.oauth.exceptions.OAuthClientUpdateException;
 import io.supertokens.oauth.exceptions.OAuthException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
@@ -37,6 +38,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.io.Serial;
+import java.lang.reflect.InvocationTargetException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.List;
@@ -47,7 +49,9 @@ public class OAuthClientsAPI extends WebserverAPI {
     private static final long serialVersionUID = -4482427281337641246L;
 
     private static final List<String> REQUIRED_INPUT_FIELDS_FOR_POST = Arrays.asList(new String[]{"clientName", "scope"});
+    private static final List<String> REQUIRED_INPUT_FIELDS_FOR_PATCH = Arrays.asList(new String[]{"clientId"});
     public static final String OAUTH2_CLIENT_NOT_FOUND_ERROR = "OAUTH2_CLIENT_NOT_FOUND_ERROR";
+    public static final String OAUTH2_CLIENT_UPDATE_ERROR = "OAUTH2_CLIENT_UPDATE_ERROR";
 
     @Override
     public String getPath() {
@@ -61,7 +65,7 @@ public class OAuthClientsAPI extends WebserverAPI {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
 
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-        InputParser.collectAllMissingRequiredFieldsOrThrowError(input, REQUIRED_INPUT_FIELDS_FOR_POST);
+        InputParser.throwErrorOnMissingRequiredField(input, REQUIRED_INPUT_FIELDS_FOR_POST);
 
         try {
             AppIdentifier appIdentifier = getAppIdentifier(req);
@@ -73,7 +77,7 @@ public class OAuthClientsAPI extends WebserverAPI {
             postResponseBody.add("client", response);
             sendJsonResponse(200, postResponseBody, resp);
 
-        } catch (OAuthClientRegisterInvalidInputException registerException) {
+        } catch (OAuthAPIInvalidInputException registerException) {
 
             throw new ServletException(new BadRequestException(registerException.error + " - " + registerException.errorDescription));
 
@@ -99,8 +103,7 @@ public class OAuthClientsAPI extends WebserverAPI {
             sendJsonResponse(200, response, resp);
 
         }  catch (OAuthClientNotFoundException e) {
-            JsonObject errorResponse = createJsonFromException(e);
-            errorResponse.addProperty("status", OAUTH2_CLIENT_NOT_FOUND_ERROR);
+            JsonObject errorResponse = createJsonFromException(e, OAUTH2_CLIENT_NOT_FOUND_ERROR);
             sendJsonResponse(200, errorResponse, resp);
 
         } catch (TenantOrAppNotFoundException | InvalidConfigException | BadPermissionException
@@ -125,8 +128,7 @@ public class OAuthClientsAPI extends WebserverAPI {
             sendJsonResponse(200, responseBody, resp);
 
         }  catch (OAuthClientNotFoundException e) {
-            JsonObject errorResponse = createJsonFromException(e);
-            errorResponse.addProperty("status", OAUTH2_CLIENT_NOT_FOUND_ERROR);
+            JsonObject errorResponse = createJsonFromException(e, OAUTH2_CLIENT_NOT_FOUND_ERROR);
             sendJsonResponse(200, errorResponse, resp);
 
         } catch (TenantOrAppNotFoundException | InvalidConfigException | BadPermissionException
@@ -135,11 +137,43 @@ public class OAuthClientsAPI extends WebserverAPI {
         }
     }
 
-    private JsonObject createJsonFromException(OAuthException exception){
+    @Override
+    protected void doPatch(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
+        InputParser.throwErrorOnMissingRequiredField(input, REQUIRED_INPUT_FIELDS_FOR_PATCH);
+
+        try {
+            AppIdentifier appIdentifier = getAppIdentifier(req);
+            Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
+
+            JsonObject response = OAuth.updateOauthClient(super.main, appIdentifier, storage, input);
+            JsonObject postResponseBody = new JsonObject();
+            postResponseBody.addProperty("status", "OK");
+            postResponseBody.add("client", response);
+            sendJsonResponse(200, postResponseBody, resp);
+
+        } catch (OAuthAPIInvalidInputException exception) {
+            throw new ServletException(new BadRequestException(exception.error + " - " + exception.errorDescription));
+        } catch (OAuthClientUpdateException updateException) {
+            //for errors with the update from hydra, which are not reported back as invalid input errors
+            throw new ServletException(updateException);
+
+        } catch (OAuthClientNotFoundException clientNotFoundException) {
+            JsonObject errorResponse = createJsonFromException(clientNotFoundException, OAUTH2_CLIENT_NOT_FOUND_ERROR);
+            sendJsonResponse(200, errorResponse, resp);
+
+        } catch (TenantOrAppNotFoundException | InvalidConfigException | StorageQueryException |
+                 InvocationTargetException | NoSuchMethodException | InstantiationException | IllegalAccessException
+                 | BadPermissionException ex) {
+            throw new ServletException(ex);
+        }
+    }
+
+    private JsonObject createJsonFromException(OAuthException exception, String status){
         JsonObject errorResponse = new JsonObject();
         errorResponse.addProperty("error", exception.error);
         errorResponse.addProperty("errorDescription", exception.errorDescription);
-
+        errorResponse.addProperty("status", status);
         return errorResponse;
     }
 }
