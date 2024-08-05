@@ -51,7 +51,6 @@ public class OAuthClientsAPI extends WebserverAPI {
     private static final List<String> REQUIRED_INPUT_FIELDS_FOR_POST = Arrays.asList(new String[]{"clientName", "scope"});
     private static final List<String> REQUIRED_INPUT_FIELDS_FOR_PATCH = Arrays.asList(new String[]{"clientId"});
     public static final String OAUTH2_CLIENT_NOT_FOUND_ERROR = "OAUTH2_CLIENT_NOT_FOUND_ERROR";
-    public static final String INVALID_INPUT_ERROR = "INVALID_INPUT_ERROR";
     public static final String OAUTH2_CLIENT_UPDATE_ERROR = "OAUTH2_CLIENT_UPDATE_ERROR";
 
     @Override
@@ -156,7 +155,7 @@ public class OAuthClientsAPI extends WebserverAPI {
         } catch (OAuthAPIInvalidInputException exception) {
             throw new ServletException(new BadRequestException(exception.error + " - " + exception.errorDescription));
         } catch (OAuthClientUpdateException updateException) {
-            //for errors with the update from hydra, which are not invalid input errors
+            //for errors with the update from hydra, which are not reported back as invalid input errors
             JsonObject errorResponse = createJsonFromException(updateException, OAUTH2_CLIENT_UPDATE_ERROR);
             sendJsonResponse(200, errorResponse, resp);
 
