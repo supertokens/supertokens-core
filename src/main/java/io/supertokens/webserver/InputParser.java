@@ -239,7 +239,7 @@ public class InputParser {
 
     }
 
-    public static List<String> collectAllMissingRequiredFieldsAndThrowError(JsonObject input, List<String> requiredFields)
+    public static List<String> collectAllMissingRequiredFieldsOrThrowError(JsonObject input, List<String> requiredFields)
             throws ServletException {
         List<String> missingFields = new ArrayList<>();
         for(String requiredField : requiredFields){

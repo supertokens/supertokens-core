@@ -115,9 +115,6 @@ public class OAuth {
             new SecureRandom().nextBytes(idBaseBytes);
             String clientId = "supertokens_" + Utils.hashSHA256Base64UrlSafe(idBaseBytes);
             try {
-                if(oauthStorage.isClientIdAlreadyExists(clientId)){
-                    continue; // restart, don't even try with Id which we know exists in hydra
-                }
 
                 JsonObject hydraRequestBody = constructHydraRequestParamsForRegisterClientPOST(paramsFromSdk, clientId);
                 JsonObject hydraResponse = HttpRequest.sendJsonPOSTRequest(main, "", adminOAuthProviderServiceUrl + HYDRA_CLIENTS_ENDPOINT, hydraRequestBody, 10000, 10000, null);

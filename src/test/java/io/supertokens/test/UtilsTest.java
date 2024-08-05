@@ -163,6 +163,81 @@ public class UtilsTest {
         assertFalse(io.supertokens.utils.Utils.containsUrl(itShouldContain,thisShouldBeContained, false));
     }
 
+    @Test
+    public void testSnakeCaseToCamelCase() {
+        String original = "snake_case";
+        String expectedResult = "snakeCase";
+        String gotResult = io.supertokens.utils.Utils.snakeCaseToCamelCase(original);
+        assertEquals(expectedResult, gotResult);
+    }
 
+    @Test
+    public void testSnakeCaseToCamelCaseStartingWithSnake() {
+        String original = "_snake_case";
+        String expectedResult = "SnakeCase";
+        String gotResult = io.supertokens.utils.Utils.snakeCaseToCamelCase(original);
+        assertEquals(expectedResult, gotResult);
+    }
 
+    @Test
+    public void testSnakeCaseToCamelCaseWithNull() {
+        String original = null;
+        String expectedResult = null;
+        String gotResult = io.supertokens.utils.Utils.snakeCaseToCamelCase(original);
+        assertEquals(expectedResult, gotResult);
+    }
+
+    @Test
+    public void testSnakeCaseToCamelCaseNothingToDo() {
+        String original = "snake";
+        String expectedResult = "snake";
+        String gotResult = io.supertokens.utils.Utils.snakeCaseToCamelCase(original);
+        assertEquals(expectedResult, gotResult);
+    }
+
+    @Test
+    public void testSnakeCaseToCamelCaseMultipleSnakes() {
+        String original = "snake_case_multiple_snakes";
+        String expectedResult = "snakeCaseMultipleSnakes";
+        String gotResult = io.supertokens.utils.Utils.snakeCaseToCamelCase(original);
+        assertEquals(expectedResult, gotResult);
+    }
+
+    @Test
+    public void testCamelCaseToSnakeCase() {
+        String original = "camelCased";
+        String expectedResult = "camel_cased";
+        String gotResult = io.supertokens.utils.Utils.camelCaseToSnakeCase(original);
+        assertEquals(expectedResult, gotResult);
+    }
+
+    @Test
+    public void testCamelCaseToSnakeCaseBigInitial() {
+        String original = "CamelCased";
+        String expectedResult = "camel_cased";
+        String gotResult = io.supertokens.utils.Utils.camelCaseToSnakeCase(original);
+        assertEquals(expectedResult, gotResult);
+    }
+
+    @Test
+    public void testCamelCaseToSnakeCaseWithNull() {
+        String original = null;
+        String expectedResult = null;
+        String gotResult = io.supertokens.utils.Utils.camelCaseToSnakeCase(original);
+        assertEquals(expectedResult, gotResult);
+    }
+    @Test
+    public void testCamelCaseToSnakeCaseMultipleCamels() {
+        String original = "multipleCamelsInCamelCase";
+        String expectedResult = "multiple_camels_in_camel_case";
+        String gotResult = io.supertokens.utils.Utils.camelCaseToSnakeCase(original);
+        assertEquals(expectedResult, gotResult);
+    }
+    @Test
+    public void testCamelCaseToSnakeCaseNothingToDo() {
+        String original = "nothing";
+        String expectedResult = "nothing";
+        String gotResult = io.supertokens.utils.Utils.camelCaseToSnakeCase(original);
+        assertEquals(expectedResult, gotResult);
+    }
 }

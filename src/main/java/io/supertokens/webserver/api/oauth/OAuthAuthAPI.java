@@ -48,8 +48,7 @@ public class OAuthAuthAPI extends WebserverAPI {
         super(main, RECIPE_ID.OAUTH.toString());
     }
 
-    private static final List<String> REQUIRED_FIELDS_FOR_POST = Arrays.asList(new String[]{"clientId", "scope",
-            "state", "redirectUri", "responseType"});
+    private static final List<String> REQUIRED_FIELDS_FOR_POST = Arrays.asList(new String[]{"clientId", "responseType"});
 
     @Override
     public String getPath() {
@@ -60,7 +59,7 @@ public class OAuthAuthAPI extends WebserverAPI {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
 
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-        InputParser.collectAllMissingRequiredFieldsAndThrowError(input, REQUIRED_FIELDS_FOR_POST);
+        InputParser.collectAllMissingRequiredFieldsOrThrowError(input, REQUIRED_FIELDS_FOR_POST);
 
         try {
             AppIdentifier appIdentifier = getAppIdentifier(req);

@@ -3039,18 +3039,9 @@ public class Start
     }
 
     @Override
-    public boolean isClientIdAlreadyExists(String clientId) throws StorageQueryException {
+    public boolean removeAppClientAssociation(AppIdentifier appIdentifier, String clientId) throws StorageQueryException {
         try {
-            return OAuthQueries.isClientIdAlreadyExists(this, clientId);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
-    public void removeAppClientAssociation(AppIdentifier appIdentifier, String clientId) throws StorageQueryException {
-        try {
-            OAuthQueries.deleteClientIdForAppId(this, clientId, appIdentifier);
+            return OAuthQueries.deleteClientIdForAppId(this, clientId, appIdentifier);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }

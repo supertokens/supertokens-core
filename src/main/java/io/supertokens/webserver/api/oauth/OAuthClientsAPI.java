@@ -47,7 +47,7 @@ public class OAuthClientsAPI extends WebserverAPI {
     private static final long serialVersionUID = -4482427281337641246L;
 
     private static final List<String> REQUIRED_INPUT_FIELDS_FOR_POST = Arrays.asList(new String[]{"clientName", "scope"});
-    public static final String OAUTH_2_CLIENT_NOT_FOUND = "OAUTH2_CLIENT_NOT_FOUND";
+    public static final String OAUTH2_CLIENT_NOT_FOUND_ERROR = "OAUTH2_CLIENT_NOT_FOUND_ERROR";
 
     @Override
     public String getPath() {
@@ -61,7 +61,7 @@ public class OAuthClientsAPI extends WebserverAPI {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
 
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-        InputParser.collectAllMissingRequiredFieldsAndThrowError(input, REQUIRED_INPUT_FIELDS_FOR_POST);
+        InputParser.collectAllMissingRequiredFieldsOrThrowError(input, REQUIRED_INPUT_FIELDS_FOR_POST);
 
         try {
             AppIdentifier appIdentifier = getAppIdentifier(req);
@@ -76,8 +76,8 @@ public class OAuthClientsAPI extends WebserverAPI {
         } catch (OAuthClientRegisterInvalidInputException registerException) {
 
             JsonObject errorResponse = createJsonFromException(registerException);
-            errorResponse.addProperty("status", "INVALID_INPUT");
-            sendJsonResponse(200, errorResponse, resp);
+            errorResponse.addProperty("status", "INVALID_INPUT_ERROR");
+            sendJsonResponse(400, errorResponse, resp);
 
         } catch (TenantOrAppNotFoundException | InvalidConfigException | BadPermissionException
                  | NoSuchAlgorithmException | StorageQueryException e) {
@@ -102,7 +102,7 @@ public class OAuthClientsAPI extends WebserverAPI {
 
         }  catch (OAuthClientNotFoundException e) {
             JsonObject errorResponse = createJsonFromException(e);
-            errorResponse.addProperty("status", OAUTH_2_CLIENT_NOT_FOUND);
+            errorResponse.addProperty("status", OAUTH2_CLIENT_NOT_FOUND_ERROR);
             sendJsonResponse(200, errorResponse, resp);
 
         } catch (TenantOrAppNotFoundException | InvalidConfigException | BadPermissionException
@@ -128,7 +128,7 @@ public class OAuthClientsAPI extends WebserverAPI {
 
         }  catch (OAuthClientNotFoundException e) {
             JsonObject errorResponse = createJsonFromException(e);
-            errorResponse.addProperty("status", OAUTH_2_CLIENT_NOT_FOUND);
+            errorResponse.addProperty("status", OAUTH2_CLIENT_NOT_FOUND_ERROR);
             sendJsonResponse(200, errorResponse, resp);
 
         } catch (TenantOrAppNotFoundException | InvalidConfigException | BadPermissionException

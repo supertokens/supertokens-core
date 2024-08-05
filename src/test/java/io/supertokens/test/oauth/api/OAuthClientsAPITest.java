@@ -22,7 +22,6 @@ import com.google.gson.JsonPrimitive;
 import io.supertokens.ProcessState;
 import io.supertokens.httpRequest.HttpRequest;
 import io.supertokens.pluginInterface.RECIPE_ID;
-import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.oauth.sqlStorage.OAuthSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -57,7 +56,7 @@ public class OAuthClientsAPITest {
 
     @Test
     public void testClientRegisteredForApp()
-            throws HttpResponseException, IOException, StorageQueryException, InterruptedException,
+            throws HttpResponseException, IOException, InterruptedException,
             io.supertokens.httpRequest.HttpResponseException {
 
         String[] args = {"../"};
@@ -96,12 +95,6 @@ public class OAuthClientsAPITest {
             assertTrue(client.has("clientId"));
 
             String clientId = client.get("clientId").getAsString();
-
-            boolean isClientAlreadyExists = oAuthStorage.isClientIdAlreadyExists(clientId);
-            assertTrue(isClientAlreadyExists);
-
-            boolean clientShouldntExists = oAuthStorage.isClientIdAlreadyExists(clientId + "someRandomStringHere");
-            assertFalse(clientShouldntExists);
 
             Map<String, String> queryParams = new HashMap<>();
             queryParams.put("clientId", client.get("clientId").getAsString());
@@ -211,7 +204,7 @@ public class OAuthClientsAPITest {
 
     @Test
     public void testGETClientNotExisting_returnsError()
-            throws StorageQueryException, InterruptedException, io.supertokens.httpRequest.HttpResponseException,
+            throws InterruptedException, io.supertokens.httpRequest.HttpResponseException,
             IOException {
 
         String[] args = {"../"};
@@ -220,21 +213,12 @@ public class OAuthClientsAPITest {
 
         String clientId = "not-an-existing-one";
 
-        OAuthSQLStorage oAuthStorage = (OAuthSQLStorage) StorageLayer.getStorage(process.getProcess());
-
-
-        boolean isClientAlreadyExists = oAuthStorage.isClientIdAlreadyExists(clientId);
-        assertFalse(isClientAlreadyExists);
-
-        boolean clientShouldntExists = oAuthStorage.isClientIdAlreadyExists(clientId + "someRandomStringHere");
-        assertFalse(clientShouldntExists);
-
         Map<String, String> queryParams = new HashMap<>();
         queryParams.put("clientId", clientId);
         JsonObject response = HttpRequest.sendGETRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/oauth/clients", queryParams, 10000, 10000, null);
 
-        assertEquals("OAUTH2_CLIENT_NOT_FOUND", response.get("status").getAsString());
+        assertEquals("OAUTH2_CLIENT_NOT_FOUND_ERROR", response.get("status").getAsString());
         assertEquals("Unable to locate the resource", response.get("error").getAsString());
 
         process.kill();

@@ -447,19 +447,23 @@ public class Utils {
     }
 
     public static String camelCaseToSnakeCase(String toSnakeCase) {
-        String regex = "([a-z])([A-Z]+)";
-        String replacement = "$1_$2";
-        toSnakeCase = toSnakeCase
-                .replaceAll(
-                        regex, replacement)
-                .toLowerCase();
+        if (toSnakeCase != null) {
+            String regex = "([a-z])([A-Z]+)";
+            String replacement = "$1_$2";
+            toSnakeCase = toSnakeCase
+                    .replaceAll(
+                            regex, replacement)
+                    .toLowerCase();
+        }
         return toSnakeCase;
     }
 
     public static String snakeCaseToCamelCase(String toCamelCase) {
-        toCamelCase = Pattern.compile("_([a-z])")
-                .matcher(toCamelCase)
-                .replaceAll(m -> m.group(1).toUpperCase());
+        if(toCamelCase != null) {
+            toCamelCase = Pattern.compile("_([a-z])")
+                    .matcher(toCamelCase)
+                    .replaceAll(m -> m.group(1).toUpperCase());
+        }
         return toCamelCase;
     }
 }
