@@ -31,6 +31,7 @@ import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
+import jakarta.servlet.ServletException;
 import org.junit.*;
 import org.junit.rules.TestRule;
 
@@ -383,12 +384,13 @@ public class OAuthClientsAPITest {
         requestBody.addProperty(propToChangeKey, newValue);
         requestBody.add(notAlistPropToChange, newListValue);
 
-        JsonObject response = HttpRequestForTesting.sendJsonPATCHRequest(process.getProcess(),
-                        "http://localhost:3567/recipe/oauth/clients", requestBody);
+        HttpResponseException expected = assertThrows(HttpResponseException.class, () -> {
+            HttpRequestForTesting.sendJsonPATCHRequest(process.getProcess(),
+                            "http://localhost:3567/recipe/oauth/clients", requestBody);
+        });
 
-        assertEquals("OAUTH2_CLIENT_UPDATE_ERROR", response.get("status").getAsString());
-        assertEquals("error", response.get("error").getAsString());
-        assertEquals("The error is unrecognizable", response.get("errorDescription").getAsString());
+        assertEquals("Http error. Status Code: 500. Message: Internal Error\n", expected.getMessage());
+        assertEquals(500, expected.statusCode);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
