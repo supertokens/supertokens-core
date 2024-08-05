@@ -48,7 +48,7 @@ labels:
     - [ ] Make sure frontend login UI shows even if backend is not working.
     - [ ] Make sure all PR checks are passing - specifically example apps checks should all be passing
 - [ ] [prebuiltui:X.Y](https://github.com/supertokens/prebuiltui) (This is based on supertokens-auth-react release)
-    - [ ] If new recipe, then make sure to expose it as a window variable
+    - [ ] If new recipe, then make sure to expose it as a window variable, and also change implementation of `checkFrontendSDKRelatedDocs` in the docs repo (global search it) - modify the `ALLOWED_LINES` variable to add about the new recipe.
 - [ ] [supertokens-react-native:X.Y](https://github.com/supertokens/supertokens-react-native/X.Y)
     - [ ] check FDI list
 - [ ] [supertokens-android:X.Y](https://github.com/supertokens/supertokens-android/X.Y)
