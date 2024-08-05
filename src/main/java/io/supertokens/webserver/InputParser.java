@@ -239,7 +239,7 @@ public class InputParser {
 
     }
 
-    public static List<String> collectAllMissingRequiredFieldsOrThrowError(JsonObject input, List<String> requiredFields)
+    public static void collectAllMissingRequiredFieldsOrThrowError(JsonObject input, List<String> requiredFields)
             throws ServletException {
         List<String> missingFields = new ArrayList<>();
         for(String requiredField : requiredFields){
@@ -252,6 +252,5 @@ public class InputParser {
             throw new ServletException(new WebserverAPI.BadRequestException("Field name `" + String.join("','", missingFields)
                     + "` is missing in JSON input"));
         }
-        return missingFields;
     }
 }

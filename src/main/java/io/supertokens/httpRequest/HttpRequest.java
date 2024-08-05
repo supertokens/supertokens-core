@@ -21,10 +21,9 @@ import com.google.gson.JsonParser;
 import io.supertokens.Main;
 
 import java.io.*;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLEncoder;
+import java.net.*;
+import java.net.http.HttpClient;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -261,6 +260,31 @@ public class HttpRequest {
                                            int connectionTimeoutMS, int readTimeoutMS, Integer version)
             throws IOException, HttpResponseException {
         return sendJsonRequest(main, requestID, url, requestBody, connectionTimeoutMS, readTimeoutMS, version, "PUT");
+    }
+
+    //TODO: tests!
+    public static <T> T sendJsonPATCHRequest(Main main, String url, JsonElement requestBody)
+            throws IOException, HttpResponseException, InterruptedException {
+
+        HttpClient client = null;
+
+        String body = requestBody.toString();
+        java.net.http.HttpRequest rawRequest = java.net.http.HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .method("PATCH", java.net.http.HttpRequest.BodyPublishers.ofString(body))
+                .build();
+        client = HttpClient.newHttpClient();
+        HttpResponse<String> response = client.send(rawRequest, HttpResponse.BodyHandlers.ofString());
+
+        int responseCode = response.statusCode();
+
+        if (responseCode < STATUS_CODE_ERROR_THRESHOLD) {
+            if (!isJsonValid(response.body().toString())) {
+                return (T) response.body().toString();
+            }
+            return (T) (new JsonParser().parse(response.body().toString()));
+        }
+        throw new HttpResponseException(responseCode, response.body().toString());
     }
 
     public static <T> T sendJsonDELETERequest(Main main, String requestID, String url, JsonElement requestBody,
