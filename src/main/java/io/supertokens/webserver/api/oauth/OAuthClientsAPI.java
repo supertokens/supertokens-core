@@ -75,9 +75,7 @@ public class OAuthClientsAPI extends WebserverAPI {
 
         } catch (OAuthClientRegisterInvalidInputException registerException) {
 
-            JsonObject errorResponse = createJsonFromException(registerException);
-            errorResponse.addProperty("status", "INVALID_INPUT_ERROR");
-            sendJsonResponse(400, errorResponse, resp);
+            throw new ServletException(new BadRequestException(registerException.error + " - " + registerException.errorDescription));
 
         } catch (TenantOrAppNotFoundException | InvalidConfigException | BadPermissionException
                  | NoSuchAlgorithmException | StorageQueryException e) {
