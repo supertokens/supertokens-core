@@ -98,6 +98,8 @@ public class NotFoundOrHelloAPI extends WebserverAPI {
 
         if (!tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
             path = path.replace("/" + tenantIdentifier.getTenantId(), "");
+        } else if (path.startsWith("/public") && tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
+            path = path.replace("/" + tenantIdentifier.getTenantId(), "");
         }
 
         if (path.equals("/") || path.isBlank()) {
