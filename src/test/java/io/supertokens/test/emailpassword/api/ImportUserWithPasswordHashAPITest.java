@@ -297,7 +297,7 @@ public class ImportUserWithPasswordHashAPITest {
             throw new Exception("Should not come here");
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.statusCode == 500
-                    && e.getMessage().equals("Http error. Status Code: 500. Message: Internal Error"));
+                    && e.getMessage().equals("Http error. Status Code: 500. Message: 'firebase_password_hashing_signer_key' cannot be null"));
         }
 
         process.kill();
@@ -388,7 +388,7 @@ public class ImportUserWithPasswordHashAPITest {
             throw new Exception("Should not come here");
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.statusCode == 500
-                    && e.getMessage().equals("Http error. Status Code: 500. Message: Internal Error"));
+                    && e.getMessage().equals("Http error. Status Code: 500. Message: 'firebase_password_hashing_signer_key' cannot be null"));
         }
 
         process.kill();
