@@ -531,10 +531,10 @@ public abstract class WebserverAPI extends HttpServlet {
                 } else if (rootCause instanceof BadPermissionException) {
                     sendTextResponse(403, rootCause.getMessage(), resp);
                 } else {
-                    sendTextResponse(500, "Internal Error", resp);
+                    sendTextResponse(500, rootCause.getMessage(), resp);
                 }
             } else {
-                sendTextResponse(500, "Internal Error", resp);
+                sendTextResponse(500, e.getMessage(), resp);
             }
         }
         Logging.info(main, tenantIdentifier, "API ended: " + req.getRequestURI() + ". Method: " + req.getMethod(),
