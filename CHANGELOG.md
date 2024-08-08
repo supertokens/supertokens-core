@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## [9.1.2] -2024-07-24
+
+- Fixes path routing which rejected tenantId stop words even if it was not an exact stop word match. For example, `/hellotenant` is a valid tenantId prefix, however, it was being rejected for the stop word `hello`.
+
 ## [9.1.1] -2024-07-24
 
 ### Fixes
