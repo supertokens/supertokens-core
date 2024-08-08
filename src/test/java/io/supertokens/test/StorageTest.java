@@ -740,7 +740,7 @@ public class StorageTest {
             fail();
         } catch (HttpResponseException ex) {
             assertEquals(ex.statusCode, 500);
-            assertEquals(ex.getMessage(), "Http error. Status Code: 500. Message: Internal Error");
+            assertEquals(ex.getMessage(), "Http error. Status Code: 500. Message: java.sql.SQLException: Storage layer disabled");
         }
 
         storage.setStorageLayerEnabled(true);
@@ -765,7 +765,7 @@ public class StorageTest {
             fail();
         } catch (HttpResponseException ex) {
             assertEquals(ex.statusCode, 500);
-            assertEquals(ex.getMessage(), "Http error. Status Code: 500. Message: Internal Error");
+            assertEquals(ex.getMessage(), "Http error. Status Code: 500. Message: java.sql.SQLException: Storage layer disabled");
         }
 
         storage.setStorageLayerEnabled(true);
