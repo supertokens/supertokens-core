@@ -70,6 +70,79 @@ public class PathRouterTest extends Mockito {
     }
 
     @Test
+    public void test500ErrorMessage() throws Exception {
+        String[] args = {"../"};
+        TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
+
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            public boolean checkAPIKey(HttpServletRequest req) {
+                return false;
+            }
+
+            @Override
+            public String getPath() {
+                return "/test/servlet-exception";
+            }
+
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                    throws IOException, ServletException {
+                throw new ServletException(new RuntimeException("Test Exception"));
+            }
+        });
+
+        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
+
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            public boolean checkAPIKey(HttpServletRequest req) {
+                return false;
+            }
+
+            @Override
+            public String getPath() {
+                return "/test/runtime-exception";
+            }
+
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                    throws IOException, ServletException {
+                throw new RuntimeException("Runtime Exception");
+            }
+        });
+
+        {
+            try {
+                String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/test/servlet-exception", new HashMap<>(), 1000, 1000, null,
+                        Utils.getCdiVersionStringLatestForTests(), "");
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(500, e.statusCode);
+                assertEquals("Http error. Status Code: 500. Message: Test Exception", e.getMessage());
+            }
+        }
+
+        {
+            try {
+                String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/test/runtime-exception", new HashMap<>(), 1000, 1000, null,
+                        Utils.getCdiVersionStringLatestForTests(), "");
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(500, e.statusCode);
+                assertEquals("Http error. Status Code: 500. Message: Runtime Exception", e.getMessage());
+            }
+        }
+    }
+
+    @Test
     public void basicTenantIdFetchingTest()
             throws InterruptedException, IOException, HttpResponseException, InvalidProviderConfigException,
             StorageQueryException, FeatureNotEnabledException, TenantOrAppNotFoundException, InvalidConfigException,
