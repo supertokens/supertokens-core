@@ -120,10 +120,10 @@ labels:
             - [ ] check if new env cnofigs need to be added
     - [ ] try.supertokens.io
       ```
-      docker rm try-supertokens -f
-      docker rmi supertokens/supertokens-postgresql:<VERSION>
-      nano ~/try-supertokens/start_container.sh (update version tag)
-      ~/try-supertokens/start_container.sh
+      sudo docker rm try-supertokens -f
+      sudo docker rmi supertokens/supertokens-postgresql:<VERSION>
+      nano ./start_container.sh (update version tag)
+      sudo ./start_container.sh
       ```
     - [ ] Run tests against node sdk (all compatible versions)
     - [ ] Run tests against python sdk (all compatible versions)
