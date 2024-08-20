@@ -263,16 +263,23 @@ public abstract class WebserverAPI extends HttpServlet {
         if (!apiPath.startsWith("/")) {
             apiPath = "/" + apiPath;
         }
-        if (apiPath.equals("/")) {
-            if (path.equals("") || path.equals("/")) {
-                return null;
-            }
+        if (apiPath.endsWith("/")) {
+            apiPath = apiPath.substring(0, apiPath.length() - 1);
+        }
+
+        if (apiPath.isBlank() && (path.equals("") || path.equals("/"))) {
+            return null;
         } else {
             if (path.matches("^/appid-[a-z0-9-]*/[a-z0-9-]+" + apiPath + "/?$")) {
                 String tenantId = path.split("/")[2].toLowerCase();
                 if (tenantId.equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
                     return null;
                 }
+
+                if (Utils.INVALID_WORDS_FOR_TENANTID.contains(tenantId)) {
+                    return null;
+                }
+
                 return tenantId;
             } else if (path.matches("^/appid-[a-z0-9-]*" + apiPath + "/?$")) {
                 return null;
@@ -281,12 +288,16 @@ public abstract class WebserverAPI extends HttpServlet {
                 if (tenantId.equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
                     return null;
                 }
+
+                if (Utils.INVALID_WORDS_FOR_TENANTID.contains(tenantId)) {
+                    return null;
+                }
+
                 return tenantId;
             } else {
                 return null;
             }
         }
-        return null;
     }
 
     private String getAppId(HttpServletRequest req) {
@@ -295,10 +306,12 @@ public abstract class WebserverAPI extends HttpServlet {
         if (!apiPath.startsWith("/")) {
             apiPath = "/" + apiPath;
         }
-        if (apiPath.equals("/")) {
-            if (path.equals("") || path.equals("/")) {
-                return null;
-            }
+        if (apiPath.endsWith("/")) {
+            apiPath = apiPath.substring(0, apiPath.length() - 1);
+        }
+
+        if (apiPath.isBlank() && (path.equals("") || path.equals("/"))) {
+            return null;
         } else {
             if (path.matches("^/appid-[a-z0-9-]*(/[a-z0-9-]+)?" + apiPath + "/?$")) {
                 String appId = path.split("/")[1].toLowerCase();
@@ -310,7 +323,6 @@ public abstract class WebserverAPI extends HttpServlet {
                 return null;
             }
         }
-        return null;
     }
 
     private String getConnectionUriDomain(HttpServletRequest req) throws ServletException {
@@ -528,10 +540,10 @@ public abstract class WebserverAPI extends HttpServlet {
                 } else if (rootCause instanceof BadPermissionException) {
                     sendTextResponse(403, rootCause.getMessage(), resp);
                 } else {
-                    sendTextResponse(500, "Internal Error", resp);
+                    sendTextResponse(500, rootCause.getMessage(), resp);
                 }
             } else {
-                sendTextResponse(500, "Internal Error", resp);
+                sendTextResponse(500, e.getMessage(), resp);
             }
         }
         Logging.info(main, tenantIdentifier, "API ended: " + req.getRequestURI() + ". Method: " + req.getMethod(),
