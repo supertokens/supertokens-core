@@ -901,6 +901,9 @@ public class FeatureFlagTest {
     private final String OPAQUE_KEY_WTIH_MFA_FEATURE = "F1a=1VUxo7-tHNqFDwuhkkCPCB378A57uRU4=rVW01XBv63YizRb6ItTBu" +
             "FHXQIvmceLTlOekCmHv7mwzEZJJKmO9N8pclQSbs4UBz8pzW5d107TIctJgBwy4upnBHUf";
 
+    private final String OPAQUE_KEY_WITH_SECURITY_FEATURE = "tje5MVjlRz0Kwzax-mKksdYpZvwNhQagFdHj=ma=W0H7WET9R0Hcpv" +
+            "Aui9r3wIk=swO2TIBLQNa94y10VQkzAa0Q0iw6GPzMeftJ4uvbnb1qpGpyf4K0cUwIZ76Pd9kZ";
+
     @Test
     public void testPaidStatsContainsAllEnabledFeatures() throws Exception {
         String[] args = {"../"};
@@ -913,7 +916,8 @@ public class FeatureFlagTest {
                 OPAQUE_KEY_WITH_MULTITENANCY_FEATURE,
                 OPAQUE_KEY_WITH_MFA_FEATURE,
                 OPAQUE_KEY_WITH_DASHBOARD_FEATURE,
-                OPAQUE_KEY_WITH_ACCOUNT_LINKING_FEATURE
+                OPAQUE_KEY_WITH_ACCOUNT_LINKING_FEATURE,
+                OPAQUE_KEY_WITH_SECURITY_FEATURE,
         };
 
         Set<EE_FEATURES> requiredFeatures = new HashSet<>();

@@ -149,6 +149,10 @@ public class HelloAPITest {
                 "http://localhost:3567/hello/appid-hello/hello", // baseUrl + app + /hello
                 "http://localhost:3567/hello/appid-hello/hello/", // baseUrl + app + /hello
                 "http://localhost:3567/hello/appid-hello/test/hello", // baseUrl + app + tenant + /hello
+                "http://localhost:3567/hello/appid-hello", // baseUrl + app + /
+                "http://localhost:3567/hello/appid-hello/", // baseUrl + app + /
+                "http://localhost:3567/hello/appid-hello/test", // baseUrl + app + tenant + /
+                "http://localhost:3567/hello/appid-hello/test/", // baseUrl + app + tenant + /
         };
 
         for (String helloUrl : HELLO_ROUTES) {
@@ -161,10 +165,7 @@ public class HelloAPITest {
         }
 
         String[] NOT_FOUND_ROUTES = new String[]{
-                "http://localhost:3567/hello/appid-hello", // baseUrl + app + /
-                "http://localhost:3567/hello/appid-hello/", // baseUrl + app + /
-                "http://localhost:3567/hello/appid-hello/test", // baseUrl + app + tenant + /
-                "http://localhost:3567/hello/appid-hello/test/", // baseUrl + app + tenant + /
+                "http://localhost:3567/hello/abcd",
         };
 
         // Not found
@@ -236,6 +237,11 @@ public class HelloAPITest {
                 "http://localhost:3567/hello/appid-hello/hello", // baseUrl + app + /hello
                 "http://localhost:3567/hello/appid-hello/hello/", // baseUrl + app + /hello
                 "http://localhost:3567/hello/appid-hello/test/hello", // baseUrl + app + tenant + /hello
+
+                "http://localhost:3567/hello/appid-hello", // baseUrl + app + /
+                "http://localhost:3567/hello/appid-hello/", // baseUrl + app + /
+                "http://localhost:3567/hello/appid-hello/test", // baseUrl + app + tenant + /
+                "http://localhost:3567/hello/appid-hello/test/", // baseUrl + app + tenant + /
         };
 
         for (String helloUrl : HELLO_ROUTES) {
@@ -250,10 +256,6 @@ public class HelloAPITest {
         String[] NOT_FOUND_ROUTES = new String[]{
                 "http://localhost:3567/abcd",
                 "http://localhost:3567",
-                "http://localhost:3567/hello/appid-hello", // baseUrl + app + /
-                "http://localhost:3567/hello/appid-hello/", // baseUrl + app + /
-                "http://localhost:3567/hello/appid-hello/test", // baseUrl + app + tenant + /
-                "http://localhost:3567/hello/appid-hello/test/", // baseUrl + app + tenant + /
         };
 
         // Not found
@@ -315,6 +317,23 @@ public class HelloAPITest {
                 new JsonObject()
         ), false);
 
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                new TenantIdentifier(null, null, "hellotenant"),
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                null, null,
+                new JsonObject()
+        ), false);
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                new TenantIdentifier(null, "hello", "hellotenant"),
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, null),
+                new PasswordlessConfig(true),
+                null, null,
+                new JsonObject()
+        ), false);
+
         String[] HELLO_ROUTES = new String[]{
                 "http://localhost:3567", // /
                 "http://localhost:3567/", // /
@@ -324,6 +343,20 @@ public class HelloAPITest {
                 "http://localhost:3567/appid-hello/hello", // app + /hello
                 "http://localhost:3567/appid-hello/hello/", // app + /hello
                 "http://localhost:3567/appid-hello/test/hello", // app + tenant + /hello
+
+                "http://localhost:3567/hellotenant",
+                "http://localhost:3567/hellotenant/",
+                "http://localhost:3567/hellotenant/hello",
+
+                "http://localhost:3567/appid-hello", // app + /
+                "http://localhost:3567/appid-hello/", // app + /
+                "http://localhost:3567/appid-hello/public",
+                "http://localhost:3567/appid-hello/public/",
+                "http://localhost:3567/appid-hello/test", // app + tenant + /
+                "http://localhost:3567/appid-hello/test/", // app + tenant + /
+                "http://localhost:3567/appid-hello/hellotenant",
+                "http://localhost:3567/appid-hello/hellotenant/",
+                "http://localhost:3567/appid-hello/hellotenant/hello",
         };
 
         for (String helloUrl : HELLO_ROUTES) {
@@ -337,15 +370,12 @@ public class HelloAPITest {
 
         String[] NOT_FOUND_ROUTES = new String[]{
                 "http://localhost:3567/abcd",
-                "http://localhost:3567/appid-hello", // app + /
-                "http://localhost:3567/appid-hello/", // app + /
-                "http://localhost:3567/appid-hello/test", // app + tenant + /
-                "http://localhost:3567/appid-hello/test/", // app + tenant + /
         };
 
         // Not found
         for (String notFoundUrl : NOT_FOUND_ROUTES) {
             try {
+                System.out.println(notFoundUrl);
                 String res = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                         notFoundUrl, null, 1000, 1000,
                         null, Utils.getCdiVersionStringLatestForTests(), "");
