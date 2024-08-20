@@ -391,6 +391,10 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
             if (feature == EE_FEATURES.ACCOUNT_LINKING) {
                 usageStats.add(EE_FEATURES.ACCOUNT_LINKING.toString(), getAccountLinkingStats());
             }
+
+            if (feature == EE_FEATURES.SECURITY) {
+                usageStats.add(EE_FEATURES.SECURITY.toString(), new JsonObject());
+            }
         }
 
         usageStats.add("maus", getMAUs());
