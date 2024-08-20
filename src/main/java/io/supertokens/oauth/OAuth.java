@@ -51,6 +51,7 @@ public class OAuth {
     private static final String ERROR_DESCRIPTION_LITERAL = "error_description=";
 
     private static final String HYDRA_AUTH_ENDPOINT = "/oauth2/auth";
+    private static final String HYDRA_TOKEN_ENDPOINT = "/oauth2/token";
     private static final String HYDRA_CLIENTS_ENDPOINT = "/admin/clients";
 
     public static OAuthAuthResponse getAuthorizationUrl(Main main, AppIdentifier appIdentifier, Storage storage, JsonObject paramsFromSdk)
@@ -66,16 +67,27 @@ public class OAuth {
         String hydraInternalAddress = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOauthProviderUrlConfiguredInHydra();
         String hydraBaseUrlForConsentAndLogin = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOauthProviderConsentLoginBaseUrl();
 
-        String clientId = paramsFromSdk.get("clientId").getAsString();
+        String clientId = paramsFromSdk.get("client_id").getAsString();
+        String cookie = null;
+
+        if (paramsFromSdk.has("cookie")) {
+            cookie = paramsFromSdk.get("cookie").getAsString();
+            paramsFromSdk.remove("cookie");
+        }
 
         if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientId)) {
             throw new OAuthAuthException("invalid_client", "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method). The requested OAuth 2.0 Client does not exist.");
         } else {
             // we query hydra
             Map<String, String> queryParamsForHydra = constructHydraRequestParamsForAuthorizationGETAPICall(paramsFromSdk);
+            Map<String, String> headers = new HashMap<>();
             Map<String, List<String>> responseHeaders = new HashMap<>();
 
-            HttpRequest.sendGETRequestWithResponseHeaders(main, "", publicOAuthProviderServiceUrl + HYDRA_AUTH_ENDPOINT, queryParamsForHydra, 10000, 10000, null, responseHeaders, false);
+            if (cookie != null) {
+                headers.put("Cookie", cookie);
+            }
+
+            HttpRequest.sendGETRequestWithResponseHeaders(main, "", publicOAuthProviderServiceUrl + HYDRA_AUTH_ENDPOINT, queryParamsForHydra, headers, 10000, 10000, null, responseHeaders, false);
 
             if(!responseHeaders.isEmpty() && responseHeaders.containsKey(LOCATION_HEADER_NAME)) {
                 String locationHeaderValue = responseHeaders.get(LOCATION_HEADER_NAME).get(0);
@@ -99,6 +111,19 @@ public class OAuth {
         }
 
         return new OAuthAuthResponse(redirectTo, cookies);
+    }
+
+    public static JsonObject getToken(Main main, AppIdentifier appIdentifier, Storage storage, JsonObject bodyFromSdk) throws InvalidConfigException, TenantOrAppNotFoundException {
+        String publicOAuthProviderServiceUrl = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderPublicServiceUrl();
+        try {
+            Map<String, String> bodyParams = constructHydraRequestParamsForAuthorizationGETAPICall(bodyFromSdk);
+            JsonObject response = HttpRequest.sendFormPOSTRequest(main, "", publicOAuthProviderServiceUrl + HYDRA_TOKEN_ENDPOINT, bodyParams, 10000, 10000, null);
+            // TODO: token transformations
+            // TODO: error handling
+            return response;
+        } catch (HttpResponseException | IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     //This more or less acts as a pass-through for the sdks, apart from camelCase <-> snake_case key transformation and setting a few default values
@@ -289,7 +314,7 @@ public class OAuth {
     private static Map<String, String> constructHydraRequestParamsForAuthorizationGETAPICall(JsonObject inputFromSdk) {
         Map<String, String> queryParamsForHydra = new HashMap<>();
         for(Map.Entry<String, JsonElement> jsonElement : inputFromSdk.entrySet()){
-            queryParamsForHydra.put(Utils.camelCaseToSnakeCase(jsonElement.getKey()), jsonElement.getValue().getAsString());
+            queryParamsForHydra.put(jsonElement.getKey(), jsonElement.getValue().getAsString());
         }
         return  queryParamsForHydra;
     }

@@ -125,6 +125,7 @@ public class HttpRequest {
     @SuppressWarnings("unchecked")
     public static <T> T sendGETRequestWithResponseHeaders(Main main, String requestID, String url,
                                                           Map<String, String> params,
+                                                          Map<String, String> headers,
                                                           int connectionTimeoutMS, int readTimeoutMS, Integer version,
                                                           Map<String, List<String>> responseHeaders, boolean followRedirects)
             throws IOException, HttpResponseException {
@@ -151,6 +152,11 @@ public class HttpRequest {
             con.setReadTimeout(readTimeoutMS);
             if (version != null) {
                 con.setRequestProperty("api-version", version + "");
+            }
+            if (headers != null) {
+                for (Map.Entry<String, String> entry : headers.entrySet()) {
+                    con.setRequestProperty(entry.getKey(), entry.getValue());
+                }
             }
             con.setInstanceFollowRedirects(followRedirects);
             int responseCode = con.getResponseCode();
@@ -293,4 +299,62 @@ public class HttpRequest {
                 "DELETE");
     }
 
+    public static <T> T sendFormPOSTRequest(Main main, String requestID, String url, Map<String, String> formData,
+                                            int connectionTimeoutMS, int readTimeoutMS, Integer version)
+            throws IOException, HttpResponseException {
+        StringBuilder formDataBuilder = new StringBuilder();
+        for (Map.Entry<String, String> entry : formData.entrySet()) {
+            formDataBuilder.append(entry.getKey()).append("=")
+                    .append(URLEncoder.encode(entry.getValue(), StandardCharsets.UTF_8)).append("&");
+        }
+        String formDataStr = formDataBuilder.toString();
+        if (!formDataStr.equals("")) {
+            formDataStr = formDataStr.substring(0, formDataStr.length() - 1);
+        }
+
+        URL obj = getURL(main, requestID, url);
+        HttpURLConnection con = null;
+        try {
+            con = (HttpURLConnection) obj.openConnection();
+            con.setRequestMethod("POST");
+            con.setConnectTimeout(connectionTimeoutMS);
+            con.setReadTimeout(readTimeoutMS);
+            con.setRequestProperty("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
+            if (version != null) {
+                con.setRequestProperty("api-version", version + "");
+            }
+
+            con.setDoOutput(true);
+            try (OutputStream os = con.getOutputStream()) {
+                os.write(formDataStr.getBytes(StandardCharsets.UTF_8));
+            }
+
+            int responseCode = con.getResponseCode();
+            InputStream inputStream = null;
+            if (responseCode < STATUS_CODE_ERROR_THRESHOLD) {
+                inputStream = con.getInputStream();
+            } else {
+                inputStream = con.getErrorStream();
+            }
+
+            StringBuilder response = new StringBuilder();
+            try (BufferedReader in = new BufferedReader(new InputStreamReader(inputStream))) {
+                String inputLine;
+                while ((inputLine = in.readLine()) != null) {
+                    response.append(inputLine);
+                }
+            }
+            if (responseCode < STATUS_CODE_ERROR_THRESHOLD) {
+                if (!isJsonValid(response.toString())) {
+                    return (T) response.toString();
+                }
+                return (T) (new JsonParser().parse(response.toString()));
+            }
+            throw new HttpResponseException(responseCode, response.toString());
+        } finally {
+            if (con != null) {
+                con.disconnect();
+            }
+        }
+    }
 }

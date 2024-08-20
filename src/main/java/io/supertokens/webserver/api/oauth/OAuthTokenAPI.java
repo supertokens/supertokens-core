@@ -40,56 +40,45 @@ import java.io.Serial;
 import java.util.Arrays;
 import java.util.List;
 
-public class OAuthAuthAPI extends WebserverAPI {
+public class OAuthTokenAPI extends WebserverAPI {
     @Serial
     private static final long serialVersionUID = -8734479943734920904L;
 
-    public OAuthAuthAPI(Main main) {
+    public OAuthTokenAPI(Main main) {
         super(main, RECIPE_ID.OAUTH.toString());
     }
 
-    private static final List<String> REQUIRED_FIELDS_FOR_POST = Arrays.asList(new String[]{"client_id", "response_type"});
-
     @Override
     public String getPath() {
-        return "/recipe/oauth/auth";
+        return "/recipe/oauth/token";
     }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
 
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-        InputParser.throwErrorOnMissingRequiredField(input, REQUIRED_FIELDS_FOR_POST);
 
         try {
             AppIdentifier appIdentifier = getAppIdentifier(req);
             Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
 
-            OAuthAuthResponse authResponse = OAuth.getAuthorizationUrl(super.main, appIdentifier, storage,
+            JsonObject response = OAuth.getToken(super.main, appIdentifier, storage,
                     input);
-            JsonObject response = new JsonObject();
-            response.addProperty("redirectTo", authResponse.redirectTo);
 
-            JsonArray jsonCookies = new JsonArray();
-            if (authResponse.cookies != null) {
-                for(String cookie : authResponse.cookies){
-                    jsonCookies.add(new JsonPrimitive(cookie));
-                }
-            }
-            response.add("cookies", jsonCookies);
             response.addProperty("status", "OK");
             super.sendJsonResponse(200, response, resp);
 
-        } catch (OAuthAuthException authException) {
+        // } catch (OAuthAuthException authException) {
 
-            JsonObject errorResponse = new JsonObject();
-            errorResponse.addProperty("error", authException.error);
-            errorResponse.addProperty("errorDescription", authException.errorDescription);
-            errorResponse.addProperty("status", "OAUTH2_AUTH_ERROR");
-            super.sendJsonResponse(200, errorResponse, resp);
+        //     JsonObject errorResponse = new JsonObject();
+        //     errorResponse.addProperty("error", authException.error);
+        //     errorResponse.addProperty("errorDescription", authException.errorDescription);
+        //     errorResponse.addProperty("status", "OAUTH2_AUTH_ERROR");
+        //     super.sendJsonResponse(200, errorResponse, resp);
 
-        } catch (TenantOrAppNotFoundException | InvalidConfigException | HttpResponseException |
-                 StorageQueryException | BadPermissionException e) {
+        } catch (TenantOrAppNotFoundException | InvalidConfigException | BadPermissionException e) {
+            throw new ServletException(e);
+        } catch (Exception e) {
             throw new ServletException(e);
         }
     }

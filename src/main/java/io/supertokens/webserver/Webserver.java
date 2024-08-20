@@ -41,6 +41,7 @@ import io.supertokens.webserver.api.multitenancy.thirdparty.CreateOrUpdateThirdP
 import io.supertokens.webserver.api.multitenancy.thirdparty.RemoveThirdPartyConfigAPI;
 import io.supertokens.webserver.api.oauth.OAuthAuthAPI;
 import io.supertokens.webserver.api.oauth.OAuthClientsAPI;
+import io.supertokens.webserver.api.oauth.OAuthTokenAPI;
 import io.supertokens.webserver.api.passwordless.*;
 import io.supertokens.webserver.api.session.*;
 import io.supertokens.webserver.api.thirdparty.GetUsersByEmailAPI;
@@ -270,6 +271,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new GetTenantCoreConfigForDashboardAPI(main));
 
         addAPI(new OAuthAuthAPI(main));
+        addAPI(new OAuthTokenAPI(main));
         addAPI(new OAuthClientsAPI(main));
 
         StandardContext context = tomcatReference.getContext();
