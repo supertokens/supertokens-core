@@ -72,6 +72,7 @@ public class OAuth {
 
         if (paramsFromSdk.has("cookie")) {
             cookie = paramsFromSdk.get("cookie").getAsString();
+            cookie = cookie.replaceAll("st_oauth_", "ory_hydra_");
             paramsFromSdk.remove("cookie");
         }
 
@@ -89,7 +90,7 @@ public class OAuth {
 
             HttpRequest.sendGETRequestWithResponseHeaders(main, "", publicOAuthProviderServiceUrl + HYDRA_AUTH_ENDPOINT, queryParamsForHydra, headers, 10000, 10000, null, responseHeaders, false);
 
-            if(!responseHeaders.isEmpty() && responseHeaders.containsKey(LOCATION_HEADER_NAME)) {
+            if (!responseHeaders.isEmpty() && responseHeaders.containsKey(LOCATION_HEADER_NAME)) {
                 String locationHeaderValue = responseHeaders.get(LOCATION_HEADER_NAME).get(0);
                 if(Utils.containsUrl(locationHeaderValue, hydraInternalAddress, true)){
                     String error = getValueOfQueryParam(locationHeaderValue, ERROR_LITERAL);
@@ -102,11 +103,21 @@ public class OAuth {
                 } else {
                     redirectTo = locationHeaderValue;
                 }
+                if (redirectTo.contains("code=ory_ac_")) {
+                    redirectTo = redirectTo.replace("code=ory_ac_", "code=st_ac_");
+                }
             } else {
                 throw new RuntimeException("Unexpected answer from Oauth Provider");
             }
             if(responseHeaders.containsKey(COOKIES_HEADER_NAME)){
-                cookies = responseHeaders.get(COOKIES_HEADER_NAME);
+                cookies = new ArrayList<>(responseHeaders.get(COOKIES_HEADER_NAME));
+
+                for (int i = 0; i < cookies.size(); i++) {
+                    String cookieStr = cookies.get(i);
+                    if (cookieStr.startsWith("ory_hydra_")) {
+                        cookies.set(i, "st_oauth_" + cookieStr.substring(10));
+                    }
+                }
             }
         }
 
@@ -117,6 +128,7 @@ public class OAuth {
         String publicOAuthProviderServiceUrl = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderPublicServiceUrl();
         try {
             Map<String, String> bodyParams = constructHydraRequestParamsForAuthorizationGETAPICall(bodyFromSdk);
+            bodyParams.put("code", bodyParams.get("code").replace("st_ac_", "ory_ac_"));
             JsonObject response = HttpRequest.sendFormPOSTRequest(main, "", publicOAuthProviderServiceUrl + HYDRA_TOKEN_ENDPOINT, bodyParams, 10000, 10000, null);
             // TODO: token transformations
             // TODO: error handling

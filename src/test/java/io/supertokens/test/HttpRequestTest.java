@@ -778,7 +778,7 @@ public class HttpRequestTest {
 
         {
             String response = HttpRequest.sendGETRequestWithResponseHeaders(process.getProcess(), "",
-                    "http://localhost:3567/getTestWithHeaders", null, 1000, 1000, null, responseHeaders, true);
+                    "http://localhost:3567/getTestWithHeaders", new HashMap<>(), null, 1000, 1000, null, responseHeaders, true);
             assertEquals(response, "200");
             assertTrue(responseHeaders.containsKey("SomeNameForHeader"));
             assertEquals(responseHeaders.get("SomeNameForHeader"), Collections.singletonList("someValueForHeader"));

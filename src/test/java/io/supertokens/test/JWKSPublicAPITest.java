@@ -82,7 +82,7 @@ public class JWKSPublicAPITest {
         // check regular output
         Map<String, List<String>> responseHeaders = new HashMap<>();
         JsonObject response = HttpRequest.sendGETRequestWithResponseHeaders(process.getProcess(), "",
-                "http://localhost:3567/.well-known/jwks.json", null,
+                "http://localhost:3567/.well-known/jwks.json", null, new HashMap<>(),
                 1000, 1000, null, responseHeaders, true);
 
         assertEquals(response.entrySet().size(), 1);
@@ -97,7 +97,7 @@ public class JWKSPublicAPITest {
         Thread.sleep(2000);
 
         response = HttpRequest.sendGETRequestWithResponseHeaders(process.getProcess(), "",
-                "http://localhost:3567/.well-known/jwks.json", null,
+                "http://localhost:3567/.well-known/jwks.json", null, new HashMap<>(),
                 1000, 1000, null, responseHeaders, true);
 
         assertEquals(response.entrySet().size(), 1);
