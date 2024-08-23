@@ -51,6 +51,7 @@ import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import java.util.Base64.Decoder;
@@ -313,6 +314,31 @@ public class Utils {
         sign.initVerify(pub);
         sign.update(stringToBytes(content));
         return sign.verify(decoder.decode(signature));
+    }
+
+    public static boolean verifyWithPublicKey(String content, String signature, String n, String e, boolean urlEncoded)
+            throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException, SignatureException {
+        Signature sign = Signature.getInstance("SHA256withRSA");
+        byte[] modulusBytes = Base64.getUrlDecoder().decode(n);
+        byte[] exponentBytes = Base64.getUrlDecoder().decode(e);
+        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+
+        if ((modulusBytes[0] & 0x80) != 0) {
+            byte[] newModulusBytes = new byte[modulusBytes.length + 1];
+            System.arraycopy(modulusBytes, 0, newModulusBytes, 1, modulusBytes.length);
+            modulusBytes = newModulusBytes;
+        }
+        
+        BigInteger modulus = new BigInteger(modulusBytes);
+        BigInteger exponent = new BigInteger(1, exponentBytes);
+        
+        RSAPublicKeySpec spec = new RSAPublicKeySpec(modulus, exponent);
+        PublicKey pub = keyFactory.generatePublic(spec);
+
+        Base64.Decoder signatureDecoder = urlEncoded ? Base64.getUrlDecoder() : Base64.getDecoder();
+        sign.initVerify(pub);
+        sign.update(content.getBytes());
+        return sign.verify(signatureDecoder.decode(signature));
     }
 
     public static boolean isFakeEmail(String email) {

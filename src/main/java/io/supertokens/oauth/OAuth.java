@@ -16,6 +16,7 @@
 
 package io.supertokens.oauth;
 
+import com.auth0.jwt.exceptions.JWTCreationException;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -24,23 +25,33 @@ import io.supertokens.Main;
 import io.supertokens.config.Config;
 import io.supertokens.httpRequest.HttpRequest;
 import io.supertokens.httpRequest.HttpResponseException;
+import io.supertokens.jwt.JWTSigningFunctions;
+import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.oauth.exceptions.*;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.oauth.OAuthStorage;
 import io.supertokens.pluginInterface.oauth.exceptions.OAuth2ClientAlreadyExistsForAppException;
+import io.supertokens.session.jwt.JWT;
+import io.supertokens.session.jwt.JWT.JWTException;
+import io.supertokens.signingkeys.JWTSigningKey;
+import io.supertokens.signingkeys.SigningKeys;
 import io.supertokens.utils.Utils;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.security.spec.InvalidKeySpecException;
 import java.util.*;
 
 public class OAuth {
@@ -124,18 +135,105 @@ public class OAuth {
         return new OAuthAuthResponse(redirectTo, cookies);
     }
 
-    public static JsonObject getToken(Main main, AppIdentifier appIdentifier, Storage storage, JsonObject bodyFromSdk) throws InvalidConfigException, TenantOrAppNotFoundException {
+    public static JsonObject getToken(Main main, AppIdentifier appIdentifier, Storage storage, JsonObject bodyFromSdk, boolean useDynamicKey) throws InvalidConfigException, TenantOrAppNotFoundException, OAuthAuthException, StorageQueryException {
+        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+        String clientId = bodyFromSdk.get("client_id").getAsString();
+
+        if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientId)) {
+            throw new OAuthAuthException("invalid_client", "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method). The requested OAuth 2.0 Client does not exist.");
+        }
+
         String publicOAuthProviderServiceUrl = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderPublicServiceUrl();
         try {
             Map<String, String> bodyParams = constructHydraRequestParamsForAuthorizationGETAPICall(bodyFromSdk);
             bodyParams.put("code", bodyParams.get("code").replace("st_ac_", "ory_ac_"));
             JsonObject response = HttpRequest.sendFormPOSTRequest(main, "", publicOAuthProviderServiceUrl + HYDRA_TOKEN_ENDPOINT, bodyParams, 10000, 10000, null);
+
+            // token transformations
+            if (response.has("access_token")) {
+                String accessToken = response.get("access_token").getAsString();
+                accessToken = resignToken(appIdentifier, main, accessToken, 1, useDynamicKey);
+                response.addProperty("access_token", accessToken);
+            }
+
+            if (response.has("id_token")) {
+                String idToken = response.get("id_token").getAsString();
+                idToken = resignToken(appIdentifier, main, idToken, 2, useDynamicKey);
+                response.addProperty("id_token", idToken);
+            }
             // TODO: token transformations
             // TODO: error handling
             return response;
         } catch (HttpResponseException | IOException e) {
+            // TODO Auto-generated catch block
+            throw new RuntimeException(e);
+        } catch (InvalidKeyException e) {
+            // TODO Auto-generated catch block
+            throw new RuntimeException(e);
+        } catch (NoSuchAlgorithmException e) {
+            // TODO Auto-generated catch block
+            throw new RuntimeException(e);
+        } catch (JWTException e) {
+            // TODO Auto-generated catch block
+            throw new RuntimeException(e);
+        } catch (InvalidKeySpecException e) {
+            // TODO Auto-generated catch block
+            throw new RuntimeException(e);
+        } catch (JWTCreationException e) {
+            // TODO Auto-generated catch block
+            throw new RuntimeException(e);
+        } catch (StorageTransactionLogicException e) {
+            // TODO Auto-generated catch block
+            throw new RuntimeException(e);
+        } catch (UnsupportedJWTSigningAlgorithmException e) {
+            // TODO Auto-generated catch block
             throw new RuntimeException(e);
         }
+    }
+
+    private static String resignToken(AppIdentifier appIdentifier, Main main, String token, int stt, boolean useDynamicSigningKey) throws IOException, HttpResponseException, JWTException, InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException, JWTCreationException {
+        // Load the JWKS from the specified URL
+        String jwksUrl = "http://localhost:4444/.well-known/jwks.json";
+        JsonObject jwksResponse = HttpRequest.sendGETRequest(main, "", jwksUrl, null, 10000, 10000, null);
+        JsonArray keys = jwksResponse.get("keys").getAsJsonArray();
+
+        // Validate the JWT and extract claims using the fetched public signing keys
+        JWT.JWTPreParseInfo jwtInfo = JWT.preParseJWTInfo(token);
+        JWT.JWTInfo jwtResult = null;
+        for (JsonElement key : keys) {
+            JsonObject keyObject = key.getAsJsonObject();
+            String kid = keyObject.get("kid").getAsString();
+            if (jwtInfo.kid.equals(kid)) {
+                jwtResult = JWT.verifyJWTAndGetPayload(jwtInfo, keyObject.get("n").getAsString(), keyObject.get("e").getAsString());
+                break;
+            }
+        }
+        if (jwtResult == null) {
+            throw new RuntimeException("No matching key found for JWT verification");
+        }
+        JsonObject payload = jwtResult.payload;
+        // move keys in ext to root
+        if (payload.has("ext")) {
+            JsonObject ext = payload.getAsJsonObject("ext");
+            for (Map.Entry<String, JsonElement> entry : ext.entrySet()) {
+                payload.add(entry.getKey(), entry.getValue());
+            }
+            payload.remove("ext");
+        }
+        payload.addProperty("stt", stt);
+
+        JWTSigningKeyInfo keyToUse;
+        if (useDynamicSigningKey) {
+            keyToUse = Utils.getJWTSigningKeyInfoFromKeyInfo(
+                    SigningKeys.getInstance(appIdentifier, main).getLatestIssuedDynamicKey());
+        } else {
+            keyToUse = SigningKeys.getInstance(appIdentifier, main)
+                    .getStaticKeyForAlgorithm(JWTSigningKey.SupportedAlgorithms.RS256);
+        }
+
+        token = JWTSigningFunctions.createJWTToken(JWTSigningKey.SupportedAlgorithms.RS256, new HashMap<>(),
+                    payload, null, payload.get("exp").getAsLong(), payload.get("iat").getAsLong(), keyToUse);
+        return token;
     }
 
     //This more or less acts as a pass-through for the sdks, apart from camelCase <-> snake_case key transformation and setting a few default values
