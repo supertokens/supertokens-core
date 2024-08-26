@@ -22,7 +22,7 @@ public class OAuthClientUpdateException extends OAuthException{
     @Serial
     private static final long serialVersionUID = -5191044905397936167L;
 
-    public OAuthClientUpdateException(String error, String errorDescription) {
-        super(error, errorDescription);
+    public OAuthClientUpdateException(String error, String errorDescription, int statusCode) {
+        super(error, errorDescription, statusCode);
     }
 }

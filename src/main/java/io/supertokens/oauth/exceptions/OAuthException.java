@@ -24,10 +24,12 @@ public class OAuthException extends Exception{
 
     public final String error;
     public final String errorDescription;
+    public final int statusCode;
 
-    public OAuthException(String error, String errorDescription){
+    public OAuthException(String error, String errorDescription, int statusCode){
         super(error);
         this.error = error;
         this.errorDescription = errorDescription;
+        this.statusCode = statusCode;
     }
 }

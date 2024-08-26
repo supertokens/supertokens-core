@@ -17,6 +17,7 @@
 package io.supertokens.oauth;
 
 import com.auth0.jwt.exceptions.JWTCreationException;
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -64,9 +65,10 @@ public class OAuth {
     private static final String HYDRA_AUTH_ENDPOINT = "/oauth2/auth";
     private static final String HYDRA_TOKEN_ENDPOINT = "/oauth2/token";
     private static final String HYDRA_CLIENTS_ENDPOINT = "/admin/clients";
+    private static final String HYDRA_JWKS_PATH = "/.well-known/jwks.json"; // New constant for JWKS path
 
-    public static OAuthAuthResponse getAuthorizationUrl(Main main, AppIdentifier appIdentifier, Storage storage, JsonObject paramsFromSdk)
-            throws InvalidConfigException, HttpResponseException, IOException, OAuthAuthException, StorageQueryException,
+    public static OAuthAuthResponse getAuthorizationUrl(Main main, AppIdentifier appIdentifier, Storage storage, JsonObject paramsFromSdk, String inputCookies)
+            throws InvalidConfigException, HttpResponseException, IOException, OAuthAPIException, StorageQueryException,
             TenantOrAppNotFoundException {
 
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
@@ -79,24 +81,21 @@ public class OAuth {
         String hydraBaseUrlForConsentAndLogin = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOauthProviderConsentLoginBaseUrl();
 
         String clientId = paramsFromSdk.get("client_id").getAsString();
-        String cookie = null;
 
-        if (paramsFromSdk.has("cookie")) {
-            cookie = paramsFromSdk.get("cookie").getAsString();
-            cookie = cookie.replaceAll("st_oauth_", "ory_hydra_");
-            paramsFromSdk.remove("cookie");
+        if (inputCookies != null) {
+            inputCookies = inputCookies.replaceAll("st_oauth_", "ory_hydra_");
         }
 
         if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientId)) {
-            throw new OAuthAuthException("invalid_client", "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method). The requested OAuth 2.0 Client does not exist.");
+            throw new OAuthAPIException("invalid_client", "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method). The requested OAuth 2.0 Client does not exist.", 400);
         } else {
             // we query hydra
             Map<String, String> queryParamsForHydra = constructHydraRequestParamsForAuthorizationGETAPICall(paramsFromSdk);
             Map<String, String> headers = new HashMap<>();
             Map<String, List<String>> responseHeaders = new HashMap<>();
 
-            if (cookie != null) {
-                headers.put("Cookie", cookie);
+            if (inputCookies != null) {
+                headers.put("Cookie", inputCookies);
             }
 
             HttpRequest.sendGETRequestWithResponseHeaders(main, "", publicOAuthProviderServiceUrl + HYDRA_AUTH_ENDPOINT, queryParamsForHydra, headers, 10000, 10000, null, responseHeaders, false);
@@ -106,7 +105,7 @@ public class OAuth {
                 if(Utils.containsUrl(locationHeaderValue, hydraInternalAddress, true)){
                     String error = getValueOfQueryParam(locationHeaderValue, ERROR_LITERAL);
                     String errorDescription = getValueOfQueryParam(locationHeaderValue, ERROR_DESCRIPTION_LITERAL);
-                    throw new OAuthAuthException(error, errorDescription);
+                    throw new OAuthAPIException(error, errorDescription, 400);
                 }
 
                 if(Utils.containsUrl(locationHeaderValue, hydraBaseUrlForConsentAndLogin, true)){
@@ -135,65 +134,59 @@ public class OAuth {
         return new OAuthAuthResponse(redirectTo, cookies);
     }
 
-    public static JsonObject getToken(Main main, AppIdentifier appIdentifier, Storage storage, JsonObject bodyFromSdk, boolean useDynamicKey) throws InvalidConfigException, TenantOrAppNotFoundException, OAuthAuthException, StorageQueryException {
+    public static JsonObject getToken(Main main, AppIdentifier appIdentifier, Storage storage, JsonObject bodyFromSdk, String iss, boolean useDynamicKey) throws InvalidConfigException, TenantOrAppNotFoundException, OAuthAPIException, StorageQueryException, IOException, InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, JWTCreationException, JWTException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException {
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
         String clientId = bodyFromSdk.get("client_id").getAsString();
 
         if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientId)) {
-            throw new OAuthAuthException("invalid_client", "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method). The requested OAuth 2.0 Client does not exist.");
+            throw new OAuthAPIException("invalid_client", "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method). The requested OAuth 2.0 Client does not exist.", 400);
         }
 
         String publicOAuthProviderServiceUrl = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderPublicServiceUrl();
         try {
             Map<String, String> bodyParams = constructHydraRequestParamsForAuthorizationGETAPICall(bodyFromSdk);
-            bodyParams.put("code", bodyParams.get("code").replace("st_ac_", "ory_ac_"));
+            if (bodyParams.containsKey("code")) {
+                bodyParams.put("code", bodyParams.get("code").replace("st_ac_", "ory_ac_"));
+            }
+            if (bodyParams.containsKey("refresh_token")) {
+                bodyParams.put("refresh_token", bodyParams.get("refresh_token").replace("st_rt_", "ory_rt_"));
+            }
             JsonObject response = HttpRequest.sendFormPOSTRequest(main, "", publicOAuthProviderServiceUrl + HYDRA_TOKEN_ENDPOINT, bodyParams, 10000, 10000, null);
 
             // token transformations
             if (response.has("access_token")) {
                 String accessToken = response.get("access_token").getAsString();
-                accessToken = resignToken(appIdentifier, main, accessToken, 1, useDynamicKey);
+                accessToken = resignToken(appIdentifier, main, accessToken, iss, 1, useDynamicKey);
                 response.addProperty("access_token", accessToken);
             }
 
             if (response.has("id_token")) {
                 String idToken = response.get("id_token").getAsString();
-                idToken = resignToken(appIdentifier, main, idToken, 2, useDynamicKey);
+                idToken = resignToken(appIdentifier, main, idToken, iss, 2, useDynamicKey);
                 response.addProperty("id_token", idToken);
             }
-            // TODO: token transformations
-            // TODO: error handling
+
+            if (response.has("refresh_token")) {
+                String refreshToken = response.get("refresh_token").getAsString();
+                refreshToken = refreshToken.replace("ory_rt_", "st_rt_");
+                response.addProperty("refresh_token", refreshToken);
+            }
             return response;
-        } catch (HttpResponseException | IOException e) {
-            // TODO Auto-generated catch block
-            throw new RuntimeException(e);
-        } catch (InvalidKeyException e) {
-            // TODO Auto-generated catch block
-            throw new RuntimeException(e);
-        } catch (NoSuchAlgorithmException e) {
-            // TODO Auto-generated catch block
-            throw new RuntimeException(e);
-        } catch (JWTException e) {
-            // TODO Auto-generated catch block
-            throw new RuntimeException(e);
-        } catch (InvalidKeySpecException e) {
-            // TODO Auto-generated catch block
-            throw new RuntimeException(e);
-        } catch (JWTCreationException e) {
-            // TODO Auto-generated catch block
-            throw new RuntimeException(e);
-        } catch (StorageTransactionLogicException e) {
-            // TODO Auto-generated catch block
-            throw new RuntimeException(e);
-        } catch (UnsupportedJWTSigningAlgorithmException e) {
-            // TODO Auto-generated catch block
-            throw new RuntimeException(e);
+
+        } catch (HttpResponseException e) {
+            JsonObject errorResponse = new Gson().fromJson(e.rawMessage, JsonObject.class);
+            throw new OAuthAPIException(
+                errorResponse.get("error").getAsString(),
+                errorResponse.get("error_description").getAsString(),
+                e.statusCode
+            );
         }
     }
 
-    private static String resignToken(AppIdentifier appIdentifier, Main main, String token, int stt, boolean useDynamicSigningKey) throws IOException, HttpResponseException, JWTException, InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException, JWTCreationException {
+    private static String resignToken(AppIdentifier appIdentifier, Main main, String token, String iss, int stt, boolean useDynamicSigningKey) throws IOException, HttpResponseException, JWTException, InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException, JWTCreationException, InvalidConfigException {
         // Load the JWKS from the specified URL
-        String jwksUrl = "http://localhost:4444/.well-known/jwks.json";
+        String publicOAuthProviderServiceUrl = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderPublicServiceUrl();
+        String jwksUrl = publicOAuthProviderServiceUrl + HYDRA_JWKS_PATH; // Use the new constant
         JsonObject jwksResponse = HttpRequest.sendGETRequest(main, "", jwksUrl, null, 10000, 10000, null);
         JsonArray keys = jwksResponse.get("keys").getAsJsonArray();
 
@@ -220,6 +213,7 @@ public class OAuth {
             }
             payload.remove("ext");
         }
+        payload.addProperty("iss", iss);
         payload.addProperty("stt", stt);
 
         JWTSigningKeyInfo keyToUse;
@@ -287,7 +281,7 @@ public class OAuth {
         String adminOAuthProviderServiceUrl = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderAdminServiceUrl();
 
         if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientId)) {
-            throw new OAuthClientNotFoundException("Unable to locate the resource", "");
+            throw new OAuthClientNotFoundException("Unable to locate the resource", "", 400);
         } else {
             try {
                 JsonObject hydraResponse = HttpRequest.sendGETRequest(main, "", adminOAuthProviderServiceUrl + HYDRA_CLIENTS_ENDPOINT + "/" + clientId, null, 10000, 10000, null);
@@ -311,7 +305,7 @@ public class OAuth {
         String adminOAuthProviderServiceUrl = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderAdminServiceUrl();
 
         if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientId)) {
-            throw new OAuthClientNotFoundException("Unable to locate the resource", "");
+            throw new OAuthClientNotFoundException("Unable to locate the resource", "", 400);
         } else {
             try {
                 oauthStorage.removeAppClientAssociation(appIdentifier, clientId);
@@ -339,7 +333,7 @@ public class OAuth {
         String clientId = paramsFromSdk.get("clientId").getAsString();
 
         if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientId)) {
-            throw new OAuthClientNotFoundException("Unable to locate the resource", "");
+            throw new OAuthClientNotFoundException("Unable to locate the resource", "", 400);
         } else {
             JsonArray hydraInput = translateIncomingDataToHydraUpdateFormat(paramsFromSdk);
             try {

@@ -16,17 +16,21 @@
 
 package io.supertokens.webserver.api.oauth;
 
+import com.auth0.jwt.exceptions.JWTCreationException;
 import com.google.gson.*;
 import io.supertokens.Main;
+import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.oauth.OAuth;
-import io.supertokens.oauth.exceptions.OAuthAuthException;
+import io.supertokens.oauth.exceptions.OAuthAPIException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.session.jwt.JWT.JWTException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -35,6 +39,9 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.io.Serial;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 
 public class OAuthTokenAPI extends WebserverAPI {
     @Serial
@@ -53,6 +60,7 @@ public class OAuthTokenAPI extends WebserverAPI {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
 
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
+        String iss = InputParser.parseStringOrThrowError(input, "iss", false);
 
         boolean useDynamicKey = false;
         Boolean useStaticKeyInput = InputParser.parseBooleanOrThrowError(input, "useStaticSigningKey", true);
@@ -61,28 +69,26 @@ public class OAuthTokenAPI extends WebserverAPI {
 
         JsonObject bodyFromSDK = InputParser.parseJsonObjectOrThrowError(input, "body", false);
 
-
         try {
             AppIdentifier appIdentifier = getAppIdentifier(req);
             Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
 
             JsonObject response = OAuth.getToken(super.main, appIdentifier, storage,
-                bodyFromSDK, useDynamicKey);
+                bodyFromSDK, iss, useDynamicKey);
 
             response.addProperty("status", "OK");
             super.sendJsonResponse(200, response, resp);
 
-        } catch (OAuthAuthException authException) {
+        } catch (OAuthAPIException authException) {
 
             JsonObject errorResponse = new JsonObject();
             errorResponse.addProperty("error", authException.error);
-            errorResponse.addProperty("errorDescription", authException.errorDescription);
-            errorResponse.addProperty("status", "OAUTH2_AUTH_ERROR");
+            errorResponse.addProperty("error_description", authException.errorDescription);
+            errorResponse.addProperty("status_code", authException.statusCode);
+            errorResponse.addProperty("status", "OAUTH2_TOKEN_ERROR");
             super.sendJsonResponse(200, errorResponse, resp);
 
-        } catch (TenantOrAppNotFoundException | InvalidConfigException | BadPermissionException e) {
-            throw new ServletException(e);
-        } catch (StorageQueryException e) {
+        } catch (TenantOrAppNotFoundException | InvalidConfigException | BadPermissionException | StorageQueryException | InvalidKeyException | NoSuchAlgorithmException | InvalidKeySpecException | JWTCreationException | JWTException | StorageTransactionLogicException | UnsupportedJWTSigningAlgorithmException e) {
             throw new ServletException(e);
         }
     }

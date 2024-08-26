@@ -23,7 +23,7 @@ public class OAuthAPIInvalidInputException extends OAuthException{
     @Serial
     private static final long serialVersionUID = 665027786586190611L;
 
-    public OAuthAPIInvalidInputException(String error, String errorDescription) {
-        super(error, errorDescription);
+    public OAuthAPIInvalidInputException(String error, String errorDescription, int statusCode) {
+        super(error, errorDescription, statusCode);
     }
 }

@@ -20,7 +20,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.httpRequest.HttpResponseException;
 import io.supertokens.oauth.OAuth;
-import io.supertokens.oauth.exceptions.OAuthAuthException;
+import io.supertokens.oauth.exceptions.OAuthAPIException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -59,7 +59,7 @@ public class OAuthAuthAPITest {
 
     @Test
     public void testLocalhostChangedToApiDomain()
-            throws StorageQueryException, OAuthAuthException, HttpResponseException, TenantOrAppNotFoundException,
+            throws StorageQueryException, OAuthAPIException, HttpResponseException, TenantOrAppNotFoundException,
             InvalidConfigException, IOException, OAuth2ClientAlreadyExistsForAppException,
             io.supertokens.test.httpRequest.HttpResponseException, InterruptedException {
 
@@ -144,7 +144,7 @@ public class OAuthAuthAPITest {
         AppIdentifier testApp = new AppIdentifier("", "");
         oAuthStorage.addClientForApp(testApp, clientId);
 
-        OAuthAuthException thrown = assertThrows(OAuthAuthException.class, () -> {
+        OAuthAPIException thrown = assertThrows(OAuthAPIException.class, () -> {
 
             OAuthAuthResponse response = OAuth.getAuthorizationUrl(process.getProcess(), new AppIdentifier("", ""),
                     oAuthStorage,  requestBody);
@@ -201,7 +201,7 @@ public class OAuthAuthAPITest {
         AppIdentifier testApp = new AppIdentifier("", "");
         oAuthStorage.addClientForApp(testApp, clientId);
 
-        OAuthAuthException thrown = assertThrows(OAuthAuthException.class, () -> {
+        OAuthAPIException thrown = assertThrows(OAuthAPIException.class, () -> {
 
             OAuthAuthResponse response = OAuth.getAuthorizationUrl(process.getProcess(), new AppIdentifier("", ""),
                     oAuthStorage,  requestBody);
@@ -259,7 +259,7 @@ public class OAuthAuthAPITest {
         AppIdentifier testApp = new AppIdentifier("", "");
         oAuthStorage.addClientForApp(testApp, clientId);
 
-        OAuthAuthException thrown = assertThrows(OAuthAuthException.class, () -> {
+        OAuthAPIException thrown = assertThrows(OAuthAPIException.class, () -> {
 
             OAuthAuthResponse response = OAuth.getAuthorizationUrl(process.getProcess(), new AppIdentifier("", ""),
                     oAuthStorage, requestBody);

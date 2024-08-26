@@ -16,10 +16,10 @@
 
 package io.supertokens.oauth.exceptions;
 
-public class OAuthAuthException extends OAuthException{
+public class OAuthAPIException extends OAuthException{
     private static final long serialVersionUID = 1836718299845759897L;
 
-    public OAuthAuthException(String error, String errorDescription) {
-        super(error, errorDescription);
+    public OAuthAPIException(String error, String errorDescription, int statusCode) {
+        super(error, errorDescription, statusCode);
     }
 }

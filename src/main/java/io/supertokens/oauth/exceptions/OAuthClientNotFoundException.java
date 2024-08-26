@@ -22,7 +22,7 @@ public class OAuthClientNotFoundException extends OAuthException{
     @Serial
     private static final long serialVersionUID = 1412853176388698991L;
 
-    public OAuthClientNotFoundException(String error, String errorDescription) {
-        super(error, errorDescription);
+    public OAuthClientNotFoundException(String error, String errorDescription, int statusCode) {
+        super(error, errorDescription, statusCode);
     }
 }

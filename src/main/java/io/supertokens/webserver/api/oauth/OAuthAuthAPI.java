@@ -21,7 +21,7 @@ import io.supertokens.Main;
 import io.supertokens.httpRequest.HttpResponseException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.oauth.OAuth;
-import io.supertokens.oauth.exceptions.OAuthAuthException;
+import io.supertokens.oauth.exceptions.OAuthAPIException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
@@ -59,14 +59,16 @@ public class OAuthAuthAPI extends WebserverAPI {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
 
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-        InputParser.throwErrorOnMissingRequiredField(input, REQUIRED_FIELDS_FOR_POST);
+        JsonObject params = InputParser.parseJsonObjectOrThrowError(input, "params", false);
+        String cookies = InputParser.parseStringOrThrowError(input, "cookies", true);
+
+        InputParser.throwErrorOnMissingRequiredField(params, REQUIRED_FIELDS_FOR_POST);
 
         try {
             AppIdentifier appIdentifier = getAppIdentifier(req);
             Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
 
-            OAuthAuthResponse authResponse = OAuth.getAuthorizationUrl(super.main, appIdentifier, storage,
-                    input);
+            OAuthAuthResponse authResponse = OAuth.getAuthorizationUrl(super.main, appIdentifier, storage, params, cookies);
             JsonObject response = new JsonObject();
             response.addProperty("redirectTo", authResponse.redirectTo);
 
@@ -80,7 +82,7 @@ public class OAuthAuthAPI extends WebserverAPI {
             response.addProperty("status", "OK");
             super.sendJsonResponse(200, response, resp);
 
-        } catch (OAuthAuthException authException) {
+        } catch (OAuthAPIException authException) {
 
             JsonObject errorResponse = new JsonObject();
             errorResponse.addProperty("error", authException.error);
