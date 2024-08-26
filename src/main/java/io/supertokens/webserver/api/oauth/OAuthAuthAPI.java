@@ -18,6 +18,7 @@ package io.supertokens.webserver.api.oauth;
 
 import com.google.gson.*;
 import io.supertokens.Main;
+import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.httpRequest.HttpResponseException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.oauth.OAuth;
@@ -91,7 +92,7 @@ public class OAuthAuthAPI extends WebserverAPI {
             super.sendJsonResponse(200, errorResponse, resp);
 
         } catch (TenantOrAppNotFoundException | InvalidConfigException | HttpResponseException |
-                 StorageQueryException | BadPermissionException e) {
+                 StorageQueryException | BadPermissionException | FeatureNotEnabledException e) {
             throw new ServletException(e);
         }
     }

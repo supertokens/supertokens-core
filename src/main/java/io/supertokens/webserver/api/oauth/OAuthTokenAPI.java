@@ -19,6 +19,7 @@ package io.supertokens.webserver.api.oauth;
 import com.auth0.jwt.exceptions.JWTCreationException;
 import com.google.gson.*;
 import io.supertokens.Main;
+import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.oauth.OAuth;
@@ -88,7 +89,10 @@ public class OAuthTokenAPI extends WebserverAPI {
             errorResponse.addProperty("status", "OAUTH2_TOKEN_ERROR");
             super.sendJsonResponse(200, errorResponse, resp);
 
-        } catch (TenantOrAppNotFoundException | InvalidConfigException | BadPermissionException | StorageQueryException | InvalidKeyException | NoSuchAlgorithmException | InvalidKeySpecException | JWTCreationException | JWTException | StorageTransactionLogicException | UnsupportedJWTSigningAlgorithmException e) {
+        } catch (TenantOrAppNotFoundException | InvalidConfigException | BadPermissionException | 
+                StorageQueryException | InvalidKeyException | NoSuchAlgorithmException | 
+                InvalidKeySpecException | JWTCreationException | JWTException | StorageTransactionLogicException | 
+                UnsupportedJWTSigningAlgorithmException | FeatureNotEnabledException e) {
             throw new ServletException(e);
         }
     }

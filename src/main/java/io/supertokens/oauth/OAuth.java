@@ -24,6 +24,9 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.config.Config;
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlag;
+import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.httpRequest.HttpRequest;
 import io.supertokens.httpRequest.HttpResponseException;
 import io.supertokens.jwt.JWTSigningFunctions;
@@ -67,9 +70,27 @@ public class OAuth {
     private static final String HYDRA_CLIENTS_ENDPOINT = "/admin/clients";
     private static final String HYDRA_JWKS_PATH = "/.well-known/jwks.json"; // New constant for JWKS path
 
+    private static Map<String, Map<String, JsonObject>> jwksCache = new HashMap<>(); // Cache for JWKS keys
+    private static final int MAX_RETRIES = 3; // Maximum number of retries for fetching JWKS
+
+    private static void checkForOauthFeature(AppIdentifier appIdentifier, Main main)
+            throws StorageQueryException, TenantOrAppNotFoundException, FeatureNotEnabledException {
+        EE_FEATURES[] features = FeatureFlag.getInstance(main, appIdentifier).getEnabledFeatures();
+        for (EE_FEATURES f : features) {
+            if (f == EE_FEATURES.OAUTH) {
+                return;
+            }
+        }
+        throw new FeatureNotEnabledException(
+                "OAuth feature is not enabled. Please subscribe to a SuperTokens core license key to enable this " +
+                        "feature.");
+    }
+
     public static OAuthAuthResponse getAuthorizationUrl(Main main, AppIdentifier appIdentifier, Storage storage, JsonObject paramsFromSdk, String inputCookies)
             throws InvalidConfigException, HttpResponseException, IOException, OAuthAPIException, StorageQueryException,
-            TenantOrAppNotFoundException {
+            TenantOrAppNotFoundException, FeatureNotEnabledException {
+
+        checkForOauthFeature(appIdentifier, main);
 
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
 
@@ -134,7 +155,9 @@ public class OAuth {
         return new OAuthAuthResponse(redirectTo, cookies);
     }
 
-    public static JsonObject getToken(Main main, AppIdentifier appIdentifier, Storage storage, JsonObject bodyFromSdk, String iss, boolean useDynamicKey) throws InvalidConfigException, TenantOrAppNotFoundException, OAuthAPIException, StorageQueryException, IOException, InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, JWTCreationException, JWTException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException {
+    public static JsonObject getToken(Main main, AppIdentifier appIdentifier, Storage storage, JsonObject bodyFromSdk, String iss, boolean useDynamicKey) throws InvalidConfigException, TenantOrAppNotFoundException, OAuthAPIException, StorageQueryException, IOException, InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, JWTCreationException, JWTException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException, FeatureNotEnabledException {
+        checkForOauthFeature(appIdentifier, main);
+        
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
         String clientId = bodyFromSdk.get("client_id").getAsString();
 
@@ -156,13 +179,13 @@ public class OAuth {
             // token transformations
             if (response.has("access_token")) {
                 String accessToken = response.get("access_token").getAsString();
-                accessToken = resignToken(appIdentifier, main, accessToken, iss, 1, useDynamicKey);
+                accessToken = reSignToken(appIdentifier, main, accessToken, iss, 1, useDynamicKey, 0);
                 response.addProperty("access_token", accessToken);
             }
 
             if (response.has("id_token")) {
                 String idToken = response.get("id_token").getAsString();
-                idToken = resignToken(appIdentifier, main, idToken, iss, 2, useDynamicKey);
+                idToken = reSignToken(appIdentifier, main, idToken, iss, 2, useDynamicKey, 0);
                 response.addProperty("id_token", idToken);
             }
 
@@ -183,27 +206,47 @@ public class OAuth {
         }
     }
 
-    private static String resignToken(AppIdentifier appIdentifier, Main main, String token, String iss, int stt, boolean useDynamicSigningKey) throws IOException, HttpResponseException, JWTException, InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException, JWTCreationException, InvalidConfigException {
+    private static String reSignToken(AppIdentifier appIdentifier, Main main, String token, String iss, int stt, boolean useDynamicSigningKey, int retryCount) throws IOException, HttpResponseException, JWTException, InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException, JWTCreationException, InvalidConfigException, OAuthAPIException {
         // Load the JWKS from the specified URL
         String publicOAuthProviderServiceUrl = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderPublicServiceUrl();
         String jwksUrl = publicOAuthProviderServiceUrl + HYDRA_JWKS_PATH; // Use the new constant
-        JsonObject jwksResponse = HttpRequest.sendGETRequest(main, "", jwksUrl, null, 10000, 10000, null);
-        JsonArray keys = jwksResponse.get("keys").getAsJsonArray();
+
+        // Check if cached keys are available for the jwksUrl
+        Map<String, JsonObject> cachedKeys = jwksCache.get(jwksUrl);
+        if (cachedKeys == null) {
+            JsonObject jwksResponse = HttpRequest.sendGETRequest(main, "", jwksUrl, null, 10000, 10000, null);
+            cachedKeys = new HashMap<>();
+            JsonArray keysArray = jwksResponse.get("keys").getAsJsonArray();
+            
+            // Populate the cache with keys indexed by kid
+            for (JsonElement key : keysArray) {
+                JsonObject keyObject = key.getAsJsonObject();
+                String kid = keyObject.get("kid").getAsString();
+                cachedKeys.put(kid, keyObject);
+            }
+            jwksCache.put(jwksUrl, cachedKeys); // Cache the keys with jwksUrl as the key
+        }
 
         // Validate the JWT and extract claims using the fetched public signing keys
         JWT.JWTPreParseInfo jwtInfo = JWT.preParseJWTInfo(token);
         JWT.JWTInfo jwtResult = null;
-        for (JsonElement key : keys) {
-            JsonObject keyObject = key.getAsJsonObject();
-            String kid = keyObject.get("kid").getAsString();
-            if (jwtInfo.kid.equals(kid)) {
-                jwtResult = JWT.verifyJWTAndGetPayload(jwtInfo, keyObject.get("n").getAsString(), keyObject.get("e").getAsString());
-                break;
+        
+        // Check if the key for the given kid exists in the cache
+        JsonObject keyObject = cachedKeys.get(jwtInfo.kid);
+        if (keyObject != null) {
+            jwtResult = JWT.verifyJWTAndGetPayload(jwtInfo, keyObject.get("n").getAsString(), keyObject.get("e").getAsString());
+        }
+
+        if (jwtResult == null) {
+            // If no matching key found and retry count is not exceeded, refetch the keys
+            if (retryCount < MAX_RETRIES) {
+                jwksCache.remove(jwksUrl); // Invalidate cache
+                return reSignToken(appIdentifier, main, token, iss, stt, useDynamicSigningKey, retryCount + 1); // Retry with incremented count
+            } else {
+                throw new OAuthAPIException("invalid_token", "The token is invalid or has expired.", 400);
             }
         }
-        if (jwtResult == null) {
-            throw new RuntimeException("No matching key found for JWT verification");
-        }
+
         JsonObject payload = jwtResult.payload;
         // move keys in ext to root
         if (payload.has("ext")) {
