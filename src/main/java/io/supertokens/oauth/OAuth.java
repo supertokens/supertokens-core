@@ -109,45 +109,45 @@ public class OAuth {
 
         if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientId)) {
             throw new OAuthAPIException("invalid_client", "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method). The requested OAuth 2.0 Client does not exist.", 400);
-        } else {
-            // we query hydra
-            Map<String, String> queryParamsForHydra = constructHydraRequestParamsForAuthorizationGETAPICall(paramsFromSdk);
-            Map<String, String> headers = new HashMap<>();
-            Map<String, List<String>> responseHeaders = new HashMap<>();
+        }
 
-            if (inputCookies != null) {
-                headers.put("Cookie", inputCookies);
+        // we query hydra
+        Map<String, String> queryParamsForHydra = constructHydraRequestParamsForAuthorizationGETAPICall(paramsFromSdk);
+        Map<String, String> headers = new HashMap<>();
+        Map<String, List<String>> responseHeaders = new HashMap<>();
+
+        if (inputCookies != null) {
+            headers.put("Cookie", inputCookies);
+        }
+
+        HttpRequest.sendGETRequestWithResponseHeaders(main, "", publicOAuthProviderServiceUrl + HYDRA_AUTH_ENDPOINT, queryParamsForHydra, headers, 10000, 10000, null, responseHeaders, false);
+
+        if (!responseHeaders.isEmpty() && responseHeaders.containsKey(LOCATION_HEADER_NAME)) {
+            String locationHeaderValue = responseHeaders.get(LOCATION_HEADER_NAME).get(0);
+            if(Utils.containsUrl(locationHeaderValue, hydraInternalAddress, true)){
+                String error = getValueOfQueryParam(locationHeaderValue, ERROR_LITERAL);
+                String errorDescription = getValueOfQueryParam(locationHeaderValue, ERROR_DESCRIPTION_LITERAL);
+                throw new OAuthAPIException(error, errorDescription, 400);
             }
 
-            HttpRequest.sendGETRequestWithResponseHeaders(main, "", publicOAuthProviderServiceUrl + HYDRA_AUTH_ENDPOINT, queryParamsForHydra, headers, 10000, 10000, null, responseHeaders, false);
-
-            if (!responseHeaders.isEmpty() && responseHeaders.containsKey(LOCATION_HEADER_NAME)) {
-                String locationHeaderValue = responseHeaders.get(LOCATION_HEADER_NAME).get(0);
-                if(Utils.containsUrl(locationHeaderValue, hydraInternalAddress, true)){
-                    String error = getValueOfQueryParam(locationHeaderValue, ERROR_LITERAL);
-                    String errorDescription = getValueOfQueryParam(locationHeaderValue, ERROR_DESCRIPTION_LITERAL);
-                    throw new OAuthAPIException(error, errorDescription, 400);
-                }
-
-                if(Utils.containsUrl(locationHeaderValue, hydraBaseUrlForConsentAndLogin, true)){
-                    redirectTo = locationHeaderValue.replace(hydraBaseUrlForConsentAndLogin, "{apiDomain}");
-                } else {
-                    redirectTo = locationHeaderValue;
-                }
-                if (redirectTo.contains("code=ory_ac_")) {
-                    redirectTo = redirectTo.replace("code=ory_ac_", "code=st_ac_");
-                }
+            if(Utils.containsUrl(locationHeaderValue, hydraBaseUrlForConsentAndLogin, true)){
+                redirectTo = locationHeaderValue.replace(hydraBaseUrlForConsentAndLogin, "{apiDomain}");
             } else {
-                throw new IllegalStateException("Unexpected answer from Oauth Provider");
+                redirectTo = locationHeaderValue;
             }
-            if(responseHeaders.containsKey(COOKIES_HEADER_NAME)){
-                cookies = new ArrayList<>(responseHeaders.get(COOKIES_HEADER_NAME));
+            if (redirectTo.contains("code=ory_ac_")) {
+                redirectTo = redirectTo.replace("code=ory_ac_", "code=st_ac_");
+            }
+        } else {
+            throw new IllegalStateException("Unexpected answer from Oauth Provider");
+        }
+        if(responseHeaders.containsKey(COOKIES_HEADER_NAME)){
+            cookies = new ArrayList<>(responseHeaders.get(COOKIES_HEADER_NAME));
 
-                for (int i = 0; i < cookies.size(); i++) {
-                    String cookieStr = cookies.get(i);
-                    if (cookieStr.startsWith("ory_hydra_")) {
-                        cookies.set(i, "st_oauth_" + cookieStr.substring(10));
-                    }
+            for (int i = 0; i < cookies.size(); i++) {
+                String cookieStr = cookies.get(i);
+                if (cookieStr.startsWith("ory_hydra_")) {
+                    cookies.set(i, "st_oauth_" + cookieStr.substring(10));
                 }
             }
         }
@@ -206,7 +206,7 @@ public class OAuth {
         }
     }
 
-    private static String reSignToken(AppIdentifier appIdentifier, Main main, String token, String iss, int stt, boolean useDynamicSigningKey, int retryCount) throws IOException, HttpResponseException, JWTException, InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException, JWTCreationException, InvalidConfigException, OAuthAPIException {
+    private static String reSignToken(AppIdentifier appIdentifier, Main main, String token, String iss, int stt, boolean useDynamicSigningKey, int retryCount) throws IOException, JWTException, InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException, JWTCreationException, InvalidConfigException, OAuthAPIException {
         // Load the JWKS from the specified URL
         String publicOAuthProviderServiceUrl = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderPublicServiceUrl();
         String jwksUrl = publicOAuthProviderServiceUrl + HYDRA_JWKS_PATH; // Use the new constant
@@ -214,10 +214,15 @@ public class OAuth {
         // Check if cached keys are available for the jwksUrl
         Map<String, JsonObject> cachedKeys = jwksCache.get(jwksUrl);
         if (cachedKeys == null) {
-            JsonObject jwksResponse = HttpRequest.sendGETRequest(main, "", jwksUrl, null, 10000, 10000, null);
+            JsonObject jwksResponse;
+            try {
+                jwksResponse = HttpRequest.sendGETRequest(main, "", jwksUrl, null, 10000, 10000, null);
+            } catch (HttpResponseException e) {
+                throw new OAuthAPIException("jwks_error", "Could not fetch JWKS keys from hydra for token verification", 500);
+            }
             cachedKeys = new HashMap<>();
             JsonArray keysArray = jwksResponse.get("keys").getAsJsonArray();
-            
+
             // Populate the cache with keys indexed by kid
             for (JsonElement key : keysArray) {
                 JsonObject keyObject = key.getAsJsonObject();
