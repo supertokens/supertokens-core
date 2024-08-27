@@ -81,9 +81,9 @@ public class OAuth {
                 return;
             }
         }
-        throw new FeatureNotEnabledException(
-                "OAuth feature is not enabled. Please subscribe to a SuperTokens core license key to enable this " +
-                        "feature.");
+        // throw new FeatureNotEnabledException(
+        //         "OAuth feature is not enabled. Please subscribe to a SuperTokens core license key to enable this " +
+        //                 "feature.");
     }
 
     public static OAuthAuthResponse getAuthorizationUrl(Main main, AppIdentifier appIdentifier, Storage storage, JsonObject paramsFromSdk, String inputCookies)
@@ -138,7 +138,7 @@ public class OAuth {
                     redirectTo = redirectTo.replace("code=ory_ac_", "code=st_ac_");
                 }
             } else {
-                throw new RuntimeException("Unexpected answer from Oauth Provider");
+                throw new IllegalStateException("Unexpected answer from Oauth Provider");
             }
             if(responseHeaders.containsKey(COOKIES_HEADER_NAME)){
                 cookies = new ArrayList<>(responseHeaders.get(COOKIES_HEADER_NAME));
@@ -324,7 +324,7 @@ public class OAuth {
         String adminOAuthProviderServiceUrl = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderAdminServiceUrl();
 
         if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientId)) {
-            throw new OAuthClientNotFoundException("Unable to locate the resource", "", 400);
+            throw new OAuthClientNotFoundException("invalid_client", "Invalid client_id specified");
         } else {
             try {
                 JsonObject hydraResponse = HttpRequest.sendGETRequest(main, "", adminOAuthProviderServiceUrl + HYDRA_CLIENTS_ENDPOINT + "/" + clientId, null, 10000, 10000, null);
@@ -348,7 +348,7 @@ public class OAuth {
         String adminOAuthProviderServiceUrl = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderAdminServiceUrl();
 
         if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientId)) {
-            throw new OAuthClientNotFoundException("Unable to locate the resource", "", 400);
+            throw new OAuthClientNotFoundException("invalid_client", "Invalid client_id specified");
         } else {
             try {
                 oauthStorage.removeAppClientAssociation(appIdentifier, clientId);
@@ -376,7 +376,7 @@ public class OAuth {
         String clientId = paramsFromSdk.get("clientId").getAsString();
 
         if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientId)) {
-            throw new OAuthClientNotFoundException("Unable to locate the resource", "", 400);
+            throw new OAuthClientNotFoundException("invalid_client", "Invalid client_id specified");
         } else {
             JsonArray hydraInput = translateIncomingDataToHydraUpdateFormat(paramsFromSdk);
             try {
