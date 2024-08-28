@@ -40,7 +40,7 @@ import io.supertokens.webserver.api.multitenancy.*;
 import io.supertokens.webserver.api.multitenancy.thirdparty.CreateOrUpdateThirdPartyConfigAPI;
 import io.supertokens.webserver.api.multitenancy.thirdparty.RemoveThirdPartyConfigAPI;
 import io.supertokens.webserver.api.oauth.OAuthAuthAPI;
-import io.supertokens.webserver.api.oauth.OAuthClientsAPI;
+import io.supertokens.webserver.api.oauth.CreateUpdateOrGetOAuthClientAPI;
 import io.supertokens.webserver.api.oauth.OAuthTokenAPI;
 import io.supertokens.webserver.api.passwordless.*;
 import io.supertokens.webserver.api.session.*;
@@ -272,7 +272,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
 
         addAPI(new OAuthAuthAPI(main));
         addAPI(new OAuthTokenAPI(main));
-        addAPI(new OAuthClientsAPI(main));
+        addAPI(new CreateUpdateOrGetOAuthClientAPI(main));
 
         StandardContext context = tomcatReference.getContext();
         Tomcat tomcat = tomcatReference.getTomcat();

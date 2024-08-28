@@ -19,12 +19,9 @@ package io.supertokens.webserver.api.oauth;
 import com.auth0.jwt.exceptions.JWTCreationException;
 import com.google.gson.*;
 import io.supertokens.Main;
-import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.oauth.OAuth;
-import io.supertokens.oauth.exceptions.OAuthAPIException;
-import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -39,17 +36,17 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
-import java.io.Serial;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-public class OAuthTokenAPI extends WebserverAPI {
-    @Serial
-    private static final long serialVersionUID = -8734479943734920904L;
+public class OAuthTokenAPI extends OAuthProxyBase {
 
     public OAuthTokenAPI(Main main) {
-        super(main, RECIPE_ID.OAUTH.toString());
+        super(main);
     }
 
     @Override
@@ -58,42 +55,51 @@ public class OAuthTokenAPI extends WebserverAPI {
     }
 
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+    public ProxyProps getProxyProperties() {
+        return new ProxyProps(
+            new String[] { "POST" }, // apiMethods
+            "POST_FORM", // method
+            "/oauth2/token", // path
+            false // camelToSnakeCaseConversion
+        );
+    }
 
-        JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
+    @Override
+    protected Map<String, String> getFormFieldsForProxyPOST(HttpServletRequest req, JsonObject input) throws IOException, ServletException {
+        InputParser.parseStringOrThrowError(input, "iss", false); // input validation
+
+        JsonObject bodyFromSDK = InputParser.parseJsonObjectOrThrowError(input, "body", false);
+
+        Map<String, String> formFields = new HashMap<>();
+        for (Map.Entry<String, JsonElement> entry : bodyFromSDK.entrySet()) {
+            formFields.put(entry.getKey(), entry.getValue().getAsString());
+        }
+
+        return formFields;
+    }
+
+    @Override
+    protected void handleResponseFromProxyPOST(HttpServletRequest req, HttpServletResponse resp, JsonObject input, int statusCode, Map<String, List<String>> headers, String rawBody, JsonObject jsonBody) throws IOException, ServletException {
+        if (jsonBody == null) {
+            throw new IllegalStateException("unexpected response from hydra");
+        }
+
         String iss = InputParser.parseStringOrThrowError(input, "iss", false);
-
         boolean useDynamicKey = false;
         Boolean useStaticKeyInput = InputParser.parseBooleanOrThrowError(input, "useStaticSigningKey", true);
         // useStaticKeyInput defaults to true, so we check if it has been explicitly set to false
         useDynamicKey = Boolean.FALSE.equals(useStaticKeyInput);
 
-        JsonObject bodyFromSDK = InputParser.parseJsonObjectOrThrowError(input, "body", false);
-
         try {
             AppIdentifier appIdentifier = getAppIdentifier(req);
             Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
+            jsonBody = OAuth.transformTokens(super.main, appIdentifier, storage, jsonBody, iss, useDynamicKey);
 
-            JsonObject response = OAuth.getToken(super.main, appIdentifier, storage,
-                bodyFromSDK, iss, useDynamicKey);
-
-            response.addProperty("status", "OK");
-            super.sendJsonResponse(200, response, resp);
-
-        } catch (OAuthAPIException authException) {
-
-            JsonObject errorResponse = new JsonObject();
-            errorResponse.addProperty("error", authException.error);
-            errorResponse.addProperty("error_description", authException.errorDescription);
-            errorResponse.addProperty("status_code", authException.statusCode);
-            errorResponse.addProperty("status", "OAUTH2_TOKEN_ERROR");
-            super.sendJsonResponse(200, errorResponse, resp);
-
-        } catch (TenantOrAppNotFoundException | InvalidConfigException | BadPermissionException | 
-                StorageQueryException | InvalidKeyException | NoSuchAlgorithmException | 
-                InvalidKeySpecException | JWTCreationException | JWTException | StorageTransactionLogicException | 
-                UnsupportedJWTSigningAlgorithmException | FeatureNotEnabledException e) {
+        } catch (IOException | InvalidConfigException | TenantOrAppNotFoundException | BadPermissionException | StorageQueryException | InvalidKeyException | NoSuchAlgorithmException | InvalidKeySpecException | JWTCreationException | JWTException | StorageTransactionLogicException | UnsupportedJWTSigningAlgorithmException e) {
             throw new ServletException(e);
         }
+
+        jsonBody.addProperty("status", "OK");
+        super.sendJsonResponse(200, jsonBody, resp);
     }
 }

@@ -16,40 +16,26 @@
 
 package io.supertokens.webserver.api.oauth;
 
-import com.google.gson.*;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
+
 import io.supertokens.Main;
-import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
-import io.supertokens.httpRequest.HttpResponseException;
-import io.supertokens.multitenancy.exception.BadPermissionException;
-import io.supertokens.oauth.OAuth;
-import io.supertokens.oauth.exceptions.OAuthAPIException;
-import io.supertokens.pluginInterface.RECIPE_ID;
-import io.supertokens.pluginInterface.Storage;
-import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
-import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
-import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.oauth.OAuthAuthResponse;
 import io.supertokens.webserver.InputParser;
-import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
-import java.io.Serial;
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
-public class OAuthAuthAPI extends WebserverAPI {
-    @Serial
-    private static final long serialVersionUID = -8734479943734920904L;
-
+public class OAuthAuthAPI extends OAuthProxyBase {
     public OAuthAuthAPI(Main main) {
-        super(main, RECIPE_ID.OAUTH.toString());
+        super(main);
     }
-
-    private static final List<String> REQUIRED_FIELDS_FOR_POST = Arrays.asList(new String[]{"client_id", "response_type"});
 
     @Override
     public String getPath() {
@@ -57,43 +43,59 @@ public class OAuthAuthAPI extends WebserverAPI {
     }
 
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+    public OAuthProxyBase.ProxyProps getProxyProperties() {
+        return new OAuthProxyBase.ProxyProps(
+            new String[]{ "POST" }, // apiMethods
+            "GET", // method
+            "/oauth2/auth", // path
+            false // camelToSnakeCaseConversion
+        );
+    }
 
-        JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
+    @Override
+    protected Map<String, String> getQueryParamsForProxy(HttpServletRequest req, JsonObject input) throws IOException, ServletException {
         JsonObject params = InputParser.parseJsonObjectOrThrowError(input, "params", false);
+
+        return params.entrySet().stream().collect(Collectors.toMap(
+            Map.Entry::getKey,
+            e -> e.getValue().getAsString()
+        ));
+    }
+
+    @Override
+    protected Map<String, String> getHeadersForProxy(HttpServletRequest req, JsonObject input) throws ServletException, IOException {
         String cookies = InputParser.parseStringOrThrowError(input, "cookies", true);
 
-        InputParser.throwErrorOnMissingRequiredField(params, REQUIRED_FIELDS_FOR_POST);
+        Map<String, String> headers = new HashMap<>();
 
-        try {
-            AppIdentifier appIdentifier = getAppIdentifier(req);
-            Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
-
-            OAuthAuthResponse authResponse = OAuth.getAuthorizationUrl(super.main, appIdentifier, storage, params, cookies);
-            JsonObject response = new JsonObject();
-            response.addProperty("redirectTo", authResponse.redirectTo);
-
-            JsonArray jsonCookies = new JsonArray();
-            if (authResponse.cookies != null) {
-                for(String cookie : authResponse.cookies){
-                    jsonCookies.add(new JsonPrimitive(cookie));
-                }
-            }
-            response.add("cookies", jsonCookies);
-            response.addProperty("status", "OK");
-            super.sendJsonResponse(200, response, resp);
-
-        } catch (OAuthAPIException authException) {
-
-            JsonObject errorResponse = new JsonObject();
-            errorResponse.addProperty("error", authException.error);
-            errorResponse.addProperty("errorDescription", authException.errorDescription);
-            errorResponse.addProperty("status", "OAUTH2_AUTH_ERROR");
-            super.sendJsonResponse(200, errorResponse, resp);
-
-        } catch (TenantOrAppNotFoundException | InvalidConfigException | HttpResponseException |
-                 StorageQueryException | BadPermissionException | FeatureNotEnabledException e) {
-            throw new ServletException(e);
+        if (cookies != null) {
+            headers.put("Cookie", cookies);
         }
+
+        return headers;
+    }
+
+    @Override
+    protected void handleResponseFromProxyGET(HttpServletRequest req, HttpServletResponse resp, int statusCode, Map<String, List<String>> headers, String rawBody, JsonObject jsonBody) throws IOException, ServletException {
+        if (headers == null || !headers.containsKey("Location")) {
+            throw new IllegalStateException("Invalid response from hydra");
+        }
+
+        String redirectTo = headers.get("Location").get(0);
+        List<String> cookies = headers.get("Set-Cookie");
+
+        JsonObject response = new JsonObject();
+        response.addProperty("redirectTo", redirectTo);
+
+        JsonArray jsonCookies = new JsonArray();
+        if (cookies != null) {
+            for (String cookie : cookies) {
+                jsonCookies.add(new JsonPrimitive(cookie));
+            }
+        }
+
+        response.add("cookies", jsonCookies);
+        response.addProperty("status", "OK");
+        super.sendJsonResponse(200, response, resp);
     }
 }

@@ -43,7 +43,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.List;
 
-public class OAuthClientsAPI extends WebserverAPI {
+public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
 
     @Serial
     private static final long serialVersionUID = -4482427281337641246L;
@@ -57,7 +57,7 @@ public class OAuthClientsAPI extends WebserverAPI {
     public String getPath() {
         return "/recipe/oauth/clients";
     }
-    public OAuthClientsAPI(Main main){
+    public CreateUpdateOrGetOAuthClientAPI(Main main){
         super(main, RECIPE_ID.OAUTH.toString());
     }
 
@@ -103,7 +103,7 @@ public class OAuthClientsAPI extends WebserverAPI {
             sendJsonResponse(200, response, resp);
 
         }  catch (OAuthClientNotFoundException e) {
-            JsonObject errorResponse = createJsonFromException(e, OAUTH2_CLIENT_NOT_FOUND_ERROR);
+            JsonObject errorResponse = new JsonObject();
             sendJsonResponse(200, errorResponse, resp);
 
         } catch (TenantOrAppNotFoundException | InvalidConfigException | BadPermissionException
@@ -128,7 +128,7 @@ public class OAuthClientsAPI extends WebserverAPI {
             sendJsonResponse(200, responseBody, resp);
 
         }  catch (OAuthClientNotFoundException e) {
-            JsonObject errorResponse = createJsonFromException(e, OAUTH2_CLIENT_NOT_FOUND_ERROR);
+            JsonObject errorResponse = new JsonObject();
             sendJsonResponse(200, errorResponse, resp);
 
         } catch (TenantOrAppNotFoundException | InvalidConfigException | BadPermissionException
@@ -159,7 +159,7 @@ public class OAuthClientsAPI extends WebserverAPI {
             throw new ServletException(updateException);
 
         } catch (OAuthClientNotFoundException clientNotFoundException) {
-            JsonObject errorResponse = createJsonFromException(clientNotFoundException, OAUTH2_CLIENT_NOT_FOUND_ERROR);
+            JsonObject errorResponse = new JsonObject();
             sendJsonResponse(200, errorResponse, resp);
 
         } catch (TenantOrAppNotFoundException | InvalidConfigException | StorageQueryException |

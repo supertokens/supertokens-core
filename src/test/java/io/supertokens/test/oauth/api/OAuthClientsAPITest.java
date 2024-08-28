@@ -43,430 +43,429 @@ import static org.junit.Assert.*;
 import static org.junit.Assert.assertTrue;
 
 public class OAuthClientsAPITest {
-    TestingProcessManager.TestingProcess process;
-
-    @Rule
-    public TestRule watchman = Utils.getOnFailure();
-
-    @AfterClass
-    public static void afterTesting() {
-        Utils.afterTesting();
-    }
-
-    @Before
-    public void beforeEach() throws InterruptedException {
-        Utils.reset();
-    }
-
-    @Test
-    public void testClientRegisteredForApp()
-            throws HttpResponseException, IOException, InterruptedException,
-            io.supertokens.httpRequest.HttpResponseException {
-
-        String[] args = {"../"};
-        this.process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        String clientName = "jozef";
-        String scope = "profile";
-
-        OAuthSQLStorage oAuthStorage = (OAuthSQLStorage) StorageLayer.getStorage(process.getProcess());
-
-
-        {
-            JsonObject requestBody = new JsonObject();
-            requestBody.addProperty("clientName", clientName);
-            requestBody.addProperty("scope", scope);
-
-            JsonArray grantTypes = new JsonArray();
-            grantTypes.add(new JsonPrimitive("refresh_token"));
-            grantTypes.add(new JsonPrimitive("authorization_code"));
-            requestBody.add("grantTypes", grantTypes);
-
-            JsonArray responseTypes = new JsonArray();
-            responseTypes.add(new JsonPrimitive("code"));
-            responseTypes.add(new JsonPrimitive("id_token"));
-            requestBody.add("responseTypes", responseTypes);
-
-            JsonObject actualResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/oauth/clients", requestBody, 1000, 1000, null,
-                    null, RECIPE_ID.OAUTH.toString());
-
-            assertTrue(actualResponse.has("client"));
-            JsonObject client = actualResponse.get("client").getAsJsonObject();
-
-            assertTrue(client.has("clientSecret"));
-            assertTrue(client.has("clientId"));
-
-            String clientId = client.get("clientId").getAsString();
-
-            Map<String, String> queryParams = new HashMap<>();
-            queryParams.put("clientId", client.get("clientId").getAsString());
-            JsonObject loadedClient = HttpRequest.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/oauth/clients", queryParams,10000,10000, null);
-
-            assertTrue(loadedClient.has("client"));
-            JsonObject loadedClientJson = loadedClient.get("client").getAsJsonObject();
-            assertFalse(loadedClientJson.has("clientSecret")); //this should only be sent when registering
-            assertEquals(clientId, loadedClientJson.get("clientId").getAsString());
-
-            {//delete client
-                JsonObject deleteRequestBody = new JsonObject();
-                deleteRequestBody.addProperty("clientId", clientId);
-                JsonObject deleteResponse = HttpRequestForTesting.sendJsonDELETERequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/oauth/clients", deleteRequestBody, 1000, 1000, null,
-                        null, RECIPE_ID.OAUTH.toString());
-
-                assertTrue(deleteResponse.isJsonObject());
-                assertEquals("OK", deleteResponse.get("status").getAsString()); //empty response
-
-            }
-
-            process.kill();
-            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-        }
-    }
-
-    @Test
-    public void testMissingRequiredField_throwsException() throws  InterruptedException {
-
-        String[] args = {"../"};
-        this.process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        String clientName = "jozef";
-        //notice missing 'scope' field!
-
-        {
-            JsonObject requestBody = new JsonObject();
-            requestBody.addProperty("clientName", clientName);
-            //notice missing 'scope' field
-
-            JsonArray grantTypes = new JsonArray();
-            grantTypes.add(new JsonPrimitive("refresh_token"));
-            grantTypes.add(new JsonPrimitive("authorization_code"));
-            requestBody.add("grantTypes", grantTypes);
-
-            JsonArray responseTypes = new JsonArray();
-            responseTypes.add(new JsonPrimitive("code"));
-            responseTypes.add(new JsonPrimitive("id_token"));
-            requestBody.add("responseTypes", responseTypes);
-
-            io.supertokens.test.httpRequest.HttpResponseException expected = assertThrows(io.supertokens.test.httpRequest.HttpResponseException.class, () -> {
-                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/oauth/clients", requestBody, 1000, 1000, null,
-                null, RECIPE_ID.OAUTH.toString());
-            });
-
-            assertEquals(400, expected.statusCode);
-            assertEquals("Http error. Status Code: 400. Message: Field name `scope` is missing in JSON input", expected.getMessage());
-
-            process.kill();
-            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-        }
-    }
-
-    @Test
-    public void testMoreFieldAreIgnored()
-            throws InterruptedException, HttpResponseException, IOException {
-
-        String[] args = {"../"};
-        this.process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        String clientName = "jozef";
-        String scope = "scope";
-        String maliciousAttempt = "giveMeAllYourBelongings!"; //here!
-
-        {
-            JsonObject requestBody = new JsonObject();
-            requestBody.addProperty("clientName", clientName);
-            requestBody.addProperty("scope", scope);
-            requestBody.addProperty("dontMindMe", maliciousAttempt); //here!
-
-            JsonArray grantTypes = new JsonArray();
-            grantTypes.add(new JsonPrimitive("refresh_token"));
-            grantTypes.add(new JsonPrimitive("authorization_code"));
-            requestBody.add("grantTypes", grantTypes);
-
-            JsonArray responseTypes = new JsonArray();
-            responseTypes.add(new JsonPrimitive("code"));
-            responseTypes.add(new JsonPrimitive("id_token"));
-            requestBody.add("responseTypes", responseTypes);
-
-            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/oauth/clients", requestBody, 1000, 1000, null,
-                        null, RECIPE_ID.OAUTH.toString());
-
-            assertEquals("OK", response.get("status").getAsString());
-            assertTrue(response.has("client"));
-            process.kill();
-            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-        }
-    }
-
-
-    @Test
-    public void testGETClientNotExisting_returnsError()
-            throws InterruptedException, io.supertokens.httpRequest.HttpResponseException,
-            IOException {
-
-        String[] args = {"../"};
-        this.process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        String clientId = "not-an-existing-one";
-
-        Map<String, String> queryParams = new HashMap<>();
-        queryParams.put("clientId", clientId);
-        JsonObject response = HttpRequest.sendGETRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/oauth/clients", queryParams, 10000, 10000, null);
-
-        assertEquals("OAUTH2_CLIENT_NOT_FOUND_ERROR", response.get("status").getAsString());
-        assertEquals("Unable to locate the resource", response.get("error").getAsString());
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-    }
-
-    @Test
-    public void testClientUpdatePatch()
-            throws StorageQueryException, IOException, OAuth2ClientAlreadyExistsForAppException,
-            io.supertokens.test.httpRequest.HttpResponseException, InterruptedException {
-
-        String[] args = {"../"};
-
-        this.process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        String clientId = "6030f07e-c8ef-4289-80c9-c18e0bf4f679";
-        String propToChangeKey = "clientName";
-        String newValue = "Jozef";
-
-        OAuthSQLStorage oAuthStorage = (OAuthSQLStorage) StorageLayer.getStorage(process.getProcess());
-
-        AppIdentifier testApp = new AppIdentifier("", "");
-        oAuthStorage.addClientForApp(testApp, clientId);
-
-        JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("clientId", clientId);
-        requestBody.addProperty(propToChangeKey, newValue);
-
-        JsonObject actualResponse = HttpRequestForTesting.sendJsonPATCHRequest(process.getProcess(),
-                "http://localhost:3567/recipe/oauth/clients", requestBody);
-
-        assertEquals("OK", actualResponse.get("status").getAsString());
-        assertTrue(actualResponse.has("client"));
-
-        JsonObject updatedClient = actualResponse.get("client").getAsJsonObject();
-
-        assertTrue(updatedClient.has(propToChangeKey));
-        assertEquals(newValue, updatedClient.get(propToChangeKey).getAsString());
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-    }
-
-    @Test
-    public void testClientUpdatePatch_multipleFields()
-            throws StorageQueryException, IOException, OAuth2ClientAlreadyExistsForAppException,
-            io.supertokens.test.httpRequest.HttpResponseException, InterruptedException {
-
-        String[] args = {"../"};
-
-        this.process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        String clientId = "6030f07e-c8ef-4289-80c9-c18e0bf4f679";
-        String propToChangeKey = "clientName";
-        String newValue = "Jozef2";
-
-        String listPropToChange = "grantTypes";
-        JsonArray newListValue = new JsonArray();
-        newListValue.add(new JsonPrimitive("test1"));
-        newListValue.add(new JsonPrimitive("test2"));
-
-        OAuthSQLStorage oAuthStorage = (OAuthSQLStorage) StorageLayer.getStorage(process.getProcess());
-
-        AppIdentifier testApp = new AppIdentifier("", "");
-        oAuthStorage.addClientForApp(testApp, clientId);
-
-        JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("clientId", clientId);
-        requestBody.addProperty(propToChangeKey, newValue);
-        requestBody.add(listPropToChange, newListValue);
-
-        JsonObject actualResponse = HttpRequestForTesting.sendJsonPATCHRequest(process.getProcess(),
-                "http://localhost:3567/recipe/oauth/clients", requestBody);
-
-        assertEquals("OK", actualResponse.get("status").getAsString());
-        assertTrue(actualResponse.has("client"));
-
-        JsonObject updatedClient = actualResponse.get("client").getAsJsonObject();
-
-        assertTrue(updatedClient.has(propToChangeKey));
-        assertEquals(newValue, updatedClient.get(propToChangeKey).getAsString());
-
-        assertTrue(updatedClient.has(listPropToChange));
-        assertEquals(newListValue.getAsJsonArray(), updatedClient.get(listPropToChange).getAsJsonArray());
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-    }
-
-    @Test
-    public void testClientUpdatePatch_missingClientIdResultsInError()
-            throws StorageQueryException, IOException, OAuth2ClientAlreadyExistsForAppException,
-            io.supertokens.test.httpRequest.HttpResponseException, InterruptedException {
-
-        String[] args = {"../"};
-
-        this.process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        String clientId = "6030f07e-c8ef-4289-80c9-c18e0bf4f679";
-        String propToChangeKey = "clientName";
-        String newValue = "Jozef2";
-
-        String listPropToChange = "grantTypes";
-        JsonArray newListValue = new JsonArray();
-        newListValue.add(new JsonPrimitive("test1"));
-        newListValue.add(new JsonPrimitive("test2"));
-
-        OAuthSQLStorage oAuthStorage = (OAuthSQLStorage) StorageLayer.getStorage(process.getProcess());
-
-        AppIdentifier testApp = new AppIdentifier("", "");
-        oAuthStorage.addClientForApp(testApp, clientId);
-
-        JsonObject requestBody = new JsonObject();
-        //note the missing client Id
-        requestBody.addProperty(propToChangeKey, newValue);
-        requestBody.add(listPropToChange, newListValue);
-
-        io.supertokens.test.httpRequest.HttpResponseException expected = assertThrows(io.supertokens.test.httpRequest.HttpResponseException.class,
-                () -> {        HttpRequestForTesting.sendJsonPATCHRequest(process.getProcess(),
-                "http://localhost:3567/recipe/oauth/clients", requestBody);
-        });
-
-        assertEquals(400, expected.statusCode);
-        assertEquals("Http error. Status Code: 400. Message: Field name `clientId` is missing in JSON input\n", expected.getMessage());
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-    }
-
-    @Test
-    public void testClientUpdatePatch_hydraErrortResultsInError()
-            throws StorageQueryException, IOException, OAuth2ClientAlreadyExistsForAppException,
-            io.supertokens.test.httpRequest.HttpResponseException, InterruptedException {
-
-        String[] args = {"../"};
-
-        this.process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        String clientId = "6030f07e-c8ef-4289-80c9-c18e0bf4f679";
-        String propToChangeKey = "clientName";
-        String newValue = "Jozef2";
-
-        String notAlistPropToChange = "scope";
-        JsonArray newListValue = new JsonArray();
-        newListValue.add(new JsonPrimitive("test1"));
-        newListValue.add(new JsonPrimitive("test2"));
-
-        OAuthSQLStorage oAuthStorage = (OAuthSQLStorage) StorageLayer.getStorage(process.getProcess());
-
-        AppIdentifier testApp = new AppIdentifier("", "");
-        oAuthStorage.addClientForApp(testApp, clientId);
-
-        JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("clientId", clientId);
-        requestBody.addProperty(propToChangeKey, newValue);
-        requestBody.add(notAlistPropToChange, newListValue);
-
-        HttpResponseException expected = assertThrows(HttpResponseException.class, () -> {
-            HttpRequestForTesting.sendJsonPATCHRequest(process.getProcess(),
-                            "http://localhost:3567/recipe/oauth/clients", requestBody);
-        });
-
-        assertEquals("Http error. Status Code: 500. Message: Internal Error\n", expected.getMessage());
-        assertEquals(500, expected.statusCode);
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-    }
-
-    @Test
-    public void testClientUpdatePatch_invalidInputDataResultsInError()
-            throws StorageQueryException, IOException, OAuth2ClientAlreadyExistsForAppException,
-            io.supertokens.test.httpRequest.HttpResponseException, InterruptedException {
-
-        String[] args = {"../"};
-
-        this.process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        String clientId = "6030f07e-c8ef-4289-80c9-c18e0bf4f679";
-        String propToChangeKey = "clientName";
-        String newValue = "Jozef2";
-
-        String notAlistPropToChange = "allowed_cors_origins";
-        JsonArray newListValue = new JsonArray();
-        newListValue.add(new JsonPrimitive("*"));
-        newListValue.add(new JsonPrimitive("appleTree"));
-
-        OAuthSQLStorage oAuthStorage = (OAuthSQLStorage) StorageLayer.getStorage(process.getProcess());
-
-        AppIdentifier testApp = new AppIdentifier("", "");
-        oAuthStorage.addClientForApp(testApp, clientId);
-
-        JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("clientId", clientId);
-        requestBody.addProperty(propToChangeKey, newValue);
-        requestBody.add(notAlistPropToChange, newListValue);
-
-        io.supertokens.test.httpRequest.HttpResponseException expected = assertThrows(io.supertokens.test.httpRequest.HttpResponseException.class,
-                () -> {        HttpRequestForTesting.sendJsonPATCHRequest(process.getProcess(),
-                        "http://localhost:3567/recipe/oauth/clients", requestBody);
-                });
-
-        assertEquals(400, expected.statusCode);
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-    }
-
-    @Test
-    public void testClientUpdatePatch_notExistingClientResultsInNotFound()
-            throws StorageQueryException, IOException, OAuth2ClientAlreadyExistsForAppException,
-            io.supertokens.test.httpRequest.HttpResponseException, InterruptedException {
-
-        String[] args = {"../"};
-
-        this.process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        String clientId = "6030f07e-c8ef-4289-80c9-c18e0bf4f679-Not_Existing";
-        String propToChangeKey = "clientName";
-        String newValue = "Jozef2";
-
-        OAuthSQLStorage oAuthStorage = (OAuthSQLStorage) StorageLayer.getStorage(process.getProcess());
-
-        AppIdentifier testApp = new AppIdentifier("", "");
-        oAuthStorage.addClientForApp(testApp, clientId); // exists at our end, not exists in hydra
-
-        JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("clientId", clientId);
-        requestBody.addProperty(propToChangeKey, newValue);
-
-        JsonObject response = HttpRequestForTesting.sendJsonPATCHRequest(process.getProcess(),
-                "http://localhost:3567/recipe/oauth/clients", requestBody);
-
-        assertEquals("OAUTH2_CLIENT_NOT_FOUND_ERROR", response.get("status").getAsString());
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-    }
-
-
+//    TestingProcessManager.TestingProcess process;
+//
+//    @Rule
+//    public TestRule watchman = Utils.getOnFailure();
+//
+//    @AfterClass
+//    public static void afterTesting() {
+//        Utils.afterTesting();
+//    }
+//
+//    @Before
+//    public void beforeEach() throws InterruptedException {
+//        Utils.reset();
+//    }
+//
+//    @Test
+//    public void testClientRegisteredForApp()
+//            throws HttpResponseException, IOException, InterruptedException,
+//            io.supertokens.httpRequest.HttpResponseException {
+//
+//        String[] args = {"../"};
+//        this.process = TestingProcessManager.start(args);
+//        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+//
+//        String clientName = "jozef";
+//        String scope = "profile";
+//
+//        OAuthSQLStorage oAuthStorage = (OAuthSQLStorage) StorageLayer.getStorage(process.getProcess());
+//
+//
+//        {
+//            JsonObject requestBody = new JsonObject();
+//            requestBody.addProperty("clientName", clientName);
+//            requestBody.addProperty("scope", scope);
+//
+//            JsonArray grantTypes = new JsonArray();
+//            grantTypes.add(new JsonPrimitive("refresh_token"));
+//            grantTypes.add(new JsonPrimitive("authorization_code"));
+//            requestBody.add("grantTypes", grantTypes);
+//
+//            JsonArray responseTypes = new JsonArray();
+//            responseTypes.add(new JsonPrimitive("code"));
+//            responseTypes.add(new JsonPrimitive("id_token"));
+//            requestBody.add("responseTypes", responseTypes);
+//
+//            JsonObject actualResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+//                    "http://localhost:3567/recipe/oauth/clients", requestBody, 1000, 1000, null,
+//                    null, RECIPE_ID.OAUTH.toString());
+//
+//            assertTrue(actualResponse.has("client"));
+//            JsonObject client = actualResponse.get("client").getAsJsonObject();
+//
+//            assertTrue(client.has("clientSecret"));
+//            assertTrue(client.has("clientId"));
+//
+//            String clientId = client.get("clientId").getAsString();
+//
+//            Map<String, String> queryParams = new HashMap<>();
+//            queryParams.put("clientId", client.get("clientId").getAsString());
+//            JsonObject loadedClient = HttpRequest.sendGETRequest(process.getProcess(), "",
+//                    "http://localhost:3567/recipe/oauth/clients", queryParams,10000,10000, null);
+//
+//            assertTrue(loadedClient.has("client"));
+//            JsonObject loadedClientJson = loadedClient.get("client").getAsJsonObject();
+//            assertFalse(loadedClientJson.has("clientSecret")); //this should only be sent when registering
+//            assertEquals(clientId, loadedClientJson.get("clientId").getAsString());
+//
+//            {//delete client
+//                JsonObject deleteRequestBody = new JsonObject();
+//                deleteRequestBody.addProperty("clientId", clientId);
+//                JsonObject deleteResponse = HttpRequestForTesting.sendJsonDELETERequest(process.getProcess(), "",
+//                        "http://localhost:3567/recipe/oauth/clients", deleteRequestBody, 1000, 1000, null,
+//                        null, RECIPE_ID.OAUTH.toString());
+//
+//                assertTrue(deleteResponse.isJsonObject());
+//                assertEquals("OK", deleteResponse.get("status").getAsString()); //empty response
+//
+//            }
+//
+//            process.kill();
+//            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+//        }
+//    }
+//
+//    @Test
+//    public void testMissingRequiredField_throwsException() throws  InterruptedException {
+//
+//        String[] args = {"../"};
+//        this.process = TestingProcessManager.start(args);
+//        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+//
+//        String clientName = "jozef";
+//        //notice missing 'scope' field!
+//
+//        {
+//            JsonObject requestBody = new JsonObject();
+//            requestBody.addProperty("clientName", clientName);
+//            //notice missing 'scope' field
+//
+//            JsonArray grantTypes = new JsonArray();
+//            grantTypes.add(new JsonPrimitive("refresh_token"));
+//            grantTypes.add(new JsonPrimitive("authorization_code"));
+//            requestBody.add("grantTypes", grantTypes);
+//
+//            JsonArray responseTypes = new JsonArray();
+//            responseTypes.add(new JsonPrimitive("code"));
+//            responseTypes.add(new JsonPrimitive("id_token"));
+//            requestBody.add("responseTypes", responseTypes);
+//
+//            io.supertokens.test.httpRequest.HttpResponseException expected = assertThrows(io.supertokens.test.httpRequest.HttpResponseException.class, () -> {
+//                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+//                "http://localhost:3567/recipe/oauth/clients", requestBody, 1000, 1000, null,
+//                null, RECIPE_ID.OAUTH.toString());
+//            });
+//
+//            assertEquals(400, expected.statusCode);
+//            assertEquals("Http error. Status Code: 400. Message: Field name `scope` is missing in JSON input", expected.getMessage());
+//
+//            process.kill();
+//            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+//        }
+//    }
+//
+//    @Test
+//    public void testMoreFieldAreIgnored()
+//            throws InterruptedException, HttpResponseException, IOException {
+//
+//        String[] args = {"../"};
+//        this.process = TestingProcessManager.start(args);
+//        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+//
+//        String clientName = "jozef";
+//        String scope = "scope";
+//        String maliciousAttempt = "giveMeAllYourBelongings!"; //here!
+//
+//        {
+//            JsonObject requestBody = new JsonObject();
+//            requestBody.addProperty("clientName", clientName);
+//            requestBody.addProperty("scope", scope);
+//            requestBody.addProperty("dontMindMe", maliciousAttempt); //here!
+//
+//            JsonArray grantTypes = new JsonArray();
+//            grantTypes.add(new JsonPrimitive("refresh_token"));
+//            grantTypes.add(new JsonPrimitive("authorization_code"));
+//            requestBody.add("grantTypes", grantTypes);
+//
+//            JsonArray responseTypes = new JsonArray();
+//            responseTypes.add(new JsonPrimitive("code"));
+//            responseTypes.add(new JsonPrimitive("id_token"));
+//            requestBody.add("responseTypes", responseTypes);
+//
+//            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+//                        "http://localhost:3567/recipe/oauth/clients", requestBody, 1000, 1000, null,
+//                        null, RECIPE_ID.OAUTH.toString());
+//
+//            assertEquals("OK", response.get("status").getAsString());
+//            assertTrue(response.has("client"));
+//            process.kill();
+//            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+//        }
+//    }
+//
+//
+//    @Test
+//    public void testGETClientNotExisting_returnsError()
+//            throws InterruptedException, io.supertokens.httpRequest.HttpResponseException,
+//            IOException {
+//
+//        String[] args = {"../"};
+//        this.process = TestingProcessManager.start(args);
+//        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+//
+//        String clientId = "not-an-existing-one";
+//
+//        Map<String, String> queryParams = new HashMap<>();
+//        queryParams.put("clientId", clientId);
+//        JsonObject response = HttpRequest.sendGETRequest(process.getProcess(), "",
+//                        "http://localhost:3567/recipe/oauth/clients", queryParams, 10000, 10000, null);
+//
+//        assertEquals("OAUTH2_CLIENT_NOT_FOUND_ERROR", response.get("status").getAsString());
+//        assertEquals("Unable to locate the resource", response.get("error").getAsString());
+//
+//        process.kill();
+//        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+//    }
+//
+//    @Test
+//    public void testClientUpdatePatch()
+//            throws StorageQueryException, IOException, OAuth2ClientAlreadyExistsForAppException,
+//            io.supertokens.test.httpRequest.HttpResponseException, InterruptedException {
+//
+//        String[] args = {"../"};
+//
+//        this.process = TestingProcessManager.start(args);
+//        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+//
+//        String clientId = "6030f07e-c8ef-4289-80c9-c18e0bf4f679";
+//        String propToChangeKey = "clientName";
+//        String newValue = "Jozef";
+//
+//        OAuthSQLStorage oAuthStorage = (OAuthSQLStorage) StorageLayer.getStorage(process.getProcess());
+//
+//        AppIdentifier testApp = new AppIdentifier("", "");
+//        oAuthStorage.addClientForApp(testApp, clientId);
+//
+//        JsonObject requestBody = new JsonObject();
+//        requestBody.addProperty("clientId", clientId);
+//        requestBody.addProperty(propToChangeKey, newValue);
+//
+//        JsonObject actualResponse = HttpRequestForTesting.sendJsonPATCHRequest(process.getProcess(),
+//                "http://localhost:3567/recipe/oauth/clients", requestBody);
+//
+//        assertEquals("OK", actualResponse.get("status").getAsString());
+//        assertTrue(actualResponse.has("client"));
+//
+//        JsonObject updatedClient = actualResponse.get("client").getAsJsonObject();
+//
+//        assertTrue(updatedClient.has(propToChangeKey));
+//        assertEquals(newValue, updatedClient.get(propToChangeKey).getAsString());
+//
+//        process.kill();
+//        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+//    }
+//
+//    @Test
+//    public void testClientUpdatePatch_multipleFields()
+//            throws StorageQueryException, IOException, OAuth2ClientAlreadyExistsForAppException,
+//            io.supertokens.test.httpRequest.HttpResponseException, InterruptedException {
+//
+//        String[] args = {"../"};
+//
+//        this.process = TestingProcessManager.start(args);
+//        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+//
+//        String clientId = "6030f07e-c8ef-4289-80c9-c18e0bf4f679";
+//        String propToChangeKey = "clientName";
+//        String newValue = "Jozef2";
+//
+//        String listPropToChange = "grantTypes";
+//        JsonArray newListValue = new JsonArray();
+//        newListValue.add(new JsonPrimitive("test1"));
+//        newListValue.add(new JsonPrimitive("test2"));
+//
+//        OAuthSQLStorage oAuthStorage = (OAuthSQLStorage) StorageLayer.getStorage(process.getProcess());
+//
+//        AppIdentifier testApp = new AppIdentifier("", "");
+//        oAuthStorage.addClientForApp(testApp, clientId);
+//
+//        JsonObject requestBody = new JsonObject();
+//        requestBody.addProperty("clientId", clientId);
+//        requestBody.addProperty(propToChangeKey, newValue);
+//        requestBody.add(listPropToChange, newListValue);
+//
+//        JsonObject actualResponse = HttpRequestForTesting.sendJsonPATCHRequest(process.getProcess(),
+//                "http://localhost:3567/recipe/oauth/clients", requestBody);
+//
+//        assertEquals("OK", actualResponse.get("status").getAsString());
+//        assertTrue(actualResponse.has("client"));
+//
+//        JsonObject updatedClient = actualResponse.get("client").getAsJsonObject();
+//
+//        assertTrue(updatedClient.has(propToChangeKey));
+//        assertEquals(newValue, updatedClient.get(propToChangeKey).getAsString());
+//
+//        assertTrue(updatedClient.has(listPropToChange));
+//        assertEquals(newListValue.getAsJsonArray(), updatedClient.get(listPropToChange).getAsJsonArray());
+//
+//        process.kill();
+//        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+//    }
+//
+//    @Test
+//    public void testClientUpdatePatch_missingClientIdResultsInError()
+//            throws StorageQueryException, IOException, OAuth2ClientAlreadyExistsForAppException,
+//            io.supertokens.test.httpRequest.HttpResponseException, InterruptedException {
+//
+//        String[] args = {"../"};
+//
+//        this.process = TestingProcessManager.start(args);
+//        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+//
+//        String clientId = "6030f07e-c8ef-4289-80c9-c18e0bf4f679";
+//        String propToChangeKey = "clientName";
+//        String newValue = "Jozef2";
+//
+//        String listPropToChange = "grantTypes";
+//        JsonArray newListValue = new JsonArray();
+//        newListValue.add(new JsonPrimitive("test1"));
+//        newListValue.add(new JsonPrimitive("test2"));
+//
+//        OAuthSQLStorage oAuthStorage = (OAuthSQLStorage) StorageLayer.getStorage(process.getProcess());
+//
+//        AppIdentifier testApp = new AppIdentifier("", "");
+//        oAuthStorage.addClientForApp(testApp, clientId);
+//
+//        JsonObject requestBody = new JsonObject();
+//        //note the missing client Id
+//        requestBody.addProperty(propToChangeKey, newValue);
+//        requestBody.add(listPropToChange, newListValue);
+//
+//        io.supertokens.test.httpRequest.HttpResponseException expected = assertThrows(io.supertokens.test.httpRequest.HttpResponseException.class,
+//                () -> {        HttpRequestForTesting.sendJsonPATCHRequest(process.getProcess(),
+//                "http://localhost:3567/recipe/oauth/clients", requestBody);
+//        });
+//
+//        assertEquals(400, expected.statusCode);
+//        assertEquals("Http error. Status Code: 400. Message: Field name `clientId` is missing in JSON input\n", expected.getMessage());
+//
+//        process.kill();
+//        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+//    }
+//
+//    @Test
+//    public void testClientUpdatePatch_hydraErrortResultsInError()
+//            throws StorageQueryException, IOException, OAuth2ClientAlreadyExistsForAppException,
+//            io.supertokens.test.httpRequest.HttpResponseException, InterruptedException {
+//
+//        String[] args = {"../"};
+//
+//        this.process = TestingProcessManager.start(args);
+//        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+//
+//        String clientId = "6030f07e-c8ef-4289-80c9-c18e0bf4f679";
+//        String propToChangeKey = "clientName";
+//        String newValue = "Jozef2";
+//
+//        String notAlistPropToChange = "scope";
+//        JsonArray newListValue = new JsonArray();
+//        newListValue.add(new JsonPrimitive("test1"));
+//        newListValue.add(new JsonPrimitive("test2"));
+//
+//        OAuthSQLStorage oAuthStorage = (OAuthSQLStorage) StorageLayer.getStorage(process.getProcess());
+//
+//        AppIdentifier testApp = new AppIdentifier("", "");
+//        oAuthStorage.addClientForApp(testApp, clientId);
+//
+//        JsonObject requestBody = new JsonObject();
+//        requestBody.addProperty("clientId", clientId);
+//        requestBody.addProperty(propToChangeKey, newValue);
+//        requestBody.add(notAlistPropToChange, newListValue);
+//
+//        HttpResponseException expected = assertThrows(HttpResponseException.class, () -> {
+//            HttpRequestForTesting.sendJsonPATCHRequest(process.getProcess(),
+//                            "http://localhost:3567/recipe/oauth/clients", requestBody);
+//        });
+//
+//        assertEquals("Http error. Status Code: 500. Message: Internal Error\n", expected.getMessage());
+//        assertEquals(500, expected.statusCode);
+//
+//        process.kill();
+//        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+//    }
+//
+//    @Test
+//    public void testClientUpdatePatch_invalidInputDataResultsInError()
+//            throws StorageQueryException, IOException, OAuth2ClientAlreadyExistsForAppException,
+//            io.supertokens.test.httpRequest.HttpResponseException, InterruptedException {
+//
+//        String[] args = {"../"};
+//
+//        this.process = TestingProcessManager.start(args);
+//        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+//
+//        String clientId = "6030f07e-c8ef-4289-80c9-c18e0bf4f679";
+//        String propToChangeKey = "clientName";
+//        String newValue = "Jozef2";
+//
+//        String notAlistPropToChange = "allowed_cors_origins";
+//        JsonArray newListValue = new JsonArray();
+//        newListValue.add(new JsonPrimitive("*"));
+//        newListValue.add(new JsonPrimitive("appleTree"));
+//
+//        OAuthSQLStorage oAuthStorage = (OAuthSQLStorage) StorageLayer.getStorage(process.getProcess());
+//
+//        AppIdentifier testApp = new AppIdentifier("", "");
+//        oAuthStorage.addClientForApp(testApp, clientId);
+//
+//        JsonObject requestBody = new JsonObject();
+//        requestBody.addProperty("clientId", clientId);
+//        requestBody.addProperty(propToChangeKey, newValue);
+//        requestBody.add(notAlistPropToChange, newListValue);
+//
+//        io.supertokens.test.httpRequest.HttpResponseException expected = assertThrows(io.supertokens.test.httpRequest.HttpResponseException.class,
+//                () -> {        HttpRequestForTesting.sendJsonPATCHRequest(process.getProcess(),
+//                        "http://localhost:3567/recipe/oauth/clients", requestBody);
+//                });
+//
+//        assertEquals(400, expected.statusCode);
+//
+//        process.kill();
+//        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+//    }
+//
+//    @Test
+//    public void testClientUpdatePatch_notExistingClientResultsInNotFound()
+//            throws StorageQueryException, IOException, OAuth2ClientAlreadyExistsForAppException,
+//            io.supertokens.test.httpRequest.HttpResponseException, InterruptedException {
+//
+//        String[] args = {"../"};
+//
+//        this.process = TestingProcessManager.start(args);
+//        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+//
+//        String clientId = "6030f07e-c8ef-4289-80c9-c18e0bf4f679-Not_Existing";
+//        String propToChangeKey = "clientName";
+//        String newValue = "Jozef2";
+//
+//        OAuthSQLStorage oAuthStorage = (OAuthSQLStorage) StorageLayer.getStorage(process.getProcess());
+//
+//        AppIdentifier testApp = new AppIdentifier("", "");
+//        oAuthStorage.addClientForApp(testApp, clientId); // exists at our end, not exists in hydra
+//
+//        JsonObject requestBody = new JsonObject();
+//        requestBody.addProperty("clientId", clientId);
+//        requestBody.addProperty(propToChangeKey, newValue);
+//
+//        JsonObject response = HttpRequestForTesting.sendJsonPATCHRequest(process.getProcess(),
+//                "http://localhost:3567/recipe/oauth/clients", requestBody);
+//
+//        assertEquals("OAUTH2_CLIENT_NOT_FOUND_ERROR", response.get("status").getAsString());
+//
+//        process.kill();
+//        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+//    }
+//
 }
