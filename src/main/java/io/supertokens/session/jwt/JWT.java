@@ -134,20 +134,6 @@ public class JWT {
         return new JWTInfo(new JsonParser().parse(Utils.convertFromBase64(jwt.payload)).getAsJsonObject(), jwt.version);
     }
 
-    public static JWTInfo verifyJWTAndGetPayload(JWTPreParseInfo jwt, String n, String e)
-            throws InvalidKeyException, NoSuchAlgorithmException, JWTException {
-
-        try {
-            if (!Utils.verifyWithPublicKey(jwt.header + "." + jwt.payload, jwt.signature, n, e,
-                    jwt.version != AccessToken.VERSION.V1 && jwt.version != AccessToken.VERSION.V2)) {
-                throw new JWTException("JWT verification failed");
-            }
-        } catch (InvalidKeySpecException | SignatureException e2) {
-            throw new JWTException("JWT verification failed");
-        }
-        return new JWTInfo(new JsonParser().parse(Utils.convertFromBase64(jwt.payload)).getAsJsonObject(), jwt.version);
-    }
-
     public static JWTInfo getPayloadWithoutVerifying(String jwt) throws JWTException {
         JWTPreParseInfo jwtInfo = preParseJWTInfo(jwt);
         return new JWTInfo(new JsonParser().parse(Utils.convertFromBase64(jwtInfo.payload)).getAsJsonObject(),

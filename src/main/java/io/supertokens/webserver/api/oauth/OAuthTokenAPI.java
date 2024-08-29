@@ -55,13 +55,16 @@ public class OAuthTokenAPI extends OAuthProxyBase {
     }
 
     @Override
-    public ProxyProps getProxyProperties() {
-        return new ProxyProps(
-            new String[] { "POST" }, // apiMethods
-            "POST_FORM", // method
-            "/oauth2/token", // path
-            false // camelToSnakeCaseConversion
-        );
+    public ProxyProps[] getProxyProperties(HttpServletRequest req, JsonObject input) {
+        return new ProxyProps[] {
+            new ProxyProps(
+                "POST", // apiMethod
+                "POST_FORM", // method
+                "/oauth2/token", // path
+                false, // proxyToAdmin
+                false // camelToSnakeCaseConversion
+            )
+        };
     }
 
     @Override

@@ -43,13 +43,16 @@ public class OAuthAuthAPI extends OAuthProxyBase {
     }
 
     @Override
-    public OAuthProxyBase.ProxyProps getProxyProperties() {
-        return new OAuthProxyBase.ProxyProps(
-            new String[]{ "POST" }, // apiMethods
-            "GET", // method
-            "/oauth2/auth", // path
-            false // camelToSnakeCaseConversion
-        );
+    public OAuthProxyBase.ProxyProps[] getProxyProperties(HttpServletRequest req, JsonObject input) {
+        return new OAuthProxyBase.ProxyProps[] {
+            new OAuthProxyBase.ProxyProps(
+                "POST", // apiMethod
+                "GET", // method
+                "/oauth2/auth", // path
+                false, // proxyToAdmin
+                false // camelToSnakeCaseConversion
+            )
+        };
     }
 
     @Override

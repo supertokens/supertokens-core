@@ -316,31 +316,6 @@ public class Utils {
         return sign.verify(decoder.decode(signature));
     }
 
-    public static boolean verifyWithPublicKey(String content, String signature, String n, String e, boolean urlEncoded)
-            throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException, SignatureException {
-        Signature sign = Signature.getInstance("SHA256withRSA");
-        byte[] modulusBytes = Base64.getUrlDecoder().decode(n);
-        byte[] exponentBytes = Base64.getUrlDecoder().decode(e);
-        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-
-        if ((modulusBytes[0] & 0x80) != 0) {
-            byte[] newModulusBytes = new byte[modulusBytes.length + 1];
-            System.arraycopy(modulusBytes, 0, newModulusBytes, 1, modulusBytes.length);
-            modulusBytes = newModulusBytes;
-        }
-        
-        BigInteger modulus = new BigInteger(modulusBytes);
-        BigInteger exponent = new BigInteger(1, exponentBytes);
-        
-        RSAPublicKeySpec spec = new RSAPublicKeySpec(modulus, exponent);
-        PublicKey pub = keyFactory.generatePublic(spec);
-
-        Base64.Decoder signatureDecoder = urlEncoded ? Base64.getUrlDecoder() : Base64.getDecoder();
-        sign.initVerify(pub);
-        sign.update(content.getBytes());
-        return sign.verify(signatureDecoder.decode(signature));
-    }
-
     public static boolean isFakeEmail(String email) {
         return email.endsWith("@stfakeemail.supertokens.com") || email.endsWith(".fakeemail.com");
     }

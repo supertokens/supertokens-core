@@ -121,44 +121,46 @@ public class Transformations {
 
             String redirectTo = headers.get(LOCATION_HEADER_NAME).get(0);
 
-            try {
-                if (Utils.containsUrl(redirectTo, hydraInternalAddress, true)) {
-                    try {
-                        URL url = new URL(redirectTo);
-                        String query = url.getQuery();
-                        Map<String, String> urlQueryParams = new HashMap<>();
-                        if (query != null) {
-                            String[] pairs = query.split("&");
-                            for (String pair : pairs) {
-                                int idx = pair.indexOf("=");
-                                urlQueryParams.put(pair.substring(0, idx), pair.substring(idx + 1));
+            if (!redirectTo.startsWith("/")) {
+                try {
+                    if (Utils.containsUrl(redirectTo, hydraInternalAddress, true)) {
+                        try {
+                            URL url = new URL(redirectTo);
+                            String query = url.getQuery();
+                            Map<String, String> urlQueryParams = new HashMap<>();
+                            if (query != null) {
+                                String[] pairs = query.split("&");
+                                for (String pair : pairs) {
+                                    int idx = pair.indexOf("=");
+                                    urlQueryParams.put(pair.substring(0, idx), pair.substring(idx + 1));
+                                }
                             }
+                            String error = urlQueryParams.getOrDefault("error", null);
+                            String errorDebug = urlQueryParams.getOrDefault("error_debug", null);
+                            String errorDescription = urlQueryParams.getOrDefault("error_description", null);
+                            String errorHint = urlQueryParams.getOrDefault("error_hint", null);
+                            throw new OAuthAPIException(error, errorDebug, errorDescription, errorHint, 400);
+
+                        } catch (MalformedURLException e) {
+                            throw new IllegalStateException(e);
                         }
-                        String error = urlQueryParams.getOrDefault("error", null);
-                        String errorDebug = urlQueryParams.getOrDefault("error_debug", null);
-                        String errorDescription = urlQueryParams.getOrDefault("error_description", null);
-                        String errorHint = urlQueryParams.getOrDefault("error_hint", null);
-                        throw new OAuthAPIException(error, errorDebug, errorDescription, errorHint, 400);
-
-                    } catch (MalformedURLException e) {
-                        throw new IllegalStateException(e);
                     }
+
+                    if (Utils.containsUrl(redirectTo, hydraBaseUrlForConsentAndLogin, true)) {
+                        redirectTo = redirectTo.replace(hydraBaseUrlForConsentAndLogin, "{apiDomain}");
+                    }
+                } catch (MalformedURLException e) {
+                    throw new IllegalStateException(e);
                 }
 
-                if (Utils.containsUrl(redirectTo, hydraBaseUrlForConsentAndLogin, true)) {
-                    redirectTo = redirectTo.replace(hydraBaseUrlForConsentAndLogin, "{apiDomain}");
-                }
-            } catch (MalformedURLException e) {
-                throw new IllegalStateException(e);
+                redirectTo = transformRedirectUrlFromHydra(redirectTo);
             }
-
-            redirectTo = transformRedirectUrlFromHydra(redirectTo);
 
             headers.put(LOCATION_HEADER_NAME, List.of(redirectTo));
         }
 
         final String COOKIES_HEADER_NAME = "Set-Cookie";
-        if(headers.containsKey(COOKIES_HEADER_NAME)) {
+        if (headers.containsKey(COOKIES_HEADER_NAME)) {
             // Cookie transformation
             List<String> cookies = headers.get(COOKIES_HEADER_NAME);
             cookies = Transformations.transformCookiesFromHydra(cookies);
@@ -166,5 +168,25 @@ public class Transformations {
         }
 
         return headers;
+    }
+
+    public static JsonObject transformJsonForHydra(JsonObject jsonInput) {
+        JsonObject transformedJsonInput = new JsonObject();
+        for (Map.Entry<String, com.google.gson.JsonElement> entry : jsonInput.entrySet()) {
+            String key = entry.getKey();
+            com.google.gson.JsonElement value = entry.getValue();
+            if (value.isJsonPrimitive() && ((com.google.gson.JsonPrimitive) value).isString()) {
+                String stringValue = ((com.google.gson.JsonPrimitive) value).getAsString();
+                if (stringValue.startsWith("st_")) {
+                    stringValue = stringValue.replaceFirst("st_", "ory_");
+                    transformedJsonInput.addProperty(key, stringValue);
+                } else {
+                    transformedJsonInput.add(key, value);
+                }
+            } else {
+                transformedJsonInput.add(key, value);
+            }
+        }
+        return transformedJsonInput;
     }
 }

@@ -73,6 +73,9 @@ dependencies {
 
     // https://mvnrepository.com/artifact/com.googlecode.libphonenumber/libphonenumber/
     implementation group: 'com.googlecode.libphonenumber', name: 'libphonenumber', version: '8.13.25'
+    implementation group: 'io.jsonwebtoken', name: 'jjwt-api', version: '0.12.6'
+    runtimeOnly group: 'io.jsonwebtoken', name: 'jjwt-impl', version: '0.12.6'
+    runtimeOnly group: 'io.jsonwebtoken', name: 'jjwt-jackson', version: '0.12.6'
 
     compileOnly project(":supertokens-plugin-interface")
     testImplementation project(":supertokens-plugin-interface")

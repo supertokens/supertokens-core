@@ -16,164 +16,124 @@
 
 package io.supertokens.webserver.api.oauth;
 
+import java.io.IOException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import com.google.gson.JsonObject;
+
 import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.oauth.OAuth;
-import io.supertokens.oauth.exceptions.OAuthClientNotFoundException;
-import io.supertokens.oauth.exceptions.OAuthAPIInvalidInputException;
-import io.supertokens.oauth.exceptions.OAuthClientUpdateException;
-import io.supertokens.oauth.exceptions.OAuthException;
-import io.supertokens.pluginInterface.RECIPE_ID;
-import io.supertokens.pluginInterface.Storage;
-import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.oauth.exceptions.OAuth2ClientAlreadyExistsForAppException;
 import io.supertokens.webserver.InputParser;
-import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import java.io.IOException;
-import java.io.Serial;
-import java.lang.reflect.InvocationTargetException;
-import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
-import java.util.List;
-
-public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
-
-    @Serial
-    private static final long serialVersionUID = -4482427281337641246L;
-
-    private static final List<String> REQUIRED_INPUT_FIELDS_FOR_POST = Arrays.asList(new String[]{"clientName", "scope"});
-    private static final List<String> REQUIRED_INPUT_FIELDS_FOR_PATCH = Arrays.asList(new String[]{"clientId"});
-    public static final String OAUTH2_CLIENT_NOT_FOUND_ERROR = "OAUTH2_CLIENT_NOT_FOUND_ERROR";
-    public static final String OAUTH2_CLIENT_UPDATE_ERROR = "OAUTH2_CLIENT_UPDATE_ERROR";
-
+public class CreateUpdateOrGetOAuthClientAPI extends OAuthProxyBase {
     @Override
     public String getPath() {
         return "/recipe/oauth/clients";
     }
+
     public CreateUpdateOrGetOAuthClientAPI(Main main){
-        super(main, RECIPE_ID.OAUTH.toString());
+        super(main);
     }
 
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+    public ProxyProps[] getProxyProperties(HttpServletRequest req, JsonObject input) throws ServletException {
+        String clientId = "";
 
-        JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-        InputParser.throwErrorOnMissingRequiredField(input, REQUIRED_INPUT_FIELDS_FOR_POST);
+        if (req.getMethod().equals("GET")) {
+            clientId = InputParser.getQueryParamOrThrowError(req, "clientId", false);
+        } else if (req.getMethod().equals("PUT")) {
+            clientId = InputParser.parseStringOrThrowError(input, "clientId", false);
+        }
+
+        return new ProxyProps[] {
+            new ProxyProps(
+                "GET", // apiMethod
+                "GET", // method
+                "/admin/clients/" + clientId, // path
+                true, // proxyToAdmin
+                true // camelToSnakeCaseConversion
+            ),
+            new ProxyProps(
+                "POST", // apiMethod
+                "POST_JSON", // method
+                "/admin/clients", // path
+                true, // proxyToAdmin
+                true // camelToSnakeCaseConversion
+            ),
+            new ProxyProps(
+                "PUT", // apiMethod
+                "PUT_JSON", // method
+                "/admin/clients/" + clientId, // path
+                true, // proxyToAdmin
+                true // camelToSnakeCaseConversion
+            )
+        };
+    }
+
+    @Override
+    protected Map<String, String> getQueryParamsForProxy(HttpServletRequest req, JsonObject input) throws IOException, ServletException {
+        Map<String, String> queryParams = new HashMap<>();
+
+        String queryString = req.getQueryString();
+        if (queryString != null) {
+            String[] queryParamsParts = queryString.split("&");
+            for (String queryParam : queryParamsParts) {
+                String[] keyValue = queryParam.split("=");
+                if (keyValue.length == 2) {
+                    queryParams.put(keyValue[0], URLDecoder.decode(keyValue[1], StandardCharsets.UTF_8));
+                }
+            }
+        }
+
+        return queryParams;
+    }
+
+    @Override
+    protected JsonObject getJsonBodyForProxyPOST(HttpServletRequest req, JsonObject input)
+            throws IOException, ServletException {
+
+        // Defaults that we require
+        input.addProperty("accessTokenStrategy", "jwt");
+        input.addProperty("skipConsent", true);
+        input.addProperty("subjectType", "public");
+
+        return input;
+    }
+
+    @Override
+    protected void handleResponseFromProxyGET(HttpServletRequest req, HttpServletResponse resp, int statusCode,
+            Map<String, List<String>> headers, String rawBody, JsonObject jsonBody)
+            throws IOException, ServletException {
+        this.sendJsonResponse(200, jsonBody, resp);
+    }
+
+    @Override
+    protected void handleResponseFromProxyPOST(HttpServletRequest req, HttpServletResponse resp, JsonObject input, int statusCode, Map<String, List<String>> headers, String rawBody, JsonObject jsonBody) throws IOException, ServletException {
+        String clientId = jsonBody.get("clientId").getAsString();
 
         try {
-            AppIdentifier appIdentifier = getAppIdentifier(req);
-            Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
-
-            JsonObject response = OAuth.registerOAuthClient(super.main, appIdentifier, storage, input);
-            JsonObject postResponseBody = new JsonObject();
-            postResponseBody.addProperty("status", "OK");
-            postResponseBody.add("client", response);
-            sendJsonResponse(200, postResponseBody, resp);
-
-        } catch (OAuthAPIInvalidInputException registerException) {
-
-            throw new ServletException(new BadRequestException(registerException.error + " - " + registerException.errorDescription));
-
-        } catch (TenantOrAppNotFoundException | InvalidConfigException | BadPermissionException
-                 | NoSuchAlgorithmException | StorageQueryException e) {
+            OAuth.addClientId(main, getAppIdentifier(req), enforcePublicTenantAndGetPublicTenantStorage(req), clientId);
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
+        } catch (OAuth2ClientAlreadyExistsForAppException e) {
+            // ignore
         }
+        this.sendJsonResponse(200, jsonBody, resp);
     }
 
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        String clientId = InputParser.getQueryParamOrThrowError(req, "clientId", false);
-
-        try {
-            AppIdentifier appIdentifier = getAppIdentifier(req);
-            Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
-
-            JsonObject client = OAuth.loadOAuthClient(main, appIdentifier, storage, clientId);
-
-            JsonObject response = new JsonObject();
-            response.addProperty("status", "OK");
-            response.add("client", client);
-            sendJsonResponse(200, response, resp);
-
-        }  catch (OAuthClientNotFoundException e) {
-            JsonObject errorResponse = new JsonObject();
-            sendJsonResponse(200, errorResponse, resp);
-
-        } catch (TenantOrAppNotFoundException | InvalidConfigException | BadPermissionException
-                 | StorageQueryException e){
-            throw new ServletException(e);
-        }
-    }
-
-    @Override
-    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        JsonObject requestBody = InputParser.parseJsonObjectOrThrowError(req);
-
-        String clientId = InputParser.parseStringOrThrowError(requestBody, "clientId", false);
-
-        try {
-            AppIdentifier appIdentifier = getAppIdentifier(req);
-            Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
-
-            OAuth.deleteOAuthClient(main, appIdentifier, storage, clientId);
-            JsonObject responseBody = new JsonObject();
-            responseBody.addProperty("status", "OK");
-            sendJsonResponse(200, responseBody, resp);
-
-        }  catch (OAuthClientNotFoundException e) {
-            JsonObject errorResponse = new JsonObject();
-            sendJsonResponse(200, errorResponse, resp);
-
-        } catch (TenantOrAppNotFoundException | InvalidConfigException | BadPermissionException
-                 | StorageQueryException e){
-            throw new ServletException(e);
-        }
-    }
-
-    @Override
-    protected void doPatch(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-        InputParser.throwErrorOnMissingRequiredField(input, REQUIRED_INPUT_FIELDS_FOR_PATCH);
-
-        try {
-            AppIdentifier appIdentifier = getAppIdentifier(req);
-            Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
-
-            JsonObject response = OAuth.updateOauthClient(super.main, appIdentifier, storage, input);
-            JsonObject postResponseBody = new JsonObject();
-            postResponseBody.addProperty("status", "OK");
-            postResponseBody.add("client", response);
-            sendJsonResponse(200, postResponseBody, resp);
-
-        } catch (OAuthAPIInvalidInputException exception) {
-            throw new ServletException(new BadRequestException(exception.error + " - " + exception.errorDescription));
-        } catch (OAuthClientUpdateException updateException) {
-            //for errors with the update from hydra, which are not reported back as invalid input errors
-            throw new ServletException(updateException);
-
-        } catch (OAuthClientNotFoundException clientNotFoundException) {
-            JsonObject errorResponse = new JsonObject();
-            sendJsonResponse(200, errorResponse, resp);
-
-        } catch (TenantOrAppNotFoundException | InvalidConfigException | StorageQueryException |
-                 InvocationTargetException | NoSuchMethodException | InstantiationException | IllegalAccessException
-                 | BadPermissionException ex) {
-            throw new ServletException(ex);
-        }
-    }
-
-    private JsonObject createJsonFromException(OAuthException exception, String status){
-        JsonObject errorResponse = new JsonObject();
-        errorResponse.addProperty("error", exception.error);
-        errorResponse.addProperty("errorDescription", exception.errorDescription);
-        errorResponse.addProperty("status", status);
-        return errorResponse;
+    protected void handleResponseFromProxyPUT(HttpServletRequest req, HttpServletResponse resp, JsonObject input, int statusCode, Map<String, List<String>> headers, String rawBody, JsonObject jsonBody) throws IOException, ServletException {
+        this.sendJsonResponse(200, jsonBody, resp);
     }
 }

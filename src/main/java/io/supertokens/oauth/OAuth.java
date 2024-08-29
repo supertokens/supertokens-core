@@ -22,6 +22,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+
 import io.supertokens.Main;
 import io.supertokens.config.Config;
 import io.supertokens.featureflag.EE_FEATURES;
@@ -42,7 +43,6 @@ import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.oauth.OAuthStorage;
 import io.supertokens.pluginInterface.oauth.exceptions.OAuth2ClientAlreadyExistsForAppException;
-import io.supertokens.session.jwt.JWT;
 import io.supertokens.session.jwt.JWT.JWTException;
 import io.supertokens.signingkeys.JWTSigningKey;
 import io.supertokens.signingkeys.SigningKeys;
@@ -51,6 +51,7 @@ import io.supertokens.utils.Utils;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.FileNotFoundException;
 import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
 import java.net.HttpURLConnection;
@@ -59,9 +60,9 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 import java.util.*;
+import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
 public class OAuth {
@@ -70,9 +71,6 @@ public class OAuth {
 
     private static final String HYDRA_CLIENTS_ENDPOINT = "/admin/clients";
     private static final String HYDRA_JWKS_PATH = "/.well-known/jwks.json"; // New constant for JWKS path
-
-    private static Map<String, Map<String, JsonObject>> jwksCache = new HashMap<>(); // Cache for JWKS keys
-    private static final int MAX_RETRIES = 3; // Maximum number of retries for fetching JWKS
 
     private static void checkForOauthFeature(AppIdentifier appIdentifier, Main main)
             throws StorageQueryException, TenantOrAppNotFoundException, FeatureNotEnabledException {
@@ -88,7 +86,7 @@ public class OAuth {
                         "feature.");
     }
 
-    public static Response handleOAuthProxyGET(Main main, AppIdentifier appIdentifier, Storage storage, String path, Map<String, String> queryParams, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
+    public static Response handleOAuthProxyGET(Main main, AppIdentifier appIdentifier, Storage storage, String path, boolean proxyToAdmin, Map<String, String> queryParams, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
         checkForOauthFeature(appIdentifier, main);
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
 
@@ -103,8 +101,13 @@ public class OAuth {
         queryParams = Transformations.transformQueryParamsForHydra(queryParams);
         headers = Transformations.transformRequestHeadersForHydra(headers);
 
-        String publicOAuthProviderServiceUrl = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderPublicServiceUrl();
-        String fullUrl = publicOAuthProviderServiceUrl + path;
+        String baseURL;
+        if (proxyToAdmin) {
+            baseURL = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderAdminServiceUrl();
+        } else {
+            baseURL = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderPublicServiceUrl();
+        }
+        String fullUrl = baseURL + path;
 
         Response response = doGet(fullUrl, headers, queryParams);
 
@@ -117,7 +120,7 @@ public class OAuth {
         return response;
     }
 
-    public static Response handleOAuthProxyFormPOST(Main main, AppIdentifier appIdentifier, Storage storage, String path, Map<String, String> formFields, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
+    public static Response handleOAuthProxyFormPOST(Main main, AppIdentifier appIdentifier, Storage storage, String path, boolean proxyToAdmin, Map<String, String> formFields, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
         checkForOauthFeature(appIdentifier, main);
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
 
@@ -136,6 +139,108 @@ public class OAuth {
         String fullUrl = publicOAuthProviderServiceUrl + path;
 
         Response response = doFormPost(fullUrl, headers, formFields);
+
+        // Response transformations
+        response.jsonResponse = Transformations.transformJsonResponseFromHydra(response.jsonResponse);
+        response.headers = Transformations.transformResponseHeadersFromHydra(main, appIdentifier, response.headers);
+
+        checkNonSuccessResponse(response);
+
+        return response;
+    }
+
+    public static Response handleOAuthProxyJsonPOST(Main main, AppIdentifier appIdentifier, Storage storage, String path, boolean proxyToAdmin, JsonObject jsonInput, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
+        checkForOauthFeature(appIdentifier, main);
+        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+
+        if (jsonInput.has("client_id")) {
+            String clientId = jsonInput.get("client_id").getAsString();
+            if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientId)) {
+                throw new OAuthClientNotFoundException();
+            }
+        }
+
+        // Request transformations
+        jsonInput = Transformations.transformJsonForHydra(jsonInput);
+        headers = Transformations.transformRequestHeadersForHydra(headers);
+
+        String baseURL;
+        if (proxyToAdmin) {
+            baseURL = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderAdminServiceUrl();
+        } else {
+            baseURL = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderPublicServiceUrl();
+        }
+        String fullUrl = baseURL + path;
+
+        Response response = doJsonPost(fullUrl, headers, jsonInput);
+
+        // Response transformations
+        response.jsonResponse = Transformations.transformJsonResponseFromHydra(response.jsonResponse);
+        response.headers = Transformations.transformResponseHeadersFromHydra(main, appIdentifier, response.headers);
+
+        checkNonSuccessResponse(response);
+
+        return response;
+    }
+
+    public static Response handleOAuthProxyJsonPUT(Main main, AppIdentifier appIdentifier, Storage storage, String path, boolean proxyToAdmin, JsonObject jsonInput, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
+        checkForOauthFeature(appIdentifier, main);
+        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+
+        if (jsonInput.has("client_id")) {
+            String clientId = jsonInput.get("client_id").getAsString();
+            if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientId)) {
+                throw new OAuthClientNotFoundException();
+            }
+        }
+
+        // Request transformations
+        jsonInput = Transformations.transformJsonForHydra(jsonInput);
+        headers = Transformations.transformRequestHeadersForHydra(headers);
+
+        String baseURL;
+        if (proxyToAdmin) {
+            baseURL = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderAdminServiceUrl();
+        } else {
+            baseURL = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderPublicServiceUrl();
+        }
+        String fullUrl = baseURL + path;
+
+        Response response = doJsonPut(fullUrl, headers, jsonInput);
+
+        // Response transformations
+        response.jsonResponse = Transformations.transformJsonResponseFromHydra(response.jsonResponse);
+        response.headers = Transformations.transformResponseHeadersFromHydra(main, appIdentifier, response.headers);
+
+        checkNonSuccessResponse(response);
+
+        return response;
+    }
+
+    public static Response handleOAuthProxyJsonDELETE(Main main, AppIdentifier appIdentifier, Storage storage, String path, boolean proxyToAdmin, JsonObject jsonInput, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
+        checkForOauthFeature(appIdentifier, main);
+        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+
+        if (jsonInput.has("client_id")) {
+            String clientId = jsonInput.get("client_id").getAsString();
+            if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientId)) {
+                throw new OAuthClientNotFoundException();
+            }
+        }
+
+        // Request transformations
+        jsonInput = Transformations.transformJsonForHydra(jsonInput);
+        headers = Transformations.transformRequestHeadersForHydra(headers);
+
+        String baseURL;
+        if (proxyToAdmin) {
+            baseURL = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderAdminServiceUrl();
+        } else {
+            baseURL = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderPublicServiceUrl();
+        }
+        String fullUrl = baseURL + path;
+
+        Response response = doJsonDelete(fullUrl, headers, jsonInput);
 
         // Response transformations
         response.jsonResponse = Transformations.transformJsonResponseFromHydra(response.jsonResponse);
@@ -183,48 +288,9 @@ public class OAuth {
         String publicOAuthProviderServiceUrl = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderPublicServiceUrl();
         String jwksUrl = publicOAuthProviderServiceUrl + HYDRA_JWKS_PATH;
 
-        // Check if cached keys are available for the jwksUrl
-        Map<String, JsonObject> cachedKeys = jwksCache.get(jwksUrl);
-        if (cachedKeys == null) {
-            JsonObject jwksResponse;
-            try {
-                jwksResponse = HttpRequest.sendGETRequest(main, "", jwksUrl, null, 10000, 10000, null);
-            } catch (HttpResponseException e) {
-                throw new RuntimeException("Could not fetch JWKS keys from hydra for token verification");
-            }
-            cachedKeys = new HashMap<>();
-            JsonArray keysArray = jwksResponse.get("keys").getAsJsonArray();
-
-            // Populate the cache with keys indexed by kid
-            for (JsonElement key : keysArray) {
-                JsonObject keyObject = key.getAsJsonObject();
-                String kid = keyObject.get("kid").getAsString();
-                cachedKeys.put(kid, keyObject);
-            }
-            jwksCache.put(jwksUrl, cachedKeys); // Cache the keys with jwksUrl as the key
-        }
-
         // Validate the JWT and extract claims using the fetched public signing keys
-        JWT.JWTPreParseInfo jwtInfo = JWT.preParseJWTInfo(token);
-        JWT.JWTInfo jwtResult = null;
-        
-        // Check if the key for the given kid exists in the cache
-        JsonObject keyObject = cachedKeys.get(jwtInfo.kid);
-        if (keyObject != null) {
-            jwtResult = JWT.verifyJWTAndGetPayload(jwtInfo, keyObject.get("n").getAsString(), keyObject.get("e").getAsString());
-        }
+        JsonObject payload = JWTVerification.verifyJWTAndGetPayload(main, token, jwksUrl);
 
-        if (jwtResult == null) {
-            // If no matching key found and retry count is not exceeded, refetch the keys
-            if (retryCount < MAX_RETRIES) {
-                jwksCache.remove(jwksUrl); // Invalidate cache
-                return reSignToken(appIdentifier, main, token, iss, stt, useDynamicSigningKey, retryCount + 1); // Retry with incremented count
-            } else {
-                throw new RuntimeException("Could not verify token with hydra");
-            }
-        }
-
-        JsonObject payload = jwtResult.payload;
         // move keys in ext to root
         if (payload.has("ext")) {
             JsonObject ext = payload.getAsJsonObject("ext");
@@ -250,67 +316,14 @@ public class OAuth {
         return token;
     }
 
-    //This more or less acts as a pass-through for the sdks, apart from camelCase <-> snake_case key transformation and setting a few default values
-    public static JsonObject registerOAuthClient(Main main, AppIdentifier appIdentifier, Storage storage, JsonObject paramsFromSdk)
-            throws TenantOrAppNotFoundException, InvalidConfigException, IOException,
-            OAuthAPIInvalidInputException,
-            NoSuchAlgorithmException, StorageQueryException {
-
+    public static void addClientId(Main main, AppIdentifier appIdentifier, Storage storage, String clientId) throws StorageQueryException, OAuth2ClientAlreadyExistsForAppException {
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
-        String adminOAuthProviderServiceUrl = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderAdminServiceUrl();
-
-        byte[] idBaseBytes = new byte[48];
-
-        while(true){
-            new SecureRandom().nextBytes(idBaseBytes);
-            String clientId = "supertokens_" + Utils.hashSHA256Base64UrlSafe(idBaseBytes);
-            try {
-
-                JsonObject hydraRequestBody = constructHydraRequestParamsForRegisterClientPOST(paramsFromSdk, clientId);
-                JsonObject hydraResponse = HttpRequest.sendJsonPOSTRequest(main, "", adminOAuthProviderServiceUrl + HYDRA_CLIENTS_ENDPOINT, hydraRequestBody, 10000, 10000, null);
-
-                oauthStorage.addClientForApp(appIdentifier, clientId);
-
-                return formatResponseForSDK(hydraResponse); //sdk expects everything from hydra in camelCase
-            } catch (HttpResponseException e) {
-                try {
-                    if (e.statusCode == 409){
-                        //no-op
-                        //client with id already exists, silently retry with different Id
-                    } else {
-                        //other error from hydra, like invalid content in json. Throw exception
-                        throw createCustomExceptionFromHttpResponseException(
-                                e, OAuthAPIInvalidInputException.class);
-                    }
-                } catch (NoSuchMethodException | InvocationTargetException | InstantiationException |
-                         IllegalAccessException ex) {
-                    throw new RuntimeException(ex);
-                }
-            } catch (OAuth2ClientAlreadyExistsForAppException e) {
-                //in theory, this is unreachable. We are registering new clients here, so this should not happen.
-                throw new RuntimeException(e);
-            }
-        }
+        oauthStorage.addClientForApp(appIdentifier, clientId);
     }
 
-    public static JsonObject loadOAuthClient(Main main, AppIdentifier appIdentifier, Storage storage, String clientId)
-            throws TenantOrAppNotFoundException, InvalidConfigException, StorageQueryException,
-            IOException, OAuthClientNotFoundException {
+    public static void removeClientId(Main main, AppIdentifier appIdentifier, Storage storage, String clientId) throws StorageQueryException {
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
-
-        String adminOAuthProviderServiceUrl = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderAdminServiceUrl();
-
-        if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientId)) {
-            throw new OAuthClientNotFoundException();
-        } else {
-            try {
-                JsonObject hydraResponse = HttpRequest.sendGETRequest(main, "", adminOAuthProviderServiceUrl + HYDRA_CLIENTS_ENDPOINT + "/" + clientId, null, 10000, 10000, null);
-                return  formatResponseForSDK(hydraResponse);
-            } catch (HttpResponseException e) {
-//              throw createCustomExceptionFromHttpResponseException(e, OAuthException.class);
-                throw new IllegalStateException("FIXME"); // TODO fixme
-            }
-        }
+        oauthStorage.removeAppClientAssociation(appIdentifier, clientId);
     }
 
     public static void deleteOAuthClient(Main main, AppIdentifier appIdentifier, Storage storage, String clientId)
@@ -402,25 +415,6 @@ public class OAuth {
         return customExceptionClass.getDeclaredConstructor(String.class, String.class).newInstance(error, errorDescription);
     }
 
-    private static JsonObject constructHydraRequestParamsForRegisterClientPOST(JsonObject paramsFromSdk, String generatedClientId){
-        JsonObject requestBody = new JsonObject();
-
-        //translating camelCase keys to snakeCase keys
-        for (Map.Entry<String, JsonElement> jsonEntry : paramsFromSdk.entrySet()){
-            requestBody.add(Utils.camelCaseToSnakeCase(jsonEntry.getKey()), jsonEntry.getValue());
-        }
-
-        //add client_id
-        requestBody.addProperty("client_id", generatedClientId);
-
-        //setting other non-changing defaults
-        requestBody.addProperty("access_token_strategy", "jwt");
-        requestBody.addProperty("skip_consent", true);
-        requestBody.addProperty("subject_type", "public");
-
-        return requestBody;
-    }
-
     private static JsonObject formatResponseForSDK(JsonObject response) {
         JsonObject formattedResponse = new JsonObject();
 
@@ -437,6 +431,31 @@ public class OAuth {
         Map<String, String> result = new HashMap<>();
         for (Map.Entry<String, String> entry : queryParams.entrySet()) {
             result.put(Utils.camelCaseToSnakeCase(entry.getKey()), entry.getValue());
+        }
+        return result;
+    }
+
+    public static JsonObject convertCamelToSnakeCase(JsonObject queryParams) {
+        JsonObject result = new JsonObject();
+        for (Map.Entry<String, JsonElement> entry : queryParams.entrySet()) {
+            result.add(Utils.camelCaseToSnakeCase(entry.getKey()), entry.getValue());
+        }
+        return result;
+    }
+
+    public static JsonObject convertSnakeCaseToCamelCaseRecursively(JsonObject jsonResponse) {
+        if (jsonResponse == null) {
+            return null;
+        }
+
+        JsonObject result = new JsonObject();
+        for (Entry<String, JsonElement> entry: jsonResponse.entrySet()) {
+            String key = entry.getKey();
+            JsonElement value = entry.getValue();
+            if (value.isJsonObject()) {
+                value = convertSnakeCaseToCamelCaseRecursively(value.getAsJsonObject());
+            }
+            result.add(Utils.snakeCaseToCamelCase(key), value);
         }
         return result;
     }
@@ -473,41 +492,163 @@ public class OAuth {
         return new Response(responseCode, response.toString(), jsonResponse, con.getHeaderFields());
     }
 
-    private static Response doFormPost(String url, Map<String, String> headers, Map<String, String> formFields) throws IOException {
-        URL obj = new URL(url);
-        HttpURLConnection con = (HttpURLConnection) obj.openConnection();
-        con.setRequestMethod("POST");
-        con.setConnectTimeout(CONNECTION_TIMEOUT);
-        con.setReadTimeout(READ_TIMEOUT);
-        con.setDoOutput(true);
-        con.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+    private static Response doFormPost(String url, Map<String, String> headers, Map<String, String> formFields) throws IOException, OAuthClientNotFoundException {
+        try {
+            URL obj = new URL(url);
+            HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+            con.setRequestMethod("POST");
+            con.setConnectTimeout(CONNECTION_TIMEOUT);
+            con.setReadTimeout(READ_TIMEOUT);
+            con.setDoOutput(true);
+            con.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
 
-        if (headers != null) {
-            for (Map.Entry<String, String> entry : headers.entrySet()) {
-                con.setRequestProperty(entry.getKey(), entry.getValue());
+            if (headers != null) {
+                for (Map.Entry<String, String> entry : headers.entrySet()) {
+                    con.setRequestProperty(entry.getKey(), entry.getValue());
+                }
             }
-        }
 
-        try (DataOutputStream os = new DataOutputStream(con.getOutputStream())) {
-            os.writeBytes(formFields.entrySet().stream()
-                .map(e -> e.getKey() + "=" + URLEncoder.encode(e.getValue(), StandardCharsets.UTF_8))
-                .collect(Collectors.joining("&")));
+            try (DataOutputStream os = new DataOutputStream(con.getOutputStream())) {
+                os.writeBytes(formFields.entrySet().stream()
+                    .map(e -> e.getKey() + "=" + URLEncoder.encode(e.getValue(), StandardCharsets.UTF_8))
+                    .collect(Collectors.joining("&")));
+            }
+            int responseCode = con.getResponseCode();
+            BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+            String inputLine;
+            StringBuffer response = new StringBuffer();
+            while ((inputLine = in.readLine()) != null) {
+                response.append(inputLine);
+            }
+            in.close();
+            JsonObject jsonResponse = null;
+            if (con.getContentType().contains("application/json")) {
+                Gson gson = new Gson();
+                jsonResponse = gson.fromJson(response.toString(), JsonObject.class);
+            }
+            return new Response(responseCode, response.toString(), jsonResponse, con.getHeaderFields());
+        } catch (FileNotFoundException e) {
+            throw new OAuthClientNotFoundException();
         }
-        int responseCode = con.getResponseCode();
-        BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
-        String inputLine;
-        StringBuffer response = new StringBuffer();
-        while ((inputLine = in.readLine()) != null) {
-            response.append(inputLine);
-        }
-        in.close();
-        JsonObject jsonResponse = null;
-        if (con.getContentType().contains("application/json")) {
-            Gson gson = new Gson();
-            jsonResponse = gson.fromJson(response.toString(), JsonObject.class);
-        }
-        return new Response(responseCode, response.toString(), jsonResponse, con.getHeaderFields());
     }
+
+    private static Response doJsonPost(String url, Map<String, String> headers, JsonObject jsonInput) throws IOException, OAuthClientNotFoundException {
+        try {
+            URL obj = new URL(url);
+            HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+            con.setRequestMethod("POST");
+            con.setConnectTimeout(CONNECTION_TIMEOUT);
+            con.setReadTimeout(READ_TIMEOUT);
+            con.setDoOutput(true);
+            con.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+
+            if (headers != null) {
+                for (Map.Entry<String, String> entry : headers.entrySet()) {
+                    con.setRequestProperty(entry.getKey(), entry.getValue());
+                }
+            }
+
+            try (DataOutputStream os = new DataOutputStream(con.getOutputStream())) {
+                os.writeBytes(jsonInput.toString());
+            }
+            int responseCode = con.getResponseCode();
+            BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+            String inputLine;
+            StringBuffer response = new StringBuffer();
+            while ((inputLine = in.readLine()) != null) {
+                response.append(inputLine);
+            }
+            in.close();
+            JsonObject jsonResponse = null;
+            if (con.getContentType().contains("application/json")) {
+                Gson gson = new Gson();
+                jsonResponse = gson.fromJson(response.toString(), JsonObject.class);
+            }
+            return new Response(responseCode, response.toString(), jsonResponse, con.getHeaderFields());
+        } catch (FileNotFoundException e) {
+            throw new OAuthClientNotFoundException();
+        }
+    }
+
+    private static Response doJsonPut(String url, Map<String, String> headers, JsonObject jsonInput) throws IOException, OAuthClientNotFoundException {
+        try {
+            URL obj = new URL(url);
+            HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+            con.setRequestMethod("PUT");
+            con.setConnectTimeout(CONNECTION_TIMEOUT);
+            con.setReadTimeout(READ_TIMEOUT);
+            con.setDoOutput(true);
+            con.setRequestProperty("Content-Type", "application/json");
+
+            if (headers != null) {
+                for (Map.Entry<String, String> entry : headers.entrySet()) {
+                    con.setRequestProperty(entry.getKey(), entry.getValue());
+                }
+            }
+
+            try (DataOutputStream os = new DataOutputStream(con.getOutputStream())) {
+                os.writeBytes(jsonInput.toString());
+            }
+            int responseCode = con.getResponseCode();
+            BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+            String inputLine;
+            StringBuffer response = new StringBuffer();
+            while ((inputLine = in.readLine()) != null) {
+                response.append(inputLine);
+            }
+            in.close();
+            JsonObject jsonResponse = null;
+            if (con.getContentType().contains("application/json")) {
+                Gson gson = new Gson();
+                jsonResponse = gson.fromJson(response.toString(), JsonObject.class);
+            }
+            return new Response(responseCode, response.toString(), jsonResponse, con.getHeaderFields());
+        } catch (FileNotFoundException e) {
+            throw new OAuthClientNotFoundException();
+        }
+    }
+
+    private static Response doJsonDelete(String url, Map<String, String> headers, JsonObject jsonInput) throws IOException, OAuthClientNotFoundException {
+        try {
+            URL obj = new URL(url);
+            HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+            con.setRequestMethod("DELETE");
+            con.setConnectTimeout(CONNECTION_TIMEOUT);
+            con.setReadTimeout(READ_TIMEOUT);
+            con.setDoOutput(true);
+            con.setRequestProperty("Content-Type", "application/json");
+
+            if (headers != null) {
+                for (Map.Entry<String, String> entry : headers.entrySet()) {
+                    con.setRequestProperty(entry.getKey(), entry.getValue());
+                }
+            }
+
+            if (jsonInput != null) {
+                try (DataOutputStream os = new DataOutputStream(con.getOutputStream())) {
+                    os.writeBytes(jsonInput.toString());
+                }
+            }
+
+            int responseCode = con.getResponseCode();
+            BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+            String inputLine;
+            StringBuffer response = new StringBuffer();
+            while ((inputLine = in.readLine()) != null) {
+                response.append(inputLine);
+            }
+            in.close();
+            JsonObject jsonResponse = null;
+            if (con.getContentType() != null && con.getContentType().contains("application/json")) {
+                Gson gson = new Gson();
+                jsonResponse = gson.fromJson(response.toString(), JsonObject.class);
+            }
+            return new Response(responseCode, response.toString(), jsonResponse, con.getHeaderFields());
+        } catch (FileNotFoundException e) {
+            throw new OAuthClientNotFoundException();
+        }
+    }
+
     public static class Response {
         public int statusCode;
         public String rawResponse;
