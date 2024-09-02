@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## [9.2.1] - 2024-08-02
+
+- Removes the stats that were resulting in high CPU consumption
+
 ## [9.2.0] - 2024-08-20
 
 - Adds `SECURITY` feature in `EE_FEATURES`.

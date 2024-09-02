@@ -193,14 +193,14 @@ public class FeatureFlagTest {
             assert maus.get(29).getAsInt() == 0;
 
             JsonObject mfaStats = usageStats.get("mfa").getAsJsonObject();
-            int totalMfaUsers = mfaStats.get("totalUserCountWithMoreThanOneLoginMethodOrTOTPEnabled").getAsInt();
-            JsonArray mfaMaus = mfaStats.get("mauWithMoreThanOneLoginMethodOrTOTPEnabled").getAsJsonArray();
+//            int totalMfaUsers = mfaStats.get("totalUserCountWithMoreThanOneLoginMethodOrTOTPEnabled").getAsInt();
+//            JsonArray mfaMaus = mfaStats.get("mauWithMoreThanOneLoginMethodOrTOTPEnabled").getAsJsonArray();
+//
+//            assert mfaMaus.size() == 31;
+//            assert mfaMaus.get(0).getAsInt() == 0;
+//            assert mfaMaus.get(29).getAsInt() == 0;
 
-            assert mfaMaus.size() == 31;
-            assert mfaMaus.get(0).getAsInt() == 0;
-            assert mfaMaus.get(29).getAsInt() == 0;
-
-            assert totalMfaUsers == 0;
+//            assert totalMfaUsers == 0;
         }
 
         // First register 2 users for emailpassword recipe.
@@ -253,15 +253,15 @@ public class FeatureFlagTest {
             assert maus.get(0).getAsInt() == 2; // 2 users have signed up
             assert maus.get(29).getAsInt() == 2;
 
-            JsonObject mfaStats = usageStats.get("mfa").getAsJsonObject();
-            int totalMfaUsers = mfaStats.get("totalUserCountWithMoreThanOneLoginMethodOrTOTPEnabled").getAsInt();
-            JsonArray mfaMaus = mfaStats.get("mauWithMoreThanOneLoginMethodOrTOTPEnabled").getAsJsonArray();
-
-            assert mfaMaus.size() == 31;
-            assert mfaMaus.get(0).getAsInt() == 1; // only 1 user has TOTP enabled
-            assert mfaMaus.get(29).getAsInt() == 1;
-
-            assert totalMfaUsers == 1;
+//            JsonObject mfaStats = usageStats.get("mfa").getAsJsonObject();
+//            int totalMfaUsers = mfaStats.get("totalUserCountWithMoreThanOneLoginMethodOrTOTPEnabled").getAsInt();
+//            JsonArray mfaMaus = mfaStats.get("mauWithMoreThanOneLoginMethodOrTOTPEnabled").getAsJsonArray();
+//
+//            assert mfaMaus.size() == 31;
+//            assert mfaMaus.get(0).getAsInt() == 1; // only 1 user has TOTP enabled
+//            assert mfaMaus.get(29).getAsInt() == 1;
+//
+//            assert totalMfaUsers == 1;
         }
 
         {
@@ -299,14 +299,14 @@ public class FeatureFlagTest {
 
             {
                 JsonObject mfaStats = usageStats.get("mfa").getAsJsonObject();
-                int totalMfaUsers = mfaStats.get("totalUserCountWithMoreThanOneLoginMethodOrTOTPEnabled").getAsInt();
-                JsonArray mfaMaus = mfaStats.get("mauWithMoreThanOneLoginMethodOrTOTPEnabled").getAsJsonArray();
-
-                assert mfaMaus.size() == 31;
-                assert mfaMaus.get(0).getAsInt() == 2; // 1 TOTP user + 1 account linked user
-                assert mfaMaus.get(29).getAsInt() == 2;
-
-                assert totalMfaUsers == 2;
+//                int totalMfaUsers = mfaStats.get("totalUserCountWithMoreThanOneLoginMethodOrTOTPEnabled").getAsInt();
+//                JsonArray mfaMaus = mfaStats.get("mauWithMoreThanOneLoginMethodOrTOTPEnabled").getAsJsonArray();
+//
+//                assert mfaMaus.size() == 31;
+//                assert mfaMaus.get(0).getAsInt() == 2; // 1 TOTP user + 1 account linked user
+//                assert mfaMaus.get(29).getAsInt() == 2;
+//
+//                assert totalMfaUsers == 2;
             }
 
             // Add TOTP to the linked user
@@ -342,14 +342,14 @@ public class FeatureFlagTest {
 
             { // MFA stats should still count 2 users
                 JsonObject mfaStats = usageStats.get("mfa").getAsJsonObject();
-                int totalMfaUsers = mfaStats.get("totalUserCountWithMoreThanOneLoginMethodOrTOTPEnabled").getAsInt();
-                JsonArray mfaMaus = mfaStats.get("mauWithMoreThanOneLoginMethodOrTOTPEnabled").getAsJsonArray();
-
-                assert mfaMaus.size() == 31;
-                assert mfaMaus.get(0).getAsInt() == 2; // 1 TOTP user + 1 account linked user
-                assert mfaMaus.get(29).getAsInt() == 2;
-
-                assert totalMfaUsers == 2;
+//                int totalMfaUsers = mfaStats.get("totalUserCountWithMoreThanOneLoginMethodOrTOTPEnabled").getAsInt();
+//                JsonArray mfaMaus = mfaStats.get("mauWithMoreThanOneLoginMethodOrTOTPEnabled").getAsJsonArray();
+//
+//                assert mfaMaus.size() == 31;
+//                assert mfaMaus.get(0).getAsInt() == 2; // 1 TOTP user + 1 account linked user
+//                assert mfaMaus.get(29).getAsInt() == 2;
+//
+//                assert totalMfaUsers == 2;
             }
         }
 
@@ -378,14 +378,14 @@ public class FeatureFlagTest {
 
             { // MFA stats should still count 2 users
                 JsonObject mfaStats = usageStats.get("mfa").getAsJsonObject();
-                int totalMfaUsers = mfaStats.get("totalUserCountWithMoreThanOneLoginMethodOrTOTPEnabled").getAsInt();
-                JsonArray mfaMaus = mfaStats.get("mauWithMoreThanOneLoginMethodOrTOTPEnabled").getAsJsonArray();
-
-                assert mfaMaus.size() == 31;
-                assert mfaMaus.get(0).getAsInt() == 2; // 1 TOTP user + 1 account linked user
-                assert mfaMaus.get(29).getAsInt() == 2;
-
-                assert totalMfaUsers == 2;
+//                int totalMfaUsers = mfaStats.get("totalUserCountWithMoreThanOneLoginMethodOrTOTPEnabled").getAsInt();
+//                JsonArray mfaMaus = mfaStats.get("mauWithMoreThanOneLoginMethodOrTOTPEnabled").getAsJsonArray();
+//
+//                assert mfaMaus.size() == 31;
+//                assert mfaMaus.get(0).getAsInt() == 2; // 1 TOTP user + 1 account linked user
+//                assert mfaMaus.get(29).getAsInt() == 2;
+//
+//                assert totalMfaUsers == 2;
             }
         }
 

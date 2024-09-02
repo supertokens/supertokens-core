@@ -200,29 +200,34 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         // TODO: Active users are present only on public tenant and MFA users may be
         // present on different storages
         JsonObject result = new JsonObject();
-        Storage[] storages = StorageLayer.getStoragesForApp(main, this.appIdentifier);
 
-        int totalUserCountWithMoreThanOneLoginMethod = 0;
-        int[] maus = new int[31];
+        // Commenting out these stats for now as they are very CPU intensive and reduces the performance
+        // of other API calls while this is running.
+        // Also, we are not currently using these stats.
 
-        long now = System.currentTimeMillis();
+        // Storage[] storages = StorageLayer.getStoragesForApp(main, this.appIdentifier);
 
-        for (Storage storage : storages) {
-            totalUserCountWithMoreThanOneLoginMethod += ((AuthRecipeStorage) storage)
-                    .getUsersCountWithMoreThanOneLoginMethodOrTOTPEnabled(this.appIdentifier);
+        // int totalUserCountWithMoreThanOneLoginMethod = 0;
+        // int[] maus = new int[31];
 
-            for (int i = 1; i <= 31; i++) {
-                long timestamp = now - (i * 24 * 60 * 60 * 1000L);
+        // long now = System.currentTimeMillis();
 
-                // `maus[i-1]` since i starts from 1
-                maus[i - 1] += ((ActiveUsersStorage) storage)
-                        .countUsersThatHaveMoreThanOneLoginMethodOrTOTPEnabledAndActiveSince(appIdentifier, timestamp);
-            }
-        }
+        // for (Storage storage : storages) {
+        //     totalUserCountWithMoreThanOneLoginMethod += ((AuthRecipeStorage) storage)
+        //             .getUsersCountWithMoreThanOneLoginMethodOrTOTPEnabled(this.appIdentifier);
 
-        result.addProperty("totalUserCountWithMoreThanOneLoginMethodOrTOTPEnabled",
-                totalUserCountWithMoreThanOneLoginMethod);
-        result.add("mauWithMoreThanOneLoginMethodOrTOTPEnabled", new Gson().toJsonTree(maus));
+        //     for (int i = 1; i <= 31; i++) {
+        //         long timestamp = now - (i * 24 * 60 * 60 * 1000L);
+
+        //         // `maus[i-1]` since i starts from 1
+        //         maus[i - 1] += ((ActiveUsersStorage) storage)
+        //                 .countUsersThatHaveMoreThanOneLoginMethodOrTOTPEnabledAndActiveSince(appIdentifier, timestamp);
+        //     }
+        // }
+
+        // result.addProperty("totalUserCountWithMoreThanOneLoginMethodOrTOTPEnabled",
+        //         totalUserCountWithMoreThanOneLoginMethod);
+        // result.add("mauWithMoreThanOneLoginMethodOrTOTPEnabled", new Gson().toJsonTree(maus));
         return result;
     }
 
@@ -305,36 +310,41 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         }
 
         result.addProperty("usesAccountLinking", usesAccountLinking);
-        if (!usesAccountLinking) {
-            result.addProperty("totalUserCountWithMoreThanOneLoginMethod", 0);
-            JsonArray mauArray = new JsonArray();
-            for (int i = 0; i < 31; i++) {
-                mauArray.add(new JsonPrimitive(0));
-            }
-            result.add("mauWithMoreThanOneLoginMethod", mauArray);
-            return result;
-        }
 
-        int totalUserCountWithMoreThanOneLoginMethod = 0;
-        int[] maus = new int[31];
+        // Commenting out these stats for now as they are very CPU intensive and reduces the performance
+        // of other API calls while this is running.
+        // Also, we are not currently using these stats.
+        
+        // if (!usesAccountLinking) {
+        //     result.addProperty("totalUserCountWithMoreThanOneLoginMethod", 0);
+        //     JsonArray mauArray = new JsonArray();
+        //     for (int i = 0; i < 31; i++) {
+        //         mauArray.add(new JsonPrimitive(0));
+        //     }
+        //     result.add("mauWithMoreThanOneLoginMethod", mauArray);
+        //     return result;
+        // }
 
-        long now = System.currentTimeMillis();
+        // int totalUserCountWithMoreThanOneLoginMethod = 0;
+        // int[] maus = new int[31];
 
-        for (Storage storage : storages) {
-            totalUserCountWithMoreThanOneLoginMethod += ((AuthRecipeStorage) storage).getUsersCountWithMoreThanOneLoginMethod(
-                    this.appIdentifier);
+        // long now = System.currentTimeMillis();
 
-            for (int i = 1; i <= 31; i++) {
-                long timestamp = now - (i * 24 * 60 * 60 * 1000L);
+        // for (Storage storage : storages) {
+        //     totalUserCountWithMoreThanOneLoginMethod += ((AuthRecipeStorage) storage).getUsersCountWithMoreThanOneLoginMethod(
+        //             this.appIdentifier);
 
-                // `maus[i-1]` because i starts from 1
-                maus[i - 1] += ((ActiveUsersStorage) storage).countUsersThatHaveMoreThanOneLoginMethodAndActiveSince(
-                        appIdentifier, timestamp);
-            }
-        }
+        //     for (int i = 1; i <= 31; i++) {
+        //         long timestamp = now - (i * 24 * 60 * 60 * 1000L);
 
-        result.addProperty("totalUserCountWithMoreThanOneLoginMethod", totalUserCountWithMoreThanOneLoginMethod);
-        result.add("mauWithMoreThanOneLoginMethod", new Gson().toJsonTree(maus));
+        //         // `maus[i-1]` because i starts from 1
+        //         maus[i - 1] += ((ActiveUsersStorage) storage).countUsersThatHaveMoreThanOneLoginMethodAndActiveSince(
+        //                 appIdentifier, timestamp);
+        //     }
+        // }
+
+        // result.addProperty("totalUserCountWithMoreThanOneLoginMethod", totalUserCountWithMoreThanOneLoginMethod);
+        // result.add("mauWithMoreThanOneLoginMethod", new Gson().toJsonTree(maus));
         return result;
     }
 
