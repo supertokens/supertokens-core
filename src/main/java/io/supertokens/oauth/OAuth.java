@@ -264,13 +264,13 @@ public class OAuth {
     public static JsonObject transformTokens(Main main, AppIdentifier appIdentifier, Storage storage, JsonObject jsonBody, String iss, boolean useDynamicKey) throws IOException, JWTException, InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException, JWTCreationException, InvalidConfigException {
         if (jsonBody.has("access_token")) {
             String accessToken = jsonBody.get("access_token").getAsString();
-            accessToken = reSignToken(appIdentifier, main, accessToken, iss, 1, useDynamicKey, 0);
+            accessToken = reSignToken(appIdentifier, main, accessToken, iss, SessionTokenType.ACCESS_TOKEN, useDynamicKey, 0);
             jsonBody.addProperty("access_token", accessToken);
         }
 
         if (jsonBody.has("id_token")) {
             String idToken = jsonBody.get("id_token").getAsString();
-            idToken = reSignToken(appIdentifier, main, idToken, iss, 2, useDynamicKey, 0);
+            idToken = reSignToken(appIdentifier, main, idToken, iss, SessionTokenType.ID_TOKEN, useDynamicKey, 0);
             jsonBody.addProperty("id_token", idToken);
         }
 
@@ -283,7 +283,7 @@ public class OAuth {
         return jsonBody;
     }
 
-    private static String reSignToken(AppIdentifier appIdentifier, Main main, String token, String iss, int stt, boolean useDynamicSigningKey, int retryCount) throws IOException, JWTException, InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException, JWTCreationException, InvalidConfigException {
+    private static String reSignToken(AppIdentifier appIdentifier, Main main, String token, String iss, SessionTokenType tokenType, boolean useDynamicSigningKey, int retryCount) throws IOException, JWTException, InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException, JWTCreationException, InvalidConfigException {
         // Load the JWKS from the specified URL
         String publicOAuthProviderServiceUrl = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderPublicServiceUrl();
         String jwksUrl = publicOAuthProviderServiceUrl + HYDRA_JWKS_PATH;
@@ -300,7 +300,7 @@ public class OAuth {
             payload.remove("ext");
         }
         payload.addProperty("iss", iss);
-        payload.addProperty("stt", stt);
+        payload.addProperty("stt", tokenType.getValue());
 
         JWTSigningKeyInfo keyToUse;
         if (useDynamicSigningKey) {
@@ -660,6 +660,21 @@ public class OAuth {
             this.rawResponse = rawResponse;
             this.jsonResponse = jsonResponse;
             this.headers = headers;
+        }
+    }
+
+    public static enum SessionTokenType {
+        ACCESS_TOKEN(1),
+        ID_TOKEN(2);
+
+        private final int value;
+
+        SessionTokenType(int value) {
+            this.value = value;
+        }
+
+        public int getValue() {
+            return value;
         }
     }
 }
