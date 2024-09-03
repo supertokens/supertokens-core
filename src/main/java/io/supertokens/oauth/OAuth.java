@@ -292,7 +292,7 @@ public class OAuth {
         JsonObject payload = JWTVerification.verifyJWTAndGetPayload(main, token, jwksUrl);
 
         // move keys in ext to root
-        if (payload.has("ext")) {
+        if (tokenType == SessionTokenType.ACCESS_TOKEN && payload.has("ext")) {
             JsonObject ext = payload.getAsJsonObject("ext");
             for (Map.Entry<String, JsonElement> entry : ext.entrySet()) {
                 payload.add(entry.getKey(), entry.getValue());
