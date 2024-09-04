@@ -10,6 +10,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
+import io.supertokens.oauth.HttpRequest;
 import io.supertokens.oauth.OAuth;
 import io.supertokens.oauth.exceptions.OAuthAPIException;
 import io.supertokens.oauth.exceptions.OAuthClientNotFoundException;
@@ -128,7 +129,7 @@ public abstract class OAuthProxyBase extends WebserverAPI {
         try {
             AppIdentifier appIdentifier = getAppIdentifier(req);
             Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
-            OAuth.Response response = OAuth.handleOAuthProxyGET(main, appIdentifier, storage, proxyProps.path, proxyProps.proxyToAdmin, queryParams, headers);
+            HttpRequest.Response response = OAuth.handleOAuthProxyGET(main, appIdentifier, storage, proxyProps.path, proxyProps.proxyToAdmin, queryParams, headers);
 
             if (proxyProps.camelToSnakeCaseConversion) {
                 response.jsonResponse = OAuth.convertSnakeCaseToCamelCaseRecursively(response.jsonResponse);
@@ -137,21 +138,9 @@ public abstract class OAuthProxyBase extends WebserverAPI {
             handleResponseFromProxyGET(req, resp, response.statusCode, response.headers, response.rawResponse, response.jsonResponse);
 
         } catch (OAuthClientNotFoundException e) {
-            JsonObject response = new JsonObject();
-            response.addProperty("status", "CLIENT_NOT_FOUND_ERROR");
-
-            this.sendJsonResponse(400, response, resp);
-
+            handleOAuthClientNotFoundException(resp);
         } catch (OAuthAPIException e) {
-            JsonObject response = new JsonObject();
-            response.addProperty("status", "OAUTH_ERROR");
-            response.addProperty("error", e.error);
-            response.addProperty("error_debug", e.errorDebug);
-            response.addProperty("error_description", e.errorDescription);
-            response.addProperty("error_hint", e.errorHint);
-            response.addProperty("status_code", e.statusCode);
-            this.sendJsonResponse(200, response, resp);
-
+            handleOAuthAPIException(resp, e);
         } catch (StorageQueryException | TenantOrAppNotFoundException | FeatureNotEnabledException | InvalidConfigException | BadPermissionException e) {
             throw new ServletException(e);
         }
@@ -170,7 +159,7 @@ public abstract class OAuthProxyBase extends WebserverAPI {
         try {
             AppIdentifier appIdentifier = getAppIdentifier(req);
             Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
-            OAuth.Response response = OAuth.handleOAuthProxyFormPOST(main, appIdentifier, storage, proxyProps.path, proxyProps.proxyToAdmin, formFields, headers);
+            HttpRequest.Response response = OAuth.handleOAuthProxyFormPOST(main, appIdentifier, storage, proxyProps.path, proxyProps.proxyToAdmin, formFields, headers);
 
             if (proxyProps.camelToSnakeCaseConversion) {
                 response.jsonResponse = OAuth.convertSnakeCaseToCamelCaseRecursively(response.jsonResponse);
@@ -179,21 +168,9 @@ public abstract class OAuthProxyBase extends WebserverAPI {
             handleResponseFromProxyPOST(req, resp, input, response.statusCode, response.headers, response.rawResponse, response.jsonResponse);
 
         } catch (OAuthClientNotFoundException e) {
-            JsonObject response = new JsonObject();
-            response.addProperty("status", "CLIENT_NOT_FOUND_ERROR");
-
-            this.sendJsonResponse(400, response, resp);
-
+            handleOAuthClientNotFoundException(resp);
         } catch (OAuthAPIException e) {
-            JsonObject response = new JsonObject();
-            response.addProperty("status", "OAUTH_ERROR");
-            response.addProperty("error", e.error);
-            response.addProperty("error_debug", e.errorDebug);
-            response.addProperty("error_description", e.errorDescription);
-            response.addProperty("error_hint", e.errorHint);
-            response.addProperty("status_code", e.statusCode);
-            this.sendJsonResponse(200, response, resp);
-
+            handleOAuthAPIException(resp, e);
         } catch (StorageQueryException | TenantOrAppNotFoundException | FeatureNotEnabledException | InvalidConfigException | BadPermissionException e) {
             throw new ServletException(e);
         }
@@ -212,7 +189,7 @@ public abstract class OAuthProxyBase extends WebserverAPI {
         try {
             AppIdentifier appIdentifier = getAppIdentifier(req);
             Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
-            OAuth.Response response = OAuth.handleOAuthProxyJsonPOST(main, appIdentifier, storage, proxyProps.path, proxyProps.proxyToAdmin, jsonInput, headers);
+            HttpRequest.Response response = OAuth.handleOAuthProxyJsonPOST(main, appIdentifier, storage, proxyProps.path, proxyProps.proxyToAdmin, jsonInput, headers);
 
             if (proxyProps.camelToSnakeCaseConversion) {
                 response.jsonResponse = OAuth.convertSnakeCaseToCamelCaseRecursively(response.jsonResponse);
@@ -221,21 +198,9 @@ public abstract class OAuthProxyBase extends WebserverAPI {
             handleResponseFromProxyPOST(req, resp, input, response.statusCode, response.headers, response.rawResponse, response.jsonResponse);
 
         } catch (OAuthClientNotFoundException e) {
-            JsonObject response = new JsonObject();
-            response.addProperty("status", "CLIENT_NOT_FOUND_ERROR");
-
-            this.sendJsonResponse(400, response, resp);
-
+            handleOAuthClientNotFoundException(resp);
         } catch (OAuthAPIException e) {
-            JsonObject response = new JsonObject();
-            response.addProperty("status", "OAUTH_ERROR");
-            response.addProperty("error", e.error);
-            response.addProperty("error_debug", e.errorDebug);
-            response.addProperty("error_description", e.errorDescription);
-            response.addProperty("error_hint", e.errorHint);
-            response.addProperty("status_code", e.statusCode);
-            this.sendJsonResponse(200, response, resp);
-
+            handleOAuthAPIException(resp, e);
         } catch (StorageQueryException | TenantOrAppNotFoundException | FeatureNotEnabledException | InvalidConfigException | BadPermissionException e) {
             throw new ServletException(e);
         }
@@ -254,7 +219,7 @@ public abstract class OAuthProxyBase extends WebserverAPI {
         try {
             AppIdentifier appIdentifier = getAppIdentifier(req);
             Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
-            OAuth.Response response = OAuth.handleOAuthProxyJsonDELETE(main, appIdentifier, storage, proxyProps.path, proxyProps.proxyToAdmin, jsonInput, headers);
+            HttpRequest.Response response = OAuth.handleOAuthProxyJsonDELETE(main, appIdentifier, storage, proxyProps.path, proxyProps.proxyToAdmin, jsonInput, headers);
 
             if (proxyProps.camelToSnakeCaseConversion) {
                 response.jsonResponse = OAuth.convertSnakeCaseToCamelCaseRecursively(response.jsonResponse);
@@ -263,21 +228,9 @@ public abstract class OAuthProxyBase extends WebserverAPI {
             handleResponseFromProxyDELETE(req, resp, input, response.statusCode, response.headers, response.rawResponse, response.jsonResponse);
 
         } catch (OAuthClientNotFoundException e) {
-            JsonObject response = new JsonObject();
-            response.addProperty("status", "CLIENT_NOT_FOUND_ERROR");
-
-            this.sendJsonResponse(400, response, resp);
-
+            handleOAuthClientNotFoundException(resp);
         } catch (OAuthAPIException e) {
-            JsonObject response = new JsonObject();
-            response.addProperty("status", "OAUTH_ERROR");
-            response.addProperty("error", e.error);
-            response.addProperty("error_debug", e.errorDebug);
-            response.addProperty("error_description", e.errorDescription);
-            response.addProperty("error_hint", e.errorHint);
-            response.addProperty("status_code", e.statusCode);
-            this.sendJsonResponse(200, response, resp);
-
+            handleOAuthAPIException(resp, e);
         } catch (StorageQueryException | TenantOrAppNotFoundException | FeatureNotEnabledException | InvalidConfigException | BadPermissionException e) {
             throw new ServletException(e);
         }
@@ -296,7 +249,7 @@ public abstract class OAuthProxyBase extends WebserverAPI {
         try {
             AppIdentifier appIdentifier = getAppIdentifier(req);
             Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
-            OAuth.Response response = OAuth.handleOAuthProxyJsonPUT(main, appIdentifier, storage, proxyProps.path, proxyProps.proxyToAdmin, jsonInput, headers);
+            HttpRequest.Response response = OAuth.handleOAuthProxyJsonPUT(main, appIdentifier, storage, proxyProps.path, proxyProps.proxyToAdmin, jsonInput, headers);
 
             if (proxyProps.camelToSnakeCaseConversion) {
                 response.jsonResponse = OAuth.convertSnakeCaseToCamelCaseRecursively(response.jsonResponse);
@@ -305,24 +258,35 @@ public abstract class OAuthProxyBase extends WebserverAPI {
             handleResponseFromProxyPUT(req, resp, input, response.statusCode, response.headers, response.rawResponse, response.jsonResponse);
 
         } catch (OAuthClientNotFoundException e) {
-            JsonObject response = new JsonObject();
-            response.addProperty("status", "CLIENT_NOT_FOUND_ERROR");
-
-            this.sendJsonResponse(400, response, resp);
-
+            handleOAuthClientNotFoundException(resp);
         } catch (OAuthAPIException e) {
-            JsonObject response = new JsonObject();
-            response.addProperty("status", "OAUTH_ERROR");
-            response.addProperty("error", e.error);
-            response.addProperty("error_debug", e.errorDebug);
-            response.addProperty("error_description", e.errorDescription);
-            response.addProperty("error_hint", e.errorHint);
-            response.addProperty("status_code", e.statusCode);
-            this.sendJsonResponse(200, response, resp);
-
+            handleOAuthAPIException(resp, e);
         } catch (StorageQueryException | TenantOrAppNotFoundException | FeatureNotEnabledException | InvalidConfigException | BadPermissionException e) {
             throw new ServletException(e);
         }
+    }
+
+    private void handleOAuthClientNotFoundException(HttpServletResponse resp) throws IOException {
+        JsonObject response = new JsonObject();
+        response.addProperty("status", "CLIENT_NOT_FOUND_ERROR");
+        this.sendJsonResponse(400, response, resp);
+    }
+
+    private void handleOAuthAPIException(HttpServletResponse resp, OAuthAPIException e) throws IOException {
+        JsonObject response = new JsonObject();
+        response.addProperty("status", "OAUTH_ERROR");
+        response.addProperty("error", e.error);
+        if (e.errorDebug != null) {
+            response.addProperty("errorDebug", e.errorDebug);
+        }
+        if (e.errorDescription != null) {
+            response.addProperty("errorDescription", e.errorDescription);
+        }
+        if (e.errorHint != null) {
+            response.addProperty("errorHint", e.errorHint);
+        }
+        response.addProperty("statusCode", e.statusCode);
+        this.sendJsonResponse(200, response, resp);
     }
 
     protected Map<String, String> getQueryParamsForProxy(HttpServletRequest req, JsonObject input) throws IOException, ServletException {
