@@ -23,6 +23,11 @@ public class ActiveUsersQueries {
                 + " );";
     }
 
+    static String getQueryToCreateLastActiveTimeIndexForUserLastActiveTable(Start start) {
+        return "CREATE INDEX user_last_active_last_active_time_index ON "
+                + Config.getConfig(start).getUserLastActiveTable() + "(last_active_time DESC, app_id DESC);";
+    }
+
     public static int countUsersActiveSince(Start start, AppIdentifier appIdentifier, long sinceTime)
             throws SQLException, StorageQueryException {
         String QUERY = "SELECT COUNT(*) as total FROM " + Config.getConfig(start).getUserLastActiveTable()
