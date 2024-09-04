@@ -7,7 +7,25 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
-## [9.2.1] - 2024-08-02
+## [9.2.2] - 2024-09-04
+
+- Adds index on `last_active_time` for `user_last_active` table to improve the performance of MAU computation.
+
+### Migration
+
+If using PostgreSQL, run the following SQL script:
+
+```sql
+CREATE INDEX IF NOT EXISTS user_last_active_last_active_time_index ON user_last_active (last_active_time DESC, app_id DESC);
+```
+
+If using MySQL, run the following SQL script:
+
+```sql
+CREATE INDEX user_last_active_last_active_time_index ON user_last_active (last_active_time DESC, app_id DESC);
+```
+
+## [9.2.1] - 2024-09-02
 
 - Removes the stats that were resulting in high CPU consumption
 
