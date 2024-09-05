@@ -488,6 +488,7 @@ public class TOTPRecipeTest {
             if (result == null) {
                 return;
             }
+
             try {
                 Main main = result.process.getProcess();
                 TOTPStorage storage = result.storage;
@@ -523,13 +524,13 @@ public class TOTPRecipeTest {
         
                     // Delete device1
                     Totp.removeDevice(main, "user", "device1");
-        
-                    devices = Totp.getDevices(main, "user");
-                    assert (devices.length == 1);
-        
-                    // 1 device still remain so all codes should still be still there:
+
+                    // 1 device still remain so all codes should still be there:
                     TOTPUsedCode[] usedCodes = getAllUsedCodesUtil(storage, "user");
                     assert (usedCodes.length == 5); // 2 for device verification and 3 for code verification
+
+                    devices = Totp.getDevices(main, "user");
+                    assert (devices.length == 1);
                 }
         
                 // Deleting the last device of a user should delete all related codes:
@@ -552,13 +553,14 @@ public class TOTPRecipeTest {
                     // No device left so all codes of the user should be deleted:
                     TOTPUsedCode[] usedCodes = getAllUsedCodesUtil(storage, "user");
                     assert (usedCodes.length == 0);
-        
+
+                    usedCodes = getAllUsedCodesUtil(storage, "other-user");
+                    System.out.println("Point2 " + usedCodes.length);
+                    assert (usedCodes.length == 3); // 1 for device verification and 2 for code verification
+
                     // But for other users things should still be there:
                     TOTPDevice[] otherUserDevices = Totp.getDevices(main, "other-user");
                     assert (otherUserDevices.length == 1);
-        
-                    usedCodes = getAllUsedCodesUtil(storage, "other-user");
-                    assert (usedCodes.length == 3); // 1 for device verification and 2 for code verification
                 }
 
                 result.process.kill();
