@@ -17,6 +17,7 @@
 package io.supertokens.webserver.api.oauth;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
@@ -79,7 +80,7 @@ public class OAuthAuthAPI extends OAuthProxyBase {
     }
 
     @Override
-    protected void handleResponseFromProxyGET(HttpServletRequest req, HttpServletResponse resp, int statusCode, Map<String, List<String>> headers, String rawBody, JsonObject jsonBody) throws IOException, ServletException {
+    protected void handleResponseFromProxyGET(HttpServletRequest req, HttpServletResponse resp, int statusCode, Map<String, List<String>> headers, String rawBody, JsonElement jsonBody) throws IOException, ServletException {
         if (headers == null || !headers.containsKey("Location")) {
             throw new IllegalStateException("Invalid response from hydra");
         }

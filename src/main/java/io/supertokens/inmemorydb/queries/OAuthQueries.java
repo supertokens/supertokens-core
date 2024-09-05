@@ -23,6 +23,8 @@ import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
@@ -49,6 +51,21 @@ public class OAuthQueries {
             pst.setString(1, clientId);
             pst.setString(2, appIdentifier.getAppId());
         }, ResultSet::next);
+    }
+
+    public static List<String> listClientsForApp(Start start, AppIdentifier appIdentifier)
+            throws SQLException, StorageQueryException {
+        String QUERY = "SELECT client_id FROM " + Config.getConfig(start).getOAuthClientTable() +
+                " WHERE app_id = ?";
+        return execute(start, QUERY, pst -> {
+            pst.setString(1, appIdentifier.getAppId());
+        }, (result) -> {
+            List<String> res = new ArrayList<>();
+            while (result.next()) {
+                res.add(result.getString("client_id"));
+            }
+            return res;
+        });
     }
 
     public static void insertClientIdForAppId(Start start, String clientId, AppIdentifier appIdentifier)

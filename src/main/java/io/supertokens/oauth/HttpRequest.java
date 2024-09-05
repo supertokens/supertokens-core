@@ -1,6 +1,7 @@
 package io.supertokens.oauth;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.supertokens.oauth.exceptions.OAuthClientNotFoundException;
 
@@ -157,10 +158,10 @@ public class HttpRequest {
             response.append(inputLine);
         }
         in.close();
-        JsonObject jsonResponse = null;
+        JsonElement jsonResponse = null;
         if (con.getContentType() != null && con.getContentType().contains("application/json")) {
             Gson gson = new Gson();
-            jsonResponse = gson.fromJson(response.toString(), JsonObject.class);
+            jsonResponse = gson.fromJson(response.toString(), JsonElement.class);
         }
         return new Response(responseCode, response.toString(), jsonResponse, con.getHeaderFields());
     }
@@ -168,10 +169,10 @@ public class HttpRequest {
     public static class Response {
         public int statusCode;
         public String rawResponse;
-        public JsonObject jsonResponse;
+        public JsonElement jsonResponse;
         public Map<String, List<String>> headers;
 
-        public Response(int statusCode, String rawResponse, JsonObject jsonResponse, Map<String, List<String>> headers) {
+        public Response(int statusCode, String rawResponse, JsonElement jsonResponse, Map<String, List<String>> headers) {
             this.statusCode = statusCode;
             this.rawResponse = rawResponse;
             this.jsonResponse = jsonResponse;

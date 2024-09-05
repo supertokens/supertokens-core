@@ -133,8 +133,8 @@ public class CreateUpdateOrGetOAuthClientAPI extends OAuthProxyBase {
                 "/admin/clients/" + clientId,
                 true, queryParams, null);
 
-            JsonObject existingConfig = response.jsonResponse;
-            existingConfig = OAuth.convertSnakeCaseToCamelCaseRecursively(existingConfig);
+            JsonObject existingConfig = response.jsonResponse.getAsJsonObject();
+            existingConfig = OAuth.convertSnakeCaseToCamelCaseRecursively(existingConfig).getAsJsonObject();
             for (Map.Entry<String, JsonElement> entry : existingConfig.entrySet()) {
                 String key = entry.getKey();
                 if (!input.has(key)) {
@@ -152,14 +152,14 @@ public class CreateUpdateOrGetOAuthClientAPI extends OAuthProxyBase {
 
     @Override
     protected void handleResponseFromProxyGET(HttpServletRequest req, HttpServletResponse resp, int statusCode,
-            Map<String, List<String>> headers, String rawBody, JsonObject jsonBody)
+            Map<String, List<String>> headers, String rawBody, JsonElement jsonBody)
             throws IOException, ServletException {
         this.sendJsonResponse(200, jsonBody, resp);
     }
 
     @Override
-    protected void handleResponseFromProxyPOST(HttpServletRequest req, HttpServletResponse resp, JsonObject input, int statusCode, Map<String, List<String>> headers, String rawBody, JsonObject jsonBody) throws IOException, ServletException {
-        String clientId = jsonBody.get("clientId").getAsString();
+    protected void handleResponseFromProxyPOST(HttpServletRequest req, HttpServletResponse resp, JsonObject input, int statusCode, Map<String, List<String>> headers, String rawBody, JsonElement jsonBody) throws IOException, ServletException {
+        String clientId = jsonBody.getAsJsonObject().get("clientId").getAsString();
 
         try {
             OAuth.addClientId(main, getAppIdentifier(req), enforcePublicTenantAndGetPublicTenantStorage(req), clientId);
@@ -172,7 +172,7 @@ public class CreateUpdateOrGetOAuthClientAPI extends OAuthProxyBase {
     }
 
     @Override
-    protected void handleResponseFromProxyPUT(HttpServletRequest req, HttpServletResponse resp, JsonObject input, int statusCode, Map<String, List<String>> headers, String rawBody, JsonObject jsonBody) throws IOException, ServletException {
+    protected void handleResponseFromProxyPUT(HttpServletRequest req, HttpServletResponse resp, JsonObject input, int statusCode, Map<String, List<String>> headers, String rawBody, JsonElement jsonBody) throws IOException, ServletException {
         this.sendJsonResponse(200, jsonBody, resp);
     }
 }

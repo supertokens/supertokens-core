@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import io.supertokens.Main;
@@ -65,7 +66,7 @@ public class RemoveOAuthClientAPI extends OAuthProxyBase {
     }
 
     @Override
-    protected void handleResponseFromProxyDELETE(HttpServletRequest req, HttpServletResponse resp, JsonObject input, int statusCode, Map<String, List<String>> headers, String rawBody, JsonObject jsonBody) throws IOException, ServletException {
+    protected void handleResponseFromProxyDELETE(HttpServletRequest req, HttpServletResponse resp, JsonObject input, int statusCode, Map<String, List<String>> headers, String rawBody, JsonElement jsonBody) throws IOException, ServletException {
         String clientId = InputParser.parseStringOrThrowError(input, "clientId", false);
 
         try {

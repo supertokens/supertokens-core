@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import io.supertokens.Main;
@@ -96,7 +97,7 @@ public class Transformations {
         return transformedBodyParams;
     }
 
-    public static JsonObject transformJsonResponseFromHydra(JsonObject jsonResponse) {
+    public static JsonElement transformJsonResponseFromHydra(JsonElement jsonResponse) {
         return jsonResponse;
     }
 

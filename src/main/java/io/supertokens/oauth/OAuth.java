@@ -17,6 +17,7 @@
 package io.supertokens.oauth;
 
 import com.auth0.jwt.exceptions.JWTCreationException;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
@@ -237,18 +238,18 @@ public class OAuth {
             throw new OAuthClientNotFoundException();
         }
         if (response.statusCode >= 400) {
-            String error = response.jsonResponse.get("error").getAsString();
+            String error = response.jsonResponse.getAsJsonObject().get("error").getAsString();
             String errorDebug = null;
-            if (response.jsonResponse.has("error_debug")) {
-                errorDebug = response.jsonResponse.get("error_debug").getAsString();
+            if (response.jsonResponse.getAsJsonObject().has("error_debug")) {
+                errorDebug = response.jsonResponse.getAsJsonObject().get("error_debug").getAsString();
             }
             String errorDescription = null;
-            if (response.jsonResponse.has("error_description")) {
-                errorDescription = response.jsonResponse.get("error_description").getAsString();
+            if (response.jsonResponse.getAsJsonObject().has("error_description")) {
+                errorDescription = response.jsonResponse.getAsJsonObject().get("error_description").getAsString();
             }
             String errorHint = null;
-            if (response.jsonResponse.has("error_hint")) {
-                errorHint = response.jsonResponse.get("error_hint").getAsString();
+            if (response.jsonResponse.getAsJsonObject().has("error_hint")) {
+                errorHint = response.jsonResponse.getAsJsonObject().get("error_hint").getAsString();
             }
             throw new OAuthAPIException(error, errorDebug, errorDescription, errorHint, response.statusCode);
         }
@@ -319,10 +320,17 @@ public class OAuth {
         oauthStorage.removeAppClientAssociation(appIdentifier, clientId);
     }
 
+    public static List<String> listClientIds(Main main, AppIdentifier appIdentifier, Storage storage) throws StorageQueryException {
+        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+        return oauthStorage.listClientsForApp(appIdentifier);
+    }
+
     public static Map<String, String> convertCamelToSnakeCase(Map<String, String> queryParams) {
         Map<String, String> result = new HashMap<>();
-        for (Map.Entry<String, String> entry : queryParams.entrySet()) {
-            result.put(Utils.camelCaseToSnakeCase(entry.getKey()), entry.getValue());
+        if (queryParams != null) {
+            for (Map.Entry<String, String> entry : queryParams.entrySet()) {
+                result.put(Utils.camelCaseToSnakeCase(entry.getKey()), entry.getValue());
+            }
         }
         return result;
     }
@@ -335,21 +343,31 @@ public class OAuth {
         return result;
     }
 
-    public static JsonObject convertSnakeCaseToCamelCaseRecursively(JsonObject jsonResponse) {
+    public static JsonElement convertSnakeCaseToCamelCaseRecursively(JsonElement jsonResponse) {
         if (jsonResponse == null) {
             return null;
         }
 
-        JsonObject result = new JsonObject();
-        for (Entry<String, JsonElement> entry: jsonResponse.entrySet()) {
-            String key = entry.getKey();
-            JsonElement value = entry.getValue();
-            if (value.isJsonObject()) {
-                value = convertSnakeCaseToCamelCaseRecursively(value.getAsJsonObject());
+        if (jsonResponse.isJsonObject()) {
+            JsonObject result = new JsonObject();
+            for (Entry<String, JsonElement> entry: jsonResponse.getAsJsonObject().entrySet()) {
+                String key = entry.getKey();
+                JsonElement value = entry.getValue();
+                if (value.isJsonObject()) {
+                    value = convertSnakeCaseToCamelCaseRecursively(value.getAsJsonObject());
+                }
+                result.add(Utils.snakeCaseToCamelCase(key), value);
             }
-            result.add(Utils.snakeCaseToCamelCase(key), value);
+            return result;
+        } else if (jsonResponse.isJsonArray()) {
+            JsonArray result = new JsonArray();
+            for (JsonElement element : jsonResponse.getAsJsonArray()) {
+                result.add(convertSnakeCaseToCamelCaseRecursively(element));
+            }
+            return result;
         }
-        return result;
+        return jsonResponse;
+
     }
 
     public static enum SessionTokenType {

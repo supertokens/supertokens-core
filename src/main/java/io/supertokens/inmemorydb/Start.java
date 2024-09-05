@@ -3046,4 +3046,13 @@ public class Start
             throw new StorageQueryException(e);
         }
     }
+
+    @Override
+    public List<String> listClientsForApp(AppIdentifier appIdentifier) throws StorageQueryException {
+        try {
+            return OAuthQueries.listClientsForApp(this, appIdentifier);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
 }

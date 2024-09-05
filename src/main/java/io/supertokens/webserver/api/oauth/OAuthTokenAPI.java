@@ -30,7 +30,6 @@ import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.session.jwt.JWT.JWTException;
 import io.supertokens.webserver.InputParser;
-import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -82,7 +81,7 @@ public class OAuthTokenAPI extends OAuthProxyBase {
     }
 
     @Override
-    protected void handleResponseFromProxyPOST(HttpServletRequest req, HttpServletResponse resp, JsonObject input, int statusCode, Map<String, List<String>> headers, String rawBody, JsonObject jsonBody) throws IOException, ServletException {
+    protected void handleResponseFromProxyPOST(HttpServletRequest req, HttpServletResponse resp, JsonObject input, int statusCode, Map<String, List<String>> headers, String rawBody, JsonElement jsonBody) throws IOException, ServletException {
         if (jsonBody == null) {
             throw new IllegalStateException("unexpected response from hydra");
         }
@@ -96,13 +95,13 @@ public class OAuthTokenAPI extends OAuthProxyBase {
         try {
             AppIdentifier appIdentifier = getAppIdentifier(req);
             Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
-            jsonBody = OAuth.transformTokens(super.main, appIdentifier, storage, jsonBody, iss, useDynamicKey);
+            jsonBody = OAuth.transformTokens(super.main, appIdentifier, storage, jsonBody.getAsJsonObject(), iss, useDynamicKey);
 
         } catch (IOException | InvalidConfigException | TenantOrAppNotFoundException | BadPermissionException | StorageQueryException | InvalidKeyException | NoSuchAlgorithmException | InvalidKeySpecException | JWTCreationException | JWTException | StorageTransactionLogicException | UnsupportedJWTSigningAlgorithmException e) {
             throw new ServletException(e);
         }
 
-        jsonBody.addProperty("status", "OK");
+        jsonBody.getAsJsonObject().addProperty("status", "OK");
         super.sendJsonResponse(200, jsonBody, resp);
     }
 }
