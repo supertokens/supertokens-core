@@ -97,8 +97,63 @@ public class Transformations {
         return transformedBodyParams;
     }
 
-    public static JsonElement transformJsonResponseFromHydra(JsonElement jsonResponse) {
+    public static JsonElement transformJsonResponseFromHydra(Main main, AppIdentifier appIdentifier, JsonElement jsonResponse) throws InvalidConfigException, TenantOrAppNotFoundException, OAuthAPIException {
+        if (jsonResponse == null) {
+            return jsonResponse;
+        }
+
+        if (jsonResponse.isJsonObject() && jsonResponse.getAsJsonObject().has("redirect_to")) {
+            String redirectTo = jsonResponse.getAsJsonObject().get("redirect_to").getAsString();
+            redirectTo = transformRedirectUrlFromHydra(main, appIdentifier, redirectTo);
+            jsonResponse.getAsJsonObject().addProperty("redirect_to", redirectTo);
+        }
+
         return jsonResponse;
+    }
+
+    private static String transformRedirectUrlFromHydra(Main main, AppIdentifier appIdentifier,String redirectTo) throws InvalidConfigException, TenantOrAppNotFoundException, OAuthAPIException {
+        String hydraInternalAddress = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main)
+                .getOauthProviderUrlConfiguredInHydra();
+        String hydraBaseUrlForConsentAndLogin = Config
+                .getConfig(appIdentifier.getAsPublicTenantIdentifier(), main)
+                .getOauthProviderConsentLoginBaseUrl();
+        
+        if (!redirectTo.startsWith("/")) {
+            try {
+                if (Utils.containsUrl(redirectTo, hydraInternalAddress, true)) {
+                    try {
+                        URL url = new URL(redirectTo);
+                        String query = url.getQuery();
+                        Map<String, String> urlQueryParams = new HashMap<>();
+                        if (query != null) {
+                            String[] pairs = query.split("&");
+                            for (String pair : pairs) {
+                                int idx = pair.indexOf("=");
+                                urlQueryParams.put(pair.substring(0, idx), URLDecoder.decode(pair.substring(idx + 1), StandardCharsets.UTF_8));
+                            }
+                        }
+                        String error = urlQueryParams.getOrDefault("error", null);
+                        String errorDebug = urlQueryParams.getOrDefault("error_debug", null);
+                        String errorDescription = urlQueryParams.getOrDefault("error_description", null);
+                        String errorHint = urlQueryParams.getOrDefault("error_hint", null);
+                        if (error != null) {
+                            throw new OAuthAPIException(error, errorDebug, errorDescription, errorHint, 400);
+                        }
+                        redirectTo = redirectTo.replace(hydraInternalAddress, "{apiDomain}");
+                        redirectTo = redirectTo.replace("oauth2/", "oauth/");
+
+                    } catch (MalformedURLException e) {
+                        throw new IllegalStateException(e);
+                    }
+                } else if (Utils.containsUrl(redirectTo, hydraBaseUrlForConsentAndLogin, true)) {
+                    redirectTo = redirectTo.replace(hydraBaseUrlForConsentAndLogin, "{apiDomain}");
+                }
+            } catch (MalformedURLException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+
+        return redirectTo;
     }
 
     public static Map<String, List<String>> transformResponseHeadersFromHydra(Main main, AppIdentifier appIdentifier,
@@ -114,49 +169,8 @@ public class Transformations {
         final String LOCATION_HEADER_NAME = "Location";
 
         if (headers.containsKey(LOCATION_HEADER_NAME)) {
-            String hydraInternalAddress = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main)
-                    .getOauthProviderUrlConfiguredInHydra();
-            String hydraBaseUrlForConsentAndLogin = Config
-                    .getConfig(appIdentifier.getAsPublicTenantIdentifier(), main)
-                    .getOauthProviderConsentLoginBaseUrl();
-
             String redirectTo = headers.get(LOCATION_HEADER_NAME).get(0);
-
-            if (!redirectTo.startsWith("/")) {
-                try {
-                    if (Utils.containsUrl(redirectTo, hydraInternalAddress, true)) {
-                        try {
-                            URL url = new URL(redirectTo);
-                            String query = url.getQuery();
-                            Map<String, String> urlQueryParams = new HashMap<>();
-                            if (query != null) {
-                                String[] pairs = query.split("&");
-                                for (String pair : pairs) {
-                                    int idx = pair.indexOf("=");
-                                    urlQueryParams.put(pair.substring(0, idx), URLDecoder.decode(pair.substring(idx + 1), StandardCharsets.UTF_8));
-                                }
-                            }
-                            String error = urlQueryParams.getOrDefault("error", null);
-                            String errorDebug = urlQueryParams.getOrDefault("error_debug", null);
-                            String errorDescription = urlQueryParams.getOrDefault("error_description", null);
-                            String errorHint = urlQueryParams.getOrDefault("error_hint", null);
-                            throw new OAuthAPIException(error, errorDebug, errorDescription, errorHint, 400);
-
-                        } catch (MalformedURLException e) {
-                            throw new IllegalStateException(e);
-                        }
-                    }
-
-                    if (Utils.containsUrl(redirectTo, hydraBaseUrlForConsentAndLogin, true)) {
-                        redirectTo = redirectTo.replace(hydraBaseUrlForConsentAndLogin, "{apiDomain}");
-                    }
-                } catch (MalformedURLException e) {
-                    throw new IllegalStateException(e);
-                }
-
-                redirectTo = transformRedirectUrlFromHydra(redirectTo);
-            }
-
+            redirectTo = transformRedirectUrlFromHydra(main, appIdentifier, redirectTo);
             headers.put(LOCATION_HEADER_NAME, List.of(redirectTo));
         }
 

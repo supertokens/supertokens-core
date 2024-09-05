@@ -94,7 +94,7 @@ public class OAuth {
         HttpRequest.Response response = HttpRequest.doGet(fullUrl, headers, queryParams);
 
         // Response transformations
-        response.jsonResponse = Transformations.transformJsonResponseFromHydra(response.jsonResponse);
+        response.jsonResponse = Transformations.transformJsonResponseFromHydra(main, appIdentifier, response.jsonResponse);
         response.headers = Transformations.transformResponseHeadersFromHydra(main, appIdentifier, response.headers);
 
         checkNonSuccessResponse(response);
@@ -123,7 +123,7 @@ public class OAuth {
         HttpRequest.Response response = HttpRequest.doFormPost(fullUrl, headers, formFields);
 
         // Response transformations
-        response.jsonResponse = Transformations.transformJsonResponseFromHydra(response.jsonResponse);
+        response.jsonResponse = Transformations.transformJsonResponseFromHydra(main, appIdentifier, response.jsonResponse);
         response.headers = Transformations.transformResponseHeadersFromHydra(main, appIdentifier, response.headers);
 
         checkNonSuccessResponse(response);
@@ -157,7 +157,7 @@ public class OAuth {
         HttpRequest.Response response = HttpRequest.doJsonPost(fullUrl, headers, jsonInput);
 
         // Response transformations
-        response.jsonResponse = Transformations.transformJsonResponseFromHydra(response.jsonResponse);
+        response.jsonResponse = Transformations.transformJsonResponseFromHydra(main, appIdentifier, response.jsonResponse);
         response.headers = Transformations.transformResponseHeadersFromHydra(main, appIdentifier, response.headers);
 
         checkNonSuccessResponse(response);
@@ -165,7 +165,7 @@ public class OAuth {
         return response;
     }
 
-    public static HttpRequest.Response handleOAuthProxyJsonPUT(Main main, AppIdentifier appIdentifier, Storage storage, String path, boolean proxyToAdmin, JsonObject jsonInput, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
+    public static HttpRequest.Response handleOAuthProxyJsonPUT(Main main, AppIdentifier appIdentifier, Storage storage, String path, Map<String, String> queryParams, boolean proxyToAdmin, JsonObject jsonInput, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
         checkForOauthFeature(appIdentifier, main);
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
 
@@ -188,10 +188,10 @@ public class OAuth {
         }
         String fullUrl = baseURL + path;
 
-        HttpRequest.Response response = HttpRequest.doJsonPut(fullUrl, headers, jsonInput);
+        HttpRequest.Response response = HttpRequest.doJsonPut(fullUrl, queryParams, headers, jsonInput);
 
         // Response transformations
-        response.jsonResponse = Transformations.transformJsonResponseFromHydra(response.jsonResponse);
+        response.jsonResponse = Transformations.transformJsonResponseFromHydra(main, appIdentifier, response.jsonResponse);
         response.headers = Transformations.transformResponseHeadersFromHydra(main, appIdentifier, response.headers);
 
         checkNonSuccessResponse(response);
@@ -225,7 +225,7 @@ public class OAuth {
         HttpRequest.Response response = HttpRequest.doJsonDelete(fullUrl, headers, jsonInput);
 
         // Response transformations
-        response.jsonResponse = Transformations.transformJsonResponseFromHydra(response.jsonResponse);
+        response.jsonResponse = Transformations.transformJsonResponseFromHydra(main, appIdentifier, response.jsonResponse);
         response.headers = Transformations.transformResponseHeadersFromHydra(main, appIdentifier, response.headers);
 
         checkNonSuccessResponse(response);

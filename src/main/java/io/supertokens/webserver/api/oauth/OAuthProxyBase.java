@@ -2,6 +2,7 @@ package io.supertokens.webserver.api.oauth;
 
 import java.io.IOException;
 import java.io.Serial;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -239,6 +240,12 @@ public abstract class OAuthProxyBase extends WebserverAPI {
 
     private void doProxyPutJsonRequest(HttpServletRequest req, HttpServletResponse resp, ProxyProps proxyProps, JsonObject input)
             throws IOException, ServletException {
+        Map<String, String> queryParams = getQueryParamsForProxy(req, input);
+
+        if (proxyProps.camelToSnakeCaseConversion) {
+            queryParams = OAuth.convertCamelToSnakeCase(queryParams);
+        }
+
         JsonObject jsonInput = getJsonBodyForProxyPUT(req, input);
 
         if (proxyProps.camelToSnakeCaseConversion) {
@@ -250,7 +257,7 @@ public abstract class OAuthProxyBase extends WebserverAPI {
         try {
             AppIdentifier appIdentifier = getAppIdentifier(req);
             Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
-            HttpRequest.Response response = OAuth.handleOAuthProxyJsonPUT(main, appIdentifier, storage, proxyProps.path, proxyProps.proxyToAdmin, jsonInput, headers);
+            HttpRequest.Response response = OAuth.handleOAuthProxyJsonPUT(main, appIdentifier, storage, proxyProps.path, queryParams, proxyProps.proxyToAdmin, jsonInput, headers);
 
             if (proxyProps.camelToSnakeCaseConversion) {
                 response.jsonResponse = OAuth.convertSnakeCaseToCamelCaseRecursively(response.jsonResponse);
@@ -291,7 +298,11 @@ public abstract class OAuthProxyBase extends WebserverAPI {
     }
 
     protected Map<String, String> getQueryParamsForProxy(HttpServletRequest req, JsonObject input) throws IOException, ServletException {
-        return null;
+        Map<String, String> queryParams = new HashMap<>();
+        for (Map.Entry<String, String[]> entry : req.getParameterMap().entrySet()) {
+            queryParams.put(entry.getKey(), entry.getValue()[0]);
+        }
+        return queryParams;
     }
 
     protected Map<String, String> getHeadersForProxy(HttpServletRequest req, JsonObject input) throws IOException, ServletException {
