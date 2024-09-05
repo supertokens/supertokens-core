@@ -23,11 +23,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import io.supertokens.Main;
+import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
+import io.supertokens.oauth.HttpRequest;
 import io.supertokens.oauth.OAuth;
+import io.supertokens.oauth.exceptions.OAuthAPIException;
+import io.supertokens.oauth.exceptions.OAuthClientNotFoundException;
+import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.oauth.exceptions.OAuth2ClientAlreadyExistsForAppException;
@@ -107,6 +113,39 @@ public class CreateUpdateOrGetOAuthClientAPI extends OAuthProxyBase {
         input.addProperty("accessTokenStrategy", "jwt");
         input.addProperty("skipConsent", true);
         input.addProperty("subjectType", "public");
+
+        return input;
+    }
+
+    @Override
+    protected JsonObject getJsonBodyForProxyPUT(HttpServletRequest req, JsonObject input)
+            throws IOException, ServletException {
+        // fetch existing config and the apply input on top of it
+        String clientId = input.get("clientId").getAsString();
+
+        try {
+            Map<String, String> queryParams = new HashMap<>();
+            queryParams.put("client_id", clientId);
+            HttpRequest.Response response = OAuth.handleOAuthProxyGET(
+                main,
+                getAppIdentifier(req),
+                enforcePublicTenantAndGetPublicTenantStorage(req),
+                "/admin/clients/" + clientId,
+                true, queryParams, null);
+
+            JsonObject existingConfig = response.jsonResponse;
+            existingConfig = OAuth.convertSnakeCaseToCamelCaseRecursively(existingConfig);
+            for (Map.Entry<String, JsonElement> entry : existingConfig.entrySet()) {
+                String key = entry.getKey();
+                if (!input.has(key)) {
+                    input.add(key, entry.getValue());
+                }
+            }
+        } catch (StorageQueryException | TenantOrAppNotFoundException | FeatureNotEnabledException | InvalidConfigException | BadPermissionException e) {
+            throw new ServletException(e);
+        } catch (OAuthClientNotFoundException | OAuthAPIException e) {
+            // ignore since the PUT API will throw one of this error later on
+        }
 
         return input;
     }

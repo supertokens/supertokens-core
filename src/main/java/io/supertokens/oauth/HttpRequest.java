@@ -9,6 +9,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -18,6 +19,9 @@ public class HttpRequest {
     private static final int READ_TIMEOUT = 5000;
 
     public static Response doGet(String url, Map<String, String> headers, Map<String, String> queryParams) throws IOException {
+        if (queryParams == null) {
+            queryParams = new HashMap<>();
+        }
         URL obj = new URL(url + "?" + queryParams.entrySet().stream()
                 .map(e -> e.getKey() + "=" + URLEncoder.encode(e.getValue(), StandardCharsets.UTF_8))
                 .collect(Collectors.joining("&")));

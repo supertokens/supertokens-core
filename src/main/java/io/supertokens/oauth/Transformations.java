@@ -132,7 +132,7 @@ public class Transformations {
                                 String[] pairs = query.split("&");
                                 for (String pair : pairs) {
                                     int idx = pair.indexOf("=");
-                                    urlQueryParams.put(pair.substring(0, idx), pair.substring(idx + 1));
+                                    urlQueryParams.put(pair.substring(0, idx), URLDecoder.decode(pair.substring(idx + 1), StandardCharsets.UTF_8));
                                 }
                             }
                             String error = urlQueryParams.getOrDefault("error", null);

@@ -71,7 +71,7 @@ public class OAuth {
         checkForOauthFeature(appIdentifier, main);
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
 
-        if (queryParams.containsKey("client_id")) {
+        if (queryParams != null && queryParams.containsKey("client_id")) {
             String clientId = queryParams.get("client_id");
             if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientId)) {
                 throw new OAuthClientNotFoundException();
@@ -193,9 +193,6 @@ public class OAuth {
         response.jsonResponse = Transformations.transformJsonResponseFromHydra(response.jsonResponse);
         response.headers = Transformations.transformResponseHeadersFromHydra(main, appIdentifier, response.headers);
 
-        System.out.println("Status code: " + response.statusCode);
-        System.out.println("response.jsonResponse: " + response.jsonResponse);
-
         checkNonSuccessResponse(response);
 
         return response;
@@ -235,7 +232,10 @@ public class OAuth {
         return response;
     }
 
-    private static void checkNonSuccessResponse(HttpRequest.Response response) throws OAuthAPIException {
+    private static void checkNonSuccessResponse(HttpRequest.Response response) throws OAuthAPIException, OAuthClientNotFoundException {
+        if (response.statusCode == 404) {
+            throw new OAuthClientNotFoundException();
+        }
         if (response.statusCode >= 400) {
             String error = response.jsonResponse.get("error").getAsString();
             String errorDebug = null;

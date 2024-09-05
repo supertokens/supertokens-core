@@ -269,7 +269,7 @@ public abstract class OAuthProxyBase extends WebserverAPI {
     private void handleOAuthClientNotFoundException(HttpServletResponse resp) throws IOException {
         JsonObject response = new JsonObject();
         response.addProperty("status", "CLIENT_NOT_FOUND_ERROR");
-        this.sendJsonResponse(400, response, resp);
+        this.sendJsonResponse(200, response, resp);
     }
 
     private void handleOAuthAPIException(HttpServletResponse resp, OAuthAPIException e) throws IOException {
