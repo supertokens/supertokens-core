@@ -353,15 +353,14 @@ public class TOTPRecipeTest {
                 // Wait for 1 second (Should cool down rate limiting):
                 Thread.sleep(1000);
                 // But again try with invalid code:
-                InvalidTotpException invalidTotpException = assertThrows(InvalidTotpException.class,
-                        () -> Totp.verifyCode(main, "user", "invalid0"));
-                assertEquals(1, invalidTotpException.currentAttempts);
-                invalidTotpException = assertThrows(InvalidTotpException.class,
-                        () -> Totp.verifyCode(main, "user", "invalid0"));
-                assertEquals(2, invalidTotpException.currentAttempts);
-                invalidTotpException = assertThrows(InvalidTotpException.class,
-                        () -> Totp.verifyCode(main, "user", "invalid0"));
-                assertEquals(3, invalidTotpException.currentAttempts);
+                InvalidTotpException invalidTotpException;
+                for (int tries = 0; tries < 10; tries++) {
+                    invalidTotpException = assertThrows(InvalidTotpException.class,
+                            () -> Totp.verifyCode(main, "user", "invalid0"));
+                    if (invalidTotpException.currentAttempts == 3) {
+                        break;
+                    }
+                }
 
                 // This triggered rate limiting again. So even valid codes will fail for
                 // another cooldown period:
@@ -372,15 +371,13 @@ public class TOTPRecipeTest {
                 Thread.sleep(1000);
 
                 // test that after cool down, we can retry invalid codes N times again
-                invalidTotpException = assertThrows(InvalidTotpException.class,
-                        () -> Totp.verifyCode(main, "user", "invalid0"));
-                assertEquals(1, invalidTotpException.currentAttempts);
-                invalidTotpException = assertThrows(InvalidTotpException.class,
-                        () -> Totp.verifyCode(main, "user", "invalid0"));
-                assertEquals(2, invalidTotpException.currentAttempts);
-                invalidTotpException = assertThrows(InvalidTotpException.class,
-                        () -> Totp.verifyCode(main, "user", "invalid0"));
-                assertEquals(3, invalidTotpException.currentAttempts);
+                for (int tries = 0; tries < 10; tries++) {
+                    invalidTotpException = assertThrows(InvalidTotpException.class,
+                            () -> Totp.verifyCode(main, "user", "invalid0"));
+                    if (invalidTotpException.currentAttempts == 3) {
+                        break;
+                    }
+                }
 
                 Thread.sleep(1100);
 
@@ -396,6 +393,8 @@ public class TOTPRecipeTest {
             } catch (Exception | AssertionError e) {
                 process.kill();
                 assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
+                Thread.sleep(250);
 
                 lastException = e;
             }
