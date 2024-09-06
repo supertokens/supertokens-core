@@ -42,9 +42,12 @@ import io.supertokens.webserver.api.multitenancy.thirdparty.RemoveThirdPartyConf
 import io.supertokens.webserver.api.oauth.OAuthAuthAPI;
 import io.supertokens.webserver.api.oauth.OAuthClientListAPI;
 import io.supertokens.webserver.api.oauth.OAuthGetAuthConsentRequestAPI;
+import io.supertokens.webserver.api.oauth.OAuthGetAuthLoginRequestAPI;
 import io.supertokens.webserver.api.oauth.OAuthRejectAuthConsentRequestAPI;
+import io.supertokens.webserver.api.oauth.OAuthRejectAuthLoginRequestAPI;
 import io.supertokens.webserver.api.oauth.CreateUpdateOrGetOAuthClientAPI;
 import io.supertokens.webserver.api.oauth.OAuthAcceptAuthConsentRequestAPI;
+import io.supertokens.webserver.api.oauth.OAuthAcceptAuthLoginRequestAPI;
 import io.supertokens.webserver.api.oauth.OAuthTokenAPI;
 import io.supertokens.webserver.api.oauth.RemoveOAuthClientAPI;
 import io.supertokens.webserver.api.passwordless.*;
@@ -284,6 +287,9 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new OAuthGetAuthConsentRequestAPI(main));
         addAPI(new OAuthAcceptAuthConsentRequestAPI(main));
         addAPI(new OAuthRejectAuthConsentRequestAPI(main));
+        addAPI(new OAuthGetAuthLoginRequestAPI(main));
+        addAPI(new OAuthAcceptAuthLoginRequestAPI(main));
+        addAPI(new OAuthRejectAuthLoginRequestAPI(main));
 
         StandardContext context = tomcatReference.getContext();
         Tomcat tomcat = tomcatReference.getTomcat();
