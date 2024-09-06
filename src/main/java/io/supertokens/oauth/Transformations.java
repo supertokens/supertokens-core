@@ -41,7 +41,7 @@ public class Transformations {
         return requestHeaders;
     }
 
-    public static String transformRedirectUrlFromHydra(String redirectTo) {
+    private static String transformQueryParamsInURLFromHydra(String redirectTo) {
         try {
             URL url = new URL(redirectTo);
             String query = url.getQuery();
@@ -102,10 +102,22 @@ public class Transformations {
             return jsonResponse;
         }
 
-        if (jsonResponse.isJsonObject() && jsonResponse.getAsJsonObject().has("redirect_to")) {
-            String redirectTo = jsonResponse.getAsJsonObject().get("redirect_to").getAsString();
-            redirectTo = transformRedirectUrlFromHydra(main, appIdentifier, redirectTo);
-            jsonResponse.getAsJsonObject().addProperty("redirect_to", redirectTo);
+        if (jsonResponse.isJsonObject()) {
+            if (jsonResponse.getAsJsonObject().has("redirect_to")) {
+                String redirectTo = jsonResponse.getAsJsonObject().get("redirect_to").getAsString();
+                redirectTo = transformRedirectUrlFromHydra(main, appIdentifier, redirectTo);
+                jsonResponse.getAsJsonObject().addProperty("redirect_to", redirectTo);
+            }
+
+            for (Map.Entry<String, JsonElement> entry : jsonResponse.getAsJsonObject().entrySet()) {
+                if (entry.getValue().isJsonPrimitive() && entry.getValue().getAsJsonPrimitive().isString()) {
+                    String value = entry.getValue().getAsString();
+                    if (value.startsWith("ory_")) {
+                        value = value.replaceFirst("ory_", "st_");
+                        jsonResponse.getAsJsonObject().addProperty(entry.getKey(), value);
+                    }
+                }
+            }
         }
 
         return jsonResponse;
@@ -119,6 +131,8 @@ public class Transformations {
                 .getOauthProviderConsentLoginBaseUrl();
         
         if (!redirectTo.startsWith("/")) {
+            redirectTo = transformQueryParamsInURLFromHydra(redirectTo);
+
             try {
                 if (Utils.containsUrl(redirectTo, hydraInternalAddress, true)) {
                     try {
