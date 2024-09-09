@@ -117,8 +117,13 @@ public class OAuth {
         formFields = Transformations.transformFormFieldsForHydra(formFields);
         headers = Transformations.transformRequestHeadersForHydra(headers);
 
-        String publicOAuthProviderServiceUrl = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderPublicServiceUrl();
-        String fullUrl = publicOAuthProviderServiceUrl + path;
+        String baseURL;
+        if (proxyToAdmin) {
+            baseURL = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderAdminServiceUrl();
+        } else {
+            baseURL = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderPublicServiceUrl();
+        }
+        String fullUrl = baseURL + path;
 
         HttpRequest.Response response = HttpRequest.doFormPost(fullUrl, headers, formFields);
 

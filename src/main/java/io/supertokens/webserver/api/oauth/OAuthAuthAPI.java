@@ -17,12 +17,15 @@
 package io.supertokens.webserver.api.oauth;
 
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
 import io.supertokens.Main;
+import io.supertokens.multitenancy.exception.BadPermissionException;
+import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.InputParser;
+import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -33,9 +36,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class OAuthAuthAPI extends OAuthProxyBase {
+public class OAuthAuthAPI extends WebserverAPI {
     public OAuthAuthAPI(Main main) {
-        super(main);
+        super(main, RECIPE_ID.OAUTH.toString());
     }
 
     @Override
@@ -44,62 +47,60 @@ public class OAuthAuthAPI extends OAuthProxyBase {
     }
 
     @Override
-    public OAuthProxyBase.ProxyProps[] getProxyProperties(HttpServletRequest req, JsonObject input) {
-        return new OAuthProxyBase.ProxyProps[] {
-            new OAuthProxyBase.ProxyProps(
-                "POST", // apiMethod
-                "GET", // method
-                "/oauth2/auth", // path
-                false, // proxyToAdmin
-                false // camelToSnakeCaseConversion
-            )
-        };
-    }
-
-    @Override
-    protected Map<String, String> getQueryParamsForProxy(HttpServletRequest req, JsonObject input) throws IOException, ServletException {
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         JsonObject params = InputParser.parseJsonObjectOrThrowError(input, "params", false);
-
-        return params.entrySet().stream().collect(Collectors.toMap(
-            Map.Entry::getKey,
-            e -> e.getValue().getAsString()
-        ));
-    }
-
-    @Override
-    protected Map<String, String> getHeadersForProxy(HttpServletRequest req, JsonObject input) throws ServletException, IOException {
         String cookies = InputParser.parseStringOrThrowError(input, "cookies", true);
 
-        Map<String, String> headers = new HashMap<>();
+        try {
+            OAuthProxyHelper.proxyGET(
+                main, req, resp,
+                getAppIdentifier(req),
+                enforcePublicTenantAndGetPublicTenantStorage(req),
+                "/oauth2/auth",
+                false,
+                false,
+                () -> {
+                    return params.entrySet().stream().collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        e -> e.getValue().getAsString()
+                    ));
+                },
+                () -> {
+                    Map<String, String> headers = new HashMap<>();
 
-        if (cookies != null) {
-            headers.put("Cookie", cookies);
+                    if (cookies != null) {
+                        headers.put("Cookie", cookies);
+                    }
+            
+                    return headers;
+                },
+                (statusCode, headers, rawBody, jsonBody) -> {
+                    if (headers == null || !headers.containsKey("Location")) {
+                        throw new IllegalStateException("Invalid response from hydra");
+                    }
+            
+                    String redirectTo = headers.get("Location").get(0);
+                    List<String> responseCookies = headers.get("Set-Cookie");
+            
+                    JsonObject response = new JsonObject();
+                    response.addProperty("redirectTo", redirectTo);
+
+                    JsonArray jsonCookies = new JsonArray();
+                    if (responseCookies != null) {
+                        for (String cookie : responseCookies) {
+                            jsonCookies.add(new JsonPrimitive(cookie));
+                        }
+                    }
+            
+                    response.add("cookies", jsonCookies);
+                    response.addProperty("status", "OK");
+                    super.sendJsonResponse(200, response, resp);
+                }
+            );
+
+        } catch (IOException | TenantOrAppNotFoundException | BadPermissionException e) {
+            throw new ServletException(e);
         }
-
-        return headers;
-    }
-
-    @Override
-    protected void handleResponseFromProxyGET(HttpServletRequest req, HttpServletResponse resp, int statusCode, Map<String, List<String>> headers, String rawBody, JsonElement jsonBody) throws IOException, ServletException {
-        if (headers == null || !headers.containsKey("Location")) {
-            throw new IllegalStateException("Invalid response from hydra");
-        }
-
-        String redirectTo = headers.get("Location").get(0);
-        List<String> cookies = headers.get("Set-Cookie");
-
-        JsonObject response = new JsonObject();
-        response.addProperty("redirectTo", redirectTo);
-
-        JsonArray jsonCookies = new JsonArray();
-        if (cookies != null) {
-            for (String cookie : cookies) {
-                jsonCookies.add(new JsonPrimitive(cookie));
-            }
-        }
-
-        response.add("cookies", jsonCookies);
-        response.addProperty("status", "OK");
-        super.sendJsonResponse(200, response, resp);
     }
 }

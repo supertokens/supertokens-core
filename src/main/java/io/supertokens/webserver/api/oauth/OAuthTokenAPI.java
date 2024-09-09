@@ -22,6 +22,7 @@ import io.supertokens.Main;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.oauth.OAuth;
+import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -30,6 +31,7 @@ import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.session.jwt.JWT.JWTException;
 import io.supertokens.webserver.InputParser;
+import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -42,10 +44,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class OAuthTokenAPI extends OAuthProxyBase {
+public class OAuthTokenAPI extends WebserverAPI {
 
     public OAuthTokenAPI(Main main) {
-        super(main);
+        super(main, RECIPE_ID.OAUTH.toString());
     }
 
     @Override
@@ -54,54 +56,54 @@ public class OAuthTokenAPI extends OAuthProxyBase {
     }
 
     @Override
-    public ProxyProps[] getProxyProperties(HttpServletRequest req, JsonObject input) {
-        return new ProxyProps[] {
-            new ProxyProps(
-                "POST", // apiMethod
-                "POST_FORM", // method
-                "/oauth2/token", // path
-                false, // proxyToAdmin
-                false // camelToSnakeCaseConversion
-            )
-        };
-    }
-
-    @Override
-    protected Map<String, String> getFormFieldsForProxyPOST(HttpServletRequest req, JsonObject input) throws IOException, ServletException {
-        InputParser.parseStringOrThrowError(input, "iss", false); // input validation
-
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
+        String iss = InputParser.parseStringOrThrowError(input, "iss", false); // input validation
         JsonObject bodyFromSDK = InputParser.parseJsonObjectOrThrowError(input, "body", false);
 
-        Map<String, String> formFields = new HashMap<>();
-        for (Map.Entry<String, JsonElement> entry : bodyFromSDK.entrySet()) {
-            formFields.put(entry.getKey(), entry.getValue().getAsString());
-        }
-
-        return formFields;
-    }
-
-    @Override
-    protected void handleResponseFromProxyPOST(HttpServletRequest req, HttpServletResponse resp, JsonObject input, int statusCode, Map<String, List<String>> headers, String rawBody, JsonElement jsonBody) throws IOException, ServletException {
-        if (jsonBody == null) {
-            throw new IllegalStateException("unexpected response from hydra");
-        }
-
-        String iss = InputParser.parseStringOrThrowError(input, "iss", false);
-        boolean useDynamicKey = false;
         Boolean useStaticKeyInput = InputParser.parseBooleanOrThrowError(input, "useStaticSigningKey", true);
-        // useStaticKeyInput defaults to true, so we check if it has been explicitly set to false
-        useDynamicKey = Boolean.FALSE.equals(useStaticKeyInput);
 
         try {
-            AppIdentifier appIdentifier = getAppIdentifier(req);
-            Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
-            jsonBody = OAuth.transformTokens(super.main, appIdentifier, storage, jsonBody.getAsJsonObject(), iss, useDynamicKey);
+            OAuthProxyHelper.proxyFormPOST(
+                main, req, resp,
+                getAppIdentifier(req),
+                enforcePublicTenantAndGetPublicTenantStorage(req),
+                "/oauth2/token", // proxyPath
+                false, // proxyToAdmin
+                false, // camelToSnakeCaseConversion
+                () -> {
+                    Map<String, String> formFields = new HashMap<>();
+                    for (Map.Entry<String, JsonElement> entry : bodyFromSDK.entrySet()) {
+                        formFields.put(entry.getKey(), entry.getValue().getAsString());
+                    }
+            
+                    return formFields;
+                },
+                HashMap::new,
+                (statusCode, headers, rawBody, jsonBody) -> {
+                    if (jsonBody == null) {
+                        throw new IllegalStateException("unexpected response from hydra");
+                    }
 
-        } catch (IOException | InvalidConfigException | TenantOrAppNotFoundException | BadPermissionException | StorageQueryException | InvalidKeyException | NoSuchAlgorithmException | InvalidKeySpecException | JWTCreationException | JWTException | StorageTransactionLogicException | UnsupportedJWTSigningAlgorithmException e) {
+                    try {
+                        AppIdentifier appIdentifier = getAppIdentifier(req);
+                        Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
+
+                        // useStaticKeyInput defaults to true, so we check if it has been explicitly set to false
+                        boolean useDynamicKey = false;
+                        useDynamicKey = Boolean.FALSE.equals(useStaticKeyInput);
+                        jsonBody = OAuth.transformTokens(super.main, appIdentifier, storage, jsonBody.getAsJsonObject(), iss, useDynamicKey);
+            
+                    } catch (IOException | InvalidConfigException | TenantOrAppNotFoundException | BadPermissionException | StorageQueryException | InvalidKeyException | NoSuchAlgorithmException | InvalidKeySpecException | JWTCreationException | JWTException | StorageTransactionLogicException | UnsupportedJWTSigningAlgorithmException e) {
+                        throw new ServletException(e);
+                    }
+            
+                    jsonBody.getAsJsonObject().addProperty("status", "OK");
+                    super.sendJsonResponse(200, jsonBody, resp);
+                }
+            );
+        } catch (IOException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
-
-        jsonBody.getAsJsonObject().addProperty("status", "OK");
-        super.sendJsonResponse(200, jsonBody, resp);
     }
 }

@@ -17,66 +17,64 @@
 package io.supertokens.webserver.api.oauth;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Map;
+import java.util.HashMap;
 
-import com.google.gson.JsonElement;
+
 import com.google.gson.JsonObject;
 
 import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.oauth.OAuth;
+import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.InputParser;
+import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-public class RemoveOAuthClientAPI extends OAuthProxyBase {
+public class RemoveOAuthClientAPI extends WebserverAPI {
+
+    public RemoveOAuthClientAPI(Main main){
+        super(main, RECIPE_ID.OAUTH.toString());
+    }
+
     @Override
     public String getPath() {
         return "/recipe/oauth/clients/remove";
     }
 
-    public RemoveOAuthClientAPI(Main main){
-        super(main);
-    }
-
     @Override
-    public ProxyProps[] getProxyProperties(HttpServletRequest req, JsonObject input) throws ServletException {
-        String clientId = InputParser.parseStringOrThrowError(input, "clientId", false);
-
-        return new ProxyProps[] {
-            new ProxyProps(
-                "POST", // apiMethod
-                "DELETE_JSON", // method
-                "/admin/clients/" + clientId, // path
-                true, // proxyToAdmin
-                true // camelToSnakeCaseConversion
-            )
-        };
-    }
-
-    @Override
-    protected JsonObject getJsonBodyForProxyDELETE(HttpServletRequest req, JsonObject input)
-            throws IOException, ServletException {
-
-        return new JsonObject();
-    }
-
-    @Override
-    protected void handleResponseFromProxyDELETE(HttpServletRequest req, HttpServletResponse resp, JsonObject input, int statusCode, Map<String, List<String>> headers, String rawBody, JsonElement jsonBody) throws IOException, ServletException {
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String clientId = InputParser.parseStringOrThrowError(input, "clientId", false);
 
         try {
-            OAuth.removeClientId(main, getAppIdentifier(req), enforcePublicTenantAndGetPublicTenantStorage(req), clientId);
-        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
+            OAuthProxyHelper.proxyJsonDELETE(
+                main, req, resp,
+                getAppIdentifier(req),
+                enforcePublicTenantAndGetPublicTenantStorage(req),
+                "/admin/clients/" + clientId, // proxyPath
+                true, // proxyToAdmin
+                true, // camelToSnakeCaseConversion
+                () -> new JsonObject(), // getJsonBody
+                HashMap::new, // getHeadersForProxy
+                (statusCode, headers, rawBody, jsonBody) -> { // handleResponse
+                    try {
+                        OAuth.removeClientId(main, getAppIdentifier(req), enforcePublicTenantAndGetPublicTenantStorage(req), clientId);
+                    } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
+                        throw new ServletException(e);
+                    }
+
+                    JsonObject responseBody = new JsonObject();
+                    responseBody.addProperty("status", "OK");
+                    this.sendJsonResponse(200, responseBody, resp);
+                }
+            );
+
+        } catch (IOException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
-
-        JsonObject responseBody = new JsonObject();
-        responseBody.addProperty("status", "OK");
-        this.sendJsonResponse(200, responseBody, resp);
     }
 }

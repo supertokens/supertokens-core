@@ -1,21 +1,24 @@
 package io.supertokens.webserver.api.oauth;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Map;
+import java.util.HashMap;
 
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import io.supertokens.Main;
+import io.supertokens.multitenancy.exception.BadPermissionException;
+import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.webserver.InputParser;
+import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-public class OAuthRejectAuthLogoutRequestAPI extends OAuthProxyBase {
+public class OAuthRejectAuthLogoutRequestAPI extends WebserverAPI {
 
     public OAuthRejectAuthLogoutRequestAPI(Main main) {
-        super(main);
+        super(main, RECIPE_ID.OAUTH.toString());
     }
 
     @Override
@@ -24,22 +27,28 @@ public class OAuthRejectAuthLogoutRequestAPI extends OAuthProxyBase {
     }
 
     @Override
-    public ProxyProps[] getProxyProperties(HttpServletRequest req, JsonObject input) {
-        return new ProxyProps[] {
-            new ProxyProps(
-                "PUT", // apiMethod
-                "PUT_JSON", // method
-                "/admin/oauth2/auth/requests/logout/reject", // path
-                true, // proxyToAdmin
-                true // camelToSnakeCaseConversion
-            )
-        };
-    }
+    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
-    @Override
-    protected void handleResponseFromProxyPUT(HttpServletRequest req, HttpServletResponse resp, JsonObject input, int statusCode, Map<String, List<String>> headers, String rawBody, JsonElement jsonBody) throws IOException, ServletException {
-        JsonObject response = jsonBody.getAsJsonObject();
-        response.addProperty("status", "OK");
-        sendJsonResponse(200, response, resp);
+        try {
+            OAuthProxyHelper.proxyJsonPUT(
+                main, req, resp,
+                getAppIdentifier(req),
+                enforcePublicTenantAndGetPublicTenantStorage(req),
+                "/admin/oauth2/auth/requests/logout/reject", // proxyPath
+                true, // proxyToAdmin
+                true, // camelToSnakeCaseConversion
+                () -> OAuthProxyHelper.defaultGetQueryParamsFromRequest(req),
+                () -> input, // getJsonBody
+                HashMap::new, // getHeadersForProxy
+                (statusCode, headers, rawBody, jsonBody) -> { // handleResponse
+                    JsonObject response = jsonBody.getAsJsonObject();
+                    response.addProperty("status", "OK");
+                    sendJsonResponse(200, response, resp);
+                }
+            );
+        } catch (IOException | TenantOrAppNotFoundException | BadPermissionException e) {
+            throw new ServletException(e);
+        }
     }
 }
