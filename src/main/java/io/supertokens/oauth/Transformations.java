@@ -147,11 +147,9 @@ public class Transformations {
                             }
                         }
                         String error = urlQueryParams.getOrDefault("error", null);
-                        String errorDebug = urlQueryParams.getOrDefault("error_debug", null);
                         String errorDescription = urlQueryParams.getOrDefault("error_description", null);
-                        String errorHint = urlQueryParams.getOrDefault("error_hint", null);
                         if (error != null) {
-                            throw new OAuthAPIException(error, errorDebug, errorDescription, errorHint, 400);
+                            throw new OAuthAPIException(error, errorDescription, 400);
                         }
                         redirectTo = redirectTo.replace(hydraInternalAddress, "{apiDomain}");
                         redirectTo = redirectTo.replace("oauth2/", "oauth/");

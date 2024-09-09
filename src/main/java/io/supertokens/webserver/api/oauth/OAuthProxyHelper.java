@@ -266,15 +266,7 @@ public class OAuthProxyHelper {
         JsonObject response = new JsonObject();
         response.addProperty("status", "OAUTH_ERROR");
         response.addProperty("error", e.error);
-        if (e.errorDebug != null) {
-            response.addProperty("errorDebug", e.errorDebug);
-        }
-        if (e.errorDescription != null) {
-            response.addProperty("errorDescription", e.errorDescription);
-        }
-        if (e.errorHint != null) {
-            response.addProperty("errorHint", e.errorHint);
-        }
+        response.addProperty("errorDescription", e.errorDescription);
         response.addProperty("statusCode", e.statusCode);
 
         resp.setStatus(200);

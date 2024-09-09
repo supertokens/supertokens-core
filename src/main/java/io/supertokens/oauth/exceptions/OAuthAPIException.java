@@ -20,18 +20,14 @@ public class OAuthAPIException extends Exception {
     private static final long serialVersionUID = 1836718299845759897L;
 
     public final String error;
-    public final String errorDebug;
     public final String errorDescription;
-    public final String errorHint;
     public final int statusCode;
 
-    public OAuthAPIException(String error, String errorDebug, String errorDescription, String errorHint, int statusCode) {
+    public OAuthAPIException(String error, String errorDescription, int statusCode) {
         super(error);
 
         this.error = error;
-        this.errorDebug = errorDebug;
         this.errorDescription = errorDescription;
-        this.errorHint = errorHint;
         this.statusCode = statusCode;
     }
 }

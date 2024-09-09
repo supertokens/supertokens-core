@@ -244,19 +244,11 @@ public class OAuth {
         }
         if (response.statusCode >= 400) {
             String error = response.jsonResponse.getAsJsonObject().get("error").getAsString();
-            String errorDebug = null;
-            if (response.jsonResponse.getAsJsonObject().has("error_debug")) {
-                errorDebug = response.jsonResponse.getAsJsonObject().get("error_debug").getAsString();
-            }
             String errorDescription = null;
             if (response.jsonResponse.getAsJsonObject().has("error_description")) {
                 errorDescription = response.jsonResponse.getAsJsonObject().get("error_description").getAsString();
             }
-            String errorHint = null;
-            if (response.jsonResponse.getAsJsonObject().has("error_hint")) {
-                errorHint = response.jsonResponse.getAsJsonObject().get("error_hint").getAsString();
-            }
-            throw new OAuthAPIException(error, errorDebug, errorDescription, errorHint, response.statusCode);
+            throw new OAuthAPIException(error, errorDescription, response.statusCode);
         }
     }
 
