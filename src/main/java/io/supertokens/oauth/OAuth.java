@@ -23,6 +23,7 @@ import com.google.gson.JsonObject;
 
 import io.supertokens.Main;
 import io.supertokens.config.Config;
+import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
@@ -39,6 +40,7 @@ import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.oauth.OAuthStorage;
 import io.supertokens.pluginInterface.oauth.exceptions.OAuth2ClientAlreadyExistsForAppException;
+import io.supertokens.session.accessToken.AccessToken;
 import io.supertokens.session.jwt.JWT.JWTException;
 import io.supertokens.signingkeys.JWTSigningKey;
 import io.supertokens.signingkeys.SigningKeys;
@@ -380,5 +382,27 @@ public class OAuth {
         public int getValue() {
             return value;
         }
+    }
+
+    public static JsonObject introspectAccessToken(Main main, AppIdentifier appIdentifier, Storage storage,
+            String token) throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException, UnsupportedJWTSigningAlgorithmException {
+        try {
+            JsonObject payload = AccessToken.getPayloadFromAccessToken(appIdentifier, main, token);
+            if (payload.has("stt") && payload.get("stt").getAsInt() == SessionTokenType.ACCESS_TOKEN.value) {
+                payload.addProperty("active", true);
+                payload.addProperty("token_type", "Bearer");
+                payload.addProperty("token_use", "access_token");
+
+                return payload;
+            }
+            // else fallback to active: false
+
+        } catch (TryRefreshTokenException e) {
+            // fallback to active: false
+        }
+
+        JsonObject result = new JsonObject();
+        result.addProperty("active", false);
+        return result;
     }
 }
