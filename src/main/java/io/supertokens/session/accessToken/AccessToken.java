@@ -56,46 +56,6 @@ import java.util.Map;
 
 public class AccessToken {
 
-    public static JsonObject getPayloadFromAccessToken(AppIdentifier appIdentifier,
-                                                       @Nonnull Main main, @Nonnull String token)
-            throws TenantOrAppNotFoundException, TryRefreshTokenException, StorageQueryException,
-            UnsupportedJWTSigningAlgorithmException, StorageTransactionLogicException {
-        List<JWTSigningKeyInfo> keyInfoList = SigningKeys.getInstance(appIdentifier, main).getAllKeys();
-        Exception error = null;
-        JWT.JWTInfo jwtInfo = null;
-        JWT.JWTPreParseInfo preParseJWTInfo = null;
-        try {
-            preParseJWTInfo = JWT.preParseJWTInfo(token);
-        } catch (JWTException e) {
-            // This basically should never happen, but it means, that the token structure is wrong, can't verify
-            throw new TryRefreshTokenException(e);
-        }
-
-        for (JWTSigningKeyInfo keyInfo : keyInfoList) {
-            try {
-                jwtInfo = JWT.verifyJWTAndGetPayload(preParseJWTInfo,
-                        ((JWTAsymmetricSigningKeyInfo) keyInfo).publicKey);
-                error = null;
-                break;
-            } catch (NoSuchAlgorithmException e) {
-                // This basically should never happen, but it means, that can't verify any tokens, no need to retry
-                throw new TryRefreshTokenException(e);
-            } catch (KeyException | JWTException e) {
-                error = e;
-            }
-        }
-
-        if (jwtInfo == null) {
-            throw new TryRefreshTokenException(error);
-        }
-
-        if (jwtInfo.payload.get("exp").getAsLong() * 1000 < System.currentTimeMillis()) {
-            throw new TryRefreshTokenException("Access token expired");
-        }
-
-        return jwtInfo.payload;
-    }
-
     // TODO: device fingerprint - store hash of this in JWT.
 
     private static AccessTokenInfo getInfoFromAccessToken(AppIdentifier appIdentifier,

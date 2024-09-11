@@ -258,13 +258,13 @@ public class OAuth {
     public static JsonObject transformTokens(Main main, AppIdentifier appIdentifier, Storage storage, JsonObject jsonBody, String iss, boolean useDynamicKey) throws IOException, JWTException, InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException, JWTCreationException, InvalidConfigException {
         if (jsonBody.has("access_token")) {
             String accessToken = jsonBody.get("access_token").getAsString();
-            accessToken = reSignToken(appIdentifier, main, accessToken, iss, SessionTokenType.ACCESS_TOKEN, useDynamicKey, 0);
+            accessToken = OAuthToken.reSignToken(appIdentifier, main, accessToken, iss, OAuthToken.TokenType.ACCESS_TOKEN, useDynamicKey, 0);
             jsonBody.addProperty("access_token", accessToken);
         }
 
         if (jsonBody.has("id_token")) {
             String idToken = jsonBody.get("id_token").getAsString();
-            idToken = reSignToken(appIdentifier, main, idToken, iss, SessionTokenType.ID_TOKEN, useDynamicKey, 0);
+            idToken = OAuthToken.reSignToken(appIdentifier, main, idToken, iss, OAuthToken.TokenType.ID_TOKEN, useDynamicKey, 0);
             jsonBody.addProperty("id_token", idToken);
         }
 
@@ -275,35 +275,6 @@ public class OAuth {
         }
 
         return jsonBody;
-    }
-
-    private static String reSignToken(AppIdentifier appIdentifier, Main main, String token, String iss, SessionTokenType tokenType, boolean useDynamicSigningKey, int retryCount) throws IOException, JWTException, InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException, JWTCreationException, InvalidConfigException {
-        // Load the JWKS from the specified URL
-        JsonObject payload = JWT.getPayloadWithoutVerifying(token).payload;
-
-        // move keys in ext to root
-        if (tokenType == SessionTokenType.ACCESS_TOKEN && payload.has("ext")) {
-            JsonObject ext = payload.getAsJsonObject("ext");
-            for (Map.Entry<String, JsonElement> entry : ext.entrySet()) {
-                payload.add(entry.getKey(), entry.getValue());
-            }
-            payload.remove("ext");
-        }
-        payload.addProperty("iss", iss);
-        payload.addProperty("stt", tokenType.getValue());
-
-        JWTSigningKeyInfo keyToUse;
-        if (useDynamicSigningKey) {
-            keyToUse = Utils.getJWTSigningKeyInfoFromKeyInfo(
-                    SigningKeys.getInstance(appIdentifier, main).getLatestIssuedDynamicKey());
-        } else {
-            keyToUse = SigningKeys.getInstance(appIdentifier, main)
-                    .getStaticKeyForAlgorithm(JWTSigningKey.SupportedAlgorithms.RS256);
-        }
-
-        token = JWTSigningFunctions.createJWTToken(JWTSigningKey.SupportedAlgorithms.RS256, new HashMap<>(),
-                    payload, null, payload.get("exp").getAsLong(), payload.get("iat").getAsLong(), keyToUse);
-        return token;
     }
 
     public static void addClientId(Main main, AppIdentifier appIdentifier, Storage storage, String clientId) throws StorageQueryException, OAuth2ClientAlreadyExistsForAppException {
@@ -366,26 +337,11 @@ public class OAuth {
 
     }
 
-    public static enum SessionTokenType {
-        ACCESS_TOKEN(1),
-        ID_TOKEN(2);
-
-        private final int value;
-
-        SessionTokenType(int value) {
-            this.value = value;
-        }
-
-        public int getValue() {
-            return value;
-        }
-    }
-
     public static JsonObject introspectAccessToken(Main main, AppIdentifier appIdentifier, Storage storage,
             String token) throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException, UnsupportedJWTSigningAlgorithmException {
         try {
-            JsonObject payload = AccessToken.getPayloadFromAccessToken(appIdentifier, main, token);
-            if (payload.has("stt") && payload.get("stt").getAsInt() == SessionTokenType.ACCESS_TOKEN.value) {
+            JsonObject payload = OAuthToken.getPayloadFromJWTToken(appIdentifier, main, token);
+            if (payload.has("stt") && payload.get("stt").getAsInt() == OAuthToken.TokenType.ACCESS_TOKEN.getValue()) {
                 payload.addProperty("active", true);
                 payload.addProperty("token_type", "Bearer");
                 payload.addProperty("token_use", "access_token");
