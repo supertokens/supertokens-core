@@ -58,7 +58,7 @@ public class OAuthTokenAPI extends WebserverAPI {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String iss = InputParser.parseStringOrThrowError(input, "iss", false); // input validation
-        JsonObject bodyFromSDK = InputParser.parseJsonObjectOrThrowError(input, "body", false);
+        JsonObject bodyFromSDK = InputParser.parseJsonObjectOrThrowError(input, "inputBody", false);
 
         Boolean useStaticKeyInput = InputParser.parseBooleanOrThrowError(input, "useStaticSigningKey", true);
 
