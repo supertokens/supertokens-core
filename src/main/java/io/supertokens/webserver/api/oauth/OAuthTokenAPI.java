@@ -88,14 +88,17 @@ public class OAuthTokenAPI extends WebserverAPI {
                         AppIdentifier appIdentifier = getAppIdentifier(req);
                         Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
 
+                        JsonObject accessTokenUpdate = InputParser.parseJsonObjectOrThrowError(bodyFromSDK, "access_token", true);
+                        JsonObject idTokenUpdate = InputParser.parseJsonObjectOrThrowError(bodyFromSDK, "id_token", true);
+
                         // useStaticKeyInput defaults to true, so we check if it has been explicitly set to false
                         boolean useDynamicKey = Boolean.FALSE.equals(useStaticKeyInput);
-                        jsonBody = OAuth.transformTokens(super.main, appIdentifier, storage, jsonBody.getAsJsonObject(), iss, useDynamicKey);
+                        jsonBody = OAuth.transformTokens(super.main, appIdentifier, storage, jsonBody.getAsJsonObject(), iss, accessTokenUpdate, idTokenUpdate, useDynamicKey);
             
                     } catch (IOException | InvalidConfigException | TenantOrAppNotFoundException | BadPermissionException | StorageQueryException | InvalidKeyException | NoSuchAlgorithmException | InvalidKeySpecException | JWTCreationException | JWTException | StorageTransactionLogicException | UnsupportedJWTSigningAlgorithmException e) {
                         throw new ServletException(e);
                     }
-            
+
                     jsonBody.getAsJsonObject().addProperty("status", "OK");
                     super.sendJsonResponse(200, jsonBody, resp);
                 }

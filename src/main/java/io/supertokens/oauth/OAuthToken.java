@@ -28,6 +28,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class OAuthToken {
     public enum TokenType {
@@ -44,6 +45,14 @@ public class OAuthToken {
             return value;
         }
     }
+
+    private static Set<String> NON_OVERRIDABLE_TOKEN_PROPS = Set.of(
+        "kid", "typ", "alg", "aud",
+        "iss", "iat", "exp", "nbf", "jti", "ext",
+        "sid", "rat", "at_hash",
+        "client_id", "scp", "sub", "rsub",
+        "sessionHandle", "tId", "stt"
+    );
 
     public static JsonObject getPayloadFromJWTToken(AppIdentifier appIdentifier,
             @Nonnull Main main, @Nonnull String token)
@@ -87,7 +96,7 @@ public class OAuthToken {
         return jwtInfo.payload;
     }
 
-    public static String reSignToken(AppIdentifier appIdentifier, Main main, String token, String iss, TokenType tokenType, boolean useDynamicSigningKey, int retryCount) throws IOException, JWTException, InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException,
+    public static String reSignToken(AppIdentifier appIdentifier, Main main, String token, String iss, JsonObject payloadUpdate, TokenType tokenType, boolean useDynamicSigningKey, int retryCount) throws IOException, JWTException, InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException,
             JWTCreationException {
         // Load the JWKS from the specified URL
         JsonObject payload = JWT.getPayloadWithoutVerifying(token).payload;
@@ -102,6 +111,12 @@ public class OAuthToken {
         }
         payload.addProperty("iss", iss);
         payload.addProperty("stt", tokenType.getValue());
+
+        for (Map.Entry<String, JsonElement> entry : payloadUpdate.entrySet()) {
+            if (!NON_OVERRIDABLE_TOKEN_PROPS.contains(entry.getKey())) {
+                payload.add(entry.getKey(), entry.getValue());
+            }
+        }
 
         JWTSigningKeyInfo keyToUse;
         if (useDynamicSigningKey) {
