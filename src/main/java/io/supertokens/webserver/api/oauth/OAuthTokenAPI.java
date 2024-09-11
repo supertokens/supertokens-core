@@ -89,8 +89,7 @@ public class OAuthTokenAPI extends WebserverAPI {
                         Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
 
                         // useStaticKeyInput defaults to true, so we check if it has been explicitly set to false
-                        boolean useDynamicKey = false;
-                        useDynamicKey = Boolean.FALSE.equals(useStaticKeyInput);
+                        boolean useDynamicKey = Boolean.FALSE.equals(useStaticKeyInput);
                         jsonBody = OAuth.transformTokens(super.main, appIdentifier, storage, jsonBody.getAsJsonObject(), iss, useDynamicKey);
             
                     } catch (IOException | InvalidConfigException | TenantOrAppNotFoundException | BadPermissionException | StorageQueryException | InvalidKeyException | NoSuchAlgorithmException | InvalidKeySpecException | JWTCreationException | JWTException | StorageTransactionLogicException | UnsupportedJWTSigningAlgorithmException e) {

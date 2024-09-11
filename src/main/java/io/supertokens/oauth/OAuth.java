@@ -41,6 +41,7 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.pluginInterface.oauth.OAuthStorage;
 import io.supertokens.pluginInterface.oauth.exceptions.OAuth2ClientAlreadyExistsForAppException;
 import io.supertokens.session.accessToken.AccessToken;
+import io.supertokens.session.jwt.JWT;
 import io.supertokens.session.jwt.JWT.JWTException;
 import io.supertokens.signingkeys.JWTSigningKey;
 import io.supertokens.signingkeys.SigningKeys;
@@ -278,11 +279,7 @@ public class OAuth {
 
     private static String reSignToken(AppIdentifier appIdentifier, Main main, String token, String iss, SessionTokenType tokenType, boolean useDynamicSigningKey, int retryCount) throws IOException, JWTException, InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException, JWTCreationException, InvalidConfigException {
         // Load the JWKS from the specified URL
-        String publicOAuthProviderServiceUrl = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderPublicServiceUrl();
-        String jwksUrl = publicOAuthProviderServiceUrl + HYDRA_JWKS_PATH;
-
-        // Validate the JWT and extract claims using the fetched public signing keys
-        JsonObject payload = JWTVerification.verifyJWTAndGetPayload(main, token, jwksUrl);
+        JsonObject payload = JWT.getPayloadWithoutVerifying(token).payload;
 
         // move keys in ext to root
         if (tokenType == SessionTokenType.ACCESS_TOKEN && payload.has("ext")) {

@@ -151,12 +151,14 @@ public class HttpRequest {
 
     private static Response getResponse(HttpURLConnection con) throws IOException {
         int responseCode = con.getResponseCode();
-        BufferedReader in;
-        if (responseCode < 400) {
-            in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+        InputStream inputStream;
+        if (con.getErrorStream() != null) {
+            inputStream = con.getErrorStream();
         } else {
-            in = new BufferedReader(new InputStreamReader(con.getErrorStream()));
+            inputStream = con.getInputStream();
         }
+        BufferedReader in = new BufferedReader(new InputStreamReader(inputStream));
+
         String inputLine;
         StringBuilder response = new StringBuilder();
         while ((inputLine = in.readLine()) != null) {

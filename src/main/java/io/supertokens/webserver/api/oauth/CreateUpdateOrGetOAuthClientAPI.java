@@ -65,25 +65,8 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
                 "/admin/clients/" + clientId, // proxyPath
                 true, // proxyToAdmin
                 true, // camelToSnakeCaseConversion
-                () -> { // getQueryParamsForProxy
-                    Map<String, String> queryParams = new HashMap<>();
-
-                    String queryString = req.getQueryString();
-                    if (queryString != null) {
-                        String[] queryParamsParts = queryString.split("&");
-                        for (String queryParam : queryParamsParts) {
-                            String[] keyValue = queryParam.split("=");
-                            if (keyValue.length == 2) {
-                                queryParams.put(keyValue[0], URLDecoder.decode(keyValue[1], StandardCharsets.UTF_8));
-                            }
-                        }
-                    }
-            
-                    return queryParams;
-                },
-                () -> { // getHeadersForProxy
-                    return new HashMap<>();
-                },
+                () -> OAuthProxyHelper.defaultGetQueryParamsFromRequest(req),
+                () -> new HashMap<>(), // getHeadersForProxy
                 (statusCode, headers, rawBody, jsonBody) -> { // handleResponse
                     this.sendJsonResponse(200, jsonBody, resp);
                 }

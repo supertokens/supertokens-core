@@ -57,16 +57,16 @@ public class OAuthAuthAPI extends WebserverAPI {
                 main, req, resp,
                 getAppIdentifier(req),
                 enforcePublicTenantAndGetPublicTenantStorage(req),
-                "/oauth2/auth",
-                false,
-                false,
-                () -> {
+                "/oauth2/auth", // proxyPath
+                false, // proxyToAdmin
+                false, // camelToSnakeCaseConversion
+                () -> { // getQueryParamsForProxy
                     return params.entrySet().stream().collect(Collectors.toMap(
                         Map.Entry::getKey,
                         e -> e.getValue().getAsString()
                     ));
                 },
-                () -> {
+                () -> { // getHeadersForProxy
                     Map<String, String> headers = new HashMap<>();
 
                     if (cookies != null) {
@@ -75,7 +75,7 @@ public class OAuthAuthAPI extends WebserverAPI {
             
                     return headers;
                 },
-                (statusCode, headers, rawBody, jsonBody) -> {
+                (statusCode, headers, rawBody, jsonBody) -> { // handleResponse
                     if (headers == null || !headers.containsKey("Location")) {
                         throw new IllegalStateException("Invalid response from hydra");
                     }
