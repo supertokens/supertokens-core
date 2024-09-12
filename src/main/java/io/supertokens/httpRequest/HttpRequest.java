@@ -16,17 +16,22 @@
 
 package io.supertokens.httpRequest;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
+
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
-import io.supertokens.Main;
 
-import java.io.*;
-import java.net.*;
-import java.net.http.HttpClient;
-import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.Map;
+import io.supertokens.Main;
 
 public class HttpRequest {
 
@@ -125,9 +130,8 @@ public class HttpRequest {
     @SuppressWarnings("unchecked")
     public static <T> T sendGETRequestWithResponseHeaders(Main main, String requestID, String url,
                                                           Map<String, String> params,
-                                                          Map<String, String> headers,
                                                           int connectionTimeoutMS, int readTimeoutMS, Integer version,
-                                                          Map<String, List<String>> responseHeaders, boolean followRedirects)
+                                                          Map<String, String> responseHeaders)
             throws IOException, HttpResponseException {
         StringBuilder paramBuilder = new StringBuilder();
 
@@ -153,17 +157,12 @@ public class HttpRequest {
             if (version != null) {
                 con.setRequestProperty("api-version", version + "");
             }
-            if (headers != null) {
-                for (Map.Entry<String, String> entry : headers.entrySet()) {
-                    con.setRequestProperty(entry.getKey(), entry.getValue());
-                }
-            }
-            con.setInstanceFollowRedirects(followRedirects);
+
             int responseCode = con.getResponseCode();
 
             con.getHeaderFields().forEach((key, value) -> {
                 if (key != null) {
-                    responseHeaders.put(key, value);
+                    responseHeaders.put(key, value.get(0));
                 }
             });
 
@@ -268,30 +267,6 @@ public class HttpRequest {
         return sendJsonRequest(main, requestID, url, requestBody, connectionTimeoutMS, readTimeoutMS, version, "PUT");
     }
 
-    public static <T> T sendJsonPATCHRequest(Main main, String url, JsonElement requestBody)
-            throws IOException, HttpResponseException, InterruptedException {
-
-        HttpClient client = null;
-
-        String body = requestBody.toString();
-        java.net.http.HttpRequest rawRequest = java.net.http.HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .method("PATCH", java.net.http.HttpRequest.BodyPublishers.ofString(body))
-                .build();
-        client = HttpClient.newHttpClient();
-        HttpResponse<String> response = client.send(rawRequest, HttpResponse.BodyHandlers.ofString());
-
-        int responseCode = response.statusCode();
-
-        if (responseCode < STATUS_CODE_ERROR_THRESHOLD) {
-            if (!isJsonValid(response.body().toString())) {
-                return (T) response.body().toString();
-            }
-            return (T) (new JsonParser().parse(response.body().toString()));
-        }
-        throw new HttpResponseException(responseCode, response.body().toString());
-    }
-
     public static <T> T sendJsonDELETERequest(Main main, String requestID, String url, JsonElement requestBody,
                                               int connectionTimeoutMS, int readTimeoutMS, Integer version)
             throws IOException, HttpResponseException {
@@ -299,62 +274,4 @@ public class HttpRequest {
                 "DELETE");
     }
 
-    public static <T> T sendFormPOSTRequest(Main main, String requestID, String url, Map<String, String> formData,
-                                            int connectionTimeoutMS, int readTimeoutMS, Integer version)
-            throws IOException, HttpResponseException {
-        StringBuilder formDataBuilder = new StringBuilder();
-        for (Map.Entry<String, String> entry : formData.entrySet()) {
-            formDataBuilder.append(entry.getKey()).append("=")
-                    .append(URLEncoder.encode(entry.getValue(), StandardCharsets.UTF_8)).append("&");
-        }
-        String formDataStr = formDataBuilder.toString();
-        if (!formDataStr.equals("")) {
-            formDataStr = formDataStr.substring(0, formDataStr.length() - 1);
-        }
-
-        URL obj = getURL(main, requestID, url);
-        HttpURLConnection con = null;
-        try {
-            con = (HttpURLConnection) obj.openConnection();
-            con.setRequestMethod("POST");
-            con.setConnectTimeout(connectionTimeoutMS);
-            con.setReadTimeout(readTimeoutMS);
-            con.setRequestProperty("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
-            if (version != null) {
-                con.setRequestProperty("api-version", version + "");
-            }
-
-            con.setDoOutput(true);
-            try (OutputStream os = con.getOutputStream()) {
-                os.write(formDataStr.getBytes(StandardCharsets.UTF_8));
-            }
-
-            int responseCode = con.getResponseCode();
-            InputStream inputStream = null;
-            if (responseCode < STATUS_CODE_ERROR_THRESHOLD) {
-                inputStream = con.getInputStream();
-            } else {
-                inputStream = con.getErrorStream();
-            }
-
-            StringBuilder response = new StringBuilder();
-            try (BufferedReader in = new BufferedReader(new InputStreamReader(inputStream))) {
-                String inputLine;
-                while ((inputLine = in.readLine()) != null) {
-                    response.append(inputLine);
-                }
-            }
-            if (responseCode < STATUS_CODE_ERROR_THRESHOLD) {
-                if (!isJsonValid(response.toString())) {
-                    return (T) response.toString();
-                }
-                return (T) (new JsonParser().parse(response.toString()));
-            }
-            throw new HttpResponseException(responseCode, response.toString());
-        } finally {
-            if (con != null) {
-                con.disconnect();
-            }
-        }
-    }
 }
