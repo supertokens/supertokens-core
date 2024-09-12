@@ -1,10 +1,8 @@
 package io.supertokens.oauth;
 
-import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -70,9 +68,7 @@ public class Transformations {
         for (int i = 0; i < cookies.size(); i++) {
             String cookieStr = cookies.get(i);
             if (cookieStr.startsWith("ory_hydra_")) {
-                if (cookieStr.startsWith("ory_hydra_")) {
-                    cookieStr = cookieStr.replaceFirst("ory_hydra_", "st_oauth_");
-                }
+                cookieStr = cookieStr.replaceFirst("ory_hydra_", "st_oauth_");
                 cookies.set(i, cookieStr);
             }
         }
