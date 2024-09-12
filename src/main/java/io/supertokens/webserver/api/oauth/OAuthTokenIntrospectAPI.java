@@ -72,19 +72,19 @@ public class OAuthTokenIntrospectAPI extends WebserverAPI {
                     formFields,
                     new HashMap<>(), // getHeaders
                     (statusCode, headers, rawBody, jsonBody) -> { // handleResponse
-                        JsonObject jsonObject = jsonBody.getAsJsonObject();
+                        JsonObject response = jsonBody.getAsJsonObject();
 
-                        jsonObject.addProperty("iss", iss);
-                        if (jsonObject.has("ext")) {
-                            JsonObject ext = jsonObject.get("ext").getAsJsonObject();
+                        response.addProperty("iss", iss);
+                        if (response.has("ext")) {
+                            JsonObject ext = response.get("ext").getAsJsonObject();
                             for (Map.Entry<String, JsonElement> entry : ext.entrySet()) {
-                                jsonObject.add(entry.getKey(), entry.getValue());
+                                response.add(entry.getKey(), entry.getValue());
                             }
-                            jsonObject.remove("ext");
+                            response.remove("ext");
                         }
 
-                        jsonObject.addProperty("status", "OK");
-                        super.sendJsonResponse(200, jsonBody, resp);
+                        response.addProperty("status", "OK");
+                        return response;
                     }
                 );
             } catch (IOException | TenantOrAppNotFoundException | BadPermissionException e) {

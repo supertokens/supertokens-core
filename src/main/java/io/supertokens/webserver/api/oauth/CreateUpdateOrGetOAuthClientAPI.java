@@ -66,7 +66,7 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
                 OAuthProxyHelper.defaultGetQueryParamsFromRequest(req),
                 new HashMap<>(), // getHeadersForProxy
                 (statusCode, headers, rawBody, jsonBody) -> { // handleResponse
-                    this.sendJsonResponse(200, jsonBody, resp);
+                    return jsonBody.getAsJsonObject();
                 }
             );
         } catch (IOException | TenantOrAppNotFoundException | BadPermissionException e) {
@@ -103,7 +103,7 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
                     } catch (OAuth2ClientAlreadyExistsForAppException e) {
                         // ignore
                     }
-                    this.sendJsonResponse(200, jsonBody, resp);
+                    return jsonBody.getAsJsonObject();
                 }
             );
         } catch (IOException | TenantOrAppNotFoundException | BadPermissionException e) {
@@ -119,16 +119,15 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
         // Apply existing client config on top of input
         try {
             Map<String, String> queryParams = new HashMap<>();
-            queryParams.put("client_id", clientId);
-            HttpRequest.Response response = OAuth.handleOAuthProxyGET(
+            queryParams.put("clientId", clientId);
+            HttpRequest.Response response = OAuth.doOAuthProxyGET(
                     main,
                     getAppIdentifier(req),
                     enforcePublicTenantAndGetPublicTenantStorage(req),
                     "/admin/clients/" + clientId,
-                    true, queryParams, null);
+                    true, true, queryParams, null);
 
             JsonObject existingConfig = response.jsonResponse.getAsJsonObject();
-            existingConfig = OAuth.convertSnakeCaseToCamelCaseRecursively(existingConfig).getAsJsonObject();
             for (Map.Entry<String, JsonElement> entry : existingConfig.entrySet()) {
                 String key = entry.getKey();
                 if (!input.has(key)) {
@@ -153,7 +152,7 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
                 input, // jsonBody
                 new HashMap<>(), // headers
                 (statusCode, headers, rawBody, jsonBody) -> { // handleResponse
-                    this.sendJsonResponse(200, jsonBody, resp);
+                    return jsonBody.getAsJsonObject();
                 }
             );
         } catch (IOException | TenantOrAppNotFoundException | BadPermissionException e) {

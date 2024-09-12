@@ -93,7 +93,7 @@ public class OAuthAuthAPI extends WebserverAPI {
             
                     response.add("cookies", jsonCookies);
                     response.addProperty("status", "OK");
-                    super.sendJsonResponse(200, response, resp);
+                    return response;
                 }
             );
 

@@ -67,7 +67,7 @@ public class OAuthClientListAPI extends WebserverAPI {
                     }
 
                     response.add("clients", clients);
-                    sendJsonResponse(200, response, resp);
+                    return response;
                 }
             );
         } catch (IOException | TenantOrAppNotFoundException | BadPermissionException e) {

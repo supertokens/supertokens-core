@@ -33,24 +33,19 @@ public class OAuthProxyHelper {
     public static void proxyGET(Main main, HttpServletRequest req, HttpServletResponse resp, AppIdentifier appIdentifier, Storage storage,
                                 String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion,
                                 Map<String, String> queryParams, Map<String, String> headers,
-                                HandleResponse handleResponse) throws IOException, ServletException {
-        if (camelToSnakeCaseConversion) {
-            queryParams = OAuth.convertCamelToSnakeCase(queryParams);
-        }
-
+                                GetJsonResponse getJsonResponse) throws IOException, ServletException {
         try {
-            HttpRequest.Response response = OAuth.handleOAuthProxyGET(main, appIdentifier, storage, path, proxyToAdmin, queryParams, headers);
+            HttpRequest.Response response = OAuth.doOAuthProxyGET(main, appIdentifier, storage, path, proxyToAdmin, camelToSnakeCaseConversion, queryParams, headers);
 
-            if (camelToSnakeCaseConversion) {
-                response.jsonResponse = OAuth.convertSnakeCaseToCamelCaseRecursively(response.jsonResponse);
-            }
-
-            handleResponse.apply(
+            JsonObject jsonResponse = getJsonResponse.apply(
                 response.statusCode,
                 response.headers,
                 response.rawResponse,
                 response.jsonResponse
             );
+            resp.setStatus(200);
+            resp.setHeader("Content-Type", "application/json; charset=UTF-8");
+            resp.getWriter().println(jsonResponse.toString());
 
         } catch (OAuthClientNotFoundException e) {
             handleOAuthClientNotFoundException(resp);
@@ -64,24 +59,19 @@ public class OAuthProxyHelper {
     public static void proxyFormPOST(Main main, HttpServletRequest req, HttpServletResponse resp, AppIdentifier appIdentifier, Storage storage,
                                      String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion,
                                      Map<String, String> formFields, Map<String, String> headers,
-                                     HandleResponse handleResponse) throws IOException, ServletException {
-        if (camelToSnakeCaseConversion) {
-            formFields = OAuth.convertCamelToSnakeCase(formFields);
-        }
-
+                                     GetJsonResponse getJsonResponse) throws IOException, ServletException {
         try {
-            HttpRequest.Response response = OAuth.handleOAuthProxyFormPOST(main, appIdentifier, storage, path, proxyToAdmin, formFields, headers);
+            HttpRequest.Response response = OAuth.doOAuthProxyFormPOST(main, appIdentifier, storage, path, proxyToAdmin, camelToSnakeCaseConversion, formFields, headers);
 
-            if (camelToSnakeCaseConversion) {
-                response.jsonResponse = OAuth.convertSnakeCaseToCamelCaseRecursively(response.jsonResponse);
-            }
-
-            handleResponse.apply(
+            JsonObject jsonResponse = getJsonResponse.apply(
                 response.statusCode,
                 response.headers,
                 response.rawResponse,
                 response.jsonResponse
             );
+            resp.setStatus(200);
+            resp.setHeader("Content-Type", "application/json; charset=UTF-8");
+            resp.getWriter().println(jsonResponse.toString());
 
         } catch (OAuthClientNotFoundException e) {
             handleOAuthClientNotFoundException(resp);
@@ -95,24 +85,19 @@ public class OAuthProxyHelper {
     public static void proxyJsonPOST(Main main, HttpServletRequest req, HttpServletResponse resp, AppIdentifier appIdentifier, Storage storage,
                                      String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion,
                                      JsonObject jsonInput, Map<String, String> headers,
-                                     HandleResponse handleResponse) throws IOException, ServletException {
-        if (camelToSnakeCaseConversion) {
-            jsonInput = OAuth.convertCamelToSnakeCase(jsonInput);
-        }
-
+                                     GetJsonResponse getJsonResponse) throws IOException, ServletException {
         try {
-            HttpRequest.Response response = OAuth.handleOAuthProxyJsonPOST(main, appIdentifier, storage, path, proxyToAdmin, jsonInput, headers);
+            HttpRequest.Response response = OAuth.doOAuthProxyJsonPOST(main, appIdentifier, storage, path, proxyToAdmin, camelToSnakeCaseConversion, jsonInput, headers);
 
-            if (camelToSnakeCaseConversion) {
-                response.jsonResponse = OAuth.convertSnakeCaseToCamelCaseRecursively(response.jsonResponse);
-            }
-
-            handleResponse.apply(
+            JsonObject jsonResponse = getJsonResponse.apply(
                 response.statusCode,
                 response.headers,
                 response.rawResponse,
                 response.jsonResponse
             );
+            resp.setStatus(200);
+            resp.setHeader("Content-Type", "application/json; charset=UTF-8");
+            resp.getWriter().println(jsonResponse.toString());
 
         } catch (OAuthClientNotFoundException e) {
             handleOAuthClientNotFoundException(resp);
@@ -126,28 +111,20 @@ public class OAuthProxyHelper {
     public static void proxyJsonPUT(Main main, HttpServletRequest req, HttpServletResponse resp, AppIdentifier appIdentifier, Storage storage,
                                     String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion,
                                     Map<String, String> queryParams, JsonObject jsonInput,
-                                    Map<String, String> headers, HandleResponse handleResponse) throws IOException, ServletException {
-        if (camelToSnakeCaseConversion) {
-            queryParams = OAuth.convertCamelToSnakeCase(queryParams);
-        }
-
-        if (camelToSnakeCaseConversion) {
-            jsonInput = OAuth.convertCamelToSnakeCase(jsonInput);
-        }
+                                    Map<String, String> headers, GetJsonResponse getJsonResponse) throws IOException, ServletException {
 
         try {
-            HttpRequest.Response response = OAuth.handleOAuthProxyJsonPUT(main, appIdentifier, storage, path, queryParams, proxyToAdmin, jsonInput, headers);
+            HttpRequest.Response response = OAuth.doOAuthProxyJsonPUT(main, appIdentifier, storage, path, proxyToAdmin, camelToSnakeCaseConversion, queryParams,  jsonInput, headers);
 
-            if (camelToSnakeCaseConversion) {
-                response.jsonResponse = OAuth.convertSnakeCaseToCamelCaseRecursively(response.jsonResponse);
-            }
-
-            handleResponse.apply(
+            JsonObject jsonResponse = getJsonResponse.apply(
                 response.statusCode,
                 response.headers,
                 response.rawResponse,
                 response.jsonResponse
             );
+            resp.setStatus(200);
+            resp.setHeader("Content-Type", "application/json; charset=UTF-8");
+            resp.getWriter().println(jsonResponse.toString());
 
         } catch (OAuthClientNotFoundException e) {
             handleOAuthClientNotFoundException(resp);
@@ -161,24 +138,19 @@ public class OAuthProxyHelper {
     public static void proxyJsonDELETE(Main main, HttpServletRequest req, HttpServletResponse resp, AppIdentifier appIdentifier, Storage storage,
                                        String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion,
                                        JsonObject jsonInput, Map<String, String> headers,
-                                       HandleResponse handleResponse) throws IOException, ServletException {
-        if (camelToSnakeCaseConversion) {
-            jsonInput = OAuth.convertCamelToSnakeCase(jsonInput);
-        }
-
+                                       GetJsonResponse getJsonResponse) throws IOException, ServletException {
         try {
-            HttpRequest.Response response = OAuth.handleOAuthProxyJsonDELETE(main, appIdentifier, storage, path, proxyToAdmin, jsonInput, headers);
+            HttpRequest.Response response = OAuth.doOAuthProxyJsonDELETE(main, appIdentifier, storage, path, proxyToAdmin, camelToSnakeCaseConversion, jsonInput, headers);
 
-            if (camelToSnakeCaseConversion) {
-                response.jsonResponse = OAuth.convertSnakeCaseToCamelCaseRecursively(response.jsonResponse);
-            }
-
-            handleResponse.apply(
+            JsonObject jsonResponse = getJsonResponse.apply(
                 response.statusCode,
                 response.headers,
                 response.rawResponse,
                 response.jsonResponse
             );
+            resp.setStatus(200);
+            resp.setHeader("Content-Type", "application/json; charset=UTF-8");
+            resp.getWriter().println(jsonResponse.toString());
 
         } catch (OAuthClientNotFoundException e) {
             handleOAuthClientNotFoundException(resp);
@@ -207,8 +179,8 @@ public class OAuthProxyHelper {
     }
 
     @FunctionalInterface
-    public interface HandleResponse {
-        void apply(int statusCode, Map<String, List<String>> headers, String rawBody, JsonElement jsonBody) throws IOException, ServletException;
+    public interface GetJsonResponse {
+        JsonObject apply(int statusCode, Map<String, List<String>> headers, String rawBody, JsonElement jsonBody) throws IOException, ServletException;
     }
 
     private static void handleOAuthClientNotFoundException(HttpServletResponse resp) throws IOException {

@@ -67,9 +67,9 @@ public class RemoveOAuthClientAPI extends WebserverAPI {
                         throw new ServletException(e);
                     }
 
-                    JsonObject responseBody = new JsonObject();
-                    responseBody.addProperty("status", "OK");
-                    this.sendJsonResponse(200, responseBody, resp);
+                    JsonObject response = new JsonObject();
+                    response.addProperty("status", "OK");
+                    return response;
                 }
             );
 

@@ -63,9 +63,13 @@ public class OAuth {
                         "feature.");
     }
 
-    public static HttpRequest.Response handleOAuthProxyGET(Main main, AppIdentifier appIdentifier, Storage storage, String path, boolean proxyToAdmin, Map<String, String> queryParams, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
+    public static HttpRequest.Response doOAuthProxyGET(Main main, AppIdentifier appIdentifier, Storage storage, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion, Map<String, String> queryParams, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
         checkForOauthFeature(appIdentifier, main);
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+
+        if (camelToSnakeCaseConversion) {
+            queryParams = convertCamelToSnakeCase(queryParams);
+        }
 
         if (queryParams != null && queryParams.containsKey("client_id")) {
             String clientId = queryParams.get("client_id");
@@ -94,12 +98,21 @@ public class OAuth {
 
         checkNonSuccessResponse(response);
 
+        if (camelToSnakeCaseConversion) {
+            response.jsonResponse = convertSnakeCaseToCamelCaseRecursively(response.jsonResponse);
+        }
+
+
         return response;
     }
 
-    public static HttpRequest.Response handleOAuthProxyFormPOST(Main main, AppIdentifier appIdentifier, Storage storage, String path, boolean proxyToAdmin, Map<String, String> formFields, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
+    public static HttpRequest.Response doOAuthProxyFormPOST(Main main, AppIdentifier appIdentifier, Storage storage, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion, Map<String, String> formFields, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
         checkForOauthFeature(appIdentifier, main);
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+
+        if (camelToSnakeCaseConversion) {
+            formFields = OAuth.convertCamelToSnakeCase(formFields);
+        }
 
         if (formFields.containsKey("client_id")) {
             String clientId = formFields.get("client_id");
@@ -128,12 +141,20 @@ public class OAuth {
 
         checkNonSuccessResponse(response);
 
+        if (camelToSnakeCaseConversion) {
+            response.jsonResponse = OAuth.convertSnakeCaseToCamelCaseRecursively(response.jsonResponse);
+        }
+
         return response;
     }
 
-    public static HttpRequest.Response handleOAuthProxyJsonPOST(Main main, AppIdentifier appIdentifier, Storage storage, String path, boolean proxyToAdmin, JsonObject jsonInput, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
+    public static HttpRequest.Response doOAuthProxyJsonPOST(Main main, AppIdentifier appIdentifier, Storage storage, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion, JsonObject jsonInput, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
         checkForOauthFeature(appIdentifier, main);
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+
+        if (camelToSnakeCaseConversion) {
+            jsonInput = convertCamelToSnakeCase(jsonInput);
+        }
 
         if (jsonInput.has("client_id")) {
             String clientId = jsonInput.get("client_id").getAsString();
@@ -162,12 +183,21 @@ public class OAuth {
 
         checkNonSuccessResponse(response);
 
+        if (camelToSnakeCaseConversion) {
+            response.jsonResponse = convertSnakeCaseToCamelCaseRecursively(response.jsonResponse);
+        }
+
         return response;
     }
 
-    public static HttpRequest.Response handleOAuthProxyJsonPUT(Main main, AppIdentifier appIdentifier, Storage storage, String path, Map<String, String> queryParams, boolean proxyToAdmin, JsonObject jsonInput, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
+    public static HttpRequest.Response doOAuthProxyJsonPUT(Main main, AppIdentifier appIdentifier, Storage storage, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion,  Map<String, String> queryParams, JsonObject jsonInput, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
         checkForOauthFeature(appIdentifier, main);
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+
+        if (camelToSnakeCaseConversion) {
+            queryParams = convertCamelToSnakeCase(queryParams);
+            jsonInput = convertCamelToSnakeCase(jsonInput);
+        }
 
         if (jsonInput.has("client_id")) {
             String clientId = jsonInput.get("client_id").getAsString();
@@ -196,12 +226,20 @@ public class OAuth {
 
         checkNonSuccessResponse(response);
 
+        if (camelToSnakeCaseConversion) {
+            response.jsonResponse = convertSnakeCaseToCamelCaseRecursively(response.jsonResponse);
+        }
+
         return response;
     }
 
-    public static HttpRequest.Response handleOAuthProxyJsonDELETE(Main main, AppIdentifier appIdentifier, Storage storage, String path, boolean proxyToAdmin, JsonObject jsonInput, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
+    public static HttpRequest.Response doOAuthProxyJsonDELETE(Main main, AppIdentifier appIdentifier, Storage storage, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion, JsonObject jsonInput, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
         checkForOauthFeature(appIdentifier, main);
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+
+        if (camelToSnakeCaseConversion) {
+            jsonInput = OAuth.convertCamelToSnakeCase(jsonInput);
+        }
 
         if (jsonInput.has("client_id")) {
             String clientId = jsonInput.get("client_id").getAsString();
@@ -229,6 +267,10 @@ public class OAuth {
         response.headers = Transformations.transformResponseHeadersFromHydra(main, appIdentifier, response.headers);
 
         checkNonSuccessResponse(response);
+
+        if (camelToSnakeCaseConversion) {
+            response.jsonResponse = OAuth.convertSnakeCaseToCamelCaseRecursively(response.jsonResponse);
+        }
 
         return response;
     }
@@ -284,7 +326,7 @@ public class OAuth {
         return oauthStorage.listClientsForApp(appIdentifier);
     }
 
-    public static Map<String, String> convertCamelToSnakeCase(Map<String, String> queryParams) {
+    private static Map<String, String> convertCamelToSnakeCase(Map<String, String> queryParams) {
         Map<String, String> result = new HashMap<>();
         if (queryParams != null) {
             for (Map.Entry<String, String> entry : queryParams.entrySet()) {
@@ -302,7 +344,7 @@ public class OAuth {
         return result;
     }
 
-    public static JsonElement convertSnakeCaseToCamelCaseRecursively(JsonElement jsonResponse) {
+    private static JsonElement convertSnakeCaseToCamelCaseRecursively(JsonElement jsonResponse) {
         if (jsonResponse == null) {
             return null;
         }

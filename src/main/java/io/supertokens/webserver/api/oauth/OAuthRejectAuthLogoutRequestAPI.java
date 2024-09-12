@@ -44,7 +44,7 @@ public class OAuthRejectAuthLogoutRequestAPI extends WebserverAPI {
                 (statusCode, headers, rawBody, jsonBody) -> { // handleResponse
                     JsonObject response = jsonBody.getAsJsonObject();
                     response.addProperty("status", "OK");
-                    sendJsonResponse(200, response, resp);
+                    return response;
                 }
             );
         } catch (IOException | TenantOrAppNotFoundException | BadPermissionException e) {

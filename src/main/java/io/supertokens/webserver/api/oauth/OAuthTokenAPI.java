@@ -98,7 +98,7 @@ public class OAuthTokenAPI extends WebserverAPI {
                     }
 
                     jsonBody.getAsJsonObject().addProperty("status", "OK");
-                    super.sendJsonResponse(200, jsonBody, resp);
+                    return jsonBody.getAsJsonObject();
                 }
             );
         } catch (IOException | TenantOrAppNotFoundException | BadPermissionException e) {
