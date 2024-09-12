@@ -50,19 +50,14 @@ public class Transformations {
             for (String param : queryParams) {
                 String[] keyValue = param.split("=");
                 if (keyValue.length > 1 && keyValue[1].startsWith("ory_")) {
-                    String decodedValue = URLDecoder.decode(keyValue[1], StandardCharsets.UTF_8.name());
-                    if (decodedValue.startsWith("ory_")) {
-                        decodedValue = decodedValue.replaceFirst("ory_", "st_");
-                    }
-                    String encodedValue = URLEncoder.encode(decodedValue, StandardCharsets.UTF_8.name());
-                    updatedQuery.append(keyValue[0]).append("=").append(encodedValue).append("&");
+                    updatedQuery.append(keyValue[0]).append("=").append(keyValue[1].replaceFirst("ory_", "st_")).append("&");
                 } else {
                     updatedQuery.append(param).append("&");
                 }
             }
             redirectTo = url.getProtocol() + "://" + url.getHost() + ":" + url.getPort() + url.getPath() + "?"
                     + updatedQuery.toString().trim();
-        } catch (MalformedURLException | UnsupportedEncodingException e) {
+        } catch (MalformedURLException e) {
             throw new IllegalStateException(e);
         }
 
@@ -177,10 +172,9 @@ public class Transformations {
 
         headers = new HashMap<>(headers); // make it modifyable
 
-        // Location transformation
         final String LOCATION_HEADER_NAME = "Location";
-
         if (headers.containsKey(LOCATION_HEADER_NAME)) {
+            // Transform url in Location header
             String redirectTo = headers.get(LOCATION_HEADER_NAME).get(0);
             redirectTo = transformRedirectUrlFromHydra(main, appIdentifier, redirectTo);
             headers.put(LOCATION_HEADER_NAME, List.of(redirectTo));

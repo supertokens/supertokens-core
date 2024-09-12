@@ -100,14 +100,6 @@ public class OAuthToken {
             JWTCreationException {
         JsonObject payload = JWT.getPayloadWithoutVerifying(token).payload;
 
-        // move keys in ext to root
-        if (tokenType == TokenType.ACCESS_TOKEN && payload.has("ext")) {
-            JsonObject ext = payload.getAsJsonObject("ext");
-            for (Map.Entry<String, JsonElement> entry : ext.entrySet()) {
-                payload.add(entry.getKey(), entry.getValue());
-            }
-            payload.remove("ext");
-        }
         payload.addProperty("iss", iss);
         payload.addProperty("stt", tokenType.getValue());
 
