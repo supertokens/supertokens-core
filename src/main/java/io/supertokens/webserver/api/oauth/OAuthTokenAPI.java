@@ -62,6 +62,11 @@ public class OAuthTokenAPI extends WebserverAPI {
 
         Boolean useStaticKeyInput = InputParser.parseBooleanOrThrowError(input, "useStaticSigningKey", true);
 
+        Map<String, String> formFields = new HashMap<>();
+        for (Map.Entry<String, JsonElement> entry : bodyFromSDK.entrySet()) {
+            formFields.put(entry.getKey(), entry.getValue().getAsString());
+        }
+
         try {
             OAuthProxyHelper.proxyFormPOST(
                 main, req, resp,
@@ -70,15 +75,8 @@ public class OAuthTokenAPI extends WebserverAPI {
                 "/oauth2/token", // proxyPath
                 false, // proxyToAdmin
                 false, // camelToSnakeCaseConversion
-                () -> {
-                    Map<String, String> formFields = new HashMap<>();
-                    for (Map.Entry<String, JsonElement> entry : bodyFromSDK.entrySet()) {
-                        formFields.put(entry.getKey(), entry.getValue().getAsString());
-                    }
-            
-                    return formFields;
-                },
-                HashMap::new,
+                formFields,
+                new HashMap<>(), // headers
                 (statusCode, headers, rawBody, jsonBody) -> {
                     if (jsonBody == null) {
                         throw new IllegalStateException("unexpected response from hydra");
@@ -88,8 +86,8 @@ public class OAuthTokenAPI extends WebserverAPI {
                         AppIdentifier appIdentifier = getAppIdentifier(req);
                         Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
 
-                        JsonObject accessTokenUpdate = InputParser.parseJsonObjectOrThrowError(bodyFromSDK, "access_token", true);
-                        JsonObject idTokenUpdate = InputParser.parseJsonObjectOrThrowError(bodyFromSDK, "id_token", true);
+                        JsonObject accessTokenUpdate = InputParser.parseJsonObjectOrThrowError(input, "access_token", true);
+                        JsonObject idTokenUpdate = InputParser.parseJsonObjectOrThrowError(input, "id_token", true);
 
                         // useStaticKeyInput defaults to true, so we check if it has been explicitly set to false
                         boolean useDynamicKey = Boolean.FALSE.equals(useStaticKeyInput);

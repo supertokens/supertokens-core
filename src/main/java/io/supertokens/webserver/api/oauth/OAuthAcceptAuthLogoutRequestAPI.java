@@ -1,10 +1,7 @@
 package io.supertokens.webserver.api.oauth;
 
 import java.io.IOException;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
-import java.util.Map;
 
 import com.google.gson.JsonObject;
 
@@ -41,9 +38,9 @@ public class OAuthAcceptAuthLogoutRequestAPI extends WebserverAPI {
                 "/admin/oauth2/auth/requests/logout/accept",
                 true,
                 true,
-                () -> OAuthProxyHelper.defaultGetQueryParamsFromRequest(req),
-                () -> input,
-                HashMap::new,
+                OAuthProxyHelper.defaultGetQueryParamsFromRequest(req),
+                input,
+                new HashMap<>(),
                 (statusCode, headers, rawBody, jsonBody) -> {
                     JsonObject response = jsonBody.getAsJsonObject();
                     response.addProperty("status", "OK");

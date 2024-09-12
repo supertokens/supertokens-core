@@ -42,8 +42,8 @@ public class OAuthClientListAPI extends WebserverAPI {
                 "/admin/clients", // proxyPath
                 true, // proxyToAdmin
                 true, // camelToSnakeCaseConversion
-                HashMap::new, // getQueryParamsForProxy
-                HashMap::new, // getHeadersForProxy
+                new HashMap<>(), // queryParams
+                new HashMap<>(), // headers
                 (statusCode, headers, rawBody, jsonBody) -> { // handleResponse
                     JsonObject response = new JsonObject();
                     response.addProperty("status", "OK");

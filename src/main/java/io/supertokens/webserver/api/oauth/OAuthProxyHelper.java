@@ -32,15 +32,11 @@ public class OAuthProxyHelper {
 
     public static void proxyGET(Main main, HttpServletRequest req, HttpServletResponse resp, AppIdentifier appIdentifier, Storage storage,
                                 String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion,
-                                GetQueryParamsForProxy getQueryParamsForProxy, GetHeadersForProxy getHeadersForProxy,
+                                Map<String, String> queryParams, Map<String, String> headers,
                                 HandleResponse handleResponse) throws IOException, ServletException {
-        Map<String, String> queryParams = getQueryParamsForProxy.apply();
-
         if (camelToSnakeCaseConversion) {
             queryParams = OAuth.convertCamelToSnakeCase(queryParams);
         }
-
-        Map<String, String> headers = getHeadersForProxy.apply();
 
         try {
             HttpRequest.Response response = OAuth.handleOAuthProxyGET(main, appIdentifier, storage, path, proxyToAdmin, queryParams, headers);
@@ -67,15 +63,11 @@ public class OAuthProxyHelper {
 
     public static void proxyFormPOST(Main main, HttpServletRequest req, HttpServletResponse resp, AppIdentifier appIdentifier, Storage storage,
                                      String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion,
-                                     GetFormFieldsForProxy getFormFieldsForProxy, GetHeadersForProxy getHeadersForProxy,
+                                     Map<String, String> formFields, Map<String, String> headers,
                                      HandleResponse handleResponse) throws IOException, ServletException {
-        Map<String, String> formFields = getFormFieldsForProxy.apply();
-
         if (camelToSnakeCaseConversion) {
             formFields = OAuth.convertCamelToSnakeCase(formFields);
         }
-
-        Map<String, String> headers = getHeadersForProxy.apply();
 
         try {
             HttpRequest.Response response = OAuth.handleOAuthProxyFormPOST(main, appIdentifier, storage, path, proxyToAdmin, formFields, headers);
@@ -102,15 +94,11 @@ public class OAuthProxyHelper {
 
     public static void proxyJsonPOST(Main main, HttpServletRequest req, HttpServletResponse resp, AppIdentifier appIdentifier, Storage storage,
                                      String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion,
-                                     GetJsonBody getJsonBody, GetHeadersForProxy getHeadersForProxy,
+                                     JsonObject jsonInput, Map<String, String> headers,
                                      HandleResponse handleResponse) throws IOException, ServletException {
-        JsonObject jsonInput = getJsonBody.apply();
-
         if (camelToSnakeCaseConversion) {
             jsonInput = OAuth.convertCamelToSnakeCase(jsonInput);
         }
-
-        Map<String, String> headers = getHeadersForProxy.apply();
 
         try {
             HttpRequest.Response response = OAuth.handleOAuthProxyJsonPOST(main, appIdentifier, storage, path, proxyToAdmin, jsonInput, headers);
@@ -137,21 +125,15 @@ public class OAuthProxyHelper {
 
     public static void proxyJsonPUT(Main main, HttpServletRequest req, HttpServletResponse resp, AppIdentifier appIdentifier, Storage storage,
                                     String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion,
-                                    GetQueryParamsForProxy getQueryParamsForProxy, GetJsonBody getJsonBodyForProxyPUT,
-                                    GetHeadersForProxy getHeadersForProxy, HandleResponse handleResponse) throws IOException, ServletException {
-        Map<String, String> queryParams = getQueryParamsForProxy.apply();
-
+                                    Map<String, String> queryParams, JsonObject jsonInput,
+                                    Map<String, String> headers, HandleResponse handleResponse) throws IOException, ServletException {
         if (camelToSnakeCaseConversion) {
             queryParams = OAuth.convertCamelToSnakeCase(queryParams);
         }
 
-        JsonObject jsonInput = getJsonBodyForProxyPUT.apply();
-
         if (camelToSnakeCaseConversion) {
             jsonInput = OAuth.convertCamelToSnakeCase(jsonInput);
         }
-
-        Map<String, String> headers = getHeadersForProxy.apply();
 
         try {
             HttpRequest.Response response = OAuth.handleOAuthProxyJsonPUT(main, appIdentifier, storage, path, queryParams, proxyToAdmin, jsonInput, headers);
@@ -178,15 +160,11 @@ public class OAuthProxyHelper {
 
     public static void proxyJsonDELETE(Main main, HttpServletRequest req, HttpServletResponse resp, AppIdentifier appIdentifier, Storage storage,
                                        String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion,
-                                       GetJsonBody getJsonBodyForProxyDELETE, GetHeadersForProxy getHeadersForProxy,
+                                       JsonObject jsonInput, Map<String, String> headers,
                                        HandleResponse handleResponse) throws IOException, ServletException {
-        JsonObject jsonInput = getJsonBodyForProxyDELETE.apply();
-
         if (camelToSnakeCaseConversion) {
             jsonInput = OAuth.convertCamelToSnakeCase(jsonInput);
         }
-
-        Map<String, String> headers = getHeadersForProxy.apply();
 
         try {
             HttpRequest.Response response = OAuth.handleOAuthProxyJsonDELETE(main, appIdentifier, storage, path, proxyToAdmin, jsonInput, headers);
@@ -226,26 +204,6 @@ public class OAuthProxyHelper {
         }
 
         return queryParams;
-    }
-
-    @FunctionalInterface
-    public interface GetQueryParamsForProxy {
-        Map<String, String> apply() throws IOException, ServletException;
-    }
-
-    @FunctionalInterface
-    public interface GetFormFieldsForProxy {
-        Map<String, String> apply() throws IOException, ServletException;
-    }
-
-    @FunctionalInterface
-    public interface GetJsonBody {
-        JsonObject apply() throws IOException, ServletException;
-    }
-
-    @FunctionalInterface
-    public interface GetHeadersForProxy {
-        Map<String, String> apply() throws IOException, ServletException;
     }
 
     @FunctionalInterface

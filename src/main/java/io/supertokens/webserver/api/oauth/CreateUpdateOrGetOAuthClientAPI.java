@@ -17,8 +17,6 @@
 package io.supertokens.webserver.api.oauth;
 
 import java.io.IOException;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -65,8 +63,8 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
                 "/admin/clients/" + clientId, // proxyPath
                 true, // proxyToAdmin
                 true, // camelToSnakeCaseConversion
-                () -> OAuthProxyHelper.defaultGetQueryParamsFromRequest(req),
-                () -> new HashMap<>(), // getHeadersForProxy
+                OAuthProxyHelper.defaultGetQueryParamsFromRequest(req),
+                new HashMap<>(), // getHeadersForProxy
                 (statusCode, headers, rawBody, jsonBody) -> { // handleResponse
                     this.sendJsonResponse(200, jsonBody, resp);
                 }
@@ -93,12 +91,8 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
                 "/admin/clients", // proxyPath
                 true, // proxyToAdmin
                 true, // camelToSnakeCaseConversion
-                () -> { // getJsonBody
-                    return input;
-                },
-                () -> { // getHeadersForProxy
-                    return new HashMap<>();
-                },
+                input, // jsonBody
+                new HashMap<>(), // headers
                 (statusCode, headers, rawBody, jsonBody) -> { // handleResponse
                     String clientId = jsonBody.getAsJsonObject().get("clientId").getAsString();
 
@@ -122,6 +116,31 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String clientId = InputParser.parseStringOrThrowError(input, "clientId", false);
 
+        // Apply existing client config on top of input
+        try {
+            Map<String, String> queryParams = new HashMap<>();
+            queryParams.put("client_id", clientId);
+            HttpRequest.Response response = OAuth.handleOAuthProxyGET(
+                    main,
+                    getAppIdentifier(req),
+                    enforcePublicTenantAndGetPublicTenantStorage(req),
+                    "/admin/clients/" + clientId,
+                    true, queryParams, null);
+
+            JsonObject existingConfig = response.jsonResponse.getAsJsonObject();
+            existingConfig = OAuth.convertSnakeCaseToCamelCaseRecursively(existingConfig).getAsJsonObject();
+            for (Map.Entry<String, JsonElement> entry : existingConfig.entrySet()) {
+                String key = entry.getKey();
+                if (!input.has(key)) {
+                    input.add(key, entry.getValue());
+                }
+            }
+        } catch (StorageQueryException | TenantOrAppNotFoundException | FeatureNotEnabledException | InvalidConfigException | BadPermissionException e) {
+            throw new ServletException(e);
+        } catch (OAuthClientNotFoundException | OAuthAPIException e) {
+            // ignore since the PUT API will throw one of this error later on
+        }
+
         try {
             OAuthProxyHelper.proxyJsonPUT(
                 main, req, resp,
@@ -130,39 +149,9 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
                 "/admin/clients/" + clientId,
                 true, // proxyToAdmin
                 true, // camelToSnakeCaseConversion
-                () -> { // getJsonBody
-                    return new HashMap<>();
-                },
-                () -> { // getHeadersForProxy
-                    try {
-                        Map<String, String> queryParams = new HashMap<>();
-                        queryParams.put("client_id", clientId);
-                        HttpRequest.Response response = OAuth.handleOAuthProxyGET(
-                            main,
-                            getAppIdentifier(req),
-                            enforcePublicTenantAndGetPublicTenantStorage(req),
-                            "/admin/clients/" + clientId,
-                            true, queryParams, null);
-            
-                        JsonObject existingConfig = response.jsonResponse.getAsJsonObject();
-                        existingConfig = OAuth.convertSnakeCaseToCamelCaseRecursively(existingConfig).getAsJsonObject();
-                        for (Map.Entry<String, JsonElement> entry : existingConfig.entrySet()) {
-                            String key = entry.getKey();
-                            if (!input.has(key)) {
-                                input.add(key, entry.getValue());
-                            }
-                        }
-                    } catch (StorageQueryException | TenantOrAppNotFoundException | FeatureNotEnabledException | InvalidConfigException | BadPermissionException e) {
-                        throw new ServletException(e);
-                    } catch (OAuthClientNotFoundException | OAuthAPIException e) {
-                        // ignore since the PUT API will throw one of this error later on
-                    }
-            
-                    return input;
-                },
-                () -> { // getHeadersForProxy
-                    return new HashMap<>();
-                },
+                new HashMap<>(), // queryParams
+                input, // jsonBody
+                new HashMap<>(), // headers
                 (statusCode, headers, rawBody, jsonBody) -> { // handleResponse
                     this.sendJsonResponse(200, jsonBody, resp);
                 }

@@ -27,7 +27,6 @@ import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
-import io.supertokens.jwt.JWTSigningFunctions;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.oauth.exceptions.*;
 import io.supertokens.pluginInterface.Storage;
@@ -35,16 +34,11 @@ import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.oauth.OAuthStorage;
 import io.supertokens.pluginInterface.oauth.exceptions.OAuth2ClientAlreadyExistsForAppException;
-import io.supertokens.session.accessToken.AccessToken;
-import io.supertokens.session.jwt.JWT;
 import io.supertokens.session.jwt.JWT.JWTException;
-import io.supertokens.signingkeys.JWTSigningKey;
-import io.supertokens.signingkeys.SigningKeys;
 import io.supertokens.utils.Utils;
 
 import java.io.IOException;
@@ -55,8 +49,6 @@ import java.util.*;
 import java.util.Map.Entry;
 
 public class OAuth {
-    private static final String HYDRA_JWKS_PATH = "/.well-known/jwks.json";
-
     private static void checkForOauthFeature(AppIdentifier appIdentifier, Main main)
             throws StorageQueryException, TenantOrAppNotFoundException, FeatureNotEnabledException {
         EE_FEATURES[] features = FeatureFlag.getInstance(main, appIdentifier).getEnabledFeatures();

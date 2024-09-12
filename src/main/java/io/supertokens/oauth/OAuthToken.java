@@ -98,7 +98,6 @@ public class OAuthToken {
 
     public static String reSignToken(AppIdentifier appIdentifier, Main main, String token, String iss, JsonObject payloadUpdate, TokenType tokenType, boolean useDynamicSigningKey, int retryCount) throws IOException, JWTException, InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException,
             JWTCreationException {
-        // Load the JWKS from the specified URL
         JsonObject payload = JWT.getPayloadWithoutVerifying(token).payload;
 
         // move keys in ext to root

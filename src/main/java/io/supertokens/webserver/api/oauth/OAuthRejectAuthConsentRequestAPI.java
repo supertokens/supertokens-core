@@ -1,10 +1,7 @@
 package io.supertokens.webserver.api.oauth;
 
 import java.io.IOException;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
-import java.util.Map;
 
 import com.google.gson.JsonObject;
 
@@ -41,9 +38,9 @@ public class OAuthRejectAuthConsentRequestAPI extends WebserverAPI {
                 "/admin/oauth2/auth/requests/consent/reject", // proxyPath
                 true, // proxyToAdmin
                 true, // camelToSnakeCaseConversion
-                () -> OAuthProxyHelper.defaultGetQueryParamsFromRequest(req),
-                () -> input, // getJsonBody
-                HashMap::new, // getHeadersForProxy
+                OAuthProxyHelper.defaultGetQueryParamsFromRequest(req),
+                input, // getJsonBody
+                new HashMap<>(), // getHeadersForProxy
                 (statusCode, headers, rawBody, jsonBody) -> { // handleResponse
                     JsonObject response = jsonBody.getAsJsonObject();
                     response.addProperty("status", "OK");

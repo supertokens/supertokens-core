@@ -38,9 +38,9 @@ public class OAuthRejectAuthLogoutRequestAPI extends WebserverAPI {
                 "/admin/oauth2/auth/requests/logout/reject", // proxyPath
                 true, // proxyToAdmin
                 true, // camelToSnakeCaseConversion
-                () -> OAuthProxyHelper.defaultGetQueryParamsFromRequest(req),
-                () -> input, // getJsonBody
-                HashMap::new, // getHeadersForProxy
+                OAuthProxyHelper.defaultGetQueryParamsFromRequest(req),
+                input, // jsonBody
+                new HashMap<>(), // headers
                 (statusCode, headers, rawBody, jsonBody) -> { // handleResponse
                     JsonObject response = jsonBody.getAsJsonObject();
                     response.addProperty("status", "OK");

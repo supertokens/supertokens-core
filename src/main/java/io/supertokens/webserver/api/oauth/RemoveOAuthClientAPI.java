@@ -58,8 +58,8 @@ public class RemoveOAuthClientAPI extends WebserverAPI {
                 "/admin/clients/" + clientId, // proxyPath
                 true, // proxyToAdmin
                 true, // camelToSnakeCaseConversion
-                () -> new JsonObject(), // getJsonBody
-                HashMap::new, // getHeadersForProxy
+                new JsonObject(), // getJsonBody
+                new HashMap<>(), // getHeadersForProxy
                 (statusCode, headers, rawBody, jsonBody) -> { // handleResponse
                     try {
                         OAuth.removeClientId(main, getAppIdentifier(req), enforcePublicTenantAndGetPublicTenantStorage(req), clientId);

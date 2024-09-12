@@ -56,24 +56,22 @@ public class OAuthTokenIntrospectAPI extends WebserverAPI {
         if (token.startsWith("st_rt_")) {
             String iss = InputParser.parseStringOrThrowError(input, "iss", false);
 
+            Map<String, String> formFields = new HashMap<>();
+            for (Map.Entry<String, JsonElement> entry : input.entrySet()) {
+                formFields.put(entry.getKey(), entry.getValue().getAsString());
+            }
+
             try {
                 OAuthProxyHelper.proxyFormPOST(
                     main, req, resp,
                     getAppIdentifier(req),
                     enforcePublicTenantAndGetPublicTenantStorage(req),
-                    "/admin/oauth2/introspect",
-                    true,
-                    false,
-                    () -> {
-                        Map<String, String> formFields = new HashMap<>();
-                        for (Map.Entry<String, JsonElement> entry : input.entrySet()) {
-                            formFields.put(entry.getKey(), entry.getValue().getAsString());
-                        }
-                
-                        return formFields;
-                    },
-                    HashMap::new,
-                    (statusCode, headers, rawBody, jsonBody) -> {
+                    "/admin/oauth2/introspect", // pathProxy
+                    true, // proxyToAdmin
+                    false, // camelToSnakeCaseConversion
+                    formFields,
+                    new HashMap<>(), // getHeaders
+                    (statusCode, headers, rawBody, jsonBody) -> { // handleResponse
                         JsonObject jsonObject = jsonBody.getAsJsonObject();
 
                         jsonObject.addProperty("iss", iss);

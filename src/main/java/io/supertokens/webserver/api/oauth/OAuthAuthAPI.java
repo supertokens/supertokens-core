@@ -52,6 +52,17 @@ public class OAuthAuthAPI extends WebserverAPI {
         JsonObject params = InputParser.parseJsonObjectOrThrowError(input, "params", false);
         String cookies = InputParser.parseStringOrThrowError(input, "cookies", true);
 
+        Map<String, String> queryParams = params.entrySet().stream().collect(Collectors.toMap(
+                Map.Entry::getKey,
+                e -> e.getValue().getAsString()
+        ));
+
+        Map<String, String> headers = new HashMap<>();
+
+        if (cookies != null) {
+            headers.put("Cookie", cookies);
+        }
+
         try {
             OAuthProxyHelper.proxyGET(
                 main, req, resp,
@@ -60,28 +71,15 @@ public class OAuthAuthAPI extends WebserverAPI {
                 "/oauth2/auth", // proxyPath
                 false, // proxyToAdmin
                 false, // camelToSnakeCaseConversion
-                () -> { // getQueryParamsForProxy
-                    return params.entrySet().stream().collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        e -> e.getValue().getAsString()
-                    ));
-                },
-                () -> { // getHeadersForProxy
-                    Map<String, String> headers = new HashMap<>();
-
-                    if (cookies != null) {
-                        headers.put("Cookie", cookies);
-                    }
-            
-                    return headers;
-                },
-                (statusCode, headers, rawBody, jsonBody) -> { // handleResponse
-                    if (headers == null || !headers.containsKey("Location")) {
+                queryParams,
+                headers,
+                (statusCode, responseHeaders, rawBody, jsonBody) -> { // handleResponse
+                    if (headers == null || !responseHeaders.containsKey("Location")) {
                         throw new IllegalStateException("Invalid response from hydra");
                     }
             
-                    String redirectTo = headers.get("Location").get(0);
-                    List<String> responseCookies = headers.get("Set-Cookie");
+                    String redirectTo = responseHeaders.get("Location").get(0);
+                    List<String> responseCookies = responseHeaders.get("Set-Cookie");
             
                     JsonObject response = new JsonObject();
                     response.addProperty("redirectTo", redirectTo);
