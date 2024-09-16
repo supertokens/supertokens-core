@@ -21,15 +21,14 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-public class RevokeOAuthConsentSessions extends WebserverAPI {
-
-    public RevokeOAuthConsentSessions(Main main){
+public class RevokeOAuthToken extends WebserverAPI {
+    public RevokeOAuthToken(Main main){
         super(main, RECIPE_ID.OAUTH.toString());
     }
 
     @Override
     public String getPath() {
-        return "/recipe/oauth/sessions/consent/revoke";
+        return "/recipe/oauth/token/revoke";
     }
 
     @Override
@@ -49,7 +48,7 @@ public class RevokeOAuthConsentSessions extends WebserverAPI {
                 main, req, resp,
                 appIdentifier,
                 storage,
-                "/admin/oauth2/auth/sessions/consent", // proxyPath
+                "/oauth2/revoke", // proxyPath
                 true, // proxyToAdmin
                 true, // camelToSnakeCaseConversion
                 queryParams, // queryParams
