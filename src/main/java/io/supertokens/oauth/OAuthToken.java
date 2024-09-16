@@ -49,9 +49,8 @@ public class OAuthToken {
     private static Set<String> NON_OVERRIDABLE_TOKEN_PROPS = Set.of(
         "kid", "typ", "alg", "aud",
         "iss", "iat", "exp", "nbf", "jti", "ext",
-        "sid", "rat", "at_hash",
-        "client_id", "scp", "sub", "rsub",
-        "sessionHandle", "tId", "stt"
+        "sid", "rat", "at_hash", "rt_hash",
+        "client_id", "scp", "sub", "stt"
     );
 
     public static JsonObject getPayloadFromJWTToken(AppIdentifier appIdentifier,
@@ -103,9 +102,11 @@ public class OAuthToken {
         payload.addProperty("iss", iss);
         payload.addProperty("stt", tokenType.getValue());
 
-        for (Map.Entry<String, JsonElement> entry : payloadUpdate.entrySet()) {
-            if (!NON_OVERRIDABLE_TOKEN_PROPS.contains(entry.getKey())) {
-                payload.add(entry.getKey(), entry.getValue());
+        if (payloadUpdate != null) {
+            for (Map.Entry<String, JsonElement> entry : payloadUpdate.entrySet()) {
+                if (!NON_OVERRIDABLE_TOKEN_PROPS.contains(entry.getKey())) {
+                    payload.add(entry.getKey(), entry.getValue());
+                }
             }
         }
 

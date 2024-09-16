@@ -60,7 +60,9 @@ public class OAuthTokenAPI extends WebserverAPI {
         String iss = InputParser.parseStringOrThrowError(input, "iss", false); // input validation
         JsonObject bodyFromSDK = InputParser.parseJsonObjectOrThrowError(input, "inputBody", false);
 
+        // useStaticKeyInput defaults to true, so we check if it has been explicitly set to false
         Boolean useStaticKeyInput = InputParser.parseBooleanOrThrowError(input, "useStaticSigningKey", true);
+        boolean useDynamicKey = Boolean.FALSE.equals(useStaticKeyInput);
 
         Map<String, String> formFields = new HashMap<>();
         for (Map.Entry<String, JsonElement> entry : bodyFromSDK.entrySet()) {
@@ -89,8 +91,6 @@ public class OAuthTokenAPI extends WebserverAPI {
                         JsonObject accessTokenUpdate = InputParser.parseJsonObjectOrThrowError(input, "access_token", true);
                         JsonObject idTokenUpdate = InputParser.parseJsonObjectOrThrowError(input, "id_token", true);
 
-                        // useStaticKeyInput defaults to true, so we check if it has been explicitly set to false
-                        boolean useDynamicKey = Boolean.FALSE.equals(useStaticKeyInput);
                         jsonBody = OAuth.transformTokens(super.main, appIdentifier, storage, jsonBody.getAsJsonObject(), iss, accessTokenUpdate, idTokenUpdate, useDynamicKey);
             
                     } catch (IOException | InvalidConfigException | TenantOrAppNotFoundException | BadPermissionException | StorageQueryException | InvalidKeyException | NoSuchAlgorithmException | InvalidKeySpecException | JWTCreationException | JWTException | StorageTransactionLogicException | UnsupportedJWTSigningAlgorithmException e) {
