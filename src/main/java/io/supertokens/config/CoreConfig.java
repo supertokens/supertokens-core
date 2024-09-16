@@ -297,7 +297,7 @@ public class CoreConfig {
     @JsonProperty
     @HideFromDashboard
     @ConfigDescription(
-            "If specified, the core uses this URL replace the default consent and login URLs to {apiDomain}. Defaults to 'http://localhost:3000'")
+            "If specified, the core uses this URL replace the default consent and login URLs to {apiDomain}. Defaults to 'null'")
     private String oauth_provider_consent_login_base_url = null;
 
     @NotConflictingInApp

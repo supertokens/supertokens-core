@@ -120,7 +120,7 @@ public class Transformations {
         String hydraBaseUrlForConsentAndLogin = Config
                 .getConfig(appIdentifier.getAsPublicTenantIdentifier(), main)
                 .getOauthProviderConsentLoginBaseUrl();
-        
+
         if (!redirectTo.startsWith("/")) {
             redirectTo = transformQueryParamsInURLFromHydra(redirectTo);
 
@@ -143,6 +143,8 @@ public class Transformations {
                             throw new OAuthAPIException(error, errorDescription, 400);
                         }
                         redirectTo = redirectTo.replace(hydraInternalAddress, "{apiDomain}");
+
+                        // path to hydra starts with /oauth2 while on the SDK it would be /oauth
                         redirectTo = redirectTo.replace("oauth2/", "oauth/");
 
                     } catch (MalformedURLException e) {
