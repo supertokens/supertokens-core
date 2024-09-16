@@ -233,7 +233,7 @@ public class OAuth {
         return response;
     }
 
-    public static HttpRequest.Response doOAuthProxyJsonDELETE(Main main, AppIdentifier appIdentifier, Storage storage, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion, JsonObject jsonInput, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
+    public static HttpRequest.Response doOAuthProxyJsonDELETE(Main main, AppIdentifier appIdentifier, Storage storage, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion, Map<String, String> queryParams, JsonObject jsonInput, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
         checkForOauthFeature(appIdentifier, main);
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
 
@@ -260,7 +260,7 @@ public class OAuth {
         }
         String fullUrl = baseURL + path;
 
-        HttpRequest.Response response = HttpRequest.doJsonDelete(fullUrl, headers, jsonInput);
+        HttpRequest.Response response = HttpRequest.doJsonDelete(fullUrl, headers, queryParams, jsonInput);
 
         // Response transformations
         response.jsonResponse = Transformations.transformJsonResponseFromHydra(main, appIdentifier, response.jsonResponse);
@@ -374,13 +374,37 @@ public class OAuth {
     public static JsonObject introspectAccessToken(Main main, AppIdentifier appIdentifier, Storage storage,
             String token) throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException, UnsupportedJWTSigningAlgorithmException {
         try {
+            OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
             JsonObject payload = OAuthToken.getPayloadFromJWTToken(appIdentifier, main, token);
-            if (payload.has("stt") && payload.get("stt").getAsInt() == OAuthToken.TokenType.ACCESS_TOKEN.getValue()) {
-                payload.addProperty("active", true);
-                payload.addProperty("token_type", "Bearer");
-                payload.addProperty("token_use", "access_token");
 
-                return payload;
+            if (payload.has("stt") && payload.get("stt").getAsInt() == OAuthToken.TokenType.ACCESS_TOKEN.getValue()) {
+
+                long issuedAt = payload.get("iat").getAsLong();
+                String rtHash = payload.get("rt_hash").getAsString();
+                String subject = payload.get("sub").getAsString();
+                String jti = payload.get("jti").getAsString();
+                String clientId = payload.get("client_id").getAsString();
+                String sessionHandle = null;
+                if (payload.has("sessionHandle")) {
+                    sessionHandle = payload.get("sessionHandle").getAsString();
+                }
+
+                boolean isRTHashValid = !oauthStorage.isRevoked(appIdentifier, "rt_hash", rtHash, issuedAt);
+                boolean isSubjectValid = !oauthStorage.isRevoked(appIdentifier, "sub", subject, issuedAt);
+                boolean isJTIValid = !oauthStorage.isRevoked(appIdentifier, "jti", jti, issuedAt);
+                boolean isClientIdValid = !oauthStorage.isRevoked(appIdentifier, "client_id_sub", clientId + ":" + subject, issuedAt);
+                boolean isSessionHandleValid = true;
+                if (sessionHandle != null) {
+                    isSessionHandleValid = !oauthStorage.isRevoked(appIdentifier, "sessionHandle", sessionHandle, issuedAt);
+                }
+
+                if (isRTHashValid && isSubjectValid && isJTIValid && isClientIdValid && isSessionHandleValid) {
+                    payload.addProperty("active", true);
+                    payload.addProperty("token_type", "Bearer");
+                    payload.addProperty("token_use", "access_token");
+    
+                    return payload;
+                }
             }
             // else fallback to active: false
 
@@ -391,5 +415,14 @@ public class OAuth {
         JsonObject result = new JsonObject();
         result.addProperty("active", false);
         return result;
+    }
+
+    public static void revokeAllConsentSessions(Main main, AppIdentifier appIdentifier, Storage storage, String subject, String clientId) throws StorageQueryException {
+        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+        if (clientId == null) {
+            oauthStorage.revoke(appIdentifier, "sub", subject);
+        } else {
+            oauthStorage.revoke(appIdentifier, "client_id_sub", clientId + ":" + subject);
+        }
     }
 }

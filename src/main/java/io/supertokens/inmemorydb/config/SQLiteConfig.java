@@ -165,5 +165,7 @@ public class SQLiteConfig {
         return "dashboard_user_sessions";
     }
 
-    public String getOAuthClientTable(){ return "oauth_clients"; }
+    public String getOAuthClientTable() { 
+        return "oauth_clients";
+    }
 }

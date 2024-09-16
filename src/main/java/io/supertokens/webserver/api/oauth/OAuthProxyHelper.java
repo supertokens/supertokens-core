@@ -137,10 +137,10 @@ public class OAuthProxyHelper {
 
     public static void proxyJsonDELETE(Main main, HttpServletRequest req, HttpServletResponse resp, AppIdentifier appIdentifier, Storage storage,
                                        String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion,
-                                       JsonObject jsonInput, Map<String, String> headers,
+                                       Map<String, String> queryParams, JsonObject jsonInput, Map<String, String> headers,
                                        GetJsonResponse getJsonResponse) throws IOException, ServletException {
         try {
-            HttpRequest.Response response = OAuth.doOAuthProxyJsonDELETE(main, appIdentifier, storage, path, proxyToAdmin, camelToSnakeCaseConversion, jsonInput, headers);
+            HttpRequest.Response response = OAuth.doOAuthProxyJsonDELETE(main, appIdentifier, storage, path, proxyToAdmin, camelToSnakeCaseConversion, queryParams, jsonInput, headers);
 
             JsonObject jsonResponse = getJsonResponse.apply(
                 response.statusCode,

@@ -3055,4 +3055,16 @@ public class Start
             throw new StorageQueryException(e);
         }
     }
+
+    @Override
+    public void revoke(AppIdentifier appIdentifier, String targetType, String targetValue)
+            throws StorageQueryException {
+        throw new IllegalStateException("todo implement");
+    }
+
+    @Override
+    public boolean isRevoked(AppIdentifier appIdentifier, String targetType, String targetValue, long issuedAt)
+            throws StorageQueryException {
+        throw new IllegalStateException("todo implement");
+    }
 }
