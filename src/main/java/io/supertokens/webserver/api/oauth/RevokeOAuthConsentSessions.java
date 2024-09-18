@@ -35,43 +35,51 @@ public class RevokeOAuthConsentSessions extends WebserverAPI {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
+        Boolean all = InputParser.parseBooleanOrThrowError(input, "all", true);
+        String subject = InputParser.parseStringOrThrowError(input, "subject", false);
+        String clientId = InputParser.parseStringOrThrowError(input, "client", false);
 
         try {
-            Map<String, String> queryParams = input.entrySet().stream().collect(Collectors.toMap(
-                Map.Entry::getKey,
-                e -> e.getValue().isJsonPrimitive() && e.getValue().getAsJsonPrimitive().isString() ? e.getValue().getAsString() : e.getValue().toString()
-            ));
-
             AppIdentifier appIdentifier = getAppIdentifier(req);
             Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
 
-            OAuthProxyHelper.proxyJsonDELETE(
-                main, req, resp,
-                appIdentifier,
-                storage,
-                null, // clientIdToCheck
-                "/admin/oauth2/auth/sessions/consent", // proxyPath
-                true, // proxyToAdmin
-                true, // camelToSnakeCaseConversion
-                queryParams, // queryParams
-                new JsonObject(), // jsonInput
-                new HashMap<>(), // headers
-                (statusCode, headers, rawBody, jsonBody) -> { // handleResponse
-                    boolean all = queryParams.get("all") != null && queryParams.get("all").equals("true");
-                    if (all) {
-                        try {
-                            OAuth.revokeAllConsentSessions(main, appIdentifier, storage, queryParams.get("subject"), queryParams.get("client"));
-                        } catch (StorageQueryException e) {
-                            throw new ServletException(e);
-                        }
-                    }
+            Map<String, String> queryParams = new HashMap<>();
+            queryParams.put("subject", subject);
+            if (clientId != null) {
+                queryParams.put("client", clientId);
+            }
+            if (all != null) {
+                queryParams.put("all", all.toString());
+            }
 
-                    JsonObject response = new JsonObject();
-                    response.addProperty("status", "OK");
-                    return response;
-                }
-            );
-        } catch (IOException | TenantOrAppNotFoundException | BadPermissionException e) {
+            OAuth.revokeAllConsentSessions(main, appIdentifier, storage, subject, clientId);
+
+            if (Boolean.TRUE.equals(all)) {
+                OAuthProxyHelper.proxyJsonDELETE(
+                    main, req, resp,
+                    appIdentifier,
+                    storage,
+                    null, // clientIdToCheck
+                    "/oauth2/revoke", // proxyPath
+                    true, // proxyToAdmin
+                    true, // camelToSnakeCaseConversion
+                    queryParams, // queryParams
+                    new JsonObject(), // jsonInput
+                    new HashMap<>(), // headers
+                    (statusCode, headers, rawBody, jsonBody) -> { // handleResponse
+                        JsonObject response = new JsonObject();
+                        response.addProperty("status", "OK");
+                        return response;
+                    }
+                );
+                return;
+            }
+
+            JsonObject response = new JsonObject();
+            response.addProperty("status", "OK");
+            super.sendJsonResponse(200, response, resp);
+            
+        } catch (IOException | TenantOrAppNotFoundException | BadPermissionException | StorageQueryException e) {
             throw new ServletException(e);
         }
     }

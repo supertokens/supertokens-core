@@ -95,12 +95,15 @@ public class OAuthToken {
         return jwtInfo.payload;
     }
 
-    public static String reSignToken(AppIdentifier appIdentifier, Main main, String token, String iss, JsonObject payloadUpdate, TokenType tokenType, boolean useDynamicSigningKey, int retryCount) throws IOException, JWTException, InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException,
+    public static String reSignToken(AppIdentifier appIdentifier, Main main, String token, String iss, JsonObject payloadUpdate, String rtHash, TokenType tokenType, boolean useDynamicSigningKey, int retryCount) throws IOException, JWTException, InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException,
             JWTCreationException {
         JsonObject payload = JWT.getPayloadWithoutVerifying(token).payload;
 
         payload.addProperty("iss", iss);
         payload.addProperty("stt", tokenType.getValue());
+        if (rtHash != null) {
+            payload.addProperty("rt_hash", rtHash);
+        }
 
         if (tokenType == TokenType.ACCESS_TOKEN) {
             // we need to move rsub, tId and sessionHandle from ext to root

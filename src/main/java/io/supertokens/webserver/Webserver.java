@@ -39,21 +39,7 @@ import io.supertokens.webserver.api.jwt.JWTSigningAPI;
 import io.supertokens.webserver.api.multitenancy.*;
 import io.supertokens.webserver.api.multitenancy.thirdparty.CreateOrUpdateThirdPartyConfigAPI;
 import io.supertokens.webserver.api.multitenancy.thirdparty.RemoveThirdPartyConfigAPI;
-import io.supertokens.webserver.api.oauth.OAuthAuthAPI;
-import io.supertokens.webserver.api.oauth.OAuthClientListAPI;
-import io.supertokens.webserver.api.oauth.OAuthGetAuthConsentRequestAPI;
-import io.supertokens.webserver.api.oauth.OAuthGetAuthLoginRequestAPI;
-import io.supertokens.webserver.api.oauth.OAuthGetAuthLogoutRequestAPI;
-import io.supertokens.webserver.api.oauth.OAuthRejectAuthConsentRequestAPI;
-import io.supertokens.webserver.api.oauth.OAuthRejectAuthLoginRequestAPI;
-import io.supertokens.webserver.api.oauth.OAuthRejectAuthLogoutRequestAPI;
-import io.supertokens.webserver.api.oauth.CreateUpdateOrGetOAuthClientAPI;
-import io.supertokens.webserver.api.oauth.OAuthAcceptAuthConsentRequestAPI;
-import io.supertokens.webserver.api.oauth.OAuthAcceptAuthLoginRequestAPI;
-import io.supertokens.webserver.api.oauth.OAuthAcceptAuthLogoutRequestAPI;
-import io.supertokens.webserver.api.oauth.OAuthTokenAPI;
-import io.supertokens.webserver.api.oauth.OAuthTokenIntrospectAPI;
-import io.supertokens.webserver.api.oauth.RemoveOAuthClientAPI;
+import io.supertokens.webserver.api.oauth.*;
 import io.supertokens.webserver.api.passwordless.*;
 import io.supertokens.webserver.api.session.*;
 import io.supertokens.webserver.api.thirdparty.GetUsersByEmailAPI;
@@ -298,6 +284,9 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new OAuthAcceptAuthLogoutRequestAPI(main));
         addAPI(new OAuthRejectAuthLogoutRequestAPI(main));
         addAPI(new OAuthTokenIntrospectAPI(main));
+
+        addAPI(new RevokeOAuthToken(main));
+        addAPI(new RevokeOAuthConsentSessions(main));
 
         StandardContext context = tomcatReference.getContext();
         Tomcat tomcat = tomcatReference.getTomcat();

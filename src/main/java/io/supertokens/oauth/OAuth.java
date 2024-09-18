@@ -284,22 +284,26 @@ public class OAuth {
     }
 
     public static JsonObject transformTokens(Main main, AppIdentifier appIdentifier, Storage storage, JsonObject jsonBody, String iss, JsonObject accessTokenUpdate, JsonObject idTokenUpdate, boolean useDynamicKey) throws IOException, JWTException, InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException, JWTCreationException, InvalidConfigException {
-        if (jsonBody.has("access_token")) {
-            String accessToken = jsonBody.get("access_token").getAsString();
-            accessToken = OAuthToken.reSignToken(appIdentifier, main, accessToken, iss, accessTokenUpdate, OAuthToken.TokenType.ACCESS_TOKEN, useDynamicKey, 0);
-            jsonBody.addProperty("access_token", accessToken);
-        }
-
-        if (jsonBody.has("id_token")) {
-            String idToken = jsonBody.get("id_token").getAsString();
-            idToken = OAuthToken.reSignToken(appIdentifier, main, idToken, iss, idTokenUpdate, OAuthToken.TokenType.ID_TOKEN, useDynamicKey, 0);
-            jsonBody.addProperty("id_token", idToken);
-        }
+        String rtHash = null;
 
         if (jsonBody.has("refresh_token")) {
             String refreshToken = jsonBody.get("refresh_token").getAsString();
             refreshToken = refreshToken.replace("ory_rt_", "st_rt_");
             jsonBody.addProperty("refresh_token", refreshToken);
+
+            rtHash = Utils.hashSHA256(refreshToken);
+        }
+
+        if (jsonBody.has("access_token")) {
+            String accessToken = jsonBody.get("access_token").getAsString();
+            accessToken = OAuthToken.reSignToken(appIdentifier, main, accessToken, iss, accessTokenUpdate, rtHash, OAuthToken.TokenType.ACCESS_TOKEN, useDynamicKey, 0);
+            jsonBody.addProperty("access_token", accessToken);
+        }
+
+        if (jsonBody.has("id_token")) {
+            String idToken = jsonBody.get("id_token").getAsString();
+            idToken = OAuthToken.reSignToken(appIdentifier, main, idToken, iss, idTokenUpdate, null, OAuthToken.TokenType.ID_TOKEN, useDynamicKey, 0);
+            jsonBody.addProperty("id_token", idToken);
         }
 
         return jsonBody;
@@ -417,6 +421,28 @@ public class OAuth {
             oauthStorage.revoke(appIdentifier, "sub", subject);
         } else {
             oauthStorage.revoke(appIdentifier, "client_id_sub", clientId + ":" + subject);
+        }
+    }
+
+	public static void revokeRefreshToken(Main main, AppIdentifier appIdentifier, Storage storage, String token) throws StorageQueryException, NoSuchAlgorithmException {
+		OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+		String hash = Utils.hashSHA256(token);
+		oauthStorage.revoke(appIdentifier, "rt_hash", hash);
+	}
+
+    public static void revokeAccessToken(Main main, AppIdentifier appIdentifier,
+            Storage storage, String token) throws StorageQueryException, TenantOrAppNotFoundException, UnsupportedJWTSigningAlgorithmException, StorageTransactionLogicException {
+        try {
+            OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+            JsonObject payload = OAuthToken.getPayloadFromJWTToken(appIdentifier, main, token);
+
+            if (payload.has("stt") && payload.get("stt").getAsInt() == OAuthToken.TokenType.ACCESS_TOKEN.getValue()) {
+                String jti = payload.get("jti").getAsString();
+                oauthStorage.revoke(appIdentifier, "jti", jti);
+            }
+
+        } catch (TryRefreshTokenException e) {
+            // the token is already invalid or revoked, so ignore
         }
     }
 }
