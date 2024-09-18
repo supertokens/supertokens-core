@@ -47,6 +47,7 @@ public class OAuthClientListAPI extends WebserverAPI {
                 main, req, resp,
                 appIdentifier,
                 storage,
+                null, // clientIdToCheck
                 "/admin/clients", // proxyPath
                 true, // proxyToAdmin
                 true, // camelToSnakeCaseConversion

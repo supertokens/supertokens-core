@@ -62,6 +62,7 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
                 main, req, resp,
                 getAppIdentifier(req),
                 enforcePublicTenantAndGetPublicTenantStorage(req),
+                clientId, // clientIdToCheck
                 "/admin/clients/" + clientId, // proxyPath
                 true, // proxyToAdmin
                 true, // camelToSnakeCaseConversion
@@ -95,6 +96,7 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
                 main, req, resp, 
                 appIdentifier,
                 storage,
+                null, // clientIdToCheck
                 "/admin/clients", // proxyPath
                 true, // proxyToAdmin
                 true, // camelToSnakeCaseConversion
@@ -131,6 +133,7 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
                     main,
                     getAppIdentifier(req),
                     enforcePublicTenantAndGetPublicTenantStorage(req),
+                    clientId,
                     "/admin/clients/" + clientId,
                     true, true, queryParams, null);
 
@@ -152,6 +155,7 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
                 main, req, resp,
                 getAppIdentifier(req),
                 enforcePublicTenantAndGetPublicTenantStorage(req),
+                clientId, // clientIdToCheck
                 "/admin/clients/" + clientId,
                 true, // proxyToAdmin
                 true, // camelToSnakeCaseConversion

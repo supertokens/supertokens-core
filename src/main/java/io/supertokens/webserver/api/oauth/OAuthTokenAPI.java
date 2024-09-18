@@ -77,6 +77,7 @@ public class OAuthTokenAPI extends WebserverAPI {
                 main, req, resp,
                 getAppIdentifier(req),
                 enforcePublicTenantAndGetPublicTenantStorage(req),
+                formFields.get("client_id"), // clientIdToCheck
                 "/oauth2/token", // proxyPath
                 false, // proxyToAdmin
                 false, // camelToSnakeCaseConversion

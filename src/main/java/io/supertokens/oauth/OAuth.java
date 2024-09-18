@@ -63,7 +63,7 @@ public class OAuth {
                         "feature.");
     }
 
-    public static HttpRequestForOry.Response doOAuthProxyGET(Main main, AppIdentifier appIdentifier, Storage storage, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion, Map<String, String> queryParams, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
+    public static HttpRequestForOry.Response doOAuthProxyGET(Main main, AppIdentifier appIdentifier, Storage storage, String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion, Map<String, String> queryParams, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
         checkForOauthFeature(appIdentifier, main);
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
 
@@ -71,9 +71,8 @@ public class OAuth {
             queryParams = convertCamelToSnakeCase(queryParams);
         }
 
-        if (queryParams != null && queryParams.containsKey("client_id")) {
-            String clientId = queryParams.get("client_id");
-            if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientId)) {
+        if (clientIdToCheck != null) {
+            if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientIdToCheck)) {
                 throw new OAuthClientNotFoundException();
             }
         }
@@ -105,7 +104,7 @@ public class OAuth {
         return response;
     }
 
-    public static HttpRequestForOry.Response doOAuthProxyFormPOST(Main main, AppIdentifier appIdentifier, Storage storage, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion, Map<String, String> formFields, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
+    public static HttpRequestForOry.Response doOAuthProxyFormPOST(Main main, AppIdentifier appIdentifier, Storage storage, String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion, Map<String, String> formFields, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
         checkForOauthFeature(appIdentifier, main);
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
 
@@ -113,9 +112,8 @@ public class OAuth {
             formFields = OAuth.convertCamelToSnakeCase(formFields);
         }
 
-        if (formFields.containsKey("client_id")) {
-            String clientId = formFields.get("client_id");
-            if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientId)) {
+        if (clientIdToCheck != null) {
+            if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientIdToCheck)) {
                 throw new OAuthClientNotFoundException();
             }
         }
@@ -147,7 +145,7 @@ public class OAuth {
         return response;
     }
 
-    public static HttpRequestForOry.Response doOAuthProxyJsonPOST(Main main, AppIdentifier appIdentifier, Storage storage, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion, JsonObject jsonInput, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
+    public static HttpRequestForOry.Response doOAuthProxyJsonPOST(Main main, AppIdentifier appIdentifier, Storage storage, String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion, JsonObject jsonInput, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
         checkForOauthFeature(appIdentifier, main);
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
 
@@ -155,9 +153,8 @@ public class OAuth {
             jsonInput = convertCamelToSnakeCase(jsonInput);
         }
 
-        if (jsonInput.has("client_id")) {
-            String clientId = jsonInput.get("client_id").getAsString();
-            if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientId)) {
+        if (clientIdToCheck != null) {
+            if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientIdToCheck)) {
                 throw new OAuthClientNotFoundException();
             }
         }
@@ -189,7 +186,7 @@ public class OAuth {
         return response;
     }
 
-    public static HttpRequestForOry.Response doOAuthProxyJsonPUT(Main main, AppIdentifier appIdentifier, Storage storage, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion,  Map<String, String> queryParams, JsonObject jsonInput, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
+    public static HttpRequestForOry.Response doOAuthProxyJsonPUT(Main main, AppIdentifier appIdentifier, Storage storage, String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion,  Map<String, String> queryParams, JsonObject jsonInput, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
         checkForOauthFeature(appIdentifier, main);
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
 
@@ -198,9 +195,8 @@ public class OAuth {
             jsonInput = convertCamelToSnakeCase(jsonInput);
         }
 
-        if (jsonInput.has("client_id")) {
-            String clientId = jsonInput.get("client_id").getAsString();
-            if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientId)) {
+        if (clientIdToCheck != null) {
+            if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientIdToCheck)) {
                 throw new OAuthClientNotFoundException();
             }
         }
@@ -232,7 +228,7 @@ public class OAuth {
         return response;
     }
 
-    public static HttpRequestForOry.Response doOAuthProxyJsonDELETE(Main main, AppIdentifier appIdentifier, Storage storage, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion, JsonObject jsonInput, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
+    public static HttpRequestForOry.Response doOAuthProxyJsonDELETE(Main main, AppIdentifier appIdentifier, Storage storage, String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion, JsonObject jsonInput, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
         checkForOauthFeature(appIdentifier, main);
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
 
@@ -240,9 +236,8 @@ public class OAuth {
             jsonInput = OAuth.convertCamelToSnakeCase(jsonInput);
         }
 
-        if (jsonInput.has("client_id")) {
-            String clientId = jsonInput.get("client_id").getAsString();
-            if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientId)) {
+        if (clientIdToCheck != null) {
+            if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientIdToCheck)) {
                 throw new OAuthClientNotFoundException();
             }
         }

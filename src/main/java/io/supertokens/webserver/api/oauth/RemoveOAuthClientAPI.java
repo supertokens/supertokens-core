@@ -55,6 +55,7 @@ public class RemoveOAuthClientAPI extends WebserverAPI {
                 main, req, resp,
                 getAppIdentifier(req),
                 enforcePublicTenantAndGetPublicTenantStorage(req),
+                clientId, // clientIdToCheck
                 "/admin/clients/" + clientId, // proxyPath
                 true, // proxyToAdmin
                 true, // camelToSnakeCaseConversion

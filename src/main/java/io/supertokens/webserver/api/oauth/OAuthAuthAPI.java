@@ -68,6 +68,7 @@ public class OAuthAuthAPI extends WebserverAPI {
                 main, req, resp,
                 getAppIdentifier(req),
                 enforcePublicTenantAndGetPublicTenantStorage(req),
+                queryParams.get("client_id"), // clientIdToCheck
                 "/oauth2/auth", // proxyPath
                 false, // proxyToAdmin
                 false, // camelToSnakeCaseConversion

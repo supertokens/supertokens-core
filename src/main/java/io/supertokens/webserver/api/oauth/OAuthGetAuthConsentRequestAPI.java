@@ -32,6 +32,7 @@ public class OAuthGetAuthConsentRequestAPI extends WebserverAPI {
                 main, req, resp,
                 getAppIdentifier(req),
                 enforcePublicTenantAndGetPublicTenantStorage(req),
+                null, // clientIdToCheck
                 "/admin/oauth2/auth/requests/consent", // proxyPath
                 true, // proxyToAdmin
                 true, // camelToSnakeCaseConversion

@@ -32,6 +32,7 @@ public class OAuthGetAuthLoginRequestAPI extends WebserverAPI {
                 main, req, resp,
                 getAppIdentifier(req),
                 enforcePublicTenantAndGetPublicTenantStorage(req),
+                null, // clientIdToCheck
                 "/admin/oauth2/auth/requests/login", // proxyPath
                 true, // proxyToAdmin
                 true, // camelToSnakeCaseConversion
