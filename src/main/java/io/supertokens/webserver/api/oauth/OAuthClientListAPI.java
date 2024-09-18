@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.google.gson.JsonArray;
@@ -14,7 +15,9 @@ import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.oauth.OAuth;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -35,14 +38,19 @@ public class OAuthClientListAPI extends WebserverAPI {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         try {
+            AppIdentifier appIdentifier = getAppIdentifier(req);
+            Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
+            Map<String, String> queryParams = OAuthProxyHelper.defaultGetQueryParamsFromRequest(req);
+            queryParams.put("owner", appIdentifier.getAppId());
+
             OAuthProxyHelper.proxyGET(
                 main, req, resp,
-                getAppIdentifier(req),
-                enforcePublicTenantAndGetPublicTenantStorage(req),
+                appIdentifier,
+                storage,
                 "/admin/clients", // proxyPath
                 true, // proxyToAdmin
                 true, // camelToSnakeCaseConversion
-                new HashMap<>(), // queryParams
+                queryParams,
                 new HashMap<>(), // headers
                 (statusCode, headers, rawBody, jsonBody) -> { // getJsonResponse
                     JsonObject response = new JsonObject();
@@ -67,6 +75,29 @@ public class OAuthClientListAPI extends WebserverAPI {
                     }
 
                     response.add("clients", clients);
+
+                    // pagination
+                    List<String> linkHeader = headers.get("Link");
+                    if (linkHeader != null && !linkHeader.isEmpty()) {
+                        for (String nextLink : linkHeader.get(0).split(",")) {
+                            if (!nextLink.contains("rel=\"next\"")) {
+                                continue;
+                            }
+
+                            String pageToken = null;
+                            if (nextLink.contains("page_token=")) {
+                                int startIndex = nextLink.indexOf("page_token=") + "page_token=".length();
+                                int endIndex = nextLink.indexOf('>', startIndex);
+                                if (endIndex != -1) {
+                                    pageToken = nextLink.substring(startIndex, endIndex);
+                                }
+                            }
+                            if (pageToken != null) {
+                                response.addProperty("nextPaginationToken", pageToken);
+                            }
+                        }
+                    }
+
                     return response;
                 }
             );
