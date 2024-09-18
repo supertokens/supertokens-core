@@ -36,13 +36,14 @@ public class OAuthRejectAuthLoginRequestAPI extends WebserverAPI {
                 main, req, resp,
                 getAppIdentifier(req),
                 enforcePublicTenantAndGetPublicTenantStorage(req),
+                null, // clientIdToCheck
                 "/admin/oauth2/auth/requests/login/reject", // proxyPath
                 true, // proxyToAdmin
                 true, // camelToSnakeCaseConversion
                 OAuthProxyHelper.defaultGetQueryParamsFromRequest(req),
                 input, // jsonBody
                 new HashMap<>(), // headers
-                (statusCode, headers, rawBody, jsonBody) -> { // handleResponse
+                (statusCode, headers, rawBody, jsonBody) -> { // getJsonResponse
                     JsonObject response = jsonBody.getAsJsonObject();
                     response.addProperty("status", "OK");
                     return response;

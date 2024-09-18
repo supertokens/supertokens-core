@@ -35,6 +35,7 @@ public class OAuthAcceptAuthLoginRequestAPI extends WebserverAPI {
                 main, req, resp,
                 getAppIdentifier(req),
                 enforcePublicTenantAndGetPublicTenantStorage(req),
+                null, // clientIdToCheck
                 "/admin/oauth2/auth/requests/login/accept",
                 true,
                 true,

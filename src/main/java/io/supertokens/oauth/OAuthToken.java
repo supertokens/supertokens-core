@@ -102,6 +102,11 @@ public class OAuthToken {
         payload.addProperty("iss", iss);
         payload.addProperty("stt", tokenType.getValue());
 
+        if (tokenType == TokenType.ACCESS_TOKEN) {
+            // we need to move rsub, tId and sessionHandle from ext to root
+            Transformations.transformExt(payload);
+        }
+
         if (payloadUpdate != null) {
             for (Map.Entry<String, JsonElement> entry : payloadUpdate.entrySet()) {
                 if (!NON_OVERRIDABLE_TOKEN_PROPS.contains(entry.getKey())) {

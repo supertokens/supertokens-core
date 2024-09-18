@@ -21,6 +21,7 @@ import io.supertokens.Main;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.oauth.OAuth;
+import io.supertokens.oauth.Transformations;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -66,22 +67,17 @@ public class OAuthTokenIntrospectAPI extends WebserverAPI {
                     main, req, resp,
                     getAppIdentifier(req),
                     enforcePublicTenantAndGetPublicTenantStorage(req),
+                    null, // clientIdToCheck
                     "/admin/oauth2/introspect", // pathProxy
                     true, // proxyToAdmin
                     false, // camelToSnakeCaseConversion
                     formFields,
                     new HashMap<>(), // getHeaders
-                    (statusCode, headers, rawBody, jsonBody) -> { // handleResponse
+                    (statusCode, headers, rawBody, jsonBody) -> { // getJsonResponse
                         JsonObject response = jsonBody.getAsJsonObject();
 
                         response.addProperty("iss", iss);
-                        if (response.has("ext")) {
-                            JsonObject ext = response.get("ext").getAsJsonObject();
-                            for (Map.Entry<String, JsonElement> entry : ext.entrySet()) {
-                                response.add(entry.getKey(), entry.getValue());
-                            }
-                            response.remove("ext");
-                        }
+                        Transformations.transformExt(response);
 
                         response.addProperty("status", "OK");
                         return response;

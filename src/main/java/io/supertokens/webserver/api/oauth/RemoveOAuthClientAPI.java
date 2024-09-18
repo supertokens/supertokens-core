@@ -55,13 +55,14 @@ public class RemoveOAuthClientAPI extends WebserverAPI {
                 main, req, resp,
                 getAppIdentifier(req),
                 enforcePublicTenantAndGetPublicTenantStorage(req),
+                clientId, // clientIdToCheck
                 "/admin/clients/" + clientId, // proxyPath
                 true, // proxyToAdmin
                 true, // camelToSnakeCaseConversion
                 new HashMap<>(), // queryParams
                 new JsonObject(), // getJsonBody
                 new HashMap<>(), // getHeadersForProxy
-                (statusCode, headers, rawBody, jsonBody) -> { // handleResponse
+                (statusCode, headers, rawBody, jsonBody) -> { // getJsonResponse
                     try {
                         OAuth.removeClientId(main, getAppIdentifier(req), enforcePublicTenantAndGetPublicTenantStorage(req), clientId);
                     } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {

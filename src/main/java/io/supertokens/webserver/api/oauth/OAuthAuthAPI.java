@@ -68,12 +68,13 @@ public class OAuthAuthAPI extends WebserverAPI {
                 main, req, resp,
                 getAppIdentifier(req),
                 enforcePublicTenantAndGetPublicTenantStorage(req),
+                queryParams.get("client_id"), // clientIdToCheck
                 "/oauth2/auth", // proxyPath
                 false, // proxyToAdmin
                 false, // camelToSnakeCaseConversion
                 queryParams,
                 headers,
-                (statusCode, responseHeaders, rawBody, jsonBody) -> { // handleResponse
+                (statusCode, responseHeaders, rawBody, jsonBody) -> { // getJsonResponse
                     if (headers == null || !responseHeaders.containsKey("Location")) {
                         throw new IllegalStateException("Invalid response from hydra");
                     }

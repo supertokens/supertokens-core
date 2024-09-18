@@ -60,6 +60,9 @@ public class OAuthTokenAPI extends WebserverAPI {
         String iss = InputParser.parseStringOrThrowError(input, "iss", false); // input validation
         JsonObject bodyFromSDK = InputParser.parseJsonObjectOrThrowError(input, "inputBody", false);
 
+        JsonObject accessTokenUpdate = InputParser.parseJsonObjectOrThrowError(input, "access_token", true);
+        JsonObject idTokenUpdate = InputParser.parseJsonObjectOrThrowError(input, "id_token", true);
+
         // useStaticKeyInput defaults to true, so we check if it has been explicitly set to false
         Boolean useStaticKeyInput = InputParser.parseBooleanOrThrowError(input, "useStaticSigningKey", true);
         boolean useDynamicKey = Boolean.FALSE.equals(useStaticKeyInput);
@@ -74,6 +77,7 @@ public class OAuthTokenAPI extends WebserverAPI {
                 main, req, resp,
                 getAppIdentifier(req),
                 enforcePublicTenantAndGetPublicTenantStorage(req),
+                formFields.get("client_id"), // clientIdToCheck
                 "/oauth2/token", // proxyPath
                 false, // proxyToAdmin
                 false, // camelToSnakeCaseConversion
@@ -87,9 +91,6 @@ public class OAuthTokenAPI extends WebserverAPI {
                     try {
                         AppIdentifier appIdentifier = getAppIdentifier(req);
                         Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
-
-                        JsonObject accessTokenUpdate = InputParser.parseJsonObjectOrThrowError(input, "access_token", true);
-                        JsonObject idTokenUpdate = InputParser.parseJsonObjectOrThrowError(input, "id_token", true);
 
                         jsonBody = OAuth.transformTokens(super.main, appIdentifier, storage, jsonBody.getAsJsonObject(), iss, accessTokenUpdate, idTokenUpdate, useDynamicKey);
             

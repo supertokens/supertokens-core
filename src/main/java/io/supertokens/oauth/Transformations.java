@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -21,10 +22,7 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.utils.Utils;
 
 public class Transformations {
-
-    public static Map<String, String> transformQueryParamsForHydra(Map<String, String> queryParams) {
-        return queryParams;
-    }
+    private static Set<String> EXT_PROPS = Set.of("rsub", "tId", "sessionHandle");
 
     public static Map<String, String> transformRequestHeadersForHydra(Map<String, String> requestHeaders) {
         if (requestHeaders == null) {
@@ -207,5 +205,21 @@ public class Transformations {
             }
         }
         return transformedJsonInput;
+    }
+
+    public static void transformExt(JsonObject payload) {
+        if (payload.has("ext")) {
+            JsonObject ext = payload.get("ext").getAsJsonObject();
+            for (String prop : EXT_PROPS) {
+                if (ext.has(prop)) {
+                    payload.addProperty(prop, ext.get(prop).getAsString());
+                    ext.remove(prop);
+                }
+            }
+            
+            if (ext.entrySet().size() == 0) {
+                payload.remove("ext");
+            }
+        }
     }
 }

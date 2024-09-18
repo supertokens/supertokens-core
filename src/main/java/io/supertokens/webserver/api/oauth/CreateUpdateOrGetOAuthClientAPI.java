@@ -26,13 +26,15 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
-import io.supertokens.oauth.HttpRequest;
+import io.supertokens.oauth.HttpRequestForOry;
 import io.supertokens.oauth.OAuth;
 import io.supertokens.oauth.exceptions.OAuthAPIException;
 import io.supertokens.oauth.exceptions.OAuthClientNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.oauth.exceptions.OAuth2ClientAlreadyExistsForAppException;
 import io.supertokens.webserver.InputParser;
@@ -60,12 +62,13 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
                 main, req, resp,
                 getAppIdentifier(req),
                 enforcePublicTenantAndGetPublicTenantStorage(req),
+                clientId, // clientIdToCheck
                 "/admin/clients/" + clientId, // proxyPath
                 true, // proxyToAdmin
                 true, // camelToSnakeCaseConversion
                 OAuthProxyHelper.defaultGetQueryParamsFromRequest(req),
                 new HashMap<>(), // getHeadersForProxy
-                (statusCode, headers, rawBody, jsonBody) -> { // handleResponse
+                (statusCode, headers, rawBody, jsonBody) -> { // getJsonResponse
                     return jsonBody.getAsJsonObject();
                 }
             );
@@ -84,16 +87,22 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
         input.addProperty("subjectType", "public");
 
         try {
+            AppIdentifier appIdentifier = getAppIdentifier(req);
+            Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
+
+            input.addProperty("owner", appIdentifier.getAppId());
+
             OAuthProxyHelper.proxyJsonPOST(
                 main, req, resp, 
-                getAppIdentifier(req),
-                enforcePublicTenantAndGetPublicTenantStorage(req),
+                appIdentifier,
+                storage,
+                null, // clientIdToCheck
                 "/admin/clients", // proxyPath
                 true, // proxyToAdmin
                 true, // camelToSnakeCaseConversion
                 input, // jsonBody
                 new HashMap<>(), // headers
-                (statusCode, headers, rawBody, jsonBody) -> { // handleResponse
+                (statusCode, headers, rawBody, jsonBody) -> { // getJsonResponse
                     String clientId = jsonBody.getAsJsonObject().get("clientId").getAsString();
 
                     try {
@@ -120,10 +129,11 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
         try {
             Map<String, String> queryParams = new HashMap<>();
             queryParams.put("clientId", clientId);
-            HttpRequest.Response response = OAuth.doOAuthProxyGET(
+            HttpRequestForOry.Response response = OAuth.doOAuthProxyGET(
                     main,
                     getAppIdentifier(req),
                     enforcePublicTenantAndGetPublicTenantStorage(req),
+                    clientId,
                     "/admin/clients/" + clientId,
                     true, true, queryParams, null);
 
@@ -145,13 +155,14 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
                 main, req, resp,
                 getAppIdentifier(req),
                 enforcePublicTenantAndGetPublicTenantStorage(req),
+                clientId, // clientIdToCheck
                 "/admin/clients/" + clientId,
                 true, // proxyToAdmin
                 true, // camelToSnakeCaseConversion
                 new HashMap<>(), // queryParams
                 input, // jsonBody
                 new HashMap<>(), // headers
-                (statusCode, headers, rawBody, jsonBody) -> { // handleResponse
+                (statusCode, headers, rawBody, jsonBody) -> { // getJsonResponse
                     return jsonBody.getAsJsonObject();
                 }
             );

@@ -13,7 +13,7 @@ import com.google.gson.JsonObject;
 
 import io.supertokens.Main;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
-import io.supertokens.oauth.HttpRequest;
+import io.supertokens.oauth.HttpRequestForOry;
 import io.supertokens.oauth.OAuth;
 import io.supertokens.oauth.exceptions.OAuthAPIException;
 import io.supertokens.oauth.exceptions.OAuthClientNotFoundException;
@@ -31,11 +31,11 @@ public class OAuthProxyHelper {
     private static final long serialVersionUID = -8734479943734920904L;
 
     public static void proxyGET(Main main, HttpServletRequest req, HttpServletResponse resp, AppIdentifier appIdentifier, Storage storage,
-                                String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion,
+                                String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion,
                                 Map<String, String> queryParams, Map<String, String> headers,
                                 GetJsonResponse getJsonResponse) throws IOException, ServletException {
         try {
-            HttpRequest.Response response = OAuth.doOAuthProxyGET(main, appIdentifier, storage, path, proxyToAdmin, camelToSnakeCaseConversion, queryParams, headers);
+            HttpRequestForOry.Response response = OAuth.doOAuthProxyGET(main, appIdentifier, storage, clientIdToCheck, path, proxyToAdmin, camelToSnakeCaseConversion, queryParams, headers);
 
             JsonObject jsonResponse = getJsonResponse.apply(
                 response.statusCode,
@@ -57,11 +57,11 @@ public class OAuthProxyHelper {
     }
 
     public static void proxyFormPOST(Main main, HttpServletRequest req, HttpServletResponse resp, AppIdentifier appIdentifier, Storage storage,
-                                     String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion,
+                                     String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion,
                                      Map<String, String> formFields, Map<String, String> headers,
                                      GetJsonResponse getJsonResponse) throws IOException, ServletException {
         try {
-            HttpRequest.Response response = OAuth.doOAuthProxyFormPOST(main, appIdentifier, storage, path, proxyToAdmin, camelToSnakeCaseConversion, formFields, headers);
+            HttpRequestForOry.Response response = OAuth.doOAuthProxyFormPOST(main, appIdentifier, storage, clientIdToCheck, path, proxyToAdmin, camelToSnakeCaseConversion, formFields, headers);
 
             JsonObject jsonResponse = getJsonResponse.apply(
                 response.statusCode,
@@ -83,11 +83,11 @@ public class OAuthProxyHelper {
     }
 
     public static void proxyJsonPOST(Main main, HttpServletRequest req, HttpServletResponse resp, AppIdentifier appIdentifier, Storage storage,
-                                     String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion,
+                                     String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion,
                                      JsonObject jsonInput, Map<String, String> headers,
                                      GetJsonResponse getJsonResponse) throws IOException, ServletException {
         try {
-            HttpRequest.Response response = OAuth.doOAuthProxyJsonPOST(main, appIdentifier, storage, path, proxyToAdmin, camelToSnakeCaseConversion, jsonInput, headers);
+            HttpRequestForOry.Response response = OAuth.doOAuthProxyJsonPOST(main, appIdentifier, storage, clientIdToCheck, path, proxyToAdmin, camelToSnakeCaseConversion, jsonInput, headers);
 
             JsonObject jsonResponse = getJsonResponse.apply(
                 response.statusCode,
@@ -109,12 +109,12 @@ public class OAuthProxyHelper {
     }
 
     public static void proxyJsonPUT(Main main, HttpServletRequest req, HttpServletResponse resp, AppIdentifier appIdentifier, Storage storage,
-                                    String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion,
+                                    String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion,
                                     Map<String, String> queryParams, JsonObject jsonInput,
                                     Map<String, String> headers, GetJsonResponse getJsonResponse) throws IOException, ServletException {
 
         try {
-            HttpRequest.Response response = OAuth.doOAuthProxyJsonPUT(main, appIdentifier, storage, path, proxyToAdmin, camelToSnakeCaseConversion, queryParams,  jsonInput, headers);
+            HttpRequestForOry.Response response = OAuth.doOAuthProxyJsonPUT(main, appIdentifier, storage, clientIdToCheck, path, proxyToAdmin, camelToSnakeCaseConversion, queryParams,  jsonInput, headers);
 
             JsonObject jsonResponse = getJsonResponse.apply(
                 response.statusCode,
@@ -136,11 +136,11 @@ public class OAuthProxyHelper {
     }
 
     public static void proxyJsonDELETE(Main main, HttpServletRequest req, HttpServletResponse resp, AppIdentifier appIdentifier, Storage storage,
-                                       String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion,
+                                       String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion,
                                        Map<String, String> queryParams, JsonObject jsonInput, Map<String, String> headers,
                                        GetJsonResponse getJsonResponse) throws IOException, ServletException {
         try {
-            HttpRequest.Response response = OAuth.doOAuthProxyJsonDELETE(main, appIdentifier, storage, path, proxyToAdmin, camelToSnakeCaseConversion, queryParams, jsonInput, headers);
+            HttpRequestForOry.Response response = OAuth.doOAuthProxyJsonDELETE(main, appIdentifier, storage, clientIdToCheck, path, proxyToAdmin, camelToSnakeCaseConversion, queryParams, jsonInput, headers);
 
             JsonObject jsonResponse = getJsonResponse.apply(
                 response.statusCode,

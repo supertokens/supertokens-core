@@ -48,6 +48,7 @@ public class RevokeOAuthToken extends WebserverAPI {
                 main, req, resp,
                 appIdentifier,
                 storage,
+                null, // clientIdToCheck
                 "/oauth2/revoke", // proxyPath
                 true, // proxyToAdmin
                 true, // camelToSnakeCaseConversion

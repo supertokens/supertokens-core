@@ -49,6 +49,7 @@ public class RevokeOAuthConsentSessions extends WebserverAPI {
                 main, req, resp,
                 appIdentifier,
                 storage,
+                null, // clientIdToCheck
                 "/admin/oauth2/auth/sessions/consent", // proxyPath
                 true, // proxyToAdmin
                 true, // camelToSnakeCaseConversion
