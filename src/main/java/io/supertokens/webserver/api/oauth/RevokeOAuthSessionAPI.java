@@ -18,8 +18,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-public class RevokeOAuthSession extends WebserverAPI {
-    public RevokeOAuthSession(Main main){
+public class RevokeOAuthSessionAPI extends WebserverAPI {
+    public RevokeOAuthSessionAPI(Main main){
         super(main, RECIPE_ID.OAUTH.toString());
     }
 

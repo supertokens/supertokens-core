@@ -3,7 +3,6 @@ package io.supertokens.webserver.api.oauth;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import com.google.gson.JsonObject;
 
@@ -21,9 +20,9 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-public class RevokeOAuthConsentSessions extends WebserverAPI {
+public class RevokeOAuthConsentSessionsAPI extends WebserverAPI {
 
-    public RevokeOAuthConsentSessions(Main main){
+    public RevokeOAuthConsentSessionsAPI(Main main){
         super(main, RECIPE_ID.OAUTH.toString());
     }
 

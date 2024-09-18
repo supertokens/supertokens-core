@@ -369,6 +369,59 @@ public class OAuth {
 
     }
 
+    public static void verifyAndUpdateIntrospectRefreshTokenPayload(Main main, AppIdentifier appIdentifier,
+            Storage storage, JsonObject payload, String iss, String refreshToken) throws StorageQueryException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException {
+        
+        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+
+        if (!payload.get("active").getAsBoolean()) {
+            return; // refresh token is not active
+        }
+
+        Transformations.transformExt(payload);
+
+        long issuedAt = payload.get("iat").getAsLong();
+        String subject = payload.get("sub").getAsString();
+        String clientId = payload.get("client_id").getAsString();
+        String sessionHandle = null;
+        if (payload.has("sessionHandle")) {
+            sessionHandle = payload.get("sessionHandle").getAsString();
+        }
+
+        boolean isSubjectValid = !oauthStorage.isRevoked(appIdentifier, "sub", subject, issuedAt);
+        boolean isClientIdSubjectValid = !oauthStorage.isRevoked(appIdentifier, "client_id_sub", clientId + ":" + subject, issuedAt);
+        boolean isSessionHandleValid = true;
+        if (sessionHandle != null) {
+            isSessionHandleValid = !oauthStorage.isRevoked(appIdentifier, "sessionHandle", sessionHandle, issuedAt);
+        }
+
+        if (isSubjectValid && isClientIdSubjectValid && isSessionHandleValid) {
+            payload.addProperty("iss", iss);
+        } else {
+            payload.entrySet().clear();
+            payload.addProperty("active", false);
+
+            // // ideally we want to revoke the refresh token in hydra, but we can't since we don't have the client secret here
+            // refreshToken = refreshToken.replace("st_rt_", "ory_rt_");
+            // Map<String, String> formFields = new HashMap<>();
+            // formFields.put("token", refreshToken);
+
+            // try {
+            //     doOAuthProxyFormPOST(
+            //         main, appIdentifier, oauthStorage,
+            //         clientId, // clientIdToCheck
+            //         "/oauth2/revoke", // path
+            //         false, // proxyToAdmin
+            //         false, // camelToSnakeCaseConversion
+            //         formFields,
+            //         new HashMap<>());
+            // } catch (OAuthAPIException | OAuthClientNotFoundException e) {
+            //     // ignore
+            // }
+        }
+    }
+
+
     public static JsonObject introspectAccessToken(Main main, AppIdentifier appIdentifier, Storage storage,
             String token) throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException, UnsupportedJWTSigningAlgorithmException {
         try {
@@ -390,13 +443,13 @@ public class OAuth {
                 boolean isRTHashValid = !oauthStorage.isRevoked(appIdentifier, "rt_hash", rtHash, issuedAt);
                 boolean isSubjectValid = !oauthStorage.isRevoked(appIdentifier, "sub", subject, issuedAt);
                 boolean isJTIValid = !oauthStorage.isRevoked(appIdentifier, "jti", jti, issuedAt);
-                boolean isClientIdValid = !oauthStorage.isRevoked(appIdentifier, "client_id_sub", clientId + ":" + subject, issuedAt);
+                boolean isClientIdSubjectValid = !oauthStorage.isRevoked(appIdentifier, "client_id_sub", clientId + ":" + subject, issuedAt);
                 boolean isSessionHandleValid = true;
                 if (sessionHandle != null) {
                     isSessionHandleValid = !oauthStorage.isRevoked(appIdentifier, "sessionHandle", sessionHandle, issuedAt);
                 }
 
-                if (isRTHashValid && isSubjectValid && isJTIValid && isClientIdValid && isSessionHandleValid) {
+                if (isRTHashValid && isSubjectValid && isJTIValid && isClientIdSubjectValid && isSessionHandleValid) {
                     payload.addProperty("active", true);
                     payload.addProperty("token_type", "Bearer");
                     payload.addProperty("token_use", "access_token");

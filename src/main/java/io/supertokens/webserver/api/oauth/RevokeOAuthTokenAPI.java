@@ -23,8 +23,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-public class RevokeOAuthToken extends WebserverAPI {
-    public RevokeOAuthToken(Main main){
+public class RevokeOAuthTokenAPI extends WebserverAPI {
+    public RevokeOAuthTokenAPI(Main main){
         super(main, RECIPE_ID.OAUTH.toString());
     }
 
@@ -59,7 +59,7 @@ public class RevokeOAuthToken extends WebserverAPI {
                     null, //clientIdToCheck
                     "/oauth2/revoke", // path
                     false, // proxyToAdmin
-                    true, // camelToSnakeCaseConversion
+                    false, // camelToSnakeCaseConversion
                     formFields, // formFields
                     new HashMap<>(), // headers
                     (statusCode, headers, rawBody, jsonBody) -> { // getJsonResponse
@@ -88,7 +88,5 @@ public class RevokeOAuthToken extends WebserverAPI {
                  UnsupportedJWTSigningAlgorithmException | StorageTransactionLogicException e) {
             throw new ServletException(e);
         }
-
-        
     }
 }

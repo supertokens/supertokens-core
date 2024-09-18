@@ -18,12 +18,13 @@ package io.supertokens.webserver.api.oauth;
 
 import com.google.gson.*;
 import io.supertokens.Main;
+import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.oauth.OAuth;
-import io.supertokens.oauth.Transformations;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
@@ -63,10 +64,12 @@ public class OAuthTokenIntrospectAPI extends WebserverAPI {
             }
 
             try {
+                AppIdentifier appIdentifier = getAppIdentifier(req);
+                Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
                 OAuthProxyHelper.proxyFormPOST(
                     main, req, resp,
-                    getAppIdentifier(req),
-                    enforcePublicTenantAndGetPublicTenantStorage(req),
+                    appIdentifier,
+                    storage,
                     null, // clientIdToCheck
                     "/admin/oauth2/introspect", // pathProxy
                     true, // proxyToAdmin
@@ -76,8 +79,12 @@ public class OAuthTokenIntrospectAPI extends WebserverAPI {
                     (statusCode, headers, rawBody, jsonBody) -> { // getJsonResponse
                         JsonObject response = jsonBody.getAsJsonObject();
 
-                        response.addProperty("iss", iss);
-                        Transformations.transformExt(response);
+                        try {
+                            OAuth.verifyAndUpdateIntrospectRefreshTokenPayload(main, appIdentifier, storage, response, iss, token);
+                        } catch (StorageQueryException | TenantOrAppNotFoundException |
+                                 FeatureNotEnabledException | InvalidConfigException e) {
+                            throw new ServletException(e);
+                        }
 
                         response.addProperty("status", "OK");
                         return response;
