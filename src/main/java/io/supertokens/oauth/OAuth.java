@@ -445,4 +445,10 @@ public class OAuth {
             // the token is already invalid or revoked, so ignore
         }
     }
+
+	public static void revokeSessionHandle(Main main, AppIdentifier appIdentifier, Storage storage,
+			String sessionHandle) throws StorageQueryException {
+        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+        oauthStorage.revoke(appIdentifier, "sessionHandle", sessionHandle);
+	}
 }

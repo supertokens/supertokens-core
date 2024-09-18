@@ -287,6 +287,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
 
         addAPI(new RevokeOAuthToken(main));
         addAPI(new RevokeOAuthConsentSessions(main));
+        addAPI(new RevokeOAuthSession(main));
 
         StandardContext context = tomcatReference.getContext();
         Tomcat tomcat = tomcatReference.getTomcat();
