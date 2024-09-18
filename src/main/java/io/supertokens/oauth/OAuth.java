@@ -79,7 +79,6 @@ public class OAuth {
         }
 
         // Request transformations
-        queryParams = Transformations.transformQueryParamsForHydra(queryParams);
         headers = Transformations.transformRequestHeadersForHydra(headers);
 
         String baseURL;

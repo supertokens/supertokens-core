@@ -22,10 +22,6 @@ import io.supertokens.utils.Utils;
 
 public class Transformations {
 
-    public static Map<String, String> transformQueryParamsForHydra(Map<String, String> queryParams) {
-        return queryParams;
-    }
-
     public static Map<String, String> transformRequestHeadersForHydra(Map<String, String> requestHeaders) {
         if (requestHeaders == null) {
             return requestHeaders;
