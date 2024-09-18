@@ -73,7 +73,7 @@ public class OAuthAuthAPI extends WebserverAPI {
                 false, // camelToSnakeCaseConversion
                 queryParams,
                 headers,
-                (statusCode, responseHeaders, rawBody, jsonBody) -> { // handleResponse
+                (statusCode, responseHeaders, rawBody, jsonBody) -> { // getJsonResponse
                     if (headers == null || !responseHeaders.containsKey("Location")) {
                         throw new IllegalStateException("Invalid response from hydra");
                     }

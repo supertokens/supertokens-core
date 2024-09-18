@@ -26,7 +26,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
-import io.supertokens.oauth.HttpRequest;
+import io.supertokens.oauth.HttpRequestForOry;
 import io.supertokens.oauth.OAuth;
 import io.supertokens.oauth.exceptions.OAuthAPIException;
 import io.supertokens.oauth.exceptions.OAuthClientNotFoundException;
@@ -65,7 +65,7 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
                 true, // camelToSnakeCaseConversion
                 OAuthProxyHelper.defaultGetQueryParamsFromRequest(req),
                 new HashMap<>(), // getHeadersForProxy
-                (statusCode, headers, rawBody, jsonBody) -> { // handleResponse
+                (statusCode, headers, rawBody, jsonBody) -> { // getJsonResponse
                     return jsonBody.getAsJsonObject();
                 }
             );
@@ -93,7 +93,7 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
                 true, // camelToSnakeCaseConversion
                 input, // jsonBody
                 new HashMap<>(), // headers
-                (statusCode, headers, rawBody, jsonBody) -> { // handleResponse
+                (statusCode, headers, rawBody, jsonBody) -> { // getJsonResponse
                     String clientId = jsonBody.getAsJsonObject().get("clientId").getAsString();
 
                     try {
@@ -120,7 +120,7 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
         try {
             Map<String, String> queryParams = new HashMap<>();
             queryParams.put("clientId", clientId);
-            HttpRequest.Response response = OAuth.doOAuthProxyGET(
+            HttpRequestForOry.Response response = OAuth.doOAuthProxyGET(
                     main,
                     getAppIdentifier(req),
                     enforcePublicTenantAndGetPublicTenantStorage(req),
@@ -151,7 +151,7 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
                 new HashMap<>(), // queryParams
                 input, // jsonBody
                 new HashMap<>(), // headers
-                (statusCode, headers, rawBody, jsonBody) -> { // handleResponse
+                (statusCode, headers, rawBody, jsonBody) -> { // getJsonResponse
                     return jsonBody.getAsJsonObject();
                 }
             );

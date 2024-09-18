@@ -15,7 +15,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class HttpRequest {
+public class HttpRequestForOry {
+    // This is a helper class to make HTTP requests to the hydra server specifically.
+    // Although this is similar to HttpRequest, this is slightly modified to be able to work with
+    // form data, headers in request and responses, query params in non-get requests, reading responses in
+    // case of errors, etc.
+    // Left the original HttpRequest as is to avoid any issues with existing code.
+
     private static final int CONNECTION_TIMEOUT = 5000;
     private static final int READ_TIMEOUT = 5000;
 

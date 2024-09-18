@@ -71,7 +71,7 @@ public class OAuthTokenIntrospectAPI extends WebserverAPI {
                     false, // camelToSnakeCaseConversion
                     formFields,
                     new HashMap<>(), // getHeaders
-                    (statusCode, headers, rawBody, jsonBody) -> { // handleResponse
+                    (statusCode, headers, rawBody, jsonBody) -> { // getJsonResponse
                         JsonObject response = jsonBody.getAsJsonObject();
 
                         response.addProperty("iss", iss);

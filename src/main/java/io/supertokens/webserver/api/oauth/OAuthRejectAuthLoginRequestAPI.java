@@ -42,7 +42,7 @@ public class OAuthRejectAuthLoginRequestAPI extends WebserverAPI {
                 OAuthProxyHelper.defaultGetQueryParamsFromRequest(req),
                 input, // jsonBody
                 new HashMap<>(), // headers
-                (statusCode, headers, rawBody, jsonBody) -> { // handleResponse
+                (statusCode, headers, rawBody, jsonBody) -> { // getJsonResponse
                     JsonObject response = jsonBody.getAsJsonObject();
                     response.addProperty("status", "OK");
                     return response;

@@ -44,7 +44,7 @@ public class OAuthClientListAPI extends WebserverAPI {
                 true, // camelToSnakeCaseConversion
                 new HashMap<>(), // queryParams
                 new HashMap<>(), // headers
-                (statusCode, headers, rawBody, jsonBody) -> { // handleResponse
+                (statusCode, headers, rawBody, jsonBody) -> { // getJsonResponse
                     JsonObject response = new JsonObject();
                     response.addProperty("status", "OK");
 

@@ -37,7 +37,7 @@ public class OAuthGetAuthLoginRequestAPI extends WebserverAPI {
                 true, // camelToSnakeCaseConversion
                 OAuthProxyHelper.defaultGetQueryParamsFromRequest(req),
                 new HashMap<>(), // headers
-                (statusCode, headers, rawBody, jsonBody) -> { // handleResponse
+                (statusCode, headers, rawBody, jsonBody) -> { // getJsonResponse
                     JsonObject response = jsonBody.getAsJsonObject();
                     response.addProperty("status", "OK");
                     return response;
