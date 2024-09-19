@@ -42,7 +42,9 @@ import io.supertokens.session.jwt.JWT.JWTException;
 import io.supertokens.utils.Utils;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.*;
@@ -285,6 +287,7 @@ public class OAuth {
 
     public static JsonObject transformTokens(Main main, AppIdentifier appIdentifier, Storage storage, JsonObject jsonBody, String iss, JsonObject accessTokenUpdate, JsonObject idTokenUpdate, boolean useDynamicKey) throws IOException, JWTException, InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException, JWTCreationException, InvalidConfigException {
         String rtHash = null;
+        String atHash = null;
 
         if (jsonBody.has("refresh_token")) {
             String refreshToken = jsonBody.get("refresh_token").getAsString();
@@ -296,13 +299,24 @@ public class OAuth {
 
         if (jsonBody.has("access_token")) {
             String accessToken = jsonBody.get("access_token").getAsString();
-            accessToken = OAuthToken.reSignToken(appIdentifier, main, accessToken, iss, accessTokenUpdate, rtHash, OAuthToken.TokenType.ACCESS_TOKEN, useDynamicKey, 0);
+            accessToken = OAuthToken.reSignToken(appIdentifier, main, accessToken, iss, accessTokenUpdate, rtHash, null, OAuthToken.TokenType.ACCESS_TOKEN, useDynamicKey, 0);
             jsonBody.addProperty("access_token", accessToken);
+
+            // Compute at_hash as per OAuth 2.0 standard
+            // 1. Take the access token
+            // 2. Hash it with SHA-256
+            // 3. Take the left-most half of the hash
+            // 4. Base64url encode it
+            byte[] accessTokenBytes = accessToken.getBytes(StandardCharsets.UTF_8);
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(accessTokenBytes);
+            byte[] halfHash = Arrays.copyOf(hash, hash.length / 2);
+            atHash = Base64.getUrlEncoder().withoutPadding().encodeToString(halfHash);
         }
 
         if (jsonBody.has("id_token")) {
             String idToken = jsonBody.get("id_token").getAsString();
-            idToken = OAuthToken.reSignToken(appIdentifier, main, idToken, iss, idTokenUpdate, null, OAuthToken.TokenType.ID_TOKEN, useDynamicKey, 0);
+            idToken = OAuthToken.reSignToken(appIdentifier, main, idToken, iss, idTokenUpdate, null, atHash, OAuthToken.TokenType.ID_TOKEN, useDynamicKey, 0);
             jsonBody.addProperty("id_token", idToken);
         }
 
