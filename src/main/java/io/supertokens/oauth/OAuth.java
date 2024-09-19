@@ -468,13 +468,9 @@ public class OAuth {
         return result;
     }
 
-    public static void revokeAllConsentSessions(Main main, AppIdentifier appIdentifier, Storage storage, String subject, String clientId) throws StorageQueryException {
+    public static void revokeTokensForClientId(Main main, AppIdentifier appIdentifier, Storage storage, String clientId) throws StorageQueryException {
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
-        if (clientId == null) {
-            oauthStorage.revoke(appIdentifier, "sub", subject);
-        } else {
-            oauthStorage.revoke(appIdentifier, "client_id_sub", clientId + ":" + subject);
-        }
+        oauthStorage.revoke(appIdentifier, "client_id", clientId);
     }
 
 	public static void revokeRefreshToken(Main main, AppIdentifier appIdentifier, Storage storage, String token) throws StorageQueryException, NoSuchAlgorithmException {
