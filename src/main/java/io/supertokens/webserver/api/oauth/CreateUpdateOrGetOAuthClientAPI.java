@@ -56,9 +56,9 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         String clientId = InputParser.getQueryParamOrThrowError(req, "clientId", false);
-        
+
         try {
-            OAuthProxyHelper.proxyGET(
+            HttpRequestForOry.Response response = OAuthProxyHelper.proxyGET(
                 main, req, resp,
                 getAppIdentifier(req),
                 enforcePublicTenantAndGetPublicTenantStorage(req),
@@ -67,11 +67,11 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
                 true, // proxyToAdmin
                 true, // camelToSnakeCaseConversion
                 OAuthProxyHelper.defaultGetQueryParamsFromRequest(req),
-                new HashMap<>(), // getHeadersForProxy
-                (statusCode, headers, rawBody, jsonBody) -> { // getJsonResponse
-                    return jsonBody.getAsJsonObject();
-                }
+                new HashMap<>()
             );
+            if (response != null) {
+                super.sendJsonResponse(200, response.jsonResponse, resp);
+            }
         } catch (IOException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
@@ -92,7 +92,7 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
 
             input.addProperty("owner", appIdentifier.getAppId());
 
-            OAuthProxyHelper.proxyJsonPOST(
+            HttpRequestForOry.Response response = OAuthProxyHelper.proxyJsonPOST(
                 main, req, resp, 
                 appIdentifier,
                 storage,
@@ -101,20 +101,20 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
                 true, // proxyToAdmin
                 true, // camelToSnakeCaseConversion
                 input, // jsonBody
-                new HashMap<>(), // headers
-                (statusCode, headers, rawBody, jsonBody) -> { // getJsonResponse
-                    String clientId = jsonBody.getAsJsonObject().get("clientId").getAsString();
-
-                    try {
-                        OAuth.addClientId(main, getAppIdentifier(req), enforcePublicTenantAndGetPublicTenantStorage(req), clientId);
-                    } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
-                        throw new ServletException(e);
-                    } catch (OAuth2ClientAlreadyExistsForAppException e) {
-                        // ignore
-                    }
-                    return jsonBody.getAsJsonObject();
-                }
+                new HashMap<>() // headers
             );
+            if (response != null) {
+                String clientId = response.jsonResponse.getAsJsonObject().get("clientId").getAsString();
+
+                try {
+                    OAuth.addClientId(main, getAppIdentifier(req), enforcePublicTenantAndGetPublicTenantStorage(req), clientId);
+                } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
+                    throw new ServletException(e);
+                } catch (OAuth2ClientAlreadyExistsForAppException e) {
+                    // ignore
+                }
+                super.sendJsonResponse(200, response.jsonResponse, resp);
+            }
         } catch (IOException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
@@ -151,7 +151,7 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
         }
 
         try {
-            OAuthProxyHelper.proxyJsonPUT(
+            HttpRequestForOry.Response response = OAuthProxyHelper.proxyJsonPUT(
                 main, req, resp,
                 getAppIdentifier(req),
                 enforcePublicTenantAndGetPublicTenantStorage(req),
@@ -161,11 +161,12 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
                 true, // camelToSnakeCaseConversion
                 new HashMap<>(), // queryParams
                 input, // jsonBody
-                new HashMap<>(), // headers
-                (statusCode, headers, rawBody, jsonBody) -> { // getJsonResponse
-                    return jsonBody.getAsJsonObject();
-                }
+                new HashMap<>() // headers
             );
+
+            if (response != null) {
+                super.sendJsonResponse(200, response.jsonResponse, resp);
+            }
         } catch (IOException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }

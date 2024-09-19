@@ -22,6 +22,7 @@ import com.google.gson.JsonPrimitive;
 
 import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
+import io.supertokens.oauth.HttpRequestForOry;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.InputParser;
@@ -64,7 +65,7 @@ public class OAuthAuthAPI extends WebserverAPI {
         }
 
         try {
-            OAuthProxyHelper.proxyGET(
+            HttpRequestForOry.Response response = OAuthProxyHelper.proxyGET(
                 main, req, resp,
                 getAppIdentifier(req),
                 enforcePublicTenantAndGetPublicTenantStorage(req),
@@ -73,30 +74,32 @@ public class OAuthAuthAPI extends WebserverAPI {
                 false, // proxyToAdmin
                 false, // camelToSnakeCaseConversion
                 queryParams,
-                headers,
-                (statusCode, responseHeaders, rawBody, jsonBody) -> { // getJsonResponse
-                    if (headers == null || !responseHeaders.containsKey("Location")) {
-                        throw new IllegalStateException("Invalid response from hydra");
-                    }
-            
-                    String redirectTo = responseHeaders.get("Location").get(0);
-                    List<String> responseCookies = responseHeaders.get("Set-Cookie");
-            
-                    JsonObject response = new JsonObject();
-                    response.addProperty("redirectTo", redirectTo);
-
-                    JsonArray jsonCookies = new JsonArray();
-                    if (responseCookies != null) {
-                        for (String cookie : responseCookies) {
-                            jsonCookies.add(new JsonPrimitive(cookie));
-                        }
-                    }
-            
-                    response.add("cookies", jsonCookies);
-                    response.addProperty("status", "OK");
-                    return response;
-                }
+                headers
             );
+
+            if (response != null) {
+                if (response.headers == null || !response.headers.containsKey("Location")) {
+                    throw new IllegalStateException("Invalid response from hydra");
+                }
+        
+                String redirectTo = response.headers.get("Location").get(0);
+                List<String> responseCookies = response.headers.get("Set-Cookie");
+        
+                JsonObject finalResponse = new JsonObject();
+                finalResponse.addProperty("redirectTo", redirectTo);
+
+                JsonArray jsonCookies = new JsonArray();
+                if (responseCookies != null) {
+                    for (String cookie : responseCookies) {
+                        jsonCookies.add(new JsonPrimitive(cookie));
+                    }
+                }
+        
+                finalResponse.add("cookies", jsonCookies);
+                finalResponse.addProperty("status", "OK");
+                
+                super.sendJsonResponse(200, finalResponse, resp);
+            }
 
         } catch (IOException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);

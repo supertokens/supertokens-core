@@ -8,6 +8,7 @@ import com.google.gson.JsonObject;
 
 import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
+import io.supertokens.oauth.HttpRequestForOry;
 import io.supertokens.oauth.OAuth;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
@@ -54,7 +55,7 @@ public class RevokeOAuthConsentSessionsAPI extends WebserverAPI {
             OAuth.revokeAllConsentSessions(main, appIdentifier, storage, subject, clientId);
 
             if (Boolean.TRUE.equals(all)) {
-                OAuthProxyHelper.proxyJsonDELETE(
+                HttpRequestForOry.Response response = OAuthProxyHelper.proxyJsonDELETE(
                     main, req, resp,
                     appIdentifier,
                     storage,
@@ -64,13 +65,12 @@ public class RevokeOAuthConsentSessionsAPI extends WebserverAPI {
                     true, // camelToSnakeCaseConversion
                     queryParams, // queryParams
                     new JsonObject(), // jsonInput
-                    new HashMap<>(), // headers
-                    (statusCode, headers, rawBody, jsonBody) -> { // handleResponse
-                        JsonObject response = new JsonObject();
-                        response.addProperty("status", "OK");
-                        return response;
-                    }
+                    new HashMap<>() // headers
                 );
+                if (response != null) {
+                    response.jsonResponse.getAsJsonObject().addProperty("status", "OK");
+                    super.sendJsonResponse(200, response.jsonResponse, resp);
+                }
                 return;
             }
 

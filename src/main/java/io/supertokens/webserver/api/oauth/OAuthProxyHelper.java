@@ -5,10 +5,8 @@ import java.io.Serial;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import io.supertokens.Main;
@@ -30,22 +28,11 @@ public class OAuthProxyHelper {
     @Serial
     private static final long serialVersionUID = -8734479943734920904L;
 
-    public static void proxyGET(Main main, HttpServletRequest req, HttpServletResponse resp, AppIdentifier appIdentifier, Storage storage,
+    public static HttpRequestForOry.Response proxyGET(Main main, HttpServletRequest req, HttpServletResponse resp, AppIdentifier appIdentifier, Storage storage,
                                 String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion,
-                                Map<String, String> queryParams, Map<String, String> headers,
-                                GetJsonResponse getJsonResponse) throws IOException, ServletException {
+                                Map<String, String> queryParams, Map<String, String> headers) throws IOException, ServletException {
         try {
-            HttpRequestForOry.Response response = OAuth.doOAuthProxyGET(main, appIdentifier, storage, clientIdToCheck, path, proxyToAdmin, camelToSnakeCaseConversion, queryParams, headers);
-
-            JsonObject jsonResponse = getJsonResponse.apply(
-                response.statusCode,
-                response.headers,
-                response.rawResponse,
-                response.jsonResponse
-            );
-            resp.setStatus(200);
-            resp.setHeader("Content-Type", "application/json; charset=UTF-8");
-            resp.getWriter().println(jsonResponse.toString());
+            return OAuth.doOAuthProxyGET(main, appIdentifier, storage, clientIdToCheck, path, proxyToAdmin, camelToSnakeCaseConversion, queryParams, headers);
 
         } catch (OAuthClientNotFoundException e) {
             handleOAuthClientNotFoundException(resp);
@@ -54,25 +41,14 @@ public class OAuthProxyHelper {
         } catch (StorageQueryException | TenantOrAppNotFoundException | FeatureNotEnabledException | InvalidConfigException e) {
             throw new ServletException(e);
         }
+        return null;
     }
 
-    public static void proxyFormPOST(Main main, HttpServletRequest req, HttpServletResponse resp, AppIdentifier appIdentifier, Storage storage,
+    public static HttpRequestForOry.Response proxyFormPOST(Main main, HttpServletRequest req, HttpServletResponse resp, AppIdentifier appIdentifier, Storage storage,
                                      String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion,
-                                     Map<String, String> formFields, Map<String, String> headers,
-                                     GetJsonResponse getJsonResponse) throws IOException, ServletException {
+                                     Map<String, String> formFields, Map<String, String> headers) throws IOException, ServletException {
         try {
-            HttpRequestForOry.Response response = OAuth.doOAuthProxyFormPOST(main, appIdentifier, storage, clientIdToCheck, path, proxyToAdmin, camelToSnakeCaseConversion, formFields, headers);
-
-            JsonObject jsonResponse = getJsonResponse.apply(
-                response.statusCode,
-                response.headers,
-                response.rawResponse,
-                response.jsonResponse
-            );
-            resp.setStatus(200);
-            resp.setHeader("Content-Type", "application/json; charset=UTF-8");
-            resp.getWriter().println(jsonResponse.toString());
-
+            return OAuth.doOAuthProxyFormPOST(main, appIdentifier, storage, clientIdToCheck, path, proxyToAdmin, camelToSnakeCaseConversion, formFields, headers);
         } catch (OAuthClientNotFoundException e) {
             handleOAuthClientNotFoundException(resp);
         } catch (OAuthAPIException e) {
@@ -80,25 +56,14 @@ public class OAuthProxyHelper {
         } catch (StorageQueryException | TenantOrAppNotFoundException | FeatureNotEnabledException | InvalidConfigException e) {
             throw new ServletException(e);
         }
+        return null;
     }
 
-    public static void proxyJsonPOST(Main main, HttpServletRequest req, HttpServletResponse resp, AppIdentifier appIdentifier, Storage storage,
+    public static HttpRequestForOry.Response proxyJsonPOST(Main main, HttpServletRequest req, HttpServletResponse resp, AppIdentifier appIdentifier, Storage storage,
                                      String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion,
-                                     JsonObject jsonInput, Map<String, String> headers,
-                                     GetJsonResponse getJsonResponse) throws IOException, ServletException {
+                                     JsonObject jsonInput, Map<String, String> headers) throws IOException, ServletException {
         try {
-            HttpRequestForOry.Response response = OAuth.doOAuthProxyJsonPOST(main, appIdentifier, storage, clientIdToCheck, path, proxyToAdmin, camelToSnakeCaseConversion, jsonInput, headers);
-
-            JsonObject jsonResponse = getJsonResponse.apply(
-                response.statusCode,
-                response.headers,
-                response.rawResponse,
-                response.jsonResponse
-            );
-            resp.setStatus(200);
-            resp.setHeader("Content-Type", "application/json; charset=UTF-8");
-            resp.getWriter().println(jsonResponse.toString());
-
+            return OAuth.doOAuthProxyJsonPOST(main, appIdentifier, storage, clientIdToCheck, path, proxyToAdmin, camelToSnakeCaseConversion, jsonInput, headers);
         } catch (OAuthClientNotFoundException e) {
             handleOAuthClientNotFoundException(resp);
         } catch (OAuthAPIException e) {
@@ -106,26 +71,15 @@ public class OAuthProxyHelper {
         } catch (StorageQueryException | TenantOrAppNotFoundException | FeatureNotEnabledException | InvalidConfigException e) {
             throw new ServletException(e);
         }
+        return null;
     }
 
-    public static void proxyJsonPUT(Main main, HttpServletRequest req, HttpServletResponse resp, AppIdentifier appIdentifier, Storage storage,
+    public static HttpRequestForOry.Response proxyJsonPUT(Main main, HttpServletRequest req, HttpServletResponse resp, AppIdentifier appIdentifier, Storage storage,
                                     String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion,
-                                    Map<String, String> queryParams, JsonObject jsonInput,
-                                    Map<String, String> headers, GetJsonResponse getJsonResponse) throws IOException, ServletException {
+                                    Map<String, String> queryParams, JsonObject jsonInput, Map<String, String> headers) throws IOException, ServletException {
 
         try {
-            HttpRequestForOry.Response response = OAuth.doOAuthProxyJsonPUT(main, appIdentifier, storage, clientIdToCheck, path, proxyToAdmin, camelToSnakeCaseConversion, queryParams,  jsonInput, headers);
-
-            JsonObject jsonResponse = getJsonResponse.apply(
-                response.statusCode,
-                response.headers,
-                response.rawResponse,
-                response.jsonResponse
-            );
-            resp.setStatus(200);
-            resp.setHeader("Content-Type", "application/json; charset=UTF-8");
-            resp.getWriter().println(jsonResponse.toString());
-
+            return OAuth.doOAuthProxyJsonPUT(main, appIdentifier, storage, clientIdToCheck, path, proxyToAdmin, camelToSnakeCaseConversion, queryParams,  jsonInput, headers);
         } catch (OAuthClientNotFoundException e) {
             handleOAuthClientNotFoundException(resp);
         } catch (OAuthAPIException e) {
@@ -133,25 +87,14 @@ public class OAuthProxyHelper {
         } catch (StorageQueryException | TenantOrAppNotFoundException | FeatureNotEnabledException | InvalidConfigException e) {
             throw new ServletException(e);
         }
+        return null;
     }
 
-    public static void proxyJsonDELETE(Main main, HttpServletRequest req, HttpServletResponse resp, AppIdentifier appIdentifier, Storage storage,
+    public static HttpRequestForOry.Response proxyJsonDELETE(Main main, HttpServletRequest req, HttpServletResponse resp, AppIdentifier appIdentifier, Storage storage,
                                        String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion,
-                                       Map<String, String> queryParams, JsonObject jsonInput, Map<String, String> headers,
-                                       GetJsonResponse getJsonResponse) throws IOException, ServletException {
+                                       Map<String, String> queryParams, JsonObject jsonInput, Map<String, String> headers) throws IOException, ServletException {
         try {
-            HttpRequestForOry.Response response = OAuth.doOAuthProxyJsonDELETE(main, appIdentifier, storage, clientIdToCheck, path, proxyToAdmin, camelToSnakeCaseConversion, queryParams, jsonInput, headers);
-
-            JsonObject jsonResponse = getJsonResponse.apply(
-                response.statusCode,
-                response.headers,
-                response.rawResponse,
-                response.jsonResponse
-            );
-            resp.setStatus(200);
-            resp.setHeader("Content-Type", "application/json; charset=UTF-8");
-            resp.getWriter().println(jsonResponse.toString());
-
+            return OAuth.doOAuthProxyJsonDELETE(main, appIdentifier, storage, clientIdToCheck, path, proxyToAdmin, camelToSnakeCaseConversion, queryParams, jsonInput, headers);
         } catch (OAuthClientNotFoundException e) {
             handleOAuthClientNotFoundException(resp);
         } catch (OAuthAPIException e) {
@@ -159,6 +102,7 @@ public class OAuthProxyHelper {
         } catch (StorageQueryException | TenantOrAppNotFoundException | FeatureNotEnabledException | InvalidConfigException e) {
             throw new ServletException(e);
         }
+        return null;
     }
 
     public static Map<String, String> defaultGetQueryParamsFromRequest(HttpServletRequest req) {
@@ -176,11 +120,6 @@ public class OAuthProxyHelper {
         }
 
         return queryParams;
-    }
-
-    @FunctionalInterface
-    public interface GetJsonResponse {
-        JsonObject apply(int statusCode, Map<String, List<String>> headers, String rawBody, JsonElement jsonBody) throws IOException, ServletException;
     }
 
     private static void handleOAuthClientNotFoundException(HttpServletResponse resp) throws IOException {

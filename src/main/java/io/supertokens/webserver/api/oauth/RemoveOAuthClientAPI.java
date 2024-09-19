@@ -24,6 +24,7 @@ import com.google.gson.JsonObject;
 
 import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
+import io.supertokens.oauth.HttpRequestForOry;
 import io.supertokens.oauth.OAuth;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -51,7 +52,7 @@ public class RemoveOAuthClientAPI extends WebserverAPI {
         String clientId = InputParser.parseStringOrThrowError(input, "clientId", false);
 
         try {
-            OAuthProxyHelper.proxyJsonDELETE(
+            HttpRequestForOry.Response response = OAuthProxyHelper.proxyJsonDELETE(
                 main, req, resp,
                 getAppIdentifier(req),
                 enforcePublicTenantAndGetPublicTenantStorage(req),
@@ -60,20 +61,22 @@ public class RemoveOAuthClientAPI extends WebserverAPI {
                 true, // proxyToAdmin
                 true, // camelToSnakeCaseConversion
                 new HashMap<>(), // queryParams
-                new JsonObject(), // getJsonBody
-                new HashMap<>(), // getHeadersForProxy
-                (statusCode, headers, rawBody, jsonBody) -> { // getJsonResponse
-                    try {
-                        OAuth.removeClientId(main, getAppIdentifier(req), enforcePublicTenantAndGetPublicTenantStorage(req), clientId);
-                    } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
-                        throw new ServletException(e);
-                    }
-
-                    JsonObject response = new JsonObject();
-                    response.addProperty("status", "OK");
-                    return response;
-                }
+                new JsonObject(), // jsonBody
+                new HashMap<>() // headers
             );
+
+            if (response != null) {
+                try {
+                    OAuth.removeClientId(main, getAppIdentifier(req), enforcePublicTenantAndGetPublicTenantStorage(req), clientId);
+                } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
+                    throw new ServletException(e);
+                }
+
+                JsonObject finalResponse = new JsonObject();
+                finalResponse.addProperty("status", "OK");
+
+                super.sendJsonResponse(200, finalResponse, resp);
+            }
 
         } catch (IOException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);

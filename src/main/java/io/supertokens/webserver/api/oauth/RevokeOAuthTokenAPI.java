@@ -10,6 +10,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
+import io.supertokens.oauth.HttpRequestForOry;
 import io.supertokens.oauth.OAuth;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
@@ -52,7 +53,7 @@ public class RevokeOAuthTokenAPI extends WebserverAPI {
                 formFields.put("client_id", clientId);
                 formFields.put("client_secret", clientSecret);
 
-                OAuthProxyHelper.proxyFormPOST(
+                HttpRequestForOry.Response response = OAuthProxyHelper.proxyFormPOST(
                     main, req, resp,
                     getAppIdentifier(req),
                     enforcePublicTenantAndGetPublicTenantStorage(req),
@@ -61,23 +62,23 @@ public class RevokeOAuthTokenAPI extends WebserverAPI {
                     false, // proxyToAdmin
                     false, // camelToSnakeCaseConversion
                     formFields, // formFields
-                    new HashMap<>(), // headers
-                    (statusCode, headers, rawBody, jsonBody) -> { // getJsonResponse
-                        // Success response would mean that the clientId/secret has been validated
-                        try {
-                            OAuth.revokeRefreshToken(main, appIdentifier, storage, token);
-                        } catch (StorageQueryException | NoSuchAlgorithmException e) {
-                            throw new ServletException(e);
-                        }
-
-                        JsonObject response = new JsonObject();
-                        response.addProperty("status", "OK");
-                        return response;
-                    }
+                    new HashMap<>() // headers
                 );
+
+                if (response != null) {
+                    // Success response would mean that the clientId/secret has been validated
+                    try {
+                        OAuth.revokeRefreshToken(main, appIdentifier, storage, token);
+                    } catch (StorageQueryException | NoSuchAlgorithmException e) {
+                        throw new ServletException(e);
+                    }
+
+                    JsonObject finalResponse = new JsonObject();
+                    finalResponse.addProperty("status", "OK");
+                    super.sendJsonResponse(200, finalResponse, resp);
+                }
             } else {
                 // revoking access token
-
                 OAuth.revokeAccessToken(main, appIdentifier, storage, token);
 
                 JsonObject response = new JsonObject();

@@ -21,6 +21,7 @@ import io.supertokens.Main;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
+import io.supertokens.oauth.HttpRequestForOry;
 import io.supertokens.oauth.OAuth;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
@@ -66,7 +67,7 @@ public class OAuthTokenIntrospectAPI extends WebserverAPI {
             try {
                 AppIdentifier appIdentifier = getAppIdentifier(req);
                 Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
-                OAuthProxyHelper.proxyFormPOST(
+                HttpRequestForOry.Response response = OAuthProxyHelper.proxyFormPOST(
                     main, req, resp,
                     appIdentifier,
                     storage,
@@ -75,21 +76,22 @@ public class OAuthTokenIntrospectAPI extends WebserverAPI {
                     true, // proxyToAdmin
                     false, // camelToSnakeCaseConversion
                     formFields,
-                    new HashMap<>(), // getHeaders
-                    (statusCode, headers, rawBody, jsonBody) -> { // getJsonResponse
-                        JsonObject response = jsonBody.getAsJsonObject();
-
-                        try {
-                            OAuth.verifyAndUpdateIntrospectRefreshTokenPayload(main, appIdentifier, storage, response, iss, token);
-                        } catch (StorageQueryException | TenantOrAppNotFoundException |
-                                 FeatureNotEnabledException | InvalidConfigException e) {
-                            throw new ServletException(e);
-                        }
-
-                        response.addProperty("status", "OK");
-                        return response;
-                    }
+                    new HashMap<>() // headers
                 );
+
+                if (response != null) {
+                    JsonObject finalResponse = response.jsonResponse.getAsJsonObject();
+
+                    try {
+                        OAuth.verifyAndUpdateIntrospectRefreshTokenPayload(main, appIdentifier, storage, finalResponse, iss, token);
+                    } catch (StorageQueryException | TenantOrAppNotFoundException |
+                                FeatureNotEnabledException | InvalidConfigException e) {
+                        throw new ServletException(e);
+                    }
+
+                    finalResponse.addProperty("status", "OK");
+                    super.sendJsonResponse(200, finalResponse, resp);
+                }
             } catch (IOException | TenantOrAppNotFoundException | BadPermissionException e) {
                 throw new ServletException(e);
             }

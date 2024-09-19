@@ -13,6 +13,7 @@ import com.google.gson.JsonObject;
 
 import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
+import io.supertokens.oauth.HttpRequestForOry;
 import io.supertokens.oauth.OAuth;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
@@ -43,7 +44,7 @@ public class OAuthClientListAPI extends WebserverAPI {
             Map<String, String> queryParams = OAuthProxyHelper.defaultGetQueryParamsFromRequest(req);
             queryParams.put("owner", appIdentifier.getAppId());
 
-            OAuthProxyHelper.proxyGET(
+            HttpRequestForOry.Response response = OAuthProxyHelper.proxyGET(
                 main, req, resp,
                 appIdentifier,
                 storage,
@@ -52,56 +53,57 @@ public class OAuthClientListAPI extends WebserverAPI {
                 true, // proxyToAdmin
                 true, // camelToSnakeCaseConversion
                 queryParams,
-                new HashMap<>(), // headers
-                (statusCode, headers, rawBody, jsonBody) -> { // getJsonResponse
-                    JsonObject response = new JsonObject();
-                    response.addProperty("status", "OK");
-
-                    // Filter out the clients for app
-                    List<String> clientIds;
-                    try {
-                        clientIds = OAuth.listClientIds(main, getAppIdentifier(req), enforcePublicTenantAndGetPublicTenantStorage(req));
-                    } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
-                        throw new ServletException(e);
-                    }
-
-                    Set<String> clientIdsSet = new HashSet<>(clientIds);
-
-                    JsonArray clients = new JsonArray();
-                    
-                    for (JsonElement clientElem : jsonBody.getAsJsonArray()) {
-                        if (clientIdsSet.contains(clientElem.getAsJsonObject().get("clientId").getAsString())) {
-                            clients.add(clientElem);
-                        }
-                    }
-
-                    response.add("clients", clients);
-
-                    // pagination
-                    List<String> linkHeader = headers.get("Link");
-                    if (linkHeader != null && !linkHeader.isEmpty()) {
-                        for (String nextLink : linkHeader.get(0).split(",")) {
-                            if (!nextLink.contains("rel=\"next\"")) {
-                                continue;
-                            }
-
-                            String pageToken = null;
-                            if (nextLink.contains("page_token=")) {
-                                int startIndex = nextLink.indexOf("page_token=") + "page_token=".length();
-                                int endIndex = nextLink.indexOf('>', startIndex);
-                                if (endIndex != -1) {
-                                    pageToken = nextLink.substring(startIndex, endIndex);
-                                }
-                            }
-                            if (pageToken != null) {
-                                response.addProperty("nextPaginationToken", pageToken);
-                            }
-                        }
-                    }
-
-                    return response;
-                }
+                new HashMap<>() // headers
             );
+
+            if (response != null) {
+                JsonObject finalResponse = new JsonObject();
+                finalResponse.addProperty("status", "OK");
+
+                // Filter out the clients for app
+                List<String> clientIds;
+                try {
+                    clientIds = OAuth.listClientIds(main, getAppIdentifier(req), enforcePublicTenantAndGetPublicTenantStorage(req));
+                } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
+                    throw new ServletException(e);
+                }
+
+                Set<String> clientIdsSet = new HashSet<>(clientIds);
+
+                JsonArray clients = new JsonArray();
+                
+                for (JsonElement clientElem : response.jsonResponse.getAsJsonArray()) {
+                    if (clientIdsSet.contains(clientElem.getAsJsonObject().get("clientId").getAsString())) {
+                        clients.add(clientElem);
+                    }
+                }
+
+                finalResponse.add("clients", clients);
+
+                // pagination
+                List<String> linkHeader = response.headers.get("Link");
+                if (linkHeader != null && !linkHeader.isEmpty()) {
+                    for (String nextLink : linkHeader.get(0).split(",")) {
+                        if (!nextLink.contains("rel=\"next\"")) {
+                            continue;
+                        }
+
+                        String pageToken = null;
+                        if (nextLink.contains("page_token=")) {
+                            int startIndex = nextLink.indexOf("page_token=") + "page_token=".length();
+                            int endIndex = nextLink.indexOf('>', startIndex);
+                            if (endIndex != -1) {
+                                pageToken = nextLink.substring(startIndex, endIndex);
+                            }
+                        }
+                        if (pageToken != null) {
+                            finalResponse.addProperty("nextPaginationToken", pageToken);
+                        }
+                    }
+                }
+
+                super.sendJsonResponse(200, finalResponse, resp);
+            }
         } catch (IOException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }

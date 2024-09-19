@@ -21,6 +21,7 @@ import com.google.gson.*;
 import io.supertokens.Main;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
+import io.supertokens.oauth.HttpRequestForOry;
 import io.supertokens.oauth.OAuth;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
@@ -73,7 +74,7 @@ public class OAuthTokenAPI extends WebserverAPI {
         }
 
         try {
-            OAuthProxyHelper.proxyFormPOST(
+            HttpRequestForOry.Response response = OAuthProxyHelper.proxyFormPOST(
                 main, req, resp,
                 getAppIdentifier(req),
                 enforcePublicTenantAndGetPublicTenantStorage(req),
@@ -82,26 +83,22 @@ public class OAuthTokenAPI extends WebserverAPI {
                 false, // proxyToAdmin
                 false, // camelToSnakeCaseConversion
                 formFields,
-                new HashMap<>(), // headers
-                (statusCode, headers, rawBody, jsonBody) -> {
-                    if (jsonBody == null) {
-                        throw new IllegalStateException("unexpected response from hydra");
-                    }
-
-                    try {
-                        AppIdentifier appIdentifier = getAppIdentifier(req);
-                        Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
-
-                        jsonBody = OAuth.transformTokens(super.main, appIdentifier, storage, jsonBody.getAsJsonObject(), iss, accessTokenUpdate, idTokenUpdate, useDynamicKey);
-            
-                    } catch (IOException | InvalidConfigException | TenantOrAppNotFoundException | BadPermissionException | StorageQueryException | InvalidKeyException | NoSuchAlgorithmException | InvalidKeySpecException | JWTCreationException | JWTException | StorageTransactionLogicException | UnsupportedJWTSigningAlgorithmException e) {
-                        throw new ServletException(e);
-                    }
-
-                    jsonBody.getAsJsonObject().addProperty("status", "OK");
-                    return jsonBody.getAsJsonObject();
-                }
+                new HashMap<>() // headers
             );
+
+            if (response != null) {
+                try {
+                    AppIdentifier appIdentifier = getAppIdentifier(req);
+                    Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
+
+                    response.jsonResponse = OAuth.transformTokens(super.main, appIdentifier, storage, response.jsonResponse.getAsJsonObject(), iss, accessTokenUpdate, idTokenUpdate, useDynamicKey);
+                } catch (IOException | InvalidConfigException | TenantOrAppNotFoundException | BadPermissionException | StorageQueryException | InvalidKeyException | NoSuchAlgorithmException | InvalidKeySpecException | JWTCreationException | JWTException | StorageTransactionLogicException | UnsupportedJWTSigningAlgorithmException e) {
+                    throw new ServletException(e);
+                }
+
+                response.jsonResponse.getAsJsonObject().addProperty("status", "OK");
+                super.sendJsonResponse(200, response.jsonResponse, resp);
+            }
         } catch (IOException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
