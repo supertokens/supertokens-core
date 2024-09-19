@@ -3063,7 +3063,7 @@ public class Start
     }
 
     @Override
-    public boolean isRevoked(AppIdentifier appIdentifier, String targetType, String targetValue, long issuedAt)
+    public boolean isRevoked(AppIdentifier appIdentifier, String[] targetTypes, String[] targetValues, long issuedAt)
             throws StorageQueryException {
         throw new IllegalStateException("todo implement");
     }

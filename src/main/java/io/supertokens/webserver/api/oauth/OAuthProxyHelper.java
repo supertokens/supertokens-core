@@ -131,7 +131,7 @@ public class OAuthProxyHelper {
         resp.getWriter().println(response.toString());
     }
 
-    private static void handleOAuthAPIException(HttpServletResponse resp, OAuthAPIException e) throws IOException {
+    public static void handleOAuthAPIException(HttpServletResponse resp, OAuthAPIException e) throws IOException {
         JsonObject response = new JsonObject();
         response.addProperty("status", "OAUTH_ERROR");
         response.addProperty("error", e.error);

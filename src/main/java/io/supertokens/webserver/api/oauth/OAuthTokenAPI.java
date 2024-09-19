@@ -19,10 +19,12 @@ package io.supertokens.webserver.api.oauth;
 import com.auth0.jwt.exceptions.JWTCreationException;
 import com.google.gson.*;
 import io.supertokens.Main;
+import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.oauth.HttpRequestForOry;
 import io.supertokens.oauth.OAuth;
+import io.supertokens.oauth.exceptions.OAuthAPIException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
@@ -61,6 +63,7 @@ public class OAuthTokenAPI extends WebserverAPI {
         String iss = InputParser.parseStringOrThrowError(input, "iss", false); // input validation
         JsonObject bodyFromSDK = InputParser.parseJsonObjectOrThrowError(input, "inputBody", false);
 
+        String grantType = InputParser.parseStringOrThrowError(bodyFromSDK, "grant_type", false);
         JsonObject accessTokenUpdate = InputParser.parseJsonObjectOrThrowError(input, "access_token", true);
         JsonObject idTokenUpdate = InputParser.parseJsonObjectOrThrowError(input, "id_token", true);
 
@@ -73,7 +76,49 @@ public class OAuthTokenAPI extends WebserverAPI {
             formFields.put(entry.getKey(), entry.getValue().getAsString());
         }
 
+        
         try {
+            AppIdentifier appIdentifier = getAppIdentifier(req);
+            Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
+
+            // check if the refresh token is valid
+            if (grantType.equals("refresh_token")) {
+                String refreshToken = InputParser.parseStringOrThrowError(bodyFromSDK, "refresh_token", false);
+    
+                HttpRequestForOry.Response response = OAuthProxyHelper.proxyFormPOST(
+                    main, req, resp,
+                    appIdentifier,
+                    storage,
+                    null, // clientIdToCheck
+                    "/admin/oauth2/introspect", // pathProxy
+                    true, // proxyToAdmin
+                    false, // camelToSnakeCaseConversion
+                    formFields,
+                    new HashMap<>() // headers
+                );
+
+                if (response == null) {
+                    return; // proxy helper would have sent the error response
+                }
+    
+                JsonObject refreshTokenPayload = response.jsonResponse.getAsJsonObject();
+
+                try {
+                    OAuth.verifyAndUpdateIntrospectRefreshTokenPayload(main, appIdentifier, storage, refreshTokenPayload, iss, refreshToken);
+                } catch (StorageQueryException | TenantOrAppNotFoundException |
+                            FeatureNotEnabledException | InvalidConfigException e) {
+                    throw new ServletException(e);
+                }
+
+                if (!refreshTokenPayload.get("active").getAsBoolean()) {
+                    // this is what ory would return for an invalid token
+                    OAuthProxyHelper.handleOAuthAPIException(resp, new OAuthAPIException(
+                        "token_inactive", "Token is inactive because it is malformed, expired or otherwise invalid. Token validation failed.", 401
+                    ));
+                    return;
+                }
+            }
+
             HttpRequestForOry.Response response = OAuthProxyHelper.proxyFormPOST(
                 main, req, resp,
                 getAppIdentifier(req),
@@ -88,11 +133,8 @@ public class OAuthTokenAPI extends WebserverAPI {
 
             if (response != null) {
                 try {
-                    AppIdentifier appIdentifier = getAppIdentifier(req);
-                    Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
-
                     response.jsonResponse = OAuth.transformTokens(super.main, appIdentifier, storage, response.jsonResponse.getAsJsonObject(), iss, accessTokenUpdate, idTokenUpdate, useDynamicKey);
-                } catch (IOException | InvalidConfigException | TenantOrAppNotFoundException | BadPermissionException | StorageQueryException | InvalidKeyException | NoSuchAlgorithmException | InvalidKeySpecException | JWTCreationException | JWTException | StorageTransactionLogicException | UnsupportedJWTSigningAlgorithmException e) {
+                } catch (IOException | InvalidConfigException | TenantOrAppNotFoundException | StorageQueryException | InvalidKeyException | NoSuchAlgorithmException | InvalidKeySpecException | JWTCreationException | JWTException | StorageTransactionLogicException | UnsupportedJWTSigningAlgorithmException e) {
                     throw new ServletException(e);
                 }
 

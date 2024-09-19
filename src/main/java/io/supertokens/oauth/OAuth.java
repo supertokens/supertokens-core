@@ -380,22 +380,9 @@ public class OAuth {
 
         Transformations.transformExt(payload);
 
-        long issuedAt = payload.get("iat").getAsLong();
-        String subject = payload.get("sub").getAsString();
-        String clientId = payload.get("client_id").getAsString();
-        String sessionHandle = null;
-        if (payload.has("sessionHandle")) {
-            sessionHandle = payload.get("sessionHandle").getAsString();
-        }
+        boolean isValid = !isTokenRevokedBasedOnPayload(oauthStorage, appIdentifier, payload);
 
-        boolean isSubjectValid = !oauthStorage.isRevoked(appIdentifier, "sub", subject, issuedAt);
-        boolean isClientIdSubjectValid = !oauthStorage.isRevoked(appIdentifier, "client_id_sub", clientId + ":" + subject, issuedAt);
-        boolean isSessionHandleValid = true;
-        if (sessionHandle != null) {
-            isSessionHandleValid = !oauthStorage.isRevoked(appIdentifier, "sessionHandle", sessionHandle, issuedAt);
-        }
-
-        if (isSubjectValid && isClientIdSubjectValid && isSessionHandleValid) {
+        if (isValid) {
             payload.addProperty("iss", iss);
         } else {
             payload.entrySet().clear();
@@ -421,6 +408,32 @@ public class OAuth {
         }
     }
 
+    private static boolean isTokenRevokedBasedOnPayload(OAuthStorage oauthStorage, AppIdentifier appIdentifier, JsonObject payload) throws StorageQueryException {
+        long issuedAt = payload.get("iat").getAsLong();
+        List<String> targetTypes = new ArrayList<>();
+        List<String> targetValues = new ArrayList<>();
+
+        targetTypes.add("client_id");
+        targetValues.add(payload.get("client_id").getAsString());
+
+        if (payload.has("jti")) {
+            targetTypes.add("jti");
+            targetValues.add(payload.get("jti").getAsString());
+        }
+
+        if (payload.has("rt_hash")) {
+            targetTypes.add("rt_hash");
+            targetValues.add(payload.get("rt_hash").getAsString());
+        }
+
+        if (payload.has("sessionHandle")) {
+            targetTypes.add("session_handle");
+            targetValues.add(payload.get("sessionHandle").getAsString());
+        }
+
+        return oauthStorage.isRevoked(appIdentifier, targetTypes.toArray(new String[0]), targetValues.toArray(new String[0]), issuedAt);
+    }
+
 
     public static JsonObject introspectAccessToken(Main main, AppIdentifier appIdentifier, Storage storage,
             String token) throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException, UnsupportedJWTSigningAlgorithmException {
@@ -430,26 +443,9 @@ public class OAuth {
 
             if (payload.has("stt") && payload.get("stt").getAsInt() == OAuthToken.TokenType.ACCESS_TOKEN.getValue()) {
 
-                long issuedAt = payload.get("iat").getAsLong();
-                String rtHash = payload.get("rt_hash").getAsString();
-                String subject = payload.get("sub").getAsString();
-                String jti = payload.get("jti").getAsString();
-                String clientId = payload.get("client_id").getAsString();
-                String sessionHandle = null;
-                if (payload.has("sessionHandle")) {
-                    sessionHandle = payload.get("sessionHandle").getAsString();
-                }
+                boolean isValid = !isTokenRevokedBasedOnPayload(oauthStorage, appIdentifier, payload);
 
-                boolean isRTHashValid = !oauthStorage.isRevoked(appIdentifier, "rt_hash", rtHash, issuedAt);
-                boolean isSubjectValid = !oauthStorage.isRevoked(appIdentifier, "sub", subject, issuedAt);
-                boolean isJTIValid = !oauthStorage.isRevoked(appIdentifier, "jti", jti, issuedAt);
-                boolean isClientIdSubjectValid = !oauthStorage.isRevoked(appIdentifier, "client_id_sub", clientId + ":" + subject, issuedAt);
-                boolean isSessionHandleValid = true;
-                if (sessionHandle != null) {
-                    isSessionHandleValid = !oauthStorage.isRevoked(appIdentifier, "sessionHandle", sessionHandle, issuedAt);
-                }
-
-                if (isRTHashValid && isSubjectValid && isJTIValid && isClientIdSubjectValid && isSessionHandleValid) {
+                if (isValid) {
                     payload.addProperty("active", true);
                     payload.addProperty("token_type", "Bearer");
                     payload.addProperty("token_use", "access_token");
@@ -498,6 +494,6 @@ public class OAuth {
 	public static void revokeSessionHandle(Main main, AppIdentifier appIdentifier, Storage storage,
 			String sessionHandle) throws StorageQueryException {
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
-        oauthStorage.revoke(appIdentifier, "sessionHandle", sessionHandle);
+        oauthStorage.revoke(appIdentifier, "session_handle", sessionHandle);
 	}
 }
