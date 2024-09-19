@@ -168,4 +168,8 @@ public class SQLiteConfig {
     public String getOAuthClientTable() { 
         return "oauth_clients";
     }
+
+    public String getOAuthRevokeTable() {
+        return "oauth_revoke";
+    }
 }

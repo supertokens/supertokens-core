@@ -3059,12 +3059,21 @@ public class Start
     @Override
     public void revoke(AppIdentifier appIdentifier, String targetType, String targetValue)
             throws StorageQueryException {
-        throw new IllegalStateException("todo implement");
+        try {
+            OAuthQueries.revoke(this, appIdentifier, targetType, targetValue);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+        
     }
 
     @Override
     public boolean isRevoked(AppIdentifier appIdentifier, String[] targetTypes, String[] targetValues, long issuedAt)
             throws StorageQueryException {
-        throw new IllegalStateException("todo implement");
+        try {
+            return OAuthQueries.isRevoked(this, appIdentifier, targetTypes, targetValues, issuedAt);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 }
