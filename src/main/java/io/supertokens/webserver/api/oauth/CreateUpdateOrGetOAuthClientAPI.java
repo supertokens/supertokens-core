@@ -28,6 +28,7 @@ import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.oauth.HttpRequestForOry;
 import io.supertokens.oauth.OAuth;
+import io.supertokens.oauth.Transformations;
 import io.supertokens.oauth.exceptions.OAuthAPIException;
 import io.supertokens.oauth.exceptions.OAuthClientNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
@@ -70,6 +71,7 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
                 new HashMap<>()
             );
             if (response != null) {
+                Transformations.applyClientPropsWhiteList(response.jsonResponse.getAsJsonObject());
                 super.sendJsonResponse(200, response.jsonResponse, resp);
             }
         } catch (IOException | TenantOrAppNotFoundException | BadPermissionException e) {
@@ -113,6 +115,8 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
                 } catch (OAuth2ClientAlreadyExistsForAppException e) {
                     // ignore
                 }
+
+                Transformations.applyClientPropsWhiteList(response.jsonResponse.getAsJsonObject());
                 super.sendJsonResponse(200, response.jsonResponse, resp);
             }
         } catch (IOException | TenantOrAppNotFoundException | BadPermissionException e) {

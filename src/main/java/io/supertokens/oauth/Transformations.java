@@ -24,6 +24,36 @@ import io.supertokens.utils.Utils;
 public class Transformations {
     private static Set<String> EXT_PROPS = Set.of("rsub", "tId", "sessionHandle");
 
+    private static Set<String> CLIENT_PROPS = Set.of(
+        "clientId",
+        "clientSecret",
+        "clientName",
+        "scope",
+        "redirectUris",
+        "postLogoutRedirectUris",
+        "authorizationCodeGrantAccessTokenLifespan",
+        "authorizationCodeGrantIdTokenLifespan",
+        "authorizationCodeGrantRefreshTokenLifespan",
+        "clientCredentialsGrantAccessTokenLifespan",
+        "implicitGrantAccessTokenLifespan",
+        "implicitGrantIdTokenLifespan",
+        "refreshTokenGrantAccessTokenLifespan",
+        "refreshTokenGrantIdTokenLifespan",
+        "refreshTokenGrantRefreshTokenLifespan",
+        "tokenEndpointAuthMethod",
+        "clientUri",
+        "allowedCorsOrigins",
+        "audience",
+        "grantTypes",
+        "responseTypes",
+        "logoUri",
+        "policyUri",
+        "tosUri",
+        "createdAt",
+        "updatedAt",
+        "metadata"
+    );
+
     public static Map<String, String> transformRequestHeadersForHydra(Map<String, String> requestHeaders) {
         if (requestHeaders == null) {
             return requestHeaders;
@@ -220,6 +250,20 @@ public class Transformations {
             if (ext.entrySet().size() == 0) {
                 payload.remove("ext");
             }
+        }
+    }
+
+    public static void applyClientPropsWhiteList(JsonObject payload) {
+        List<String> propsToRemove = new ArrayList<>();
+
+        for (Map.Entry<String, JsonElement> entry : payload.entrySet()) {
+            if (!CLIENT_PROPS.contains(entry.getKey())) {
+                propsToRemove.add(entry.getKey());
+            }
+        }
+
+        for (String prop : propsToRemove) {
+            payload.remove(prop);
         }
     }
 }
