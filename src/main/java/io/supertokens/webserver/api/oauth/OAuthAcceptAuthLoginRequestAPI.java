@@ -9,6 +9,7 @@ import io.supertokens.Main;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.webserver.WebserverAPI;
 import io.supertokens.multitenancy.exception.BadPermissionException;
+import io.supertokens.oauth.HttpRequestForOry;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.InputParser;
 import jakarta.servlet.ServletException;
@@ -31,7 +32,7 @@ public class OAuthAcceptAuthLoginRequestAPI extends WebserverAPI {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
         try {
-            OAuthProxyHelper.proxyJsonPUT(
+            HttpRequestForOry.Response response = OAuthProxyHelper.proxyJsonPUT(
                 main, req, resp,
                 getAppIdentifier(req),
                 enforcePublicTenantAndGetPublicTenantStorage(req),
@@ -41,13 +42,13 @@ public class OAuthAcceptAuthLoginRequestAPI extends WebserverAPI {
                 true,
                 OAuthProxyHelper.defaultGetQueryParamsFromRequest(req),
                 input, // jsonBody
-                new HashMap<>(), // headers
-                (statusCode, headers, rawBody, jsonBody) -> {
-                    JsonObject response = jsonBody.getAsJsonObject();
-                    response.addProperty("status", "OK");
-                    return response;
-                }
+                new HashMap<>() // headers
             );
+
+            if (response != null) {
+                response.jsonResponse.getAsJsonObject().addProperty("status", "OK");
+                super.sendJsonResponse(200, response.jsonResponse, resp);
+            }
         } catch (IOException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }

@@ -3,10 +3,9 @@ package io.supertokens.webserver.api.oauth;
 import java.io.IOException;
 import java.util.HashMap;
 
-import com.google.gson.JsonObject;
-
 import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
+import io.supertokens.oauth.HttpRequestForOry;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.WebserverAPI;
@@ -28,7 +27,7 @@ public class OAuthGetAuthLoginRequestAPI extends WebserverAPI {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         try {
-            OAuthProxyHelper.proxyGET(
+            HttpRequestForOry.Response response = OAuthProxyHelper.proxyGET(
                 main, req, resp,
                 getAppIdentifier(req),
                 enforcePublicTenantAndGetPublicTenantStorage(req),
@@ -37,13 +36,13 @@ public class OAuthGetAuthLoginRequestAPI extends WebserverAPI {
                 true, // proxyToAdmin
                 true, // camelToSnakeCaseConversion
                 OAuthProxyHelper.defaultGetQueryParamsFromRequest(req),
-                new HashMap<>(), // headers
-                (statusCode, headers, rawBody, jsonBody) -> { // getJsonResponse
-                    JsonObject response = jsonBody.getAsJsonObject();
-                    response.addProperty("status", "OK");
-                    return response;
-                }
+                new HashMap<>() // headers
             );
+
+            if (response != null) {
+                response.jsonResponse.getAsJsonObject().addProperty("status", "OK");
+                super.sendJsonResponse(200, response.jsonResponse, resp);
+            }
 
         } catch (IOException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);

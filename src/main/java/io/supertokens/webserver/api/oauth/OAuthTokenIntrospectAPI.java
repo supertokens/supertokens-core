@@ -20,6 +20,7 @@ import com.google.gson.*;
 import io.supertokens.Main;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
+import io.supertokens.oauth.HttpRequestForOry;
 import io.supertokens.oauth.OAuth;
 import io.supertokens.oauth.Transformations;
 import io.supertokens.pluginInterface.RECIPE_ID;
@@ -63,7 +64,7 @@ public class OAuthTokenIntrospectAPI extends WebserverAPI {
             }
 
             try {
-                OAuthProxyHelper.proxyFormPOST(
+                HttpRequestForOry.Response response = OAuthProxyHelper.proxyFormPOST(
                     main, req, resp,
                     getAppIdentifier(req),
                     enforcePublicTenantAndGetPublicTenantStorage(req),
@@ -71,18 +72,19 @@ public class OAuthTokenIntrospectAPI extends WebserverAPI {
                     "/admin/oauth2/introspect", // pathProxy
                     true, // proxyToAdmin
                     false, // camelToSnakeCaseConversion
-                    formFields,
-                    new HashMap<>(), // getHeaders
-                    (statusCode, headers, rawBody, jsonBody) -> { // getJsonResponse
-                        JsonObject response = jsonBody.getAsJsonObject();
-
-                        response.addProperty("iss", iss);
-                        Transformations.transformExt(response);
-
-                        response.addProperty("status", "OK");
-                        return response;
-                    }
+                    formFields, // formFields
+                    new HashMap<>() // headers
                 );
+
+                if (response != null) {
+                    JsonObject finalResponse = response.jsonResponse.getAsJsonObject();
+
+                    finalResponse.addProperty("iss", iss);
+                    Transformations.transformExt(finalResponse);
+
+                    finalResponse.addProperty("status", "OK");
+                    super.sendJsonResponse(200, finalResponse, resp);
+                }
             } catch (IOException | TenantOrAppNotFoundException | BadPermissionException e) {
                 throw new ServletException(e);
             }
