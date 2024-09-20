@@ -116,7 +116,7 @@ public class OAuthQueries {
                 + "(app_id, target_type, target_value, timestamp) VALUES (?, ?, ?, ?) "
                 + "ON CONFLICT (app_id, target_type, target_value) DO UPDATE SET timestamp = ?";
 
-        long currentTime = System.currentTimeMillis();
+        long currentTime = System.currentTimeMillis() / 1000;
         update(start, INSERT, pst -> {
             pst.setString(1, appIdentifier.getAppId());
             pst.setString(2, targetType);

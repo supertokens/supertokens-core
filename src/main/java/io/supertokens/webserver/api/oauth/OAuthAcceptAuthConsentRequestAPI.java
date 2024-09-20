@@ -41,6 +41,12 @@ public class OAuthAcceptAuthConsentRequestAPI extends WebserverAPI {
         accessToken.addProperty("rsub", rsub);
         accessToken.addProperty("sessionHandle", sessionHandle);
 
+        // remove the above from input
+        input.remove("iss");
+        input.remove("tId");
+        input.remove("rsub");
+        input.remove("sessionHandle");
+
         JsonObject session = new JsonObject();
         session.add("access_token", accessToken);
         input.add("session", session);
