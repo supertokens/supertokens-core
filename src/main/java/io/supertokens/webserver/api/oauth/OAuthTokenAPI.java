@@ -84,6 +84,9 @@ public class OAuthTokenAPI extends WebserverAPI {
             if (grantType.equals("refresh_token")) {
                 String refreshToken = InputParser.parseStringOrThrowError(bodyFromSDK, "refresh_token", false);
 
+                Map<String, String> formFieldsForTokenIntrospect = new HashMap<>();
+                formFieldsForTokenIntrospect.put("token", refreshToken);
+
                 HttpRequestForOry.Response response = OAuthProxyHelper.proxyFormPOST(
                     main, req, resp,
                     appIdentifier,
@@ -92,7 +95,7 @@ public class OAuthTokenAPI extends WebserverAPI {
                     "/admin/oauth2/introspect", // pathProxy
                     true, // proxyToAdmin
                     false, // camelToSnakeCaseConversion
-                    formFields,
+                    formFieldsForTokenIntrospect,
                     new HashMap<>() // headers
                 );
 
