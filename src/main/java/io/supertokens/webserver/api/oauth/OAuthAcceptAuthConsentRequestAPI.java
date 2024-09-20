@@ -35,12 +35,14 @@ public class OAuthAcceptAuthConsentRequestAPI extends WebserverAPI {
         String rsub = InputParser.parseStringOrThrowError(input, "rsub", false);
         String sessionHandle = InputParser.parseStringOrThrowError(input, "sessionHandle", false);
 
-        JsonObject session = new JsonObject();
-        session.addProperty("iss", iss);
-        session.addProperty("tId", tId);
-        session.addProperty("rsub", rsub);
-        session.addProperty("sessionHandle", sessionHandle);
+        JsonObject accessToken = new JsonObject();
+        accessToken.addProperty("iss", iss);
+        accessToken.addProperty("tId", tId);
+        accessToken.addProperty("rsub", rsub);
+        accessToken.addProperty("sessionHandle", sessionHandle);
 
+        JsonObject session = new JsonObject();
+        session.add("access_token", accessToken);
         input.add("session", session);
 
         try {
