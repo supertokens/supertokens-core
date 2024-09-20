@@ -71,18 +71,20 @@ public class Transformations {
         try {
             URL url = new URL(redirectTo);
             String query = url.getQuery();
-            String[] queryParams = query.split("&");
-            StringBuilder updatedQuery = new StringBuilder();
-            for (String param : queryParams) {
-                String[] keyValue = param.split("=");
-                if (keyValue.length > 1 && keyValue[1].startsWith("ory_")) {
-                    updatedQuery.append(keyValue[0]).append("=").append(keyValue[1].replaceFirst("ory_", "st_")).append("&");
-                } else {
-                    updatedQuery.append(param).append("&");
+            if (query != null) {
+                String[] queryParams = query.split("&");
+                StringBuilder updatedQuery = new StringBuilder();
+                for (String param : queryParams) {
+                    String[] keyValue = param.split("=");
+                    if (keyValue.length > 1 && keyValue[1].startsWith("ory_")) {
+                        updatedQuery.append(keyValue[0]).append("=").append(keyValue[1].replaceFirst("ory_", "st_")).append("&");
+                    } else {
+                        updatedQuery.append(param).append("&");
+                    }
                 }
+                redirectTo = url.getProtocol() + "://" + url.getHost() + ":" + url.getPort() + url.getPath() + "?"
+                        + updatedQuery.toString().trim();
             }
-            redirectTo = url.getProtocol() + "://" + url.getHost() + ":" + url.getPort() + url.getPath() + "?"
-                    + updatedQuery.toString().trim();
         } catch (MalformedURLException e) {
             throw new IllegalStateException(e);
         }

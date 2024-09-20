@@ -72,6 +72,7 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
             );
             if (response != null) {
                 Transformations.applyClientPropsWhiteList(response.jsonResponse.getAsJsonObject());
+                response.jsonResponse.getAsJsonObject().addProperty("status", "OK");
                 super.sendJsonResponse(200, response.jsonResponse, resp);
             }
         } catch (IOException | TenantOrAppNotFoundException | BadPermissionException e) {
@@ -109,7 +110,7 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
                 String clientId = response.jsonResponse.getAsJsonObject().get("clientId").getAsString();
 
                 try {
-                    OAuth.addClientId(main, getAppIdentifier(req), enforcePublicTenantAndGetPublicTenantStorage(req), clientId);
+                    OAuth.addClientId(main, getAppIdentifier(req), enforcePublicTenantAndGetPublicTenantStorage(req), clientId, false); // FIXME
                 } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
                     throw new ServletException(e);
                 } catch (OAuth2ClientAlreadyExistsForAppException e) {
@@ -117,6 +118,7 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
                 }
 
                 Transformations.applyClientPropsWhiteList(response.jsonResponse.getAsJsonObject());
+                response.jsonResponse.getAsJsonObject().addProperty("status", "OK");
                 super.sendJsonResponse(200, response.jsonResponse, resp);
             }
         } catch (IOException | TenantOrAppNotFoundException | BadPermissionException e) {
@@ -169,6 +171,8 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
             );
 
             if (response != null) {
+                Transformations.applyClientPropsWhiteList(response.jsonResponse.getAsJsonObject());
+                response.jsonResponse.getAsJsonObject().addProperty("status", "OK");
                 super.sendJsonResponse(200, response.jsonResponse, resp);
             }
         } catch (IOException | TenantOrAppNotFoundException | BadPermissionException e) {
