@@ -514,9 +514,39 @@ public class OAuth {
         oauthStorage.revoke(appIdentifier, "session_handle", sessionHandle);
 	}
 
-    public static void verifyIdTokenAndClientIdForLogout(Main main, AppIdentifier appIdentifier, Storage storage,
-            String idTokenHint, String clientId) throws StorageQueryException, OAuthAPIException {
-        
-    }
+    public static void verifyIdTokenHintClientIdAndUpdateQueryParamsForLogout(Main main, AppIdentifier appIdentifier, Storage storage,
+            Map<String, String> queryParams) throws StorageQueryException, OAuthAPIException, TenantOrAppNotFoundException, UnsupportedJWTSigningAlgorithmException, StorageTransactionLogicException {
 
+        String idTokenHint = queryParams.get("idTokenHint");
+        String clientId = queryParams.get("clientId");
+
+        JsonObject idTokenPayload = null;
+        if (idTokenHint != null) {
+            queryParams.remove("idTokenHint");
+
+            try {
+                idTokenPayload = OAuthToken.getPayloadFromJWTToken(appIdentifier, main, idTokenHint);
+            } catch (TryRefreshTokenException e) {
+                // invalid id token
+                throw new OAuthAPIException("invalid_request", "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed.", 400);
+            }
+        }
+
+        if (idTokenPayload != null) {
+            if (!idTokenPayload.has("stt") || idTokenPayload.get("stt").getAsInt() != OAuthToken.TokenType.ID_TOKEN.getValue()) {
+                // Invalid id token
+                throw new OAuthAPIException("invalid_request", "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed.", 400);
+            }
+
+            String clientIdInIdTokenPayload = idTokenPayload.get("aud").getAsString();
+
+            if (clientId != null) {
+                if (!clientId.equals(clientIdInIdTokenPayload)) {
+                    throw new OAuthAPIException("invalid_request", "The client_id in the id_token_hint does not match the client_id in the request.", 400);
+                }
+            }
+
+            queryParams.put("clientId", clientIdInIdTokenPayload);
+        }
+    }
 }

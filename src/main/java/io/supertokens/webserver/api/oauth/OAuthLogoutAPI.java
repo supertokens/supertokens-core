@@ -2,10 +2,12 @@ package io.supertokens.webserver.api.oauth;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Map;
 
 import com.google.gson.JsonObject;
 
 import io.supertokens.Main;
+import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.oauth.HttpRequestForOry;
 import io.supertokens.oauth.OAuth;
@@ -13,9 +15,9 @@ import io.supertokens.oauth.exceptions.OAuthAPIException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -33,24 +35,22 @@ public class OAuthLogoutAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        String idTokenHint = InputParser.getQueryParamOrThrowError(req, "idTokenHint", true);
-        String clientId = InputParser.getQueryParamOrThrowError(req, "clientId", true);
-
         try {
             AppIdentifier appIdentifier = getAppIdentifier(req);
             Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
 
-            OAuth.verifyIdTokenAndClientIdForLogout(main, appIdentifier, storage, idTokenHint, clientId);
+            Map<String, String> queryParams = OAuthProxyHelper.defaultGetQueryParamsFromRequest(req);
+            OAuth.verifyIdTokenHintClientIdAndUpdateQueryParamsForLogout(main, appIdentifier, storage, queryParams);
 
             HttpRequestForOry.Response response = OAuthProxyHelper.proxyGET(
                 main, req, resp,
                 appIdentifier,
                 storage,
-                null, // clientIdToCheck
+                queryParams.get("clientId"), // clientIdToCheck
                 "/oauth2/sessions/logout", // proxyPath
                 false, // proxyToAdmin
                 true, // camelToSnakeCaseConversion
-                OAuthProxyHelper.defaultGetQueryParamsFromRequest(req),
+                queryParams,
                 new HashMap<>() // headers
             );
 
@@ -66,7 +66,7 @@ public class OAuthLogoutAPI extends WebserverAPI {
 
         } catch (OAuthAPIException e) {
             OAuthProxyHelper.handleOAuthAPIException(resp, e);
-        } catch (IOException | TenantOrAppNotFoundException | BadPermissionException | StorageQueryException e) {
+        } catch (IOException | TenantOrAppNotFoundException | BadPermissionException | StorageQueryException | UnsupportedJWTSigningAlgorithmException | StorageTransactionLogicException e) {
             throw new ServletException(e);
         }
     }
