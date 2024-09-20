@@ -57,8 +57,6 @@ public class OAuthTokenIntrospectAPI extends WebserverAPI {
         String token = InputParser.parseStringOrThrowError(input, "token", false);
 
         if (token.startsWith("st_rt_")) {
-            String iss = InputParser.parseStringOrThrowError(input, "iss", false);
-
             Map<String, String> formFields = new HashMap<>();
             for (Map.Entry<String, JsonElement> entry : input.entrySet()) {
                 formFields.put(entry.getKey(), entry.getValue().getAsString());
@@ -83,7 +81,7 @@ public class OAuthTokenIntrospectAPI extends WebserverAPI {
                     JsonObject finalResponse = response.jsonResponse.getAsJsonObject();
 
                     try {
-                        OAuth.verifyAndUpdateIntrospectRefreshTokenPayload(main, appIdentifier, storage, finalResponse, iss, token);
+                        OAuth.verifyAndUpdateIntrospectRefreshTokenPayload(main, appIdentifier, storage, finalResponse, token);
                     } catch (StorageQueryException | TenantOrAppNotFoundException |
                                 FeatureNotEnabledException | InvalidConfigException e) {
                         throw new ServletException(e);

@@ -30,6 +30,18 @@ public class OAuthAcceptAuthConsentRequestAPI extends WebserverAPI {
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
+        String iss = InputParser.parseStringOrThrowError(input, "iss", false);
+        String tId = InputParser.parseStringOrThrowError(input, "tId", false);
+        String rsub = InputParser.parseStringOrThrowError(input, "rsub", false);
+        String sessionHandle = InputParser.parseStringOrThrowError(input, "sessionHandle", false);
+
+        JsonObject session = new JsonObject();
+        session.addProperty("iss", iss);
+        session.addProperty("tId", tId);
+        session.addProperty("rsub", rsub);
+        session.addProperty("sessionHandle", sessionHandle);
+
+        input.add("session", session);
 
         try {
             HttpRequestForOry.Response response = OAuthProxyHelper.proxyJsonPUT(

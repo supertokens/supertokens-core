@@ -22,7 +22,7 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.utils.Utils;
 
 public class Transformations {
-    private static Set<String> EXT_PROPS = Set.of("rsub", "tId", "sessionHandle");
+    private static Set<String> EXT_PROPS = Set.of("iss", "rsub", "tId", "sessionHandle");
 
     private static Set<String> CLIENT_PROPS = Set.of(
         "clientId",

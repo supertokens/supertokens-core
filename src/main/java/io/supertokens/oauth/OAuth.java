@@ -285,11 +285,52 @@ public class OAuth {
         }
     }
 
+    public static String transformTokensInAuthRedirect(Main main, AppIdentifier appIdentifier, Storage storage, String url, String iss, JsonObject accessTokenUpdate, JsonObject idTokenUpdate, boolean useDynamicKey) {
+        if (url.indexOf('#') == -1) {
+            return url;
+        }
+
+        try {
+            // Extract the part after '#'
+            String fragment = url.substring(url.indexOf('#') + 1);
+
+            // Parse the fragment as query parameters
+            // Create a JsonObject from the params
+            JsonObject jsonBody = new JsonObject();
+            for (String param : fragment.split("&")) {
+                String[] keyValue = param.split("=", 2);
+                if (keyValue.length == 2) {
+                    String key = keyValue[0];
+                    String value = java.net.URLDecoder.decode(keyValue[1], StandardCharsets.UTF_8.toString());
+                    jsonBody.addProperty(key, value);
+                }
+            }
+
+            // Transform the tokens
+            JsonObject transformedJson = transformTokens(main, appIdentifier, storage, jsonBody, iss, accessTokenUpdate, idTokenUpdate, useDynamicKey);
+
+            // Reconstruct the query params
+            StringBuilder newFragment = new StringBuilder();
+            for (Map.Entry<String, JsonElement> entry : transformedJson.entrySet()) {
+                if (newFragment.length() > 0) {
+                    newFragment.append("&");
+                }
+                String encodedValue = java.net.URLEncoder.encode(entry.getValue().getAsString(), StandardCharsets.UTF_8.toString());
+                newFragment.append(entry.getKey()).append("=").append(encodedValue);
+            }
+
+            // Reconstruct the URL
+            String baseUrl = url.substring(0, url.indexOf('#'));
+            return baseUrl + "#" + newFragment.toString();
+        } catch (Exception e) {
+            // If any exception occurs, return the original URL
+            return url;
+        }
+    }
+
     public static JsonObject transformTokens(Main main, AppIdentifier appIdentifier, Storage storage, JsonObject jsonBody, String iss, JsonObject accessTokenUpdate, JsonObject idTokenUpdate, boolean useDynamicKey) throws IOException, JWTException, InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException, JWTCreationException, InvalidConfigException {
         String rtHash = null;
         String atHash = null;
-
-        System.out.println("jsonBody: " + jsonBody.toString());
 
         if (jsonBody.has("refresh_token")) {
             String refreshToken = jsonBody.get("refresh_token").getAsString();
@@ -301,7 +342,6 @@ public class OAuth {
 
         if (jsonBody.has("access_token")) {
             String accessToken = jsonBody.get("access_token").getAsString();
-            System.out.println("accessToken: " + accessToken);
             accessToken = OAuthToken.reSignToken(appIdentifier, main, accessToken, iss, accessTokenUpdate, rtHash, null, OAuthToken.TokenType.ACCESS_TOKEN, useDynamicKey, 0);
             jsonBody.addProperty("access_token", accessToken);
 
@@ -387,7 +427,7 @@ public class OAuth {
     }
 
     public static void verifyAndUpdateIntrospectRefreshTokenPayload(Main main, AppIdentifier appIdentifier,
-            Storage storage, JsonObject payload, String iss, String refreshToken) throws StorageQueryException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException {
+            Storage storage, JsonObject payload, String refreshToken) throws StorageQueryException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException {
         
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
 
@@ -399,9 +439,7 @@ public class OAuth {
 
         boolean isValid = !isTokenRevokedBasedOnPayload(oauthStorage, appIdentifier, payload);
 
-        if (isValid) {
-            payload.addProperty("iss", iss);
-        } else {
+        if (!isValid) {
             payload.entrySet().clear();
             payload.addProperty("active", false);
 
@@ -450,7 +488,6 @@ public class OAuth {
 
         return oauthStorage.isRevoked(appIdentifier, targetTypes.toArray(new String[0]), targetValues.toArray(new String[0]), issuedAt);
     }
-
 
     public static JsonObject introspectAccessToken(Main main, AppIdentifier appIdentifier, Storage storage,
             String token) throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException, UnsupportedJWTSigningAlgorithmException {

@@ -76,7 +76,6 @@ public class OAuthTokenAPI extends WebserverAPI {
             formFields.put(entry.getKey(), entry.getValue().getAsString());
         }
 
-        
         try {
             AppIdentifier appIdentifier = getAppIdentifier(req);
             Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
@@ -84,7 +83,7 @@ public class OAuthTokenAPI extends WebserverAPI {
             // check if the refresh token is valid
             if (grantType.equals("refresh_token")) {
                 String refreshToken = InputParser.parseStringOrThrowError(bodyFromSDK, "refresh_token", false);
-    
+
                 HttpRequestForOry.Response response = OAuthProxyHelper.proxyFormPOST(
                     main, req, resp,
                     appIdentifier,
@@ -100,11 +99,11 @@ public class OAuthTokenAPI extends WebserverAPI {
                 if (response == null) {
                     return; // proxy helper would have sent the error response
                 }
-    
+
                 JsonObject refreshTokenPayload = response.jsonResponse.getAsJsonObject();
 
                 try {
-                    OAuth.verifyAndUpdateIntrospectRefreshTokenPayload(main, appIdentifier, storage, refreshTokenPayload, iss, refreshToken);
+                    OAuth.verifyAndUpdateIntrospectRefreshTokenPayload(main, appIdentifier, storage, refreshTokenPayload, refreshToken);
                 } catch (StorageQueryException | TenantOrAppNotFoundException |
                             FeatureNotEnabledException | InvalidConfigException e) {
                     throw new ServletException(e);
