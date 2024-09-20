@@ -28,6 +28,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import io.supertokens.Main;
+import io.supertokens.config.Config;
+import io.supertokens.config.CoreConfig;
 import io.supertokens.emailpassword.PasswordHashing;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.Multitenancy;
@@ -62,6 +64,10 @@ public class BulkImportTestUtils {
     }
 
     public static List<BulkImportUser> generateBulkImportUser(int numberOfUsers, List<String> tenants, int startIndex) {
+        return generateBulkImportUserWithRoles(numberOfUsers, tenants, startIndex, List.of("role1", "role2"));
+    }
+
+    public static List<BulkImportUser> generateBulkImportUserWithRoles(int numberOfUsers, List<String> tenants, int startIndex, List<String> roles) {
         List<BulkImportUser> users = new ArrayList<>();
         JsonParser parser = new JsonParser();
 
@@ -74,8 +80,9 @@ public class BulkImportTestUtils {
                     .getAsJsonObject();
 
             List<UserRole> userRoles = new ArrayList<>();
-            userRoles.add(new UserRole("role1", tenants));
-            userRoles.add(new UserRole("role2", tenants));
+            for(String roleName : roles) {
+                userRoles.add(new UserRole(roleName, tenants));
+            }
 
             List<TotpDevice> totpDevices = new ArrayList<>();
             totpDevices.add(new TotpDevice("secretKey", 30, 1, "deviceName"));
@@ -113,10 +120,10 @@ public class BulkImportTestUtils {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            null, null, new JsonObject()));
+                            null, null, Config.getBaseConfigAsJsonObject(main)));
         }
         { // tenant 2
-            JsonObject config = new JsonObject();
+            JsonObject config = Config.getBaseConfigAsJsonObject(main);
             TenantIdentifier tenantIdentifier = new TenantIdentifier(null, null, "t2");
 
             StorageLayer.getStorage(new TenantIdentifier(null, null, null), main)

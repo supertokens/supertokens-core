@@ -151,3 +151,7 @@ disable_telemetry: true
 # (OPTIONAL | Default: null) string value. If specified, the supertokens service will only load the specified CUD even
 # if there are more CUDs in the database and block all other CUDs from being used from this instance.
 # supertokens_saas_load_only_cud:
+
+# (DIFFERENT_ACROSS_TENANTS | OPTIONAL | Default: 1) int value. If specified, the supertokens core will use the
+# specified number of threads to complete the migration of users.
+# bulk_migration_parallelism:

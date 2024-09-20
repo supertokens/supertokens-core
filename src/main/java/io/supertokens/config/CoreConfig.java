@@ -209,6 +209,10 @@ public class CoreConfig {
     @IgnoreForAnnotationCheck
     private boolean isNormalizedAndValid = false;
 
+    @NotConflictingInApp
+    @JsonProperty
+    private int bulk_migration_parallelism = 1;
+
     public static Set<String> getValidFields() {
         CoreConfig coreConfig = new CoreConfig();
         JsonObject coreConfigObj = new GsonBuilder().serializeNulls().create().toJsonTree(coreConfig).getAsJsonObject();
@@ -396,6 +400,10 @@ public class CoreConfig {
 
     public boolean getHttpsEnabled() {
         return webserver_https_enabled;
+    }
+
+    public int getBulkMigrationParallelism() {
+        return bulk_migration_parallelism;
     }
 
     private String getConfigFileLocation(Main main) {
@@ -588,6 +596,10 @@ public class CoreConfig {
             } catch (IllegalArgumentException e) {
                 throw new InvalidConfigException("supertokens_max_cdi_version is not a valid semantic version");
             }
+        }
+
+        if (bulk_migration_parallelism < 1) {
+            throw new InvalidConfigException("Provided bulk_migration_parallelism must be >= 1");
         }
 
         // Normalize
