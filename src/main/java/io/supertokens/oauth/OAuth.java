@@ -74,7 +74,7 @@ public class OAuth {
         }
 
         if (clientIdToCheck != null) {
-            if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientIdToCheck)) {
+            if (!oauthStorage.doesClientIdExistForApp(appIdentifier, clientIdToCheck)) {
                 throw new OAuthClientNotFoundException();
             }
         }
@@ -115,7 +115,7 @@ public class OAuth {
         }
 
         if (clientIdToCheck != null) {
-            if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientIdToCheck)) {
+            if (!oauthStorage.doesClientIdExistForApp(appIdentifier, clientIdToCheck)) {
                 throw new OAuthClientNotFoundException();
             }
         }
@@ -156,7 +156,7 @@ public class OAuth {
         }
 
         if (clientIdToCheck != null) {
-            if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientIdToCheck)) {
+            if (!oauthStorage.doesClientIdExistForApp(appIdentifier, clientIdToCheck)) {
                 throw new OAuthClientNotFoundException();
             }
         }
@@ -198,7 +198,7 @@ public class OAuth {
         }
 
         if (clientIdToCheck != null) {
-            if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientIdToCheck)) {
+            if (!oauthStorage.doesClientIdExistForApp(appIdentifier, clientIdToCheck)) {
                 throw new OAuthClientNotFoundException();
             }
         }
@@ -239,7 +239,7 @@ public class OAuth {
         }
 
         if (clientIdToCheck != null) {
-            if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientIdToCheck)) {
+            if (!oauthStorage.doesClientIdExistForApp(appIdentifier, clientIdToCheck)) {
                 throw new OAuthClientNotFoundException();
             }
         }
@@ -289,6 +289,8 @@ public class OAuth {
         String rtHash = null;
         String atHash = null;
 
+        System.out.println("jsonBody: " + jsonBody.toString());
+
         if (jsonBody.has("refresh_token")) {
             String refreshToken = jsonBody.get("refresh_token").getAsString();
             refreshToken = refreshToken.replace("ory_rt_", "st_rt_");
@@ -299,6 +301,7 @@ public class OAuth {
 
         if (jsonBody.has("access_token")) {
             String accessToken = jsonBody.get("access_token").getAsString();
+            System.out.println("accessToken: " + accessToken);
             accessToken = OAuthToken.reSignToken(appIdentifier, main, accessToken, iss, accessTokenUpdate, rtHash, null, OAuthToken.TokenType.ACCESS_TOKEN, useDynamicKey, 0);
             jsonBody.addProperty("access_token", accessToken);
 
@@ -323,9 +326,9 @@ public class OAuth {
         return jsonBody;
     }
 
-    public static void addClientId(Main main, AppIdentifier appIdentifier, Storage storage, String clientId) throws StorageQueryException, OAuth2ClientAlreadyExistsForAppException {
+    public static void addClientId(Main main, AppIdentifier appIdentifier, Storage storage, String clientId, boolean isClientCredentialsOnly) throws StorageQueryException, OAuth2ClientAlreadyExistsForAppException {
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
-        oauthStorage.addClientForApp(appIdentifier, clientId);
+        oauthStorage.addOrUpdateClientForApp(appIdentifier, clientId, isClientCredentialsOnly);
     }
 
     public static void removeClientId(Main main, AppIdentifier appIdentifier, Storage storage, String clientId) throws StorageQueryException {
@@ -510,4 +513,10 @@ public class OAuth {
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
         oauthStorage.revoke(appIdentifier, "session_handle", sessionHandle);
 	}
+
+    public static void verifyIdTokenAndClientIdForLogout(Main main, AppIdentifier appIdentifier, Storage storage,
+            String idTokenHint, String clientId) throws StorageQueryException, OAuthAPIException {
+        
+    }
+
 }
