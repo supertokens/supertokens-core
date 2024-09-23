@@ -3069,6 +3069,12 @@ public class Start
     }
 
     @Override
+    public void addM2MToken(AppIdentifier appIdentifier, String clientId, long iat, long exp)
+            throws StorageQueryException {
+        // TODO
+    }
+
+    @Override
     public int countTotalNumberOfClientCredentialsOnlyClientsForApp(AppIdentifier appIdentifier)
             throws StorageQueryException {
         return 0; // TODO

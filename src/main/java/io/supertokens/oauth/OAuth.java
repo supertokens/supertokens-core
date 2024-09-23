@@ -585,4 +585,10 @@ public class OAuth {
             queryParams.put("clientId", clientIdInIdTokenPayload);
         }
     }
+
+    public static void addM2MToken(Main main, AppIdentifier appIdentifier, Storage storage, String accessToken) throws StorageQueryException, TenantOrAppNotFoundException, TryRefreshTokenException, UnsupportedJWTSigningAlgorithmException, StorageTransactionLogicException {
+        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+        JsonObject payload = OAuthToken.getPayloadFromJWTToken(appIdentifier, main, accessToken);
+        oauthStorage.addM2MToken(appIdentifier, payload.get("client_id").getAsString(), payload.get("iat").getAsLong(), payload.get("exp").getAsLong());
+    }
 }

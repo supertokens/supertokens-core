@@ -136,6 +136,15 @@ public class OAuthTokenAPI extends WebserverAPI {
             if (response != null) {
                 try {
                     response.jsonResponse = OAuth.transformTokens(super.main, appIdentifier, storage, response.jsonResponse.getAsJsonObject(), iss, accessTokenUpdate, idTokenUpdate, useDynamicKey);
+
+                    if (grantType.equals("client_credentials")) {
+                        try {
+                            OAuth.addM2MToken(main, appIdentifier, storage, response.jsonResponse.getAsJsonObject().get("access_token").getAsString());
+                        } catch (Exception e) {
+                            // ignore
+                        }
+                    }
+
                 } catch (IOException | InvalidConfigException | TenantOrAppNotFoundException | StorageQueryException | InvalidKeyException | NoSuchAlgorithmException | InvalidKeySpecException | JWTCreationException | JWTException | StorageTransactionLogicException | UnsupportedJWTSigningAlgorithmException e) {
                     throw new ServletException(e);
                 }

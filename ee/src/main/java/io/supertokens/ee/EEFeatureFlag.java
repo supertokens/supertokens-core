@@ -24,6 +24,7 @@ import io.supertokens.pluginInterface.ActiveUsersStorage;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.dashboard.sqlStorage.DashboardSQLStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -32,6 +33,7 @@ import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.oauth.OAuthStorage;
 import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
@@ -338,6 +340,28 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         return result;
     }
 
+    private JsonObject getOAuthStats() throws StorageQueryException, TenantOrAppNotFoundException {
+        JsonObject result = new JsonObject();
+
+        OAuthStorage oAuthStorage = StorageUtils.getOAuthStorage(StorageLayer.getStorage(
+            this.appIdentifier.getAsPublicTenantIdentifier(), main));
+        
+        result.addProperty("totalNumberOfClients", oAuthStorage.countTotalNumberOfClientsForApp(appIdentifier));
+        result.addProperty("numberOfClientCredentialsOnlyClients", oAuthStorage.countTotalNumberOfClientsForApp(appIdentifier));
+        result.addProperty("numberOfM2MTokensAlive", oAuthStorage.countTotalNumberOfM2MTokensAlive(appIdentifier));
+
+        long now = System.currentTimeMillis();
+        JsonArray tokensCreatedArray = new JsonArray();
+        for (int i = 1; i <= 31; i++) {
+            long timestamp = now - (i * 24 * 60 * 60 * 1000L);
+            int numberOfTokensCreated = oAuthStorage.countTotalNumberOfM2MTokensCreatedSince(this.appIdentifier, timestamp);
+            tokensCreatedArray.add(new JsonPrimitive(numberOfTokensCreated));
+        }
+        result.add("numberOfM2MTokensCreated", tokensCreatedArray);
+
+        return result;
+    }
+
     private JsonArray getMAUs() throws StorageQueryException, TenantOrAppNotFoundException {
         JsonArray mauArr = new JsonArray();
         long now = System.currentTimeMillis();
@@ -394,6 +418,10 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
 
             if (feature == EE_FEATURES.SECURITY) {
                 usageStats.add(EE_FEATURES.SECURITY.toString(), new JsonObject());
+            }
+
+            if (feature == EE_FEATURES.OAUTH) {
+                usageStats.add(EE_FEATURES.OAUTH.toString(), getOAuthStats());
             }
         }
 
