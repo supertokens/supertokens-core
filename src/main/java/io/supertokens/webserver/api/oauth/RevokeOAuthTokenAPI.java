@@ -46,12 +46,14 @@ public class RevokeOAuthTokenAPI extends WebserverAPI {
             if (token.startsWith("st_rt_")) {
                 // revoking refresh token
                 String clientId = InputParser.parseStringOrThrowError(input, "client_id", false);
-                String clientSecret = InputParser.parseStringOrThrowError(input, "client_secret", false);
+                String clientSecret = InputParser.parseStringOrThrowError(input, "client_secret", true);
 
                 Map<String, String> formFields = new HashMap<>();
                 formFields.put("token", token);
                 formFields.put("client_id", clientId);
-                formFields.put("client_secret", clientSecret);
+                if (clientSecret != null) {
+                    formFields.put("client_secret", clientSecret);
+                }
 
                 HttpRequestForOry.Response response = OAuthProxyHelper.proxyFormPOST(
                     main, req, resp,

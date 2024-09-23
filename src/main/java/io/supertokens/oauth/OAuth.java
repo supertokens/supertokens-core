@@ -37,7 +37,6 @@ import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicExceptio
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.oauth.OAuthStorage;
-import io.supertokens.pluginInterface.oauth.exceptions.OAuth2ClientAlreadyExistsForAppException;
 import io.supertokens.session.jwt.JWT.JWTException;
 import io.supertokens.utils.Utils;
 
@@ -366,7 +365,7 @@ public class OAuth {
         return jsonBody;
     }
 
-    public static void addClientId(Main main, AppIdentifier appIdentifier, Storage storage, String clientId, boolean isClientCredentialsOnly) throws StorageQueryException, OAuth2ClientAlreadyExistsForAppException {
+    public static void addOrUpdateClientId(Main main, AppIdentifier appIdentifier, Storage storage, String clientId, boolean isClientCredentialsOnly) throws StorageQueryException {
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
         oauthStorage.addOrUpdateClientForApp(appIdentifier, clientId, isClientCredentialsOnly);
     }

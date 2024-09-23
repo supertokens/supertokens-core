@@ -19,6 +19,7 @@ package io.supertokens.webserver.api.oauth;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -37,7 +38,6 @@ import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.oauth.exceptions.OAuth2ClientAlreadyExistsForAppException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -88,6 +88,12 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
         input.addProperty("accessTokenStrategy", "jwt");
         input.addProperty("skipConsent", true);
         input.addProperty("subjectType", "public");
+        input.addProperty("clientId", "stcl_" + UUID.randomUUID());
+
+        boolean isClientCredentialsOnly = input.has("grantTypes") &&
+            input.get("grantTypes").isJsonArray() &&
+            input.get("grantTypes").getAsJsonArray().size() == 1 &&
+            input.get("grantTypes").getAsJsonArray().get(0).getAsString().equals("client_credentials");
 
         try {
             AppIdentifier appIdentifier = getAppIdentifier(req);
@@ -110,11 +116,9 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
                 String clientId = response.jsonResponse.getAsJsonObject().get("clientId").getAsString();
 
                 try {
-                    OAuth.addClientId(main, getAppIdentifier(req), enforcePublicTenantAndGetPublicTenantStorage(req), clientId, false); // FIXME
+                    OAuth.addOrUpdateClientId(main, getAppIdentifier(req), enforcePublicTenantAndGetPublicTenantStorage(req), clientId, isClientCredentialsOnly);
                 } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
                     throw new ServletException(e);
-                } catch (OAuth2ClientAlreadyExistsForAppException e) {
-                    // ignore
                 }
 
                 Transformations.applyClientPropsWhiteList(response.jsonResponse.getAsJsonObject());
@@ -130,6 +134,10 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String clientId = InputParser.parseStringOrThrowError(input, "clientId", false);
+        boolean isClientCredentialsOnly = input.has("grantTypes") &&
+            input.get("grantTypes").isJsonArray() &&
+            input.get("grantTypes").getAsJsonArray().size() == 1 &&
+            input.get("grantTypes").getAsJsonArray().get(0).getAsString().equals("client_credentials");
 
         // Apply existing client config on top of input
         try {
@@ -171,6 +179,12 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
             );
 
             if (response != null) {
+                try {
+                    OAuth.addOrUpdateClientId(main, getAppIdentifier(req), enforcePublicTenantAndGetPublicTenantStorage(req), clientId, isClientCredentialsOnly);
+                } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
+                    throw new ServletException(e);
+                }
+
                 Transformations.applyClientPropsWhiteList(response.jsonResponse.getAsJsonObject());
                 response.jsonResponse.getAsJsonObject().addProperty("status", "OK");
                 super.sendJsonResponse(200, response.jsonResponse, resp);
