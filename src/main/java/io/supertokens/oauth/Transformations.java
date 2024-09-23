@@ -82,8 +82,7 @@ public class Transformations {
                         updatedQuery.append(param).append("&");
                     }
                 }
-                redirectTo = url.getProtocol() + "://" + url.getHost() + ":" + url.getPort() + url.getPath() + "?"
-                        + updatedQuery.toString().trim();
+                redirectTo = redirectTo.replace("?" + query, "?" + updatedQuery.toString().trim());
             }
         } catch (MalformedURLException e) {
             throw new IllegalStateException(e);
