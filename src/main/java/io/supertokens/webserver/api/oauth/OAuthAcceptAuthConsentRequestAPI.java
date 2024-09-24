@@ -2,6 +2,7 @@ package io.supertokens.webserver.api.oauth;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.UUID;
 
 import com.google.gson.JsonObject;
 
@@ -40,6 +41,7 @@ public class OAuthAcceptAuthConsentRequestAPI extends WebserverAPI {
         accessToken.addProperty("tId", tId);
         accessToken.addProperty("rsub", rsub);
         accessToken.addProperty("sessionHandle", sessionHandle);
+        accessToken.addProperty("gid", UUID.randomUUID().toString());
 
         // remove the above from input
         input.remove("iss");

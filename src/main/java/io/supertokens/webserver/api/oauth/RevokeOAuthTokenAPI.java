@@ -8,12 +8,14 @@ import java.util.Map;
 import com.google.gson.JsonObject;
 
 import io.supertokens.Main;
+import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.oauth.HttpRequestForOry;
 import io.supertokens.oauth.OAuth;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
@@ -44,6 +46,37 @@ public class RevokeOAuthTokenAPI extends WebserverAPI {
             Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
 
             if (token.startsWith("st_rt_")) {
+                String gid = null;
+                {
+                    // introspect token to get gid
+                    Map<String, String> formFields = new HashMap<>();
+                    formFields.put("token", token);
+    
+                    HttpRequestForOry.Response response = OAuthProxyHelper.proxyFormPOST(
+                        main, req, resp,
+                        appIdentifier,
+                        storage,
+                        null, // clientIdToCheck
+                        "/admin/oauth2/introspect", // pathProxy
+                        true, // proxyToAdmin
+                        false, // camelToSnakeCaseConversion
+                        formFields,
+                        new HashMap<>() // headers
+                    );
+
+                    if (response != null) {
+                        JsonObject finalResponse = response.jsonResponse.getAsJsonObject();
+
+                        try {
+                            OAuth.verifyAndUpdateIntrospectRefreshTokenPayload(main, appIdentifier, storage, finalResponse, token);
+                            gid = finalResponse.get("gid").getAsString();
+                        } catch (StorageQueryException | TenantOrAppNotFoundException |
+                                    FeatureNotEnabledException | InvalidConfigException e) {
+                            throw new ServletException(e);
+                        }
+                    }
+                }
+
                 // revoking refresh token
                 String clientId = InputParser.parseStringOrThrowError(input, "client_id", false);
                 String clientSecret = InputParser.parseStringOrThrowError(input, "client_secret", true);
@@ -70,7 +103,7 @@ public class RevokeOAuthTokenAPI extends WebserverAPI {
                 if (response != null) {
                     // Success response would mean that the clientId/secret has been validated
                     try {
-                        OAuth.revokeRefreshToken(main, appIdentifier, storage, token);
+                        OAuth.revokeRefreshToken(main, appIdentifier, storage, gid);
                     } catch (StorageQueryException | NoSuchAlgorithmException e) {
                         throw new ServletException(e);
                     }

@@ -49,7 +49,7 @@ public class OAuthToken {
     private static Set<String> NON_OVERRIDABLE_TOKEN_PROPS = Set.of(
         "kid", "typ", "alg", "aud",
         "iss", "iat", "exp", "nbf", "jti", "ext",
-        "sid", "rat", "at_hash", "rt_hash",
+        "sid", "rat", "at_hash", "gid",
         "client_id", "scp", "sub", "stt"
     );
 
@@ -95,16 +95,12 @@ public class OAuthToken {
         return jwtInfo.payload;
     }
 
-    public static String reSignToken(AppIdentifier appIdentifier, Main main, String token, String iss, JsonObject payloadUpdate, String rtHash, String atHash, TokenType tokenType, boolean useDynamicSigningKey, int retryCount) throws IOException, JWTException, InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException,
+    public static String reSignToken(AppIdentifier appIdentifier, Main main, String token, String iss, JsonObject payloadUpdate, String atHash, TokenType tokenType, boolean useDynamicSigningKey, int retryCount) throws IOException, JWTException, InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException,
             JWTCreationException {
         JsonObject payload = JWT.getPayloadWithoutVerifying(token).payload;
 
         payload.addProperty("iss", iss);
         payload.addProperty("stt", tokenType.getValue());
-        if (rtHash != null) {
-            payload.addProperty("rt_hash", rtHash);
-        }
-
         if (atHash != null) {
             payload.addProperty("at_hash", atHash);
         }

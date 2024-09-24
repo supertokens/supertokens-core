@@ -328,20 +328,17 @@ public class OAuth {
     }
 
     public static JsonObject transformTokens(Main main, AppIdentifier appIdentifier, Storage storage, JsonObject jsonBody, String iss, JsonObject accessTokenUpdate, JsonObject idTokenUpdate, boolean useDynamicKey) throws IOException, JWTException, InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException, JWTCreationException, InvalidConfigException {
-        String rtHash = null;
         String atHash = null;
 
         if (jsonBody.has("refresh_token")) {
             String refreshToken = jsonBody.get("refresh_token").getAsString();
             refreshToken = refreshToken.replace("ory_rt_", "st_rt_");
             jsonBody.addProperty("refresh_token", refreshToken);
-
-            rtHash = Utils.hashSHA256(refreshToken);
         }
 
         if (jsonBody.has("access_token")) {
             String accessToken = jsonBody.get("access_token").getAsString();
-            accessToken = OAuthToken.reSignToken(appIdentifier, main, accessToken, iss, accessTokenUpdate, rtHash, null, OAuthToken.TokenType.ACCESS_TOKEN, useDynamicKey, 0);
+            accessToken = OAuthToken.reSignToken(appIdentifier, main, accessToken, iss, accessTokenUpdate, null, OAuthToken.TokenType.ACCESS_TOKEN, useDynamicKey, 0);
             jsonBody.addProperty("access_token", accessToken);
 
             // Compute at_hash as per OAuth 2.0 standard
@@ -358,7 +355,7 @@ public class OAuth {
 
         if (jsonBody.has("id_token")) {
             String idToken = jsonBody.get("id_token").getAsString();
-            idToken = OAuthToken.reSignToken(appIdentifier, main, idToken, iss, idTokenUpdate, null, atHash, OAuthToken.TokenType.ID_TOKEN, useDynamicKey, 0);
+            idToken = OAuthToken.reSignToken(appIdentifier, main, idToken, iss, idTokenUpdate, atHash, OAuthToken.TokenType.ID_TOKEN, useDynamicKey, 0);
             jsonBody.addProperty("id_token", idToken);
         }
 
@@ -475,9 +472,9 @@ public class OAuth {
             targetValues.add(payload.get("jti").getAsString());
         }
 
-        if (payload.has("rt_hash")) {
-            targetTypes.add("rt_hash");
-            targetValues.add(payload.get("rt_hash").getAsString());
+        if (payload.has("gid")) {
+            targetTypes.add("gid");
+            targetValues.add(payload.get("gid").getAsString());
         }
 
         if (payload.has("sessionHandle")) {
@@ -522,10 +519,9 @@ public class OAuth {
         oauthStorage.revoke(appIdentifier, "client_id", clientId);
     }
 
-	public static void revokeRefreshToken(Main main, AppIdentifier appIdentifier, Storage storage, String token) throws StorageQueryException, NoSuchAlgorithmException {
+	public static void revokeRefreshToken(Main main, AppIdentifier appIdentifier, Storage storage, String gid) throws StorageQueryException, NoSuchAlgorithmException {
 		OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
-		String hash = Utils.hashSHA256(token);
-		oauthStorage.revoke(appIdentifier, "rt_hash", hash);
+		oauthStorage.revoke(appIdentifier, "gid", gid);
 	}
 
     public static void revokeAccessToken(Main main, AppIdentifier appIdentifier,
