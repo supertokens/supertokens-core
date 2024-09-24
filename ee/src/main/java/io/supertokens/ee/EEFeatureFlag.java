@@ -347,7 +347,7 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
             this.appIdentifier.getAsPublicTenantIdentifier(), main));
         
         result.addProperty("totalNumberOfClients", oAuthStorage.countTotalNumberOfClientsForApp(appIdentifier));
-        result.addProperty("numberOfClientCredentialsOnlyClients", oAuthStorage.countTotalNumberOfClientsForApp(appIdentifier));
+        result.addProperty("numberOfClientCredentialsOnlyClients", oAuthStorage.countTotalNumberOfClientCredentialsOnlyClientsForApp(appIdentifier));
         result.addProperty("numberOfM2MTokensAlive", oAuthStorage.countTotalNumberOfM2MTokensAlive(appIdentifier));
 
         long now = System.currentTimeMillis();

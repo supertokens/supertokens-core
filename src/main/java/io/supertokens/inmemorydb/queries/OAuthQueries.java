@@ -224,7 +224,7 @@ public class OAuthQueries {
                 " WHERE app_id = ? AND exp > ?";
         return execute(start, QUERY, pst -> {
             pst.setString(1, appIdentifier.getAppId());
-            pst.setLong(2, System.currentTimeMillis());
+            pst.setLong(2, System.currentTimeMillis()/1000);
         }, result -> {
             if (result.next()) {
                 return result.getInt("c");

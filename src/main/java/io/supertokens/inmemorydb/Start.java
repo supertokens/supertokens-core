@@ -106,7 +106,6 @@ public class Start
         ActiveUsersSQLStorage, DashboardSQLStorage, AuthRecipeSQLStorage, OAuthSQLStorage {
 
     private static final Object appenderLock = new Object();
-    private static final String APP_ID_KEY_NAME = "app_id";
     private static final String ACCESS_TOKEN_SIGNING_KEY_NAME = "access_token_signing_key";
     private static final String REFRESH_TOKEN_KEY_NAME = "refresh_token_key";
     public static boolean isTesting = false;
