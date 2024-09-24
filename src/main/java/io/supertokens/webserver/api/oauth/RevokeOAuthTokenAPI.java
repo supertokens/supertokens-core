@@ -85,6 +85,13 @@ public class RevokeOAuthTokenAPI extends WebserverAPI {
                 String clientId = InputParser.parseStringOrThrowError(input, "client_id", false);
                 String clientSecret = InputParser.parseStringOrThrowError(input, "client_secret", true);
 
+                String authorizationHeader = InputParser.parseStringOrThrowError(input, "authorizationHeader", true);
+
+                Map<String, String> headers = new HashMap<>();
+                if (authorizationHeader != null) {
+                    headers.put("Authorization", authorizationHeader);
+                }
+
                 Map<String, String> formFields = new HashMap<>();
                 formFields.put("token", token);
                 formFields.put("client_id", clientId);
@@ -101,7 +108,7 @@ public class RevokeOAuthTokenAPI extends WebserverAPI {
                     false, // proxyToAdmin
                     false, // camelToSnakeCaseConversion
                     formFields, // formFields
-                    new HashMap<>() // headers
+                    headers // headers
                 );
 
                 if (response != null) {
