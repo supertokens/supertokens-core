@@ -247,10 +247,6 @@ public class Transformations {
                     ext.remove(prop);
                 }
             }
-            
-            if (ext.entrySet().size() == 0) {
-                payload.remove("ext");
-            }
         }
     }
 

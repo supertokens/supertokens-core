@@ -64,8 +64,8 @@ public class OAuthTokenAPI extends WebserverAPI {
         JsonObject bodyFromSDK = InputParser.parseJsonObjectOrThrowError(input, "inputBody", false);
 
         String grantType = InputParser.parseStringOrThrowError(bodyFromSDK, "grant_type", false);
-        JsonObject accessTokenUpdate = InputParser.parseJsonObjectOrThrowError(input, "access_token", true);
-        JsonObject idTokenUpdate = InputParser.parseJsonObjectOrThrowError(input, "id_token", true);
+        JsonObject accessTokenUpdate = InputParser.parseJsonObjectOrThrowError(input, "access_token", "authorization_code".equals(grantType));
+        JsonObject idTokenUpdate = InputParser.parseJsonObjectOrThrowError(input, "id_token", "authorization_code".equals(grantType));
 
         // useStaticKeyInput defaults to true, so we check if it has been explicitly set to false
         Boolean useStaticKeyInput = InputParser.parseBooleanOrThrowError(input, "useStaticSigningKey", true);

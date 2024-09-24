@@ -35,12 +35,18 @@ public class OAuthAcceptAuthConsentRequestAPI extends WebserverAPI {
         String tId = InputParser.parseStringOrThrowError(input, "tId", false);
         String rsub = InputParser.parseStringOrThrowError(input, "rsub", false);
         String sessionHandle = InputParser.parseStringOrThrowError(input, "sessionHandle", false);
+        JsonObject initialAccessTokenPayload = InputParser.parseJsonObjectOrThrowError(input, "initialAccessTokenPayload", false);
+        JsonObject initialIdTokenPayload = InputParser.parseJsonObjectOrThrowError(input, "initialIdTokenPayload", false);
 
         JsonObject accessToken = new JsonObject();
         accessToken.addProperty("iss", iss);
         accessToken.addProperty("tId", tId);
         accessToken.addProperty("rsub", rsub);
         accessToken.addProperty("sessionHandle", sessionHandle);
+        accessToken.add("initialPayload", initialAccessTokenPayload);
+
+        JsonObject idToken = new JsonObject();
+        idToken.add("initialPayload", initialIdTokenPayload);
         accessToken.addProperty("gid", UUID.randomUUID().toString());
 
         // remove the above from input
@@ -48,9 +54,12 @@ public class OAuthAcceptAuthConsentRequestAPI extends WebserverAPI {
         input.remove("tId");
         input.remove("rsub");
         input.remove("sessionHandle");
+        input.remove("initialAccessTokenPayload");
+        input.remove("initialIdTokenPayload");
 
         JsonObject session = new JsonObject();
         session.add("access_token", accessToken);
+        session.add("id_token", idToken);
         input.add("session", session);
 
         try {

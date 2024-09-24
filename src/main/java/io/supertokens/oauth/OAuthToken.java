@@ -110,6 +110,20 @@ public class OAuthToken {
             Transformations.transformExt(payload);
         }
 
+        // This should only happen in the authorization code flow during the token exchange. (enforced on the api level)
+        // Other flows (including later calls using the refresh token) will have the payloadUpdate defined.
+        if (payloadUpdate == null) {
+            if (tokenType == TokenType.ACCESS_TOKEN) {
+                if (payload.has("ext") && payload.get("ext").isJsonObject()) {
+                    payloadUpdate = payload.getAsJsonObject("ext").getAsJsonObject("initialPayload");
+                    payload.remove("ext");
+                }
+            } else {
+                payloadUpdate = payload.getAsJsonObject("initialPayload");
+                payload.remove("initialPayload");
+            }
+        }
+
         if (payloadUpdate != null) {
             for (Map.Entry<String, JsonElement> entry : payloadUpdate.entrySet()) {
                 if (!NON_OVERRIDABLE_TOKEN_PROPS.contains(entry.getKey())) {

@@ -432,6 +432,7 @@ public class OAuth {
         }
 
         Transformations.transformExt(payload);
+        payload.remove("ext");
 
         boolean isValid = !isTokenRevokedBasedOnPayload(oauthStorage, appIdentifier, payload);
 
