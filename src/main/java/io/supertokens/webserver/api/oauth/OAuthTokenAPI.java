@@ -71,11 +71,11 @@ public class OAuthTokenAPI extends WebserverAPI {
         Boolean useStaticKeyInput = InputParser.parseBooleanOrThrowError(input, "useStaticSigningKey", true);
         boolean useDynamicKey = Boolean.FALSE.equals(useStaticKeyInput);
 
-        String authorization = InputParser.parseStringOrThrowError(input, "authorization", true);
+        String authorizationHeader = InputParser.parseStringOrThrowError(input, "authorizationHeader", true);
 
         Map<String, String> headers = new HashMap<>();
-        if (authorization != null) {
-            headers.put("Authorization", authorization);
+        if (authorizationHeader != null) {
+            headers.put("Authorization", authorizationHeader);
         }
 
         Map<String, String> formFields = new HashMap<>();
