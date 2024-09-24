@@ -3023,7 +3023,7 @@ public class Start
     public void addOrUpdateClientForApp(AppIdentifier appIdentifier, String clientId, boolean isClientCredentialsOnly)
             throws StorageQueryException {
         try {
-            OAuthQueries.insertClientIdForAppId(this, clientId, appIdentifier);
+            OAuthQueries.insertClientIdForAppId(this, appIdentifier, clientId, isClientCredentialsOnly);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -3071,28 +3071,48 @@ public class Start
     @Override
     public void addM2MToken(AppIdentifier appIdentifier, String clientId, long iat, long exp)
             throws StorageQueryException {
-        // TODO
+        try {
+            OAuthQueries.addM2MToken(this, appIdentifier, clientId, iat, exp);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
     public int countTotalNumberOfClientCredentialsOnlyClientsForApp(AppIdentifier appIdentifier)
             throws StorageQueryException {
-        return 0; // TODO
+        try {
+            return OAuthQueries.countTotalNumberOfClientsForApp(this, appIdentifier, true);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
     public int countTotalNumberOfClientsForApp(AppIdentifier appIdentifier) throws StorageQueryException {
-        return 0; // TODO
+        try {
+            return OAuthQueries.countTotalNumberOfClientsForApp(this, appIdentifier, false);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
     public int countTotalNumberOfM2MTokensAlive(AppIdentifier appIdentifier) throws StorageQueryException {
-        return 0; // TODO
+        try {
+            return OAuthQueries.countTotalNumberOfM2MTokensAlive(this, appIdentifier);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
     public int countTotalNumberOfM2MTokensCreatedSince(AppIdentifier appIdentifier, long since)
             throws StorageQueryException {
-        return 0; // TODO
+        try {
+            return OAuthQueries.countTotalNumberOfM2MTokensCreatedSince(this, appIdentifier, since);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 }

@@ -165,11 +165,15 @@ public class SQLiteConfig {
         return "dashboard_user_sessions";
     }
 
-    public String getOAuthClientTable() { 
+    public String getOAuthClientsTable() {
         return "oauth_clients";
     }
 
     public String getOAuthRevokeTable() {
         return "oauth_revoke";
+    }
+
+    public String getOAuthM2MTokensTable() {
+        return "oauth_m2m_tokens";
     }
 }
