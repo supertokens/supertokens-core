@@ -71,6 +71,13 @@ public class OAuthTokenAPI extends WebserverAPI {
         Boolean useStaticKeyInput = InputParser.parseBooleanOrThrowError(input, "useStaticSigningKey", true);
         boolean useDynamicKey = Boolean.FALSE.equals(useStaticKeyInput);
 
+        String authorization = InputParser.parseStringOrThrowError(input, "authorization", true);
+
+        Map<String, String> headers = new HashMap<>();
+        if (authorization != null) {
+            headers.put("Authorization", authorization);
+        }
+
         Map<String, String> formFields = new HashMap<>();
         for (Map.Entry<String, JsonElement> entry : bodyFromSDK.entrySet()) {
             formFields.put(entry.getKey(), entry.getValue().getAsString());
@@ -130,7 +137,7 @@ public class OAuthTokenAPI extends WebserverAPI {
                 false, // proxyToAdmin
                 false, // camelToSnakeCaseConversion
                 formFields,
-                new HashMap<>() // headers
+                headers // headers
             );
 
             if (response != null) {
