@@ -47,6 +47,7 @@ public class RevokeOAuthTokenAPI extends WebserverAPI {
 
             if (token.startsWith("st_rt_")) {
                 String gid = null;
+                long exp = -1;
                 {
                     // introspect token to get gid
                     Map<String, String> formFields = new HashMap<>();
@@ -69,7 +70,10 @@ public class RevokeOAuthTokenAPI extends WebserverAPI {
 
                         try {
                             OAuth.verifyAndUpdateIntrospectRefreshTokenPayload(main, appIdentifier, storage, finalResponse, token);
-                            gid = finalResponse.get("gid").getAsString();
+                            if (finalResponse.get("active").getAsBoolean()) {
+                                gid = finalResponse.get("gid").getAsString();
+                                exp = finalResponse.get("exp").getAsLong();
+                            }
                         } catch (StorageQueryException | TenantOrAppNotFoundException |
                                     FeatureNotEnabledException | InvalidConfigException e) {
                             throw new ServletException(e);
@@ -102,10 +106,12 @@ public class RevokeOAuthTokenAPI extends WebserverAPI {
 
                 if (response != null) {
                     // Success response would mean that the clientId/secret has been validated
-                    try {
-                        OAuth.revokeRefreshToken(main, appIdentifier, storage, gid);
-                    } catch (StorageQueryException | NoSuchAlgorithmException e) {
-                        throw new ServletException(e);
+                    if (gid != null) {
+                        try {
+                            OAuth.revokeRefreshToken(main, appIdentifier, storage, gid, exp);
+                        } catch (StorageQueryException | NoSuchAlgorithmException e) {
+                            throw new ServletException(e);
+                        }
                     }
 
                     JsonObject finalResponse = new JsonObject();

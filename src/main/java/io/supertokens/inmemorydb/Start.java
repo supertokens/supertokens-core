@@ -3048,10 +3048,10 @@ public class Start
     }
 
     @Override
-    public void revoke(AppIdentifier appIdentifier, String targetType, String targetValue)
+    public void revoke(AppIdentifier appIdentifier, String targetType, String targetValue, long exp)
             throws StorageQueryException {
         try {
-            OAuthQueries.revoke(this, appIdentifier, targetType, targetValue);
+            OAuthQueries.revoke(this, appIdentifier, targetType, targetValue, exp);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -3073,6 +3073,15 @@ public class Start
             throws StorageQueryException {
         try {
             OAuthQueries.addM2MToken(this, appIdentifier, clientId, iat, exp);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void cleanUpExpiredAndRevokedTokens(AppIdentifier appIdentifier) throws StorageQueryException {
+        try {
+            OAuthQueries.cleanUpExpiredAndRevokedTokens(this, appIdentifier);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }

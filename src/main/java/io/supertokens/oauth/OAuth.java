@@ -516,13 +516,14 @@ public class OAuth {
     }
 
     public static void revokeTokensForClientId(Main main, AppIdentifier appIdentifier, Storage storage, String clientId) throws StorageQueryException {
+        long exp = System.currentTimeMillis() / 1000 + 3600 * 24 * 183; // 6 month from now
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
-        oauthStorage.revoke(appIdentifier, "client_id", clientId);
+        oauthStorage.revoke(appIdentifier, "client_id", clientId, exp);
     }
 
-	public static void revokeRefreshToken(Main main, AppIdentifier appIdentifier, Storage storage, String gid) throws StorageQueryException, NoSuchAlgorithmException {
+	public static void revokeRefreshToken(Main main, AppIdentifier appIdentifier, Storage storage, String gid, long exp) throws StorageQueryException, NoSuchAlgorithmException {
 		OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
-		oauthStorage.revoke(appIdentifier, "gid", gid);
+		oauthStorage.revoke(appIdentifier, "gid", gid, exp);
 	}
 
     public static void revokeAccessToken(Main main, AppIdentifier appIdentifier,
@@ -531,9 +532,11 @@ public class OAuth {
             OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
             JsonObject payload = OAuthToken.getPayloadFromJWTToken(appIdentifier, main, token);
 
+            long exp = payload.get("exp").getAsLong();
+
             if (payload.has("stt") && payload.get("stt").getAsInt() == OAuthToken.TokenType.ACCESS_TOKEN.getValue()) {
                 String jti = payload.get("jti").getAsString();
-                oauthStorage.revoke(appIdentifier, "jti", jti);
+                oauthStorage.revoke(appIdentifier, "jti", jti, exp);
             }
 
         } catch (TryRefreshTokenException e) {
@@ -543,8 +546,9 @@ public class OAuth {
 
 	public static void revokeSessionHandle(Main main, AppIdentifier appIdentifier, Storage storage,
 			String sessionHandle) throws StorageQueryException {
+        long exp = System.currentTimeMillis() / 1000 + 3600 * 24 * 183; // 6 month from now
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
-        oauthStorage.revoke(appIdentifier, "session_handle", sessionHandle);
+        oauthStorage.revoke(appIdentifier, "session_handle", sessionHandle, exp);
 	}
 
     public static void verifyIdTokenHintClientIdAndUpdateQueryParamsForLogout(Main main, AppIdentifier appIdentifier, Storage storage,
