@@ -18,13 +18,14 @@ package io.supertokens.webserver.api.oauth;
 
 import com.google.gson.*;
 import io.supertokens.Main;
+import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.oauth.HttpRequestForOry;
 import io.supertokens.oauth.OAuth;
-import io.supertokens.oauth.Transformations;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
@@ -56,31 +57,35 @@ public class OAuthTokenIntrospectAPI extends WebserverAPI {
         String token = InputParser.parseStringOrThrowError(input, "token", false);
 
         if (token.startsWith("st_rt_")) {
-            String iss = InputParser.parseStringOrThrowError(input, "iss", false);
-
             Map<String, String> formFields = new HashMap<>();
             for (Map.Entry<String, JsonElement> entry : input.entrySet()) {
                 formFields.put(entry.getKey(), entry.getValue().getAsString());
             }
 
             try {
+                AppIdentifier appIdentifier = getAppIdentifier(req);
+                Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
                 HttpRequestForOry.Response response = OAuthProxyHelper.proxyFormPOST(
                     main, req, resp,
-                    getAppIdentifier(req),
-                    enforcePublicTenantAndGetPublicTenantStorage(req),
+                    appIdentifier,
+                    storage,
                     null, // clientIdToCheck
                     "/admin/oauth2/introspect", // pathProxy
                     true, // proxyToAdmin
                     false, // camelToSnakeCaseConversion
-                    formFields, // formFields
+                    formFields,
                     new HashMap<>() // headers
                 );
 
                 if (response != null) {
                     JsonObject finalResponse = response.jsonResponse.getAsJsonObject();
 
-                    finalResponse.addProperty("iss", iss);
-                    Transformations.transformExt(finalResponse);
+                    try {
+                        OAuth.verifyAndUpdateIntrospectRefreshTokenPayload(main, appIdentifier, storage, finalResponse, token);
+                    } catch (StorageQueryException | TenantOrAppNotFoundException |
+                                FeatureNotEnabledException | InvalidConfigException e) {
+                        throw new ServletException(e);
+                    }
 
                     finalResponse.addProperty("status", "OK");
                     super.sendJsonResponse(200, finalResponse, resp);

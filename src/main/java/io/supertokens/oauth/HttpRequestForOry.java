@@ -127,9 +127,15 @@ public class HttpRequestForOry {
         }
     }
 
-    public static Response doJsonDelete(String url, Map<String, String> headers, JsonObject jsonInput) throws IOException, OAuthClientNotFoundException {
+    public static Response doJsonDelete(String url, Map<String, String> headers, Map<String, String> queryParams, JsonObject jsonInput) throws IOException, OAuthClientNotFoundException {
         try {
-            URL obj = new URL(url);
+            if (queryParams == null) {
+                queryParams = new HashMap<>();
+            }
+
+            URL obj = new URL(url + "?" + queryParams.entrySet().stream()
+                    .map(e -> e.getKey() + "=" + URLEncoder.encode(e.getValue(), StandardCharsets.UTF_8))
+                    .collect(Collectors.joining("&")));
             HttpURLConnection con = (HttpURLConnection) obj.openConnection();
             con.setRequestMethod("DELETE");
             con.setConnectTimeout(CONNECTION_TIMEOUT);

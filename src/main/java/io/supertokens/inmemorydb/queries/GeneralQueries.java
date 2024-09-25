@@ -423,9 +423,26 @@ public class GeneralQueries {
             update(start, TOTPQueries.getQueryToCreateUsedCodesExpiryTimeIndex(start), NO_OP_SETTER);
         }
 
-        if (!doesTableExists(start, Config.getConfig(start).getOAuthClientTable())) {
+        if (!doesTableExists(start, Config.getConfig(start).getOAuthClientsTable())) {
             getInstance(main).addState(CREATING_NEW_TABLE, null);
             update(start, OAuthQueries.getQueryToCreateOAuthClientTable(start), NO_OP_SETTER);
+        }
+
+        if (!doesTableExists(start, Config.getConfig(start).getOAuthRevokeTable())) {
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, OAuthQueries.getQueryToCreateOAuthRevokeTable(start), NO_OP_SETTER);
+
+            // index
+            update(start, OAuthQueries.getQueryToCreateOAuthRevokeTimestampIndex(start), NO_OP_SETTER);
+        }
+
+        if (!doesTableExists(start, Config.getConfig(start).getOAuthM2MTokensTable())) {
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, OAuthQueries.getQueryToCreateOAuthM2MTokensTable(start), NO_OP_SETTER);
+
+            // index
+            update(start, OAuthQueries.getQueryToCreateOAuthM2MTokenIatIndex(start), NO_OP_SETTER);
+            update(start, OAuthQueries.getQueryToCreateOAuthM2MTokenExpIndex(start), NO_OP_SETTER);
         }
     }
 

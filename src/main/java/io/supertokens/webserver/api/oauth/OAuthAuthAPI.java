@@ -23,7 +23,10 @@ import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.oauth.HttpRequestForOry;
+import io.supertokens.oauth.OAuth;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -53,6 +56,13 @@ public class OAuthAuthAPI extends WebserverAPI {
         JsonObject params = InputParser.parseJsonObjectOrThrowError(input, "params", false);
         String cookies = InputParser.parseStringOrThrowError(input, "cookies", true);
 
+        // These optional stuff will be used in case of implicit flow
+        JsonObject accessTokenUpdate = InputParser.parseJsonObjectOrThrowError(input, "access_token", true);
+        JsonObject idTokenUpdate = InputParser.parseJsonObjectOrThrowError(input, "id_token", true);
+        String iss = InputParser.parseStringOrThrowError(input, "iss", true);
+        Boolean useStaticKeyInput = InputParser.parseBooleanOrThrowError(input, "useStaticSigningKey", true);
+        boolean useDynamicKey = Boolean.FALSE.equals(useStaticKeyInput);
+
         Map<String, String> queryParams = params.entrySet().stream().collect(Collectors.toMap(
                 Map.Entry::getKey,
                 e -> e.getValue().getAsString()
@@ -65,10 +75,13 @@ public class OAuthAuthAPI extends WebserverAPI {
         }
 
         try {
+            AppIdentifier appIdentifier = getAppIdentifier(req);
+            Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
+
             HttpRequestForOry.Response response = OAuthProxyHelper.proxyGET(
                 main, req, resp,
-                getAppIdentifier(req),
-                enforcePublicTenantAndGetPublicTenantStorage(req),
+                appIdentifier,
+                storage,
                 queryParams.get("client_id"), // clientIdToCheck
                 "/oauth2/auth", // proxyPath
                 false, // proxyToAdmin
@@ -83,8 +96,10 @@ public class OAuthAuthAPI extends WebserverAPI {
                 }
         
                 String redirectTo = response.headers.get("Location").get(0);
+
+                redirectTo = OAuth.transformTokensInAuthRedirect(main, appIdentifier, storage, redirectTo, iss, accessTokenUpdate, idTokenUpdate, useDynamicKey);
                 List<String> responseCookies = response.headers.get("Set-Cookie");
-        
+
                 JsonObject finalResponse = new JsonObject();
                 finalResponse.addProperty("redirectTo", redirectTo);
 

@@ -92,9 +92,9 @@ public class OAuthProxyHelper {
 
     public static HttpRequestForOry.Response proxyJsonDELETE(Main main, HttpServletRequest req, HttpServletResponse resp, AppIdentifier appIdentifier, Storage storage,
                                        String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion,
-                                       JsonObject jsonInput, Map<String, String> headers) throws IOException, ServletException {
+                                       Map<String, String> queryParams, JsonObject jsonInput, Map<String, String> headers) throws IOException, ServletException {
         try {
-            return OAuth.doOAuthProxyJsonDELETE(main, appIdentifier, storage, clientIdToCheck, path, proxyToAdmin, camelToSnakeCaseConversion, jsonInput, headers);
+            return OAuth.doOAuthProxyJsonDELETE(main, appIdentifier, storage, clientIdToCheck, path, proxyToAdmin, camelToSnakeCaseConversion, queryParams, jsonInput, headers);
         } catch (OAuthClientNotFoundException e) {
             handleOAuthClientNotFoundException(resp);
         } catch (OAuthAPIException e) {
@@ -131,7 +131,7 @@ public class OAuthProxyHelper {
         resp.getWriter().println(response.toString());
     }
 
-    private static void handleOAuthAPIException(HttpServletResponse resp, OAuthAPIException e) throws IOException {
+    public static void handleOAuthAPIException(HttpServletResponse resp, OAuthAPIException e) throws IOException {
         JsonObject response = new JsonObject();
         response.addProperty("status", "OAUTH_ERROR");
         response.addProperty("error", e.error);

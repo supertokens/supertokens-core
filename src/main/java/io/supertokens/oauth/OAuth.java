@@ -37,12 +37,13 @@ import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicExceptio
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.oauth.OAuthStorage;
-import io.supertokens.pluginInterface.oauth.exceptions.OAuth2ClientAlreadyExistsForAppException;
 import io.supertokens.session.jwt.JWT.JWTException;
 import io.supertokens.utils.Utils;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.*;
@@ -72,7 +73,7 @@ public class OAuth {
         }
 
         if (clientIdToCheck != null) {
-            if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientIdToCheck)) {
+            if (!oauthStorage.doesClientIdExistForApp(appIdentifier, clientIdToCheck)) {
                 throw new OAuthClientNotFoundException();
             }
         }
@@ -113,7 +114,7 @@ public class OAuth {
         }
 
         if (clientIdToCheck != null) {
-            if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientIdToCheck)) {
+            if (!oauthStorage.doesClientIdExistForApp(appIdentifier, clientIdToCheck)) {
                 throw new OAuthClientNotFoundException();
             }
         }
@@ -154,7 +155,7 @@ public class OAuth {
         }
 
         if (clientIdToCheck != null) {
-            if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientIdToCheck)) {
+            if (!oauthStorage.doesClientIdExistForApp(appIdentifier, clientIdToCheck)) {
                 throw new OAuthClientNotFoundException();
             }
         }
@@ -196,7 +197,7 @@ public class OAuth {
         }
 
         if (clientIdToCheck != null) {
-            if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientIdToCheck)) {
+            if (!oauthStorage.doesClientIdExistForApp(appIdentifier, clientIdToCheck)) {
                 throw new OAuthClientNotFoundException();
             }
         }
@@ -228,7 +229,7 @@ public class OAuth {
         return response;
     }
 
-    public static HttpRequestForOry.Response doOAuthProxyJsonDELETE(Main main, AppIdentifier appIdentifier, Storage storage, String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion, JsonObject jsonInput, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
+    public static HttpRequestForOry.Response doOAuthProxyJsonDELETE(Main main, AppIdentifier appIdentifier, Storage storage, String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion, Map<String, String> queryParams, JsonObject jsonInput, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
         checkForOauthFeature(appIdentifier, main);
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
 
@@ -237,7 +238,7 @@ public class OAuth {
         }
 
         if (clientIdToCheck != null) {
-            if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientIdToCheck)) {
+            if (!oauthStorage.doesClientIdExistForApp(appIdentifier, clientIdToCheck)) {
                 throw new OAuthClientNotFoundException();
             }
         }
@@ -254,7 +255,7 @@ public class OAuth {
         }
         String fullUrl = baseURL + path;
 
-        HttpRequestForOry.Response response = HttpRequestForOry.doJsonDelete(fullUrl, headers, jsonInput);
+        HttpRequestForOry.Response response = HttpRequestForOry.doJsonDelete(fullUrl, queryParams, headers, jsonInput);
 
         // Response transformations
         response.jsonResponse = Transformations.transformJsonResponseFromHydra(main, appIdentifier, response.jsonResponse);
@@ -283,18 +284,51 @@ public class OAuth {
         }
     }
 
-    public static JsonObject transformTokens(Main main, AppIdentifier appIdentifier, Storage storage, JsonObject jsonBody, String iss, JsonObject accessTokenUpdate, JsonObject idTokenUpdate, boolean useDynamicKey) throws IOException, JWTException, InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException, JWTCreationException, InvalidConfigException {
-        if (jsonBody.has("access_token")) {
-            String accessToken = jsonBody.get("access_token").getAsString();
-            accessToken = OAuthToken.reSignToken(appIdentifier, main, accessToken, iss, accessTokenUpdate, OAuthToken.TokenType.ACCESS_TOKEN, useDynamicKey, 0);
-            jsonBody.addProperty("access_token", accessToken);
+    public static String transformTokensInAuthRedirect(Main main, AppIdentifier appIdentifier, Storage storage, String url, String iss, JsonObject accessTokenUpdate, JsonObject idTokenUpdate, boolean useDynamicKey) {
+        if (url.indexOf('#') == -1) {
+            return url;
         }
 
-        if (jsonBody.has("id_token")) {
-            String idToken = jsonBody.get("id_token").getAsString();
-            idToken = OAuthToken.reSignToken(appIdentifier, main, idToken, iss, idTokenUpdate, OAuthToken.TokenType.ID_TOKEN, useDynamicKey, 0);
-            jsonBody.addProperty("id_token", idToken);
+        try {
+            // Extract the part after '#'
+            String fragment = url.substring(url.indexOf('#') + 1);
+
+            // Parse the fragment as query parameters
+            // Create a JsonObject from the params
+            JsonObject jsonBody = new JsonObject();
+            for (String param : fragment.split("&")) {
+                String[] keyValue = param.split("=", 2);
+                if (keyValue.length == 2) {
+                    String key = keyValue[0];
+                    String value = java.net.URLDecoder.decode(keyValue[1], StandardCharsets.UTF_8.toString());
+                    jsonBody.addProperty(key, value);
+                }
+            }
+
+            // Transform the tokens
+            JsonObject transformedJson = transformTokens(main, appIdentifier, storage, jsonBody, iss, accessTokenUpdate, idTokenUpdate, useDynamicKey);
+
+            // Reconstruct the query params
+            StringBuilder newFragment = new StringBuilder();
+            for (Map.Entry<String, JsonElement> entry : transformedJson.entrySet()) {
+                if (newFragment.length() > 0) {
+                    newFragment.append("&");
+                }
+                String encodedValue = java.net.URLEncoder.encode(entry.getValue().getAsString(), StandardCharsets.UTF_8.toString());
+                newFragment.append(entry.getKey()).append("=").append(encodedValue);
+            }
+
+            // Reconstruct the URL
+            String baseUrl = url.substring(0, url.indexOf('#'));
+            return baseUrl + "#" + newFragment.toString();
+        } catch (Exception e) {
+            // If any exception occurs, return the original URL
+            return url;
         }
+    }
+
+    public static JsonObject transformTokens(Main main, AppIdentifier appIdentifier, Storage storage, JsonObject jsonBody, String iss, JsonObject accessTokenUpdate, JsonObject idTokenUpdate, boolean useDynamicKey) throws IOException, JWTException, InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException, JWTCreationException, InvalidConfigException {
+        String atHash = null;
 
         if (jsonBody.has("refresh_token")) {
             String refreshToken = jsonBody.get("refresh_token").getAsString();
@@ -302,12 +336,35 @@ public class OAuth {
             jsonBody.addProperty("refresh_token", refreshToken);
         }
 
+        if (jsonBody.has("access_token")) {
+            String accessToken = jsonBody.get("access_token").getAsString();
+            accessToken = OAuthToken.reSignToken(appIdentifier, main, accessToken, iss, accessTokenUpdate, null, OAuthToken.TokenType.ACCESS_TOKEN, useDynamicKey, 0);
+            jsonBody.addProperty("access_token", accessToken);
+
+            // Compute at_hash as per OAuth 2.0 standard
+            // 1. Take the access token
+            // 2. Hash it with SHA-256
+            // 3. Take the left-most half of the hash
+            // 4. Base64url encode it
+            byte[] accessTokenBytes = accessToken.getBytes(StandardCharsets.UTF_8);
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(accessTokenBytes);
+            byte[] halfHash = Arrays.copyOf(hash, hash.length / 2);
+            atHash = Base64.getUrlEncoder().withoutPadding().encodeToString(halfHash);
+        }
+
+        if (jsonBody.has("id_token")) {
+            String idToken = jsonBody.get("id_token").getAsString();
+            idToken = OAuthToken.reSignToken(appIdentifier, main, idToken, iss, idTokenUpdate, atHash, OAuthToken.TokenType.ID_TOKEN, useDynamicKey, 0);
+            jsonBody.addProperty("id_token", idToken);
+        }
+
         return jsonBody;
     }
 
-    public static void addClientId(Main main, AppIdentifier appIdentifier, Storage storage, String clientId) throws StorageQueryException, OAuth2ClientAlreadyExistsForAppException {
+    public static void addOrUpdateClientId(Main main, AppIdentifier appIdentifier, Storage storage, String clientId, boolean isClientCredentialsOnly) throws StorageQueryException {
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
-        oauthStorage.addClientForApp(appIdentifier, clientId);
+        oauthStorage.addOrUpdateClientForApp(appIdentifier, clientId, isClientCredentialsOnly);
     }
 
     public static void removeClientId(Main main, AppIdentifier appIdentifier, Storage storage, String clientId) throws StorageQueryException {
@@ -365,16 +422,87 @@ public class OAuth {
 
     }
 
+    public static void verifyAndUpdateIntrospectRefreshTokenPayload(Main main, AppIdentifier appIdentifier,
+            Storage storage, JsonObject payload, String refreshToken) throws StorageQueryException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException {
+        
+        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+
+        if (!payload.get("active").getAsBoolean()) {
+            return; // refresh token is not active
+        }
+
+        Transformations.transformExt(payload);
+        payload.remove("ext");
+
+        boolean isValid = !isTokenRevokedBasedOnPayload(oauthStorage, appIdentifier, payload);
+
+        if (!isValid) {
+            payload.entrySet().clear();
+            payload.addProperty("active", false);
+
+            // // ideally we want to revoke the refresh token in hydra, but we can't since we don't have the client secret here
+            // refreshToken = refreshToken.replace("st_rt_", "ory_rt_");
+            // Map<String, String> formFields = new HashMap<>();
+            // formFields.put("token", refreshToken);
+
+            // try {
+            //     doOAuthProxyFormPOST(
+            //         main, appIdentifier, oauthStorage,
+            //         clientId, // clientIdToCheck
+            //         "/oauth2/revoke", // path
+            //         false, // proxyToAdmin
+            //         false, // camelToSnakeCaseConversion
+            //         formFields,
+            //         new HashMap<>());
+            // } catch (OAuthAPIException | OAuthClientNotFoundException e) {
+            //     // ignore
+            // }
+        }
+    }
+
+    private static boolean isTokenRevokedBasedOnPayload(OAuthStorage oauthStorage, AppIdentifier appIdentifier, JsonObject payload) throws StorageQueryException {
+        long issuedAt = payload.get("iat").getAsLong();
+        List<String> targetTypes = new ArrayList<>();
+        List<String> targetValues = new ArrayList<>();
+
+        targetTypes.add("client_id");
+        targetValues.add(payload.get("client_id").getAsString());
+
+        if (payload.has("jti")) {
+            targetTypes.add("jti");
+            targetValues.add(payload.get("jti").getAsString());
+        }
+
+        if (payload.has("gid")) {
+            targetTypes.add("gid");
+            targetValues.add(payload.get("gid").getAsString());
+        }
+
+        if (payload.has("sessionHandle")) {
+            targetTypes.add("session_handle");
+            targetValues.add(payload.get("sessionHandle").getAsString());
+        }
+
+        return oauthStorage.isRevoked(appIdentifier, targetTypes.toArray(new String[0]), targetValues.toArray(new String[0]), issuedAt);
+    }
+
     public static JsonObject introspectAccessToken(Main main, AppIdentifier appIdentifier, Storage storage,
             String token) throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException, UnsupportedJWTSigningAlgorithmException {
         try {
+            OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
             JsonObject payload = OAuthToken.getPayloadFromJWTToken(appIdentifier, main, token);
-            if (payload.has("stt") && payload.get("stt").getAsInt() == OAuthToken.TokenType.ACCESS_TOKEN.getValue()) {
-                payload.addProperty("active", true);
-                payload.addProperty("token_type", "Bearer");
-                payload.addProperty("token_use", "access_token");
 
-                return payload;
+            if (payload.has("stt") && payload.get("stt").getAsInt() == OAuthToken.TokenType.ACCESS_TOKEN.getValue()) {
+
+                boolean isValid = !isTokenRevokedBasedOnPayload(oauthStorage, appIdentifier, payload);
+
+                if (isValid) {
+                    payload.addProperty("active", true);
+                    payload.addProperty("token_type", "Bearer");
+                    payload.addProperty("token_use", "access_token");
+    
+                    return payload;
+                }
             }
             // else fallback to active: false
 
@@ -385,5 +513,83 @@ public class OAuth {
         JsonObject result = new JsonObject();
         result.addProperty("active", false);
         return result;
+    }
+
+    public static void revokeTokensForClientId(Main main, AppIdentifier appIdentifier, Storage storage, String clientId) throws StorageQueryException {
+        long exp = System.currentTimeMillis() / 1000 + 3600 * 24 * 183; // 6 month from now
+        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+        oauthStorage.revoke(appIdentifier, "client_id", clientId, exp);
+    }
+
+	public static void revokeRefreshToken(Main main, AppIdentifier appIdentifier, Storage storage, String gid, long exp) throws StorageQueryException, NoSuchAlgorithmException {
+		OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+		oauthStorage.revoke(appIdentifier, "gid", gid, exp);
+	}
+
+    public static void revokeAccessToken(Main main, AppIdentifier appIdentifier,
+            Storage storage, String token) throws StorageQueryException, TenantOrAppNotFoundException, UnsupportedJWTSigningAlgorithmException, StorageTransactionLogicException {
+        try {
+            OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+            JsonObject payload = OAuthToken.getPayloadFromJWTToken(appIdentifier, main, token);
+
+            long exp = payload.get("exp").getAsLong();
+
+            if (payload.has("stt") && payload.get("stt").getAsInt() == OAuthToken.TokenType.ACCESS_TOKEN.getValue()) {
+                String jti = payload.get("jti").getAsString();
+                oauthStorage.revoke(appIdentifier, "jti", jti, exp);
+            }
+
+        } catch (TryRefreshTokenException e) {
+            // the token is already invalid or revoked, so ignore
+        }
+    }
+
+	public static void revokeSessionHandle(Main main, AppIdentifier appIdentifier, Storage storage,
+			String sessionHandle) throws StorageQueryException {
+        long exp = System.currentTimeMillis() / 1000 + 3600 * 24 * 183; // 6 month from now
+        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+        oauthStorage.revoke(appIdentifier, "session_handle", sessionHandle, exp);
+	}
+
+    public static void verifyIdTokenHintClientIdAndUpdateQueryParamsForLogout(Main main, AppIdentifier appIdentifier, Storage storage,
+            Map<String, String> queryParams) throws StorageQueryException, OAuthAPIException, TenantOrAppNotFoundException, UnsupportedJWTSigningAlgorithmException, StorageTransactionLogicException {
+
+        String idTokenHint = queryParams.get("idTokenHint");
+        String clientId = queryParams.get("clientId");
+
+        JsonObject idTokenPayload = null;
+        if (idTokenHint != null) {
+            queryParams.remove("idTokenHint");
+
+            try {
+                idTokenPayload = OAuthToken.getPayloadFromJWTToken(appIdentifier, main, idTokenHint);
+            } catch (TryRefreshTokenException e) {
+                // invalid id token
+                throw new OAuthAPIException("invalid_request", "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed.", 400);
+            }
+        }
+
+        if (idTokenPayload != null) {
+            if (!idTokenPayload.has("stt") || idTokenPayload.get("stt").getAsInt() != OAuthToken.TokenType.ID_TOKEN.getValue()) {
+                // Invalid id token
+                throw new OAuthAPIException("invalid_request", "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed.", 400);
+            }
+
+            String clientIdInIdTokenPayload = idTokenPayload.get("aud").getAsString();
+
+            if (clientId != null) {
+                if (!clientId.equals(clientIdInIdTokenPayload)) {
+                    throw new OAuthAPIException("invalid_request", "The client_id in the id_token_hint does not match the client_id in the request.", 400);
+                }
+            }
+
+            queryParams.put("clientId", clientIdInIdTokenPayload);
+        }
+    }
+
+    public static void addM2MToken(Main main, AppIdentifier appIdentifier, Storage storage, String accessToken) throws StorageQueryException, TenantOrAppNotFoundException, TryRefreshTokenException, UnsupportedJWTSigningAlgorithmException, StorageTransactionLogicException {
+        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+        JsonObject payload = OAuthToken.getPayloadFromJWTToken(appIdentifier, main, accessToken);
+        oauthStorage.addM2MToken(appIdentifier, payload.get("client_id").getAsString(), payload.get("iat").getAsLong(), payload.get("exp").getAsLong());
     }
 }

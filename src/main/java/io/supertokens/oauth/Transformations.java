@@ -22,7 +22,37 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.utils.Utils;
 
 public class Transformations {
-    private static Set<String> EXT_PROPS = Set.of("rsub", "tId", "sessionHandle");
+    private static Set<String> EXT_PROPS = Set.of("iss", "rsub", "tId", "sessionHandle", "gid");
+
+    private static Set<String> CLIENT_PROPS = Set.of(
+        "clientId",
+        "clientSecret",
+        "clientName",
+        "scope",
+        "redirectUris",
+        "postLogoutRedirectUris",
+        "authorizationCodeGrantAccessTokenLifespan",
+        "authorizationCodeGrantIdTokenLifespan",
+        "authorizationCodeGrantRefreshTokenLifespan",
+        "clientCredentialsGrantAccessTokenLifespan",
+        "implicitGrantAccessTokenLifespan",
+        "implicitGrantIdTokenLifespan",
+        "refreshTokenGrantAccessTokenLifespan",
+        "refreshTokenGrantIdTokenLifespan",
+        "refreshTokenGrantRefreshTokenLifespan",
+        "tokenEndpointAuthMethod",
+        "clientUri",
+        "allowedCorsOrigins",
+        "audience",
+        "grantTypes",
+        "responseTypes",
+        "logoUri",
+        "policyUri",
+        "tosUri",
+        "createdAt",
+        "updatedAt",
+        "metadata"
+    );
 
     public static Map<String, String> transformRequestHeadersForHydra(Map<String, String> requestHeaders) {
         if (requestHeaders == null) {
@@ -41,18 +71,19 @@ public class Transformations {
         try {
             URL url = new URL(redirectTo);
             String query = url.getQuery();
-            String[] queryParams = query.split("&");
-            StringBuilder updatedQuery = new StringBuilder();
-            for (String param : queryParams) {
-                String[] keyValue = param.split("=");
-                if (keyValue.length > 1 && keyValue[1].startsWith("ory_")) {
-                    updatedQuery.append(keyValue[0]).append("=").append(keyValue[1].replaceFirst("ory_", "st_")).append("&");
-                } else {
-                    updatedQuery.append(param).append("&");
+            if (query != null) {
+                String[] queryParams = query.split("&");
+                StringBuilder updatedQuery = new StringBuilder();
+                for (String param : queryParams) {
+                    String[] keyValue = param.split("=");
+                    if (keyValue.length > 1 && keyValue[1].startsWith("ory_")) {
+                        updatedQuery.append(keyValue[0]).append("=").append(keyValue[1].replaceFirst("ory_", "st_")).append("&");
+                    } else {
+                        updatedQuery.append(param).append("&");
+                    }
                 }
+                redirectTo = redirectTo.replace("?" + query, "?" + updatedQuery.toString().trim());
             }
-            redirectTo = url.getProtocol() + "://" + url.getHost() + ":" + url.getPort() + url.getPath() + "?"
-                    + updatedQuery.toString().trim();
         } catch (MalformedURLException e) {
             throw new IllegalStateException(e);
         }
@@ -216,10 +247,20 @@ public class Transformations {
                     ext.remove(prop);
                 }
             }
-            
-            if (ext.entrySet().size() == 0) {
-                payload.remove("ext");
+        }
+    }
+
+    public static void applyClientPropsWhiteList(JsonObject payload) {
+        List<String> propsToRemove = new ArrayList<>();
+
+        for (Map.Entry<String, JsonElement> entry : payload.entrySet()) {
+            if (!CLIENT_PROPS.contains(entry.getKey())) {
+                propsToRemove.add(entry.getKey());
             }
+        }
+
+        for (String prop : propsToRemove) {
+            payload.remove(prop);
         }
     }
 }

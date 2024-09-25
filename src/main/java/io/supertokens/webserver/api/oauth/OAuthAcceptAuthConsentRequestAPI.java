@@ -2,6 +2,7 @@ package io.supertokens.webserver.api.oauth;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.UUID;
 
 import com.google.gson.JsonObject;
 
@@ -30,6 +31,36 @@ public class OAuthAcceptAuthConsentRequestAPI extends WebserverAPI {
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
+        String iss = InputParser.parseStringOrThrowError(input, "iss", false);
+        String tId = InputParser.parseStringOrThrowError(input, "tId", false);
+        String rsub = InputParser.parseStringOrThrowError(input, "rsub", false);
+        String sessionHandle = InputParser.parseStringOrThrowError(input, "sessionHandle", false);
+        JsonObject initialAccessTokenPayload = InputParser.parseJsonObjectOrThrowError(input, "initialAccessTokenPayload", false);
+        JsonObject initialIdTokenPayload = InputParser.parseJsonObjectOrThrowError(input, "initialIdTokenPayload", false);
+
+        JsonObject accessToken = new JsonObject();
+        accessToken.addProperty("iss", iss);
+        accessToken.addProperty("tId", tId);
+        accessToken.addProperty("rsub", rsub);
+        accessToken.addProperty("sessionHandle", sessionHandle);
+        accessToken.add("initialPayload", initialAccessTokenPayload);
+
+        JsonObject idToken = new JsonObject();
+        idToken.add("initialPayload", initialIdTokenPayload);
+        accessToken.addProperty("gid", UUID.randomUUID().toString());
+
+        // remove the above from input
+        input.remove("iss");
+        input.remove("tId");
+        input.remove("rsub");
+        input.remove("sessionHandle");
+        input.remove("initialAccessTokenPayload");
+        input.remove("initialIdTokenPayload");
+
+        JsonObject session = new JsonObject();
+        session.add("access_token", accessToken);
+        session.add("id_token", idToken);
+        input.add("session", session);
 
         try {
             HttpRequestForOry.Response response = OAuthProxyHelper.proxyJsonPUT(

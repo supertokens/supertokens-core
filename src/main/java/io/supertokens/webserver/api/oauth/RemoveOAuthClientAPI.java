@@ -60,6 +60,7 @@ public class RemoveOAuthClientAPI extends WebserverAPI {
                 "/admin/clients/" + clientId, // proxyPath
                 true, // proxyToAdmin
                 true, // camelToSnakeCaseConversion
+                new HashMap<>(), // queryParams
                 new JsonObject(), // jsonBody
                 new HashMap<>() // headers
             );

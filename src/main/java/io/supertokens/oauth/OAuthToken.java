@@ -49,7 +49,7 @@ public class OAuthToken {
     private static Set<String> NON_OVERRIDABLE_TOKEN_PROPS = Set.of(
         "kid", "typ", "alg", "aud",
         "iss", "iat", "exp", "nbf", "jti", "ext",
-        "sid", "rat", "at_hash", "rt_hash",
+        "sid", "rat", "at_hash", "gid",
         "client_id", "scp", "sub", "stt"
     );
 
@@ -95,16 +95,33 @@ public class OAuthToken {
         return jwtInfo.payload;
     }
 
-    public static String reSignToken(AppIdentifier appIdentifier, Main main, String token, String iss, JsonObject payloadUpdate, TokenType tokenType, boolean useDynamicSigningKey, int retryCount) throws IOException, JWTException, InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException,
+    public static String reSignToken(AppIdentifier appIdentifier, Main main, String token, String iss, JsonObject payloadUpdate, String atHash, TokenType tokenType, boolean useDynamicSigningKey, int retryCount) throws IOException, JWTException, InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException,
             JWTCreationException {
         JsonObject payload = JWT.getPayloadWithoutVerifying(token).payload;
 
         payload.addProperty("iss", iss);
         payload.addProperty("stt", tokenType.getValue());
+        if (atHash != null) {
+            payload.addProperty("at_hash", atHash);
+        }
 
         if (tokenType == TokenType.ACCESS_TOKEN) {
             // we need to move rsub, tId and sessionHandle from ext to root
             Transformations.transformExt(payload);
+        }
+
+        // This should only happen in the authorization code flow during the token exchange. (enforced on the api level)
+        // Other flows (including later calls using the refresh token) will have the payloadUpdate defined.
+        if (payloadUpdate == null) {
+            if (tokenType == TokenType.ACCESS_TOKEN) {
+                if (payload.has("ext") && payload.get("ext").isJsonObject()) {
+                    payloadUpdate = payload.getAsJsonObject("ext").getAsJsonObject("initialPayload");
+                    payload.remove("ext");
+                }
+            } else {
+                payloadUpdate = payload.getAsJsonObject("initialPayload");
+                payload.remove("initialPayload");
+            }
         }
 
         if (payloadUpdate != null) {
