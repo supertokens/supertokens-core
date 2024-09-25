@@ -120,10 +120,10 @@ public class BulkImportTestUtils {
                             new EmailPasswordConfig(true),
                             new ThirdPartyConfig(true, null),
                             new PasswordlessConfig(true),
-                            null, null, Config.getBaseConfigAsJsonObject(main)));
+                            null, null, new JsonObject()));
         }
         { // tenant 2
-            JsonObject config = Config.getBaseConfigAsJsonObject(main);
+            JsonObject config = new JsonObject();
             TenantIdentifier tenantIdentifier = new TenantIdentifier(null, null, "t2");
 
             StorageLayer.getStorage(new TenantIdentifier(null, null, null), main)
