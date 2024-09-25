@@ -16,17 +16,22 @@
 
 package io.supertokens.httpRequest;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
+
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
-import io.supertokens.Main;
 
-import java.io.*;
-import java.net.*;
-import java.net.http.HttpClient;
-import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.Map;
+import io.supertokens.Main;
 
 public class HttpRequest {
 
@@ -126,7 +131,7 @@ public class HttpRequest {
     public static <T> T sendGETRequestWithResponseHeaders(Main main, String requestID, String url,
                                                           Map<String, String> params,
                                                           int connectionTimeoutMS, int readTimeoutMS, Integer version,
-                                                          Map<String, List<String>> responseHeaders, boolean followRedirects)
+                                                          Map<String, String> responseHeaders)
             throws IOException, HttpResponseException {
         StringBuilder paramBuilder = new StringBuilder();
 
@@ -152,12 +157,12 @@ public class HttpRequest {
             if (version != null) {
                 con.setRequestProperty("api-version", version + "");
             }
-            con.setInstanceFollowRedirects(followRedirects);
+
             int responseCode = con.getResponseCode();
 
             con.getHeaderFields().forEach((key, value) -> {
                 if (key != null) {
-                    responseHeaders.put(key, value);
+                    responseHeaders.put(key, value.get(0));
                 }
             });
 
@@ -260,30 +265,6 @@ public class HttpRequest {
                                            int connectionTimeoutMS, int readTimeoutMS, Integer version)
             throws IOException, HttpResponseException {
         return sendJsonRequest(main, requestID, url, requestBody, connectionTimeoutMS, readTimeoutMS, version, "PUT");
-    }
-
-    public static <T> T sendJsonPATCHRequest(Main main, String url, JsonElement requestBody)
-            throws IOException, HttpResponseException, InterruptedException {
-
-        HttpClient client = null;
-
-        String body = requestBody.toString();
-        java.net.http.HttpRequest rawRequest = java.net.http.HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .method("PATCH", java.net.http.HttpRequest.BodyPublishers.ofString(body))
-                .build();
-        client = HttpClient.newHttpClient();
-        HttpResponse<String> response = client.send(rawRequest, HttpResponse.BodyHandlers.ofString());
-
-        int responseCode = response.statusCode();
-
-        if (responseCode < STATUS_CODE_ERROR_THRESHOLD) {
-            if (!isJsonValid(response.body().toString())) {
-                return (T) response.body().toString();
-            }
-            return (T) (new JsonParser().parse(response.body().toString()));
-        }
-        throw new HttpResponseException(responseCode, response.body().toString());
     }
 
     public static <T> T sendJsonDELETERequest(Main main, String requestID, String url, JsonElement requestBody,

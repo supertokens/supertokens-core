@@ -297,17 +297,15 @@ public class CoreConfig {
     @JsonProperty
     @HideFromDashboard
     @ConfigDescription(
-            "If specified, the core uses this URL replace the default consent and login URLs to {apiDomain}. Defaults to 'http://localhost:3000'")
-    private String oauth_provider_consent_login_base_url = "http://localhost:3000";
+            "If specified, the core uses this URL replace the default consent and login URLs to {apiDomain}. Defaults to 'null'")
+    private String oauth_provider_consent_login_base_url = null;
 
     @NotConflictingInApp
     @JsonProperty
     @HideFromDashboard
     @ConfigDescription(
             "If specified, the core uses this URL to parse responses from the oauth provider when the oauth provider's internal address differs from the known public provider address. Defaults to the oauth_provider_public_service_url")
-    private String oauth_provider_url_configured_in_hydra;
-
-
+    private String oauth_provider_url_configured_in_hydra = null;
 
     @ConfigYamlOnly
     @JsonProperty

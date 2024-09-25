@@ -154,16 +154,15 @@ disable_telemetry: true
 
 # (OPTIONAL | Default: null) string value. If specified, the core uses this URL to connect to the OAuth provider
 #  public service.
-# oauth_provider_public_service_url:
+oauth_provider_public_service_url: http://localhost:4444
 
 # (OPTIONAL | Default: null) string value. If specified, the core uses this URL to connect to the OAuth provider admin
 #  service.
-# oauth_provider_admin_service_url:
+oauth_provider_admin_service_url: http://localhost:4445
 
-
-# (OPTIONAL | Default: http://localhost:3000) string value. If specified, the core uses this URL replace the default
+# (OPTIONAL | Default: null) string value. If specified, the core uses this URL replace the default
 # consent and login URLs to {apiDomain}.
-# oauth_provider_consent_login_base_url:
+oauth_provider_consent_login_base_url: http://localhost:4001/auth
 
 # (OPTIONAL | Default: oauth_provider_public_service_url) If specified, the core uses this URL to parse responses from the oauth provider when
 # the oauth provider's internal address differs from the known public provider address.

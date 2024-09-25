@@ -16,23 +16,26 @@
 
 package io.supertokens.test;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import io.supertokens.ProcessState;
-import io.supertokens.httpRequest.HttpRequest;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 
-import static org.junit.Assert.*;
+import io.supertokens.ProcessState;
+import io.supertokens.httpRequest.HttpRequest;
 
 public class JWKSPublicAPITest {
     @Rule
@@ -80,10 +83,10 @@ public class JWKSPublicAPITest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         // check regular output
-        Map<String, List<String>> responseHeaders = new HashMap<>();
+        Map<String, String> responseHeaders = new HashMap<>();
         JsonObject response = HttpRequest.sendGETRequestWithResponseHeaders(process.getProcess(), "",
                 "http://localhost:3567/.well-known/jwks.json", null,
-                1000, 1000, null, responseHeaders, true);
+                1000, 1000, null, responseHeaders);
 
         assertEquals(response.entrySet().size(), 1);
 
@@ -91,14 +94,14 @@ public class JWKSPublicAPITest {
         JsonArray keys = response.get("keys").getAsJsonArray();
         assertEquals(keys.size(), 2);
 
-        long maxAge = getMaxAgeValue(responseHeaders.get("Cache-Control").get(0));
+        long maxAge = getMaxAgeValue(responseHeaders.get("Cache-Control"));
         assertTrue(maxAge >= 3538 && maxAge <= 3540);
 
         Thread.sleep(2000);
 
         response = HttpRequest.sendGETRequestWithResponseHeaders(process.getProcess(), "",
                 "http://localhost:3567/.well-known/jwks.json", null,
-                1000, 1000, null, responseHeaders, true);
+                1000, 1000, null, responseHeaders);
 
         assertEquals(response.entrySet().size(), 1);
 
@@ -106,7 +109,7 @@ public class JWKSPublicAPITest {
         keys = response.get("keys").getAsJsonArray();
         assertEquals(keys.size(), 2);
 
-        long newMaxAge = getMaxAgeValue(responseHeaders.get("Cache-Control").get(0));
+        long newMaxAge = getMaxAgeValue(responseHeaders.get("Cache-Control"));
         assertTrue(maxAge - newMaxAge >= 2 && maxAge - newMaxAge <= 3);
 
         process.kill();

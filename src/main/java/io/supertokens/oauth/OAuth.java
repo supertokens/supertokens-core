@@ -16,295 +16,580 @@
 
 package io.supertokens.oauth;
 
+import com.auth0.jwt.exceptions.JWTCreationException;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+
 import io.supertokens.Main;
 import io.supertokens.config.Config;
-import io.supertokens.httpRequest.HttpRequest;
-import io.supertokens.httpRequest.HttpResponseException;
+import io.supertokens.exceptions.TryRefreshTokenException;
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlag;
+import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
+import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.oauth.exceptions.*;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.oauth.OAuthStorage;
-import io.supertokens.pluginInterface.oauth.exceptions.OAuth2ClientAlreadyExistsForAppException;
+import io.supertokens.session.jwt.JWT.JWTException;
 import io.supertokens.utils.Utils;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.security.InvalidKeyException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
+import java.security.spec.InvalidKeySpecException;
 import java.util.*;
+import java.util.Map.Entry;
 
 public class OAuth {
+    private static void checkForOauthFeature(AppIdentifier appIdentifier, Main main)
+            throws StorageQueryException, TenantOrAppNotFoundException, FeatureNotEnabledException {
+        EE_FEATURES[] features = FeatureFlag.getInstance(main, appIdentifier).getEnabledFeatures();
+        for (EE_FEATURES f : features) {
+            if (f == EE_FEATURES.OAUTH) {
+                return;
+            }
+        }
 
-    private static final String LOCATION_HEADER_NAME = "Location";
-    private static final String COOKIES_HEADER_NAME = "Set-Cookie";
-    private static final String ERROR_LITERAL = "error=";
-    private static final String ERROR_DESCRIPTION_LITERAL = "error_description=";
+        throw new FeatureNotEnabledException(
+                "OAuth feature is not enabled. Please subscribe to a SuperTokens core license key to enable this " +
+                        "feature.");
+    }
 
-    private static final String HYDRA_AUTH_ENDPOINT = "/oauth2/auth";
-    private static final String HYDRA_CLIENTS_ENDPOINT = "/admin/clients";
-
-    public static OAuthAuthResponse getAuthorizationUrl(Main main, AppIdentifier appIdentifier, Storage storage, JsonObject paramsFromSdk)
-            throws InvalidConfigException, HttpResponseException, IOException, OAuthAuthException, StorageQueryException,
-            TenantOrAppNotFoundException {
-
+    public static HttpRequestForOry.Response doOAuthProxyGET(Main main, AppIdentifier appIdentifier, Storage storage, String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion, Map<String, String> queryParams, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
+        checkForOauthFeature(appIdentifier, main);
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
 
-        String redirectTo = null;
-        List<String> cookies = null;
+        if (camelToSnakeCaseConversion) {
+            queryParams = convertCamelToSnakeCase(queryParams);
+        }
 
-        String publicOAuthProviderServiceUrl = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderPublicServiceUrl();
-        String hydraInternalAddress = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOauthProviderUrlConfiguredInHydra();
-        String hydraBaseUrlForConsentAndLogin = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOauthProviderConsentLoginBaseUrl();
+        if (clientIdToCheck != null) {
+            if (!oauthStorage.doesClientIdExistForApp(appIdentifier, clientIdToCheck)) {
+                throw new OAuthClientNotFoundException();
+            }
+        }
 
-        String clientId = paramsFromSdk.get("clientId").getAsString();
+        // Request transformations
+        headers = Transformations.transformRequestHeadersForHydra(headers);
 
-        if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientId)) {
-            throw new OAuthAuthException("invalid_client", "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method). The requested OAuth 2.0 Client does not exist.");
+        String baseURL;
+        if (proxyToAdmin) {
+            baseURL = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderAdminServiceUrl();
         } else {
-            // we query hydra
-            Map<String, String> queryParamsForHydra = constructHydraRequestParamsForAuthorizationGETAPICall(paramsFromSdk);
-            Map<String, List<String>> responseHeaders = new HashMap<>();
+            baseURL = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderPublicServiceUrl();
+        }
+        String fullUrl = baseURL + path;
 
-            HttpRequest.sendGETRequestWithResponseHeaders(main, "", publicOAuthProviderServiceUrl + HYDRA_AUTH_ENDPOINT, queryParamsForHydra, 10000, 10000, null, responseHeaders, false);
+        HttpRequestForOry.Response response = HttpRequestForOry.doGet(fullUrl, headers, queryParams);
 
-            if(!responseHeaders.isEmpty() && responseHeaders.containsKey(LOCATION_HEADER_NAME)) {
-                String locationHeaderValue = responseHeaders.get(LOCATION_HEADER_NAME).get(0);
-                if(Utils.containsUrl(locationHeaderValue, hydraInternalAddress, true)){
-                    String error = getValueOfQueryParam(locationHeaderValue, ERROR_LITERAL);
-                    String errorDescription = getValueOfQueryParam(locationHeaderValue, ERROR_DESCRIPTION_LITERAL);
-                    throw new OAuthAuthException(error, errorDescription);
-                }
+        // Response transformations
+        response.jsonResponse = Transformations.transformJsonResponseFromHydra(main, appIdentifier, response.jsonResponse);
+        response.headers = Transformations.transformResponseHeadersFromHydra(main, appIdentifier, response.headers);
 
-                if(Utils.containsUrl(locationHeaderValue, hydraBaseUrlForConsentAndLogin, true)){
-                    redirectTo = locationHeaderValue.replace(hydraBaseUrlForConsentAndLogin, "{apiDomain}");
-                } else {
-                    redirectTo = locationHeaderValue;
-                }
-            } else {
-                throw new RuntimeException("Unexpected answer from Oauth Provider");
-            }
-            if(responseHeaders.containsKey(COOKIES_HEADER_NAME)){
-                cookies = responseHeaders.get(COOKIES_HEADER_NAME);
+        checkNonSuccessResponse(response);
+
+        if (camelToSnakeCaseConversion) {
+            response.jsonResponse = convertSnakeCaseToCamelCaseRecursively(response.jsonResponse);
+        }
+
+
+        return response;
+    }
+
+    public static HttpRequestForOry.Response doOAuthProxyFormPOST(Main main, AppIdentifier appIdentifier, Storage storage, String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion, Map<String, String> formFields, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
+        checkForOauthFeature(appIdentifier, main);
+        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+
+        if (camelToSnakeCaseConversion) {
+            formFields = OAuth.convertCamelToSnakeCase(formFields);
+        }
+
+        if (clientIdToCheck != null) {
+            if (!oauthStorage.doesClientIdExistForApp(appIdentifier, clientIdToCheck)) {
+                throw new OAuthClientNotFoundException();
             }
         }
 
-        return new OAuthAuthResponse(redirectTo, cookies);
-    }
+        // Request transformations
+        formFields = Transformations.transformFormFieldsForHydra(formFields);
+        headers = Transformations.transformRequestHeadersForHydra(headers);
 
-    //This more or less acts as a pass-through for the sdks, apart from camelCase <-> snake_case key transformation and setting a few default values
-    public static JsonObject registerOAuthClient(Main main, AppIdentifier appIdentifier, Storage storage, JsonObject paramsFromSdk)
-            throws TenantOrAppNotFoundException, InvalidConfigException, IOException,
-            OAuthAPIInvalidInputException,
-            NoSuchAlgorithmException, StorageQueryException {
-
-        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
-        String adminOAuthProviderServiceUrl = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderAdminServiceUrl();
-
-        byte[] idBaseBytes = new byte[48];
-
-        while(true){
-            new SecureRandom().nextBytes(idBaseBytes);
-            String clientId = "supertokens_" + Utils.hashSHA256Base64UrlSafe(idBaseBytes);
-            try {
-
-                JsonObject hydraRequestBody = constructHydraRequestParamsForRegisterClientPOST(paramsFromSdk, clientId);
-                JsonObject hydraResponse = HttpRequest.sendJsonPOSTRequest(main, "", adminOAuthProviderServiceUrl + HYDRA_CLIENTS_ENDPOINT, hydraRequestBody, 10000, 10000, null);
-
-                oauthStorage.addClientForApp(appIdentifier, clientId);
-
-                return formatResponseForSDK(hydraResponse); //sdk expects everything from hydra in camelCase
-            } catch (HttpResponseException e) {
-                try {
-                    if (e.statusCode == 409){
-                        //no-op
-                        //client with id already exists, silently retry with different Id
-                    } else {
-                        //other error from hydra, like invalid content in json. Throw exception
-                        throw createCustomExceptionFromHttpResponseException(
-                                e, OAuthAPIInvalidInputException.class);
-                    }
-                } catch (NoSuchMethodException | InvocationTargetException | InstantiationException |
-                         IllegalAccessException ex) {
-                    throw new RuntimeException(ex);
-                }
-            } catch (OAuth2ClientAlreadyExistsForAppException e) {
-                //in theory, this is unreachable. We are registering new clients here, so this should not happen.
-                throw new RuntimeException(e);
-            }
-        }
-    }
-
-    public static JsonObject loadOAuthClient(Main main, AppIdentifier appIdentifier, Storage storage, String clientId)
-            throws TenantOrAppNotFoundException, InvalidConfigException, StorageQueryException,
-            IOException, OAuthClientNotFoundException {
-        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
-
-        String adminOAuthProviderServiceUrl = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderAdminServiceUrl();
-
-        if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientId)) {
-            throw new OAuthClientNotFoundException("Unable to locate the resource", "");
+        String baseURL;
+        if (proxyToAdmin) {
+            baseURL = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderAdminServiceUrl();
         } else {
-            try {
-                JsonObject hydraResponse = HttpRequest.sendGETRequest(main, "", adminOAuthProviderServiceUrl + HYDRA_CLIENTS_ENDPOINT + "/" + clientId, null, 10000, 10000, null);
-                return  formatResponseForSDK(hydraResponse);
-            } catch (HttpResponseException e) {
-                try {
-                    throw createCustomExceptionFromHttpResponseException(e, OAuthClientNotFoundException.class);
-                } catch (NoSuchMethodException | InvocationTargetException | InstantiationException |
-                         IllegalAccessException ex) {
-                    throw new RuntimeException(ex);
-                }
-            }
+            baseURL = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderPublicServiceUrl();
         }
+        String fullUrl = baseURL + path;
+
+        HttpRequestForOry.Response response = HttpRequestForOry.doFormPost(fullUrl, headers, formFields);
+
+        // Response transformations
+        response.jsonResponse = Transformations.transformJsonResponseFromHydra(main, appIdentifier, response.jsonResponse);
+        response.headers = Transformations.transformResponseHeadersFromHydra(main, appIdentifier, response.headers);
+
+        checkNonSuccessResponse(response);
+
+        if (camelToSnakeCaseConversion) {
+            response.jsonResponse = OAuth.convertSnakeCaseToCamelCaseRecursively(response.jsonResponse);
+        }
+
+        return response;
     }
 
-    public static void deleteOAuthClient(Main main, AppIdentifier appIdentifier, Storage storage, String clientId)
-            throws TenantOrAppNotFoundException, InvalidConfigException, StorageQueryException,
-            IOException, OAuthClientNotFoundException {
+    public static HttpRequestForOry.Response doOAuthProxyJsonPOST(Main main, AppIdentifier appIdentifier, Storage storage, String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion, JsonObject jsonInput, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
+        checkForOauthFeature(appIdentifier, main);
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
 
-        String adminOAuthProviderServiceUrl = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderAdminServiceUrl();
+        if (camelToSnakeCaseConversion) {
+            jsonInput = convertCamelToSnakeCase(jsonInput);
+        }
 
-        if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientId)) {
-            throw new OAuthClientNotFoundException("Unable to locate the resource", "");
-        } else {
-            try {
-                oauthStorage.removeAppClientAssociation(appIdentifier, clientId);
-                HttpRequest.sendJsonDELETERequest(main, "", adminOAuthProviderServiceUrl + HYDRA_CLIENTS_ENDPOINT + "/" + clientId, null, 10000, 10000, null);
-            } catch (HttpResponseException e) {
-                try {
-                    throw createCustomExceptionFromHttpResponseException(e, OAuthClientNotFoundException.class);
-                } catch (NoSuchMethodException | InvocationTargetException | InstantiationException |
-                         IllegalAccessException ex) {
-                    throw new RuntimeException(ex);
-                }
+        if (clientIdToCheck != null) {
+            if (!oauthStorage.doesClientIdExistForApp(appIdentifier, clientIdToCheck)) {
+                throw new OAuthClientNotFoundException();
             }
         }
+
+        // Request transformations
+        jsonInput = Transformations.transformJsonForHydra(jsonInput);
+        headers = Transformations.transformRequestHeadersForHydra(headers);
+
+        String baseURL;
+        if (proxyToAdmin) {
+            baseURL = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderAdminServiceUrl();
+        } else {
+            baseURL = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderPublicServiceUrl();
+        }
+        String fullUrl = baseURL + path;
+
+        HttpRequestForOry.Response response = HttpRequestForOry.doJsonPost(fullUrl, headers, jsonInput);
+
+        // Response transformations
+        response.jsonResponse = Transformations.transformJsonResponseFromHydra(main, appIdentifier, response.jsonResponse);
+        response.headers = Transformations.transformResponseHeadersFromHydra(main, appIdentifier, response.headers);
+
+        checkNonSuccessResponse(response);
+
+        if (camelToSnakeCaseConversion) {
+            response.jsonResponse = convertSnakeCaseToCamelCaseRecursively(response.jsonResponse);
+        }
+
+        return response;
     }
 
-    public static JsonObject updateOauthClient(Main main, AppIdentifier appIdentifier, Storage storage, JsonObject paramsFromSdk)
-            throws TenantOrAppNotFoundException, InvalidConfigException, StorageQueryException,
-            InvocationTargetException, NoSuchMethodException, InstantiationException,
-            IllegalAccessException, OAuthClientNotFoundException, OAuthAPIInvalidInputException,
-            OAuthClientUpdateException {
-
+    public static HttpRequestForOry.Response doOAuthProxyJsonPUT(Main main, AppIdentifier appIdentifier, Storage storage, String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion,  Map<String, String> queryParams, JsonObject jsonInput, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
+        checkForOauthFeature(appIdentifier, main);
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
-        String adminOAuthProviderServiceUrl = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderAdminServiceUrl();
 
-        String clientId = paramsFromSdk.get("clientId").getAsString();
+        if (camelToSnakeCaseConversion) {
+            queryParams = convertCamelToSnakeCase(queryParams);
+            jsonInput = convertCamelToSnakeCase(jsonInput);
+        }
 
-        if (!oauthStorage.doesClientIdExistForThisApp(appIdentifier, clientId)) {
-            throw new OAuthClientNotFoundException("Unable to locate the resource", "");
+        if (clientIdToCheck != null) {
+            if (!oauthStorage.doesClientIdExistForApp(appIdentifier, clientIdToCheck)) {
+                throw new OAuthClientNotFoundException();
+            }
+        }
+
+        // Request transformations
+        jsonInput = Transformations.transformJsonForHydra(jsonInput);
+        headers = Transformations.transformRequestHeadersForHydra(headers);
+
+        String baseURL;
+        if (proxyToAdmin) {
+            baseURL = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderAdminServiceUrl();
         } else {
-            JsonArray hydraInput = translateIncomingDataToHydraUpdateFormat(paramsFromSdk);
-            try {
-                JsonObject updatedClient = HttpRequest.sendJsonPATCHRequest(main, adminOAuthProviderServiceUrl + HYDRA_CLIENTS_ENDPOINT+ "/" + clientId, hydraInput);
-                return formatResponseForSDK(updatedClient);
-            } catch (IOException | InterruptedException e) {
-                throw new RuntimeException(e);
-            } catch (HttpResponseException e) {
-                int responseStatusCode = e.statusCode;
-                switch (responseStatusCode){
-                    case 400 -> throw createCustomExceptionFromHttpResponseException(e, OAuthAPIInvalidInputException.class);
-                    case 404 -> throw createCustomExceptionFromHttpResponseException(e, OAuthClientNotFoundException.class);
-                    case 500 -> throw createCustomExceptionFromHttpResponseException(e, OAuthClientUpdateException.class); // hydra is not so helpful with the error messages at this endpoint..
-                    default -> throw new RuntimeException(e);
+            baseURL = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderPublicServiceUrl();
+        }
+        String fullUrl = baseURL + path;
+
+        HttpRequestForOry.Response response = HttpRequestForOry.doJsonPut(fullUrl, queryParams, headers, jsonInput);
+
+        // Response transformations
+        response.jsonResponse = Transformations.transformJsonResponseFromHydra(main, appIdentifier, response.jsonResponse);
+        response.headers = Transformations.transformResponseHeadersFromHydra(main, appIdentifier, response.headers);
+
+        checkNonSuccessResponse(response);
+
+        if (camelToSnakeCaseConversion) {
+            response.jsonResponse = convertSnakeCaseToCamelCaseRecursively(response.jsonResponse);
+        }
+
+        return response;
+    }
+
+    public static HttpRequestForOry.Response doOAuthProxyJsonDELETE(Main main, AppIdentifier appIdentifier, Storage storage, String clientIdToCheck, String path, boolean proxyToAdmin, boolean camelToSnakeCaseConversion, Map<String, String> queryParams, JsonObject jsonInput, Map<String, String> headers) throws StorageQueryException, OAuthClientNotFoundException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException, OAuthAPIException {
+        checkForOauthFeature(appIdentifier, main);
+        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+
+        if (camelToSnakeCaseConversion) {
+            jsonInput = OAuth.convertCamelToSnakeCase(jsonInput);
+        }
+
+        if (clientIdToCheck != null) {
+            if (!oauthStorage.doesClientIdExistForApp(appIdentifier, clientIdToCheck)) {
+                throw new OAuthClientNotFoundException();
+            }
+        }
+
+        // Request transformations
+        jsonInput = Transformations.transformJsonForHydra(jsonInput);
+        headers = Transformations.transformRequestHeadersForHydra(headers);
+
+        String baseURL;
+        if (proxyToAdmin) {
+            baseURL = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderAdminServiceUrl();
+        } else {
+            baseURL = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getOAuthProviderPublicServiceUrl();
+        }
+        String fullUrl = baseURL + path;
+
+        HttpRequestForOry.Response response = HttpRequestForOry.doJsonDelete(fullUrl, queryParams, headers, jsonInput);
+
+        // Response transformations
+        response.jsonResponse = Transformations.transformJsonResponseFromHydra(main, appIdentifier, response.jsonResponse);
+        response.headers = Transformations.transformResponseHeadersFromHydra(main, appIdentifier, response.headers);
+
+        checkNonSuccessResponse(response);
+
+        if (camelToSnakeCaseConversion) {
+            response.jsonResponse = OAuth.convertSnakeCaseToCamelCaseRecursively(response.jsonResponse);
+        }
+
+        return response;
+    }
+
+    private static void checkNonSuccessResponse(HttpRequestForOry.Response response) throws OAuthAPIException, OAuthClientNotFoundException {
+        if (response.statusCode == 404) {
+            throw new OAuthClientNotFoundException();
+        }
+        if (response.statusCode >= 400) {
+            String error = response.jsonResponse.getAsJsonObject().get("error").getAsString();
+            String errorDescription = null;
+            if (response.jsonResponse.getAsJsonObject().has("error_description")) {
+                errorDescription = response.jsonResponse.getAsJsonObject().get("error_description").getAsString();
+            }
+            throw new OAuthAPIException(error, errorDescription, response.statusCode);
+        }
+    }
+
+    public static String transformTokensInAuthRedirect(Main main, AppIdentifier appIdentifier, Storage storage, String url, String iss, JsonObject accessTokenUpdate, JsonObject idTokenUpdate, boolean useDynamicKey) {
+        if (url.indexOf('#') == -1) {
+            return url;
+        }
+
+        try {
+            // Extract the part after '#'
+            String fragment = url.substring(url.indexOf('#') + 1);
+
+            // Parse the fragment as query parameters
+            // Create a JsonObject from the params
+            JsonObject jsonBody = new JsonObject();
+            for (String param : fragment.split("&")) {
+                String[] keyValue = param.split("=", 2);
+                if (keyValue.length == 2) {
+                    String key = keyValue[0];
+                    String value = java.net.URLDecoder.decode(keyValue[1], StandardCharsets.UTF_8.toString());
+                    jsonBody.addProperty(key, value);
                 }
             }
-        }
-    }
 
-    private static JsonArray translateIncomingDataToHydraUpdateFormat(JsonObject input){
-        JsonArray hydraPatchFormat = new JsonArray();
-        for (Map.Entry<String, JsonElement> changeIt : input.entrySet()) {
-            if (changeIt.getKey().equals("clientId")) {
-                continue; // we are not updating clientIds!
+            // Transform the tokens
+            JsonObject transformedJson = transformTokens(main, appIdentifier, storage, jsonBody, iss, accessTokenUpdate, idTokenUpdate, useDynamicKey);
+
+            // Reconstruct the query params
+            StringBuilder newFragment = new StringBuilder();
+            for (Map.Entry<String, JsonElement> entry : transformedJson.entrySet()) {
+                if (newFragment.length() > 0) {
+                    newFragment.append("&");
+                }
+                String encodedValue = java.net.URLEncoder.encode(entry.getValue().getAsString(), StandardCharsets.UTF_8.toString());
+                newFragment.append(entry.getKey()).append("=").append(encodedValue);
             }
-            hydraPatchFormat.add(translateToHydraPatch(changeIt.getKey(),changeIt.getValue()));
+
+            // Reconstruct the URL
+            String baseUrl = url.substring(0, url.indexOf('#'));
+            return baseUrl + "#" + newFragment.toString();
+        } catch (Exception e) {
+            // If any exception occurs, return the original URL
+            return url;
+        }
+    }
+
+    public static JsonObject transformTokens(Main main, AppIdentifier appIdentifier, Storage storage, JsonObject jsonBody, String iss, JsonObject accessTokenUpdate, JsonObject idTokenUpdate, boolean useDynamicKey) throws IOException, JWTException, InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException, JWTCreationException, InvalidConfigException {
+        String atHash = null;
+
+        if (jsonBody.has("refresh_token")) {
+            String refreshToken = jsonBody.get("refresh_token").getAsString();
+            refreshToken = refreshToken.replace("ory_rt_", "st_rt_");
+            jsonBody.addProperty("refresh_token", refreshToken);
         }
 
-        return hydraPatchFormat;
-    }
+        if (jsonBody.has("access_token")) {
+            String accessToken = jsonBody.get("access_token").getAsString();
+            accessToken = OAuthToken.reSignToken(appIdentifier, main, accessToken, iss, accessTokenUpdate, null, OAuthToken.TokenType.ACCESS_TOKEN, useDynamicKey, 0);
+            jsonBody.addProperty("access_token", accessToken);
 
-    private static JsonObject translateToHydraPatch(String elementName, JsonElement newValue){
-        JsonObject patchFormat = new JsonObject();
-        String hydraElementName = Utils.camelCaseToSnakeCase(elementName);
-        patchFormat.addProperty("from", "/" + hydraElementName);
-        patchFormat.addProperty("path", "/" + hydraElementName);
-        patchFormat.addProperty("op", "replace"); // What was sent by the sdk should be handled as a complete new value for the property
-        patchFormat.add("value", newValue);
-
-        return patchFormat;
-    }
-
-    private static <T extends OAuthException> T createCustomExceptionFromHttpResponseException(HttpResponseException exception, Class<T> customExceptionClass)
-            throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
-        String errorMessage = exception.rawMessage;
-        JsonObject errorResponse = (JsonObject) new JsonParser().parse(errorMessage);
-        String error = errorResponse.get("error").getAsString();
-        String errorDescription = errorResponse.get("error_description").getAsString();
-        return customExceptionClass.getDeclaredConstructor(String.class, String.class).newInstance(error, errorDescription);
-    }
-
-    private static JsonObject constructHydraRequestParamsForRegisterClientPOST(JsonObject paramsFromSdk, String generatedClientId){
-        JsonObject requestBody = new JsonObject();
-
-        //translating camelCase keys to snakeCase keys
-        for (Map.Entry<String, JsonElement> jsonEntry : paramsFromSdk.entrySet()){
-            requestBody.add(Utils.camelCaseToSnakeCase(jsonEntry.getKey()), jsonEntry.getValue());
+            // Compute at_hash as per OAuth 2.0 standard
+            // 1. Take the access token
+            // 2. Hash it with SHA-256
+            // 3. Take the left-most half of the hash
+            // 4. Base64url encode it
+            byte[] accessTokenBytes = accessToken.getBytes(StandardCharsets.UTF_8);
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(accessTokenBytes);
+            byte[] halfHash = Arrays.copyOf(hash, hash.length / 2);
+            atHash = Base64.getUrlEncoder().withoutPadding().encodeToString(halfHash);
         }
 
-        //add client_id
-        requestBody.addProperty("client_id", generatedClientId);
-
-        //setting other non-changing defaults
-        requestBody.addProperty("access_token_strategy", "jwt");
-        requestBody.addProperty("skip_consent", true);
-        requestBody.addProperty("subject_type", "public");
-
-        return requestBody;
-    }
-
-    private static JsonObject formatResponseForSDK(JsonObject response) {
-        JsonObject formattedResponse = new JsonObject();
-
-        //translating snake_case keys to camelCase keys
-        for (Map.Entry<String, JsonElement> jsonEntry : response.entrySet()){
-            formattedResponse.add(Utils.snakeCaseToCamelCase(jsonEntry.getKey()), jsonEntry.getValue());
+        if (jsonBody.has("id_token")) {
+            String idToken = jsonBody.get("id_token").getAsString();
+            idToken = OAuthToken.reSignToken(appIdentifier, main, idToken, iss, idTokenUpdate, atHash, OAuthToken.TokenType.ID_TOKEN, useDynamicKey, 0);
+            jsonBody.addProperty("id_token", idToken);
         }
 
-        return formattedResponse;
+        return jsonBody;
     }
 
-    private static Map<String, String> constructHydraRequestParamsForAuthorizationGETAPICall(JsonObject inputFromSdk) {
-        Map<String, String> queryParamsForHydra = new HashMap<>();
-        for(Map.Entry<String, JsonElement> jsonElement : inputFromSdk.entrySet()){
-            queryParamsForHydra.put(Utils.camelCaseToSnakeCase(jsonElement.getKey()), jsonElement.getValue().getAsString());
-        }
-        return  queryParamsForHydra;
+    public static void addOrUpdateClientId(Main main, AppIdentifier appIdentifier, Storage storage, String clientId, boolean isClientCredentialsOnly) throws StorageQueryException {
+        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+        oauthStorage.addOrUpdateClientForApp(appIdentifier, clientId, isClientCredentialsOnly);
     }
 
-    private static String getValueOfQueryParam(String url, String queryParam){
-        String valueOfQueryParam = "";
-        if(!queryParam.endsWith("=")){
-            queryParam = queryParam + "=";
-        }
-        int startIndex = url.indexOf(queryParam) + queryParam.length(); // start after the '=' sign
-        int endIndex = url.indexOf("&", startIndex);
-        if (endIndex == -1){
-            endIndex = url.length();
-        }
-        valueOfQueryParam = url.substring(startIndex, endIndex); // substring the url from the '=' to the next '&' or to the end of the url if there are no more &s
-        return URLDecoder.decode(valueOfQueryParam, StandardCharsets.UTF_8);
+    public static void removeClientId(Main main, AppIdentifier appIdentifier, Storage storage, String clientId) throws StorageQueryException {
+        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+        oauthStorage.removeAppClientAssociation(appIdentifier, clientId);
     }
-;}
+
+    public static List<String> listClientIds(Main main, AppIdentifier appIdentifier, Storage storage) throws StorageQueryException {
+        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+        return oauthStorage.listClientsForApp(appIdentifier);
+    }
+
+    private static Map<String, String> convertCamelToSnakeCase(Map<String, String> queryParams) {
+        Map<String, String> result = new HashMap<>();
+        if (queryParams != null) {
+            for (Map.Entry<String, String> entry : queryParams.entrySet()) {
+                result.put(Utils.camelCaseToSnakeCase(entry.getKey()), entry.getValue());
+            }
+        }
+        return result;
+    }
+
+    public static JsonObject convertCamelToSnakeCase(JsonObject queryParams) {
+        JsonObject result = new JsonObject();
+        for (Map.Entry<String, JsonElement> entry : queryParams.entrySet()) {
+            result.add(Utils.camelCaseToSnakeCase(entry.getKey()), entry.getValue());
+        }
+        return result;
+    }
+
+    private static JsonElement convertSnakeCaseToCamelCaseRecursively(JsonElement jsonResponse) {
+        if (jsonResponse == null) {
+            return null;
+        }
+
+        if (jsonResponse.isJsonObject()) {
+            JsonObject result = new JsonObject();
+            for (Entry<String, JsonElement> entry: jsonResponse.getAsJsonObject().entrySet()) {
+                String key = entry.getKey();
+                JsonElement value = entry.getValue();
+                if (value.isJsonObject()) {
+                    value = convertSnakeCaseToCamelCaseRecursively(value.getAsJsonObject());
+                }
+                result.add(Utils.snakeCaseToCamelCase(key), value);
+            }
+            return result;
+        } else if (jsonResponse.isJsonArray()) {
+            JsonArray result = new JsonArray();
+            for (JsonElement element : jsonResponse.getAsJsonArray()) {
+                result.add(convertSnakeCaseToCamelCaseRecursively(element));
+            }
+            return result;
+        }
+        return jsonResponse;
+
+    }
+
+    public static void verifyAndUpdateIntrospectRefreshTokenPayload(Main main, AppIdentifier appIdentifier,
+            Storage storage, JsonObject payload, String refreshToken) throws StorageQueryException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException {
+        
+        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+
+        if (!payload.get("active").getAsBoolean()) {
+            return; // refresh token is not active
+        }
+
+        Transformations.transformExt(payload);
+        payload.remove("ext");
+
+        boolean isValid = !isTokenRevokedBasedOnPayload(oauthStorage, appIdentifier, payload);
+
+        if (!isValid) {
+            payload.entrySet().clear();
+            payload.addProperty("active", false);
+
+            // // ideally we want to revoke the refresh token in hydra, but we can't since we don't have the client secret here
+            // refreshToken = refreshToken.replace("st_rt_", "ory_rt_");
+            // Map<String, String> formFields = new HashMap<>();
+            // formFields.put("token", refreshToken);
+
+            // try {
+            //     doOAuthProxyFormPOST(
+            //         main, appIdentifier, oauthStorage,
+            //         clientId, // clientIdToCheck
+            //         "/oauth2/revoke", // path
+            //         false, // proxyToAdmin
+            //         false, // camelToSnakeCaseConversion
+            //         formFields,
+            //         new HashMap<>());
+            // } catch (OAuthAPIException | OAuthClientNotFoundException e) {
+            //     // ignore
+            // }
+        }
+    }
+
+    private static boolean isTokenRevokedBasedOnPayload(OAuthStorage oauthStorage, AppIdentifier appIdentifier, JsonObject payload) throws StorageQueryException {
+        long issuedAt = payload.get("iat").getAsLong();
+        List<String> targetTypes = new ArrayList<>();
+        List<String> targetValues = new ArrayList<>();
+
+        targetTypes.add("client_id");
+        targetValues.add(payload.get("client_id").getAsString());
+
+        if (payload.has("jti")) {
+            targetTypes.add("jti");
+            targetValues.add(payload.get("jti").getAsString());
+        }
+
+        if (payload.has("gid")) {
+            targetTypes.add("gid");
+            targetValues.add(payload.get("gid").getAsString());
+        }
+
+        if (payload.has("sessionHandle")) {
+            targetTypes.add("session_handle");
+            targetValues.add(payload.get("sessionHandle").getAsString());
+        }
+
+        return oauthStorage.isRevoked(appIdentifier, targetTypes.toArray(new String[0]), targetValues.toArray(new String[0]), issuedAt);
+    }
+
+    public static JsonObject introspectAccessToken(Main main, AppIdentifier appIdentifier, Storage storage,
+            String token) throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException, UnsupportedJWTSigningAlgorithmException {
+        try {
+            OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+            JsonObject payload = OAuthToken.getPayloadFromJWTToken(appIdentifier, main, token);
+
+            if (payload.has("stt") && payload.get("stt").getAsInt() == OAuthToken.TokenType.ACCESS_TOKEN.getValue()) {
+
+                boolean isValid = !isTokenRevokedBasedOnPayload(oauthStorage, appIdentifier, payload);
+
+                if (isValid) {
+                    payload.addProperty("active", true);
+                    payload.addProperty("token_type", "Bearer");
+                    payload.addProperty("token_use", "access_token");
+    
+                    return payload;
+                }
+            }
+            // else fallback to active: false
+
+        } catch (TryRefreshTokenException e) {
+            // fallback to active: false
+        }
+
+        JsonObject result = new JsonObject();
+        result.addProperty("active", false);
+        return result;
+    }
+
+    public static void revokeTokensForClientId(Main main, AppIdentifier appIdentifier, Storage storage, String clientId) throws StorageQueryException {
+        long exp = System.currentTimeMillis() / 1000 + 3600 * 24 * 183; // 6 month from now
+        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+        oauthStorage.revoke(appIdentifier, "client_id", clientId, exp);
+    }
+
+	public static void revokeRefreshToken(Main main, AppIdentifier appIdentifier, Storage storage, String gid, long exp) throws StorageQueryException, NoSuchAlgorithmException {
+		OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+		oauthStorage.revoke(appIdentifier, "gid", gid, exp);
+	}
+
+    public static void revokeAccessToken(Main main, AppIdentifier appIdentifier,
+            Storage storage, String token) throws StorageQueryException, TenantOrAppNotFoundException, UnsupportedJWTSigningAlgorithmException, StorageTransactionLogicException {
+        try {
+            OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+            JsonObject payload = OAuthToken.getPayloadFromJWTToken(appIdentifier, main, token);
+
+            long exp = payload.get("exp").getAsLong();
+
+            if (payload.has("stt") && payload.get("stt").getAsInt() == OAuthToken.TokenType.ACCESS_TOKEN.getValue()) {
+                String jti = payload.get("jti").getAsString();
+                oauthStorage.revoke(appIdentifier, "jti", jti, exp);
+            }
+
+        } catch (TryRefreshTokenException e) {
+            // the token is already invalid or revoked, so ignore
+        }
+    }
+
+	public static void revokeSessionHandle(Main main, AppIdentifier appIdentifier, Storage storage,
+			String sessionHandle) throws StorageQueryException {
+        long exp = System.currentTimeMillis() / 1000 + 3600 * 24 * 183; // 6 month from now
+        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+        oauthStorage.revoke(appIdentifier, "session_handle", sessionHandle, exp);
+	}
+
+    public static void verifyIdTokenHintClientIdAndUpdateQueryParamsForLogout(Main main, AppIdentifier appIdentifier, Storage storage,
+            Map<String, String> queryParams) throws StorageQueryException, OAuthAPIException, TenantOrAppNotFoundException, UnsupportedJWTSigningAlgorithmException, StorageTransactionLogicException {
+
+        String idTokenHint = queryParams.get("idTokenHint");
+        String clientId = queryParams.get("clientId");
+
+        JsonObject idTokenPayload = null;
+        if (idTokenHint != null) {
+            queryParams.remove("idTokenHint");
+
+            try {
+                idTokenPayload = OAuthToken.getPayloadFromJWTToken(appIdentifier, main, idTokenHint);
+            } catch (TryRefreshTokenException e) {
+                // invalid id token
+                throw new OAuthAPIException("invalid_request", "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed.", 400);
+            }
+        }
+
+        if (idTokenPayload != null) {
+            if (!idTokenPayload.has("stt") || idTokenPayload.get("stt").getAsInt() != OAuthToken.TokenType.ID_TOKEN.getValue()) {
+                // Invalid id token
+                throw new OAuthAPIException("invalid_request", "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed.", 400);
+            }
+
+            String clientIdInIdTokenPayload = idTokenPayload.get("aud").getAsString();
+
+            if (clientId != null) {
+                if (!clientId.equals(clientIdInIdTokenPayload)) {
+                    throw new OAuthAPIException("invalid_request", "The client_id in the id_token_hint does not match the client_id in the request.", 400);
+                }
+            }
+
+            queryParams.put("clientId", clientIdInIdTokenPayload);
+        }
+    }
+
+    public static void addM2MToken(Main main, AppIdentifier appIdentifier, Storage storage, String accessToken) throws StorageQueryException, TenantOrAppNotFoundException, TryRefreshTokenException, UnsupportedJWTSigningAlgorithmException, StorageTransactionLogicException {
+        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+        JsonObject payload = OAuthToken.getPayloadFromJWTToken(appIdentifier, main, accessToken);
+        oauthStorage.addM2MToken(appIdentifier, payload.get("client_id").getAsString(), payload.get("iat").getAsLong(), payload.get("exp").getAsLong());
+    }
+}

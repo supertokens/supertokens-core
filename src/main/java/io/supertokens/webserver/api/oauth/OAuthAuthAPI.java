@@ -16,19 +16,18 @@
 
 package io.supertokens.webserver.api.oauth;
 
-import com.google.gson.*;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
+
 import io.supertokens.Main;
-import io.supertokens.httpRequest.HttpResponseException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
+import io.supertokens.oauth.HttpRequestForOry;
 import io.supertokens.oauth.OAuth;
-import io.supertokens.oauth.exceptions.OAuthAuthException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
-import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
-import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.oauth.OAuthAuthResponse;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -36,19 +35,15 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
-import java.io.Serial;
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class OAuthAuthAPI extends WebserverAPI {
-    @Serial
-    private static final long serialVersionUID = -8734479943734920904L;
-
     public OAuthAuthAPI(Main main) {
         super(main, RECIPE_ID.OAUTH.toString());
     }
-
-    private static final List<String> REQUIRED_FIELDS_FOR_POST = Arrays.asList(new String[]{"clientId", "responseType"});
 
     @Override
     public String getPath() {
@@ -57,39 +52,71 @@ public class OAuthAuthAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-        InputParser.throwErrorOnMissingRequiredField(input, REQUIRED_FIELDS_FOR_POST);
+        JsonObject params = InputParser.parseJsonObjectOrThrowError(input, "params", false);
+        String cookies = InputParser.parseStringOrThrowError(input, "cookies", true);
+
+        // These optional stuff will be used in case of implicit flow
+        JsonObject accessTokenUpdate = InputParser.parseJsonObjectOrThrowError(input, "access_token", true);
+        JsonObject idTokenUpdate = InputParser.parseJsonObjectOrThrowError(input, "id_token", true);
+        String iss = InputParser.parseStringOrThrowError(input, "iss", true);
+        Boolean useStaticKeyInput = InputParser.parseBooleanOrThrowError(input, "useStaticSigningKey", true);
+        boolean useDynamicKey = Boolean.FALSE.equals(useStaticKeyInput);
+
+        Map<String, String> queryParams = params.entrySet().stream().collect(Collectors.toMap(
+                Map.Entry::getKey,
+                e -> e.getValue().getAsString()
+        ));
+
+        Map<String, String> headers = new HashMap<>();
+
+        if (cookies != null) {
+            headers.put("Cookie", cookies);
+        }
 
         try {
             AppIdentifier appIdentifier = getAppIdentifier(req);
             Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
 
-            OAuthAuthResponse authResponse = OAuth.getAuthorizationUrl(super.main, appIdentifier, storage,
-                    input);
-            JsonObject response = new JsonObject();
-            response.addProperty("redirectTo", authResponse.redirectTo);
+            HttpRequestForOry.Response response = OAuthProxyHelper.proxyGET(
+                main, req, resp,
+                appIdentifier,
+                storage,
+                queryParams.get("client_id"), // clientIdToCheck
+                "/oauth2/auth", // proxyPath
+                false, // proxyToAdmin
+                false, // camelToSnakeCaseConversion
+                queryParams,
+                headers
+            );
 
-            JsonArray jsonCookies = new JsonArray();
-            if (authResponse.cookies != null) {
-                for(String cookie : authResponse.cookies){
-                    jsonCookies.add(new JsonPrimitive(cookie));
+            if (response != null) {
+                if (response.headers == null || !response.headers.containsKey("Location")) {
+                    throw new IllegalStateException("Invalid response from hydra");
                 }
+        
+                String redirectTo = response.headers.get("Location").get(0);
+
+                redirectTo = OAuth.transformTokensInAuthRedirect(main, appIdentifier, storage, redirectTo, iss, accessTokenUpdate, idTokenUpdate, useDynamicKey);
+                List<String> responseCookies = response.headers.get("Set-Cookie");
+
+                JsonObject finalResponse = new JsonObject();
+                finalResponse.addProperty("redirectTo", redirectTo);
+
+                JsonArray jsonCookies = new JsonArray();
+                if (responseCookies != null) {
+                    for (String cookie : responseCookies) {
+                        jsonCookies.add(new JsonPrimitive(cookie));
+                    }
+                }
+        
+                finalResponse.add("cookies", jsonCookies);
+                finalResponse.addProperty("status", "OK");
+                
+                super.sendJsonResponse(200, finalResponse, resp);
             }
-            response.add("cookies", jsonCookies);
-            response.addProperty("status", "OK");
-            super.sendJsonResponse(200, response, resp);
 
-        } catch (OAuthAuthException authException) {
-
-            JsonObject errorResponse = new JsonObject();
-            errorResponse.addProperty("error", authException.error);
-            errorResponse.addProperty("errorDescription", authException.errorDescription);
-            errorResponse.addProperty("status", "OAUTH2_AUTH_ERROR");
-            super.sendJsonResponse(200, errorResponse, resp);
-
-        } catch (TenantOrAppNotFoundException | InvalidConfigException | HttpResponseException |
-                 StorageQueryException | BadPermissionException e) {
+        } catch (IOException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
     }
