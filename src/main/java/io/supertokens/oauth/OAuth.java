@@ -571,12 +571,13 @@ public class OAuth {
     }
 
     public static String createLogoutRequestAndReturnRedirectUri(Main main, AppIdentifier appIdentifier, Storage storage, String clientId,
-            String postLogoutRedirectionUri, String state, String idTokenHint) throws StorageQueryException {
+            String postLogoutRedirectionUri, String sessionHandle, String state) throws StorageQueryException {
         
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
 
         String logoutChallenge = UUID.randomUUID().toString();
-        oauthStorage.addLogoutChallenge(appIdentifier, logoutChallenge, clientId, postLogoutRedirectionUri, state, System.currentTimeMillis());
+        oauthStorage.addLogoutChallenge(appIdentifier, logoutChallenge, clientId, postLogoutRedirectionUri, sessionHandle, state, System.currentTimeMillis());
+
         return "{apiDomain}/oauth/logout?logout_challenge=" + logoutChallenge;
     }
 
@@ -588,7 +589,7 @@ public class OAuth {
             throw new OAuthAPIException("invalid_request", "Logout request not found", 400);
         }
 
-        oauthStorage.revoke(appIdentifier, "gid", logoutChallenge.gid, 3600 * 24 * (183 + 31));
+        revokeSessionHandle(main, appIdentifier, oauthStorage, logoutChallenge.sessionHandle);
 
         String url = null;
         if (logoutChallenge.postLogoutRedirectionUri != null) {

@@ -3080,9 +3080,9 @@ public class Start
 
     @Override
     public void addLogoutChallenge(AppIdentifier appIdentifier, String challenge, String clientId,
-            String postLogoutRedirectionUri, String state, long timeCreated) throws StorageQueryException {
+            String postLogoutRedirectionUri, String sessionHandle, String state, long timeCreated) throws StorageQueryException {
         try {
-            OAuthQueries.addLogoutChallenge(this, appIdentifier, challenge, clientId, postLogoutRedirectionUri, state, timeCreated);
+            OAuthQueries.addLogoutChallenge(this, appIdentifier, challenge, clientId, postLogoutRedirectionUri, sessionHandle, state, timeCreated);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }

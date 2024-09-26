@@ -101,7 +101,7 @@ public class OAuthQueries {
                 + "challenge VARCHAR(128) NOT NULL,"
                 + "client_id VARCHAR(128) NOT NULL,"
                 + "post_logout_redirect_uri VARCHAR(1024),"
-                + "gid VARCHAR(128),"
+                + "session_handle VARCHAR(128),"
                 + "state VARCHAR(128),"
                 + "time_created BIGINT NOT NULL,"
                 + "PRIMARY KEY (app_id, challenge),"
@@ -314,21 +314,22 @@ public class OAuthQueries {
     }
 
     public static void addLogoutChallenge(Start start, AppIdentifier appIdentifier, String challenge, String clientId,
-            String postLogoutRedirectionUri, String state, long timeCreated) throws SQLException, StorageQueryException {
+            String postLogoutRedirectionUri, String sessionHandle, String state, long timeCreated) throws SQLException, StorageQueryException {
         String QUERY = "INSERT INTO " + Config.getConfig(start).getOAuthLogoutChallengesTable() +
-                " (app_id, challenge, client_id, post_logout_redirect_uri, state, time_created) VALUES (?, ?, ?, ?, ?, ?)";
+                " (app_id, challenge, client_id, post_logout_redirect_uri, session_handle, state, time_created) VALUES (?, ?, ?, ?, ?, ?, ?)";
         update(start, QUERY, pst -> {
             pst.setString(1, appIdentifier.getAppId());
             pst.setString(2, challenge);
             pst.setString(3, clientId);
             pst.setString(4, postLogoutRedirectionUri);
-            pst.setString(5, state);
-            pst.setLong(6, timeCreated);
+            pst.setString(5, sessionHandle);
+            pst.setString(6, state);
+            pst.setLong(7, timeCreated);
         });
     }
 
     public static OAuthLogoutChallenge getLogoutChallenge(Start start, AppIdentifier appIdentifier, String challenge) throws SQLException, StorageQueryException {
-        String QUERY = "SELECT challenge, client_id, post_logout_redirect_uri, gid, state, time_created FROM " +
+        String QUERY = "SELECT challenge, client_id, post_logout_redirect_uri, session_handle, state, time_created FROM " +
                 Config.getConfig(start).getOAuthLogoutChallengesTable() +
                 " WHERE app_id = ? AND challenge = ?";
         
@@ -341,7 +342,7 @@ public class OAuthQueries {
                     result.getString("challenge"),
                     result.getString("client_id"),
                     result.getString("post_logout_redirect_uri"),
-                    result.getString("gid"),
+                    result.getString("session_handle"),
                     result.getString("state"),
                     result.getLong("time_created")
                 );

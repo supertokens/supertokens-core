@@ -58,8 +58,12 @@ public class OAuthLogoutAPI extends WebserverAPI {
             }
             // Verify id token and client id associations
             JsonObject idTokenPayload = null;
+            String sessionHandle = null;
             if (idTokenHint != null) {
                 idTokenPayload = OAuth.verifyIdTokenAndGetPayload(main, appIdentifier, storage, idTokenHint);
+                if (idTokenPayload.has("sid")) {
+                    sessionHandle = idTokenPayload.get("sid").getAsString();
+                }
 
                 if (clientId != null) {
                     String clientIdInIdTokenPayload = idTokenPayload.get("aud").getAsString();
@@ -125,7 +129,7 @@ public class OAuthLogoutAPI extends WebserverAPI {
                 return;
             }
 
-            String redirectTo = OAuth.createLogoutRequestAndReturnRedirectUri(main, appIdentifier, storage, clientId, postLogoutRedirectionUri, state, idTokenHint);
+            String redirectTo = OAuth.createLogoutRequestAndReturnRedirectUri(main, appIdentifier, storage, clientId, postLogoutRedirectionUri, sessionHandle, state);
 
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
