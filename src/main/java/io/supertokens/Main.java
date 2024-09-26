@@ -20,7 +20,7 @@ import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.cronjobs.Cronjobs;
-import io.supertokens.cronjobs.cleanupOAuthRevokeList.CleanupOAuthRevokeList;
+import io.supertokens.cronjobs.cleanupOAuthRevokeList.CleanupOAuthRevokeListAndChallenges;
 import io.supertokens.cronjobs.deleteExpiredAccessTokenSigningKeys.DeleteExpiredAccessTokenSigningKeys;
 import io.supertokens.cronjobs.deleteExpiredDashboardSessions.DeleteExpiredDashboardSessions;
 import io.supertokens.cronjobs.deleteExpiredEmailVerificationTokens.DeleteExpiredEmailVerificationTokens;
@@ -257,7 +257,7 @@ public class Main {
         // starts DeleteExpiredAccessTokenSigningKeys cronjob if the access token signing keys can change
         Cronjobs.addCronjob(this, DeleteExpiredAccessTokenSigningKeys.init(this, uniqueUserPoolIdsTenants));
 
-        Cronjobs.addCronjob(this, CleanupOAuthRevokeList.init(this, uniqueUserPoolIdsTenants));
+        Cronjobs.addCronjob(this, CleanupOAuthRevokeListAndChallenges.init(this, uniqueUserPoolIdsTenants));
 
         // this is to ensure tenantInfos are in sync for the new cron job as well
         MultitenancyHelper.getInstance(this).refreshCronjobs();

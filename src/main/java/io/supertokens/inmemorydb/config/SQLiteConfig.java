@@ -176,4 +176,8 @@ public class SQLiteConfig {
     public String getOAuthM2MTokensTable() {
         return "oauth_m2m_tokens";
     }
+
+    public String getOAuthLogoutChallengesTable() {
+        return "oauth_logout_challenges";
+    }
 }
