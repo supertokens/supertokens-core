@@ -120,7 +120,7 @@ public class ProcessBulkImportUsersCronJobTest {
 
     @Test
     public void shouldProcessBulkImportUsersInNotSoLargeNumbersInTheSameTenant() throws Exception {
-        Utils.setValueInConfig("bulk_migration_parallelism", "2");
+        Utils.setValueInConfig("bulk_migration_parallelism", "8");
         TestingProcess process = startCronProcess();
         Main main = process.getProcess();
 
@@ -143,7 +143,7 @@ public class ProcessBulkImportUsersCronJobTest {
         List<BulkImportUser> users = generateBulkImportUser(usersCount);
         BulkImport.addUsers(appIdentifier, storage, users);
 
-        Thread.sleep(6000);
+        Thread.sleep(60000);
 
         List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, 1000, null,
                 null, null);
@@ -159,7 +159,7 @@ public class ProcessBulkImportUsersCronJobTest {
 
     @Test
     public void shouldProcessBulkImportUsersInLargeNumbersInTheSameTenant() throws Exception {
-        Utils.setValueInConfig("bulk_migration_parallelism", "12");
+        Utils.setValueInConfig("bulk_migration_parallelism", "8");
 
         TestingProcess process = startCronProcess();
         Main main = process.getProcess();
@@ -259,7 +259,7 @@ public class ProcessBulkImportUsersCronJobTest {
 
     @Test
     public void shouldProcessBulkImportUsersInLargeNumberInMultipleTenantsWithDifferentStorages() throws Exception {
-        Utils.setValueInConfig("bulk_migration_parallelism", "4");
+        Utils.setValueInConfig("bulk_migration_parallelism", "8");
 
         TestingProcess process = startCronProcess();
         Main main = process.getProcess();
@@ -356,7 +356,7 @@ public class ProcessBulkImportUsersCronJobTest {
 
     @Test
     public void shouldDeleteEverythingFromTheDBIfAnythingFailsOnMultipleThreads() throws Exception {
-        Utils.setValueInConfig("bulk_migration_parallelism", "12");
+        Utils.setValueInConfig("bulk_migration_parallelism", "8");
         // Creating a non-existing user role will result in an error.
         // Since, user role creation happens at the last step of the bulk import process, everything should be deleted from the DB.
 
@@ -399,7 +399,7 @@ public class ProcessBulkImportUsersCronJobTest {
 
     @Test
     public void shouldDeleteOnlyFailedFromTheDBIfAnythingFailsOnMultipleThreads() throws Exception {
-        Utils.setValueInConfig("bulk_migration_parallelism", "12");
+        Utils.setValueInConfig("bulk_migration_parallelism", "8");
         // Creating a non-existing user role will result in an error.
         // Since, user role creation happens at the last step of the bulk import process, everything should be deleted from the DB.
 

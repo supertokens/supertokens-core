@@ -30,6 +30,7 @@ import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.authRecipe.sqlStorage.AuthRecipeSQLStorage;
 import io.supertokens.pluginInterface.bulkimport.BulkImportStorage;
 import io.supertokens.pluginInterface.bulkimport.BulkImportUser;
+import io.supertokens.pluginInterface.bulkimport.exceptions.BulkImportTransactionRolledBackException;
 import io.supertokens.pluginInterface.bulkimport.sqlStorage.BulkImportSQLStorage;
 import io.supertokens.pluginInterface.exceptions.DbInitException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
@@ -80,12 +81,16 @@ public class ProcessBulkUsersImportWorker implements Runnable {
             throws TenantOrAppNotFoundException, StorageQueryException, IOException,
             DbInitException {
 
-        BulkImportUser lastStartedUser = null;
+        BulkImportUser user = null;
         try {
-            for (BulkImportUser user : users) {
-                lastStartedUser = user;
-                if (Main.isTesting && Main.isTesting_skipBulkImportUserValidationInCronJob) {
+            boolean shouldRetryImmediately = false;
+            int userIndexPointer = 0;
+            while(userIndexPointer < users.size()){
+                user = users.get(userIndexPointer);
+                if ((Main.isTesting && Main.isTesting_skipBulkImportUserValidationInCronJob) || shouldRetryImmediately) {
                     // Skip validation when the flag is enabled during testing
+                    // Skip validation if it's a retry run. This already passed validation. A revalidation triggers
+                    // an invalid external user id already exists validation error - which is not true!
                 } else {
                     // Validate the user
                     bulkImportUserUtils.createBulkImportUserFromJSON(main, appIdentifier, user.toJsonObject(), user.id);
@@ -143,10 +148,11 @@ public class ProcessBulkUsersImportWorker implements Runnable {
                     }
                 }
 
-                bulkImportProxyStorage.startTransaction(con -> {
+                BulkImportUser finalUser = user;
+                shouldRetryImmediately = bulkImportProxyStorage.startTransaction(con -> {
                     try {
                         Storage[] allStoragesForApp = getAllProxyStoragesForApp(main, appIdentifier);
-                        BulkImport.processUserImportSteps(main, con, appIdentifier, bulkImportProxyStorage, user,
+                        BulkImport.processUserImportSteps(main, con, appIdentifier, bulkImportProxyStorage, finalUser,
                                 primaryLM, allStoragesForApp);
 
                         // We are updating the primaryUserId in the bulkImportUser entry. This will help us handle
@@ -154,7 +160,7 @@ public class ProcessBulkUsersImportWorker implements Runnable {
                         // If this update statement fails then the outer transaction will fail as well and the user
                         // will simpl be processed again. No inconsistency will happen in this
                         // case.
-                        baseTenantStorage.updateBulkImportUserPrimaryUserId(appIdentifier, user.id,
+                        baseTenantStorage.updateBulkImportUserPrimaryUserId(appIdentifier, finalUser.id,
                                 primaryLM.superTokensUserId);
 
                         // We need to commit the transaction manually because we have overridden that in the proxy
@@ -171,22 +177,38 @@ public class ProcessBulkUsersImportWorker implements Runnable {
                         // in the database.
                         // When processing the user again, we'll check if primaryUserId exists with the same email.
                         // In this case the user will exist, and we'll simply delete the entry.
-                        baseTenantStorage.deleteBulkImportUsers(appIdentifier, new String[]{user.id});
+                        baseTenantStorage.deleteBulkImportUsers(appIdentifier, new String[]{finalUser.id});
                     } catch (StorageTransactionLogicException e) {
                         // We need to rollback the transaction manually because we have overridden that in the proxy
                         // storage
                         bulkImportProxyStorage.rollbackTransactionForBulkImportProxyStorage();
-                        handleProcessUserExceptions(app, user, e, baseTenantStorage);
+                        if(isBulkImportTransactionRolledBackIsTheRealCause(e)){
+                            return true;
+                            //@see BulkImportTransactionRolledBackException for explanation
+                        }
+                        handleProcessUserExceptions(app, finalUser, e, baseTenantStorage);
                     }
-                    return null;
+                    return false;
                 });
 
+                if(!shouldRetryImmediately){
+                    userIndexPointer++;
+                }
             }
         } catch (StorageTransactionLogicException | InvalidBulkImportDataException | InvalidConfigException e) {
-            handleProcessUserExceptions(appIdentifier, lastStartedUser, e, baseTenantStorage);
+            handleProcessUserExceptions(appIdentifier, user, e, baseTenantStorage);
         } finally {
             closeAllProxyStorages(); //closing it here to reuse the existing connection with all the users
         }
+    }
+
+    private boolean isBulkImportTransactionRolledBackIsTheRealCause(Throwable exception) {
+        if(exception instanceof BulkImportTransactionRolledBackException){
+            return true;
+        } else if(exception.getCause()!=null){
+            return isBulkImportTransactionRolledBackIsTheRealCause(exception.getCause());
+        }
+        return false;
     }
 
     private void handleProcessUserExceptions(AppIdentifier appIdentifier, BulkImportUser user, Exception e,
