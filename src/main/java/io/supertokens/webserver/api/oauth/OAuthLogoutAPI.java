@@ -39,7 +39,7 @@ public class OAuthLogoutAPI extends WebserverAPI {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         String clientId = InputParser.getQueryParamOrThrowError(req, "clientId", true);
         String idTokenHint = InputParser.getQueryParamOrThrowError(req, "idTokenHint", true);
-        String postLogoutRedirectionUri = InputParser.getQueryParamOrThrowError(req, "postLogoutRedirectionUri", true);
+        String postLogoutRedirectionUri = InputParser.getQueryParamOrThrowError(req, "postLogoutRedirectUri", true);
         String state = InputParser.getQueryParamOrThrowError(req, "state", true);
 
         try {

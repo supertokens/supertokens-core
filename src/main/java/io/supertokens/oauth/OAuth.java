@@ -591,17 +591,15 @@ public class OAuth {
 
         revokeSessionHandle(main, appIdentifier, oauthStorage, logoutChallenge.sessionHandle);
 
-        String url = null;
         if (logoutChallenge.postLogoutRedirectionUri != null) {
-            url = logoutChallenge.postLogoutRedirectionUri;
+            String url = logoutChallenge.postLogoutRedirectionUri;
+            if (logoutChallenge.state != null) {
+                return url + "?state=" + logoutChallenge.state;
+            } else {
+                return url;
+            }
         } else {
-            url = "{apiDomain}/fallbacks/logout/callback";
-        }
-
-        if (logoutChallenge.state != null) {
-            return url + "?state=" + logoutChallenge.state;
-        } else {
-            return url;
+            return "{apiDomain}/fallbacks/logout/callback";
         }
     }
 

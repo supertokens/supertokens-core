@@ -120,9 +120,10 @@ public class OAuthToken {
                 }
             } else {
                 payloadUpdate = payload.getAsJsonObject("initialPayload");
-                payload.remove("initialPayload");
             }
         }
+        payload.remove("ext");
+        payload.remove("initialPayload");
 
         if (payloadUpdate != null) {
             for (Map.Entry<String, JsonElement> entry : payloadUpdate.entrySet()) {
