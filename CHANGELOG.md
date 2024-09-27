@@ -14,7 +14,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     - `oauth_provider_public_service_url`
     - `oauth_provider_admin_service_url`
     - `oauth_provider_consent_login_base_url`
-    - `oauth_provider_url_configured_in_hydra`
+    - `oauth_provider_url_configured_in_oauth_provider`
 - Adds POST `/recipe/oauth/auth` for OAuth2 auth flow support
 - Adds POST `/recipe/oauth/clients` for OAuth2 client registration
 - Adds GET `/recipe/oauth/clients?clientId=example_id` for loading OAuth2 client

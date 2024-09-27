@@ -20,6 +20,7 @@ import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.oauth.OAuthLogoutChallenge;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -90,6 +91,32 @@ public class OAuthQueries {
         String oAuth2M2MTokensTable = Config.getConfig(start).getOAuthM2MTokensTable();
         return "CREATE INDEX IF NOT EXISTS oauth_m2m_token_exp_index ON "
                 + oAuth2M2MTokensTable + "(exp DESC, app_id DESC);";
+    }
+
+    public static String getQueryToCreateOAuthLogoutChallengesTable(Start start) {
+        String oAuth2LogoutChallengesTable = Config.getConfig(start).getOAuthLogoutChallengesTable();
+        // @formatter:off
+        return "CREATE TABLE IF NOT EXISTS " + oAuth2LogoutChallengesTable + " ("
+                + "app_id VARCHAR(64) DEFAULT 'public',"
+                + "challenge VARCHAR(128) NOT NULL,"
+                + "client_id VARCHAR(128) NOT NULL,"
+                + "post_logout_redirect_uri VARCHAR(1024),"
+                + "session_handle VARCHAR(128),"
+                + "state VARCHAR(128),"
+                + "time_created BIGINT NOT NULL,"
+                + "PRIMARY KEY (app_id, challenge),"
+                + "FOREIGN KEY(app_id, client_id)"
+                + " REFERENCES " + Config.getConfig(start).getOAuthClientsTable() + "(app_id, client_id) ON DELETE CASCADE,"
+                + "FOREIGN KEY(app_id)"
+                + " REFERENCES " + Config.getConfig(start).getAppsTable() + "(app_id) ON DELETE CASCADE"
+                + ");";
+        // @formatter:on
+    }
+
+    public static String getQueryToCreateOAuthLogoutChallengesTimeCreatedIndex(Start start) {
+        String oAuth2LogoutChallengesTable = Config.getConfig(start).getOAuthLogoutChallengesTable();
+        return "CREATE INDEX IF NOT EXISTS oauth_logout_challenges_time_created_index ON "
+                + oAuth2LogoutChallengesTable + "(time_created ASC, app_id ASC);";
     }
 
     public static boolean isClientIdForAppId(Start start, String clientId, AppIdentifier appIdentifier)
@@ -164,7 +191,7 @@ public class OAuthQueries {
     public static boolean isRevoked(Start start, AppIdentifier appIdentifier, String[] targetTypes, String[] targetValues, long issuedAt)
             throws SQLException, StorageQueryException {
         String QUERY = "SELECT app_id FROM " + Config.getConfig(start).getOAuthRevokeTable() +
-                " WHERE app_id = ? AND timestamp > ? AND (";
+                " WHERE app_id = ? AND timestamp >= ? AND (";
 
         for (int i = 0; i < targetTypes.length; i++) {
             QUERY += "(target_type = ? AND target_value = ?)";
@@ -284,5 +311,61 @@ public class OAuthQueries {
                 pst.setLong(2, timestamp);
             });
         }
+    }
+
+    public static void addLogoutChallenge(Start start, AppIdentifier appIdentifier, String challenge, String clientId,
+            String postLogoutRedirectionUri, String sessionHandle, String state, long timeCreated) throws SQLException, StorageQueryException {
+        String QUERY = "INSERT INTO " + Config.getConfig(start).getOAuthLogoutChallengesTable() +
+                " (app_id, challenge, client_id, post_logout_redirect_uri, session_handle, state, time_created) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        update(start, QUERY, pst -> {
+            pst.setString(1, appIdentifier.getAppId());
+            pst.setString(2, challenge);
+            pst.setString(3, clientId);
+            pst.setString(4, postLogoutRedirectionUri);
+            pst.setString(5, sessionHandle);
+            pst.setString(6, state);
+            pst.setLong(7, timeCreated);
+        });
+    }
+
+    public static OAuthLogoutChallenge getLogoutChallenge(Start start, AppIdentifier appIdentifier, String challenge) throws SQLException, StorageQueryException {
+        String QUERY = "SELECT challenge, client_id, post_logout_redirect_uri, session_handle, state, time_created FROM " +
+                Config.getConfig(start).getOAuthLogoutChallengesTable() +
+                " WHERE app_id = ? AND challenge = ?";
+        
+        return execute(start, QUERY, pst -> {
+            pst.setString(1, appIdentifier.getAppId());
+            pst.setString(2, challenge);
+        }, result -> {
+            if (result.next()) {
+                return new OAuthLogoutChallenge(
+                    result.getString("challenge"),
+                    result.getString("client_id"),
+                    result.getString("post_logout_redirect_uri"),
+                    result.getString("session_handle"),
+                    result.getString("state"),
+                    result.getLong("time_created")
+                );
+            }
+            return null;
+        });
+    }
+
+    public static void deleteLogoutChallenge(Start start, AppIdentifier appIdentifier, String challenge) throws SQLException, StorageQueryException {
+        String QUERY = "DELETE FROM " + Config.getConfig(start).getOAuthLogoutChallengesTable() +
+                " WHERE app_id = ? AND challenge = ?";
+        update(start, QUERY, pst -> {
+            pst.setString(1, appIdentifier.getAppId());
+            pst.setString(2, challenge);
+        });
+    }
+
+    public static void deleteLogoutChallengesBefore(Start start, AppIdentifier appIdentifier, long time) throws SQLException, StorageQueryException {
+        String QUERY = "DELETE FROM " + Config.getConfig(start).getOAuthLogoutChallengesTable() +
+                " WHERE app_id = ? AND time_created < ?";
+        update(start, QUERY, pst -> {
+            pst.setString(1, appIdentifier.getAppId());
+            pst.setLong(2, time);
+        });
     }
 }

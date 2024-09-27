@@ -55,6 +55,7 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateTenantExc
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateThirdPartyIdException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.multitenancy.sqlStorage.MultitenancySQLStorage;
+import io.supertokens.pluginInterface.oauth.OAuthLogoutChallenge;
 import io.supertokens.pluginInterface.oauth.sqlStorage.OAuthSQLStorage;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
 import io.supertokens.pluginInterface.passwordless.PasswordlessDevice;
@@ -3072,6 +3073,43 @@ public class Start
             throws StorageQueryException {
         try {
             OAuthQueries.addM2MToken(this, appIdentifier, clientId, iat, exp);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void addLogoutChallenge(AppIdentifier appIdentifier, String challenge, String clientId,
+            String postLogoutRedirectionUri, String sessionHandle, String state, long timeCreated) throws StorageQueryException {
+        try {
+            OAuthQueries.addLogoutChallenge(this, appIdentifier, challenge, clientId, postLogoutRedirectionUri, sessionHandle, state, timeCreated);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public OAuthLogoutChallenge getLogoutChallenge(AppIdentifier appIdentifier, String challenge) throws StorageQueryException {
+        try {
+            return OAuthQueries.getLogoutChallenge(this, appIdentifier, challenge);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void deleteLogoutChallenge(AppIdentifier appIdentifier, String challenge) throws StorageQueryException {
+        try {
+            OAuthQueries.deleteLogoutChallenge(this, appIdentifier, challenge);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void deleteLogoutChallengesBefore(AppIdentifier appIdentifier, long time) throws StorageQueryException {
+        try {
+            OAuthQueries.deleteLogoutChallengesBefore(this, appIdentifier, time);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }

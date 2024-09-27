@@ -1,4 +1,4 @@
-package io.supertokens.cronjobs.cleanupOAuthRevokeList;
+package io.supertokens.cronjobs.cleanupOAuthRevokeListAndChallenges;
 
 import java.util.List;
 
@@ -12,19 +12,19 @@ import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.oauth.OAuthStorage;
 import io.supertokens.storageLayer.StorageLayer;
 
-public class CleanupOAuthRevokeList extends CronTask {
+public class CleanupOAuthRevokeListAndChallenges extends CronTask {
 
-    public static final String RESOURCE_KEY = "io.supertokens.cronjobs.cleanupOAuthRevokeList" +
-            ".CleanupOAuthRevokeList";
+    public static final String RESOURCE_KEY = "io.supertokens.cronjobs.cleanupOAuthRevokeListAndChallenges" +
+            ".CleanupOAuthRevokeListAndChallenges";
 
-    private CleanupOAuthRevokeList(Main main, List<List<TenantIdentifier>> tenantsInfo) {
+    private CleanupOAuthRevokeListAndChallenges(Main main, List<List<TenantIdentifier>> tenantsInfo) {
         super("CleanupOAuthRevokeList", main, tenantsInfo, true);
     }
 
-    public static CleanupOAuthRevokeList init(Main main, List<List<TenantIdentifier>> tenantsInfo) {
-        return (CleanupOAuthRevokeList) main.getResourceDistributor()
+    public static CleanupOAuthRevokeListAndChallenges init(Main main, List<List<TenantIdentifier>> tenantsInfo) {
+        return (CleanupOAuthRevokeListAndChallenges) main.getResourceDistributor()
                 .setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY,
-                        new CleanupOAuthRevokeList(main, tenantsInfo));
+                        new CleanupOAuthRevokeListAndChallenges(main, tenantsInfo));
     }
 
     @Override
@@ -32,6 +32,7 @@ public class CleanupOAuthRevokeList extends CronTask {
         Storage storage = StorageLayer.getStorage(app.getAsPublicTenantIdentifier(), main);
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
         oauthStorage.cleanUpExpiredAndRevokedTokens(app);
+        oauthStorage.deleteLogoutChallengesBefore(app, System.currentTimeMillis() - 1000 * 60 * 60 * 48);
     }
 
     @Override

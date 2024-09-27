@@ -280,7 +280,6 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new OAuthGetAuthLoginRequestAPI(main));
         addAPI(new OAuthAcceptAuthLoginRequestAPI(main));
         addAPI(new OAuthRejectAuthLoginRequestAPI(main));
-        addAPI(new OAuthGetAuthLogoutRequestAPI(main));
         addAPI(new OAuthAcceptAuthLogoutRequestAPI(main));
         addAPI(new OAuthRejectAuthLogoutRequestAPI(main));
         addAPI(new OAuthTokenIntrospectAPI(main));

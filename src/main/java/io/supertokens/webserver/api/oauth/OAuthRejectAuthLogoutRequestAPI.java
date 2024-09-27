@@ -8,7 +8,9 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.oauth.HttpRequestForOry;
+import io.supertokens.oauth.OAuth;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -30,27 +32,16 @@ public class OAuthRejectAuthLogoutRequestAPI extends WebserverAPI {
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
+        String challenge = InputParser.parseStringOrThrowError(input, "challenge", false);
 
         try {
-            HttpRequestForOry.Response response = OAuthProxyHelper.proxyJsonPUT(
-                main, req, resp,
-                getAppIdentifier(req),
-                enforcePublicTenantAndGetPublicTenantStorage(req),
-                null, // clientIdToCheck
-                "/admin/oauth2/auth/requests/logout/reject", // proxyPath
-                true, // proxyToAdmin
-                true, // camelToSnakeCaseConversion
-                OAuthProxyHelper.defaultGetQueryParamsFromRequest(req),
-                input, // jsonBody
-                new HashMap<>() // headers
-            );
+            OAuth.deleteLogoutChallenge(main, getAppIdentifier(req), enforcePublicTenantAndGetPublicTenantStorage(req), challenge);
 
-            if (response != null) {
-                response.jsonResponse.getAsJsonObject().addProperty("status", "OK");
-                super.sendJsonResponse(200, response.jsonResponse, resp);
-            }
+            JsonObject response = new JsonObject();
+            response.addProperty("status", "OK");
+            super.sendJsonResponse(200, response, resp);
 
-        } catch (IOException | TenantOrAppNotFoundException | BadPermissionException e) {
+        } catch (IOException | TenantOrAppNotFoundException | BadPermissionException | StorageQueryException e) {
             throw new ServletException(e);
         }
     }

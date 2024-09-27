@@ -965,7 +965,7 @@ public class CronjobTest {
         {
             List<List<List<TenantIdentifier>>> tenantsInfos = Cronjobs.getInstance(process.getProcess())
                     .getTenantInfos();
-            assertEquals(10, tenantsInfos.size());
+            assertEquals(11, tenantsInfos.size());
             int count = 0;
             for (List<List<TenantIdentifier>> tenantsInfo : tenantsInfos) {
                 if (tenantsInfo != null) {
@@ -1049,6 +1049,8 @@ public class CronjobTest {
         intervals.put("io.supertokens.cronjobs.telemetry.Telemetry", 86400);
         intervals.put("io.supertokens.cronjobs.deleteExpiredAccessTokenSigningKeys.DeleteExpiredAccessTokenSigningKeys",
                 86400);
+        intervals.put("io.supertokens.cronjobs.cleanupOAuthRevokeListAndChallenges.CleanupOAuthRevokeListAndChallenges",
+                86400);
 
         Map<String, Integer> delays = new HashMap<>();
         delays.put("io.supertokens.ee.cronjobs.EELicenseCheck", 86400);
@@ -1063,9 +1065,11 @@ public class CronjobTest {
         delays.put("io.supertokens.cronjobs.telemetry.Telemetry", 0);
         delays.put("io.supertokens.cronjobs.deleteExpiredAccessTokenSigningKeys.DeleteExpiredAccessTokenSigningKeys",
                 0);
+        delays.put("io.supertokens.cronjobs.cleanupOAuthRevokeListAndChallenges.CleanupOAuthRevokeListAndChallenges",
+                0);
 
         List<CronTask> allTasks = Cronjobs.getInstance(process.getProcess()).getTasks();
-        assertEquals(10, allTasks.size());
+        assertEquals(11, allTasks.size());
 
         for (CronTask task : allTasks) {
             assertEquals(intervals.get(task.getClass().getName()).intValue(), task.getIntervalTimeSeconds());

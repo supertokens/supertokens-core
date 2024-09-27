@@ -36,6 +36,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.oauth.OAuthLogoutChallenge;
 import io.supertokens.pluginInterface.oauth.OAuthStorage;
 import io.supertokens.session.jwt.JWT.JWTException;
 import io.supertokens.utils.Utils;
@@ -330,6 +331,8 @@ public class OAuth {
     public static JsonObject transformTokens(Main main, AppIdentifier appIdentifier, Storage storage, JsonObject jsonBody, String iss, JsonObject accessTokenUpdate, JsonObject idTokenUpdate, boolean useDynamicKey) throws IOException, JWTException, InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException, JWTCreationException, InvalidConfigException {
         String atHash = null;
 
+        System.out.println("transformTokens: " + jsonBody.toString());
+
         if (jsonBody.has("refresh_token")) {
             String refreshToken = jsonBody.get("refresh_token").getAsString();
             refreshToken = refreshToken.replace("ory_rt_", "st_rt_");
@@ -551,39 +554,13 @@ public class OAuth {
         oauthStorage.revoke(appIdentifier, "session_handle", sessionHandle, exp);
 	}
 
-    public static void verifyIdTokenHintClientIdAndUpdateQueryParamsForLogout(Main main, AppIdentifier appIdentifier, Storage storage,
-            Map<String, String> queryParams) throws StorageQueryException, OAuthAPIException, TenantOrAppNotFoundException, UnsupportedJWTSigningAlgorithmException, StorageTransactionLogicException {
-
-        String idTokenHint = queryParams.get("idTokenHint");
-        String clientId = queryParams.get("clientId");
-
-        JsonObject idTokenPayload = null;
-        if (idTokenHint != null) {
-            queryParams.remove("idTokenHint");
-
-            try {
-                idTokenPayload = OAuthToken.getPayloadFromJWTToken(appIdentifier, main, idTokenHint);
-            } catch (TryRefreshTokenException e) {
-                // invalid id token
-                throw new OAuthAPIException("invalid_request", "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed.", 400);
-            }
-        }
-
-        if (idTokenPayload != null) {
-            if (!idTokenPayload.has("stt") || idTokenPayload.get("stt").getAsInt() != OAuthToken.TokenType.ID_TOKEN.getValue()) {
-                // Invalid id token
-                throw new OAuthAPIException("invalid_request", "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed.", 400);
-            }
-
-            String clientIdInIdTokenPayload = idTokenPayload.get("aud").getAsString();
-
-            if (clientId != null) {
-                if (!clientId.equals(clientIdInIdTokenPayload)) {
-                    throw new OAuthAPIException("invalid_request", "The client_id in the id_token_hint does not match the client_id in the request.", 400);
-                }
-            }
-
-            queryParams.put("clientId", clientIdInIdTokenPayload);
+    public static JsonObject verifyIdTokenAndGetPayload(Main main, AppIdentifier appIdentifier, Storage storage,
+            String idToken) throws StorageQueryException, OAuthAPIException, TenantOrAppNotFoundException, UnsupportedJWTSigningAlgorithmException, StorageTransactionLogicException {
+        try {
+            return OAuthToken.getPayloadFromJWTToken(appIdentifier, main, idToken);
+        } catch (TryRefreshTokenException e) {
+            // invalid id token
+            throw new OAuthAPIException("invalid_request", "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed.", 400);
         }
     }
 
@@ -591,5 +568,43 @@ public class OAuth {
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
         JsonObject payload = OAuthToken.getPayloadFromJWTToken(appIdentifier, main, accessToken);
         oauthStorage.addM2MToken(appIdentifier, payload.get("client_id").getAsString(), payload.get("iat").getAsLong(), payload.get("exp").getAsLong());
+    }
+
+    public static String createLogoutRequestAndReturnRedirectUri(Main main, AppIdentifier appIdentifier, Storage storage, String clientId,
+            String postLogoutRedirectionUri, String sessionHandle, String state) throws StorageQueryException {
+        
+        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+
+        String logoutChallenge = UUID.randomUUID().toString();
+        oauthStorage.addLogoutChallenge(appIdentifier, logoutChallenge, clientId, postLogoutRedirectionUri, sessionHandle, state, System.currentTimeMillis());
+
+        return "{apiDomain}/oauth/logout?logout_challenge=" + logoutChallenge;
+    }
+
+    public static String consumeLogoutChallengeAndGetRedirectUri(Main main, AppIdentifier appIdentifier, Storage storage, String challenge) throws StorageQueryException, OAuthAPIException {
+        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+        OAuthLogoutChallenge logoutChallenge = oauthStorage.getLogoutChallenge(appIdentifier, challenge);
+
+        if (logoutChallenge == null) {
+            throw new OAuthAPIException("invalid_request", "Logout request not found", 400);
+        }
+
+        revokeSessionHandle(main, appIdentifier, oauthStorage, logoutChallenge.sessionHandle);
+
+        if (logoutChallenge.postLogoutRedirectionUri != null) {
+            String url = logoutChallenge.postLogoutRedirectionUri;
+            if (logoutChallenge.state != null) {
+                return url + "?state=" + logoutChallenge.state;
+            } else {
+                return url;
+            }
+        } else {
+            return "{apiDomain}/fallbacks/logout/callback";
+        }
+    }
+
+    public static void deleteLogoutChallenge(Main main, AppIdentifier appIdentifier, Storage storage, String challenge) throws StorageQueryException {
+        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+        oauthStorage.deleteLogoutChallenge(appIdentifier, challenge);
     }
 }

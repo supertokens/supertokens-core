@@ -153,17 +153,17 @@ core_config_version: 0
 # supertokens_saas_load_only_cud:
 
 # (OPTIONAL | Default: null) string value. If specified, the core uses this URL to connect to the OAuth provider
-#  public service.
+# public service.
 # oauth_provider_public_service_url:
 
 # (OPTIONAL | Default: null) string value. If specified, the core uses this URL to connect to the OAuth provider admin
-#  service.
+# service.
 # oauth_provider_admin_service_url:
 
 # (OPTIONAL | Default: null) string value. If specified, the core uses this URL replace the default
 # consent and login URLs to {apiDomain}.
 # oauth_provider_consent_login_base_url:
 
-# (OPTIONAL | Default: oauth_provider_public_service_url) If specified, the core uses this URL to parse responses from the oauth provider when
-# the oauth provider's internal address differs from the known public provider address.
-# oauth_provider_url_configured_in_hydra:
+# (OPTIONAL | Default: oauth_provider_public_service_url) If specified, the core uses this URL to parse responses from
+# the oauth provider when the oauth provider's internal address differs from the known public provider address.
+# oauth_provider_url_configured_in_oauth_provider:

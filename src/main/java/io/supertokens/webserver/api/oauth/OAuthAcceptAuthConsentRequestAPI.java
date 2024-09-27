@@ -43,11 +43,11 @@ public class OAuthAcceptAuthConsentRequestAPI extends WebserverAPI {
         accessToken.addProperty("tId", tId);
         accessToken.addProperty("rsub", rsub);
         accessToken.addProperty("sessionHandle", sessionHandle);
+        accessToken.addProperty("gid", UUID.randomUUID().toString());
         accessToken.add("initialPayload", initialAccessTokenPayload);
 
         JsonObject idToken = new JsonObject();
         idToken.add("initialPayload", initialIdTokenPayload);
-        accessToken.addProperty("gid", UUID.randomUUID().toString());
 
         // remove the above from input
         input.remove("iss");
