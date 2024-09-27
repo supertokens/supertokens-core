@@ -191,7 +191,7 @@ public class OAuthQueries {
     public static boolean isRevoked(Start start, AppIdentifier appIdentifier, String[] targetTypes, String[] targetValues, long issuedAt)
             throws SQLException, StorageQueryException {
         String QUERY = "SELECT app_id FROM " + Config.getConfig(start).getOAuthRevokeTable() +
-                " WHERE app_id = ? AND timestamp > ? AND (";
+                " WHERE app_id = ? AND timestamp >= ? AND (";
 
         for (int i = 0; i < targetTypes.length; i++) {
             QUERY += "(target_type = ? AND target_value = ?)";
