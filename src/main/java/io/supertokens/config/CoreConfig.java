@@ -338,6 +338,17 @@ public class CoreConfig {
     @IgnoreForAnnotationCheck
     private boolean isNormalizedAndValid = false;
 
+    @IgnoreForAnnotationCheck
+    private static boolean disableOAuthValidationForTest = false;
+
+    @TestOnly
+    public static void setDisableOAuthValidationForTest(boolean val) {
+        if (!Main.isTesting) {
+            throw new IllegalStateException("This method can only be called during testing");
+        }
+        disableOAuthValidationForTest = val;
+    }
+
     public static Set<String> getValidFields() {
         CoreConfig coreConfig = new CoreConfig();
         JsonObject coreConfigObj = new GsonBuilder().serializeNulls().create().toJsonTree(coreConfig).getAsJsonObject();
@@ -901,9 +912,11 @@ public class CoreConfig {
             }
         }
 
-        List<String> configsTogetherSet = Arrays.asList(oauth_provider_public_service_url, oauth_provider_admin_service_url, oauth_provider_consent_login_base_url);
-        if(isAnySet(configsTogetherSet) && !isAllSet(configsTogetherSet)) {
-            throw new InvalidConfigException("If any of the following is set, all of them has to be set: oauth_provider_public_service_url, oauth_provider_admin_service_url, oauth_provider_consent_login_base_url");
+        if (!disableOAuthValidationForTest) {
+            List<String> configsTogetherSet = Arrays.asList(oauth_provider_public_service_url, oauth_provider_admin_service_url, oauth_provider_consent_login_base_url);
+            if(isAnySet(configsTogetherSet) && !isAllSet(configsTogetherSet)) {
+                throw new InvalidConfigException("If any of the following is set, all of them has to be set: oauth_provider_public_service_url, oauth_provider_admin_service_url, oauth_provider_consent_login_base_url");
+            }
         }
 
         isNormalizedAndValid = true;

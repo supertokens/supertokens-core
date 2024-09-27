@@ -27,12 +27,15 @@ import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.oauth.OAuth;
+import io.supertokens.oauth.OAuthToken;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
+import io.supertokens.pluginInterface.oauth.OAuthStorage;
 import io.supertokens.pluginInterface.totp.TOTPDevice;
 import io.supertokens.session.Session;
 import io.supertokens.storageLayer.StorageLayer;
@@ -173,6 +176,11 @@ public class TestAppData {
 
         UserIdMapping.createUserIdMapping(process.getProcess(), app.toAppIdentifier(), appStorage,
                 plUser.user.getSupertokensUserId(), "externalid", null, false);
+
+        OAuth.addOrUpdateClientId(process.getProcess(), app.toAppIdentifier(), appStorage, "test", false);
+        OAuth.createLogoutRequestAndReturnRedirectUri(process.getProcess(), app.toAppIdentifier(), appStorage, "test", "http://localhost", "sessionHandle", "state");
+        ((OAuthStorage) appStorage).addM2MToken(app.toAppIdentifier(), "test", 1000, 2000);
+        OAuth.revokeSessionHandle(process.getProcess(), app.toAppIdentifier(), appStorage, "sessionHandle");
 
         String[] tablesThatHaveData = appStorage
                 .getAllTablesInTheDatabaseThatHasDataForAppId(app.getAppId());
