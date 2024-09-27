@@ -25,9 +25,11 @@ import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.pluginInterface.ActiveUsersStorage;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.nonAuthRecipe.NonAuthRecipeStorage;
+import io.supertokens.pluginInterface.oauth.OAuthStorage;
 import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
 import io.supertokens.pluginInterface.useridmapping.exception.UnknownSuperTokensUserIdException;
 import io.supertokens.pluginInterface.useridmapping.exception.UserIdMappingAlreadyExistsException;
@@ -799,8 +801,11 @@ public class UserIdMappingTest {
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MFA});
 
         // this list contains the package names for recipes which dont use UserIdMapping
-        ArrayList<String> nonAuthRecipesWhichDontNeedUserIdMapping = new ArrayList<>(
-                List.of("io.supertokens.pluginInterface.jwt.JWTRecipeStorage", ActiveUsersStorage.class.getName()));
+        List<String> nonAuthRecipesWhichDontNeedUserIdMapping = List.of(
+                JWTRecipeStorage.class.getName(),
+                ActiveUsersStorage.class.getName(),
+                OAuthStorage.class.getName()
+        );
 
         Reflections reflections = new Reflections("io.supertokens.pluginInterface");
         Set<Class<? extends NonAuthRecipeStorage>> classes = reflections.getSubTypesOf(NonAuthRecipeStorage.class);
@@ -880,8 +885,11 @@ public class UserIdMappingTest {
             return;
         }
 
-        ArrayList<String> nonAuthRecipesWhichDontNeedUserIdMapping = new ArrayList<>(
-                List.of("io.supertokens.pluginInterface.jwt.JWTRecipeStorage", ActiveUsersStorage.class.getName()));
+        List<String> nonAuthRecipesWhichDontNeedUserIdMapping = List.of(
+                JWTRecipeStorage.class.getName(),
+                ActiveUsersStorage.class.getName(),
+                OAuthStorage.class.getName()
+        );
         Reflections reflections = new Reflections("io.supertokens.pluginInterface");
         Set<Class<? extends NonAuthRecipeStorage>> classes = reflections.getSubTypesOf(NonAuthRecipeStorage.class);
         List<String> names = classes.stream().map(Class::getCanonicalName).collect(Collectors.toList());

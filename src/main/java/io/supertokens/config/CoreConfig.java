@@ -67,7 +67,7 @@ public class CoreConfig {
             "oauth_provider_public_service_url",
             "oauth_provider_admin_service_url",
             "oauth_provider_consent_login_base_url",
-            "oauth_provider_url_configured_in_hydra"
+            "oauth_provider_url_configured_in_oauth_provider"
     };
 
     @IgnoreForAnnotationCheck
@@ -297,15 +297,15 @@ public class CoreConfig {
     @JsonProperty
     @HideFromDashboard
     @ConfigDescription(
-            "If specified, the core uses this URL replace the default consent and login URLs to {apiDomain}. Defaults to 'null'")
+            "If specified, the core uses this URL replace the default consent and login URLs to {apiDomain}.")
     private String oauth_provider_consent_login_base_url = null;
 
     @NotConflictingInApp
     @JsonProperty
     @HideFromDashboard
     @ConfigDescription(
-            "If specified, the core uses this URL to parse responses from the oauth provider when the oauth provider's internal address differs from the known public provider address. Defaults to the oauth_provider_public_service_url")
-    private String oauth_provider_url_configured_in_hydra = null;
+            "If specified, the core uses this URL to parse responses from the oauth provider when the oauth provider's internal address differs from the known public provider address.")
+    private String oauth_provider_url_configured_in_oauth_provider = null;
 
     @ConfigYamlOnly
     @JsonProperty
@@ -373,11 +373,11 @@ public class CoreConfig {
         return oauth_provider_consent_login_base_url;
     }
 
-    public String getOauthProviderUrlConfiguredInHydra() throws InvalidConfigException {
-        if(oauth_provider_url_configured_in_hydra == null) {
-            throw new InvalidConfigException("oauth_provider_url_configured_in_hydra is not set");
+    public String getOAuthProviderUrlConfiguredInOAuthProvider() throws InvalidConfigException {
+        if(oauth_provider_url_configured_in_oauth_provider == null) {
+            throw new InvalidConfigException("oauth_provider_url_configured_in_oauth_provider is not set");
         }
-        return oauth_provider_url_configured_in_hydra;
+        return oauth_provider_url_configured_in_oauth_provider;
     }
 
     public String getIpAllowRegex() {
@@ -891,13 +891,13 @@ public class CoreConfig {
         }
 
 
-        if(oauth_provider_url_configured_in_hydra == null) {
-            oauth_provider_url_configured_in_hydra = oauth_provider_public_service_url;
+        if(oauth_provider_url_configured_in_oauth_provider == null) {
+            oauth_provider_url_configured_in_oauth_provider = oauth_provider_public_service_url;
         } else {
             try {
-                URL url = new URL(oauth_provider_url_configured_in_hydra);
+                URL url = new URL(oauth_provider_url_configured_in_oauth_provider);
             } catch (MalformedURLException malformedURLException){
-                throw new InvalidConfigException("oauth_provider_url_configured_in_hydra is not a valid URL");
+                throw new InvalidConfigException("oauth_provider_url_configured_in_oauth_provider is not a valid URL");
             }
         }
 

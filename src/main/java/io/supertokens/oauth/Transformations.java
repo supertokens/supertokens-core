@@ -145,7 +145,7 @@ public class Transformations {
 
     private static String transformRedirectUrlFromHydra(Main main, AppIdentifier appIdentifier,String redirectTo) throws InvalidConfigException, TenantOrAppNotFoundException, OAuthAPIException {
         String hydraInternalAddress = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main)
-                .getOauthProviderUrlConfiguredInHydra();
+                .getOAuthProviderUrlConfiguredInOAuthProvider();
         String hydraBaseUrlForConsentAndLogin = Config
                 .getConfig(appIdentifier.getAsPublicTenantIdentifier(), main)
                 .getOauthProviderConsentLoginBaseUrl();

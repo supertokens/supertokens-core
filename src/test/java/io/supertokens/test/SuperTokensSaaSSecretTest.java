@@ -428,9 +428,22 @@ public class SuperTokensSaaSSecretTest {
         assertEquals(response.get("refreshToken").getAsJsonObject().entrySet().size(), 3);
     }
 
-    private static final String[] PROTECTED_CORE_CONFIG = new String[]{"ip_allow_regex", "ip_deny_regex"};
+    private static final String[] PROTECTED_CORE_CONFIG = new String[]{
+            "ip_allow_regex",
+            "ip_deny_regex",
+            "oauth_provider_public_service_url",
+            "oauth_provider_admin_service_url",
+            "oauth_provider_consent_login_base_url",
+            "oauth_provider_url_configured_in_oauth_provider"
+    };
     private static final Object[] PROTECTED_CORE_CONFIG_VALUES = new String[]{
-            "127\\\\.\\\\d+\\\\.\\\\d+\\\\.\\\\d+|::1|0:0:0:0:0:0:0:1", "192.0.0.1"};
+            "127\\\\.\\\\d+\\\\.\\\\d+\\\\.\\\\d+|::1|0:0:0:0:0:0:0:1",
+            "192.0.0.1",
+            "http://localhost:4444",
+            "http://localhost:4445",
+            "http://localhost:3001/auth/oauth",
+            "http://localhost:4444"
+    };
 
     @Test
     public void testThatTenantCannotSetProtectedConfigIfSuperTokensSaaSSecretIsSet()
