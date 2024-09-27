@@ -102,6 +102,7 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
 
             // Apply updates based on CDI version
             tenantConfig = applyTenantUpdates(tenantConfig, getVersionFromRequest(req), isV2, input);
+            validateFirstFactorsName(tenantConfig);
 
             // Write tenant config to db
             createOrUpdate(req, sourceTenantIdentifier, tenantConfig);
@@ -936,6 +937,17 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
         }
 
         return tenantConfig;
+    }
+
+    private static void validateFirstFactorsName(TenantConfig tenantConfig) throws ServletException {
+        if(tenantConfig.firstFactors != null && tenantConfig.firstFactors.length > 0) {
+            String allowedPattern = "^[0-9a-z-]+$";
+            for(String firstFactor: tenantConfig.firstFactors){
+                if(firstFactor != null && !firstFactor.matches(allowedPattern)){
+                    throw new ServletException(new BadRequestException("firstFactors should not contain only 0-9,a-z,- characters"));
+                }
+            }
+        }
     }
 
     private static TenantConfig applyV2TenantUpdates_5_1(TenantConfig tenantConfig, JsonObject input)
