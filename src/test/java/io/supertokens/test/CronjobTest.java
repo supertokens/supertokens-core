@@ -975,7 +975,7 @@ public class CronjobTest {
                     count++;
                 }
             }
-            assertEquals(9, count);
+            assertEquals(10, count);
         }
 
         process.kill(false);
