@@ -87,7 +87,7 @@ public class VerifyTotpDeviceAPITest {
 
     @Test
     public void testApi() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         // Trigger rate limiting on 1 wrong attempts:
         Utils.setValueInConfig("totp_max_attempts", "1");
@@ -101,7 +101,8 @@ public class VerifyTotpDeviceAPITest {
             return;
         }
 
-        FeatureFlagTestContent.getInstance(process.main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[] { EE_FEATURES.MFA });
+        FeatureFlagTestContent.getInstance(process.main)
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MFA});
 
         // Setup user and devices:
         JsonObject createDeviceReq = new JsonObject();
@@ -123,7 +124,8 @@ public class VerifyTotpDeviceAPITest {
         assertEquals(createDeviceRes.get("status").getAsString(), "OK");
         String secretKey = createDeviceRes.get("secret").getAsString();
 
-        TOTPDevice device = new TOTPDevice("user-id", "deviceName", secretKey, 30, 0, false, System.currentTimeMillis());
+        TOTPDevice device = new TOTPDevice("user-id", "deviceName", secretKey, 30, 0, false,
+                System.currentTimeMillis());
 
         // Start the actual tests for update device API:
 
@@ -166,6 +168,12 @@ public class VerifyTotpDeviceAPITest {
 
             // test totp of length 8:
             body.addProperty("totp", "12345678");
+            requestWithInvalidCode(process, body);
+
+            Thread.sleep(1100);
+
+            // test totp of more than length 8:
+            body.addProperty("totp", "123456781234");
             requestWithInvalidCode(process, body);
 
             Thread.sleep(1100);

@@ -28,7 +28,6 @@ import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicExceptio
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.passwordless.PasswordlessDevice;
-import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -80,6 +79,8 @@ public class CheckCodeAPI extends WebserverAPI {
 
         try {
             TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+            io.supertokens.webserver.api.passwordless.Utils.assertIfPasswordlessIsEnabledForTenant(main,
+                    tenantIdentifier, getVersionFromRequest(req));
             Storage storage = this.getTenantStorage(req);
             PasswordlessDevice consumedDevice = Passwordless.checkCodeAndReturnDevice(
                     tenantIdentifier,

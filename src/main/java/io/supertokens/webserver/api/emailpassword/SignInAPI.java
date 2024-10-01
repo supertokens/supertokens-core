@@ -21,7 +21,6 @@ import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
-import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
@@ -77,6 +76,9 @@ public class SignInAPI extends WebserverAPI {
         }
 
         try {
+            io.supertokens.webserver.api.emailpassword.Utils.assertIfEmailPasswordIsEnabledForTenant(main,
+                    tenantIdentifier, getVersionFromRequest(req));
+
             AuthRecipeUserInfo user = EmailPassword.signIn(tenantIdentifier, storage, super.main, normalisedEmail,
                     password);
             io.supertokens.useridmapping.UserIdMapping.populateExternalUserIdForUsers(
@@ -95,7 +97,8 @@ public class SignInAPI extends WebserverAPI {
             result.add("user", userJson);
             if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0)) {
                 for (LoginMethod loginMethod : user.loginMethods) {
-                    if (loginMethod.recipeId.equals(RECIPE_ID.EMAIL_PASSWORD) && normalisedEmail.equals(loginMethod.email)) {
+                    if (loginMethod.recipeId.equals(RECIPE_ID.EMAIL_PASSWORD) &&
+                            normalisedEmail.equals(loginMethod.email)) {
                         result.addProperty("recipeUserId", loginMethod.getSupertokensOrExternalUserId());
                         break;
                     }

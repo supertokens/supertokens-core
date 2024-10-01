@@ -8,15 +8,110 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## Unreleased
 
 ### Added
- - Adds multithreaded worker support for the `ProcessBulkImportUsers` cron job for faster bulk imports
- - Add property `bulk_migration_parallelism` for fine-tuning the worker threads number
 
-## [9.1.0] - 2024-04-25
-
-### Added
-
+- Adds multithreaded worker support for the `ProcessBulkImportUsers` cron job for faster bulk imports
+- Adds property `bulk_migration_parallelism` for fine-tuning the worker threads number
 - Adds APIs to bulk import users
 - Adds `ProcessBulkImportUsers` cron job to process bulk import users
+
+## [9.2.2] - 2024-09-04
+
+- Adds index on `last_active_time` for `user_last_active` table to improve the performance of MAU computation.
+
+### Migration
+
+If using PostgreSQL, run the following SQL script:
+
+```sql
+CREATE INDEX IF NOT EXISTS user_last_active_last_active_time_index ON user_last_active (last_active_time DESC, app_id DESC);
+```
+
+If using MySQL, run the following SQL script:
+
+```sql
+CREATE INDEX user_last_active_last_active_time_index ON user_last_active (last_active_time DESC, app_id DESC);
+```
+
+## [9.2.1] - 2024-09-02
+
+- Removes the stats that were resulting in high CPU consumption
+
+## [9.2.0] - 2024-08-20
+
+- Adds `SECURITY` feature in `EE_FEATURES`.
+
+## [9.1.2] - 2024-07-24
+
+- Fixes path routing which rejected tenantId stop words even if it was not an exact stop word match. For example, `/hellotenant` is a valid tenantId prefix, however, it was being rejected for the stop word `hello`. - https://github.com/supertokens/supertokens-core/issues/1021
+- 500 errors in core returns actual exception, since these APIs are developer facing, it makes easier to debug these errors.
+
+## [9.1.1] - 2024-07-24
+
+### Fixes
+
+- Account linking now properly checks if the login methods of the primary user can be shared with the tenants of the 
+  recipe user we are trying to link
+- Simplifying email verification token creation
+
+## [9.1.0] - 2024-05-24
+
+### Changes
+
+- Adds support for CDI 3.1 and 5.1
+- Adds annotations to properties `CoreConfig` to aid dashboard API.
+- Updates `ApiVersionAPI` to optionally accept `websiteDomain` and `apiDomain` for telemetry.
+- Adds GET `/recipe/dashboard/tenant/core-config` to fetch the core properties with metadata for dashboard.
+- Reports `websiteDomain` and `apiDomain` for each app in telemetry.
+- API Key can now be passed using the `Authorization` header: `Authorization: <api-key>`
+
+### Breaking changes
+
+- CUD/App/Tenant Management APIs are deprecated and v2 versions have been added
+  - Adds new core API for fetching all the core properties for a tenant
+      - GET `/appid-<appid>/<tenantid>/recipe/dashboard/tenant/core-config`
+  - Deprecated the following APIs
+      - PUT `/recipe/multitenancy/connectionuridomain`
+      - GET `/recipe/multitenancy/connectionuridomain/list`
+      - PUT `/recipe/multitenancy/app`
+      - GET `/recipe/multitenancy/app/list`
+      - PUT `/appid-<appid>/recipe/multitenancy/tenant`
+      - GET `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant`
+      - GET `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant/list`
+  - Adds the following APIs to replace the deprecated APIs
+      - PUT `/recipe/multitenancy/connectionuridomain/v2`
+      - GET `/recipe/multitenancy/connectionuridomain/list/v2`
+      - PUT `/recipe/multitenancy/app/v2`
+      - GET `/recipe/multitenancy/app/list/v2`
+      - PUT `/appid-<appid>/recipe/multitenancy/tenant/v2`
+      - GET `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant/v2`
+      - GET `/appid-<appid>/<tenantid>/recipe/multitenancy/tenant/list/v2`
+
+- In CDI 5.1, the auth recipe APIs such as emailpassword signIn, thirdParty signInUp, etc would not be blocked if the recipe was disabled using the deprecated APIs. They will be enforced if CDI version <= 5.0 is being passed in the header.
+
+### Fixes
+
+- Updates descriptions in the config.yaml to be consistent with the annotations.
+- Adds correct `max-age` for `JWKSPublicAPI` based on dynamic key generation interval.
+- Fixes `500` error when using TOTP code longer than 8 characters.
+
+### Migration
+
+Make sure the core is already upgraded to version 9.0.2 before migrating
+
+If using PostgreSQL
+
+```sql
+ALTER TABLE tenant_configs ADD COLUMN IF NOT EXISTS is_first_factors_null BOOLEAN DEFAULT TRUE;
+ALTER TABLE tenant_configs ALTER COLUMN is_first_factors_null DROP DEFAULT;
+```
+
+If using MySQL
+
+```sql
+ALTER TABLE tenant_configs ADD COLUMN is_first_factors_null BOOLEAN DEFAULT TRUE;
+ALTER TABLE tenant_configs ALTER COLUMN is_first_factors_null DROP DEFAULT;
+```
+>>>>>>> master
 
 ## [9.0.2] - 2024-04-17
 
@@ -43,20 +138,22 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   Tenant APIs
 - Adds `deviceName` in the response of `CreateOrUpdateTotpDeviceAPI` `POST`
 - `VerifyTOTPAPI` changes
-  - Removes `allowUnverifiedDevices` from request body and unverified devices are not allowed
-  - Adds `currentNumberOfFailedAttempts` and `maxNumberOfFailedAttempts` in response when status is 
-    `INVALID_TOTP_ERROR` or `LIMIT_REACHED_ERROR`
-  - Adds status `UNKNOWN_USER_ID_ERROR`
+    - Removes `allowUnverifiedDevices` from request body and unverified devices are not allowed
+    - Adds `currentNumberOfFailedAttempts` and `maxNumberOfFailedAttempts` in response when status is
+      `INVALID_TOTP_ERROR` or `LIMIT_REACHED_ERROR`
+    - Adds status `UNKNOWN_USER_ID_ERROR`
 - `VerifyTotpDeviceAPI` changes
-  - Adds `currentNumberOfFailedAttempts` and `maxNumberOfFailedAttempts` in response when status is
-    `INVALID_TOTP_ERROR` or `LIMIT_REACHED_ERROR`
+    - Adds `currentNumberOfFailedAttempts` and `maxNumberOfFailedAttempts` in response when status is
+      `INVALID_TOTP_ERROR` or `LIMIT_REACHED_ERROR`
 - Adds `consumedDevice` in the success response of the `ConsumeCodeAPI`
 - Adds `preAuthSessionId` input to `DeleteCodeAPI` to be able to delete codes for a device
 - Adds a new `useDynamicSigningKey` into the request body of `RefreshSessionAPI`
-  - This enables smooth switching between `useDynamicAccessTokenSigningKey` settings by allowing refresh calls to change the signing key type of a session
-  - This is available after CDI3.0
-  - This is required in&after CDI5.0 and optional before
-- Adds optional `firstFactors` and `requiredSecondaryFactors` to the create or update connectionUriDomain, app and tenant APIs
+    - This enables smooth switching between `useDynamicAccessTokenSigningKey` settings by allowing refresh calls to
+      change the signing key type of a session
+    - This is available after CDI3.0
+    - This is required in&after CDI5.0 and optional before
+- Adds optional `firstFactors` and `requiredSecondaryFactors` to the create or update connectionUriDomain, app and
+  tenant APIs
 - Updates Last active while linking accounts
 - Marks fake email in email password sign up as verified
 - Fixes slow down in useridmapping queries
@@ -94,23 +191,26 @@ DROP INDEX all_auth_recipe_users_pagination_index4 ON all_auth_recipe_users;
 
 ### Breaking changes
 
-- The following app specific APIs return a 403 when they are called with a tenant ID other than the `public` one. For example, if the path is `/users/count/active`,  and you call it with `/tenant1/users/count/active`, it will return a 403. But if you call it with `/public/users/count/active`, or just `/users/count/active`, it will work.
-  - GET `/recipe/accountlinking/user/primary/check`
-  - GET `/recipe/accountlinking/user/link/check`
-  - POST `/recipe/accountlinking/user/primary`
-  - POST `/recipe/accountlinking/user/link`
-  - POST `/recipe/accountlinking/user/unlink`
-  - GET `/users/count/active`
-  - POST `/user/remove`
-  - GET `/ee/featureflag`
-  - GET `/user/id`
-  - PUT `/ee/license`
-  - DELETE `/ee/license`
-  - GET `/ee/license`
-  - GET `/requests/stats`
-  - GET `/recipe/user` when querying by `userId`
-  - GET `/recipe/jwt/jwks`
-  - POST `/recipe/jwt`
+- The following app specific APIs return a 403 when they are called with a tenant ID other than the `public` one. For
+  example, if the path is `/users/count/active`, and you call it with `/tenant1/users/count/active`, it will return a
+    403. But if you call it with `/public/users/count/active`, or just `/users/count/active`, it will work.
+
+    - GET `/recipe/accountlinking/user/primary/check`
+    - GET `/recipe/accountlinking/user/link/check`
+    - POST `/recipe/accountlinking/user/primary`
+    - POST `/recipe/accountlinking/user/link`
+    - POST `/recipe/accountlinking/user/unlink`
+    - GET `/users/count/active`
+    - POST `/user/remove`
+    - GET `/ee/featureflag`
+    - GET `/user/id`
+    - PUT `/ee/license`
+    - DELETE `/ee/license`
+    - GET `/ee/license`
+    - GET `/requests/stats`
+    - GET `/recipe/user` when querying by `userId`
+    - GET `/recipe/jwt/jwks`
+    - POST `/recipe/jwt`
 
 ### Fixes
 
@@ -119,11 +219,13 @@ DROP INDEX all_auth_recipe_users_pagination_index4 ON all_auth_recipe_users;
 ### Migration
 
 For Postgresql:
+
 ```sql
 ALTER TABLE user_roles DROP CONSTRAINT IF EXISTS user_roles_role_fkey;
 ```
 
 For MySQL:
+
 ```sql
 ALTER TABLE user_roles DROP FOREIGN KEY user_roles_ibfk_1;
 ALTER TABLE user_roles DROP FOREIGN KEY user_roles_ibfk_2;
@@ -141,7 +243,8 @@ ALTER TABLE user_roles
 ## [7.0.17] - 2024-02-06
 
 - Fixes issue where error logs were printed to StdOut instead of StdErr.
-- Adds new config `supertokens_saas_load_only_cud` that makes the core instance load a particular CUD only, irrespective of the CUDs present in the db.
+- Adds new config `supertokens_saas_load_only_cud` that makes the core instance load a particular CUD only, irrespective
+  of the CUDs present in the db.
 - Fixes connection pool handling when connection pool size changes for a tenant.
 
 ## [7.0.16] - 2023-12-04
@@ -179,19 +282,26 @@ CREATE INDEX IF NOT EXISTS app_id_to_user_id_primary_user_id_index ON app_id_to_
 
 ## [7.0.12] - 2023-11-16
 
-In this release, the core API routes have been updated to incorporate phone number normalization before processing. Consequently, existing entries in the database also need to undergo normalization. To facilitate this, we have included a migration script to normalize phone numbers for all the existing entries.
+In this release, the core API routes have been updated to incorporate phone number normalization before processing.
+Consequently, existing entries in the database also need to undergo normalization. To facilitate this, we have included
+a migration script to normalize phone numbers for all the existing entries.
 
 **NOTE**: You can skip the migration if you are not using passwordless via phone number.
 
 ### Migration steps
 
-This script updates the `phone_number` column in the `passwordless_users`, `passwordless_user_to_tenant`, and `passwordless_devices` tables with their respective normalized values. This script is idempotent and can be run multiple times without any issue. Follow the steps below to run the script: 
+This script updates the `phone_number` column in the `passwordless_users`, `passwordless_user_to_tenant`,
+and `passwordless_devices` tables with their respective normalized values. This script is idempotent and can be run
+multiple times without any issue. Follow the steps below to run the script:
 
 1. Ensure that the core is already upgraded to version 7.0.12 (CDI version 4.0)
 2. Run the migration script
 
-    Make sure your Node.js version is 16 or above to run the script. Locate the migration script at `supertokens-core/migration_scripts/to_version_7_0_12/index.js`. Modify the script by updating the `DB_HOST`, `DB_USER`, `DB_PASSWORD`, and `DB_NAME` variables with the correct values. Subsequently, run the following commands to initiate the script:
-    
+   Make sure your Node.js version is 16 or above to run the script. Locate the migration script
+   at `supertokens-core/migration_scripts/to_version_7_0_12/index.js`. Modify the script by updating
+   the `DB_HOST`, `DB_USER`, `DB_PASSWORD`, and `DB_NAME` variables with the correct values. Subsequently, run the
+   following commands to initiate the script:
+
     ```bash
        $ git clone https://github.com/supertokens/supertokens-core.git
        $ cd supertokens-core/migration_scripts/to_version_7_0_12
@@ -199,7 +309,9 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
        $ npm start
     ```
 
-    Performance Note: On average, the script takes 19s for every 1000 rows with a maximum of 1 connection, 4.7s with a maximum of 5 connections (default), and 4.5s with a maximum of 10 connections. Increasing the `MAX_POOL_SIZE` allows the script to leverage more connections simultaneously, potentially improving execution speed.
+   Performance Note: On average, the script takes 19s for every 1000 rows with a maximum of 1 connection, 4.7s with a
+   maximum of 5 connections (default), and 4.5s with a maximum of 10 connections. Increasing the `MAX_POOL_SIZE` allows
+   the script to leverage more connections simultaneously, potentially improving execution speed.
 
 ## [7.0.11] - 2023-11-10
 
@@ -245,7 +357,8 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
 
 ## [7.0.1] - 2023-10-04
 
-- Remove padding from link codes and pre-auth session ids in passwordless, but keep support for old format that included padding (`=` signs)
+- Remove padding from link codes and pre-auth session ids in passwordless, but keep support for old format that included
+  padding (`=` signs)
 
 ## [7.0.0] - 2023-09-19
 
@@ -254,17 +367,19 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
 
 ### Session recipe changes
 
-- New access token version: v5, which contains a required prop: `rsub`. This contains the recipe user ID that belongs to the login method that the user used to login. The `sub` claim in the access token payload is now the primary user ID.
+- New access token version: v5, which contains a required prop: `rsub`. This contains the recipe user ID that belongs to
+  the login method that the user used to login. The `sub` claim in the access token payload is now the primary user ID.
 - APIs that return `SessionInformation` (like GET `/recipe/session`) contains userId, recipeUserId in the response.
 - Apis that create / modify / refresh a session return the `recipeUserId` in the `session` object in the response.
 - Token theft detected response returns userId and recipeUserId
 
 ### Db Schema changes
 
-- Adds columns `primary_or_recipe_user_id`, `is_linked_or_is_a_primary_user` and `primary_or_recipe_user_time_joined` to `all_auth_recipe_users` table
+- Adds columns `primary_or_recipe_user_id`, `is_linked_or_is_a_primary_user` and `primary_or_recipe_user_time_joined`
+  to `all_auth_recipe_users` table
 - Adds columns `primary_or_recipe_user_id` and `is_linked_or_is_a_primary_user` to `app_id_to_user_id` table
-- Removes index `all_auth_recipe_users_pagination_index` and addes `all_auth_recipe_users_pagination_index1`, 
-  `all_auth_recipe_users_pagination_index2`, `all_auth_recipe_users_pagination_index3` and 
+- Removes index `all_auth_recipe_users_pagination_index` and addes `all_auth_recipe_users_pagination_index1`,
+  `all_auth_recipe_users_pagination_index2`, `all_auth_recipe_users_pagination_index3` and
   `all_auth_recipe_users_pagination_index4` indexes instead on `all_auth_recipe_users` table
 - Adds `all_auth_recipe_users_recipe_id_index` on `all_auth_recipe_users` table
 - Adds `all_auth_recipe_users_primary_user_id_index` on `all_auth_recipe_users` table
@@ -447,7 +562,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
 
 ## [6.0.9] - 2023-08-14
 
-- Now using decimal notation to add numbers into the access token payload (instead of scientific notation) 
+- Now using decimal notation to add numbers into the access token payload (instead of scientific notation)
 
 ## [6.0.8] - 2023-08-01
 
@@ -1416,6 +1531,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
 
     ```sql
     -- helper stored procedures
+    DELIMITER //
 
     CREATE PROCEDURE st_drop_all_fkeys()
     BEGIN
@@ -1425,7 +1541,33 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
               SELECT concat('ALTER TABLE ', table_schema,'.',table_name,' DROP FOREIGN KEY ', constraint_name, ';') 
               FROM information_schema.table_constraints
               WHERE constraint_type='FOREIGN KEY' 
-                  AND table_schema = DATABASE();
+                  AND table_schema = DATABASE()
+                  AND table_name in (
+                    'all_auth_recipe_users',
+                    'dashboard_user_sessions',
+                    'dashboard_users',
+                    'emailpassword_pswd_reset_tokens',
+                    'emailpassword_users',
+                    'emailverification_tokens',
+                    'emailverification_verified_emails',
+                    'jwt_signing_keys',
+                    'key_value',
+                    'passwordless_codes',
+                    'passwordless_devices',
+                    'passwordless_users',
+                    'role_permissions',
+                    'roles',
+                    'session_access_token_signing_keys',
+                    'session_info',
+                    'thirdparty_users',
+                    'totp_used_codes',
+                    'totp_user_devices',
+                    'totp_users',
+                    'user_last_active',
+                    'user_metadata',
+                    'user_roles',
+                    'userid_mapping'
+                  );
 
       DECLARE CONTINUE handler for NOT found SET done = true;
         OPEN dropCur;
@@ -1446,9 +1588,9 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
         END LOOP;
 
         CLOSE dropCur;
-    END
+    END //
 
-    ---
+    --
 
     CREATE PROCEDURE st_drop_all_pkeys()
     BEGIN
@@ -1458,7 +1600,33 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
               SELECT concat('ALTER TABLE ', table_schema,'.',table_name,' DROP PRIMARY KEY ', ';') 
               FROM information_schema.table_constraints
               WHERE constraint_type='PRIMARY KEY' 
-                  AND table_schema = DATABASE();
+                  AND table_schema = DATABASE()
+                  AND table_name in (
+                    'all_auth_recipe_users',
+                    'dashboard_user_sessions',
+                    'dashboard_users',
+                    'emailpassword_pswd_reset_tokens',
+                    'emailpassword_users',
+                    'emailverification_tokens',
+                    'emailverification_verified_emails',
+                    'jwt_signing_keys',
+                    'key_value',
+                    'passwordless_codes',
+                    'passwordless_devices',
+                    'passwordless_users',
+                    'role_permissions',
+                    'roles',
+                    'session_access_token_signing_keys',
+                    'session_info',
+                    'thirdparty_users',
+                    'totp_used_codes',
+                    'totp_user_devices',
+                    'totp_users',
+                    'user_last_active',
+                    'user_metadata',
+                    'user_roles',
+                    'userid_mapping'
+                  );
 
       DECLARE CONTINUE handler for NOT found SET done = true;
         OPEN dropCur;
@@ -1479,9 +1647,9 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
         END LOOP;
 
         CLOSE dropCur;
-    END
+    END //
 
-    ---
+    --
 
     CREATE PROCEDURE st_drop_all_keys()
     BEGIN
@@ -1491,7 +1659,33 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
               SELECT concat('ALTER TABLE ', table_schema,'.',table_name,' DROP INDEX ', constraint_name, ';') 
               FROM information_schema.table_constraints
               WHERE constraint_type='UNIQUE' 
-                  AND table_schema = DATABASE();
+                  AND table_schema = DATABASE()
+                  AND table_name in (
+                    'all_auth_recipe_users',
+                    'dashboard_user_sessions',
+                    'dashboard_users',
+                    'emailpassword_pswd_reset_tokens',
+                    'emailpassword_users',
+                    'emailverification_tokens',
+                    'emailverification_verified_emails',
+                    'jwt_signing_keys',
+                    'key_value',
+                    'passwordless_codes',
+                    'passwordless_devices',
+                    'passwordless_users',
+                    'role_permissions',
+                    'roles',
+                    'session_access_token_signing_keys',
+                    'session_info',
+                    'thirdparty_users',
+                    'totp_used_codes',
+                    'totp_user_devices',
+                    'totp_users',
+                    'user_last_active',
+                    'user_metadata',
+                    'user_roles',
+                    'userid_mapping'
+                  );
 
       DECLARE CONTINUE handler for NOT found SET done = true;
         OPEN dropCur;
@@ -1512,9 +1706,9 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
         END LOOP;
 
         CLOSE dropCur;
-    END
+    END //
 
-    ---
+    --
 
     CREATE PROCEDURE st_drop_all_indexes()
     BEGIN
@@ -1523,7 +1717,34 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
       DECLARE dropCur CURSOR for 
               SELECT DISTINCT concat('ALTER TABLE ', table_schema, '.', table_name, ' DROP INDEX ', index_name, ';')
               FROM information_schema.statistics
-              WHERE NON_UNIQUE = 1 AND table_schema = database();
+              WHERE NON_UNIQUE = 1 
+                AND table_schema = database()
+                AND table_name in (
+                  'all_auth_recipe_users',
+                  'dashboard_user_sessions',
+                  'dashboard_users',
+                  'emailpassword_pswd_reset_tokens',
+                  'emailpassword_users',
+                  'emailverification_tokens',
+                  'emailverification_verified_emails',
+                  'jwt_signing_keys',
+                  'key_value',
+                  'passwordless_codes',
+                  'passwordless_devices',
+                  'passwordless_users',
+                  'role_permissions',
+                  'roles',
+                  'session_access_token_signing_keys',
+                  'session_info',
+                  'thirdparty_users',
+                  'totp_used_codes',
+                  'totp_user_devices',
+                  'totp_users',
+                  'user_last_active',
+                  'user_metadata',
+                  'user_roles',
+                  'userid_mapping'
+                );
 
       DECLARE CONTINUE handler for NOT found SET done = true;
         OPEN dropCur;
@@ -1544,9 +1765,9 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
         END LOOP;
 
         CLOSE dropCur;
-    END
+    END //
 
-    ---
+    --
 
     CREATE PROCEDURE st_add_column_if_not_exists(
     IN p_table_name varchar(50), 
@@ -1576,8 +1797,9 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
         execute add_column_sql;
           SELECT 'Column Successfully  Created!' INTO p_status_message;
         END IF;
-    END
+    END //
 
+    DELIMITER ;
     -- Drop constraints and indexes
 
     CALL st_drop_all_fkeys();
@@ -1598,7 +1820,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
     INSERT IGNORE INTO apps (app_id, created_at_time) 
       VALUES ('public', 0);
 
-    ------------------------------------------------------------
+    --
 
     CREATE TABLE IF NOT EXISTS tenants (
       app_id VARCHAR(64) NOT NULL DEFAULT 'public',
@@ -1616,7 +1838,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
     INSERT IGNORE INTO tenants (app_id, tenant_id, created_at_time) 
       VALUES ('public', 'public', 0);
 
-    ------------------------------------------------------------
+    --
 
     CALL st_add_column_if_not_exists('key_value', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
     CALL st_add_column_if_not_exists('key_value', 'tenant_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
@@ -1628,7 +1850,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
       ADD FOREIGN KEY (app_id, tenant_id)
         REFERENCES tenants (app_id, tenant_id) ON DELETE CASCADE;
 
-    ------------------------------------------------------------
+    --
 
     CREATE TABLE IF NOT EXISTS app_id_to_user_id (
       app_id VARCHAR(64) NOT NULL DEFAULT 'public',
@@ -1647,7 +1869,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
       SELECT user_id, recipe_id
       FROM all_auth_recipe_users;
 
-    ------------------------------------------------------------
+    --
 
     CALL st_add_column_if_not_exists('all_auth_recipe_users', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
     CALL st_add_column_if_not_exists('all_auth_recipe_users', 'tenant_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
@@ -1680,7 +1902,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
     ALTER TABLE tenant_configs
       ADD PRIMARY KEY (connection_uri_domain, app_id, tenant_id);
 
-    ------------------------------------------------------------
+    --
 
     CREATE TABLE IF NOT EXISTS tenant_thirdparty_providers (
       connection_uri_domain VARCHAR(256) DEFAULT '',
@@ -1713,7 +1935,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
       ADD FOREIGN KEY (connection_uri_domain, app_id, tenant_id)
         REFERENCES tenant_configs (connection_uri_domain, app_id, tenant_id) ON DELETE CASCADE;
 
-    ------------------------------------------------------------
+    --
 
     CREATE TABLE IF NOT EXISTS tenant_thirdparty_provider_clients (
       connection_uri_domain VARCHAR(256) DEFAULT '',
@@ -1750,7 +1972,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
 
     CREATE INDEX session_expiry_index ON session_info (expires_at);
 
-    ------------------------------------------------------------
+    --
 
     CALL st_add_column_if_not_exists('session_access_token_signing_keys', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
 
@@ -1783,7 +2005,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
       ADD FOREIGN KEY (app_id)
         REFERENCES apps (app_id) ON DELETE CASCADE;
 
-    ------------------------------------------------------------
+    --
 
     CALL st_add_column_if_not_exists('emailverification_tokens', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
     CALL st_add_column_if_not_exists('emailverification_tokens', 'tenant_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
@@ -1811,7 +2033,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
       ADD FOREIGN KEY (app_id, user_id)
         REFERENCES app_id_to_user_id (app_id, user_id) ON DELETE CASCADE;
 
-    -- ------------------------------------------------------------
+    -- --
 
     CREATE TABLE IF NOT EXISTS emailpassword_user_to_tenant (
       app_id VARCHAR(64) DEFAULT 'public',
@@ -1833,7 +2055,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
     INSERT IGNORE INTO emailpassword_user_to_tenant (user_id, email)
       SELECT user_id, email FROM emailpassword_users;
 
-    ------------------------------------------------------------
+    --
 
     CALL st_add_column_if_not_exists('emailpassword_pswd_reset_tokens', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
 
@@ -1860,7 +2082,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
       ADD FOREIGN KEY (app_id, user_id)
         REFERENCES app_id_to_user_id (app_id, user_id) ON DELETE CASCADE;
 
-    ------------------------------------------------------------
+    --
 
     CREATE TABLE IF NOT EXISTS passwordless_user_to_tenant (
       app_id VARCHAR(64) DEFAULT 'public',
@@ -1886,7 +2108,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
     INSERT IGNORE INTO passwordless_user_to_tenant (user_id, email, phone_number)
       SELECT user_id, email, phone_number FROM passwordless_users;
 
-    ------------------------------------------------------------
+    --
 
     CALL st_add_column_if_not_exists('passwordless_devices', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
     CALL st_add_column_if_not_exists('passwordless_devices', 'tenant_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
@@ -1902,7 +2124,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
 
     CREATE INDEX passwordless_devices_phone_number_index ON passwordless_devices (app_id, tenant_id, phone_number);
 
-    ------------------------------------------------------------
+    --
 
     CALL st_add_column_if_not_exists('passwordless_codes', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
     CALL st_add_column_if_not_exists('passwordless_codes', 'tenant_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
@@ -1935,7 +2157,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
 
     CREATE INDEX thirdparty_users_email_index ON thirdparty_users (app_id, email);
 
-    ------------------------------------------------------------
+    --
 
     CREATE TABLE IF NOT EXISTS thirdparty_user_to_tenant (
       app_id VARCHAR(64) DEFAULT 'public',
@@ -1989,7 +2211,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
       ADD FOREIGN KEY (app_id)
         REFERENCES apps (app_id) ON DELETE CASCADE;
 
-    ------------------------------------------------------------
+    --
 
     CALL st_add_column_if_not_exists('role_permissions', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
 
@@ -2002,7 +2224,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
 
     CREATE INDEX role_permissions_permission_index ON role_permissions (app_id, permission);
 
-    ------------------------------------------------------------
+    --
 
     CALL st_add_column_if_not_exists('user_roles', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
     CALL st_add_column_if_not_exists('user_roles', 'tenant_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
@@ -2046,7 +2268,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
       ADD FOREIGN KEY (app_id)
         REFERENCES apps (app_id) ON DELETE CASCADE;
 
-    ------------------------------------------------------------
+    --
 
     CALL st_add_column_if_not_exists('dashboard_user_sessions', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
 
@@ -2070,7 +2292,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
       ADD FOREIGN KEY (app_id)
         REFERENCES apps (app_id) ON DELETE CASCADE;
 
-    ------------------------------------------------------------
+    --
 
     CALL st_add_column_if_not_exists('totp_user_devices', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
 
@@ -2081,7 +2303,7 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
       ADD FOREIGN KEY (app_id, user_id)
         REFERENCES totp_users (app_id, user_id) ON DELETE CASCADE;
 
-    ------------------------------------------------------------
+    --
 
     CALL st_add_column_if_not_exists('totp_used_codes', 'app_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
     CALL st_add_column_if_not_exists('totp_used_codes', 'tenant_id', 'VARCHAR(64)', 'NOT NULL DEFAULT \'public\'', @status_message);
@@ -2190,9 +2412,9 @@ This script updates the `phone_number` column in the `passwordless_users`, `pass
       from session_access_token_signing_keys;
     ```
 - If using `access_token_signing_key_dynamic` true or not set:
-  - ```sql
-    ALTER TABLE session_info ADD COLUMN use_static_key BOOLEAN NOT NULL DEFAULT(false);
-    ALTER TABLE session_info ALTER COLUMN use_static_key DROP DEFAULT;
+    - ```sql
+  ALTER TABLE session_info ADD COLUMN use_static_key BOOLEAN NOT NULL DEFAULT(false);
+  ALTER TABLE session_info ALTER COLUMN use_static_key DROP DEFAULT;
     ```
 
 #### Migration steps for MongoDB

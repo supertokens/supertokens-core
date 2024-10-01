@@ -60,7 +60,7 @@ public class GetUsersWithSearchTagsAPITest {
 
     @Test
     public void testSearchingWhenFieldsHaveEmptyInputsWillBehaveLikeRegularPaginationAPI() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
@@ -70,10 +70,12 @@ public class GetUsersWithSearchTagsAPITest {
 
         // create emailpassword user
         ArrayList<String> userIds = new ArrayList<>();
-        userIds.add(EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123").getSupertokensUserId());
+        userIds.add(
+                EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123").getSupertokensUserId());
 
         // create thirdparty user
-        userIds.add(ThirdParty.signInUp(process.getProcess(), "testTPID", "test", "test2@example.com").user.getSupertokensUserId());
+        userIds.add(ThirdParty.signInUp(process.getProcess(), "testTPID", "test",
+                "test2@example.com").user.getSupertokensUserId());
 
         // create passwordless user
         CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), "test@example.com", null,
@@ -136,7 +138,7 @@ public class GetUsersWithSearchTagsAPITest {
 
     @Test
     public void testSearchingForUsers() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
@@ -146,11 +148,14 @@ public class GetUsersWithSearchTagsAPITest {
 
         // create emailpassword user
         ArrayList<String> userIds = new ArrayList<>();
-        userIds.add(EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123").getSupertokensUserId());
-        userIds.add(EmailPassword.signUp(process.getProcess(), "test2@example.com", "testPass123").getSupertokensUserId());
+        userIds.add(
+                EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123").getSupertokensUserId());
+        userIds.add(
+                EmailPassword.signUp(process.getProcess(), "test2@example.com", "testPass123").getSupertokensUserId());
 
         // create thirdparty user
-        userIds.add(ThirdParty.signInUp(process.getProcess(), "testTPID", "test", "test2@example.com").user.getSupertokensUserId());
+        userIds.add(ThirdParty.signInUp(process.getProcess(), "testTPID", "test",
+                "test2@example.com").user.getSupertokensUserId());
 
         // create passwordless user
         CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), "test@example.com", null,
@@ -180,7 +185,7 @@ public class GetUsersWithSearchTagsAPITest {
 
     @Test
     public void testSearchingForUsersWithMultipleInputsForEachField() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
@@ -190,9 +195,11 @@ public class GetUsersWithSearchTagsAPITest {
 
         // create emailpassword user
         ArrayList<String> userIds = new ArrayList<>();
-        userIds.add(EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123").getSupertokensUserId());
+        userIds.add(
+                EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123").getSupertokensUserId());
         Thread.sleep(50);
-        userIds.add(EmailPassword.signUp(process.getProcess(), "abc@example.com", "testPass123").getSupertokensUserId());
+        userIds.add(
+                EmailPassword.signUp(process.getProcess(), "abc@example.com", "testPass123").getSupertokensUserId());
         Thread.sleep(50);
 
         // search with multiple inputs to email
@@ -213,9 +220,11 @@ public class GetUsersWithSearchTagsAPITest {
         }
 
         // create thirdparty user
-        userIds.add(ThirdParty.signInUp(process.getProcess(), "testpid", "test", "test@example.com").user.getSupertokensUserId());
+        userIds.add(ThirdParty.signInUp(process.getProcess(), "testpid", "test",
+                "test@example.com").user.getSupertokensUserId());
         Thread.sleep(50);
-        userIds.add(ThirdParty.signInUp(process.getProcess(), "newtestpid", "test123", "test@example.com").user.getSupertokensUserId());
+        userIds.add(ThirdParty.signInUp(process.getProcess(), "newtestpid", "test123",
+                "test@example.com").user.getSupertokensUserId());
         Thread.sleep(50);
         // search with multiple inputs to provider
         {
@@ -275,7 +284,7 @@ public class GetUsersWithSearchTagsAPITest {
 
     @Test
     public void testRetrievingUsersWithConflictingTagsReturnsEmptyList() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
@@ -285,10 +294,12 @@ public class GetUsersWithSearchTagsAPITest {
 
         // create emailpassword user
         ArrayList<String> userIds = new ArrayList<>();
-        userIds.add(EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123").getSupertokensUserId());
+        userIds.add(
+                EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123").getSupertokensUserId());
 
         // create thirdparty user
-        userIds.add(ThirdParty.signInUp(process.getProcess(), "testTPID", "test", "test@example.com").user.getSupertokensUserId());
+        userIds.add(ThirdParty.signInUp(process.getProcess(), "testTPID", "test",
+                "test@example.com").user.getSupertokensUserId());
 
         // create passwordless user
         CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), "test@example.com",
@@ -316,7 +327,7 @@ public class GetUsersWithSearchTagsAPITest {
 
     @Test
     public void testNormalizingSearchInputsWorksCorrectly() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
@@ -326,10 +337,12 @@ public class GetUsersWithSearchTagsAPITest {
 
         // create emailpassword user
         ArrayList<String> userIds = new ArrayList<>();
-        userIds.add(EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123").getSupertokensUserId());
+        userIds.add(
+                EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123").getSupertokensUserId());
 
         // create thirdparty user
-        userIds.add(ThirdParty.signInUp(process.getProcess(), "testpid", "test", "test@example.com").user.getSupertokensUserId());
+        userIds.add(ThirdParty.signInUp(process.getProcess(), "testpid", "test",
+                "test@example.com").user.getSupertokensUserId());
 
         {
             // searching for email with upper and lower case combination
@@ -362,7 +375,7 @@ public class GetUsersWithSearchTagsAPITest {
 
     @Test
     public void testMultipleParams() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
@@ -390,7 +403,7 @@ public class GetUsersWithSearchTagsAPITest {
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 "http://localhost:3567/users", params, 1000, 1000, null, SemVer.v2_18.get(),
                 null);
-        
+
         assertEquals("OK", response.get("status").getAsString());
         assertEquals(0, response.get("users").getAsJsonArray().size());
 

@@ -97,7 +97,7 @@ public class ImportTotpDeviceAPITest {
         {
             Exception e = importDeviceRequest(process, body);
             checkFieldMissingErrorResponse(e, "userId");
-            
+
             body.addProperty("deviceName", "");
 
             body.addProperty("userId", "");
@@ -127,7 +127,7 @@ public class ImportTotpDeviceAPITest {
             body.addProperty("deviceName", "d1");
             e = importDeviceRequest(process, body);
             checkResponseErrorContains(e, "secretKey cannot be empty");
-            
+
             body.addProperty("secretKey", secret);
             e = importDeviceRequest(process, body);
             checkResponseErrorContains(e, "skew must be >= 0");

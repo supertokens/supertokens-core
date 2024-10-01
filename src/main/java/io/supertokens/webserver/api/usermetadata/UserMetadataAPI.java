@@ -20,12 +20,12 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.StorageAndUserIdMapping;
 import io.supertokens.multitenancy.exception.BadPermissionException;
-import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
-import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.usermetadata.UserMetadata;
 import io.supertokens.webserver.InputParser;
@@ -57,8 +57,9 @@ public class UserMetadataAPI extends WebserverAPI {
             AppIdentifier appIdentifier = getAppIdentifier(req);
             JsonObject metadata;
             try {
-                StorageAndUserIdMapping storageAndUserIdMapping = this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
-                        req, userId, UserIdType.ANY, false);
+                StorageAndUserIdMapping storageAndUserIdMapping =
+                        this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
+                                req, userId, UserIdType.ANY, false);
                 metadata = UserMetadata.getUserMetadata(appIdentifier, storageAndUserIdMapping.storage, userId);
             } catch (UnknownUserIdException e) {
                 throw new IllegalStateException("should never happen");
@@ -85,8 +86,9 @@ public class UserMetadataAPI extends WebserverAPI {
             JsonObject metadata;
 
             try {
-                StorageAndUserIdMapping storageAndUserIdMapping = this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
-                        req, userId, UserIdType.ANY, false);
+                StorageAndUserIdMapping storageAndUserIdMapping =
+                        this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
+                                req, userId, UserIdType.ANY, false);
                 metadata = UserMetadata.updateUserMetadata(appIdentifier, storageAndUserIdMapping.storage, userId,
                         update);
             } catch (UnknownUserIdException e) {
@@ -97,7 +99,8 @@ public class UserMetadataAPI extends WebserverAPI {
             response.add("metadata", metadata);
             response.addProperty("status", "OK");
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException | BadPermissionException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException |
+                 BadPermissionException e) {
             throw new ServletException(e);
         }
     }

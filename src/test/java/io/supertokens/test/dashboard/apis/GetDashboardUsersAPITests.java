@@ -61,7 +61,7 @@ public class GetDashboardUsersAPITests {
 
     @Test
     public void testRetrievingDashboardUsers() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -72,7 +72,7 @@ public class GetDashboardUsersAPITests {
 
         // enable dashboard feature
         FeatureFlagTestContent.getInstance(process.getProcess()).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES,
-                new EE_FEATURES[] { EE_FEATURES.DASHBOARD_LOGIN });
+                new EE_FEATURES[]{EE_FEATURES.DASHBOARD_LOGIN});
 
         // create multiple users
         ArrayList<DashboardUser> createdUsers = new ArrayList<>();
@@ -107,7 +107,7 @@ public class GetDashboardUsersAPITests {
 
     @Test
     public void testRetrievingDashboardUsersOnlyReturnsUnsuspendedUsers() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -118,7 +118,7 @@ public class GetDashboardUsersAPITests {
 
         // enable dashboard feature
         FeatureFlagTestContent.getInstance(process.getProcess()).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES,
-                new EE_FEATURES[] { EE_FEATURES.DASHBOARD_LOGIN });
+                new EE_FEATURES[]{EE_FEATURES.DASHBOARD_LOGIN});
 
         // create multiple users
         ArrayList<DashboardUser> createdUsers = new ArrayList<>();
@@ -131,7 +131,7 @@ public class GetDashboardUsersAPITests {
 
         // remove dashboard feature
         FeatureFlagTestContent.getInstance(process.getProcess()).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES,
-                new EE_FEATURES[] {});
+                new EE_FEATURES[]{});
 
         // retrieve users and check that there were correctly created
 
@@ -145,9 +145,10 @@ public class GetDashboardUsersAPITests {
 
         assertEquals(Dashboard.MAX_NUMBER_OF_FREE_DASHBOARD_USERS, retrievedUsers.size());
         for (int i = 0; i < Dashboard.MAX_NUMBER_OF_FREE_DASHBOARD_USERS; i++) {
-            assertEquals(createdUsers.get(i).userId, retrievedUsers.get(i).getAsJsonObject().get("userId").getAsString());
+            assertEquals(createdUsers.get(i).userId,
+                    retrievedUsers.get(i).getAsJsonObject().get("userId").getAsString());
         }
-        
+
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));

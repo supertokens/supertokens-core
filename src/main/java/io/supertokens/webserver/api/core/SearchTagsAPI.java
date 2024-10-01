@@ -31,7 +31,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-public class SearchTagsAPI extends WebserverAPI{
+public class SearchTagsAPI extends WebserverAPI {
 
     public SearchTagsAPI(Main main) {
         super(main, "");
@@ -41,10 +41,10 @@ public class SearchTagsAPI extends WebserverAPI{
     public String getPath() {
         return "/user/search/tags";
     }
-    
+
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        
+
         JsonObject response = new JsonObject();
         response.addProperty("status", "OK");
         JsonArray tags = new JsonArray();

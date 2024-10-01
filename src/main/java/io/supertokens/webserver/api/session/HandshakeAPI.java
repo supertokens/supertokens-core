@@ -67,12 +67,13 @@ public class HandshakeAPI extends WebserverAPI {
                             .getAccessTokenBlacklisting());
             result.addProperty("accessTokenValidity",
                     Config.getConfig(tenantIdentifier, main)
-                            .getAccessTokenValidity());
+                            .getAccessTokenValidityInMillis());
             result.addProperty("refreshTokenValidity",
                     Config.getConfig(tenantIdentifier, main)
-                            .getRefreshTokenValidity());
+                            .getRefreshTokenValidityInMillis());
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException | UnsupportedJWTSigningAlgorithmException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException |
+                 UnsupportedJWTSigningAlgorithmException e) {
             throw new ServletException(e);
         }
     }

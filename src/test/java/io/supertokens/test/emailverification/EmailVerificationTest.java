@@ -80,13 +80,17 @@ public class EmailVerificationTest {
         }
 
         AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123");
-        String token1 = EmailVerification.generateEmailVerificationToken(process.getProcess(), user.getSupertokensUserId(), user.loginMethods[0].email);
-        String token2 = EmailVerification.generateEmailVerificationToken(process.getProcess(), user.getSupertokensUserId(), user.loginMethods[0].email);
+        String token1 = EmailVerification.generateEmailVerificationToken(process.getProcess(),
+                user.getSupertokensUserId(), user.loginMethods[0].email);
+        String token2 = EmailVerification.generateEmailVerificationToken(process.getProcess(),
+                user.getSupertokensUserId(), user.loginMethods[0].email);
 
         assertNotEquals(token1, token2);
 
-        EmailVerificationTokenInfo[] tokenInfo = ((EmailVerificationSQLStorage) StorageLayer.getStorage(process.getProcess()))
-                .getAllEmailVerificationTokenInfoForUser(new TenantIdentifier(null, null, null), user.getSupertokensUserId(), user.loginMethods[0].email);
+        EmailVerificationTokenInfo[] tokenInfo = ((EmailVerificationSQLStorage) StorageLayer.getStorage(
+                process.getProcess()))
+                .getAllEmailVerificationTokenInfoForUser(new TenantIdentifier(null, null, null),
+                        user.getSupertokensUserId(), user.loginMethods[0].email);
 
         assertEquals(tokenInfo.length, 2);
         assertTrue((tokenInfo[0].token.equals(io.supertokens.utils.Utils.hashSHA256(token1)))
@@ -111,14 +115,17 @@ public class EmailVerificationTest {
         }
 
         AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123");
-        String token = EmailVerification.generateEmailVerificationToken(process.getProcess(), user.getSupertokensUserId(), user.loginMethods[0].email);
+        String token = EmailVerification.generateEmailVerificationToken(process.getProcess(),
+                user.getSupertokensUserId(), user.loginMethods[0].email);
 
         EmailVerification.verifyEmail(process.getProcess(), token);
-        assertTrue(EmailVerification.isEmailVerified(process.getProcess(), user.getSupertokensUserId(), user.loginMethods[0].email));
+        assertTrue(EmailVerification.isEmailVerified(process.getProcess(), user.getSupertokensUserId(),
+                user.loginMethods[0].email));
 
         try {
 
-            EmailVerification.generateEmailVerificationToken(process.getProcess(), user.getSupertokensUserId(), user.loginMethods[0].email);
+            EmailVerification.generateEmailVerificationToken(process.getProcess(), user.getSupertokensUserId(),
+                    user.loginMethods[0].email);
             throw new Exception("should not come here");
         } catch (EmailAlreadyVerifiedException ignored) {
         }
@@ -162,11 +169,14 @@ public class EmailVerificationTest {
         }
         AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123");
 
-        String token1 = EmailVerification.generateEmailVerificationToken(process.getProcess(), user.getSupertokensUserId(), user.loginMethods[0].email);
-        String token2 = EmailVerification.generateEmailVerificationToken(process.getProcess(), user.getSupertokensUserId(), user.loginMethods[0].email);
+        String token1 = EmailVerification.generateEmailVerificationToken(process.getProcess(),
+                user.getSupertokensUserId(), user.loginMethods[0].email);
+        String token2 = EmailVerification.generateEmailVerificationToken(process.getProcess(),
+                user.getSupertokensUserId(), user.loginMethods[0].email);
 
         EmailVerification.verifyEmail(process.getProcess(), token1);
-        assertTrue(EmailVerification.isEmailVerified(process.getProcess(), user.getSupertokensUserId(), user.loginMethods[0].email));
+        assertTrue(EmailVerification.isEmailVerified(process.getProcess(), user.getSupertokensUserId(),
+                user.loginMethods[0].email));
 
         try {
             EmailVerification.verifyEmail(process.getProcess(), token2);
@@ -195,7 +205,8 @@ public class EmailVerificationTest {
         }
         AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123");
 
-        String token = EmailVerification.generateEmailVerificationToken(process.getProcess(), user.getSupertokensUserId(), user.loginMethods[0].email);
+        String token = EmailVerification.generateEmailVerificationToken(process.getProcess(),
+                user.getSupertokensUserId(), user.loginMethods[0].email);
 
         Thread.sleep(20);
 
@@ -224,9 +235,10 @@ public class EmailVerificationTest {
         AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123");
 
         for (int i = 0; i < 100; i++) {
-            String verifyToken = EmailVerification.generateEmailVerificationToken(process.getProcess(), user.getSupertokensUserId(),
+            String verifyToken = EmailVerification.generateEmailVerificationToken(process.getProcess(),
+                    user.getSupertokensUserId(),
                     user.loginMethods[0].email);
-            assertEquals(verifyToken.length(), 128);
+            assertEquals(128, verifyToken.length());
             assertFalse(verifyToken.contains("+"));
             assertFalse(verifyToken.contains("="));
             assertFalse(verifyToken.contains("/"));
@@ -287,15 +299,48 @@ public class EmailVerificationTest {
 
         AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
 
-        assert (!EmailVerification.isEmailVerified(process.getProcess(), user.getSupertokensUserId(), user.loginMethods[0].email));
+        assert (!EmailVerification.isEmailVerified(process.getProcess(), user.getSupertokensUserId(),
+                user.loginMethods[0].email));
 
-        String token = EmailVerification.generateEmailVerificationToken(process.getProcess(), user.getSupertokensUserId(), user.loginMethods[0].email);
+        String token = EmailVerification.generateEmailVerificationToken(process.getProcess(),
+                user.getSupertokensUserId(), user.loginMethods[0].email);
 
         assert (token != null);
 
         EmailVerification.verifyEmail(process.getProcess(), token);
 
-        assert (EmailVerification.isEmailVerified(process.getProcess(), user.getSupertokensUserId(), user.loginMethods[0].email));
+        assert (EmailVerification.isEmailVerified(process.getProcess(), user.getSupertokensUserId(),
+                user.loginMethods[0].email));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void verifyEmailWithOldTokenAfterTokenGenerationChanged() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
+
+        assert (!EmailVerification.isEmailVerified(process.getProcess(), user.getSupertokensUserId(),
+                user.loginMethods[0].email));
+
+        String token = EmailVerification.generateEmailVerificationTokenTheOldWay(process.getProcess(),
+                user.getSupertokensUserId(), user.loginMethods[0].email);
+
+        assert (token != null);
+
+        EmailVerification.verifyEmail(process.getProcess(), token);
+
+        assert (EmailVerification.isEmailVerified(process.getProcess(), user.getSupertokensUserId(),
+                user.loginMethods[0].email));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -314,10 +359,12 @@ public class EmailVerificationTest {
         }
 
         AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123");
-        String token = EmailVerification.generateEmailVerificationToken(process.getProcess(), user.getSupertokensUserId(), user.loginMethods[0].email);
+        String token = EmailVerification.generateEmailVerificationToken(process.getProcess(),
+                user.getSupertokensUserId(), user.loginMethods[0].email);
 
         EmailVerification.verifyEmail(process.getProcess(), token);
-        assertTrue(EmailVerification.isEmailVerified(process.getProcess(), user.getSupertokensUserId(), user.loginMethods[0].email));
+        assertTrue(EmailVerification.isEmailVerified(process.getProcess(), user.getSupertokensUserId(),
+                user.loginMethods[0].email));
 
         ((EmailVerificationSQLStorage) StorageLayer.getStorage(process.getProcess())).startTransaction(con -> {
             try {
@@ -330,7 +377,8 @@ public class EmailVerificationTest {
             return null;
         });
 
-        assertFalse(EmailVerification.isEmailVerified(process.getProcess(), user.getSupertokensUserId(), user.loginMethods[0].email));
+        assertFalse(EmailVerification.isEmailVerified(process.getProcess(), user.getSupertokensUserId(),
+                user.loginMethods[0].email));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -349,10 +397,12 @@ public class EmailVerificationTest {
         }
 
         AuthRecipeUserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123");
-        String token = EmailVerification.generateEmailVerificationToken(process.getProcess(), user.getSupertokensUserId(), user.loginMethods[0].email);
+        String token = EmailVerification.generateEmailVerificationToken(process.getProcess(),
+                user.getSupertokensUserId(), user.loginMethods[0].email);
 
         EmailVerification.verifyEmail(process.getProcess(), token);
-        assertTrue(EmailVerification.isEmailVerified(process.getProcess(), user.getSupertokensUserId(), user.loginMethods[0].email));
+        assertTrue(EmailVerification.isEmailVerified(process.getProcess(), user.getSupertokensUserId(),
+                user.loginMethods[0].email));
 
         ((EmailVerificationSQLStorage) StorageLayer.getStorage(process.getProcess())).startTransaction(con -> {
             try {
@@ -365,7 +415,8 @@ public class EmailVerificationTest {
             return null;
         });
 
-        assertTrue(EmailVerification.isEmailVerified(process.getProcess(), user.getSupertokensUserId(), user.loginMethods[0].email));
+        assertTrue(EmailVerification.isEmailVerified(process.getProcess(), user.getSupertokensUserId(),
+                user.loginMethods[0].email));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

@@ -62,7 +62,8 @@ public class Dashboard {
         }
     }
 
-    public static DashboardUser signUpDashboardUser(AppIdentifier appIdentifier, Storage storage, Main main, String email,
+    public static DashboardUser signUpDashboardUser(AppIdentifier appIdentifier, Storage storage, Main main,
+                                                    String email,
                                                     String password)
             throws StorageQueryException, DuplicateEmailException, FeatureNotEnabledException,
             TenantOrAppNotFoundException {
@@ -167,7 +168,8 @@ public class Dashboard {
                 .deleteDashboardUserWithUserId(appIdentifier, userId);
     }
 
-    private static boolean isUserSuspended(AppIdentifier appIdentifier, Storage storage, Main main, @Nullable String email,
+    private static boolean isUserSuspended(AppIdentifier appIdentifier, Storage storage, Main main,
+                                           @Nullable String email,
                                            @Nullable String userId)
             throws StorageQueryException {
         if (!isDashboardFeatureFlagEnabled(main, appIdentifier)) {
@@ -239,7 +241,8 @@ public class Dashboard {
             dashboardStorage.startTransaction(transaction -> {
                 if (newEmail != null) {
                     try {
-                        dashboardStorage.updateDashboardUsersEmailWithUserId_Transaction(appIdentifier, transaction, userId,
+                        dashboardStorage.updateDashboardUsersEmailWithUserId_Transaction(appIdentifier, transaction,
+                                userId,
                                 newEmail);
                     } catch (DuplicateEmailException | UserIdNotFoundException e) {
                         throw new StorageTransactionLogicException(e);
@@ -250,7 +253,8 @@ public class Dashboard {
                     try {
                         String hashedPassword = PasswordHashing.getInstance(main)
                                 .createHashWithSalt(appIdentifier, newPassword);
-                        dashboardStorage.updateDashboardUsersPasswordWithUserId_Transaction(appIdentifier, transaction, userId,
+                        dashboardStorage.updateDashboardUsersPasswordWithUserId_Transaction(appIdentifier, transaction,
+                                userId,
                                 hashedPassword);
                     } catch (UserIdNotFoundException | TenantOrAppNotFoundException e) {
                         throw new StorageTransactionLogicException(e);
@@ -403,14 +407,16 @@ public class Dashboard {
         return false;
     }
 
-    public static String getEmailFromSessionId(AppIdentifier appIdentifier, Storage storage, String sessionId) throws StorageQueryException {
+    public static String getEmailFromSessionId(AppIdentifier appIdentifier, Storage storage, String sessionId)
+            throws StorageQueryException {
         DashboardSessionInfo sessionInfo = StorageUtils.getDashboardStorage(storage)
                 .getSessionInfoWithSessionId(appIdentifier, sessionId);
 
         if (sessionInfo != null) {
             String userId = sessionInfo.userId;
 
-            DashboardUser user = StorageUtils.getDashboardStorage(storage).getDashboardUserByUserId(appIdentifier, userId);
+            DashboardUser user = StorageUtils.getDashboardStorage(storage)
+                    .getDashboardUserByUserId(appIdentifier, userId);
 
             if (user != null) {
                 return user.email;

@@ -82,7 +82,7 @@ public class InstallHandler extends CommandHandler {
         Process process = pb.start();
         String result = "";
         try (InputStreamReader in = new InputStreamReader(process.getInputStream());
-                BufferedReader reader = new BufferedReader(in)) {
+             BufferedReader reader = new BufferedReader(in)) {
             StringBuilder builder = new StringBuilder();
             String line = null;
             while ((line = reader.readLine()) != null) {

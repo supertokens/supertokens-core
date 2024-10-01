@@ -104,7 +104,8 @@ public class TestAppData {
             return;
         }
 
-        String[] tablesToIgnore = new String[]{"tenant_thirdparty_provider_clients", "tenant_thirdparty_providers", "tenant_first_factors", "tenant_required_secondary_factors"};
+        String[] tablesToIgnore = new String[]{"tenant_thirdparty_provider_clients", "tenant_thirdparty_providers",
+                "tenant_first_factors", "tenant_required_secondary_factors"};
 
         TenantIdentifier app = new TenantIdentifier(null, "a1", null);
 

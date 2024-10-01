@@ -51,7 +51,7 @@ public class RefreshSessionAPITest5_0 {
 
     @Test
     public void badInputMissingUseDynamicSigningKey() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -86,7 +86,8 @@ public class RefreshSessionAPITest5_0 {
                     SemVer.v5_0.get(), "session");
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertEquals(e.getMessage(),
-                    "Http error. Status Code: 400. Message: Field name 'useDynamicSigningKey' is invalid in JSON input");
+                    "Http error. Status Code: 400. Message: Field name 'useDynamicSigningKey' is invalid in JSON " +
+                            "input");
 
         }
 
@@ -96,7 +97,7 @@ public class RefreshSessionAPITest5_0 {
 
     @Test
     public void successOutputUpgradeWithNonStaticKeySessionTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -137,7 +138,7 @@ public class RefreshSessionAPITest5_0 {
 
     @Test
     public void successOutputUpgradeWithStaticKeySessionTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -178,7 +179,7 @@ public class RefreshSessionAPITest5_0 {
 
     @Test
     public void successOutputWithStaticKeySessionTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -219,7 +220,7 @@ public class RefreshSessionAPITest5_0 {
 
     @Test
     public void successOutputWithNonStaticKeySessionTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -260,7 +261,7 @@ public class RefreshSessionAPITest5_0 {
 
     @Test
     public void successOutputSwitchingWithStaticKeySessionTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -302,7 +303,7 @@ public class RefreshSessionAPITest5_0 {
 
     @Test
     public void successOutputSwitchingWithNonStaticKeySessionTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -341,8 +342,10 @@ public class RefreshSessionAPITest5_0 {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
     private static void checkRefreshSessionResponse(JsonObject response, TestingProcessManager.TestingProcess process,
-            String userId, JsonObject userDataInJWT, boolean hasAntiCsrf, boolean useStaticKey) throws
+                                                    String userId, JsonObject userDataInJWT, boolean hasAntiCsrf,
+                                                    boolean useStaticKey) throws
             JWT.JWTException {
 
         assertNotNull(response.get("session").getAsJsonObject().get("handle").getAsString());
@@ -358,12 +361,13 @@ public class RefreshSessionAPITest5_0 {
         assertTrue(response.get("accessToken").getAsJsonObject().has("createdTime"));
         assertEquals(response.get("accessToken").getAsJsonObject().entrySet().size(), 3);
 
-        JWT.JWTPreParseInfo tokenInfo = JWT.preParseJWTInfo(response.get("accessToken").getAsJsonObject().get("token").getAsString());
-        
+        JWT.JWTPreParseInfo tokenInfo = JWT.preParseJWTInfo(
+                response.get("accessToken").getAsJsonObject().get("token").getAsString());
+
         if (useStaticKey) {
-            assert(tokenInfo.kid.startsWith("s-"));
+            assert (tokenInfo.kid.startsWith("s-"));
         } else {
-            assert(tokenInfo.kid.startsWith("d-"));
+            assert (tokenInfo.kid.startsWith("d-"));
         }
 
         assertTrue(response.get("refreshToken").getAsJsonObject().has("token"));

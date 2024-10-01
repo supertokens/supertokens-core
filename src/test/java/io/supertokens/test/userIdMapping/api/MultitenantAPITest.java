@@ -222,6 +222,7 @@ public class MultitenantAPITest {
             throws HttpResponseException, IOException {
         return getUserIdMapping(tenantIdentifier, userId, userIdType, SemVer.v3_0);
     }
+
     private JsonObject getUserIdMapping(TenantIdentifier tenantIdentifier, String userId, String userIdType,
                                         SemVer version)
             throws HttpResponseException, IOException {
@@ -230,7 +231,8 @@ public class MultitenantAPITest {
         QUERY_PARAM.put("userIdType", userIdType);
 
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/userid/map"), QUERY_PARAM, 1000, 1000, null,
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/userid/map"), QUERY_PARAM, 1000,
+                1000, null,
                 version.get(), "useridmapping");
         assertEquals("OK", response.get("status").getAsString());
         return response;
@@ -243,7 +245,8 @@ public class MultitenantAPITest {
         QUERY_PARAM.put("userIdType", userIdType);
 
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/userid/map"), QUERY_PARAM, 1000, 1000, null,
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/userid/map"), QUERY_PARAM, 1000,
+                1000, null,
                 SemVer.v3_0.get(), "useridmapping");
         assertEquals("UNKNOWN_MAPPING_ERROR", response.get("status").getAsString());
     }
@@ -278,7 +281,7 @@ public class MultitenantAPITest {
         user3.addProperty("externalUserId", "euserid3");
 
 
-        for (TenantIdentifier createTenant: new TenantIdentifier[]{t1}) {
+        for (TenantIdentifier createTenant : new TenantIdentifier[]{t1}) {
             successfulCreateUserIdMapping(createTenant, user1.get("id").getAsString(), "euserid1");
             successfulCreateUserIdMapping(createTenant, user2.get("id").getAsString(), "euserid2");
             successfulCreateUserIdMapping(createTenant, user3.get("id").getAsString(), "euserid3");
@@ -298,13 +301,15 @@ public class MultitenantAPITest {
                                 mapping.get("externalUserId").getAsString());
                     }
                     {
-                        JsonObject mapping = getUserIdMapping(queryTenant, user.get("externalUserId").getAsString(), "EXTERNAL");
+                        JsonObject mapping = getUserIdMapping(queryTenant, user.get("externalUserId").getAsString(),
+                                "EXTERNAL");
                         assertEquals(user.get("id").getAsString(), mapping.get("superTokensUserId").getAsString());
                         assertEquals(user.get("externalUserId").getAsString(),
                                 mapping.get("externalUserId").getAsString());
                     }
                     {
-                        JsonObject mapping = getUserIdMapping(queryTenant, user.get("externalUserId").getAsString(), "ANY");
+                        JsonObject mapping = getUserIdMapping(queryTenant, user.get("externalUserId").getAsString(),
+                                "ANY");
                         assertEquals(user.get("id").getAsString(), mapping.get("superTokensUserId").getAsString());
                         assertEquals(user.get("externalUserId").getAsString(),
                                 mapping.get("externalUserId").getAsString());
@@ -395,10 +400,10 @@ public class MultitenantAPITest {
         JsonObject user1 = emailPasswordSignUp(t1, "user@example.com", "password1");
         JsonObject user2 = emailPasswordSignUp(t2, "user@example.com", "password2");
 
-        ((UserIdMappingStorage)StorageLayer.getStorage(t1, process.getProcess())).createUserIdMapping(
+        ((UserIdMappingStorage) StorageLayer.getStorage(t1, process.getProcess())).createUserIdMapping(
                 t1.toAppIdentifier(), user1.get("id").getAsString(), "euserid", null);
 
-        ((UserIdMappingStorage)StorageLayer.getStorage(t2, process.getProcess())).createUserIdMapping(
+        ((UserIdMappingStorage) StorageLayer.getStorage(t2, process.getProcess())).createUserIdMapping(
                 t2.toAppIdentifier(), user2.get("id").getAsString(), "euserid", null);
 
         {
@@ -437,10 +442,10 @@ public class MultitenantAPITest {
         JsonObject user1 = emailPasswordSignUp(t1, "user@example.com", "password1");
         JsonObject user2 = emailPasswordSignUp(t2, "user@example.com", "password2");
 
-        ((UserIdMappingStorage)StorageLayer.getStorage(t1, process.getProcess())).createUserIdMapping(
+        ((UserIdMappingStorage) StorageLayer.getStorage(t1, process.getProcess())).createUserIdMapping(
                 t1.toAppIdentifier(), user1.get("id").getAsString(), "euserid", null);
 
-        ((UserIdMappingStorage)StorageLayer.getStorage(t2, process.getProcess())).createUserIdMapping(
+        ((UserIdMappingStorage) StorageLayer.getStorage(t2, process.getProcess())).createUserIdMapping(
                 t2.toAppIdentifier(), user2.get("id").getAsString(), "euserid", null);
 
         {
@@ -497,7 +502,10 @@ public class MultitenantAPITest {
             fail();
         } catch (HttpResponseException e) {
             assertEquals(400, e.statusCode);
-            assertEquals("Http error. Status Code: 400. Message: Cannot create a userId mapping where the externalId is also a SuperTokens userID", e.getMessage());
+            assertEquals(
+                    "Http error. Status Code: 400. Message: Cannot create a userId mapping where the externalId is " +
+                            "also a SuperTokens userID",
+                    e.getMessage());
         }
     }
 }

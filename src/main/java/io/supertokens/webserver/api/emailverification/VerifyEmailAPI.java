@@ -23,15 +23,15 @@ import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.emailverification.User;
 import io.supertokens.emailverification.exception.EmailVerificationInvalidTokenException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
+import io.supertokens.output.Logging;
+import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.output.Logging;
-import io.supertokens.pluginInterface.RECIPE_ID;
-import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
@@ -94,7 +94,8 @@ public class VerifyEmailAPI extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", "EMAIL_VERIFICATION_INVALID_TOKEN_ERROR");
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | NoSuchAlgorithmException | StorageTransactionLogicException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | NoSuchAlgorithmException | StorageTransactionLogicException |
+                 TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
 
@@ -112,8 +113,9 @@ public class VerifyEmailAPI extends WebserverAPI {
             AppIdentifier appIdentifier = getAppIdentifier(req);
             Storage storage;
             try {
-                StorageAndUserIdMapping storageAndUserIdMapping = enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
-                        req, userId, UserIdType.ANY, false);
+                StorageAndUserIdMapping storageAndUserIdMapping =
+                        enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
+                                req, userId, UserIdType.ANY, false);
                 storage = storageAndUserIdMapping.storage;
             } catch (UnknownUserIdException e) {
                 throw new IllegalStateException("should never happen");

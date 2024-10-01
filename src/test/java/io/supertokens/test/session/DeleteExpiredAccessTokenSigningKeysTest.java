@@ -81,9 +81,9 @@ public class DeleteExpiredAccessTokenSigningKeysTest {
         if (sessionStorage.getType() != STORAGE_TYPE.SQL) {
             return;
         }
-        long accessTokenValidity = Config.getConfig(process.getProcess()).getAccessTokenValidity();
+        long accessTokenValidity = Config.getConfig(process.getProcess()).getAccessTokenValidityInMillis();
         long signingKeyUpdateInterval = Config.getConfig(process.getProcess())
-                .getAccessTokenDynamicSigningKeyUpdateInterval();
+                .getAccessTokenDynamicSigningKeyUpdateIntervalInMillis();
 
         SessionSQLStorage sqlStorage = (SessionSQLStorage) sessionStorage;
         sqlStorage.startTransaction(con -> {

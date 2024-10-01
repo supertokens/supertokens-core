@@ -35,19 +35,25 @@ import java.util.Random;
 import static org.junit.Assert.assertEquals;
 
 public class TestMultitenancyAPIHelper {
-    public static JsonObject createConnectionUriDomain(Main main, TenantIdentifier sourceTenant, String connectionUriDomain, Boolean emailPasswordEnabled,
+    public static JsonObject createConnectionUriDomain(Main main, TenantIdentifier sourceTenant,
+                                                       String connectionUriDomain, Boolean emailPasswordEnabled,
                                                        Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
-                                                       JsonObject coreConfig) throws HttpResponseException, IOException {
-        return createConnectionUriDomain(main, sourceTenant, connectionUriDomain, emailPasswordEnabled, thirdPartyEnabled,
+                                                       JsonObject coreConfig)
+            throws HttpResponseException, IOException {
+        return createConnectionUriDomain(main, sourceTenant, connectionUriDomain, emailPasswordEnabled,
+                thirdPartyEnabled,
                 passwordlessEnabled, false, null, false, null, coreConfig, SemVer.v3_0);
 
     }
 
-    public static JsonObject createConnectionUriDomain(Main main, TenantIdentifier sourceTenant, String connectionUriDomain, Boolean emailPasswordEnabled,
+    public static JsonObject createConnectionUriDomain(Main main, TenantIdentifier sourceTenant,
+                                                       String connectionUriDomain, Boolean emailPasswordEnabled,
                                                        Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
                                                        boolean setFirstFactors, String[] firstFactors,
-                                                       boolean setRequiredSecondaryFactors, String[] requiredSecondaryFactors,
-                                                       JsonObject coreConfig, SemVer version) throws HttpResponseException, IOException {
+                                                       boolean setRequiredSecondaryFactors,
+                                                       String[] requiredSecondaryFactors,
+                                                       JsonObject coreConfig, SemVer version)
+            throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
         if (connectionUriDomain != null) {
             requestBody.addProperty("connectionUriDomain", connectionUriDomain);
@@ -98,7 +104,8 @@ public class TestMultitenancyAPIHelper {
         requestBody.addProperty("connectionUriDomain", connectionUriDomain);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
-                HttpRequestForTesting.getMultitenantUrl(sourceTenant, "/recipe/multitenancy/connectionuridomain/remove"),
+                HttpRequestForTesting.getMultitenantUrl(sourceTenant,
+                        "/recipe/multitenancy/connectionuridomain/remove"),
                 requestBody, 1000, 2500, null,
                 SemVer.v3_0.get(), "multitenancy");
 
@@ -106,18 +113,21 @@ public class TestMultitenancyAPIHelper {
         return response;
     }
 
-    public static JsonObject createApp(Main main, TenantIdentifier sourceTenant, String appId, Boolean emailPasswordEnabled,
+    public static JsonObject createApp(Main main, TenantIdentifier sourceTenant, String appId,
+                                       Boolean emailPasswordEnabled,
                                        Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
                                        JsonObject coreConfig) throws HttpResponseException, IOException {
         return createApp(main, sourceTenant, appId, emailPasswordEnabled, thirdPartyEnabled, passwordlessEnabled,
                 false, null, false, null, coreConfig, SemVer.v3_0);
     }
 
-        public static JsonObject createApp(Main main, TenantIdentifier sourceTenant, String appId, Boolean emailPasswordEnabled,
+    public static JsonObject createApp(Main main, TenantIdentifier sourceTenant, String appId,
+                                       Boolean emailPasswordEnabled,
                                        Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
                                        boolean setFirstFactors, String[] firstFactors,
                                        boolean setRequiredSecondaryFactors, String[] requiredSecondaryFactors,
-                                       JsonObject coreConfig, SemVer version) throws HttpResponseException, IOException {
+                                       JsonObject coreConfig, SemVer version)
+            throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("appId", appId);
         if (emailPasswordEnabled != null) {
@@ -171,18 +181,21 @@ public class TestMultitenancyAPIHelper {
         return response;
     }
 
-    public static JsonObject createTenant(Main main, TenantIdentifier sourceTenant, String tenantId, Boolean emailPasswordEnabled,
+    public static JsonObject createTenant(Main main, TenantIdentifier sourceTenant, String tenantId,
+                                          Boolean emailPasswordEnabled,
                                           Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
                                           JsonObject coreConfig) throws HttpResponseException, IOException {
         return createTenant(main, sourceTenant, tenantId, emailPasswordEnabled, thirdPartyEnabled, passwordlessEnabled,
                 false, null, false, null, coreConfig, SemVer.v3_0);
     }
 
-    public static JsonObject createTenant(Main main, TenantIdentifier sourceTenant, String tenantId, Boolean emailPasswordEnabled,
+    public static JsonObject createTenant(Main main, TenantIdentifier sourceTenant, String tenantId,
+                                          Boolean emailPasswordEnabled,
                                           Boolean thirdPartyEnabled, Boolean passwordlessEnabled,
                                           boolean setFirstFactors, String[] firstFactors,
                                           boolean setRequiredSecondaryFactors, String[] requiredSecondaryFactors,
-                                          JsonObject coreConfig, SemVer version) throws HttpResponseException, IOException {
+                                          JsonObject coreConfig, SemVer version)
+            throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("tenantId", tenantId);
         if (emailPasswordEnabled != null) {
@@ -281,12 +294,15 @@ public class TestMultitenancyAPIHelper {
         return response;
     }
 
-    public static JsonObject addOrUpdateThirdPartyProviderConfig(TenantIdentifier tenantIdentifier, ThirdPartyConfig.Provider provider, Main main)
+    public static JsonObject addOrUpdateThirdPartyProviderConfig(TenantIdentifier tenantIdentifier,
+                                                                 ThirdPartyConfig.Provider provider, Main main)
             throws HttpResponseException, IOException {
         return addOrUpdateThirdPartyProviderConfig(tenantIdentifier, provider, false, main);
     }
 
-    public static JsonObject addOrUpdateThirdPartyProviderConfig(TenantIdentifier tenantIdentifier, ThirdPartyConfig.Provider provider, boolean skipValidation, Main main)
+    public static JsonObject addOrUpdateThirdPartyProviderConfig(TenantIdentifier tenantIdentifier,
+                                                                 ThirdPartyConfig.Provider provider,
+                                                                 boolean skipValidation, Main main)
             throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
         JsonObject tpConfig = provider.toJson();
@@ -308,7 +324,8 @@ public class TestMultitenancyAPIHelper {
         requestBody.addProperty("thirdPartyId", thirdPartyId);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
-                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/multitenancy/config/thirdparty/remove"),
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier,
+                        "/recipe/multitenancy/config/thirdparty/remove"),
                 requestBody, 1000, 2500, null,
                 SemVer.v3_0.get(), "multitenancy");
 
@@ -316,7 +333,8 @@ public class TestMultitenancyAPIHelper {
         return response;
     }
 
-    public static JsonObject listUsers(TenantIdentifier sourceTenant, String paginationToken, String limit, String includeRecipeIds, Main main)
+    public static JsonObject listUsers(TenantIdentifier sourceTenant, String paginationToken, String limit,
+                                       String includeRecipeIds, Main main)
             throws HttpResponseException, IOException {
         Map<String, String> params = new HashMap<>();
         if (paginationToken != null) {
@@ -347,7 +365,8 @@ public class TestMultitenancyAPIHelper {
         return signUpResponse.getAsJsonObject("user");
     }
 
-    public static JsonObject epSignUpAndGetResponse(TenantIdentifier tenantIdentifier, String email, String password, Main main, SemVer version)
+    public static JsonObject epSignUpAndGetResponse(TenantIdentifier tenantIdentifier, String email, String password,
+                                                    Main main, SemVer version)
             throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("email", email);
@@ -359,7 +378,8 @@ public class TestMultitenancyAPIHelper {
         return signUpResponse;
     }
 
-    public static JsonObject epSignInAndGetResponse(TenantIdentifier tenantIdentifier, String email, String password, Main main, SemVer version)
+    public static JsonObject epSignInAndGetResponse(TenantIdentifier tenantIdentifier, String email, String password,
+                                                    Main main, SemVer version)
             throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("email", email);
@@ -371,7 +391,8 @@ public class TestMultitenancyAPIHelper {
         return signUpResponse;
     }
 
-    public static JsonObject tpSignInUp(TenantIdentifier tenantIdentifier, String thirdPartyId, String thirdPartyUserId, String email, Main main)
+    public static JsonObject tpSignInUp(TenantIdentifier tenantIdentifier, String thirdPartyId, String thirdPartyUserId,
+                                        String email, Main main)
             throws HttpResponseException, IOException {
         JsonObject emailObject = new JsonObject();
         emailObject.addProperty("id", email);
@@ -381,14 +402,16 @@ public class TestMultitenancyAPIHelper {
         signUpRequestBody.addProperty("thirdPartyUserId", thirdPartyUserId);
         signUpRequestBody.add("email", emailObject);
 
-        JsonObject response = tpSignInUpAndGetResponse(tenantIdentifier, thirdPartyId, thirdPartyUserId, email, main, SemVer.v3_0);
+        JsonObject response = tpSignInUpAndGetResponse(tenantIdentifier, thirdPartyId, thirdPartyUserId, email, main,
+                SemVer.v3_0);
         assertEquals("OK", response.get("status").getAsString());
         assertEquals(3, response.entrySet().size());
 
         return response.get("user").getAsJsonObject();
     }
 
-    public static JsonObject tpSignInUpAndGetResponse(TenantIdentifier tenantIdentifier, String thirdPartyId, String thirdPartyUserId, String email, Main main, SemVer version)
+    public static JsonObject tpSignInUpAndGetResponse(TenantIdentifier tenantIdentifier, String thirdPartyId,
+                                                      String thirdPartyUserId, String email, Main main, SemVer version)
             throws HttpResponseException, IOException {
         JsonObject emailObject = new JsonObject();
         emailObject.addProperty("id", email);
@@ -423,7 +446,8 @@ public class TestMultitenancyAPIHelper {
         return createCodeWithEmail(tenantIdentifier, email, main, SemVer.v3_0);
     }
 
-    private static JsonObject createCodeWithEmail(TenantIdentifier tenantIdentifier, String email, Main main, SemVer version)
+    private static JsonObject createCodeWithEmail(TenantIdentifier tenantIdentifier, String email, Main main,
+                                                  SemVer version)
             throws HttpResponseException, IOException {
         String exampleCode = generateRandomString(6);
         JsonObject createCodeRequestBody = new JsonObject();
@@ -454,13 +478,15 @@ public class TestMultitenancyAPIHelper {
         consumeCodeRequestBody.addProperty("preAuthSessionId", preAuthSessionId);
         consumeCodeRequestBody.addProperty("userInputCode", userInputCode);
 
-        JsonObject response = consumeCodeAndGetResponse(tenantIdentifier, deviceId, preAuthSessionId, userInputCode, main, version);
+        JsonObject response = consumeCodeAndGetResponse(tenantIdentifier, deviceId, preAuthSessionId, userInputCode,
+                main, version);
         assertEquals("OK", response.get("status").getAsString());
         return response.get("user").getAsJsonObject();
     }
 
-    private static JsonObject consumeCodeAndGetResponse(TenantIdentifier tenantIdentifier, String deviceId, String preAuthSessionId,
-                                          String userInputCode, Main main, SemVer version)
+    private static JsonObject consumeCodeAndGetResponse(TenantIdentifier tenantIdentifier, String deviceId,
+                                                        String preAuthSessionId,
+                                                        String userInputCode, Main main, SemVer version)
             throws HttpResponseException, IOException {
         JsonObject consumeCodeRequestBody = new JsonObject();
         consumeCodeRequestBody.addProperty("deviceId", deviceId);
@@ -489,19 +515,24 @@ public class TestMultitenancyAPIHelper {
     public static JsonObject plSignInUpEmail(TenantIdentifier tenantIdentifier, String email, Main main)
             throws HttpResponseException, IOException {
         JsonObject code = createCodeWithEmail(tenantIdentifier, email, main);
-        return consumeCode(tenantIdentifier, code.get("deviceId").getAsString(), code.get("preAuthSessionId").getAsString(), code.get("userInputCode").getAsString(), main);
+        return consumeCode(tenantIdentifier, code.get("deviceId").getAsString(),
+                code.get("preAuthSessionId").getAsString(), code.get("userInputCode").getAsString(), main);
     }
 
-    public static JsonObject plSignInUpWithEmailOTP(TenantIdentifier tenantIdentifier, String email, Main main, SemVer version)
+    public static JsonObject plSignInUpWithEmailOTP(TenantIdentifier tenantIdentifier, String email, Main main,
+                                                    SemVer version)
             throws HttpResponseException, IOException {
         JsonObject code = createCodeWithEmail(tenantIdentifier, email, main, version);
-        return consumeCodeAndGetResponse(tenantIdentifier, code.get("deviceId").getAsString(), code.get("preAuthSessionId").getAsString(), code.get("userInputCode").getAsString(), main, version);
+        return consumeCodeAndGetResponse(tenantIdentifier, code.get("deviceId").getAsString(),
+                code.get("preAuthSessionId").getAsString(), code.get("userInputCode").getAsString(), main, version);
     }
 
-    public static JsonObject plSignInUpWithEmailLink(TenantIdentifier tenantIdentifier, String email, Main main, SemVer version)
+    public static JsonObject plSignInUpWithEmailLink(TenantIdentifier tenantIdentifier, String email, Main main,
+                                                     SemVer version)
             throws HttpResponseException, IOException {
         JsonObject code = createCodeWithEmail(tenantIdentifier, email, main, version);
-        return consumeCodeAndGetResponse(tenantIdentifier, code.get("preAuthSessionId").getAsString(), code.get("linkCode").getAsString(), main, version);
+        return consumeCodeAndGetResponse(tenantIdentifier, code.get("preAuthSessionId").getAsString(),
+                code.get("linkCode").getAsString(), main, version);
     }
 
     private static JsonObject createCodeWithNumber(TenantIdentifier tenantIdentifier, String phoneNumber, Main main)
@@ -509,7 +540,8 @@ public class TestMultitenancyAPIHelper {
         return createCodeWithNumber(tenantIdentifier, phoneNumber, main, SemVer.v3_0);
     }
 
-    private static JsonObject createCodeWithNumber(TenantIdentifier tenantIdentifier, String phoneNumber, Main main, SemVer version)
+    private static JsonObject createCodeWithNumber(TenantIdentifier tenantIdentifier, String phoneNumber, Main main,
+                                                   SemVer version)
             throws HttpResponseException, IOException {
         JsonObject createCodeRequestBody = new JsonObject();
         createCodeRequestBody.addProperty("phoneNumber", phoneNumber);
@@ -528,19 +560,24 @@ public class TestMultitenancyAPIHelper {
     public static JsonObject plSignInUpNumber(TenantIdentifier tenantIdentifier, String phoneNumber, Main main)
             throws HttpResponseException, IOException {
         JsonObject code = createCodeWithNumber(tenantIdentifier, phoneNumber, main);
-        return consumeCode(tenantIdentifier, code.get("deviceId").getAsString(), code.get("preAuthSessionId").getAsString(), code.get("userInputCode").getAsString(), main);
+        return consumeCode(tenantIdentifier, code.get("deviceId").getAsString(),
+                code.get("preAuthSessionId").getAsString(), code.get("userInputCode").getAsString(), main);
     }
 
-    public static JsonObject plSignInUpWithPhoneOTP(TenantIdentifier tenantIdentifier, String phoneNumber, Main main, SemVer version)
+    public static JsonObject plSignInUpWithPhoneOTP(TenantIdentifier tenantIdentifier, String phoneNumber, Main main,
+                                                    SemVer version)
             throws HttpResponseException, IOException {
         JsonObject code = createCodeWithNumber(tenantIdentifier, phoneNumber, main, version);
-        return consumeCodeAndGetResponse(tenantIdentifier, code.get("deviceId").getAsString(), code.get("preAuthSessionId").getAsString(), code.get("userInputCode").getAsString(), main, version);
+        return consumeCodeAndGetResponse(tenantIdentifier, code.get("deviceId").getAsString(),
+                code.get("preAuthSessionId").getAsString(), code.get("userInputCode").getAsString(), main, version);
     }
 
-    public static JsonObject plSignInUpWithPhoneLink(TenantIdentifier tenantIdentifier, String phoneNumber, Main main, SemVer version)
+    public static JsonObject plSignInUpWithPhoneLink(TenantIdentifier tenantIdentifier, String phoneNumber, Main main,
+                                                     SemVer version)
             throws HttpResponseException, IOException {
         JsonObject code = createCodeWithNumber(tenantIdentifier, phoneNumber, main, version);
-        return consumeCodeAndGetResponse(tenantIdentifier, code.get("preAuthSessionId").getAsString(), code.get("linkCode").getAsString(), main, version);
+        return consumeCodeAndGetResponse(tenantIdentifier, code.get("preAuthSessionId").getAsString(),
+                code.get("linkCode").getAsString(), main, version);
     }
 
     public static void addLicense(String licenseKey, Main main) throws HttpResponseException, IOException {
@@ -574,7 +611,8 @@ public class TestMultitenancyAPIHelper {
         return userResponse.getAsJsonObject("user");
     }
 
-    public static void createUserIdMapping(TenantIdentifier tenantIdentifier, String supertokensUserId, String externalUserId, Main main)
+    public static void createUserIdMapping(TenantIdentifier tenantIdentifier, String supertokensUserId,
+                                           String externalUserId, Main main)
             throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("superTokensUserId", supertokensUserId);
@@ -599,7 +637,7 @@ public class TestMultitenancyAPIHelper {
     }
 
     public static JsonObject updateUserMetadata(TenantIdentifier tenantIdentifier, String userId, JsonObject metadata,
-                                        Main main)
+                                                Main main)
             throws HttpResponseException, IOException {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("userId", userId);
@@ -641,7 +679,8 @@ public class TestMultitenancyAPIHelper {
         requestBody.addProperty("userId", userId);
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
-                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier,"/recipe/user/role"), requestBody, 1000, 1000, null,
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user/role"), requestBody, 1000, 1000,
+                null,
                 WebserverAPI.getLatestCDIVersion().get(), "userroles");
 
         assertEquals(2, response.entrySet().size());
@@ -653,7 +692,8 @@ public class TestMultitenancyAPIHelper {
         HashMap<String, String> QUERY_PARAMS = new HashMap<>();
         QUERY_PARAMS.put("userId", userId);
         JsonObject response = HttpRequestForTesting.sendGETRequest(main, "",
-                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier,"/recipe/user/roles"), QUERY_PARAMS, 1000, 1000, null,
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user/roles"), QUERY_PARAMS, 1000,
+                1000, null,
                 WebserverAPI.getLatestCDIVersion().get(), "userroles");
         return response;
     }
@@ -664,7 +704,8 @@ public class TestMultitenancyAPIHelper {
         request.addProperty("role", role);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
-                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier,"/recipe/role/remove"), request, 1000, 1000, null,
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/role/remove"), request, 1000, 1000,
+                null,
                 WebserverAPI.getLatestCDIVersion().get(), "userroles");
         assertEquals(2, response.entrySet().size());
         assertEquals("OK", response.get("status").getAsString());
@@ -677,7 +718,7 @@ public class TestMultitenancyAPIHelper {
         requestBody.addProperty("email", email);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
-                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier,"/recipe/user/email/verify/token"),
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user/email/verify/token"),
                 requestBody, 1000, 1000, null,
                 WebserverAPI.getLatestCDIVersion().get(), "emailverification");
 
@@ -689,7 +730,8 @@ public class TestMultitenancyAPIHelper {
         verifyResponseBody.addProperty("token", response.get("token").getAsString());
 
         JsonObject response2 = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
-                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user/email/verify"), verifyResponseBody, 1000, 1000, null,
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user/email/verify"),
+                verifyResponseBody, 1000, 1000, null,
                 WebserverAPI.getLatestCDIVersion().get(), "emailverification");
 
         assertEquals(response2.entrySet().size(), 3);
@@ -703,7 +745,8 @@ public class TestMultitenancyAPIHelper {
         body.addProperty("email", email);
 
         HttpRequestForTesting.sendJsonPOSTRequest(main, "",
-                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier,"/recipe/user/email/verify/remove"), body, 1000, 1000, null,
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user/email/verify/remove"), body,
+                1000, 1000, null,
                 WebserverAPI.getLatestCDIVersion().get(), RECIPE_ID.EMAIL_VERIFICATION.toString());
     }
 }

@@ -39,6 +39,7 @@ import io.supertokens.signingkeys.JWTSigningKey;
 import io.supertokens.signingkeys.SigningKeys;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
+import io.supertokens.utils.SemVer;
 
 import java.io.IOException;
 import java.util.*;
@@ -85,7 +86,8 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
                 Multitenancy.addNewOrUpdateAppOrTenant(main,
                         new TenantConfig(
                                 new TenantIdentifier(null, null, null),
-                                new EmailPasswordConfig(true), new ThirdPartyConfig(true, null),
+                                new EmailPasswordConfig(true),
+                                new ThirdPartyConfig(true, null),
                                 new PasswordlessConfig(true),
                                 null, null, new JsonObject()), false, false, false);
                 // Not force reloading all resources here (the last boolean in the function above)
@@ -124,11 +126,11 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
 
                     Map<ResourceDistributor.KeyClass, JsonObject> normalizedTenantsFromDb =
                             Config.getNormalisedConfigsForAllTenants(
-                            filteredTenantsFromDb, Config.getBaseConfigAsJsonObject(main));
+                                    filteredTenantsFromDb, Config.getBaseConfigAsJsonObject(main));
 
                     Map<ResourceDistributor.KeyClass, JsonObject> normalizedTenantsFromMemory =
                             Config.getNormalisedConfigsForAllTenants(
-                            this.tenantConfigs, Config.getBaseConfigAsJsonObject(main));
+                                    this.tenantConfigs, Config.getBaseConfigAsJsonObject(main));
 
                     List<TenantIdentifier> tenantsThatChanged = new ArrayList<>();
 
@@ -266,11 +268,42 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
 
         return Arrays.stream(inputTenantConfigs)
                 .filter(tenantConfig -> tenantConfig.tenantIdentifier.getConnectionUriDomain().equals(loadOnlyCUD)
-                        || tenantConfig.tenantIdentifier.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI))
+                        || tenantConfig.tenantIdentifier.getConnectionUriDomain()
+                        .equals(TenantIdentifier.DEFAULT_CONNECTION_URI))
                 .toArray(TenantConfig[]::new);
     }
 
     public boolean isConnectionUriDomainPresentInDb(String cud) {
         return this.dangerous_allCUDsFromDb.contains(cud);
+    }
+
+    public static boolean isEmailPasswordEnabled(TenantConfig tenantConfig, SemVer version) {
+        if (version.greaterThanOrEqualTo(SemVer.v5_1)) {
+            return true;
+        } else if (version.greaterThanOrEqualTo(SemVer.v5_0)) {
+            return tenantConfig.emailPasswordConfig.isEnabledIn5_0(tenantConfig.firstFactors);
+        } else {
+            return tenantConfig.emailPasswordConfig.isEnabledInLesserThanOrEqualTo4_0(tenantConfig.firstFactors);
+        }
+    }
+
+    public static boolean isThirdPartyEnabled(TenantConfig tenantConfig, SemVer version) {
+        if (version.greaterThanOrEqualTo(SemVer.v5_1)) {
+            return true;
+        } else if (version.greaterThanOrEqualTo(SemVer.v5_0)) {
+            return tenantConfig.thirdPartyConfig.isEnabledIn5_0(tenantConfig.firstFactors);
+        } else {
+            return tenantConfig.thirdPartyConfig.isEnabledInLesserThanOrEqualTo4_0(tenantConfig.firstFactors);
+        }
+    }
+
+    public static boolean isPasswordlessEnabled(TenantConfig tenantConfig, SemVer version) {
+        if (version.greaterThanOrEqualTo(SemVer.v5_1)) {
+            return true;
+        } else if (version.greaterThanOrEqualTo(SemVer.v5_0)) {
+            return tenantConfig.passwordlessConfig.isEnabledIn5_0(tenantConfig.firstFactors);
+        } else {
+            return tenantConfig.passwordlessConfig.isEnabledInLesserThanOrEqualTo4_0(tenantConfig.firstFactors);
+        }
     }
 }

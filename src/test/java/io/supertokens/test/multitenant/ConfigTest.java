@@ -89,7 +89,7 @@ public class ConfigTest {
 
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LOADING_ALL_TENANT_CONFIG));
 
-        Assert.assertEquals(Config.getConfig(process.getProcess()).getRefreshTokenValidity(),
+        Assert.assertEquals(Config.getConfig(process.getProcess()).getRefreshTokenValidityInMillis(),
                 (long) 144001 * 60 * 1000);
         Assert.assertEquals(Config.getConfig(process.getProcess()).getAccessTokenSigningKeyDynamic(),
                 false);
@@ -159,7 +159,7 @@ public class ConfigTest {
                         new PasswordlessConfig(false),
                         null, null, tenantConfig)}, new ArrayList<>());
 
-        Assert.assertEquals(Config.getConfig(process.getProcess()).getRefreshTokenValidity(),
+        Assert.assertEquals(Config.getConfig(process.getProcess()).getRefreshTokenValidityInMillis(),
                 (long) 144001 * 60 * 1000);
         Assert.assertEquals(Config.getConfig(process.getProcess()).getPasswordResetTokenLifetime(),
                 3600000);
@@ -169,7 +169,7 @@ public class ConfigTest {
                 false);
 
         Assert.assertEquals(Config.getConfig(new TenantIdentifier("abc", null, null), process.getProcess())
-                        .getRefreshTokenValidity(),
+                        .getRefreshTokenValidityInMillis(),
                 (long) 144002 * 60 * 1000);
         Assert.assertEquals(Config.getConfig(new TenantIdentifier("abc", null, null), process.getProcess())
                         .getPasswordResetTokenLifetime(),
@@ -690,7 +690,8 @@ public class ConfigTest {
             );
             fail();
         } catch (BadPermissionException e) {
-            assertEquals("You must use the default or same connectionUriDomain to create/update a connectionUriDomain", e.getMessage());
+            assertEquals("You must use the default or same connectionUriDomain to create/update a connectionUriDomain",
+                    e.getMessage());
         }
 
         try {
@@ -1123,13 +1124,13 @@ public class ConfigTest {
 
                     CoreConfig coreConfig = Config.getConfig(tenantIdentifier, process.getProcess());
                     // Check for previous value in the hierarchy
-                    assertEquals((i+1) * 1000, coreConfig.getEmailVerificationTokenLifetime());
+                    assertEquals((i + 1) * 1000, coreConfig.getEmailVerificationTokenLifetime());
 
                 }
 
                 { // set a new value and test that it works
                     JsonObject coreConfigJson = new JsonObject();
-                    coreConfigJson.addProperty("email_verification_token_lifetime", (i+2) * 1000);
+                    coreConfigJson.addProperty("email_verification_token_lifetime", (i + 2) * 1000);
                     StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
                             .modifyConfigToAddANewUserPoolForTesting(coreConfigJson, 1);
 
@@ -1142,7 +1143,7 @@ public class ConfigTest {
                     ), false);
 
                     CoreConfig coreConfig2 = Config.getConfig(tenantIdentifier, process.getProcess());
-                    assertEquals((i+2) * 1000, coreConfig2.getEmailVerificationTokenLifetime());
+                    assertEquals((i + 2) * 1000, coreConfig2.getEmailVerificationTokenLifetime());
                 }
             }
 
@@ -1431,13 +1432,14 @@ public class ConfigTest {
                     new ThirdPartyConfig(true, null),
                     new PasswordlessConfig(true),
                     null, null, coreConfig
-            ), false);Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
-                t1,
-                new EmailPasswordConfig(true),
-                new ThirdPartyConfig(true, null),
-                new PasswordlessConfig(true),
-                null, null, coreConfig
-        ), false);
+            ), false);
+            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(
+                    t1,
+                    new EmailPasswordConfig(true),
+                    new ThirdPartyConfig(true, null),
+                    new PasswordlessConfig(true),
+                    null, null, coreConfig
+            ), false);
 
             assertNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.TENANTS_CHANGED_DURING_REFRESH_FROM_DB));
 
@@ -1652,7 +1654,8 @@ public class ConfigTest {
         {
             ProcessState.getInstance(process.getProcess()).clear();
 
-            AccessTokenSigningKey accessTokenSigningKeyBefore = AccessTokenSigningKey.getInstance(t1, process.getProcess());
+            AccessTokenSigningKey accessTokenSigningKeyBefore = AccessTokenSigningKey.getInstance(t1,
+                    process.getProcess());
             RefreshTokenKey refreshTokenKeyBefore = RefreshTokenKey.getInstance(t1, process.getProcess());
             JWTSigningKey jwtSigningKeyBefore = JWTSigningKey.getInstance(t1, process.getProcess());
             SigningKeys signingKeysBefore = SigningKeys.getInstance(t1, process.getProcess());
@@ -1668,7 +1671,8 @@ public class ConfigTest {
 
             assertNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.TENANTS_CHANGED_DURING_REFRESH_FROM_DB));
 
-            AccessTokenSigningKey accessTokenSigningKeyAfter = AccessTokenSigningKey.getInstance(t1, process.getProcess());
+            AccessTokenSigningKey accessTokenSigningKeyAfter = AccessTokenSigningKey.getInstance(t1,
+                    process.getProcess());
             RefreshTokenKey refreshTokenKeyAfter = RefreshTokenKey.getInstance(t1, process.getProcess());
             JWTSigningKey jwtSigningKeyAfter = JWTSigningKey.getInstance(t1, process.getProcess());
             SigningKeys signingKeysAfter = SigningKeys.getInstance(t1, process.getProcess());
@@ -1680,7 +1684,8 @@ public class ConfigTest {
         }
 
         {
-            AccessTokenSigningKey accessTokenSigningKeyBefore = AccessTokenSigningKey.getInstance(t1, process.getProcess());
+            AccessTokenSigningKey accessTokenSigningKeyBefore = AccessTokenSigningKey.getInstance(t1,
+                    process.getProcess());
             RefreshTokenKey refreshTokenKeyBefore = RefreshTokenKey.getInstance(t1, process.getProcess());
             JWTSigningKey jwtSigningKeyBefore = JWTSigningKey.getInstance(t1, process.getProcess());
             SigningKeys signingKeysBefore = SigningKeys.getInstance(t1, process.getProcess());
@@ -1695,7 +1700,8 @@ public class ConfigTest {
                     null, null, coreConfig
             ), false);
 
-            AccessTokenSigningKey accessTokenSigningKeyAfter = AccessTokenSigningKey.getInstance(t1, process.getProcess());
+            AccessTokenSigningKey accessTokenSigningKeyAfter = AccessTokenSigningKey.getInstance(t1,
+                    process.getProcess());
             RefreshTokenKey refreshTokenKeyAfter = RefreshTokenKey.getInstance(t1, process.getProcess());
             JWTSigningKey jwtSigningKeyAfter = JWTSigningKey.getInstance(t1, process.getProcess());
             SigningKeys signingKeysAfter = SigningKeys.getInstance(t1, process.getProcess());
@@ -1781,15 +1787,18 @@ public class ConfigTest {
 
         assertEquals(
                 300,
-                Config.getConfig(new TenantIdentifier(null, "a2", null), process.getProcess()).getEmailVerificationTokenLifetime()
+                Config.getConfig(new TenantIdentifier(null, "a2", null), process.getProcess())
+                        .getEmailVerificationTokenLifetime()
         );
         assertEquals(
                 400,
-                Config.getConfig(new TenantIdentifier(null, "a2", "t1"), process.getProcess()).getEmailVerificationTokenLifetime()
+                Config.getConfig(new TenantIdentifier(null, "a2", "t1"), process.getProcess())
+                        .getEmailVerificationTokenLifetime()
         );
         assertEquals(
                 100,
-                Config.getConfig(new TenantIdentifier(null, "a1", null), process.getProcess()).getEmailVerificationTokenLifetime()
+                Config.getConfig(new TenantIdentifier(null, "a1", null), process.getProcess())
+                        .getEmailVerificationTokenLifetime()
         );
 
         process.kill();
@@ -1937,7 +1946,7 @@ public class ConfigTest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
-        for (int i=0; i<disallowed.length; i++) {
+        for (int i = 0; i < disallowed.length; i++) {
             process = TestingProcessManager.start(args, false);
             FeatureFlagTestContent.getInstance(process.getProcess())
                     .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
@@ -1996,11 +2005,12 @@ public class ConfigTest {
                 new Object[]{"abcd1234abcd1234abcd1234abcd1234", "qwer1234qwer1234qwer1234qwer1234"}, // api_keys
                 new Object[]{true, false}, // disable_telemetry
                 new Object[]{"BCRYPT", "ARGON2"}, // password_hashing_alg
-                new Object[]{"abcd1234abcd1234abcd1234abcd1234", "qwer1234qwer1234qwer1234qwer1234"}, // firebase_password_hashing_signer_key
+                new Object[]{"abcd1234abcd1234abcd1234abcd1234", "qwer1234qwer1234qwer1234qwer1234"},
+                // firebase_password_hashing_signer_key
                 new Object[]{"2.21", "3.0"}, // supertokens_max_cdi_version
         };
 
-        for (int i=0; i<conflictingInSameUserPool.length; i++) {
+        for (int i = 0; i < conflictingInSameUserPool.length; i++) {
             process = TestingProcessManager.start(args, false);
             FeatureFlagTestContent.getInstance(process.getProcess())
                     .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
@@ -2068,7 +2078,8 @@ public class ConfigTest {
                 continue;
             }
 
-            if (!(field.isAnnotationPresent(ConfigYamlOnly.class) || field.isAnnotationPresent(NotConflictingInApp.class))) {
+            if (!(field.isAnnotationPresent(ConfigYamlOnly.class) ||
+                    field.isAnnotationPresent(NotConflictingInApp.class))) {
                 fail(field.getName() + " does not have ConfigYamlOnly or NotConflictingInApp annotation");
             }
         }

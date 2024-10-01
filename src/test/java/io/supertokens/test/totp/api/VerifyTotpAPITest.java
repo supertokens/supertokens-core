@@ -90,7 +90,7 @@ public class VerifyTotpAPITest {
 
     @Test
     public void testApi() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         // Trigger rate limiting on 1 wrong attempts:
         Utils.setValueInConfig("totp_max_attempts", "2");
@@ -184,6 +184,12 @@ public class VerifyTotpAPITest {
 
             // test totp of length 8:
             body.addProperty("totp", "12345678");
+            verifyTotpRequestThatReturnsInvalidCode(process, body);
+
+            Thread.sleep(1100);
+
+            // test totp of more than length 8:
+            body.addProperty("totp", "123456781234");
             verifyTotpRequestThatReturnsInvalidCode(process, body);
 
             Thread.sleep(1100);

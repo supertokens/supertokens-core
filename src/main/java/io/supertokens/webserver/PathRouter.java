@@ -35,7 +35,7 @@ public class PathRouter extends WebserverAPI {
     }
 
     public void addAPI(WebserverAPI newApi) {
-        this.apis.add(newApi);
+        this.apis.add(0, newApi); // add to the front so that the most recent API is checked first
         for (WebserverAPI api : this.apis) {
             for (WebserverAPI api2 : this.apis) {
                 if (api != api2 && api.getPath().equals(api2.getPath())) {
@@ -82,9 +82,23 @@ public class PathRouter extends WebserverAPI {
                 apiPath = "/" + apiPath;
             }
 
-            String tenantIdStopWords = String.join("|", Utils.INVALID_WORDS_FOR_TENANTID);
-            if (requestPath.matches("^(/appid-[a-z0-9-]*)?(/(?!" + tenantIdStopWords + ")[a-z0-9-]+)?" + apiPath + "/?$")) {
-                return api;
+            if (apiPath.endsWith("/")) {
+                apiPath = apiPath.substring(0, apiPath.length() - 1);
+            }
+
+            if (apiPath.isBlank()) {
+                String tenantIdStopWords = String.join("$|", Utils.INVALID_WORDS_FOR_TENANTID) + "$"; // Adds an end of string for each entry
+                tenantIdStopWords += "|" + String.join("/|", Utils.INVALID_WORDS_FOR_TENANTID) + "/"; // Adds a trailing slash for each entry
+                if (requestPath.matches(
+                        "^(/appid-[a-z0-9-]*)?(/(?!" + tenantIdStopWords + ")[a-z0-9-]+)?" + "/?$")) {
+                    return api;
+                }
+            } else {
+                String tenantIdStopWords = String.join("/|", Utils.INVALID_WORDS_FOR_TENANTID) + "/"; // Adds a trailing slash for each entry
+                if (requestPath.matches(
+                        "^(/appid-[a-z0-9-]*)?(/(?!" + tenantIdStopWords + ")[a-z0-9-]+)?" + apiPath + "/?$")) {
+                    return api;
+                }
             }
         }
         for (WebserverAPI api : this.apis) {

@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 
+@Deprecated
 public class CreateOrUpdateAppAPI extends BaseCreateOrUpdate {
 
     private static final long serialVersionUID = -4641988458637882374L;
@@ -53,40 +54,6 @@ public class CreateOrUpdateAppAPI extends BaseCreateOrUpdate {
         if (appId != null) {
             appId = Utils.normalizeAndValidateAppId(appId);
         }
-        Boolean emailPasswordEnabled = InputParser.parseBooleanOrThrowError(input, "emailPasswordEnabled", true);
-        Boolean thirdPartyEnabled = InputParser.parseBooleanOrThrowError(input, "thirdPartyEnabled", true);
-        Boolean passwordlessEnabled = InputParser.parseBooleanOrThrowError(input, "passwordlessEnabled", true);
-        JsonObject coreConfig = InputParser.parseJsonObjectOrThrowError(input, "coreConfig", true);
-
-        String[] firstFactors = null;
-        boolean hasFirstFactors = false;
-        String[] requiredSecondaryFactors = null;
-        boolean hasRequiredSecondaryFactors = false;
-
-        if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_0)) {
-            hasFirstFactors = input.has("firstFactors");
-            if (hasFirstFactors && !input.get("firstFactors").isJsonNull()) {
-                JsonArray firstFactorsArr = InputParser.parseArrayOrThrowError(input, "firstFactors", true);
-                firstFactors = new String[firstFactorsArr.size()];
-                for (int i = 0; i < firstFactors.length; i++) {
-                    firstFactors[i] = InputParser.parseStringFromElementOrThrowError(firstFactorsArr.get(i), "firstFactors", false);
-                }
-                if (firstFactors.length != new HashSet<>(Arrays.asList(firstFactors)).size()) {
-                    throw new ServletException(new BadRequestException("firstFactors input should not contain duplicate values"));
-                }
-            }
-            hasRequiredSecondaryFactors = input.has("requiredSecondaryFactors");
-            if (hasRequiredSecondaryFactors && !input.get("requiredSecondaryFactors").isJsonNull()) {
-                JsonArray requiredSecondaryFactorsArr = InputParser.parseArrayOrThrowError(input, "requiredSecondaryFactors", true);
-                requiredSecondaryFactors = new String[requiredSecondaryFactorsArr.size()];
-                for (int i = 0; i < requiredSecondaryFactors.length; i++) {
-                    requiredSecondaryFactors[i] = InputParser.parseStringFromElementOrThrowError(requiredSecondaryFactorsArr.get(i), "requiredSecondaryFactors", false);
-                }
-                if (requiredSecondaryFactors.length != new HashSet<>(Arrays.asList(requiredSecondaryFactors)).size()) {
-                    throw new ServletException(new BadRequestException("requiredSecondaryFactors input should not contain duplicate values"));
-                }
-            }
-        }
 
         TenantIdentifier sourceTenantIdentifier;
 
@@ -97,11 +64,9 @@ public class CreateOrUpdateAppAPI extends BaseCreateOrUpdate {
         }
 
         super.handle(
-                req, sourceTenantIdentifier,
+                req, resp, sourceTenantIdentifier,
                 new TenantIdentifier(sourceTenantIdentifier.getConnectionUriDomain(), appId, null),
-                emailPasswordEnabled, thirdPartyEnabled, passwordlessEnabled,
-                hasFirstFactors, firstFactors, hasRequiredSecondaryFactors, requiredSecondaryFactors,
-                coreConfig, resp);
+                input, false);
 
     }
 }

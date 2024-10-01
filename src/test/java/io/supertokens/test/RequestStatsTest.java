@@ -77,7 +77,8 @@ public class RequestStatsTest {
             int finalI = i;
             ex.execute(() -> {
                 try {
-                    TestMultitenancyAPIHelper.epSignUp(TenantIdentifier.BASE_TENANT, "test" + finalI + "@example.com", "password", process.getProcess());
+                    TestMultitenancyAPIHelper.epSignUp(TenantIdentifier.BASE_TENANT, "test" + finalI + "@example.com",
+                            "password", process.getProcess());
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -159,13 +160,15 @@ public class RequestStatsTest {
             int finalI = i;
             ex.execute(() -> {
                 try {
-                    TestMultitenancyAPIHelper.epSignUp(TenantIdentifier.BASE_TENANT, "test" + finalI + "@example.com", "password", process.getProcess());
+                    TestMultitenancyAPIHelper.epSignUp(TenantIdentifier.BASE_TENANT, "test" + finalI + "@example.com",
+                            "password", process.getProcess());
                 } catch (Exception e) {
                     // ignore
                 }
                 if (finalI < 400) {
                     try {
-                        TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", null), "test" + finalI + "@example.com", "password", process.getProcess());
+                        TestMultitenancyAPIHelper.epSignUp(new TenantIdentifier(null, "a1", null),
+                                "test" + finalI + "@example.com", "password", process.getProcess());
                     } catch (Exception e) {
                         // ignore
                     }
@@ -215,7 +218,8 @@ public class RequestStatsTest {
 
         {
             JsonObject stats = HttpRequestForTesting
-                    .sendGETRequest(process.getProcess(), "", "http://localhost:3567/appid-a1/requests/stats", null, 1000,
+                    .sendGETRequest(process.getProcess(), "", "http://localhost:3567/appid-a1/requests/stats", null,
+                            1000,
                             1000, null, Utils.getCdiVersionStringLatestForTests(), null);
 
             JsonArray avgRps = stats.get("averageRequestsPerSecond").getAsJsonArray();
@@ -275,12 +279,16 @@ public class RequestStatsTest {
 
         try {
             JsonObject stats = HttpRequestForTesting
-                    .sendGETRequest(process.getProcess(), "", "http://localhost:3567/appid-a1/requests/stats", null, 1000,
+                    .sendGETRequest(process.getProcess(), "", "http://localhost:3567/appid-a1/requests/stats", null,
+                            1000,
                             1000, null, Utils.getCdiVersionStringLatestForTests(), null);
             fail();
         } catch (HttpResponseException e) {
             assertEquals(400, e.statusCode);
-            assertEquals("Http error. Status Code: 400. Message: AppId or tenantId not found => Tenant with the following connectionURIDomain, appId and tenantId combination not found: (, a1, public)", e.getMessage());
+            assertEquals(
+                    "Http error. Status Code: 400. Message: AppId or tenantId not found => Tenant with the following " +
+                            "connectionURIDomain, appId and tenantId combination not found: (, a1, public)",
+                    e.getMessage());
         }
 
         process.kill();

@@ -27,6 +27,7 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -38,6 +39,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Deprecated
 public class ListAppsAPI extends WebserverAPI {
     private static final long serialVersionUID = -4641988458637882374L;
 
@@ -76,13 +78,20 @@ public class ListAppsAPI extends WebserverAPI {
             boolean shouldProtect = shouldProtectProtectedConfig(req);
             JsonArray appsArray = new JsonArray();
             for (Map.Entry<String, List<TenantConfig>> entry : appsToTenants.entrySet()) {
-               String appId = entry.getKey();
-               JsonObject appObject = new JsonObject();
-               appObject.addProperty("appId", appId);
+                String appId = entry.getKey();
+                JsonObject appObject = new JsonObject();
+                appObject.addProperty("appId", appId);
                 JsonArray tenantsArray = new JsonArray();
                 for (TenantConfig tenantConfig : entry.getValue()) {
-                    JsonObject tenantConfigJson = tenantConfig.toJson(shouldProtect,
-                            storage, CoreConfig.PROTECTED_CONFIGS);
+                    JsonObject tenantConfigJson;
+
+                    if (getVersionFromRequest(req).lesserThan(SemVer.v5_0)) {
+                        tenantConfigJson = tenantConfig.toJsonLesserThanOrEqualTo4_0(shouldProtect, storage,
+                                CoreConfig.PROTECTED_CONFIGS);
+                    } else {
+                        tenantConfigJson = tenantConfig.toJson5_0(shouldProtect, storage, CoreConfig.PROTECTED_CONFIGS);
+                    }
+
                     tenantsArray.add(tenantConfigJson);
                 }
                 appObject.add("tenants", tenantsArray);

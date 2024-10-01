@@ -32,6 +32,7 @@ import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.storageLayer.StorageLayer;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -39,7 +40,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.reflections.Reflections;
-import org.w3c.dom.css.Counter;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -216,10 +216,12 @@ public class CronjobTest {
 
         public static PerTenantCronjob getInstance(Main main, List<List<TenantIdentifier>> tenantsInfo) {
             try {
-                return (PerTenantCronjob) main.getResourceDistributor().getResource(new TenantIdentifier(null, null, null), RESOURCE_ID);
+                return (PerTenantCronjob) main.getResourceDistributor()
+                        .getResource(new TenantIdentifier(null, null, null), RESOURCE_ID);
             } catch (TenantOrAppNotFoundException e) {
                 return (PerTenantCronjob) main.getResourceDistributor()
-                        .setResource(new TenantIdentifier(null, null, null), RESOURCE_ID, new PerTenantCronjob(main, tenantsInfo));
+                        .setResource(new TenantIdentifier(null, null, null), RESOURCE_ID,
+                                new PerTenantCronjob(main, tenantsInfo));
             }
         }
 
@@ -251,10 +253,12 @@ public class CronjobTest {
 
         public static PerAppCronjob getInstance(Main main, List<List<TenantIdentifier>> tenantsInfo) {
             try {
-                return (PerAppCronjob) main.getResourceDistributor().getResource(new TenantIdentifier(null, null, null), RESOURCE_ID);
+                return (PerAppCronjob) main.getResourceDistributor()
+                        .getResource(new TenantIdentifier(null, null, null), RESOURCE_ID);
             } catch (TenantOrAppNotFoundException e) {
                 return (PerAppCronjob) main.getResourceDistributor()
-                        .setResource(new TenantIdentifier(null, null, null), RESOURCE_ID, new PerAppCronjob(main, tenantsInfo));
+                        .setResource(new TenantIdentifier(null, null, null), RESOURCE_ID,
+                                new PerAppCronjob(main, tenantsInfo));
             }
         }
 
@@ -285,10 +289,12 @@ public class CronjobTest {
 
         public static PerUserPoolCronjob getInstance(Main main, List<List<TenantIdentifier>> tenantsInfo) {
             try {
-                return (PerUserPoolCronjob) main.getResourceDistributor().getResource(new TenantIdentifier(null, null, null), RESOURCE_ID);
+                return (PerUserPoolCronjob) main.getResourceDistributor()
+                        .getResource(new TenantIdentifier(null, null, null), RESOURCE_ID);
             } catch (TenantOrAppNotFoundException e) {
                 return (PerUserPoolCronjob) main.getResourceDistributor()
-                        .setResource(new TenantIdentifier(null, null, null), RESOURCE_ID, new PerUserPoolCronjob(main, tenantsInfo));
+                        .setResource(new TenantIdentifier(null, null, null), RESOURCE_ID,
+                                new PerUserPoolCronjob(main, tenantsInfo));
             }
         }
 
@@ -582,10 +588,12 @@ public class CronjobTest {
                 new JsonObject()
         ), false);
 
-        Cronjobs.addCronjob(process.getProcess(), TargetTenantCronjob.getInstance(process.getProcess(), new TenantIdentifier(null, "a1", "t1")));
+        Cronjobs.addCronjob(process.getProcess(),
+                TargetTenantCronjob.getInstance(process.getProcess(), new TenantIdentifier(null, "a1", "t1")));
 
         Thread.sleep(1100);
-        assertTrue(TargetTenantCronjob.getInstance(process.getProcess(), new TenantIdentifier(null, "a1", "t1")).wasCalled);
+        assertTrue(TargetTenantCronjob.getInstance(process.getProcess(),
+                new TenantIdentifier(null, "a1", "t1")).wasCalled);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -638,11 +646,14 @@ public class CronjobTest {
                 new JsonObject()
         ), false);
 
-        List<List<TenantIdentifier>> uniqueUserPoolIdsTenants = StorageLayer.getTenantsWithUniqueUserPoolId(process.getProcess());
-        Cronjobs.addCronjob(process.getProcess(), PerTenantCronjob.getInstance(process.getProcess(), uniqueUserPoolIdsTenants));
+        List<List<TenantIdentifier>> uniqueUserPoolIdsTenants = StorageLayer.getTenantsWithUniqueUserPoolId(
+                process.getProcess());
+        Cronjobs.addCronjob(process.getProcess(),
+                PerTenantCronjob.getInstance(process.getProcess(), uniqueUserPoolIdsTenants));
 
         Thread.sleep(1100);
-        assertEquals(5, PerTenantCronjob.getInstance(process.getProcess(), uniqueUserPoolIdsTenants).tenantIdentifiers.size());
+        assertEquals(5,
+                PerTenantCronjob.getInstance(process.getProcess(), uniqueUserPoolIdsTenants).tenantIdentifiers.size());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -695,11 +706,14 @@ public class CronjobTest {
                 new JsonObject()
         ), false);
 
-        List<List<TenantIdentifier>> uniqueUserPoolIdsTenants = StorageLayer.getTenantsWithUniqueUserPoolId(process.getProcess());
-        Cronjobs.addCronjob(process.getProcess(), PerAppCronjob.getInstance(process.getProcess(), uniqueUserPoolIdsTenants));
+        List<List<TenantIdentifier>> uniqueUserPoolIdsTenants = StorageLayer.getTenantsWithUniqueUserPoolId(
+                process.getProcess());
+        Cronjobs.addCronjob(process.getProcess(),
+                PerAppCronjob.getInstance(process.getProcess(), uniqueUserPoolIdsTenants));
 
         Thread.sleep(1100);
-        assertEquals(3, PerAppCronjob.getInstance(process.getProcess(), uniqueUserPoolIdsTenants).appIdentifiers.size());
+        assertEquals(3,
+                PerAppCronjob.getInstance(process.getProcess(), uniqueUserPoolIdsTenants).appIdentifiers.size());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -759,8 +773,10 @@ public class CronjobTest {
                 config
         ), false);
 
-        List<List<TenantIdentifier>> uniqueUserPoolIdsTenants = StorageLayer.getTenantsWithUniqueUserPoolId(process.getProcess());
-        Cronjobs.addCronjob(process.getProcess(), PerUserPoolCronjob.getInstance(process.getProcess(), uniqueUserPoolIdsTenants));
+        List<List<TenantIdentifier>> uniqueUserPoolIdsTenants = StorageLayer.getTenantsWithUniqueUserPoolId(
+                process.getProcess());
+        Cronjobs.addCronjob(process.getProcess(),
+                PerUserPoolCronjob.getInstance(process.getProcess(), uniqueUserPoolIdsTenants));
 
         Thread.sleep(1100);
         assertEquals(2, PerUserPoolCronjob.getInstance(process.getProcess(), uniqueUserPoolIdsTenants).storages.size());
@@ -856,13 +872,14 @@ public class CronjobTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        for (int i=0; i<10; i++) {
+        for (int i = 0; i < 10; i++) {
             Cronjobs.addCronjob(process.getProcess(), CounterCronJob.getInstance(process.getProcess()));
             Thread.sleep(50);
         }
 
         Thread.sleep(5000);
-        assertTrue(CounterCronJob.getInstance(process.getProcess()).getCount() > 3 && CounterCronJob.getInstance(process.getProcess()).getCount() < 8);
+        assertTrue(CounterCronJob.getInstance(process.getProcess()).getCount() > 3 &&
+                CounterCronJob.getInstance(process.getProcess()).getCount() < 8);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -946,7 +963,8 @@ public class CronjobTest {
         ), false, false, true);
 
         {
-            List<List<List<TenantIdentifier>>> tenantsInfos = Cronjobs.getInstance(process.getProcess()).getTenantInfos();
+            List<List<List<TenantIdentifier>>> tenantsInfos = Cronjobs.getInstance(process.getProcess())
+                    .getTenantInfos();
             assertEquals(10, tenantsInfos.size());
             int count = 0;
             for (List<List<TenantIdentifier>> tenantsInfo : tenantsInfos) {
@@ -972,7 +990,8 @@ public class CronjobTest {
 
         // we expect the state of the tenantsInfo to be same after core restart
         {
-            List<List<List<TenantIdentifier>>> tenantsInfos = Cronjobs.getInstance(process.getProcess()).getTenantInfos();
+            List<List<List<TenantIdentifier>>> tenantsInfos = Cronjobs.getInstance(process.getProcess())
+                    .getTenantInfos();
             assertEquals(10, tenantsInfos.size());
             int count = 0;
             for (List<List<TenantIdentifier>> tenantsInfo : tenantsInfos) {
@@ -1018,25 +1037,32 @@ public class CronjobTest {
         intervals.put("io.supertokens.ee.cronjobs.EELicenseCheck", 86400);
         intervals.put("io.supertokens.cronjobs.syncCoreConfigWithDb.SyncCoreConfigWithDb", 60);
         intervals.put("io.supertokens.cronjobs.deleteExpiredSessions.DeleteExpiredSessions", 43200);
-        intervals.put("io.supertokens.cronjobs.deleteExpiredPasswordResetTokens.DeleteExpiredPasswordResetTokens", 3600);
-        intervals.put("io.supertokens.cronjobs.deleteExpiredEmailVerificationTokens.DeleteExpiredEmailVerificationTokens", 43200);
-        intervals.put("io.supertokens.cronjobs.deleteExpiredPasswordlessDevices.DeleteExpiredPasswordlessDevices", 3600);
+        intervals.put("io.supertokens.cronjobs.deleteExpiredPasswordResetTokens.DeleteExpiredPasswordResetTokens",
+                3600);
+        intervals.put(
+                "io.supertokens.cronjobs.deleteExpiredEmailVerificationTokens.DeleteExpiredEmailVerificationTokens",
+                43200);
+        intervals.put("io.supertokens.cronjobs.deleteExpiredPasswordlessDevices.DeleteExpiredPasswordlessDevices",
+                3600);
         intervals.put("io.supertokens.cronjobs.deleteExpiredTotpTokens.DeleteExpiredTotpTokens", 3600);
         intervals.put("io.supertokens.cronjobs.deleteExpiredDashboardSessions.DeleteExpiredDashboardSessions", 43200);
         intervals.put("io.supertokens.cronjobs.telemetry.Telemetry", 86400);
-        intervals.put("io.supertokens.cronjobs.deleteExpiredAccessTokenSigningKeys.DeleteExpiredAccessTokenSigningKeys", 86400);
+        intervals.put("io.supertokens.cronjobs.deleteExpiredAccessTokenSigningKeys.DeleteExpiredAccessTokenSigningKeys",
+                86400);
 
         Map<String, Integer> delays = new HashMap<>();
         delays.put("io.supertokens.ee.cronjobs.EELicenseCheck", 86400);
         delays.put("io.supertokens.cronjobs.syncCoreConfigWithDb.SyncCoreConfigWithDb", 0);
         delays.put("io.supertokens.cronjobs.deleteExpiredSessions.DeleteExpiredSessions", 0);
         delays.put("io.supertokens.cronjobs.deleteExpiredPasswordResetTokens.DeleteExpiredPasswordResetTokens", 0);
-        delays.put("io.supertokens.cronjobs.deleteExpiredEmailVerificationTokens.DeleteExpiredEmailVerificationTokens", 0);
+        delays.put("io.supertokens.cronjobs.deleteExpiredEmailVerificationTokens.DeleteExpiredEmailVerificationTokens",
+                0);
         delays.put("io.supertokens.cronjobs.deleteExpiredPasswordlessDevices.DeleteExpiredPasswordlessDevices", 0);
         delays.put("io.supertokens.cronjobs.deleteExpiredTotpTokens.DeleteExpiredTotpTokens", 0);
         delays.put("io.supertokens.cronjobs.deleteExpiredDashboardSessions.DeleteExpiredDashboardSessions", 0);
         delays.put("io.supertokens.cronjobs.telemetry.Telemetry", 0);
-        delays.put("io.supertokens.cronjobs.deleteExpiredAccessTokenSigningKeys.DeleteExpiredAccessTokenSigningKeys", 0);
+        delays.put("io.supertokens.cronjobs.deleteExpiredAccessTokenSigningKeys.DeleteExpiredAccessTokenSigningKeys",
+                0);
 
         List<CronTask> allTasks = Cronjobs.getInstance(process.getProcess()).getTasks();
         assertEquals(10, allTasks.size());

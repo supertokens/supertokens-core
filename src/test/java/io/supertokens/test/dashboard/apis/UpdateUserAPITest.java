@@ -57,7 +57,7 @@ public class UpdateUserAPITest {
 
     @Test
     public void BadInputTests() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -167,7 +167,7 @@ public class UpdateUserAPITest {
 
     @Test
     public void testSuccessfullyUpdatingUserDataWithUserId() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));

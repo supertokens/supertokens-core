@@ -20,7 +20,6 @@ import com.google.gson.JsonObject;
 import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
-import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
@@ -78,6 +77,7 @@ public class SignInUpAPI extends WebserverAPI {
 
             try {
                 TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+
                 Storage storage = getTenantStorage(req);
                 ThirdParty.SignInUpResponse response = ThirdParty.signInUp2_7(
                         tenantIdentifier, storage,
@@ -141,6 +141,8 @@ public class SignInUpAPI extends WebserverAPI {
 
             try {
                 TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+                io.supertokens.webserver.api.thirdparty.Utils.assertIfThirdPartyIsEnabledForTenant(main,
+                        tenantIdentifier, getVersionFromRequest(req));
                 Storage storage = getTenantStorage(req);
                 ThirdParty.SignInUpResponse response = ThirdParty.signInUp(
                         tenantIdentifier, storage, super.main, thirdPartyId, thirdPartyUserId,

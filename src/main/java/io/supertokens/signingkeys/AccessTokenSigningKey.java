@@ -71,7 +71,8 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
             this.transferLegacyKeyToNewTable();
             this.getOrCreateAndGetSigningKeys();
         } catch (StorageQueryException | StorageTransactionLogicException e) {
-            Logging.error(main, appIdentifier.getAsPublicTenantIdentifier(), "Error while fetching access token signing key", false, e);
+            Logging.error(main, appIdentifier.getAsPublicTenantIdentifier(),
+                    "Error while fetching access token signing key", false, e);
         }
     }
 
@@ -90,7 +91,8 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
         }
     }
 
-    public static void loadForAllTenants(Main main, List<AppIdentifier> apps, List<TenantIdentifier> tenantsThatChanged) {
+    public static void loadForAllTenants(Main main, List<AppIdentifier> apps,
+                                         List<TenantIdentifier> tenantsThatChanged) {
         try {
             main.getResourceDistributor().withResourceDistributorLock(() -> {
                 Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingResources =
@@ -210,8 +212,8 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                 this.appIdentifier.getAsPublicTenantIdentifier(), main);
         CoreConfig config = Config.getConfig(this.appIdentifier.getAsPublicTenantIdentifier(), main);
 
-        final long signingKeyLifetime = config.getAccessTokenDynamicSigningKeyUpdateInterval()
-                + SIGNING_KEY_VALIDITY_OVERLAP * config.getAccessTokenValidity();
+        final long signingKeyLifetime = config.getAccessTokenDynamicSigningKeyUpdateIntervalInMillis()
+                + SIGNING_KEY_VALIDITY_OVERLAP * config.getAccessTokenValidityInMillis();
 
         storage.removeAccessTokenSigningKeysBefore(appIdentifier, System.currentTimeMillis() - signingKeyLifetime);
     }
@@ -222,11 +224,11 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
         CoreConfig config = Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main);
 
         // Access token signing keys older than this are deleted (ms)
-        final long signingKeyLifetime = config.getAccessTokenDynamicSigningKeyUpdateInterval()
-                + SIGNING_KEY_VALIDITY_OVERLAP * config.getAccessTokenValidity();
+        final long signingKeyLifetime = config.getAccessTokenDynamicSigningKeyUpdateIntervalInMillis()
+                + SIGNING_KEY_VALIDITY_OVERLAP * config.getAccessTokenValidityInMillis();
         // Keys created after this timestamp can be used to sign access tokens (ms) after the overlap period
         final long keysCreatedAfterCanSign = System.currentTimeMillis()
-                - config.getAccessTokenDynamicSigningKeyUpdateInterval() + getDynamicSigningKeyOverlapMS();
+                - config.getAccessTokenDynamicSigningKeyUpdateIntervalInMillis() + getDynamicSigningKeyOverlapMS();
         // Keys created after this timestamp can be used to verify access token signatures (ms)
         final long keysCreatedAfterCanVerify = System.currentTimeMillis() - signingKeyLifetime;
 
@@ -359,8 +361,8 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
         // If we didn't explicitly set it, we try to set it to a sensible default. In tests where this matters
         // setDynamicSigningKeyOverlapMS should be used.
         if (Main.isTesting && dynamicSigningKeyOverlapMS == 60000 &&
-                config.getAccessTokenDynamicSigningKeyUpdateInterval() < 60000) {
-            return (int) (config.getAccessTokenDynamicSigningKeyUpdateInterval() / 5);
+                config.getAccessTokenDynamicSigningKeyUpdateIntervalInMillis() < 60000) {
+            return (int) (config.getAccessTokenDynamicSigningKeyUpdateIntervalInMillis() / 5);
         }
         return dynamicSigningKeyOverlapMS;
     }

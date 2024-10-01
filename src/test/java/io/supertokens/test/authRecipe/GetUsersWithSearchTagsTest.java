@@ -25,6 +25,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
+
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertNotNull;
 
@@ -57,7 +58,7 @@ public class GetUsersWithSearchTagsTest {
 
     @Test
     public void retriveUsersUsingSearchTags() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
@@ -67,11 +68,14 @@ public class GetUsersWithSearchTagsTest {
 
         // create emailpassword user
         ArrayList<String> userIds = new ArrayList<>();
-        userIds.add(EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123").getSupertokensUserId());
-        userIds.add(EmailPassword.signUp(process.getProcess(), "test2@example.com", "testPass123").getSupertokensUserId());
+        userIds.add(
+                EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123").getSupertokensUserId());
+        userIds.add(
+                EmailPassword.signUp(process.getProcess(), "test2@example.com", "testPass123").getSupertokensUserId());
 
         // create thirdparty user
-        userIds.add(ThirdParty.signInUp(process.getProcess(), "testTPID", "test", "test2@example.com").user.getSupertokensUserId());
+        userIds.add(ThirdParty.signInUp(process.getProcess(), "testTPID", "test",
+                "test2@example.com").user.getSupertokensUserId());
 
         // create passwordless user
         CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), "test@example.com",
@@ -130,7 +134,7 @@ public class GetUsersWithSearchTagsTest {
 
     @Test
     public void testRetrievingUsersWithConflictingTagsReturnsEmptyList() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
@@ -140,11 +144,14 @@ public class GetUsersWithSearchTagsTest {
 
         // create emailpassword user
         ArrayList<String> userIds = new ArrayList<>();
-        userIds.add(EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123").getSupertokensUserId());
-        userIds.add(EmailPassword.signUp(process.getProcess(), "test2@example.com", "testPass123").getSupertokensUserId());
+        userIds.add(
+                EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123").getSupertokensUserId());
+        userIds.add(
+                EmailPassword.signUp(process.getProcess(), "test2@example.com", "testPass123").getSupertokensUserId());
 
         // create thirdparty user
-        userIds.add(ThirdParty.signInUp(process.getProcess(), "testTPID", "test", "test2@example.com").user.getSupertokensUserId());
+        userIds.add(ThirdParty.signInUp(process.getProcess(), "testTPID", "test",
+                "test2@example.com").user.getSupertokensUserId());
 
         // create passwordless user
         CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), "test@example.com",
@@ -173,7 +180,7 @@ public class GetUsersWithSearchTagsTest {
 
     @Test
     public void testSearchParamRegex() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
@@ -183,12 +190,15 @@ public class GetUsersWithSearchTagsTest {
 
         // create emailpassword user
         ArrayList<String> userIds = new ArrayList<>();
-        userIds.add(EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123").getSupertokensUserId());
-        userIds.add(EmailPassword.signUp(process.getProcess(), "abc@example.com", "testPass123").getSupertokensUserId());
+        userIds.add(
+                EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123").getSupertokensUserId());
+        userIds.add(
+                EmailPassword.signUp(process.getProcess(), "abc@example.com", "testPass123").getSupertokensUserId());
         userIds.add(EmailPassword.signUp(process.getProcess(), "user@abc.com", "testPass123").getSupertokensUserId());
 
         // create thirdparty user
-        userIds.add(ThirdParty.signInUp(process.getProcess(), "testTPID", "test", "test2@example.com").user.getSupertokensUserId());
+        userIds.add(ThirdParty.signInUp(process.getProcess(), "testTPID", "test",
+                "test2@example.com").user.getSupertokensUserId());
 
         // create passwordless user
         CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), "test@example.com",
@@ -252,7 +262,7 @@ public class GetUsersWithSearchTagsTest {
 
     @Test
     public void testThatQueryLimitIsCappedAt1000PerTable() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
@@ -264,10 +274,11 @@ public class GetUsersWithSearchTagsTest {
         ArrayList<String> userIds = new ArrayList<>();
 
         for (int i = 0; i < 1005; i++) {
-            userIds.add(EmailPassword.signUp(process.getProcess(), "test" + i + "@example.com", "testPass123").getSupertokensUserId());
+            userIds.add(EmailPassword.signUp(process.getProcess(), "test" + i + "@example.com", "testPass123")
+                    .getSupertokensUserId());
             Thread.sleep(10);
         }
-        
+
         // retrieve users
         ArrayList<String> emailList = new ArrayList<>();
         emailList.add("test");
@@ -279,7 +290,7 @@ public class GetUsersWithSearchTagsTest {
             assertTrue(userIds.contains(info.users[i].getSupertokensUserId()));
 
         }
-        
+
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
     }

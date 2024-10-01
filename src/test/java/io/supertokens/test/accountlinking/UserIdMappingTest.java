@@ -75,7 +75,8 @@ public class UserIdMappingTest {
         AuthRecipe.unlinkAccounts(process.getProcess(), user1.getSupertokensUserId());
 
         try {
-            UserIdMapping.createUserIdMapping(process.getProcess(), user2.getSupertokensUserId(), user1.getSupertokensUserId(), null, false);
+            UserIdMapping.createUserIdMapping(process.getProcess(), user2.getSupertokensUserId(),
+                    user1.getSupertokensUserId(), null, false);
             fail(); // should not be allowed
         } catch (ServletException e) {
             assertTrue(e.getCause() instanceof WebserverAPI.BadRequestException);
@@ -105,10 +106,12 @@ public class UserIdMappingTest {
         AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId());
         AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), user1.getSupertokensUserId());
 
-        AuthRecipe.deleteUser(process.getProcess(), user1.getSupertokensUserId(), false); // should not delete the user from app_id_to_user_id table
+        AuthRecipe.deleteUser(process.getProcess(), user1.getSupertokensUserId(),
+                false); // should not delete the user from app_id_to_user_id table
 
         try {
-            UserIdMapping.createUserIdMapping(process.getProcess(), user2.getSupertokensUserId(), user1.getSupertokensUserId(), null, false);
+            UserIdMapping.createUserIdMapping(process.getProcess(), user2.getSupertokensUserId(),
+                    user1.getSupertokensUserId(), null, false);
             fail(); // should not be allowed
         } catch (ServletException e) {
             assertTrue(e.getCause() instanceof WebserverAPI.BadRequestException);

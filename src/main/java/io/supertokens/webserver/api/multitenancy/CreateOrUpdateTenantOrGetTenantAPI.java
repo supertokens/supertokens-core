@@ -16,7 +16,6 @@
 
 package io.supertokens.webserver.api.multitenancy;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.config.CoreConfig;
@@ -31,9 +30,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashSet;
 
+@Deprecated
 public class CreateOrUpdateTenantOrGetTenantAPI extends BaseCreateOrUpdate {
 
     private static final long serialVersionUID = -4641988458637882374L;
@@ -56,41 +54,6 @@ public class CreateOrUpdateTenantOrGetTenantAPI extends BaseCreateOrUpdate {
             tenantId = Utils.normalizeAndValidateTenantId(tenantId);
         }
 
-        Boolean emailPasswordEnabled = InputParser.parseBooleanOrThrowError(input, "emailPasswordEnabled", true);
-        Boolean thirdPartyEnabled = InputParser.parseBooleanOrThrowError(input, "thirdPartyEnabled", true);
-        Boolean passwordlessEnabled = InputParser.parseBooleanOrThrowError(input, "passwordlessEnabled", true);
-        JsonObject coreConfig = InputParser.parseJsonObjectOrThrowError(input, "coreConfig", true);
-
-        String[] firstFactors = null;
-        boolean hasFirstFactors = false;
-        String[] requiredSecondaryFactors = null;
-        boolean hasRequiredSecondaryFactors = false;
-
-        if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_0)) {
-            hasFirstFactors = input.has("firstFactors");
-            if (hasFirstFactors && !input.get("firstFactors").isJsonNull()) {
-                JsonArray firstFactorsArr = InputParser.parseArrayOrThrowError(input, "firstFactors", true);
-                firstFactors = new String[firstFactorsArr.size()];
-                for (int i = 0; i < firstFactors.length; i++) {
-                    firstFactors[i] = InputParser.parseStringFromElementOrThrowError(firstFactorsArr.get(i), "firstFactors", false);
-                }
-                if (firstFactors.length != new HashSet<>(Arrays.asList(firstFactors)).size()) {
-                    throw new ServletException(new BadRequestException("firstFactors input should not contain duplicate values"));
-                }
-            }
-            hasRequiredSecondaryFactors = input.has("requiredSecondaryFactors");
-            if (hasRequiredSecondaryFactors && !input.get("requiredSecondaryFactors").isJsonNull()) {
-                JsonArray requiredSecondaryFactorsArr = InputParser.parseArrayOrThrowError(input, "requiredSecondaryFactors", true);
-                requiredSecondaryFactors = new String[requiredSecondaryFactorsArr.size()];
-                for (int i = 0; i < requiredSecondaryFactors.length; i++) {
-                    requiredSecondaryFactors[i] = InputParser.parseStringFromElementOrThrowError(requiredSecondaryFactorsArr.get(i), "requiredSecondaryFactors", false);
-                }
-                if (requiredSecondaryFactors.length != new HashSet<>(Arrays.asList(requiredSecondaryFactors)).size()) {
-                    throw new ServletException(new BadRequestException("requiredSecondaryFactors input should not contain duplicate values"));
-                }
-            }
-        }
-
         TenantIdentifier sourceTenantIdentifier;
         try {
             sourceTenantIdentifier = getTenantIdentifier(req);
@@ -99,11 +62,10 @@ public class CreateOrUpdateTenantOrGetTenantAPI extends BaseCreateOrUpdate {
         }
 
         super.handle(
-                req, sourceTenantIdentifier,
-                new TenantIdentifier(sourceTenantIdentifier.getConnectionUriDomain(), sourceTenantIdentifier.getAppId(), tenantId),
-                emailPasswordEnabled, thirdPartyEnabled, passwordlessEnabled,
-                hasFirstFactors, firstFactors, hasRequiredSecondaryFactors, requiredSecondaryFactors,
-                coreConfig, resp);
+                req, resp, sourceTenantIdentifier,
+                new TenantIdentifier(sourceTenantIdentifier.getConnectionUriDomain(), sourceTenantIdentifier.getAppId(),
+                        tenantId),
+                input, false);
     }
 
     @Override
@@ -115,13 +77,15 @@ public class CreateOrUpdateTenantOrGetTenantAPI extends BaseCreateOrUpdate {
                 throw new TenantOrAppNotFoundException(tenantIdentifier);
             }
             boolean shouldProtect = shouldProtectProtectedConfig(req);
-            JsonObject result = config.toJson(shouldProtect, getTenantStorage(req), CoreConfig.PROTECTED_CONFIGS);
-            result.addProperty("status", "OK");
-
+            JsonObject result;
             if (getVersionFromRequest(req).lesserThan(SemVer.v5_0)) {
-                result.remove("firstFactors");
-                result.remove("requiredSecondaryFactors");
+                result = config.toJsonLesserThanOrEqualTo4_0(shouldProtect, getTenantStorage(req),
+                        CoreConfig.PROTECTED_CONFIGS);
+            } else {
+                result = config.toJson5_0(shouldProtect, getTenantStorage(req), CoreConfig.PROTECTED_CONFIGS);
             }
+
+            result.addProperty("status", "OK");
 
             super.sendJsonResponse(200, result, resp);
         } catch (TenantOrAppNotFoundException e) {

@@ -72,17 +72,22 @@ public class TestSkipValidationInCreateThirdParty {
         ), false);
 
         try {
+            JsonObject additionalConfig = new JsonObject();
+            additionalConfig.addProperty("boxyURL", "");
             TestMultitenancyAPIHelper.addOrUpdateThirdPartyProviderConfig(new TenantIdentifier(null, "a1", null),
                     new ThirdPartyConfig.Provider(
                             "boxy-saml", "Boxy SAML", new ThirdPartyConfig.ProviderClient[]{
-                            new ThirdPartyConfig.ProviderClient("web", "clientid", "clientsecret", null, null, null)
+                            new ThirdPartyConfig.ProviderClient("web", "clientid", "clientsecret", null, null,
+                                    additionalConfig)
                     }, null, null, null,
                             null, null, null, null, null, null, null,
                             null
                     ), process.getProcess());
             fail();
         } catch (HttpResponseException e) {
-            assertTrue(e.getMessage().contains("a non empty string value must be specified for boxyURL in the additionalConfig for Boxy SAML provider"));
+            assertTrue(e.getMessage().contains(
+                    "a non empty string value must be specified for boxyURL in the additionalConfig for Boxy SAML " +
+                            "provider"));
         }
 
         TestMultitenancyAPIHelper.addOrUpdateThirdPartyProviderConfig(new TenantIdentifier(null, "a1", null),

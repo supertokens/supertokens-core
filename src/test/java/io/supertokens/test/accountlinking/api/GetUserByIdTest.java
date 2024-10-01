@@ -123,12 +123,14 @@ public class GetUserByIdTest {
         Thread.sleep(50);
         AuthRecipeUserInfo user4 = createPasswordlessUserWithPhone(process.getProcess(), "+919876543210");
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId()).user;
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(),
+                user1.getSupertokensUserId()).user;
         AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), primaryUser.getSupertokensUserId());
         AuthRecipe.linkAccounts(process.getProcess(), user3.getSupertokensUserId(), primaryUser.getSupertokensUserId());
         AuthRecipe.linkAccounts(process.getProcess(), user4.getSupertokensUserId(), primaryUser.getSupertokensUserId());
 
-        for (String userId : new String[]{user1.getSupertokensUserId(), user2.getSupertokensUserId(), user3.getSupertokensUserId(), user4.getSupertokensUserId()}) {
+        for (String userId : new String[]{user1.getSupertokensUserId(), user2.getSupertokensUserId(),
+                user3.getSupertokensUserId(), user4.getSupertokensUserId()}) {
             Map<String, String> params = new HashMap<>();
             params.put("userId", userId);
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -185,11 +187,13 @@ public class GetUserByIdTest {
         Thread.sleep(50);
         AuthRecipeUserInfo user3 = createPasswordlessUserWithEmail(process.getProcess(), "test3@example.com");
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId()).user;
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(),
+                user1.getSupertokensUserId()).user;
         AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), primaryUser.getSupertokensUserId());
         AuthRecipe.linkAccounts(process.getProcess(), user3.getSupertokensUserId(), primaryUser.getSupertokensUserId());
 
-        for (String userId : new String[]{user1.getSupertokensUserId(), user2.getSupertokensUserId(), user3.getSupertokensUserId()}) {
+        for (String userId : new String[]{user1.getSupertokensUserId(), user2.getSupertokensUserId(),
+                user3.getSupertokensUserId()}) {
             Map<String, String> params = new HashMap<>();
             params.put("userId", userId);
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -229,7 +233,8 @@ public class GetUserByIdTest {
         Thread.sleep(50);
         AuthRecipeUserInfo user2 = createThirdPartyUser(process.getProcess(), "google", "userid1", "test2@example.com");
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId()).user;
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(),
+                user1.getSupertokensUserId()).user;
         AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), primaryUser.getSupertokensUserId());
 
         for (String userId : new String[]{user1.getSupertokensUserId(), user2.getSupertokensUserId()}) {
@@ -271,7 +276,8 @@ public class GetUserByIdTest {
         Thread.sleep(50);
         AuthRecipeUserInfo user2 = createPasswordlessUserWithEmail(process.getProcess(), "test2@example.com");
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId()).user;
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(),
+                user1.getSupertokensUserId()).user;
         AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), primaryUser.getSupertokensUserId());
 
         for (String userId : new String[]{user1.getSupertokensUserId(), user2.getSupertokensUserId()}) {
@@ -309,11 +315,13 @@ public class GetUserByIdTest {
             return;
         }
 
-        AuthRecipeUserInfo user1 = createThirdPartyUser(process.getProcess(), "google", "googleid", "test1@example.com");
+        AuthRecipeUserInfo user1 = createThirdPartyUser(process.getProcess(), "google", "googleid",
+                "test1@example.com");
         Thread.sleep(50);
         AuthRecipeUserInfo user2 = createPasswordlessUserWithEmail(process.getProcess(), "test2@example.com");
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId()).user;
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(),
+                user1.getSupertokensUserId()).user;
         AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), primaryUser.getSupertokensUserId());
 
         for (String userId : new String[]{user1.getSupertokensUserId(), user2.getSupertokensUserId()}) {
@@ -355,7 +363,8 @@ public class GetUserByIdTest {
         Thread.sleep(50);
         AuthRecipeUserInfo user2 = createPasswordlessUserWithPhone(process.getProcess(), "+911234567890");
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId()).user;
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(),
+                user1.getSupertokensUserId()).user;
         AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), primaryUser.getSupertokensUserId());
 
         for (String userId : new String[]{user1.getSupertokensUserId(), user2.getSupertokensUserId()}) {
@@ -399,7 +408,8 @@ public class GetUserByIdTest {
         Thread.sleep(50);
         AuthRecipeUserInfo user3 = createThirdPartyUser(process.getProcess(), "google", "googleid", "test@example.com");
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId()).user;
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(),
+                user1.getSupertokensUserId()).user;
         AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), primaryUser.getSupertokensUserId());
         AuthRecipe.linkAccounts(process.getProcess(), user3.getSupertokensUserId(), primaryUser.getSupertokensUserId());
 
@@ -444,7 +454,8 @@ public class GetUserByIdTest {
         Thread.sleep(50);
         AuthRecipeUserInfo user3 = createEmailPasswordUser(process.getProcess(), "test@example.com", "password");
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId()).user;
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(),
+                user1.getSupertokensUserId()).user;
         AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), primaryUser.getSupertokensUserId());
         AuthRecipe.linkAccounts(process.getProcess(), user3.getSupertokensUserId(), primaryUser.getSupertokensUserId());
 
@@ -495,12 +506,14 @@ public class GetUserByIdTest {
         UserIdMapping.createUserIdMapping(process.getProcess(), user2.getSupertokensUserId(), "ext2", "", false);
         UserIdMapping.createUserIdMapping(process.getProcess(), user3.getSupertokensUserId(), "ext3", "", false);
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId()).user;
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(),
+                user1.getSupertokensUserId()).user;
         AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), primaryUser.getSupertokensUserId());
         AuthRecipe.linkAccounts(process.getProcess(), user3.getSupertokensUserId(), primaryUser.getSupertokensUserId());
         AuthRecipe.linkAccounts(process.getProcess(), user4.getSupertokensUserId(), primaryUser.getSupertokensUserId());
 
-        for (String userId : new String[]{user1.getSupertokensUserId(), user2.getSupertokensUserId(), user3.getSupertokensUserId(), user4.getSupertokensUserId(), "ext1", "ext2", "ext3"}) {
+        for (String userId : new String[]{user1.getSupertokensUserId(), user2.getSupertokensUserId(),
+                user3.getSupertokensUserId(), user4.getSupertokensUserId(), "ext1", "ext2", "ext3"}) {
             Map<String, String> params = new HashMap<>();
             params.put("userId", userId);
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -508,9 +521,12 @@ public class GetUserByIdTest {
                     SemVer.v4_0.get(), "");
             JsonObject user = response.get("user").getAsJsonObject();
             assertEquals("ext1", user.get("id").getAsString());
-            assertEquals("ext1", user.get("loginMethods").getAsJsonArray().get(0).getAsJsonObject().get("recipeUserId").getAsString());
-            assertEquals("ext2", user.get("loginMethods").getAsJsonArray().get(1).getAsJsonObject().get("recipeUserId").getAsString());
-            assertEquals("ext3", user.get("loginMethods").getAsJsonArray().get(2).getAsJsonObject().get("recipeUserId").getAsString());
+            assertEquals("ext1", user.get("loginMethods").getAsJsonArray().get(0).getAsJsonObject().get("recipeUserId")
+                    .getAsString());
+            assertEquals("ext2", user.get("loginMethods").getAsJsonArray().get(1).getAsJsonObject().get("recipeUserId")
+                    .getAsString());
+            assertEquals("ext3", user.get("loginMethods").getAsJsonArray().get(2).getAsJsonObject().get("recipeUserId")
+                    .getAsString());
         }
 
         process.kill();

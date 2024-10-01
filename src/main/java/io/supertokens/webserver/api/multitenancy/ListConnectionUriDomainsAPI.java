@@ -27,6 +27,7 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -38,6 +39,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Deprecated
 public class ListConnectionUriDomainsAPI extends WebserverAPI {
     private static final long serialVersionUID = -4641988458637882374L;
 
@@ -58,7 +60,8 @@ public class ListConnectionUriDomainsAPI extends WebserverAPI {
 
             if (!tenantIdentifier.equals(new TenantIdentifier(null, null, null))) {
                 throw new BadPermissionException(
-                        "Only the public tenantId, public appId and default connectionUriDomain is allowed to list all " +
+                        "Only the public tenantId, public appId and default connectionUriDomain is allowed to list " +
+                                "all " +
                                 "connectionUriDomains and appIds associated with this " +
                                 "core");
             }
@@ -94,8 +97,16 @@ public class ListConnectionUriDomainsAPI extends WebserverAPI {
                     appObject.addProperty("appId", appId);
                     JsonArray tenantsArray = new JsonArray();
                     for (TenantConfig tenantConfig : entry2.getValue()) {
-                        JsonObject tenantConfigJson = tenantConfig.toJson(shouldProtect,
-                                storage, CoreConfig.PROTECTED_CONFIGS);
+                        JsonObject tenantConfigJson;
+
+                        if (getVersionFromRequest(req).lesserThan(SemVer.v5_0)) {
+                            tenantConfigJson = tenantConfig.toJsonLesserThanOrEqualTo4_0(shouldProtect, storage,
+                                    CoreConfig.PROTECTED_CONFIGS);
+                        } else {
+                            tenantConfigJson = tenantConfig.toJson5_0(shouldProtect, storage,
+                                    CoreConfig.PROTECTED_CONFIGS);
+                        }
+
                         tenantsArray.add(tenantConfigJson);
                     }
                     appObject.add("tenants", tenantsArray);

@@ -27,6 +27,7 @@ import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.exception.*;
+import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
@@ -38,7 +39,10 @@ import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdExce
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.pluginInterface.multitenancy.*;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.MultitenancyStorage;
+import io.supertokens.pluginInterface.multitenancy.TenantConfig;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateClientTypeException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateTenantException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateThirdPartyIdException;
@@ -148,51 +152,6 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
 
         // Verify that the keys in the coreConfig is valid
         validateConfigJsonForInvalidKeys(main, targetTenantConfig.coreConfig);
-
-        // Validate firstFactors and requiredSecondaryFactors
-        {
-            Set<String> disallowedFactors = new HashSet<>();
-            Map<String, String> factorIdToRecipeName = new HashMap<>();
-            if (!targetTenantConfig.emailPasswordConfig.enabled) {
-                disallowedFactors.add("emailpassword");
-
-                factorIdToRecipeName.put("emailpassword", "emailPassword");
-            }
-            if (!targetTenantConfig.passwordlessConfig.enabled) {
-                disallowedFactors.add("otp-email");
-                disallowedFactors.add("otp-phone");
-                disallowedFactors.add("link-email");
-                disallowedFactors.add("link-phone");
-
-                factorIdToRecipeName.put("otp-email", "passwordless");
-                factorIdToRecipeName.put("otp-phone", "passwordless");
-                factorIdToRecipeName.put("link-email", "passwordless");
-                factorIdToRecipeName.put("link-phone", "passwordless");
-            }
-            if (!targetTenantConfig.thirdPartyConfig.enabled) {
-                disallowedFactors.add("thirdparty");
-
-                factorIdToRecipeName.put("thirdparty", "thirdParty");
-            }
-
-            if (targetTenantConfig.firstFactors != null) {
-                for (String factor : targetTenantConfig.firstFactors) {
-                    if (disallowedFactors.contains(factor)) {
-                        throw new InvalidConfigException("firstFactors should not contain '" + factor
-                                + "' because " + factorIdToRecipeName.get(factor) + " is disabled for the tenant.");
-                    }
-                }
-            }
-
-            if (targetTenantConfig.requiredSecondaryFactors != null) {
-                for (String factor : targetTenantConfig.requiredSecondaryFactors) {
-                    if (disallowedFactors.contains(factor)) {
-                        throw new InvalidConfigException("requiredSecondaryFactors should not contain '" + factor
-                                + "' because " + factorIdToRecipeName.get(factor) + " is disabled for the tenant.");
-                    }
-                }
-            }
-        }
 
         // we check if the core config provided is correct
         {
@@ -450,7 +409,8 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         try {
             return authRecipeStorage.startTransaction(con -> {
                 String tenantId = tenantIdentifier.getTenantId();
-                AuthRecipeUserInfo userToAssociate = authRecipeStorage.getPrimaryUserById_Transaction(tenantIdentifier.toAppIdentifier(), con, userId);
+                AuthRecipeUserInfo userToAssociate = authRecipeStorage.getPrimaryUserById_Transaction(
+                        tenantIdentifier.toAppIdentifier(), con, userId);
 
                 if (userToAssociate != null && userToAssociate.isPrimaryUser) {
                     Set<String> emails = new HashSet<>();
@@ -471,65 +431,89 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                     }
 
                     for (String email : emails) {
-                        AuthRecipeUserInfo[] usersWithSameEmail = authRecipeStorage.listPrimaryUsersByEmail_Transaction(tenantIdentifier.toAppIdentifier(), con, email);
+                        AuthRecipeUserInfo[] usersWithSameEmail = authRecipeStorage.listPrimaryUsersByEmail_Transaction(
+                                tenantIdentifier.toAppIdentifier(), con, email);
                         for (AuthRecipeUserInfo userWithSameEmail : usersWithSameEmail) {
-                            if (userWithSameEmail.getSupertokensUserId().equals(userToAssociate.getSupertokensUserId())) {
+                            if (userWithSameEmail.getSupertokensUserId()
+                                    .equals(userToAssociate.getSupertokensUserId())) {
                                 continue; // it's the same user, no need to check anything
                             }
-                            if (userWithSameEmail.isPrimaryUser && userWithSameEmail.tenantIds.contains(tenantId) && !userWithSameEmail.getSupertokensUserId().equals(userId)) {
+                            if (userWithSameEmail.isPrimaryUser && userWithSameEmail.tenantIds.contains(tenantId) &&
+                                    !userWithSameEmail.getSupertokensUserId().equals(userId)) {
                                 for (LoginMethod lm1 : userWithSameEmail.loginMethods) {
                                     if (lm1.tenantIds.contains(tenantId)) {
                                         for (LoginMethod lm2 : userToAssociate.loginMethods) {
-                                            if (lm1.recipeId.equals(lm2.recipeId) && email.equals(lm1.email) && lm1.email.equals(lm2.email)) {
-                                                throw new StorageTransactionLogicException(new DuplicateEmailException());
+                                            if (lm1.recipeId.equals(lm2.recipeId) && email.equals(lm1.email) &&
+                                                    lm1.email.equals(lm2.email)) {
+                                                throw new StorageTransactionLogicException(
+                                                        new DuplicateEmailException());
                                             }
                                         }
                                     }
                                 }
-                                throw new StorageTransactionLogicException(new AnotherPrimaryUserWithEmailAlreadyExistsException(userWithSameEmail.getSupertokensUserId()));
+                                throw new StorageTransactionLogicException(
+                                        new AnotherPrimaryUserWithEmailAlreadyExistsException(
+                                                userWithSameEmail.getSupertokensUserId()));
                             }
                         }
                     }
 
                     for (String phoneNumber : phoneNumbers) {
-                        AuthRecipeUserInfo[] usersWithSamePhoneNumber = authRecipeStorage.listPrimaryUsersByPhoneNumber_Transaction(tenantIdentifier.toAppIdentifier(), con, phoneNumber);
+                        AuthRecipeUserInfo[] usersWithSamePhoneNumber =
+                                authRecipeStorage.listPrimaryUsersByPhoneNumber_Transaction(
+                                        tenantIdentifier.toAppIdentifier(), con, phoneNumber);
                         for (AuthRecipeUserInfo userWithSamePhoneNumber : usersWithSamePhoneNumber) {
-                            if (userWithSamePhoneNumber.getSupertokensUserId().equals(userToAssociate.getSupertokensUserId())) {
+                            if (userWithSamePhoneNumber.getSupertokensUserId()
+                                    .equals(userToAssociate.getSupertokensUserId())) {
                                 continue; // it's the same user, no need to check anything
                             }
-                            if (userWithSamePhoneNumber.tenantIds.contains(tenantId) && !userWithSamePhoneNumber.getSupertokensUserId().equals(userId)) {
+                            if (userWithSamePhoneNumber.tenantIds.contains(tenantId) &&
+                                    !userWithSamePhoneNumber.getSupertokensUserId().equals(userId)) {
                                 for (LoginMethod lm1 : userWithSamePhoneNumber.loginMethods) {
                                     if (lm1.tenantIds.contains(tenantId)) {
                                         for (LoginMethod lm2 : userToAssociate.loginMethods) {
-                                            if (lm1.recipeId.equals(lm2.recipeId) && phoneNumber.equals(lm1.phoneNumber) && lm1.phoneNumber.equals(lm2.phoneNumber)) {
-                                                throw new StorageTransactionLogicException(new DuplicatePhoneNumberException());
+                                            if (lm1.recipeId.equals(lm2.recipeId) &&
+                                                    phoneNumber.equals(lm1.phoneNumber) &&
+                                                    lm1.phoneNumber.equals(lm2.phoneNumber)) {
+                                                throw new StorageTransactionLogicException(
+                                                        new DuplicatePhoneNumberException());
                                             }
                                         }
                                     }
                                 }
-                                throw new StorageTransactionLogicException(new AnotherPrimaryUserWithPhoneNumberAlreadyExistsException(userWithSamePhoneNumber.getSupertokensUserId()));
+                                throw new StorageTransactionLogicException(
+                                        new AnotherPrimaryUserWithPhoneNumberAlreadyExistsException(
+                                                userWithSamePhoneNumber.getSupertokensUserId()));
                             }
                         }
                     }
 
                     for (LoginMethod.ThirdParty tp : thirdParties) {
-                        AuthRecipeUserInfo[] usersWithSameThirdPartyInfo = authRecipeStorage.listPrimaryUsersByThirdPartyInfo_Transaction(tenantIdentifier.toAppIdentifier(), con, tp.id, tp.userId);
+                        AuthRecipeUserInfo[] usersWithSameThirdPartyInfo =
+                                authRecipeStorage.listPrimaryUsersByThirdPartyInfo_Transaction(
+                                        tenantIdentifier.toAppIdentifier(), con, tp.id, tp.userId);
                         for (AuthRecipeUserInfo userWithSameThirdPartyInfo : usersWithSameThirdPartyInfo) {
-                            if (userWithSameThirdPartyInfo.getSupertokensUserId().equals(userToAssociate.getSupertokensUserId())) {
+                            if (userWithSameThirdPartyInfo.getSupertokensUserId()
+                                    .equals(userToAssociate.getSupertokensUserId())) {
                                 continue; // it's the same user, no need to check anything
                             }
-                            if (userWithSameThirdPartyInfo.tenantIds.contains(tenantId) && !userWithSameThirdPartyInfo.getSupertokensUserId().equals(userId)) {
+                            if (userWithSameThirdPartyInfo.tenantIds.contains(tenantId) &&
+                                    !userWithSameThirdPartyInfo.getSupertokensUserId().equals(userId)) {
                                 for (LoginMethod lm1 : userWithSameThirdPartyInfo.loginMethods) {
                                     if (lm1.tenantIds.contains(tenantId)) {
                                         for (LoginMethod lm2 : userToAssociate.loginMethods) {
-                                            if (lm1.recipeId.equals(lm2.recipeId) && tp.equals(lm1.thirdParty) && lm1.thirdParty.equals(lm2.thirdParty)) {
-                                                throw new StorageTransactionLogicException(new DuplicateThirdPartyUserException());
+                                            if (lm1.recipeId.equals(lm2.recipeId) && tp.equals(lm1.thirdParty) &&
+                                                    lm1.thirdParty.equals(lm2.thirdParty)) {
+                                                throw new StorageTransactionLogicException(
+                                                        new DuplicateThirdPartyUserException());
                                             }
                                         }
                                     }
                                 }
 
-                                throw new StorageTransactionLogicException(new AnotherPrimaryUserWithThirdPartyInfoAlreadyExistsException(userWithSameThirdPartyInfo.getSupertokensUserId()));
+                                throw new StorageTransactionLogicException(
+                                        new AnotherPrimaryUserWithThirdPartyInfoAlreadyExistsException(
+                                                userWithSameThirdPartyInfo.getSupertokensUserId()));
                             }
                         }
                     }
@@ -539,7 +523,8 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                 // associate it. This happens only in CDI 3.0 where we allow disassociation from all tenants
                 // This will not happen in CDI >= 4.0 because we will not allow disassociation from all tenants
                 try {
-                    boolean result = ((MultitenancySQLStorage) storage).addUserIdToTenant_Transaction(tenantIdentifier, con, userId);
+                    boolean result = ((MultitenancySQLStorage) storage).addUserIdToTenant_Transaction(tenantIdentifier,
+                            con, userId);
                     authRecipeStorage.commitTransaction(con);
                     return result;
                 } catch (TenantOrAppNotFoundException | UnknownUserIdException | DuplicatePhoneNumberException |
@@ -647,5 +632,30 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
     public static TenantConfig[] getAllTenants(Main main) {
         MultitenancyHelper.getInstance(main).refreshTenantsInCoreBasedOnChangesInCoreConfigOrIfTenantListChanged(true);
         return MultitenancyHelper.getInstance(main).getAllTenants();
+    }
+
+    public static void saveWebsiteAndAPIDomainForApp(Storage storage, AppIdentifier appIdentifier, String websiteDomain,
+                                                     String apiDomain)
+            throws StorageQueryException, TenantOrAppNotFoundException {
+        if (websiteDomain != null) {
+            storage.setKeyValue(appIdentifier.getAsPublicTenantIdentifier(), "websiteDomain",
+                    new KeyValueInfo(websiteDomain, System.currentTimeMillis()));
+        }
+        if (apiDomain != null) {
+            storage.setKeyValue(appIdentifier.getAsPublicTenantIdentifier(), "apiDomain",
+                    new KeyValueInfo(apiDomain, System.currentTimeMillis()));
+        }
+    }
+
+    public static String getWebsiteDomain(Storage storage, AppIdentifier appIdentifier)
+            throws StorageQueryException, TenantOrAppNotFoundException {
+        KeyValueInfo websiteDomain = storage.getKeyValue(appIdentifier.getAsPublicTenantIdentifier(), "websiteDomain");
+        return websiteDomain == null ? null : websiteDomain.value;
+    }
+
+    public static String getAPIDomain(Storage storage, AppIdentifier appIdentifier)
+            throws StorageQueryException, TenantOrAppNotFoundException {
+        KeyValueInfo apiDomain = storage.getKeyValue(appIdentifier.getAsPublicTenantIdentifier(), "apiDomain");
+        return apiDomain == null ? null : apiDomain.value;
     }
 }

@@ -20,14 +20,20 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
-import io.supertokens.config.Config;
+import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.multitenancy.exception.BadPermissionException;
+import io.supertokens.output.Logging;
+import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.utils.SemVer;
+import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 public class ApiVersionAPI extends WebserverAPI {
@@ -51,8 +57,13 @@ public class ApiVersionAPI extends WebserverAPI {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject result = new JsonObject();
         JsonArray versions = new JsonArray();
+        String websiteDomain = InputParser.getQueryParamOrThrowError(req, "websiteDomain", true);
+        String apiDomain = InputParser.getQueryParamOrThrowError(req, "apiDomain", true);
 
         try {
+            AppIdentifier appIdentifier = getAppIdentifier(req);
+            Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
+
             SemVer maxCDIVersion = getLatestCDIVersionForRequest(req);
 
             for (SemVer s : WebserverAPI.supportedVersions) {
@@ -62,7 +73,14 @@ public class ApiVersionAPI extends WebserverAPI {
             }
             result.add("versions", versions);
             super.sendJsonResponse(200, result, resp);
-        } catch (TenantOrAppNotFoundException e) {
+
+            try {
+                Multitenancy.saveWebsiteAndAPIDomainForApp(storage, appIdentifier, websiteDomain, apiDomain);
+            } catch (Exception e) {
+                Logging.warn(main, appIdentifier.getAsPublicTenantIdentifier(),
+                        "Error while saving website/API domain: " + e.toString());
+            }
+        } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
     }

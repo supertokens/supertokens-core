@@ -82,7 +82,8 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
                 doTaskForTargetTenant(this.targetTenant);
             } catch (Exception e) {
                 ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.CRON_TASK_ERROR_LOGGING, e);
-                Logging.error(main, this.targetTenant, "Cronjob threw an exception: " + this.jobName, Main.isTesting, e);
+                Logging.error(main, this.targetTenant, "Cronjob threw an exception: " + this.jobName, Main.isTesting,
+                        e);
                 if (e instanceof QuitProgramException) {
                     main.wakeUpMainThreadToShutdown();
                 }
@@ -114,7 +115,8 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
                         doTaskPerApp(app);
                     } catch (Exception e) {
                         ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.CRON_TASK_ERROR_LOGGING, e);
-                        Logging.error(main, app.getAsPublicTenantIdentifier(), "Cronjob threw an exception: " + this.jobName, Main.isTesting, e);
+                        Logging.error(main, app.getAsPublicTenantIdentifier(),
+                                "Cronjob threw an exception: " + this.jobName, Main.isTesting, e);
                         if (e instanceof QuitProgramException) {
                             main.wakeUpMainThreadToShutdown();
                         }
@@ -131,7 +133,8 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
                         } catch (Exception e) {
                             ProcessState.getInstance(main)
                                     .addState(ProcessState.PROCESS_STATE.CRON_TASK_ERROR_LOGGING, e);
-                            Logging.error(main, t.get(0), "Cronjob threw an exception: " + this.jobName, Main.isTesting, e);
+                            Logging.error(main, t.get(0), "Cronjob threw an exception: " + this.jobName, Main.isTesting,
+                                    e);
                             if (e instanceof QuitProgramException) {
                                 threwQuitProgramException.set(true);
                             }
@@ -143,7 +146,8 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
                             } catch (Exception e) {
                                 ProcessState.getInstance(main)
                                         .addState(ProcessState.PROCESS_STATE.CRON_TASK_ERROR_LOGGING, e);
-                                Logging.error(main, tenant, "Cronjob threw an exception: " + this.jobName, Main.isTesting, e);
+                                Logging.error(main, tenant, "Cronjob threw an exception: " + this.jobName,
+                                        Main.isTesting, e);
                                 if (e instanceof QuitProgramException) {
                                     threwQuitProgramException.set(true);
                                 }

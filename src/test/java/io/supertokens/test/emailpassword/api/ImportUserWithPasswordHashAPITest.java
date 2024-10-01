@@ -297,7 +297,7 @@ public class ImportUserWithPasswordHashAPITest {
             throw new Exception("Should not come here");
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.statusCode == 500
-                    && e.getMessage().equals("Http error. Status Code: 500. Message: Internal Error"));
+                    && e.getMessage().equals("Http error. Status Code: 500. Message: 'firebase_password_hashing_signer_key' cannot be null"));
         }
 
         process.kill();
@@ -388,7 +388,7 @@ public class ImportUserWithPasswordHashAPITest {
             throw new Exception("Should not come here");
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.statusCode == 500
-                    && e.getMessage().equals("Http error. Status Code: 500. Message: Internal Error"));
+                    && e.getMessage().equals("Http error. Status Code: 500. Message: 'firebase_password_hashing_signer_key' cannot be null"));
         }
 
         process.kill();
@@ -536,7 +536,8 @@ public class ImportUserWithPasswordHashAPITest {
         assertTrue(response.get("didUserAlreadyExist").getAsBoolean());
 
         // check that a new user was not created by comparing userIds
-        assertEquals(initialUserInfo.getSupertokensUserId(), response.get("user").getAsJsonObject().get("id").getAsString());
+        assertEquals(initialUserInfo.getSupertokensUserId(),
+                response.get("user").getAsJsonObject().get("id").getAsString());
 
         // sign in with the new password to check if the password hash got updated
         AuthRecipeUserInfo updatedUserInfo = EmailPassword.signIn(process.main, email, newPassword);

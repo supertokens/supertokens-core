@@ -56,7 +56,7 @@ public class GetUserRolesAPITest {
 
     @Test
     public void badInputTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -100,7 +100,7 @@ public class GetUserRolesAPITest {
 
     @Test
     public void testGettingRolesForAUser() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -111,7 +111,7 @@ public class GetUserRolesAPITest {
 
         // create and add multiple roles to a user, get roles for user
         {
-            String[] roles = new String[] { "role1", "role2", "role3" };
+            String[] roles = new String[]{"role1", "role2", "role3"};
             String userId = "userId";
 
             for (String role : roles) {

@@ -71,7 +71,7 @@ public class PasswordlessCreateCodeAPITest {
         JsonObject createCodeResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/signinup/code", createCodeRequestBody, 1000, 1000, null,
                 WebserverAPI.getLatestCDIVersion().get(), "passwordless");
-        
+
         assertEquals("OK", createCodeResponse.get("status").getAsString());
 
         HashMap<String, String> params = new HashMap<>();

@@ -39,7 +39,7 @@ public class TotpUserIdMappingTest {
 
     @Test
     public void testExternalUserIdTranslation() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -48,7 +48,8 @@ public class TotpUserIdMappingTest {
             return;
         }
 
-        FeatureFlagTestContent.getInstance(process.main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[] { EE_FEATURES.MFA });
+        FeatureFlagTestContent.getInstance(process.main)
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MFA});
 
         JsonObject body = new JsonObject();
 
