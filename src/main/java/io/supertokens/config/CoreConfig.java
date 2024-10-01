@@ -307,7 +307,9 @@ public class CoreConfig {
 
     @NotConflictingInApp
     @JsonProperty
-    private int bulk_migration_parallelism = 1;
+    @ConfigDescription("If specified, the supertokens core will use the specified number of threads to complete the " +
+            "migration of users. (Default: number of available processor cores).")
+    private int bulk_migration_parallelism =  Runtime.getRuntime().availableProcessors();
 
     public static Set<String> getValidFields() {
         CoreConfig coreConfig = new CoreConfig();

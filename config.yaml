@@ -152,6 +152,7 @@ core_config_version: 0
 # if there are more CUDs in the database and block all other CUDs from being used from this instance.
 # supertokens_saas_load_only_cud:
 
-# (DIFFERENT_ACROSS_TENANTS | OPTIONAL | Default: 1) int value. If specified, the supertokens core will use the
-# specified number of threads to complete the migration of users.
+# (DIFFERENT_ACROSS_TENANTS | OPTIONAL | Default: number of available processor cores) int value. If specified,
+# the supertokens core will use the specified number of threads to complete the migration of users.
 # bulk_migration_parallelism:
+
