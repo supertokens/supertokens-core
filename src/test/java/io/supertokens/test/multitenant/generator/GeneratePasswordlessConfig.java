@@ -20,7 +20,7 @@ import java.util.Random;
 
 public class GeneratePasswordlessConfig {
     public static ConfigGenerator.GeneratedValueAndExpectation generate_enabled() {
-        boolean enabled  = new Random().nextBoolean();
+        boolean enabled = new Random().nextBoolean();
         return new ConfigGenerator.GeneratedValueAndExpectation(
                 enabled,
                 new ConfigGenerator.Expectation("ok", enabled));

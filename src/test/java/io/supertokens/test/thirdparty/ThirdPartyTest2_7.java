@@ -400,12 +400,15 @@ public class ThirdPartyTest2_7 {
 
         checkSignInUpResponse(signUpResponse, thirdPartyUserId, thirdPartyId, email, true);
 
-        AuthRecipeUserInfo getUserInfoFromId = ThirdParty.getUser(process.getProcess(), signUpResponse.user.getSupertokensUserId());
+        AuthRecipeUserInfo getUserInfoFromId = ThirdParty.getUser(process.getProcess(),
+                signUpResponse.user.getSupertokensUserId());
         assertEquals(getUserInfoFromId.getSupertokensUserId(), signUpResponse.user.getSupertokensUserId());
         assertEquals(getUserInfoFromId.timeJoined, signUpResponse.user.timeJoined);
         assertEquals(getUserInfoFromId.loginMethods[0].email, signUpResponse.user.loginMethods[0].email);
-        assertEquals(getUserInfoFromId.loginMethods[0].thirdParty.userId, signUpResponse.user.loginMethods[0].thirdParty.userId);
-        assertEquals(getUserInfoFromId.loginMethods[0].thirdParty.id, signUpResponse.user.loginMethods[0].thirdParty.id);
+        assertEquals(getUserInfoFromId.loginMethods[0].thirdParty.userId,
+                signUpResponse.user.loginMethods[0].thirdParty.userId);
+        assertEquals(getUserInfoFromId.loginMethods[0].thirdParty.id,
+                signUpResponse.user.loginMethods[0].thirdParty.id);
 
         AuthRecipeUserInfo getUserInfoFromThirdParty = ThirdParty.getUser(process.getProcess(),
                 signUpResponse.user.loginMethods[0].thirdParty.id,

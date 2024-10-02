@@ -37,7 +37,7 @@ public class TestProviderEquality {
         Constructor<?> constructor = ThirdPartyConfig.Provider.class.getConstructors()[0];
         Parameter[] parameters = constructor.getParameters();
         Field[] fields = ThirdPartyConfig.Provider.class.getDeclaredFields();
-        assert(parameters.length == fields.length);
+        assert (parameters.length == fields.length);
 
         JsonObject baseObject = new JsonObject();
 
@@ -137,7 +137,7 @@ public class TestProviderEquality {
         Constructor<?> constructor = ThirdPartyConfig.ProviderClient.class.getConstructors()[0];
         Parameter[] parameters = constructor.getParameters();
         Field[] fields = ThirdPartyConfig.ProviderClient.class.getDeclaredFields();
-        assert(parameters.length == fields.length);
+        assert (parameters.length == fields.length);
 
         JsonObject baseObject = new JsonObject();
 
@@ -193,8 +193,10 @@ public class TestProviderEquality {
             throw new RuntimeException("Unsupported type");
         }
 
-        ThirdPartyConfig.ProviderClient providerClient1 = new Gson().fromJson(testObject1, ThirdPartyConfig.ProviderClient.class);
-        ThirdPartyConfig.ProviderClient providerClient1copy = new Gson().fromJson(testObject1, ThirdPartyConfig.ProviderClient.class);
+        ThirdPartyConfig.ProviderClient providerClient1 = new Gson().fromJson(testObject1,
+                ThirdPartyConfig.ProviderClient.class);
+        ThirdPartyConfig.ProviderClient providerClient1copy = new Gson().fromJson(testObject1,
+                ThirdPartyConfig.ProviderClient.class);
 
         JsonObject testObject2 = new Gson().fromJson(baseObject, JsonObject.class);
         if (type == String.class) {
@@ -213,8 +215,10 @@ public class TestProviderEquality {
             throw new RuntimeException("Unsupported type");
         }
 
-        ThirdPartyConfig.ProviderClient providerClient2 = new Gson().fromJson(testObject2, ThirdPartyConfig.ProviderClient.class);
-        ThirdPartyConfig.ProviderClient providerClient2copy = new Gson().fromJson(testObject2, ThirdPartyConfig.ProviderClient.class);
+        ThirdPartyConfig.ProviderClient providerClient2 = new Gson().fromJson(testObject2,
+                ThirdPartyConfig.ProviderClient.class);
+        ThirdPartyConfig.ProviderClient providerClient2copy = new Gson().fromJson(testObject2,
+                ThirdPartyConfig.ProviderClient.class);
         assertNotEquals(providerClient1, providerClient2);
         assertEquals(providerClient1, providerClient1copy);
         assertEquals(providerClient2, providerClient2copy);
@@ -225,7 +229,7 @@ public class TestProviderEquality {
         Constructor<?> constructor = ThirdPartyConfig.UserInfoMap.class.getConstructors()[0];
         Parameter[] parameters = constructor.getParameters();
         Field[] fields = ThirdPartyConfig.UserInfoMap.class.getDeclaredFields();
-        assert(parameters.length == fields.length);
+        assert (parameters.length == fields.length);
 
         JsonObject baseObject = new JsonObject();
 
@@ -269,8 +273,10 @@ public class TestProviderEquality {
             throw new RuntimeException("Unsupported type");
         }
 
-        ThirdPartyConfig.UserInfoMap userInfoMap1 = new Gson().fromJson(testObject1, ThirdPartyConfig.UserInfoMap.class);
-        ThirdPartyConfig.UserInfoMap userInfoMap1copy = new Gson().fromJson(testObject1, ThirdPartyConfig.UserInfoMap.class);
+        ThirdPartyConfig.UserInfoMap userInfoMap1 = new Gson().fromJson(testObject1,
+                ThirdPartyConfig.UserInfoMap.class);
+        ThirdPartyConfig.UserInfoMap userInfoMap1copy = new Gson().fromJson(testObject1,
+                ThirdPartyConfig.UserInfoMap.class);
 
         JsonObject testObject2 = new Gson().fromJson(baseObject, JsonObject.class);
         if (type == ThirdPartyConfig.UserInfoMapKeyValue.class) {
@@ -283,8 +289,10 @@ public class TestProviderEquality {
             throw new RuntimeException("Unsupported type");
         }
 
-        ThirdPartyConfig.UserInfoMap userInfoMap2 = new Gson().fromJson(testObject2, ThirdPartyConfig.UserInfoMap.class);
-        ThirdPartyConfig.UserInfoMap userInfoMap2copy = new Gson().fromJson(testObject2, ThirdPartyConfig.UserInfoMap.class);
+        ThirdPartyConfig.UserInfoMap userInfoMap2 = new Gson().fromJson(testObject2,
+                ThirdPartyConfig.UserInfoMap.class);
+        ThirdPartyConfig.UserInfoMap userInfoMap2copy = new Gson().fromJson(testObject2,
+                ThirdPartyConfig.UserInfoMap.class);
         assertNotEquals(userInfoMap1, userInfoMap2);
         assertEquals(userInfoMap1, userInfoMap1copy);
         assertEquals(userInfoMap2, userInfoMap2copy);
@@ -295,7 +303,7 @@ public class TestProviderEquality {
         Constructor<?> constructor = ThirdPartyConfig.UserInfoMapKeyValue.class.getConstructors()[0];
         Parameter[] parameters = constructor.getParameters();
         Field[] fields = ThirdPartyConfig.UserInfoMapKeyValue.class.getDeclaredFields();
-        assert(parameters.length == fields.length);
+        assert (parameters.length == fields.length);
 
         JsonObject baseObject = new JsonObject();
 
@@ -331,8 +339,10 @@ public class TestProviderEquality {
             throw new RuntimeException("Unsupported type");
         }
 
-        ThirdPartyConfig.UserInfoMapKeyValue userInfoMap1 = new Gson().fromJson(testObject1, ThirdPartyConfig.UserInfoMapKeyValue.class);
-        ThirdPartyConfig.UserInfoMapKeyValue userInfoMap1copy = new Gson().fromJson(testObject1, ThirdPartyConfig.UserInfoMapKeyValue.class);
+        ThirdPartyConfig.UserInfoMapKeyValue userInfoMap1 = new Gson().fromJson(testObject1,
+                ThirdPartyConfig.UserInfoMapKeyValue.class);
+        ThirdPartyConfig.UserInfoMapKeyValue userInfoMap1copy = new Gson().fromJson(testObject1,
+                ThirdPartyConfig.UserInfoMapKeyValue.class);
 
         JsonObject testObject2 = new Gson().fromJson(baseObject, JsonObject.class);
         if (type == String.class) {
@@ -342,8 +352,10 @@ public class TestProviderEquality {
             throw new RuntimeException("Unsupported type");
         }
 
-        ThirdPartyConfig.UserInfoMapKeyValue userInfoMap2 = new Gson().fromJson(testObject2, ThirdPartyConfig.UserInfoMapKeyValue.class);
-        ThirdPartyConfig.UserInfoMapKeyValue userInfoMap2copy = new Gson().fromJson(testObject2, ThirdPartyConfig.UserInfoMapKeyValue.class);
+        ThirdPartyConfig.UserInfoMapKeyValue userInfoMap2 = new Gson().fromJson(testObject2,
+                ThirdPartyConfig.UserInfoMapKeyValue.class);
+        ThirdPartyConfig.UserInfoMapKeyValue userInfoMap2copy = new Gson().fromJson(testObject2,
+                ThirdPartyConfig.UserInfoMapKeyValue.class);
         assertNotEquals(userInfoMap1, userInfoMap2);
         assertEquals(userInfoMap1, userInfoMap1copy);
         assertEquals(userInfoMap2, userInfoMap2copy);

@@ -94,11 +94,11 @@ public class UserAPI extends WebserverAPI {
                     user = EmailPassword.getUserUsingId(
                             appIdentifier,
                             storageAndUserIdMapping.storage, userId);
-                            if (user != null) {
-                                UserIdMapping.populateExternalUserIdForUsers(appIdentifier,
-                                        storageAndUserIdMapping.storage,
-                                        new AuthRecipeUserInfo[]{user});
-                            }
+                    if (user != null) {
+                        UserIdMapping.populateExternalUserIdForUsers(appIdentifier,
+                                storageAndUserIdMapping.storage,
+                                new AuthRecipeUserInfo[]{user});
+                    }
 
                 } else {
                     // API is tenant specific for get by Email

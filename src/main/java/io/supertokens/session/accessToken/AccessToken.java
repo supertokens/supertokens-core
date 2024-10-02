@@ -236,7 +236,7 @@ public class AccessToken {
         if (expiryTime != null) {
             expires = expiryTime;
         } else {
-            expires = now + Config.getConfig(tenantIdentifier, main).getAccessTokenValidity();
+            expires = now + Config.getConfig(tenantIdentifier, main).getAccessTokenValidityInMillis();
         }
         AccessTokenInfo accessToken = new AccessTokenInfo(sessionHandle, recipeUserId, primaryUserId, refreshTokenHash1,
                 expires,
@@ -297,7 +297,7 @@ public class AccessToken {
         long now = System.currentTimeMillis();
         AccessTokenInfo accessToken;
 
-        long expiryTime = now + Config.getConfig(tenantIdentifier, main).getAccessTokenValidity();
+        long expiryTime = now + Config.getConfig(tenantIdentifier, main).getAccessTokenValidityInMillis();
         accessToken = new AccessTokenInfo(sessionHandle, userId, userId, refreshTokenHash1, expiryTime,
                 parentRefreshTokenHash1,
                 userData, antiCsrfToken, now, VERSION.V1, tenantIdentifier);

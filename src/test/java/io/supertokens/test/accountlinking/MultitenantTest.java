@@ -416,7 +416,8 @@ public class MultitenantTest {
                         new LinkAccounts(t1, 0, 1),
                         new CreateEmailPasswordUser(t3, "test1@example.com"),
                         new MakePrimaryUser(t3, 2),
-                        new AssociateUserToTenant(t2, 2).expect(new AnotherPrimaryUserWithEmailAlreadyExistsException("")),
+                        new AssociateUserToTenant(t2, 2).expect(
+                                new AnotherPrimaryUserWithEmailAlreadyExistsException("")),
                 }),
 
                 new TestCase(new TestCaseStep[]{
@@ -426,7 +427,8 @@ public class MultitenantTest {
                         new LinkAccounts(t1, 0, 1),
                         new CreateEmailPasswordUser(t3, "test1@example.com"),
                         new AssociateUserToTenant(t2, 2),
-                        new MakePrimaryUser(t3, 2).expect(new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException("", "")),
+                        new MakePrimaryUser(t3, 2).expect(
+                                new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException("", "")),
                 }),
 
                 new TestCase(new TestCaseStep[]{
@@ -446,7 +448,8 @@ public class MultitenantTest {
                         new LinkAccounts(t1, 0, 1),
                         new CreateEmailPasswordUser(t3, "test1@example.com"),
                         new MakePrimaryUser(t3, 2),
-                        new AssociateUserToTenant(t2, 2).expect(new AnotherPrimaryUserWithEmailAlreadyExistsException("")),
+                        new AssociateUserToTenant(t2, 2).expect(
+                                new AnotherPrimaryUserWithEmailAlreadyExistsException("")),
                 }),
 
                 new TestCase(new TestCaseStep[]{
@@ -456,7 +459,8 @@ public class MultitenantTest {
                         new LinkAccounts(t1, 0, 1),
                         new CreateEmailPasswordUser(t3, "test1@example.com"),
                         new AssociateUserToTenant(t2, 2),
-                        new MakePrimaryUser(t3, 2).expect(new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException("", "")),
+                        new MakePrimaryUser(t3, 2).expect(
+                                new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException("", "")),
                 }),
 
                 new TestCase(new TestCaseStep[]{
@@ -476,7 +480,8 @@ public class MultitenantTest {
                         new LinkAccounts(t1, 0, 1),
                         new CreateEmailPasswordUser(t3, "test1@example.com"),
                         new MakePrimaryUser(t3, 2),
-                        new AssociateUserToTenant(t2, 2).expect(new AnotherPrimaryUserWithEmailAlreadyExistsException("")),
+                        new AssociateUserToTenant(t2, 2).expect(
+                                new AnotherPrimaryUserWithEmailAlreadyExistsException("")),
                 }),
 
                 new TestCase(new TestCaseStep[]{
@@ -486,7 +491,8 @@ public class MultitenantTest {
                         new LinkAccounts(t1, 0, 1),
                         new CreateEmailPasswordUser(t3, "test1@example.com"),
                         new AssociateUserToTenant(t2, 2),
-                        new MakePrimaryUser(t3, 2).expect(new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException("", "")),
+                        new MakePrimaryUser(t3, 2).expect(
+                                new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException("", "")),
                 }),
 
                 new TestCase(new TestCaseStep[]{
@@ -505,7 +511,8 @@ public class MultitenantTest {
                         new MakePrimaryUser(t1, 0),
                         new LinkAccounts(t1, 0, 2),
                         new MakePrimaryUser(t2, 1),
-                        new UpdatePlessUserEmail(t1, 0, "test3@example.com").expect(new EmailChangeNotAllowedException()),
+                        new UpdatePlessUserEmail(t1, 0, "test3@example.com").expect(
+                                new EmailChangeNotAllowedException()),
                 }),
 
                 new TestCase(new TestCaseStep[]{
@@ -515,7 +522,8 @@ public class MultitenantTest {
                         new MakePrimaryUser(t1, 0),
                         new LinkAccounts(t1, 0, 2),
                         new MakePrimaryUser(t2, 1),
-                        new UpdatePlessUserEmail(t1, 1, "test1@example.com").expect(new EmailChangeNotAllowedException()),
+                        new UpdatePlessUserEmail(t1, 1, "test1@example.com").expect(
+                                new EmailChangeNotAllowedException()),
                 }),
 
                 new TestCase(new TestCaseStep[]{
@@ -545,7 +553,8 @@ public class MultitenantTest {
                         new MakePrimaryUser(t1, 0),
                         new LinkAccounts(t1, 0, 2),
                         new MakePrimaryUser(t2, 1),
-                        new UpdateEmailPasswordUserEmail(t1, 0, "test3@example.com").expect(new EmailChangeNotAllowedException()),
+                        new UpdateEmailPasswordUserEmail(t1, 0, "test3@example.com").expect(
+                                new EmailChangeNotAllowedException()),
                 }),
 
                 new TestCase(new TestCaseStep[]{
@@ -555,7 +564,8 @@ public class MultitenantTest {
                         new MakePrimaryUser(t1, 0),
                         new LinkAccounts(t1, 0, 2),
                         new MakePrimaryUser(t2, 1),
-                        new UpdateEmailPasswordUserEmail(t1, 1, "test1@example.com").expect(new EmailChangeNotAllowedException()),
+                        new UpdateEmailPasswordUserEmail(t1, 1, "test1@example.com").expect(
+                                new EmailChangeNotAllowedException()),
                 }),
 
                 new TestCase(new TestCaseStep[]{
@@ -575,7 +585,8 @@ public class MultitenantTest {
                         new LinkAccounts(t1, 0, 1),
                         new CreateEmailPasswordUser(t3, "test1@example.com"),
                         new MakePrimaryUser(t3, 2),
-                        new AssociateUserToTenant(t2, 2).expect(new AnotherPrimaryUserWithEmailAlreadyExistsException("")),
+                        new AssociateUserToTenant(t2, 2).expect(
+                                new AnotherPrimaryUserWithEmailAlreadyExistsException("")),
                 }),
 
                 new TestCase(new TestCaseStep[]{
@@ -585,7 +596,8 @@ public class MultitenantTest {
                         new LinkAccounts(t1, 0, 1),
                         new CreateEmailPasswordUser(t3, "test1@example.com"),
                         new AssociateUserToTenant(t2, 2),
-                        new MakePrimaryUser(t3, 2).expect(new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException("", "")),
+                        new MakePrimaryUser(t3, 2).expect(
+                                new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException("", "")),
                 }),
 
                 new TestCase(new TestCaseStep[]{
@@ -605,7 +617,8 @@ public class MultitenantTest {
                         new LinkAccounts(t1, 0, 1),
                         new CreateEmailPasswordUser(t3, "test1@example.com"),
                         new MakePrimaryUser(t3, 2),
-                        new AssociateUserToTenant(t2, 2).expect(new AnotherPrimaryUserWithEmailAlreadyExistsException("")),
+                        new AssociateUserToTenant(t2, 2).expect(
+                                new AnotherPrimaryUserWithEmailAlreadyExistsException("")),
                 }),
 
                 new TestCase(new TestCaseStep[]{
@@ -615,7 +628,8 @@ public class MultitenantTest {
                         new LinkAccounts(t1, 0, 1),
                         new CreateEmailPasswordUser(t3, "test1@example.com"),
                         new AssociateUserToTenant(t2, 2),
-                        new MakePrimaryUser(t3, 2).expect(new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException("", "")),
+                        new MakePrimaryUser(t3, 2).expect(
+                                new AccountInfoAlreadyAssociatedWithAnotherPrimaryUserIdException("", "")),
                 }),
 
                 new TestCase(new TestCaseStep[]{
@@ -634,7 +648,8 @@ public class MultitenantTest {
                         new MakePrimaryUser(t1, 0),
                         new LinkAccounts(t1, 0, 2),
                         new MakePrimaryUser(t2, 1),
-                        new CreateThirdPartyUser(t1, "google", "googleid1", "test3@example.com").expect(new EmailChangeNotAllowedException()),
+                        new CreateThirdPartyUser(t1, "google", "googleid1", "test3@example.com").expect(
+                                new EmailChangeNotAllowedException()),
                 }),
 
                 new TestCase(new TestCaseStep[]{
@@ -644,7 +659,8 @@ public class MultitenantTest {
                         new MakePrimaryUser(t1, 0),
                         new LinkAccounts(t1, 0, 2),
                         new MakePrimaryUser(t2, 1),
-                        new CreateThirdPartyUser(t1, "google", "googleid3", "test1@example.com").expect(new EmailChangeNotAllowedException()),
+                        new CreateThirdPartyUser(t1, "google", "googleid3", "test1@example.com").expect(
+                                new EmailChangeNotAllowedException()),
                 }),
 
                 new TestCase(new TestCaseStep[]{
@@ -655,7 +671,8 @@ public class MultitenantTest {
                         new LinkAccounts(t1, 0, 1),
                         new MakePrimaryUser(t3, 2),
                         new AssociateUserToTenant(t1, 2).expect(new DuplicatePhoneNumberException()),
-                        new AssociateUserToTenant(t2, 2).expect(new AnotherPrimaryUserWithPhoneNumberAlreadyExistsException("")),
+                        new AssociateUserToTenant(t2, 2).expect(
+                                new AnotherPrimaryUserWithPhoneNumberAlreadyExistsException("")),
                 }),
 
                 new TestCase(new TestCaseStep[]{
@@ -666,7 +683,8 @@ public class MultitenantTest {
                         new LinkAccounts(t1, 0, 1),
                         new MakePrimaryUser(t3, 2),
                         new AssociateUserToTenant(t1, 2).expect(new DuplicateThirdPartyUserException()),
-                        new AssociateUserToTenant(t2, 2).expect(new AnotherPrimaryUserWithThirdPartyInfoAlreadyExistsException("")),
+                        new AssociateUserToTenant(t2, 2).expect(
+                                new AnotherPrimaryUserWithThirdPartyInfoAlreadyExistsException("")),
                 }),
                 new TestCase(new TestCaseStep[]{
                         new CreateThirdPartyUser(t1, "google", "googleid1", "test1@example.com"),
@@ -675,16 +693,18 @@ public class MultitenantTest {
                         new MakePrimaryUser(t1, 0),
                         new LinkAccounts(t1, 0, 1),
                         new MakePrimaryUser(t1, 2),
-                        new CreateThirdPartyUser(t1, "google", "googleid1", "test3@example.com").expect(new EmailChangeNotAllowedException()),
-                        new CreateThirdPartyUser(t1, "google", "googleid3", "test1@example.com").expect(new EmailChangeNotAllowedException()),
+                        new CreateThirdPartyUser(t1, "google", "googleid1", "test3@example.com").expect(
+                                new EmailChangeNotAllowedException()),
+                        new CreateThirdPartyUser(t1, "google", "googleid3", "test1@example.com").expect(
+                                new EmailChangeNotAllowedException()),
                 }),
                 new TestCase(new TestCaseStep[]{
-                       new CreateEmailPasswordUser(t1, "test@example.com"),
-                       new CreateEmailPasswordUser(t1, "test2@example.com"),
-                       new MakePrimaryUser(t1, 0),
-                       new LinkAccounts(t1, 0, 1),
-                       new UnlinkAccount(t1, 0),
-                       new AssociateUserToTenant(t2, 0).expect(new UnknownUserIdException()),
+                        new CreateEmailPasswordUser(t1, "test@example.com"),
+                        new CreateEmailPasswordUser(t1, "test2@example.com"),
+                        new MakePrimaryUser(t1, 0),
+                        new LinkAccounts(t1, 0, 1),
+                        new UnlinkAccount(t1, 0),
+                        new AssociateUserToTenant(t2, 0).expect(new UnknownUserIdException()),
                 }),
 
                 new TestCase(new TestCaseStep[]{
@@ -733,7 +753,8 @@ public class MultitenantTest {
                         new MakePrimaryUser(t1, 1),
                         new AssociateUserToTenant(t1, 0),
                         new AssociateUserToTenant(t1, 1).expect(new DuplicateEmailException()),
-                        new LinkAccounts(t1, 0, 1).expect(new RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException(null, "")),
+                        new LinkAccounts(t1, 0, 1).expect(
+                                new RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException(null, "")),
                 }),
 
                 new TestCase(new TestCaseStep[]{
@@ -803,14 +824,16 @@ public class MultitenantTest {
                         new CreatePlessUserWithEmail(t1, "test2@example.com"),
                         new MakePrimaryUser(t1, 0),
                         new MakePrimaryUser(t1, 1),
-                        new UpdatePlessUserEmail(t1, 1, "test1@example.com").expect(new EmailChangeNotAllowedException()),
+                        new UpdatePlessUserEmail(t1, 1, "test1@example.com").expect(
+                                new EmailChangeNotAllowedException()),
                 }),
                 new TestCase(new TestCaseStep[]{
                         new CreatePlessUserWithEmail(t1, "test1@example.com"),
                         new CreateEmailPasswordUser(t1, "test2@example.com"),
                         new MakePrimaryUser(t1, 0),
                         new MakePrimaryUser(t1, 1),
-                        new UpdateEmailPasswordUserEmail(t1, 1, "test1@example.com").expect(new EmailChangeNotAllowedException()),
+                        new UpdateEmailPasswordUserEmail(t1, 1, "test1@example.com").expect(
+                                new EmailChangeNotAllowedException()),
                 }),
 
                 new TestCase(new TestCaseStep[]{
@@ -830,7 +853,8 @@ public class MultitenantTest {
                         new CreateThirdPartyUser(t1, "google", "googleid", "test2@example.com"),
                         new MakePrimaryUser(t1, 0),
                         new MakePrimaryUser(t1, 1),
-                        new CreateThirdPartyUser(t1, "google", "googleid", "test1@example.com").expect(new EmailChangeNotAllowedException()),
+                        new CreateThirdPartyUser(t1, "google", "googleid", "test1@example.com").expect(
+                                new EmailChangeNotAllowedException()),
                 }),
                 new TestCase(new TestCaseStep[]{
                         new CreateEmailPasswordUser(t1, "test1@example.com"),
@@ -839,7 +863,8 @@ public class MultitenantTest {
                         new LinkAccounts(t1, 0, 1),
                         new CreateThirdPartyUser(t2, "google", "googleid", "test2@example.com"),
                         new MakePrimaryUser(t2, 2),
-                        new CreateThirdPartyUser(t2, "google", "googleid", "test1@example.com").expect(new EmailChangeNotAllowedException()),
+                        new CreateThirdPartyUser(t2, "google", "googleid", "test1@example.com").expect(
+                                new EmailChangeNotAllowedException()),
                 }),
         };
 
@@ -985,7 +1010,8 @@ public class MultitenantTest {
         String thirdPartyUserId;
         String email;
 
-        public CreateThirdPartyUser(TenantIdentifier tenantIdentifier, String thirdPartyId, String thirdPartyUserId, String email) {
+        public CreateThirdPartyUser(TenantIdentifier tenantIdentifier, String thirdPartyId, String thirdPartyUserId,
+                                    String email) {
             this.tenantIdentifier = tenantIdentifier;
             this.thirdPartyId = thirdPartyId;
             this.thirdPartyUserId = thirdPartyUserId;
@@ -1034,7 +1060,8 @@ public class MultitenantTest {
         public void execute(Main main) throws Exception {
             Storage storage = (StorageLayer.getStorage(tenantIdentifier, main));
             AuthRecipe.linkAccounts(main, tenantIdentifier.toAppIdentifier(), storage,
-                    TestCase.users.get(recipeUserIndex).getSupertokensUserId(), TestCase.users.get(primaryUserIndex).getSupertokensUserId());
+                    TestCase.users.get(recipeUserIndex).getSupertokensUserId(),
+                    TestCase.users.get(primaryUserIndex).getSupertokensUserId());
         }
     }
 
@@ -1108,7 +1135,8 @@ public class MultitenantTest {
         public void execute(Main main) throws Exception {
             Storage storage = (StorageLayer.getStorage(tenantIdentifier, main));
             Passwordless.updateUser(tenantIdentifier.toAppIdentifier(), storage,
-                    TestCase.users.get(userIndex).getSupertokensUserId(), null, new Passwordless.FieldUpdate(phoneNumber));
+                    TestCase.users.get(userIndex).getSupertokensUserId(), null,
+                    new Passwordless.FieldUpdate(phoneNumber));
         }
     }
 

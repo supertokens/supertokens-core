@@ -97,7 +97,8 @@ public class UserIdMappingAPI extends WebserverAPI {
         try {
             UserIdMapping.createUserIdMapping(
                     getAppIdentifier(req), enforcePublicTenantAndGetAllStoragesForApp(req),
-                    superTokensUserId, externalUserId, externalUserIdInfo, force, getVersionFromRequest(req).greaterThanOrEqualTo(
+                    superTokensUserId, externalUserId, externalUserIdInfo, force,
+                    getVersionFromRequest(req).greaterThanOrEqualTo(
                             SemVer.v4_0));
 
             JsonObject response = new JsonObject();
@@ -163,7 +164,8 @@ public class UserIdMappingAPI extends WebserverAPI {
             // Request from (app1, tenant3) may result in either user1 or user2
 
             StorageAndUserIdMapping storageAndUserIdMapping =
-                    this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(req, userId, userIdType, true);
+                    this.enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(req, userId, userIdType,
+                            true);
 
             if (storageAndUserIdMapping.userIdMapping == null) {
                 JsonObject response = new JsonObject();

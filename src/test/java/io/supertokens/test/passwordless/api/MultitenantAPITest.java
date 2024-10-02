@@ -248,7 +248,8 @@ public class MultitenantAPITest {
         assertEquals("RESTART_FLOW_ERROR", response.get("status").getAsString());
     }
 
-    private JsonObject consumeCode(TenantIdentifier tenantIdentifier, String deviceId, String preAuthSessionId, String userInputCode)
+    private JsonObject consumeCode(TenantIdentifier tenantIdentifier, String deviceId, String preAuthSessionId,
+                                   String userInputCode)
             throws HttpResponseException, IOException {
         JsonObject consumeCodeRequestBody = new JsonObject();
         consumeCodeRequestBody.addProperty("deviceId", deviceId);
@@ -263,7 +264,8 @@ public class MultitenantAPITest {
         return response.get("user").getAsJsonObject();
     }
 
-    private void unsuccessfulConsumeCode(TenantIdentifier tenantIdentifier, String deviceId, String preAuthSessionId, String userInputCode)
+    private void unsuccessfulConsumeCode(TenantIdentifier tenantIdentifier, String deviceId, String preAuthSessionId,
+                                         String userInputCode)
             throws HttpResponseException, IOException {
         JsonObject consumeCodeRequestBody = new JsonObject();
         consumeCodeRequestBody.addProperty("deviceId", deviceId);
@@ -280,25 +282,29 @@ public class MultitenantAPITest {
     private JsonObject signInUpEmailUsingLinkCode(TenantIdentifier tenantIdentifier, String email)
             throws HttpResponseException, IOException {
         JsonObject code = createCodeWithEmail(tenantIdentifier, email);
-        return consumeCode(tenantIdentifier, code.get("preAuthSessionId").getAsString(), code.get("linkCode").getAsString());
+        return consumeCode(tenantIdentifier, code.get("preAuthSessionId").getAsString(),
+                code.get("linkCode").getAsString());
     }
 
     private JsonObject signInUpEmailUsingUserInputCode(TenantIdentifier tenantIdentifier, String email)
             throws HttpResponseException, IOException {
         JsonObject code = createCodeWithEmail(tenantIdentifier, email);
-        return consumeCode(tenantIdentifier, code.get("deviceId").getAsString(), code.get("preAuthSessionId").getAsString(), code.get("userInputCode").getAsString());
+        return consumeCode(tenantIdentifier, code.get("deviceId").getAsString(),
+                code.get("preAuthSessionId").getAsString(), code.get("userInputCode").getAsString());
     }
 
     private JsonObject signInUpNumberUsingLinkCode(TenantIdentifier tenantIdentifier, String phoneNumber)
             throws HttpResponseException, IOException {
         JsonObject code = createCodeWithNumber(tenantIdentifier, phoneNumber);
-        return consumeCode(tenantIdentifier, code.get("preAuthSessionId").getAsString(), code.get("linkCode").getAsString());
+        return consumeCode(tenantIdentifier, code.get("preAuthSessionId").getAsString(),
+                code.get("linkCode").getAsString());
     }
 
     private JsonObject signInUpNumberUsingUserInputCode(TenantIdentifier tenantIdentifier, String phoneNumber)
             throws HttpResponseException, IOException {
         JsonObject code = createCodeWithNumber(tenantIdentifier, phoneNumber);
-        return consumeCode(tenantIdentifier, code.get("deviceId").getAsString(), code.get("preAuthSessionId").getAsString(), code.get("userInputCode").getAsString());
+        return consumeCode(tenantIdentifier, code.get("deviceId").getAsString(),
+                code.get("preAuthSessionId").getAsString(), code.get("userInputCode").getAsString());
     }
 
     private JsonObject getUserUsingId(TenantIdentifier tenantIdentifier, String userId)
@@ -423,41 +429,49 @@ public class MultitenantAPITest {
 
         TenantIdentifier[] tenants = new TenantIdentifier[]{t1, t2, t3};
         for (TenantIdentifier createTenant : tenants) {
-            for (TenantIdentifier consumeTenant: tenants) {
+            for (TenantIdentifier consumeTenant : tenants) {
                 { // email with link code
                     JsonObject code = createCodeWithEmail(createTenant, "user@example.com");
 
                     if (createTenant.equals(consumeTenant)) {
-                        consumeCode(consumeTenant, code.get("preAuthSessionId").getAsString(), code.get("linkCode").getAsString());
+                        consumeCode(consumeTenant, code.get("preAuthSessionId").getAsString(),
+                                code.get("linkCode").getAsString());
                     } else {
-                        unsuccessfulConsumeCode(consumeTenant, code.get("preAuthSessionId").getAsString(), code.get("linkCode").getAsString());
+                        unsuccessfulConsumeCode(consumeTenant, code.get("preAuthSessionId").getAsString(),
+                                code.get("linkCode").getAsString());
                     }
                 }
                 { // email with user input code
                     JsonObject code = createCodeWithEmail(createTenant, "user@example.com");
 
                     if (createTenant.equals(consumeTenant)) {
-                        consumeCode(consumeTenant, code.get("deviceId").getAsString(), code.get("preAuthSessionId").getAsString(), code.get("userInputCode").getAsString());
+                        consumeCode(consumeTenant, code.get("deviceId").getAsString(),
+                                code.get("preAuthSessionId").getAsString(), code.get("userInputCode").getAsString());
                     } else {
-                        unsuccessfulConsumeCode(consumeTenant, code.get("deviceId").getAsString(), code.get("preAuthSessionId").getAsString(), code.get("userInputCode").getAsString());
+                        unsuccessfulConsumeCode(consumeTenant, code.get("deviceId").getAsString(),
+                                code.get("preAuthSessionId").getAsString(), code.get("userInputCode").getAsString());
                     }
                 }
                 { // phoneNumber with link code
                     JsonObject code = createCodeWithNumber(createTenant, "+442071838750");
 
                     if (createTenant.equals(consumeTenant)) {
-                        consumeCode(consumeTenant, code.get("preAuthSessionId").getAsString(), code.get("linkCode").getAsString());
+                        consumeCode(consumeTenant, code.get("preAuthSessionId").getAsString(),
+                                code.get("linkCode").getAsString());
                     } else {
-                        unsuccessfulConsumeCode(consumeTenant, code.get("preAuthSessionId").getAsString(), code.get("linkCode").getAsString());
+                        unsuccessfulConsumeCode(consumeTenant, code.get("preAuthSessionId").getAsString(),
+                                code.get("linkCode").getAsString());
                     }
                 }
                 { // phoneNumber with user input code
                     JsonObject code = createCodeWithNumber(createTenant, "+442071838750");
 
                     if (createTenant.equals(consumeTenant)) {
-                        consumeCode(consumeTenant, code.get("deviceId").getAsString(), code.get("preAuthSessionId").getAsString(), code.get("userInputCode").getAsString());
+                        consumeCode(consumeTenant, code.get("deviceId").getAsString(),
+                                code.get("preAuthSessionId").getAsString(), code.get("userInputCode").getAsString());
                     } else {
-                        unsuccessfulConsumeCode(consumeTenant, code.get("deviceId").getAsString(), code.get("preAuthSessionId").getAsString(), code.get("userInputCode").getAsString());
+                        unsuccessfulConsumeCode(consumeTenant, code.get("deviceId").getAsString(),
+                                code.get("preAuthSessionId").getAsString(), code.get("userInputCode").getAsString());
                     }
                 }
             }
@@ -465,7 +479,8 @@ public class MultitenantAPITest {
     }
 
     @Test
-    public void testGetUserUsingIdReturnsUserFromTheRightTenantWhileQueryingFromAnyTenantInTheSameApp() throws Exception {
+    public void testGetUserUsingIdReturnsUserFromTheRightTenantWhileQueryingFromAnyTenantInTheSameApp()
+            throws Exception {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
@@ -567,7 +582,8 @@ public class MultitenantAPITest {
             String newPhoneNumber = generateRandomNumber(8);
             updatePhoneNumber(t1, user.getAsJsonPrimitive("id").getAsString(), newPhoneNumber);
             user.remove("phoneNumber");
-            // We need to normalize the phone number before adding it to the user object, as the update API performs normalization.
+            // We need to normalize the phone number before adding it to the user object, as the update API performs
+            // normalization.
             user.addProperty("phoneNumber", io.supertokens.utils.Utils.normalizeIfPhoneNumber(newPhoneNumber));
 
             assertEquals(user, signInUpNumberUsingUserInputCode(userTenant, newPhoneNumber));

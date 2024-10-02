@@ -60,7 +60,8 @@ public class TestGetUserSpeed {
     }
 
     public void testUserCreationLinkingAndGetByIdSpeedsCommon(TestingProcessManager.TestingProcess process,
-                                                              long createTime, long linkingTime, long getTime) throws Exception {
+                                                              long createTime, long linkingTime, long getTime)
+            throws Exception {
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;

@@ -113,7 +113,8 @@ public class ActiveUserTest {
         }
 
         AuthRecipeUserInfo user1 = createEmailPasswordUser(process.getProcess(), "test@example.com", "password");
-        AuthRecipeUserInfo user2 = createThirdPartyUser(process.getProcess(), "google", "google-user", "test@example.com");
+        AuthRecipeUserInfo user2 = createThirdPartyUser(process.getProcess(), "google", "google-user",
+                "test@example.com");
 
         {
             // Update active user

@@ -161,7 +161,8 @@ public class MultitenantAPITest {
         t3 = new TenantIdentifier(null, "a1", "t2");
     }
 
-    public JsonObject signInUp(TenantIdentifier tenantIdentifier, String thirdPartyId, String thirdPartyUserId, String email)
+    public JsonObject signInUp(TenantIdentifier tenantIdentifier, String thirdPartyId, String thirdPartyUserId,
+                               String email)
             throws HttpResponseException, IOException {
         JsonObject emailObject = new JsonObject();
         emailObject.addProperty("id", email);
@@ -193,7 +194,8 @@ public class MultitenantAPITest {
         return userResponse.getAsJsonObject("user");
     }
 
-    private JsonObject getUserUsingThirdPartyUserId(TenantIdentifier tenantIdentifier, String thirdPartyId, String thirdPartyUserId)
+    private JsonObject getUserUsingThirdPartyUserId(TenantIdentifier tenantIdentifier, String thirdPartyId,
+                                                    String thirdPartyUserId)
             throws HttpResponseException, IOException {
         HashMap<String, String> map = new HashMap<>();
         map.put("thirdPartyId", thirdPartyId);
@@ -243,7 +245,8 @@ public class MultitenantAPITest {
     }
 
     @Test
-    public void testGetUserUsingIdReturnsUserFromTheRightTenantWhileQueryingFromAnyTenantInTheSameApp() throws Exception {
+    public void testGetUserUsingIdReturnsUserFromTheRightTenantWhileQueryingFromAnyTenantInTheSameApp()
+            throws Exception {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }

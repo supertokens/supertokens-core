@@ -62,7 +62,8 @@ public class GetCodesAPI extends WebserverAPI {
         // logic based on: https://app.code2flow.com/Odo88u7TNKIk
 
         String email = InputParser.getQueryParamOrThrowError(req, "email", true);
-        String phoneNumber = Utils.normalizeIfPhoneNumber(InputParser.getQueryParamOrThrowError(req, "phoneNumber", true));
+        String phoneNumber = Utils.normalizeIfPhoneNumber(
+                InputParser.getQueryParamOrThrowError(req, "phoneNumber", true));
         String deviceId = InputParser.getQueryParamOrThrowError(req, "deviceId", true);
         String deviceIdHash = InputParser.getQueryParamOrThrowError(req, "preAuthSessionId", true);
 
@@ -135,7 +136,7 @@ public class GetCodesAPI extends WebserverAPI {
         } catch (Base64EncodingException ex) {
             throw new ServletException(new BadRequestException("Input encoding error in " + ex.source));
         } catch (NoSuchAlgorithmException | StorageQueryException
-                | TenantOrAppNotFoundException e) {
+                 | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

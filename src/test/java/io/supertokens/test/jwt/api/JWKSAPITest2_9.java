@@ -62,7 +62,7 @@ public class JWKSAPITest2_9 {
      */
     @Test
     public void testThatGettingKeysAfterCreatingJWTDoesNotReturnEmpty() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -92,7 +92,7 @@ public class JWKSAPITest2_9 {
      */
     @Test
     public void testThatKeysContainsMatchingKeyId() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -139,7 +139,7 @@ public class JWKSAPITest2_9 {
      */
     @Test
     public void testThatKeyFromResponseCanBeUsedForJWTVerification() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

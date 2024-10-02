@@ -79,7 +79,7 @@ public class ConfigTest2_6 {
 
         CoreConfig config = Config.getConfig(process.getProcess());
 
-        long refreshValidity = config.getRefreshTokenValidity();
+        long refreshValidity = config.getRefreshTokenValidityInMillis();
 
         Assert.assertEquals(refreshValidity, 60 * 1000);
 
@@ -246,10 +246,10 @@ public class ConfigTest2_6 {
     private static void checkConfigValues(CoreConfig config, TestingProcess process, boolean telemetryDisabled) {
 
         assertEquals("Config version did not match default", config.getConfigVersion(), 0);
-        assertEquals("Config access token validity did not match default", config.getAccessTokenValidity(),
+        assertEquals("Config access token validity did not match default", config.getAccessTokenValidityInMillis(),
                 3600 * 1000);
         assertFalse("Config access token blacklisting did not match default", config.getAccessTokenBlacklisting());
-        assertEquals("Config refresh token validity did not match default", config.getRefreshTokenValidity(),
+        assertEquals("Config refresh token validity did not match default", config.getRefreshTokenValidityInMillis(),
                 60 * 2400 * 60 * (long) 1000);
         assertEquals(5, config.getTotpMaxAttempts()); // 5
         assertEquals(900, config.getTotpRateLimitCooldownTimeSec()); // 15 minutes
@@ -259,7 +259,7 @@ public class ConfigTest2_6 {
         assertEquals("Config error log path did not match default", config.getErrorLogPath(process.getProcess()),
                 CLIOptions.get(process.getProcess()).getInstallationPath() + "logs/error.log");
         assertEquals("Config access signing key interval did not match default",
-                config.getAccessTokenDynamicSigningKeyUpdateInterval(), 7 * 24 * 60 * 60 * 1000);
+                config.getAccessTokenDynamicSigningKeyUpdateIntervalInMillis(), 7 * 24 * 60 * 60 * 1000);
 
         assertEquals(config.getHost(process.getProcess()), "localhost");
         assertEquals(config.getPort(process.getProcess()), 3567);

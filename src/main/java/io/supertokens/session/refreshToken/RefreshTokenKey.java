@@ -54,7 +54,8 @@ public class RefreshTokenKey extends ResourceDistributor.SingletonResource {
         try {
             this.getKey();
         } catch (StorageQueryException | StorageTransactionLogicException e) {
-            Logging.error(main, appIdentifier.getAsPublicTenantIdentifier(), "Error while fetching refresh token key", false, e);
+            Logging.error(main, appIdentifier.getAsPublicTenantIdentifier(), "Error while fetching refresh token key",
+                    false, e);
         }
     }
 
@@ -73,7 +74,8 @@ public class RefreshTokenKey extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public static void loadForAllTenants(Main main, List<AppIdentifier> apps, List<TenantIdentifier> tenantsThatChanged) {
+    public static void loadForAllTenants(Main main, List<AppIdentifier> apps,
+                                         List<TenantIdentifier> tenantsThatChanged) {
         try {
             main.getResourceDistributor().withResourceDistributorLock(() -> {
                 Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingResources =
@@ -114,7 +116,8 @@ public class RefreshTokenKey extends ResourceDistributor.SingletonResource {
 
     private String maybeGenerateNewKeyAndUpdateInDb()
             throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException {
-        SessionStorage storage = (SessionStorage) StorageLayer.getStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main);
+        SessionStorage storage = (SessionStorage) StorageLayer.getStorage(
+                this.appIdentifier.getAsPublicTenantIdentifier(), main);
 
         if (storage.getType() == STORAGE_TYPE.SQL) {
 

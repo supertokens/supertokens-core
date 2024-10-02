@@ -37,7 +37,6 @@ import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
-import io.supertokens.test.multitenant.api.TestMultitenancyAPIHelper;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
 import io.supertokens.utils.SemVer;
 import org.junit.After;
@@ -585,7 +584,8 @@ public class MultitenantAPITest {
                     } else {
                         if (StorageLayer.isInMemDb(process.getProcess())) {
                             // For in memory db, the user is in the same user pool and the password reset will succeed
-                            successfulResetPasswordUsingToken(tenant, user.getAsJsonPrimitive("id").getAsString(), token,
+                            successfulResetPasswordUsingToken(tenant, user.getAsJsonPrimitive("id").getAsString(),
+                                    token,
                                     newPassword);
                         } else {
                             invalidResetPasswordUsingToken(tenant, token, newPassword);
@@ -622,7 +622,8 @@ public class MultitenantAPITest {
                     } else {
                         if (StorageLayer.isInMemDb(process.getProcess())) {
                             // For in memory db, the user is in the same user pool and the password reset will succeed
-                            successfulResetPasswordUsingToken(tenant, user.getAsJsonPrimitive("id").getAsString(), token,
+                            successfulResetPasswordUsingToken(tenant, user.getAsJsonPrimitive("id").getAsString(),
+                                    token,
                                     newPassword);
                         } else {
                             invalidResetPasswordUsingToken(tenant, token, newPassword);

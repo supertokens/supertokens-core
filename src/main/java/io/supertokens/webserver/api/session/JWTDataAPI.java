@@ -68,7 +68,8 @@ public class JWTDataAPI extends WebserverAPI {
         Storage storage;
         try {
             AppIdentifier appIdentifier = getAppIdentifier(req);
-            tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(), Session.getTenantIdFromSessionHandle(sessionHandle));
+            tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(),
+                    Session.getTenantIdFromSessionHandle(sessionHandle));
             storage = StorageLayer.getStorage(tenantIdentifier, main);
         } catch (TenantOrAppNotFoundException e) {
             throw new ServletException(e);
@@ -113,7 +114,8 @@ public class JWTDataAPI extends WebserverAPI {
         Storage storage;
         try {
             AppIdentifier appIdentifier = getAppIdentifier(req);
-            tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(), Session.getTenantIdFromSessionHandle(sessionHandle));
+            tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(),
+                    Session.getTenantIdFromSessionHandle(sessionHandle));
             storage = StorageLayer.getStorage(tenantIdentifier, main);
         } catch (TenantOrAppNotFoundException e) {
             throw new ServletException(e);

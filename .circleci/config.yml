@@ -16,7 +16,7 @@ jobs:
     steps:
       - checkout
       - run: echo $'\n[mysqld]\ncharacter_set_server=utf8mb4\nmax_connections=10000' >> /etc/mysql/mysql.cnf
-      - run: apt-get -y -q install postgresql-9.5 postgresql-client-9.5 postgresql-contrib-9.5 sudo
+      - run: apt-get update && apt-get -y -q install postgresql-9.5 postgresql-client-9.5 postgresql-contrib-9.5 sudo
       - run: echo "host all  all    0.0.0.0/0  md5" >> /etc/postgresql/9.5/main/pg_hba.conf
       - run: echo "listen_addresses='*'" >> /etc/postgresql/9.5/main/postgresql.conf
       - run: sed -i 's/^#*\s*max_connections\s*=.*/max_connections = 10000/' /etc/postgresql/9.5/main/postgresql.conf

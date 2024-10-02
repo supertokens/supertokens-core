@@ -65,7 +65,7 @@ public class CLIOptionsTest {
 
     @Test
     public void cli1ArgsTest() throws TestingProcessManagerException, InterruptedException {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
         assertNotNull(e);
@@ -75,7 +75,7 @@ public class CLIOptionsTest {
     @Test
     public void cli2ArgsTest() throws Exception {
         // testing that when badInput is given to second cli argument, default values for host and port are used
-        String[] args = { "../", "random" };
+        String[] args = {"../", "random"};
 
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -87,7 +87,7 @@ public class CLIOptionsTest {
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
 
         // custom host and port
-        args = new String[] { "../", "host=127.0.0.1", "port=8081" };
+        args = new String[]{"../", "host=127.0.0.1", "port=8081"};
 
         process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -102,7 +102,7 @@ public class CLIOptionsTest {
 
     @Test
     public void testMultipleInstancesAtTheSameTime() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         try {
             // Create 2 custom config files
@@ -119,14 +119,14 @@ public class CLIOptionsTest {
             TestingProcess process = TestingProcessManager.start(args);
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
-            args = new String[] { "../", "port=8081",
-                    "configFile=" + new File("../temp/new1Config.yaml").getAbsolutePath() };
+            args = new String[]{"../", "port=8081",
+                    "configFile=" + new File("../temp/new1Config.yaml").getAbsolutePath()};
 
             TestingProcess process1 = TestingProcessManager.start(args);
             assertNotNull(process1.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
-            args = new String[] { "../", "port=8082",
-                    "configFile=" + new File("../temp/new2Config.yaml").getAbsolutePath() };
+            args = new String[]{"../", "port=8082",
+                    "configFile=" + new File("../temp/new2Config.yaml").getAbsolutePath()};
 
             TestingProcess process2 = TestingProcessManager.start(args);
             assertNotNull(process2.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -154,12 +154,14 @@ public class CLIOptionsTest {
 
             // clear log files
             {
-                FileWriter f = new FileWriter(Config.getConfig(process.getProcess()).getInfoLogPath(process.getProcess()));
+                FileWriter f = new FileWriter(
+                        Config.getConfig(process.getProcess()).getInfoLogPath(process.getProcess()));
                 f.flush();
                 f.close();
             }
             {
-                FileWriter f = new FileWriter(Config.getConfig(process.getProcess()).getErrorLogPath(process.getProcess()));
+                FileWriter f = new FileWriter(
+                        Config.getConfig(process.getProcess()).getErrorLogPath(process.getProcess()));
                 f.flush();
                 f.close();
             }

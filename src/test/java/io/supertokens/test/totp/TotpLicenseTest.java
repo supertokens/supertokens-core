@@ -42,7 +42,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 
 public class TotpLicenseTest {
-    public final static String OPAQUE_KEY_WITH_MFA_FEATURE = "Qk8olVa=v-9PU=snnUFMF4ihMCx4zVBOO6Jd7Nrg6Cg5YyFliEj252ADgpwEpDLfFowA0U5OyVo3XL=U4FMft2HDHCDGg9hWD4iwQQiyjMRi6Mu03CVbAxIkNGaXtJ53";
+    public final static String OPAQUE_KEY_WITH_MFA_FEATURE = "Qk8olVa=v-9PU" +
+            "=snnUFMF4ihMCx4zVBOO6Jd7Nrg6Cg5YyFliEj252ADgpwEpDLfFowA0U5OyVo3XL" +
+            "=U4FMft2HDHCDGg9hWD4iwQQiyjMRi6Mu03CVbAxIkNGaXtJ53";
 
     @Rule
     public TestRule watchman = Utils.getOnFailure();

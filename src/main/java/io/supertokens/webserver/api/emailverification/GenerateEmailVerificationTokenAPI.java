@@ -85,7 +85,8 @@ public class GenerateEmailVerificationTokenAPI extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", "EMAIL_ALREADY_VERIFIED_ERROR");
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | NoSuchAlgorithmException | InvalidKeySpecException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | NoSuchAlgorithmException | InvalidKeySpecException |
+                 TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
 

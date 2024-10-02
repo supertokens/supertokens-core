@@ -59,8 +59,9 @@ public class RemoveTotpDeviceAPI extends WebserverAPI {
                 // While sending the usage stats we do a join, so totp tables also must use internal user id.
 
                 // Try to find the appIdentifier with right storage based on the userId
-                StorageAndUserIdMapping storageAndUserIdMapping = enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
-                        req, userId, UserIdType.ANY, false);
+                StorageAndUserIdMapping storageAndUserIdMapping =
+                        enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
+                                req, userId, UserIdType.ANY, false);
                 storage = storageAndUserIdMapping.storage;
             } catch (UnknownUserIdException e) {
                 throw new IllegalStateException("should never happen");

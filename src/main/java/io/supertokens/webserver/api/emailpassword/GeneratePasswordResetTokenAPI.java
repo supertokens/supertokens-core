@@ -23,7 +23,6 @@ import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
-import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
@@ -61,7 +60,7 @@ public class GeneratePasswordResetTokenAPI extends WebserverAPI {
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
 
         // logic according to https://github.com/supertokens/supertokens-core/issues/106
-        TenantIdentifier  tenantIdentifier;
+        TenantIdentifier tenantIdentifier;
         try {
             tenantIdentifier = getTenantIdentifier(req);
         } catch (TenantOrAppNotFoundException e) {
@@ -69,6 +68,9 @@ public class GeneratePasswordResetTokenAPI extends WebserverAPI {
         }
 
         try {
+            io.supertokens.webserver.api.emailpassword.Utils.assertIfEmailPasswordIsEnabledForTenant(main,
+                    tenantIdentifier, getVersionFromRequest(req));
+
             StorageAndUserIdMapping storageAndUserIdMapping =
                     getStorageAndUserIdMappingForTenantSpecificApi(req, userId, UserIdType.ANY);
             // if a userIdMapping exists, pass the superTokensUserId to the generatePasswordResetToken

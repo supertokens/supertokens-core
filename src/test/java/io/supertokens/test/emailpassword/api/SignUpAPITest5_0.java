@@ -131,7 +131,8 @@ public class SignUpAPITest5_0 {
         assertNotNull(jsonUser.get("timeJoined"));
         assert (!jsonUser.get("isPrimaryUser").getAsBoolean());
         assert (jsonUser.get("emails").getAsJsonArray().size() == 1);
-        assert (jsonUser.get("emails").getAsJsonArray().get(0).getAsString().equals("user1.google@@stfakeemail.supertokens.com"));
+        assert (jsonUser.get("emails").getAsJsonArray().get(0).getAsString()
+                .equals("user1.google@@stfakeemail.supertokens.com"));
         assert (jsonUser.get("phoneNumbers").getAsJsonArray().size() == 0);
         assert (jsonUser.get("thirdParty").getAsJsonArray().size() == 0);
         assert (jsonUser.get("loginMethods").getAsJsonArray().size() == 1);

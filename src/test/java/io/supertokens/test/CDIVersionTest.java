@@ -313,7 +313,8 @@ public class CDIVersionTest {
 
             {
                 // check regular output
-                JsonObject response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/.well-known/jwks.json", null,
+                JsonObject response = HttpRequest.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/.well-known/jwks.json", null,
                         1000, 1000, null);
 
                 assertEquals(response.entrySet().size(), 1);
@@ -325,7 +326,8 @@ public class CDIVersionTest {
 
             {
                 JsonObject oldResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/jwt/jwks", null, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
+                        "http://localhost:3567/recipe/jwt/jwks", null, 1000, 1000, null,
+                        Utils.getCdiVersionStringLatestForTests(),
                         "jwt");
 
                 JsonArray oldKeys = oldResponse.getAsJsonArray("keys");
@@ -346,7 +348,8 @@ public class CDIVersionTest {
 
             {
                 // check regular output
-                JsonObject response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/.well-known/jwks.json", null,
+                JsonObject response = HttpRequest.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/.well-known/jwks.json", null,
                         1000, 1000, null);
 
                 assertEquals(response.entrySet().size(), 1);
@@ -369,7 +372,7 @@ public class CDIVersionTest {
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
         }
     }
-    
+
     @Test
     public void testInvalidSemanticVersion() throws Exception {
         String[] args = {"../"};
@@ -381,7 +384,8 @@ public class CDIVersionTest {
         ProcessState.EventAndException state = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
         assertNotNull(state);
 
-        assertEquals("supertokens_max_cdi_version is not a valid semantic version", state.exception.getCause().getMessage());
+        assertEquals("supertokens_max_cdi_version is not a valid semantic version",
+                state.exception.getCause().getMessage());
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
@@ -425,7 +429,7 @@ public class CDIVersionTest {
                     "jwt");
             fail();
         } catch (HttpResponseException e) {
-            assert(e.getMessage().contains("cdi-version 2.21 not supported"));
+            assert (e.getMessage().contains("cdi-version 2.21 not supported"));
         }
 
         try {
@@ -434,7 +438,7 @@ public class CDIVersionTest {
                     "jwt");
             fail();
         } catch (HttpResponseException e) {
-            assert(e.getMessage().contains("cdi-version 3.0 not supported"));
+            assert (e.getMessage().contains("cdi-version 3.0 not supported"));
         }
 
         process.kill();

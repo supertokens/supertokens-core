@@ -53,7 +53,7 @@ public class UpdateExternalUserIdInfoTest {
 
     @Test
     public void testBadInput() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -188,7 +188,7 @@ public class UpdateExternalUserIdInfoTest {
 
     @Test
     public void testUpdatingExternalUserIdInfoWithUnknownUserId() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -258,7 +258,7 @@ public class UpdateExternalUserIdInfoTest {
 
     @Test
     public void testUpdatingExternalUserIdInfoWithSuperTokensUserId() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -270,7 +270,8 @@ public class UpdateExternalUserIdInfoTest {
         // create userId mapping with externalUserIdInfo
         String externalUserIdInfo = "externalUserIdInfo";
         AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        UserIdMapping userIdMapping = new io.supertokens.pluginInterface.useridmapping.UserIdMapping(userInfo.getSupertokensUserId(),
+        UserIdMapping userIdMapping = new io.supertokens.pluginInterface.useridmapping.UserIdMapping(
+                userInfo.getSupertokensUserId(),
                 "externalUserIdInfo", externalUserIdInfo);
 
         Utils.createUserIdMappingAndCheckThatItExists(process.main, userIdMapping);
@@ -329,7 +330,7 @@ public class UpdateExternalUserIdInfoTest {
 
     @Test
     public void testUpdatingExternalUserIdInfoWithExternalUserId() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -341,7 +342,8 @@ public class UpdateExternalUserIdInfoTest {
         // create userId mapping with externalUserIdInfo
         String externalUserIdInfo = "externalUserIdInfo";
         AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        UserIdMapping userIdMapping = new io.supertokens.pluginInterface.useridmapping.UserIdMapping(userInfo.getSupertokensUserId(),
+        UserIdMapping userIdMapping = new io.supertokens.pluginInterface.useridmapping.UserIdMapping(
+                userInfo.getSupertokensUserId(),
                 "externalUserIdInfo", externalUserIdInfo);
 
         Utils.createUserIdMappingAndCheckThatItExists(process.main, userIdMapping);
@@ -400,7 +402,7 @@ public class UpdateExternalUserIdInfoTest {
 
     @Test
     public void testDeletingExternalUserIdInfo() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -412,7 +414,8 @@ public class UpdateExternalUserIdInfoTest {
         // create userId mapping with externalUserIdInfo
         String externalUserIdInfo = "externalUserIdInfo";
         AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        UserIdMapping userIdMapping = new io.supertokens.pluginInterface.useridmapping.UserIdMapping(userInfo.getSupertokensUserId(),
+        UserIdMapping userIdMapping = new io.supertokens.pluginInterface.useridmapping.UserIdMapping(
+                userInfo.getSupertokensUserId(),
                 "externalUserIdInfo", externalUserIdInfo);
 
         Utils.createUserIdMappingAndCheckThatItExists(process.main, userIdMapping);

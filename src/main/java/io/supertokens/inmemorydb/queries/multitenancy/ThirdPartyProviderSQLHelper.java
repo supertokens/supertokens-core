@@ -85,21 +85,35 @@ public class ThirdPartyProviderSQLHelper {
         }
     }
 
-    public static HashMap<TenantIdentifier, HashMap<String, ThirdPartyConfig.Provider>> selectAll(Start start, HashMap<TenantIdentifier, HashMap<String, HashMap<String, ThirdPartyConfig.ProviderClient>>> providerClientsMap)
+    public static HashMap<TenantIdentifier, HashMap<String, ThirdPartyConfig.Provider>> selectAll(Start start,
+                                                                                                  HashMap<TenantIdentifier, HashMap<String, HashMap<String, ThirdPartyConfig.ProviderClient>>> providerClientsMap)
             throws SQLException, StorageQueryException {
         HashMap<TenantIdentifier, HashMap<String, ThirdPartyConfig.Provider>> providerMap = new HashMap<>();
 
-        String QUERY = "SELECT connection_uri_domain, app_id, tenant_id, third_party_id, name, authorization_endpoint, authorization_endpoint_query_params, token_endpoint, token_endpoint_body_params, user_info_endpoint, user_info_endpoint_query_params, user_info_endpoint_headers, jwks_uri, oidc_discovery_endpoint, require_email, user_info_map_from_id_token_payload_user_id, user_info_map_from_id_token_payload_email, user_info_map_from_id_token_payload_email_verified, user_info_map_from_user_info_endpoint_user_id, user_info_map_from_user_info_endpoint_email, user_info_map_from_user_info_endpoint_email_verified FROM "
-                + Config.getConfig(start).getTenantThirdPartyProvidersTable() + ";";
+        String QUERY =
+                "SELECT connection_uri_domain, app_id, tenant_id, third_party_id, name, authorization_endpoint, " +
+                        "authorization_endpoint_query_params, token_endpoint, token_endpoint_body_params, " +
+                        "user_info_endpoint, user_info_endpoint_query_params, user_info_endpoint_headers, jwks_uri, " +
+                        "oidc_discovery_endpoint, require_email, user_info_map_from_id_token_payload_user_id, " +
+                        "user_info_map_from_id_token_payload_email, " +
+                        "user_info_map_from_id_token_payload_email_verified, " +
+                        "user_info_map_from_user_info_endpoint_user_id, user_info_map_from_user_info_endpoint_email, " +
+                        "user_info_map_from_user_info_endpoint_email_verified FROM "
+                        + Config.getConfig(start).getTenantThirdPartyProvidersTable() + ";";
 
-        execute(start, QUERY, pst -> {}, result -> {
+        execute(start, QUERY, pst -> {
+        }, result -> {
             while (result.next()) {
-                TenantIdentifier tenantIdentifier = new TenantIdentifier(result.getString("connection_uri_domain"), result.getString("app_id"), result.getString("tenant_id"));
+                TenantIdentifier tenantIdentifier = new TenantIdentifier(result.getString("connection_uri_domain"),
+                        result.getString("app_id"), result.getString("tenant_id"));
                 ThirdPartyConfig.ProviderClient[] clients = null;
-                if (providerClientsMap.containsKey(tenantIdentifier) && providerClientsMap.get(tenantIdentifier).containsKey(result.getString("third_party_id"))) {
-                    clients = providerClientsMap.get(tenantIdentifier).get(result.getString("third_party_id")).values().toArray(new ThirdPartyConfig.ProviderClient[0]);
+                if (providerClientsMap.containsKey(tenantIdentifier) &&
+                        providerClientsMap.get(tenantIdentifier).containsKey(result.getString("third_party_id"))) {
+                    clients = providerClientsMap.get(tenantIdentifier).get(result.getString("third_party_id")).values()
+                            .toArray(new ThirdPartyConfig.ProviderClient[0]);
                 }
-                ThirdPartyConfig.Provider provider = TenantThirdPartyProviderRowMapper.getInstance(clients).mapOrThrow(result);
+                ThirdPartyConfig.Provider provider = TenantThirdPartyProviderRowMapper.getInstance(clients)
+                        .mapOrThrow(result);
 
                 if (!providerMap.containsKey(tenantIdentifier)) {
                     providerMap.put(tenantIdentifier, new HashMap<>());
@@ -111,10 +125,19 @@ public class ThirdPartyProviderSQLHelper {
         return providerMap;
     }
 
-    public static void create(Start start, Connection sqlCon, TenantConfig tenantConfig, ThirdPartyConfig.Provider provider)
+    public static void create(Start start, Connection sqlCon, TenantConfig tenantConfig,
+                              ThirdPartyConfig.Provider provider)
             throws SQLException, StorageQueryException {
         String QUERY = "INSERT INTO " + Config.getConfig(start).getTenantThirdPartyProvidersTable()
-                + "(connection_uri_domain, app_id, tenant_id, third_party_id, name, authorization_endpoint, authorization_endpoint_query_params, token_endpoint, token_endpoint_body_params, user_info_endpoint, user_info_endpoint_query_params, user_info_endpoint_headers, jwks_uri, oidc_discovery_endpoint, require_email, user_info_map_from_id_token_payload_user_id, user_info_map_from_id_token_payload_email, user_info_map_from_id_token_payload_email_verified, user_info_map_from_user_info_endpoint_user_id, user_info_map_from_user_info_endpoint_email, user_info_map_from_user_info_endpoint_email_verified)" + " VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                +
+                "(connection_uri_domain, app_id, tenant_id, third_party_id, name, authorization_endpoint, " +
+                "authorization_endpoint_query_params, token_endpoint, token_endpoint_body_params, user_info_endpoint," +
+                " user_info_endpoint_query_params, user_info_endpoint_headers, jwks_uri, oidc_discovery_endpoint, " +
+                "require_email, user_info_map_from_id_token_payload_user_id, " +
+                "user_info_map_from_id_token_payload_email, user_info_map_from_id_token_payload_email_verified, " +
+                "user_info_map_from_user_info_endpoint_user_id, user_info_map_from_user_info_endpoint_email, " +
+                "user_info_map_from_user_info_endpoint_email_verified)" +
+                " VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         update(sqlCon, QUERY, pst -> {
             pst.setString(1, tenantConfig.tenantIdentifier.getConnectionUriDomain());

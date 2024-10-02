@@ -50,7 +50,8 @@ public class DeleteExpiredTotpTokens extends CronTask {
         // doesn't delete totp codes that keep the rate limiting active for
         // the expected cooldown duration.
         int deletedCount = storage.removeExpiredCodes(tenantIdentifier, expiredBefore);
-        Logging.debug(this.main, tenantIdentifier, "Cron DeleteExpiredTotpTokens deleted " + deletedCount + " expired TOTP codes");
+        Logging.debug(this.main, tenantIdentifier,
+                "Cron DeleteExpiredTotpTokens deleted " + deletedCount + " expired TOTP codes");
     }
 
     @Override

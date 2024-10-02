@@ -95,7 +95,7 @@ public class CreateTotpDeviceAPITest {
         {
             Exception e = createDeviceRequest(process, body);
             checkFieldMissingErrorResponse(e, "userId");
-            
+
             body.addProperty("deviceName", "");
 
             body.addProperty("userId", "");
@@ -158,7 +158,7 @@ public class CreateTotpDeviceAPITest {
 
             // verify d1
             {
-                TOTPDevice device = Totp.getDevices(process.getProcess(), "user-id" )[0];
+                TOTPDevice device = Totp.getDevices(process.getProcess(), "user-id")[0];
                 String validTotp = TOTPRecipeTest.generateTotpCode(process.getProcess(), device);
                 Totp.verifyDevice(process.getProcess(), "user-id", "d1", validTotp);
             }

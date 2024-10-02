@@ -41,7 +41,8 @@ public class ActiveUsers {
                                                     String recipeUserId)
             throws StorageQueryException, TenantOrAppNotFoundException, StorageTransactionLogicException {
         ActiveUsersSQLStorage activeUsersStorage =
-                (ActiveUsersSQLStorage) StorageUtils.getActiveUsersStorage(StorageLayer.getStorage(appIdentifier.getAsPublicTenantIdentifier(), main));
+                (ActiveUsersSQLStorage) StorageUtils.getActiveUsersStorage(
+                        StorageLayer.getStorage(appIdentifier.getAsPublicTenantIdentifier(), main));
 
         activeUsersStorage.startTransaction(con -> {
             activeUsersStorage.deleteUserActive_Transaction(con, appIdentifier, recipeUserId);

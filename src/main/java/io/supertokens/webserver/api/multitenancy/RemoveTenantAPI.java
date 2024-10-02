@@ -54,7 +54,8 @@ public class RemoveTenantAPI extends WebserverAPI {
         tenantId = Utils.normalizeAndValidateTenantId(tenantId);
 
         if (tenantId.equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
-            throw new ServletException(new BadPermissionException("Cannot delete public tenant, use remove app API instead"));
+            throw new ServletException(
+                    new BadPermissionException("Cannot delete public tenant, use remove app API instead"));
         }
 
         try {
@@ -64,7 +65,9 @@ public class RemoveTenantAPI extends WebserverAPI {
                 throw new BadPermissionException("Only the public tenantId is allowed to delete a tenant");
             }
 
-            boolean didExist = Multitenancy.deleteTenant(new TenantIdentifier(sourceTenantIdentifier.getConnectionUriDomain(), sourceTenantIdentifier.getAppId(), tenantId), main);
+            boolean didExist = Multitenancy.deleteTenant(
+                    new TenantIdentifier(sourceTenantIdentifier.getConnectionUriDomain(),
+                            sourceTenantIdentifier.getAppId(), tenantId), main);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

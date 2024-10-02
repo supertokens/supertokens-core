@@ -27,6 +27,7 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -34,6 +35,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
+@Deprecated
 public class ListTenantsAPI extends WebserverAPI {
     private static final long serialVersionUID = -4641988458637882374L;
 
@@ -62,8 +64,16 @@ public class ListTenantsAPI extends WebserverAPI {
 
             boolean shouldProtect = shouldProtectProtectedConfig(req);
             for (TenantConfig tenantConfig : tenantConfigs) {
-                JsonObject tenantConfigJson = tenantConfig.toJson(shouldProtect,
-                        storage, CoreConfig.PROTECTED_CONFIGS);
+
+                JsonObject tenantConfigJson;
+
+                if (getVersionFromRequest(req).lesserThan(SemVer.v5_0)) {
+                    tenantConfigJson = tenantConfig.toJsonLesserThanOrEqualTo4_0(shouldProtect, storage,
+                            CoreConfig.PROTECTED_CONFIGS);
+                } else {
+                    tenantConfigJson = tenantConfig.toJson5_0(shouldProtect, storage, CoreConfig.PROTECTED_CONFIGS);
+                }
+
                 tenantsArray.add(tenantConfigJson);
             }
 

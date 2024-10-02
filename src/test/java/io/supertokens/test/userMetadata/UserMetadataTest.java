@@ -281,7 +281,7 @@ public class UserMetadataTest {
 
                     try {
                         sqlStorage.setUserMetadata_Transaction(new AppIdentifier(null, null), con, userId,
-                                    updatedMetadata);
+                                updatedMetadata);
                     } catch (TenantOrAppNotFoundException e) {
                         throw new StorageTransactionLogicException(e);
                     }

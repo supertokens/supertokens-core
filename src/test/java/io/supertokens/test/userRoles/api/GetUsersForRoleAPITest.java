@@ -54,7 +54,7 @@ public class GetUsersForRoleAPITest {
 
     @Test
     public void badInputTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -97,7 +97,7 @@ public class GetUsersForRoleAPITest {
 
     @Test
     public void testRetrievingUsersWhoHaveRole() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -110,7 +110,7 @@ public class GetUsersForRoleAPITest {
         UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
 
         // add role to users
-        String[] userIds = new String[] { "user1", "user2", "user3" };
+        String[] userIds = new String[]{"user1", "user2", "user3"};
         for (String userId : userIds) {
             UserRoles.addRoleToUser(process.main, userId, role);
         }
@@ -134,7 +134,7 @@ public class GetUsersForRoleAPITest {
 
     @Test
     public void testRetrievingUsersWithUnknownRole() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

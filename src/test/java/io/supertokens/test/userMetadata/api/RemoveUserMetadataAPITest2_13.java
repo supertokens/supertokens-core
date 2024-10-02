@@ -52,7 +52,7 @@ public class RemoveUserMetadataAPITest2_13 {
 
     @Test
     public void notExistingTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -82,7 +82,7 @@ public class RemoveUserMetadataAPITest2_13 {
 
     @Test
     public void existingMetadataTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -123,7 +123,7 @@ public class RemoveUserMetadataAPITest2_13 {
 
     @Test
     public void deletedMetadataTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -168,7 +168,7 @@ public class RemoveUserMetadataAPITest2_13 {
 
     @Test
     public void noIdTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

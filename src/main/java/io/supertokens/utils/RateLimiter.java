@@ -33,7 +33,8 @@ public class RateLimiter extends ResourceDistributor.SingletonResource {
     private long tokenBucketSize = 5;
     private long tokensAvailable = tokenBucketSize;
 
-    public static RateLimiter getInstance(AppIdentifier appIdentifier, Main main, long timeIntervalIfCreatingNewRateLimiter) {
+    public static RateLimiter getInstance(AppIdentifier appIdentifier, Main main,
+                                          long timeIntervalIfCreatingNewRateLimiter) {
         try {
             return (RateLimiter) main.getResourceDistributor().getResource(appIdentifier, RESOURCE_KEY);
         } catch (TenantOrAppNotFoundException e) {

@@ -51,7 +51,7 @@ public class TelemetryAPITest2_7 {
 
     @Test
     public void testTelemetryDisabledInMemDb() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -71,7 +71,7 @@ public class TelemetryAPITest2_7 {
 
     @Test
     public void testDefaultTelemetry() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -93,7 +93,7 @@ public class TelemetryAPITest2_7 {
     @Test
     public void testDisableTelemetry() throws Exception {
         Utils.setValueInConfig("disable_telemetry", "true");
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -114,7 +114,7 @@ public class TelemetryAPITest2_7 {
     @Test
     public void testEnableTelemetry() throws Exception {
         Utils.setValueInConfig("disable_telemetry", "false");
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

@@ -23,6 +23,11 @@ public class ActiveUsersQueries {
                 + " );";
     }
 
+    static String getQueryToCreateLastActiveTimeIndexForUserLastActiveTable(Start start) {
+        return "CREATE INDEX user_last_active_last_active_time_index ON "
+                + Config.getConfig(start).getUserLastActiveTable() + "(last_active_time DESC, app_id DESC);";
+    }
+
     public static int countUsersActiveSince(Start start, AppIdentifier appIdentifier, long sinceTime)
             throws SQLException, StorageQueryException {
         String QUERY = "SELECT COUNT(*) as total FROM " + Config.getConfig(start).getUserLastActiveTable()
@@ -39,7 +44,8 @@ public class ActiveUsersQueries {
         });
     }
 
-    public static int countUsersActiveSinceAndHasMoreThanOneLoginMethod(Start start, AppIdentifier appIdentifier, long sinceTime)
+    public static int countUsersActiveSinceAndHasMoreThanOneLoginMethod(Start start, AppIdentifier appIdentifier,
+                                                                        long sinceTime)
             throws SQLException, StorageQueryException {
         // TODO: Active users are present only on public tenant and MFA users may be present on different storages
         String QUERY = "SELECT count(1) as c FROM ("
@@ -90,7 +96,9 @@ public class ActiveUsersQueries {
         });
     }
 
-    public static int countUsersThatHaveMoreThanOneLoginMethodOrTOTPEnabledAndActiveSince(Start start, AppIdentifier appIdentifier, long sinceTime)
+    public static int countUsersThatHaveMoreThanOneLoginMethodOrTOTPEnabledAndActiveSince(Start start,
+                                                                                          AppIdentifier appIdentifier,
+                                                                                          long sinceTime)
             throws SQLException, StorageQueryException {
         // TODO: Active users are present only on public tenant and MFA users may be present on different storages
         String QUERY =

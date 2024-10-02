@@ -57,7 +57,7 @@ public class SessionAPITest4_0 {
 
     @Test
     public void successOutputCheck() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -80,7 +80,8 @@ public class SessionAPITest4_0 {
         checkSessionResponse(response, process, userId, userDataInJWT, false);
         assertFalse(response.has("antiCsrfToken"));
 
-        String iat = "" + JWT.getPayloadWithoutVerifying(response.get("accessToken").getAsJsonObject().get("token").getAsString()).payload.get("iat").getAsInt();
+        String iat = "" + JWT.getPayloadWithoutVerifying(
+                response.get("accessToken").getAsJsonObject().get("token").getAsString()).payload.get("iat").getAsInt();
         assertEquals(10, iat.length());
         //noinspection ResultOfMethodCallIgnored
         Long.parseLong(iat); // We are checking that this doesn't throw, it would if it was in exponential form
@@ -93,7 +94,7 @@ public class SessionAPITest4_0 {
     @Test
     public void badInputTest() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -197,7 +198,7 @@ public class SessionAPITest4_0 {
 
     @Test
     public void successOutputCheckWithStatic() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -225,7 +226,8 @@ public class SessionAPITest4_0 {
     }
 
     public static void checkSessionResponse(JsonObject response, TestingProcessManager.TestingProcess process,
-            String userId, JsonObject userDataInJWT, boolean isStatic) throws JWT.JWTException {
+                                            String userId, JsonObject userDataInJWT, boolean isStatic)
+            throws JWT.JWTException {
         assertNotNull(response.get("session").getAsJsonObject().get("handle").getAsString());
         assertEquals(response.get("session").getAsJsonObject().get("userId").getAsString(), userId);
         assertEquals(response.get("session").getAsJsonObject().get("userDataInJWT").getAsJsonObject().toString(),
@@ -244,7 +246,8 @@ public class SessionAPITest4_0 {
         assertTrue(response.get("refreshToken").getAsJsonObject().has("createdTime"));
         assertEquals(response.get("refreshToken").getAsJsonObject().entrySet().size(), 3);
 
-        JWT.JWTPreParseInfo preParseInfo = JWT.preParseJWTInfo(response.get("accessToken").getAsJsonObject().get("token").getAsString());
+        JWT.JWTPreParseInfo preParseInfo = JWT.preParseJWTInfo(
+                response.get("accessToken").getAsJsonObject().get("token").getAsString());
         assertEquals(preParseInfo.version, AccessToken.VERSION.V5);
         assertNotNull(preParseInfo.kid);
 
@@ -268,12 +271,14 @@ public class SessionAPITest4_0 {
         Base64.getUrlDecoder().decode(preParseInfo.signature);
 
 
-        JsonObject payload = new JsonParser().parse(new String(Base64.getUrlDecoder().decode(preParseInfo.payload), StandardCharsets.UTF_8)).getAsJsonObject();
+        JsonObject payload = new JsonParser().parse(
+                        new String(Base64.getUrlDecoder().decode(preParseInfo.payload), StandardCharsets.UTF_8))
+                .getAsJsonObject();
         assertFalse(payload.has("userData"));
 
         for (Map.Entry<String, JsonElement> entry : userDataInJWT.entrySet()) {
-           assertTrue(payload.has(entry.getKey()));
-           assertEquals(payload.get(entry.getKey()).toString(), userDataInJWT.get(entry.getKey()).toString());
+            assertTrue(payload.has(entry.getKey()));
+            assertEquals(payload.get(entry.getKey()).toString(), userDataInJWT.get(entry.getKey()).toString());
         }
     }
 }

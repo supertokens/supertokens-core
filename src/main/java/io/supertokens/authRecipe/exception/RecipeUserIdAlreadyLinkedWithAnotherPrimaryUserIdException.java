@@ -21,7 +21,8 @@ import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 public class RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException extends Exception {
     public final AuthRecipeUserInfo recipeUser;
 
-    public RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException(AuthRecipeUserInfo recipeUser, String description) {
+    public RecipeUserIdAlreadyLinkedWithAnotherPrimaryUserIdException(AuthRecipeUserInfo recipeUser,
+                                                                      String description) {
         super(description);
         this.recipeUser = recipeUser;
     }

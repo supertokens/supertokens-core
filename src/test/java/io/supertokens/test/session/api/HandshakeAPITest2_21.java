@@ -44,7 +44,7 @@ public class HandshakeAPITest2_21 {
 
     @Test
     public void checkApi404s() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -52,7 +52,8 @@ public class HandshakeAPITest2_21 {
         io.supertokens.test.httpRequest.HttpResponseException caught = null;
         try {
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/handshake", null, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
+                    "http://localhost:3567/recipe/handshake", null, 1000, 1000, null,
+                    Utils.getCdiVersionStringLatestForTests(),
                     "session");
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             caught = e;

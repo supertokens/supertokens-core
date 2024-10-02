@@ -127,7 +127,8 @@ public class EmailVerificationTest {
                 fail();
             } catch (HttpResponseException e) {
                 assertEquals(400, e.statusCode);
-                assertTrue(e.getMessage().contains("Http error. Status Code: 400. Message: Field name 'isVerified' is invalid in JSON input"));
+                assertTrue(e.getMessage().contains(
+                        "Http error. Status Code: 400. Message: Field name 'isVerified' is invalid in JSON input"));
             }
         }
 
@@ -238,7 +239,8 @@ public class EmailVerificationTest {
 
         AuthRecipeUserInfo user1 = createEmailPasswordUser(process.getProcess(), "test@example.com", "password");
         Thread.sleep(50);
-        AuthRecipeUserInfo user2 = createThirdPartyUser(process.getProcess(), "google", "google-user", "test@example.com");
+        AuthRecipeUserInfo user2 = createThirdPartyUser(process.getProcess(), "google", "google-user",
+                "test@example.com");
 
         AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId());
         AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), user1.getSupertokensUserId());
@@ -256,10 +258,11 @@ public class EmailVerificationTest {
             signUpRequestBody.add("email", emailObject);
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/signinup", signUpRequestBody, 1000000, 1000000, null,
+                    "http://localhost:3567/recipe/signinup", signUpRequestBody, 1000, 1000, null,
                     SemVer.v4_0.get(), "thirdparty");
 
-            assertTrue(EmailVerification.isEmailVerified(process.getProcess(), user2.getSupertokensUserId(), "test@example.com"));
+            assertTrue(EmailVerification.isEmailVerified(process.getProcess(), user2.getSupertokensUserId(),
+                    "test@example.com"));
         }
     }
 }

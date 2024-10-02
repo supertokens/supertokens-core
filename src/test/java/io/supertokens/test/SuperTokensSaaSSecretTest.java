@@ -429,7 +429,8 @@ public class SuperTokensSaaSSecretTest {
     }
 
     private static final String[] PROTECTED_CORE_CONFIG = new String[]{"ip_allow_regex", "ip_deny_regex"};
-    private static final Object[] PROTECTED_CORE_CONFIG_VALUES = new String[]{"127\\\\.\\\\d+\\\\.\\\\d+\\\\.\\\\d+|::1|0:0:0:0:0:0:0:1", "192.0.0.1"};
+    private static final Object[] PROTECTED_CORE_CONFIG_VALUES = new String[]{
+            "127\\\\.\\\\d+\\\\.\\\\d+\\\\.\\\\d+|::1|0:0:0:0:0:0:0:1", "192.0.0.1"};
 
     @Test
     public void testThatTenantCannotSetProtectedConfigIfSuperTokensSaaSSecretIsSet()
@@ -460,10 +461,11 @@ public class SuperTokensSaaSSecretTest {
             try {
                 JsonObject j = new JsonObject();
                 j.addProperty(PROTECTED_CORE_CONFIG[i], "");
-                Multitenancy.addNewOrUpdateAppOrTenant(process.main, new TenantConfig(new TenantIdentifier(null, null, "t1"), new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
-                        new PasswordlessConfig(false),
-                        null, null, j), true);
+                Multitenancy.addNewOrUpdateAppOrTenant(process.main,
+                        new TenantConfig(new TenantIdentifier(null, null, "t1"), new EmailPasswordConfig(false),
+                                new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                                new PasswordlessConfig(false),
+                                null, null, j), true);
                 fail();
             } catch (BadPermissionException e) {
                 assertEquals(e.getMessage(), "Not allowed to modify protected configs.");
@@ -553,7 +555,8 @@ public class SuperTokensSaaSSecretTest {
 
             {
                 JsonObject response = HttpRequestForTesting.sendJsonRequest(process.getProcess(), "",
-                        HttpRequestForTesting.getMultitenantUrl(TenantIdentifier.BASE_TENANT, "/recipe/multitenancy/tenant/list"),
+                        HttpRequestForTesting.getMultitenantUrl(TenantIdentifier.BASE_TENANT,
+                                "/recipe/multitenancy/tenant/list"),
                         null, 1000, 1000, null,
                         SemVer.v3_0.get(), "GET", apiKey, "multitenancy");
 
@@ -574,7 +577,8 @@ public class SuperTokensSaaSSecretTest {
 
             {
                 JsonObject response = HttpRequestForTesting.sendJsonRequest(process.getProcess(), "",
-                        HttpRequestForTesting.getMultitenantUrl(TenantIdentifier.BASE_TENANT, "/recipe/multitenancy/tenant/list"),
+                        HttpRequestForTesting.getMultitenantUrl(TenantIdentifier.BASE_TENANT,
+                                "/recipe/multitenancy/tenant/list"),
                         null, 1000, 1000, null,
                         SemVer.v3_0.get(), "GET", saasSecret, "multitenancy");
 
@@ -666,7 +670,7 @@ public class SuperTokensSaaSSecretTest {
 
     @Test
     public void testThatAllProtectedPropsAreTested() throws Exception {
-        for (String protectedConfig: CoreConfig.PROTECTED_CONFIGS) {
+        for (String protectedConfig : CoreConfig.PROTECTED_CONFIGS) {
             assertTrue(Arrays.asList(PROTECTED_CORE_CONFIG).contains(protectedConfig));
         }
     }

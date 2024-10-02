@@ -72,7 +72,8 @@ public class JWTDataTest {
         // change JWT payload using session handle
         JsonObject newUserDataInJwt = new JsonObject();
         newUserDataInJwt.addProperty("key", "value2");
-        Session.updateSession(process.getProcess(), sessionInfo.session.handle, null, newUserDataInJwt, AccessToken.getLatestVersion());
+        Session.updateSession(process.getProcess(), sessionInfo.session.handle, null, newUserDataInJwt,
+                AccessToken.getLatestVersion());
 
         // check that this change is reflected
 
@@ -107,7 +108,8 @@ public class JWTDataTest {
 
         // change JWT payload to be empty using session handle
         JsonObject emptyUserDataInJwt = new JsonObject();
-        Session.updateSession(process.getProcess(), sessionInfo.session.handle, null, emptyUserDataInJwt, AccessToken.getLatestVersion());
+        Session.updateSession(process.getProcess(), sessionInfo.session.handle, null, emptyUserDataInJwt,
+                AccessToken.getLatestVersion());
 
         // check this is reflected
         assertEquals(Session.getJWTData(process.getProcess(), sessionInfo.session.handle), emptyUserDataInJwt);
@@ -140,7 +142,8 @@ public class JWTDataTest {
         assertEquals(sessionInfo.session.userDataInJWT, userDataInJWT);
 
         // change JWT payload to be null
-        Session.updateSession(process.getProcess(), sessionInfo.session.handle, userDataInDatabase, null, AccessToken.getLatestVersion());
+        Session.updateSession(process.getProcess(), sessionInfo.session.handle, userDataInDatabase, null,
+                AccessToken.getLatestVersion());
 
         // check that jwtData does not change
         assertEquals(Session.getJWTData(process.getProcess(), sessionInfo.session.handle), userDataInJWT);
@@ -182,7 +185,8 @@ public class JWTDataTest {
 
         // call update function
         try {
-            Session.updateSession(process.getProcess(), sessionInfo.session.handle, null, newUserDataInJWT, AccessToken.getLatestVersion());
+            Session.updateSession(process.getProcess(), sessionInfo.session.handle, null, newUserDataInJWT,
+                    AccessToken.getLatestVersion());
             fail();
         } catch (UnauthorisedException e) {
             assertEquals(e.getMessage(), "Session does not exist.");
@@ -254,7 +258,8 @@ public class JWTDataTest {
 
         JsonObject newUserDataInJWT = new JsonObject();
         newUserDataInJWT.addProperty("key", "value2");
-        Session.updateSession(process.getProcess(), sessionInfo.session.handle, null, newUserDataInJWT, AccessToken.getLatestVersion());
+        Session.updateSession(process.getProcess(), sessionInfo.session.handle, null, newUserDataInJWT,
+                AccessToken.getLatestVersion());
 
         SessionInformationHolder newInfo = Session.getSession(process.getProcess(), sessionInfo.accessToken.token,
                 sessionInfo.antiCsrfToken, false, true, false);
@@ -291,7 +296,8 @@ public class JWTDataTest {
 
         JsonObject newUserDataInJWT = new JsonObject();
         newUserDataInJWT.addProperty("key", "value2");
-        Session.updateSession(process.getProcess(), sessionInfo.session.handle, null, newUserDataInJWT, AccessToken.getLatestVersion());
+        Session.updateSession(process.getProcess(), sessionInfo.session.handle, null, newUserDataInJWT,
+                AccessToken.getLatestVersion());
 
         SessionInformationHolder newInfo = Session.getSession(process.getProcess(), sessionInfo.accessToken.token,
                 sessionInfo.antiCsrfToken, false, true, true);
@@ -319,7 +325,7 @@ public class JWTDataTest {
     @Test
     public void testNormalRefreshAndGetShouldNotUpdateJWTPayloadV2() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

@@ -604,7 +604,8 @@ public class InMemoryDBTest {
         }
 
         SessionInformationHolder refreshedSession2 = Session.refreshSession(process.getProcess(),
-                refreshedSession.refreshToken.token, refreshedSession.antiCsrfToken, true, AccessToken.getLatestVersion());
+                refreshedSession.refreshToken.token, refreshedSession.antiCsrfToken, true,
+                AccessToken.getLatestVersion());
         assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess())).getNumberOfSessions(
                 new TenantIdentifier(null, null, null)), 1);
 
@@ -691,7 +692,8 @@ public class InMemoryDBTest {
         }
 
         SessionInformationHolder refreshedSession2 = Session.refreshSession(process.getProcess(),
-                refreshedSession.refreshToken.token, refreshedSession.antiCsrfToken, false, AccessToken.getLatestVersion());
+                refreshedSession.refreshToken.token, refreshedSession.antiCsrfToken, false,
+                AccessToken.getLatestVersion());
         assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
                 .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
 
@@ -810,7 +812,8 @@ public class InMemoryDBTest {
             Thread.sleep(500);
 
             SessionInformationHolder newRefreshedSession2 = Session.refreshSession(main,
-                    newRefreshedSession.refreshToken.token, newRefreshedSession.antiCsrfToken, false, AccessToken.getLatestVersion());
+                    newRefreshedSession.refreshToken.token, newRefreshedSession.antiCsrfToken, false,
+                    AccessToken.getLatestVersion());
             assert newRefreshedSession2.refreshToken != null;
             assert newRefreshedSession2.accessToken != null;
             assertNotEquals(newRefreshedSession.accessToken.token, newRefreshedSession2.accessToken.token);
@@ -821,7 +824,8 @@ public class InMemoryDBTest {
             Thread.sleep(500);
 
             SessionInformationHolder newRefreshedSession3 = Session.refreshSession(main,
-                    newRefreshedSession2.refreshToken.token, newRefreshedSession2.antiCsrfToken, false, AccessToken.getLatestVersion());
+                    newRefreshedSession2.refreshToken.token, newRefreshedSession2.antiCsrfToken, false,
+                    AccessToken.getLatestVersion());
             assert newRefreshedSession3.refreshToken != null;
             assert newRefreshedSession3.accessToken != null;
             assertNotEquals(newRefreshedSession3.accessToken.token, newRefreshedSession2.accessToken.token);

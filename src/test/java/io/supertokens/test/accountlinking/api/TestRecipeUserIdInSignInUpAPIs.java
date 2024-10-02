@@ -162,7 +162,8 @@ public class TestRecipeUserIdInSignInUpAPIs {
         AuthRecipeUserInfo user2 = createPasswordlessUserWithEmail(process.getProcess(),
                 "test@example.com");
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user2.getSupertokensUserId()).user;
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(),
+                user2.getSupertokensUserId()).user;
         AuthRecipe.linkAccounts(process.getProcess(), user.getSupertokensUserId(), primaryUser.getSupertokensUserId());
 
         {
@@ -274,7 +275,8 @@ public class TestRecipeUserIdInSignInUpAPIs {
         AuthRecipeUserInfo user2 = createEmailPasswordUser(process.getProcess(),
                 "test@example.com", "password");
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user2.getSupertokensUserId()).user;
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(),
+                user2.getSupertokensUserId()).user;
         AuthRecipe.linkAccounts(process.getProcess(), userId, primaryUser.getSupertokensUserId());
 
         {
@@ -296,7 +298,8 @@ public class TestRecipeUserIdInSignInUpAPIs {
             assertEquals(userId, response.get("recipeUserId").getAsString());
         }
 
-        AuthRecipeUserInfo user3 = createThirdPartyUser(process.getProcess(), "facebook", "fb-user", "test@example.com");
+        AuthRecipeUserInfo user3 = createThirdPartyUser(process.getProcess(), "facebook", "fb-user",
+                "test@example.com");
         AuthRecipe.linkAccounts(process.getProcess(), user3.getSupertokensUserId(), primaryUser.getSupertokensUserId());
 
         {
@@ -356,7 +359,8 @@ public class TestRecipeUserIdInSignInUpAPIs {
 
         String userId = null;
         {
-            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), "test@example.com", null, null, null);
+            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(),
+                    "test@example.com", null, null, null);
 
             JsonObject consumeCodeRequestBody = new JsonObject();
             consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
@@ -372,7 +376,8 @@ public class TestRecipeUserIdInSignInUpAPIs {
         }
 
         { // Without account linking
-            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), "test@example.com", null, null, null);
+            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(),
+                    "test@example.com", null, null, null);
 
             JsonObject consumeCodeRequestBody = new JsonObject();
             consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
@@ -386,13 +391,16 @@ public class TestRecipeUserIdInSignInUpAPIs {
             assertEquals(userId, response.get("recipeUserId").getAsString());
         }
 
-        AuthRecipeUserInfo user2 = createThirdPartyUser(process.getProcess(), "google", "google-user", "test@example.com");
+        AuthRecipeUserInfo user2 = createThirdPartyUser(process.getProcess(), "google", "google-user",
+                "test@example.com");
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user2.getSupertokensUserId()).user;
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(),
+                user2.getSupertokensUserId()).user;
         AuthRecipe.linkAccounts(process.getProcess(), userId, primaryUser.getSupertokensUserId());
 
         { // after account linking
-            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), "test@example.com", null, null, null);
+            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(),
+                    "test@example.com", null, null, null);
 
             JsonObject consumeCodeRequestBody = new JsonObject();
             consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
@@ -410,7 +418,8 @@ public class TestRecipeUserIdInSignInUpAPIs {
         AuthRecipe.linkAccounts(process.getProcess(), user3.getSupertokensUserId(), primaryUser.getSupertokensUserId());
 
         { // after account linking
-            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), "test@example.com", null, null, null);
+            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(),
+                    "test@example.com", null, null, null);
 
             JsonObject consumeCodeRequestBody = new JsonObject();
             consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
@@ -424,7 +433,8 @@ public class TestRecipeUserIdInSignInUpAPIs {
             assertEquals(userId, response.get("recipeUserId").getAsString());
         }
         { // after account linking
-            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), "test2@example.com", null, null, null);
+            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(),
+                    "test2@example.com", null, null, null);
 
             JsonObject consumeCodeRequestBody = new JsonObject();
             consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
@@ -458,7 +468,8 @@ public class TestRecipeUserIdInSignInUpAPIs {
 
         String userId = null;
         {
-            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), null, "+919876543210", null, null);
+            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), null,
+                    "+919876543210", null, null);
 
             JsonObject consumeCodeRequestBody = new JsonObject();
             consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
@@ -474,7 +485,8 @@ public class TestRecipeUserIdInSignInUpAPIs {
         }
 
         { // Without account linking
-            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), null, "+919876543210", null, null);
+            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), null,
+                    "+919876543210", null, null);
 
             JsonObject consumeCodeRequestBody = new JsonObject();
             consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
@@ -488,13 +500,16 @@ public class TestRecipeUserIdInSignInUpAPIs {
             assertEquals(userId, response.get("recipeUserId").getAsString());
         }
 
-        AuthRecipeUserInfo user2 = createThirdPartyUser(process.getProcess(), "google", "google-user", "test@example.com");
+        AuthRecipeUserInfo user2 = createThirdPartyUser(process.getProcess(), "google", "google-user",
+                "test@example.com");
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user2.getSupertokensUserId()).user;
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(),
+                user2.getSupertokensUserId()).user;
         AuthRecipe.linkAccounts(process.getProcess(), userId, primaryUser.getSupertokensUserId());
 
         { // after account linking
-            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), null, "+919876543210", null, null);
+            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), null,
+                    "+919876543210", null, null);
 
             JsonObject consumeCodeRequestBody = new JsonObject();
             consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
@@ -512,7 +527,8 @@ public class TestRecipeUserIdInSignInUpAPIs {
         AuthRecipe.linkAccounts(process.getProcess(), user3.getSupertokensUserId(), primaryUser.getSupertokensUserId());
 
         { // after account linking
-            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), null, "+919876543210", null, null);
+            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), null,
+                    "+919876543210", null, null);
 
             JsonObject consumeCodeRequestBody = new JsonObject();
             consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
@@ -526,7 +542,8 @@ public class TestRecipeUserIdInSignInUpAPIs {
             assertEquals(userId, response.get("recipeUserId").getAsString());
         }
         { // after account linking
-            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), null, "+919876543211", null, null);
+            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), null,
+                    "+919876543211", null, null);
 
             JsonObject consumeCodeRequestBody = new JsonObject();
             consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
@@ -560,7 +577,8 @@ public class TestRecipeUserIdInSignInUpAPIs {
 
         String userId = null;
         {
-            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), null, "+919876543210", null, null);
+            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), null,
+                    "+919876543210", null, null);
 
             JsonObject consumeCodeRequestBody = new JsonObject();
             consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
@@ -578,7 +596,8 @@ public class TestRecipeUserIdInSignInUpAPIs {
         Passwordless.updateUser(process.getProcess(), userId, new Passwordless.FieldUpdate("test@example.com"), null);
 
         { // Without account linking - phone
-            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), null, "+919876543210", null, null);
+            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), null,
+                    "+919876543210", null, null);
 
             JsonObject consumeCodeRequestBody = new JsonObject();
             consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
@@ -592,7 +611,8 @@ public class TestRecipeUserIdInSignInUpAPIs {
             assertEquals(userId, response.get("recipeUserId").getAsString());
         }
         { // Without account linking - email
-            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), "test@example.com", null, null, null);
+            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(),
+                    "test@example.com", null, null, null);
 
             JsonObject consumeCodeRequestBody = new JsonObject();
             consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
@@ -606,13 +626,16 @@ public class TestRecipeUserIdInSignInUpAPIs {
             assertEquals(userId, response.get("recipeUserId").getAsString());
         }
 
-        AuthRecipeUserInfo user2 = createThirdPartyUser(process.getProcess(), "google", "google-user", "test@example.com");
+        AuthRecipeUserInfo user2 = createThirdPartyUser(process.getProcess(), "google", "google-user",
+                "test@example.com");
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user2.getSupertokensUserId()).user;
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(),
+                user2.getSupertokensUserId()).user;
         AuthRecipe.linkAccounts(process.getProcess(), userId, primaryUser.getSupertokensUserId());
 
         { // after account linking - phone
-            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), null, "+919876543210", null, null);
+            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), null,
+                    "+919876543210", null, null);
 
             JsonObject consumeCodeRequestBody = new JsonObject();
             consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
@@ -626,7 +649,8 @@ public class TestRecipeUserIdInSignInUpAPIs {
             assertEquals(userId, response.get("recipeUserId").getAsString());
         }
         { // after account linking - email
-            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), "test@example.com", null, null, null);
+            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(),
+                    "test@example.com", null, null, null);
 
             JsonObject consumeCodeRequestBody = new JsonObject();
             consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
@@ -644,7 +668,8 @@ public class TestRecipeUserIdInSignInUpAPIs {
         AuthRecipe.linkAccounts(process.getProcess(), user3.getSupertokensUserId(), primaryUser.getSupertokensUserId());
 
         { // after account linking - phone
-            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), null, "+919876543210", null, null);
+            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), null,
+                    "+919876543210", null, null);
 
             JsonObject consumeCodeRequestBody = new JsonObject();
             consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
@@ -658,7 +683,8 @@ public class TestRecipeUserIdInSignInUpAPIs {
             assertEquals(userId, response.get("recipeUserId").getAsString());
         }
         { // after account linking - email
-            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), "test@example.com", null, null, null);
+            Passwordless.CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(),
+                    "test@example.com", null, null, null);
 
             JsonObject consumeCodeRequestBody = new JsonObject();
             consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
@@ -712,7 +738,8 @@ public class TestRecipeUserIdInSignInUpAPIs {
         AuthRecipeUserInfo user2 = createPasswordlessUserWithEmail(process.getProcess(),
                 "test@example.com");
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user2.getSupertokensUserId()).user;
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(),
+                user2.getSupertokensUserId()).user;
         AuthRecipe.linkAccounts(process.getProcess(), user.getSupertokensUserId(), primaryUser.getSupertokensUserId());
 
         {

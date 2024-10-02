@@ -22,6 +22,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.authRecipe.UserPaginationContainer;
 import io.supertokens.bulkimport.BulkImport;
+import io.supertokens.config.Config;
 import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.cronjobs.bulkimport.ProcessBulkImportUsers;
 import io.supertokens.featureflag.EE_FEATURES;
@@ -47,9 +48,12 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import static io.supertokens.test.bulkimport.BulkImportTestUtils.generateBulkImportUser;
+import static io.supertokens.test.bulkimport.BulkImportTestUtils.generateBulkImportUserWithRoles;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 public class ProcessBulkImportUsersCronJobTest {
@@ -109,6 +113,85 @@ public class ProcessBulkImportUsersCronJobTest {
         BulkImportTestUtils.assertBulkImportUserAndAuthRecipeUserAreEqual(main, appIdentifier, publicTenant, storage,
                 bulkImportUser,
                 container.users[0]);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void shouldProcessBulkImportUsersInNotSoLargeNumbersInTheSameTenant() throws Exception {
+        Utils.setValueInConfig("bulk_migration_parallelism", "8");
+        TestingProcess process = startCronProcess();
+        Main main = process.getProcess();
+
+        if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+            return;
+        }
+
+        // Create user roles before inserting bulk users
+        {
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
+        }
+
+        BulkImportTestUtils.createTenants(main);
+
+        BulkImportSQLStorage storage = (BulkImportSQLStorage) StorageLayer.getStorage(main);
+        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+
+        int usersCount = 15;
+        List<BulkImportUser> users = generateBulkImportUser(usersCount);
+        BulkImport.addUsers(appIdentifier, storage, users);
+
+        Thread.sleep(60000);
+
+        List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, 1000, null,
+                null, null);
+
+        assertEquals(0, usersAfterProcessing.size());
+
+        UserPaginationContainer container = AuthRecipe.getUsers(main, 1000, "ASC", null, null, null);
+        assertEquals(usersCount, container.users.length);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void shouldProcessBulkImportUsersInLargeNumbersInTheSameTenant() throws Exception {
+        Utils.setValueInConfig("bulk_migration_parallelism", "8");
+
+        TestingProcess process = startCronProcess();
+        Main main = process.getProcess();
+
+        if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+            return;
+        }
+
+        // Create user roles before inserting bulk users
+        {
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
+        }
+
+        BulkImportTestUtils.createTenants(main);
+
+        BulkImportSQLStorage storage = (BulkImportSQLStorage) StorageLayer.getStorage(main);
+        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+
+        int usersCount = 1000;
+        List<BulkImportUser> users = generateBulkImportUser(usersCount);
+        BulkImport.addUsers(appIdentifier, storage, users);
+
+        Thread.sleep(2 * 60000); // minute
+
+        List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, 1000, null,
+                null, null);
+
+        assertEquals(0, usersAfterProcessing.size());
+
+        UserPaginationContainer container = AuthRecipe.getUsers(main, 1000, "ASC", null, null, null);
+        assertEquals(usersCount, container.users.length);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -175,7 +258,63 @@ public class ProcessBulkImportUsersCronJobTest {
     }
 
     @Test
-    public void shouldDeleteEverythingFromtheDBIfAnythingFails() throws Exception {
+    public void shouldProcessBulkImportUsersInLargeNumberInMultipleTenantsWithDifferentStorages() throws Exception {
+        Utils.setValueInConfig("bulk_migration_parallelism", "12");
+
+        TestingProcess process = startCronProcess();
+        Main main = process.getProcess();
+
+        if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+            return;
+        }
+
+        // Create user roles before inserting bulk users
+        {
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role2", null);
+        }
+
+        BulkImportTestUtils.createTenants(main);
+
+        TenantIdentifier t1 = new TenantIdentifier(null, null, "t1");
+        TenantIdentifier t2 = new TenantIdentifier(null, null, "t2");
+
+        BulkImportSQLStorage storage = (BulkImportSQLStorage) StorageLayer.getStorage(main);
+        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+
+        List<BulkImportUser> usersT1 = generateBulkImportUser(500, List.of(t1.getTenantId()), 0);
+        List<BulkImportUser> usersT2 = generateBulkImportUser(500, List.of(t2.getTenantId()), 500);
+
+        List<BulkImportUser> allUsers = new ArrayList<>();
+        allUsers.addAll(usersT1);
+        allUsers.addAll(usersT2);
+
+        BulkImport.addUsers(appIdentifier, storage, allUsers);
+
+        Thread.sleep(2 * 60000);
+
+        List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, 1000, null,
+                null, null);
+
+        assertEquals(0, usersAfterProcessing.size());
+
+        Storage storageT1 = StorageLayer.getStorage(t1, main);
+        Storage storageT2 = StorageLayer.getStorage(t2, main);
+
+        UserPaginationContainer containerT1 = AuthRecipe.getUsers(t1, storageT1, 500, "ASC", null, null, null);
+        UserPaginationContainer containerT2 = AuthRecipe.getUsers(t2, storageT2, 500, "ASC", null, null, null);
+
+        assertEquals(usersT1.size() + usersT2.size(), containerT1.users.length + containerT2.users.length);
+
+        UserIdMapping.populateExternalUserIdForUsers(appIdentifier, storageT1, containerT1.users);
+        UserIdMapping.populateExternalUserIdForUsers(appIdentifier, storageT2, containerT2.users);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void shouldDeleteEverythingFromTheDBIfAnythingFails() throws Exception {
         // Creating a non-existing user role will result in an error.
         // Since, user role creation happens at the last step of the bulk import process, everything should be deleted from the DB.
 
@@ -194,6 +333,8 @@ public class ProcessBulkImportUsersCronJobTest {
         BulkImportSQLStorage storage = (BulkImportSQLStorage) StorageLayer.getStorage(main);
         AppIdentifier appIdentifier = new AppIdentifier(null, null);
 
+        // note the missing role creation here!
+
         List<BulkImportUser> users = generateBulkImportUser(1);
         BulkImport.addUsers(appIdentifier, storage, users);
 
@@ -211,6 +352,105 @@ public class ProcessBulkImportUsersCronJobTest {
         UserPaginationContainer container = AuthRecipe.getUsers(main, 100, "ASC", null, null, null);
         assertEquals(0, container.users.length);
     }
+
+
+    @Test
+    public void shouldDeleteEverythingFromTheDBIfAnythingFailsOnMultipleThreads() throws Exception {
+        Utils.setValueInConfig("bulk_migration_parallelism", "8");
+        // Creating a non-existing user role will result in an error.
+        // Since, user role creation happens at the last step of the bulk import process, everything should be deleted from the DB.
+
+        // NOTE: We will also need to disable the bulk import user validation in the cron job for this test to work.
+        Main.isTesting_skipBulkImportUserValidationInCronJob = true;
+
+        TestingProcess process = startCronProcess();
+        Main main = process.getProcess();
+
+        if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+            return;
+        }
+
+        BulkImportTestUtils.createTenants(main);
+
+        BulkImportSQLStorage storage = (BulkImportSQLStorage) StorageLayer.getStorage(main);
+        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+
+        // note the missing role creation here!
+
+        List<BulkImportUser> users = generateBulkImportUser(100);
+        BulkImport.addUsers(appIdentifier, storage, users);
+
+        Thread.sleep(60000);
+
+        List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, 100, null,
+                null, null);
+
+        assertEquals(100, usersAfterProcessing.size());
+
+        for(BulkImportUser userAfterProcessing: usersAfterProcessing){
+            assertEquals(BULK_IMPORT_USER_STATUS.FAILED, userAfterProcessing.status); // should process every user and every one of them should fail because of the missing role
+            assertEquals("E034: Role role1 does not exist! You need pre-create the role before assigning it to the user.",
+                    userAfterProcessing.errorMessage);
+        }
+
+        UserPaginationContainer container = AuthRecipe.getUsers(main, 100, "ASC", null, null, null);
+        assertEquals(0, container.users.length);
+    }
+
+    @Test
+    public void shouldDeleteOnlyFailedFromTheDBIfAnythingFailsOnMultipleThreads() throws Exception {
+        Utils.setValueInConfig("bulk_migration_parallelism", "8");
+        // Creating a non-existing user role will result in an error.
+        // Since, user role creation happens at the last step of the bulk import process, everything should be deleted from the DB.
+
+        // NOTE: We will also need to disable the bulk import user validation in the cron job for this test to work.
+        Main.isTesting_skipBulkImportUserValidationInCronJob = true;
+
+        TestingProcess process = startCronProcess();
+        Main main = process.getProcess();
+
+        if (StorageLayer.getBaseStorage(main).getType() != STORAGE_TYPE.SQL || StorageLayer.isInMemDb(main)) {
+            return;
+        }
+
+
+        BulkImportTestUtils.createTenants(main);
+
+        BulkImportSQLStorage storage = (BulkImportSQLStorage) StorageLayer.getStorage(main);
+        AppIdentifier appIdentifier = new AppIdentifier(null, null);
+
+        // Create one user role before inserting bulk users
+        {
+            UserRoles.createNewRoleOrModifyItsPermissions(main, "role1", null);
+        }
+
+        List<BulkImportUser> users = generateBulkImportUserWithRoles(99, List.of("public", "t1"), 0, List.of("role1"));
+        users.addAll(generateBulkImportUserWithRoles(1, List.of("public", "t1"), 99, List.of("notExistingRole")));
+
+        BulkImport.addUsers(appIdentifier, storage, users);
+
+        Thread.sleep(2 * 60000);
+
+        List<BulkImportUser> usersAfterProcessing = storage.getBulkImportUsers(appIdentifier, 100, null,
+                null, null);
+
+        assertEquals(1, usersAfterProcessing.size());
+
+        int numberOfFailed = 0;
+        for(int i = 0; i < usersAfterProcessing.size(); i++){
+            if(usersAfterProcessing.get(i).status == BULK_IMPORT_USER_STATUS.FAILED) {
+                assertEquals(
+                        "E034: Role notExistingRole does not exist! You need pre-create the role before assigning it to the user.",
+                        usersAfterProcessing.get(i).errorMessage);
+                numberOfFailed++;
+            }
+        }
+
+        UserPaginationContainer container = AuthRecipe.getUsers(main, 100, "ASC", null, null, null);
+        assertEquals(99, container.users.length);
+        assertEquals(1, numberOfFailed);
+    }
+
 
     @Test
     public void shouldThrowTenantDoesNotExistError() throws Exception {

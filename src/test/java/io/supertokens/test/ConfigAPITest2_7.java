@@ -52,7 +52,7 @@ public class ConfigAPITest2_7 {
 
     @Test
     public void inputErrorConfigAPITest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -87,7 +87,7 @@ public class ConfigAPITest2_7 {
 
     @Test
     public void testVersion2InputErrorConfigAPITest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -124,7 +124,7 @@ public class ConfigAPITest2_7 {
     @Test
     public void testCustomConfigPath() throws Exception {
         String path = new File("../temp/config.yaml").getAbsolutePath();
-        String[] args = { "../", "configFile=" + path };
+        String[] args = {"../", "configFile=" + path};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -148,7 +148,7 @@ public class ConfigAPITest2_7 {
     @Test
     public void testVersion2TestCustomConfigPath() throws Exception {
         String path = new File("../temp/config.yaml").getAbsolutePath();
-        String[] args = { "../", "configFile=" + path };
+        String[] args = {"../", "configFile=" + path};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -171,7 +171,7 @@ public class ConfigAPITest2_7 {
 
     @Test
     public void outputPossibilitiesConfigAPITest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -211,7 +211,7 @@ public class ConfigAPITest2_7 {
 
     @Test
     public void testVersion2OutputPossibilitiesConfigAPITest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

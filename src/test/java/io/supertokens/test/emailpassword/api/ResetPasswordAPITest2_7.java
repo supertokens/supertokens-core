@@ -59,7 +59,7 @@ public class ResetPasswordAPITest2_7 {
     // Check for bad input (missing fields)
     @Test
     public void testBadInput() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -148,7 +148,7 @@ public class ResetPasswordAPITest2_7 {
     // Check good input works
     @Test
     public void testGoodInput() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -216,7 +216,7 @@ public class ResetPasswordAPITest2_7 {
     // Failure condition: passing a valid password reset token will fail the test
     @Test
     public void testALLTypesOfOutPut() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -245,7 +245,7 @@ public class ResetPasswordAPITest2_7 {
     // Failure condition: passing a valid method will fail the test
     @Test
     public void testInvalidMethodThrows400Error() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -276,7 +276,7 @@ public class ResetPasswordAPITest2_7 {
     // Failure condition: submitting a valid password will fail the test
     @Test
     public void testEmptyPasswordThrows400Error() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

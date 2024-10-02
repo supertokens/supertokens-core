@@ -74,7 +74,8 @@ public class UpdateUsersEmailAndPasswordTest {
             AuthRecipeUserInfo userInfo = EmailPassword.signUp(main, "john.doe@example.com", "password");
 
             // when
-            EmailPassword.updateUsersEmailOrPassword(main, userInfo.getSupertokensUserId(), "dave.doe@example.com", null);
+            EmailPassword.updateUsersEmailOrPassword(main, userInfo.getSupertokensUserId(), "dave.doe@example.com",
+                    null);
 
             // then
             AuthRecipeUserInfo changedEmailUserInfo = EmailPassword.signIn(main, "dave.doe@example.com", "password");
@@ -99,7 +100,8 @@ public class UpdateUsersEmailAndPasswordTest {
 
             // when
             try {
-                EmailPassword.updateUsersEmailOrPassword(main, userInfo.getSupertokensUserId(), userInfo2.loginMethods[0].email, null);
+                EmailPassword.updateUsersEmailOrPassword(main, userInfo.getSupertokensUserId(),
+                        userInfo2.loginMethods[0].email, null);
                 Assert.fail();
             } catch (DuplicateEmailException ignored) {
             }
@@ -142,7 +144,8 @@ public class UpdateUsersEmailAndPasswordTest {
             AuthRecipeUserInfo userInfo = EmailPassword.signUp(main, "john.doe@example.com", "password");
 
             // when
-            EmailPassword.updateUsersEmailOrPassword(main, userInfo.getSupertokensUserId(), "dave.doe@example.com", "newPassword");
+            EmailPassword.updateUsersEmailOrPassword(main, userInfo.getSupertokensUserId(), "dave.doe@example.com",
+                    "newPassword");
 
             // then
             AuthRecipeUserInfo changedCredentialsUserInfo = EmailPassword.signIn(main, "dave.doe@example.com",

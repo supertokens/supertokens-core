@@ -336,7 +336,7 @@ public class SessionTest1 {
         Utils.setValueInConfig("access_token_dynamic_signing_key_update_interval", "0.00027"); // 1 second
         Utils.setValueInConfig("access_token_validity", "1"); // 1 second
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -451,7 +451,8 @@ public class SessionTest1 {
         }
 
         SessionInformationHolder refreshedSession2 = Session.refreshSession(process.getProcess(),
-                refreshedSession.refreshToken.token, refreshedSession.antiCsrfToken, true, AccessToken.getLatestVersion());
+                refreshedSession.refreshToken.token, refreshedSession.antiCsrfToken, true,
+                AccessToken.getLatestVersion());
         assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
                 .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
 
@@ -536,7 +537,8 @@ public class SessionTest1 {
         }
 
         SessionInformationHolder refreshedSession2 = Session.refreshSession(process.getProcess(),
-                refreshedSession.refreshToken.token, refreshedSession.antiCsrfToken, false, AccessToken.getLatestVersion());
+                refreshedSession.refreshToken.token, refreshedSession.antiCsrfToken, false,
+                AccessToken.getLatestVersion());
         assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
                 .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
 
@@ -651,7 +653,8 @@ public class SessionTest1 {
             Thread.sleep(500);
 
             SessionInformationHolder newRefreshedSession2 = Session.refreshSession(main,
-                    newRefreshedSession.refreshToken.token, newRefreshedSession.antiCsrfToken, false, AccessToken.getLatestVersion());
+                    newRefreshedSession.refreshToken.token, newRefreshedSession.antiCsrfToken, false,
+                    AccessToken.getLatestVersion());
             assert newRefreshedSession2.refreshToken != null;
             assert newRefreshedSession2.accessToken != null;
             assertNotEquals(newRefreshedSession.accessToken.token, newRefreshedSession2.accessToken.token);
@@ -662,7 +665,8 @@ public class SessionTest1 {
             Thread.sleep(500);
 
             SessionInformationHolder newRefreshedSession3 = Session.refreshSession(main,
-                    newRefreshedSession2.refreshToken.token, newRefreshedSession2.antiCsrfToken, false, AccessToken.getLatestVersion());
+                    newRefreshedSession2.refreshToken.token, newRefreshedSession2.antiCsrfToken, false,
+                    AccessToken.getLatestVersion());
             assert newRefreshedSession3.refreshToken != null;
             assert newRefreshedSession3.accessToken != null;
             assertNotEquals(newRefreshedSession3.accessToken.token, newRefreshedSession2.accessToken.token);

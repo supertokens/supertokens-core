@@ -46,7 +46,7 @@ public class GenerateThirdPartyConfig {
 
             boolean includeDuplicates = new Random().nextDouble() < 0.1;
             String[] providers = new String[numProviders];
-            for (int i=0; i < numProviders; i++) {
+            for (int i = 0; i < numProviders; i++) {
                 while (true) {
                     if (r.nextDouble() < 0.02) {
                         providers[i] = null;
@@ -70,10 +70,17 @@ public class GenerateThirdPartyConfig {
     }
 
     public static ConfigGenerator.GeneratedValueAndExpectation generate_enabled() {
-        boolean enabled  = new Random().nextBoolean();
+        boolean enabled = new Random().nextBoolean();
         return new ConfigGenerator.GeneratedValueAndExpectation(
                 enabled,
                 new ConfigGenerator.Expectation("ok", enabled));
+    }
+
+    public static ConfigGenerator.GeneratedValueAndExpectation generate_useThirdPartyProvidersFromStaticConfigIfEmpty() {
+        boolean val = new Random().nextBoolean();
+        return new ConfigGenerator.GeneratedValueAndExpectation(
+                val,
+                new ConfigGenerator.Expectation("ok", val));
     }
 
     public static ConfigGenerator.GeneratedValueAndExpectation generate_providers()
@@ -95,14 +102,15 @@ public class GenerateThirdPartyConfig {
 
         HashSet<String> thirdPartyIdSet = new HashSet<>();
 
-        for (int i=0; i<numProviders; i++) {
+        for (int i = 0; i < numProviders; i++) {
             ConfigGenerator.GeneratedValueAndExpectation generatedProvider = ConfigGenerator.generate(
                     ThirdPartyConfig.Provider.class, new Object[]{thirdPartyIds[i]});
             providers[i] = (ThirdPartyConfig.Provider) generatedProvider.value;
             expectations[i] = generatedProvider.expectation;
             if (thirdPartyIdSet.contains(providers[i].thirdPartyId)) {
-                expectations = Arrays.copyOf(expectations, expectations.length+1);
-                expectations[expectations.length-1] = new ConfigGenerator.Expectation("exception", "Duplicate ThirdPartyId was specified in the providers list.");
+                expectations = Arrays.copyOf(expectations, expectations.length + 1);
+                expectations[expectations.length - 1] = new ConfigGenerator.Expectation("exception",
+                        "Duplicate ThirdPartyId was specified in the providers list.");
             }
             thirdPartyIdSet.add(providers[i].thirdPartyId);
         }

@@ -129,19 +129,21 @@ public class GetUserByIdTest {
         assertEquals(RECIPE_ID.EMAIL_PASSWORD, userToTest.loginMethods[0].recipeId);
         assertEquals(user1.getSupertokensUserId(), userToTest.loginMethods[0].getSupertokensUserId());
         assertFalse(userToTest.loginMethods[0].verified);
-        assert(userToTest.loginMethods[0].timeJoined > 0);
+        assert (userToTest.loginMethods[0].timeJoined > 0);
 
         assertEquals(user1, AuthRecipe.getUserById(process.getProcess(), user1.getSupertokensUserId()));
         assertEquals(user2, AuthRecipe.getUserById(process.getProcess(), user2.getSupertokensUserId()));
         assertEquals(user3, AuthRecipe.getUserById(process.getProcess(), user3.getSupertokensUserId()));
         assertEquals(user4, AuthRecipe.getUserById(process.getProcess(), user4.getSupertokensUserId()));
 
-        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), user4.getSupertokensUserId()).user;
+        AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(),
+                user4.getSupertokensUserId()).user;
         AuthRecipe.linkAccounts(process.getProcess(), user3.getSupertokensUserId(), primaryUser.getSupertokensUserId());
         AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), primaryUser.getSupertokensUserId());
         AuthRecipe.linkAccounts(process.getProcess(), user1.getSupertokensUserId(), primaryUser.getSupertokensUserId());
 
-        for (String userId : new String[]{user1.getSupertokensUserId(), user2.getSupertokensUserId(), user3.getSupertokensUserId(), user4.getSupertokensUserId()}) {
+        for (String userId : new String[]{user1.getSupertokensUserId(), user2.getSupertokensUserId(),
+                user3.getSupertokensUserId(), user4.getSupertokensUserId()}) {
             AuthRecipeUserInfo result = AuthRecipe.getUserById(process.getProcess(), userId);
             assertTrue(result.isPrimaryUser);
 
@@ -196,14 +198,16 @@ public class GetUserByIdTest {
             // Create users
             AuthRecipeUserInfo user4 = createPasswordlessUserWithPhone(process.getProcess(), "+919876543210");
             Thread.sleep(50);
-            AuthRecipeUserInfo user2 = createThirdPartyUser(process.getProcess(), "google", "userid1", "test@example.com");
+            AuthRecipeUserInfo user2 = createThirdPartyUser(process.getProcess(), "google", "userid1",
+                    "test@example.com");
             Thread.sleep(50);
             AuthRecipeUserInfo user3 = createPasswordlessUserWithEmail(process.getProcess(), "test@example.com");
             Thread.sleep(50);
             AuthRecipeUserInfo user1 = createEmailPasswordUser(process.getProcess(), "test@example.com", "password1");
 
             // Link accounts randomly
-            String[] userIds = new String[]{user1.getSupertokensUserId(), user2.getSupertokensUserId(), user3.getSupertokensUserId(), user4.getSupertokensUserId()};
+            String[] userIds = new String[]{user1.getSupertokensUserId(), user2.getSupertokensUserId(),
+                    user3.getSupertokensUserId(), user4.getSupertokensUserId()};
             Collections.shuffle(Arrays.asList(userIds));
             AuthRecipeUserInfo primaryUser = AuthRecipe.createPrimaryUser(process.getProcess(), userIds[0]).user;
             AuthRecipe.linkAccounts(process.getProcess(), userIds[1], primaryUser.getSupertokensUserId());
@@ -215,9 +219,9 @@ public class GetUserByIdTest {
                 assertTrue(result.isPrimaryUser);
 
                 assertEquals(4, result.loginMethods.length);
-                assert(result.loginMethods[0].timeJoined <= result.loginMethods[1].timeJoined);
-                assert(result.loginMethods[1].timeJoined <= result.loginMethods[2].timeJoined);
-                assert(result.loginMethods[2].timeJoined <= result.loginMethods[3].timeJoined);
+                assert (result.loginMethods[0].timeJoined <= result.loginMethods[1].timeJoined);
+                assert (result.loginMethods[1].timeJoined <= result.loginMethods[2].timeJoined);
+                assert (result.loginMethods[2].timeJoined <= result.loginMethods[3].timeJoined);
             }
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

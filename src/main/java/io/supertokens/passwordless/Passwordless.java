@@ -21,6 +21,7 @@ import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.config.Config;
 import io.supertokens.emailpassword.exceptions.EmailChangeNotAllowedException;
 import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.multitenancy.MultitenancyHelper;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.passwordless.exceptions.*;
 import io.supertokens.pluginInterface.RECIPE_ID;
@@ -91,9 +92,6 @@ public class Passwordless {
         TenantConfig config = Multitenancy.getTenantInfo(main, tenantIdentifier);
         if (config == null) {
             throw new TenantOrAppNotFoundException(tenantIdentifier);
-        }
-        if (!config.passwordlessConfig.enabled) {
-            throw new BadPermissionException("Passwordless login not enabled for tenant");
         }
 
         PasswordlessSQLStorage passwordlessStorage = StorageUtils.getPasswordlessStorage(storage);
@@ -287,9 +285,11 @@ public class Passwordless {
                 false);
     }
 
-    public static PasswordlessDevice checkCodeAndReturnDevice(TenantIdentifier tenantIdentifier, Storage storage, Main main,
+    public static PasswordlessDevice checkCodeAndReturnDevice(TenantIdentifier tenantIdentifier, Storage storage,
+                                                              Main main,
                                                               String deviceId, String deviceIdHashFromUser,
-                                                              String userInputCode, String linkCode, boolean deleteCodeOnSuccess)
+                                                              String userInputCode, String linkCode,
+                                                              boolean deleteCodeOnSuccess)
             throws RestartFlowException, ExpiredUserInputCodeException,
             IncorrectUserInputCodeException, DeviceIdHashMismatchException, StorageTransactionLogicException,
             StorageQueryException, NoSuchAlgorithmException, InvalidKeyException, IOException, Base64EncodingException,
@@ -298,9 +298,6 @@ public class Passwordless {
         TenantConfig config = Multitenancy.getTenantInfo(main, tenantIdentifier);
         if (config == null) {
             throw new TenantOrAppNotFoundException(tenantIdentifier);
-        }
-        if (!config.passwordlessConfig.enabled) {
-            throw new BadPermissionException("Passwordless login not enabled for tenant");
         }
 
         PasswordlessSQLStorage passwordlessStorage = StorageUtils.getPasswordlessStorage(storage);
@@ -422,7 +419,8 @@ public class Passwordless {
 
         PasswordlessSQLStorage passwordlessStorage = StorageUtils.getPasswordlessStorage(storage);
 
-        PasswordlessDevice consumedDevice = checkCodeAndReturnDevice(tenantIdentifier, storage, main, deviceId, deviceIdHashFromUser,
+        PasswordlessDevice consumedDevice = checkCodeAndReturnDevice(tenantIdentifier, storage, main, deviceId,
+                deviceIdHashFromUser,
                 userInputCode, linkCode, true);
 
         // Getting here means that we successfully consumed the code
@@ -433,7 +431,9 @@ public class Passwordless {
                     consumedDevice.email);
             for (AuthRecipeUserInfo currUser : users) {
                 for (LoginMethod currLM : currUser.loginMethods) {
-                    if (currLM.recipeId == RECIPE_ID.PASSWORDLESS && currLM.email != null && currLM.email.equals(consumedDevice.email) && currLM.tenantIds.contains(tenantIdentifier.getTenantId())) {
+                    if (currLM.recipeId == RECIPE_ID.PASSWORDLESS && currLM.email != null &&
+                            currLM.email.equals(consumedDevice.email) &&
+                            currLM.tenantIds.contains(tenantIdentifier.getTenantId())) {
                         user = currUser;
                         loginMethod = currLM;
                         break;
@@ -446,7 +446,8 @@ public class Passwordless {
             for (AuthRecipeUserInfo currUser : users) {
                 for (LoginMethod currLM : currUser.loginMethods) {
                     if (currLM.recipeId == RECIPE_ID.PASSWORDLESS &&
-                            currLM.phoneNumber != null && currLM.phoneNumber.equals(consumedDevice.phoneNumber) && currLM.tenantIds.contains(tenantIdentifier.getTenantId())) {
+                            currLM.phoneNumber != null && currLM.phoneNumber.equals(consumedDevice.phoneNumber) &&
+                            currLM.tenantIds.contains(tenantIdentifier.getTenantId())) {
                         user = currUser;
                         loginMethod = currLM;
                         break;
@@ -745,7 +746,8 @@ public class Passwordless {
         }
 
         LoginMethod lM = Arrays.stream(user.loginMethods)
-                .filter(currlM -> currlM.getSupertokensUserId().equals(recipeUserId) && currlM.recipeId == RECIPE_ID.PASSWORDLESS)
+                .filter(currlM -> currlM.getSupertokensUserId().equals(recipeUserId) &&
+                        currlM.recipeId == RECIPE_ID.PASSWORDLESS)
                 .findFirst().orElse(null);
 
         if (lM == null) {
@@ -773,7 +775,8 @@ public class Passwordless {
                                 if (!userWithSameEmail.tenantIds.contains(tenantId)) {
                                     continue;
                                 }
-                                if (userWithSameEmail.isPrimaryUser && !userWithSameEmail.getSupertokensUserId().equals(user.getSupertokensUserId())) {
+                                if (userWithSameEmail.isPrimaryUser &&
+                                        !userWithSameEmail.getSupertokensUserId().equals(user.getSupertokensUserId())) {
                                     throw new StorageTransactionLogicException(
                                             new EmailChangeNotAllowedException());
                                 }
@@ -807,7 +810,9 @@ public class Passwordless {
                                 if (!userWithSamePhoneNumber.tenantIds.contains(tenantId)) {
                                     continue;
                                 }
-                                if (userWithSamePhoneNumber.isPrimaryUser && !userWithSamePhoneNumber.getSupertokensUserId().equals(user.getSupertokensUserId())) {
+                                if (userWithSamePhoneNumber.isPrimaryUser &&
+                                        !userWithSamePhoneNumber.getSupertokensUserId()
+                                                .equals(user.getSupertokensUserId())) {
                                     throw new StorageTransactionLogicException(
                                             new PhoneNumberChangeNotAllowedException());
                                 }
@@ -906,7 +911,8 @@ public class Passwordless {
 
         public PasswordlessDevice consumedDevice;
 
-        public ConsumeCodeResponse(boolean createdNewUser, @Nullable AuthRecipeUserInfo user, String email, String phoneNumber, PasswordlessDevice consumedDevice) {
+        public ConsumeCodeResponse(boolean createdNewUser, @Nullable AuthRecipeUserInfo user, String email,
+                                   String phoneNumber, PasswordlessDevice consumedDevice) {
             this.createdNewUser = createdNewUser;
             this.user = user;
             this.email = email;

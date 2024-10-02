@@ -61,13 +61,15 @@ public class JWKSPublicAPI extends WebserverAPI {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         try {
-            List<JsonObject> jwks = SigningKeys.getInstance(this.getAppIdentifier(req), main).getJWKS();
+            SigningKeys signingKeys = SigningKeys.getInstance(this.getAppIdentifier(req), main);
+            List<JsonObject> jwks = signingKeys.getJWKS();
             JsonObject reply = new JsonObject();
             JsonArray jwksJsonArray = new JsonParser().parse(new Gson().toJson(jwks)).getAsJsonArray();
             reply.add("keys", jwksJsonArray);
+            resp.setHeader("Cache-Control", "max-age=" + signingKeys.getCacheDurationInSeconds() + ", must-revalidate");
             super.sendJsonResponse(200, reply, resp);
         } catch (StorageQueryException | StorageTransactionLogicException | NoSuchAlgorithmException
-                | InvalidKeySpecException | TenantOrAppNotFoundException | UnsupportedJWTSigningAlgorithmException e) {
+                 | InvalidKeySpecException | TenantOrAppNotFoundException | UnsupportedJWTSigningAlgorithmException e) {
             throw new ServletException(e);
         }
     }

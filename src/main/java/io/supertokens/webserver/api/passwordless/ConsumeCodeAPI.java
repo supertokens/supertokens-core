@@ -84,6 +84,8 @@ public class ConsumeCodeAPI extends WebserverAPI {
 
         try {
             TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+            io.supertokens.webserver.api.passwordless.Utils.assertIfPasswordlessIsEnabledForTenant(main,
+                    tenantIdentifier, getVersionFromRequest(req));
             Storage storage = this.getTenantStorage(req);
             ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(
                     tenantIdentifier,
@@ -114,8 +116,10 @@ public class ConsumeCodeAPI extends WebserverAPI {
             if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v4_0)) {
                 for (LoginMethod loginMethod : consumeCodeResponse.user.loginMethods) {
                     if (loginMethod.recipeId.equals(RECIPE_ID.PASSWORDLESS)
-                            && (consumeCodeResponse.email == null || Objects.equals(loginMethod.email, consumeCodeResponse.email))
-                            && (consumeCodeResponse.phoneNumber == null || Objects.equals(loginMethod.phoneNumber, consumeCodeResponse.phoneNumber))) {
+                            && (consumeCodeResponse.email == null ||
+                            Objects.equals(loginMethod.email, consumeCodeResponse.email))
+                            && (consumeCodeResponse.phoneNumber == null ||
+                            Objects.equals(loginMethod.phoneNumber, consumeCodeResponse.phoneNumber))) {
                         result.addProperty("recipeUserId", loginMethod.getSupertokensOrExternalUserId());
                         break;
                     }
@@ -125,7 +129,8 @@ public class ConsumeCodeAPI extends WebserverAPI {
             if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v5_0)) {
                 JsonObject jsonDevice = new JsonObject();
                 jsonDevice.addProperty("preAuthSessionId", consumeCodeResponse.consumedDevice.deviceIdHash);
-                jsonDevice.addProperty("failedCodeInputAttemptCount", consumeCodeResponse.consumedDevice.failedAttempts);
+                jsonDevice.addProperty("failedCodeInputAttemptCount",
+                        consumeCodeResponse.consumedDevice.failedAttempts);
 
                 if (consumeCodeResponse.consumedDevice.email != null) {
                     jsonDevice.addProperty("email", consumeCodeResponse.consumedDevice.email);

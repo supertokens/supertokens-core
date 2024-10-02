@@ -47,7 +47,7 @@ public class InputParserTest {
 
     @Test
     public void testParseStringOrJSONNullOrThrowError() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

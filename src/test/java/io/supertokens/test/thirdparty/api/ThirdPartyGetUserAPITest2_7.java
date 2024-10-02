@@ -65,7 +65,7 @@ public class ThirdPartyGetUserAPITest2_7 {
     @Test
     public void testBadInput() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -122,7 +122,7 @@ public class ThirdPartyGetUserAPITest2_7 {
     @Test
     public void testGoodInput() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -175,7 +175,7 @@ public class ThirdPartyGetUserAPITest2_7 {
     @Test
     public void testAllTypesOfOutput() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -222,7 +222,8 @@ public class ThirdPartyGetUserAPITest2_7 {
         AuthRecipeUserInfo user1 = EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
         Passwordless.CreateCodeResponse user2code = Passwordless.createCode(process.getProcess(), "test@example.com",
                 null, null, null);
-        AuthRecipeUserInfo user2 = Passwordless.consumeCode(process.getProcess(), user2code.deviceId, user2code.deviceIdHash, user2code.userInputCode, null).user;
+        AuthRecipeUserInfo user2 = Passwordless.consumeCode(process.getProcess(), user2code.deviceId,
+                user2code.deviceIdHash, user2code.userInputCode, null).user;
 
         {
             HashMap<String, String> map = new HashMap<>();

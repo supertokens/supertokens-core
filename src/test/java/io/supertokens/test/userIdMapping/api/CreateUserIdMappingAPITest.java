@@ -366,7 +366,8 @@ public class CreateUserIdMappingAPITest {
 
         UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
 
-        UserIdMapping userIdMapping = storage.getUserIdMapping(new AppIdentifier(null, null), userInfo.getSupertokensUserId(),
+        UserIdMapping userIdMapping = storage.getUserIdMapping(new AppIdentifier(null, null),
+                userInfo.getSupertokensUserId(),
                 true);
 
         assertNotNull(userIdMapping);

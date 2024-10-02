@@ -364,7 +364,8 @@ public class UserPaginationTest {
         long timeJoined = System.currentTimeMillis();
         for (int i = 0; i < 100; i++) {
             String userId = io.supertokens.utils.Utils.getUUID();
-            storage.signUp(TenantIdentifier.BASE_TENANT, userId, "test"+i+"@example.com", new LoginMethod.ThirdParty("google", userId), timeJoined);
+            storage.signUp(TenantIdentifier.BASE_TENANT, userId, "test" + i + "@example.com",
+                    new LoginMethod.ThirdParty("google", userId), timeJoined);
             userIds.add(userId);
         }
 

@@ -30,7 +30,7 @@ public class ParsedFirebaseSCryptResponse {
     private static final String FIREBASE_SCRYPT_SALT_SEPARATOR = "s=";
 
     public ParsedFirebaseSCryptResponse(String passwordHash, String salt, String saltSeparator, int rounds,
-            int memCost) {
+                                        int memCost) {
         this.passwordHash = passwordHash;
         this.salt = salt;
         this.saltSeparator = saltSeparator;

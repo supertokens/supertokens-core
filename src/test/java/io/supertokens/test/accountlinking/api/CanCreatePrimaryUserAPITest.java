@@ -217,7 +217,8 @@ public class CanCreatePrimaryUserAPITest {
         AuthRecipeUserInfo emailPasswordUser = EmailPassword.signUp(process.getProcess(), "test@example.com",
                 "pass1234");
 
-        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.getSupertokensUserId());
+        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main,
+                emailPasswordUser.getSupertokensUserId());
         assert (!result.wasAlreadyAPrimaryUser);
 
         ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, "google", "user-google",
@@ -262,7 +263,8 @@ public class CanCreatePrimaryUserAPITest {
                 "pass1234");
 
         AuthRecipe.createPrimaryUser(process.main, emailPasswordUser1.getSupertokensUserId());
-        AuthRecipe.linkAccounts(process.main, emailPasswordUser2.getSupertokensUserId(), emailPasswordUser1.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.main, emailPasswordUser2.getSupertokensUserId(),
+                emailPasswordUser1.getSupertokensUserId());
 
         {
             Map<String, String> params = new HashMap<>();
@@ -302,7 +304,8 @@ public class CanCreatePrimaryUserAPITest {
                 "pass1234");
         UserIdMapping.createUserIdMapping(process.main, emailPasswordUser.getSupertokensUserId(), "r1", null, false);
 
-        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main, emailPasswordUser.getSupertokensUserId());
+        AuthRecipe.CreatePrimaryUserResult result = AuthRecipe.createPrimaryUser(process.main,
+                emailPasswordUser.getSupertokensUserId());
         assert (!result.wasAlreadyAPrimaryUser);
 
         ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, "google", "user-google",
@@ -348,7 +351,8 @@ public class CanCreatePrimaryUserAPITest {
                 "pass1234");
 
         AuthRecipe.createPrimaryUser(process.main, emailPasswordUser1.getSupertokensUserId());
-        AuthRecipe.linkAccounts(process.main, emailPasswordUser2.getSupertokensUserId(), emailPasswordUser1.getSupertokensUserId());
+        AuthRecipe.linkAccounts(process.main, emailPasswordUser2.getSupertokensUserId(),
+                emailPasswordUser1.getSupertokensUserId());
 
         {
             Map<String, String> params = new HashMap<>();

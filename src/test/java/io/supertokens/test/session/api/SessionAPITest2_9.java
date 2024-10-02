@@ -112,7 +112,7 @@ public class SessionAPITest2_9 {
 
     @Test
     public void successOutputCheckWithAntiCsrfWithCookieDomain() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         Utils.setValueInConfig("cookie_domain", "localhost");
 
@@ -146,7 +146,7 @@ public class SessionAPITest2_9 {
 
     @Test
     public void successOutputCheckWithAntiCsrf() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -177,7 +177,7 @@ public class SessionAPITest2_9 {
 
     @Test
     public void successOutputCheckWithNoAntiCsrf() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -208,7 +208,7 @@ public class SessionAPITest2_9 {
     public void successOutputCheckWithStaticAccessTokenSigningKey() throws Exception {
         Utils.setValueInConfig("access_token_signing_key_dynamic", "false");
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -236,7 +236,7 @@ public class SessionAPITest2_9 {
 
     @Test
     public void successOutputCheckWithNullsInPayload() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -268,7 +268,7 @@ public class SessionAPITest2_9 {
     @Test
     public void badInputTest() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -368,7 +368,7 @@ public class SessionAPITest2_9 {
     }
 
     public static void checkSessionResponse(JsonObject response, TestingProcessManager.TestingProcess process,
-            String userId, JsonObject userDataInJWT) throws JWT.JWTException {
+                                            String userId, JsonObject userDataInJWT) throws JWT.JWTException {
         assertNotNull(response.get("session").getAsJsonObject().get("handle").getAsString());
         assertEquals(response.get("session").getAsJsonObject().get("userId").getAsString(), userId);
         assertEquals(response.get("session").getAsJsonObject().get("userDataInJWT").getAsJsonObject().toString(),
@@ -401,7 +401,8 @@ public class SessionAPITest2_9 {
             assertEquals(respPubKeyList.get(i).getAsJsonObject().entrySet().size(), 3);
         }
 
-        JWT.JWTPreParseInfo preParseInfo = JWT.preParseJWTInfo(response.get("accessToken").getAsJsonObject().get("token").getAsString());
+        JWT.JWTPreParseInfo preParseInfo = JWT.preParseJWTInfo(
+                response.get("accessToken").getAsJsonObject().get("token").getAsString());
         assertEquals(preParseInfo.version, AccessToken.VERSION.V2);
         assertNull(preParseInfo.kid);
         Base64.getDecoder().decode(preParseInfo.header);
@@ -409,7 +410,8 @@ public class SessionAPITest2_9 {
         Base64.getDecoder().decode(preParseInfo.signature);
 
 
-        JsonObject payload = new JsonParser().parse(io.supertokens.utils.Utils.convertFromBase64(preParseInfo.payload)).getAsJsonObject();
+        JsonObject payload = new JsonParser().parse(io.supertokens.utils.Utils.convertFromBase64(preParseInfo.payload))
+                .getAsJsonObject();
         assertTrue(payload.has("userData"));
         assertEquals(payload.get("userData").getAsJsonObject().toString(), userDataInJWT.toString());
     }

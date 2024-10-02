@@ -144,14 +144,16 @@ public class RequestConnectionUriDomainTest {
         StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
                 .modifyConfigToAddANewUserPoolForTesting(tenant2Config, 3);
 
-        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(new TenantIdentifier("localhost", null, null), new EmailPasswordConfig(false),
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(),
+                new TenantConfig(new TenantIdentifier("localhost", null, null), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                null, null, tenantConfig), false);
-        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantConfig(new TenantIdentifier("127.0.0.1", null, null), new EmailPasswordConfig(false),
+                        null, null, tenantConfig), false);
+        Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(),
+                new TenantConfig(new TenantIdentifier("127.0.0.1", null, null), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
-                null, null, tenant2Config), false);
+                        null, null, tenant2Config), false);
 
         Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
 

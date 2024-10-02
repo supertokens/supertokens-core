@@ -25,7 +25,6 @@ import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.signingkeys.AccessTokenSigningKey;
 import io.supertokens.signingkeys.SigningKeys;
 import io.supertokens.signingkeys.SigningKeys.KeyInfo;
 import io.supertokens.test.TestingProcessManager;
@@ -243,10 +242,10 @@ public class HandshakeAPITest2_9 {
                 Config.getConfig(process.getProcess()).getAccessTokenBlacklisting());
 
         assertEquals(response.get("accessTokenValidity").getAsLong(),
-                Config.getConfig(process.getProcess()).getAccessTokenValidity());
+                Config.getConfig(process.getProcess()).getAccessTokenValidityInMillis());
 
         assertEquals(response.get("refreshTokenValidity").getAsLong(),
-                Config.getConfig(process.getProcess()).getRefreshTokenValidity());
+                Config.getConfig(process.getProcess()).getRefreshTokenValidityInMillis());
     }
 
 }

@@ -235,7 +235,8 @@ public class Logging extends ResourceDistributor.SingletonResource {
 
     private Logger createLoggerForFile(Main main, String file, String name) {
         LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
-        LayoutWrappingEncoder ple = new LayoutWrappingEncoder(main.getProcessId(), Version.getVersion(main).getCoreVersion());
+        LayoutWrappingEncoder ple = new LayoutWrappingEncoder(main.getProcessId(),
+                Version.getVersion(main).getCoreVersion());
         ple.setContext(lc);
         ple.start();
         FileAppender<ILoggingEvent> fileAppender = new FileAppender<>();
@@ -253,7 +254,8 @@ public class Logging extends ResourceDistributor.SingletonResource {
 
     private Logger createLoggerForConsole(Main main, String name, LOG_LEVEL logLevel) {
         LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
-        LayoutWrappingEncoder ple = new LayoutWrappingEncoder(main.getProcessId(), Version.getVersion(main).getCoreVersion());
+        LayoutWrappingEncoder ple = new LayoutWrappingEncoder(main.getProcessId(),
+                Version.getVersion(main).getCoreVersion());
         ple.setContext(lc);
         ple.start();
         ConsoleAppender<ILoggingEvent> logConsoleAppender = new ConsoleAppender<>();

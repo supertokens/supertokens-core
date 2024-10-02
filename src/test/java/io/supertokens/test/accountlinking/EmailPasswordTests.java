@@ -68,7 +68,8 @@ public class EmailPasswordTests {
         }
 
         AuthRecipeUserInfo user1 = EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
-        AuthRecipeUserInfo user2 = ThirdParty.signInUp(process.getProcess(), "google", "googleid", "test@example.com").user;
+        AuthRecipeUserInfo user2 = ThirdParty.signInUp(process.getProcess(), "google", "googleid",
+                "test@example.com").user;
 
         AuthRecipe.createPrimaryUser(process.getProcess(), user2.getSupertokensUserId());
         AuthRecipe.linkAccounts(process.getProcess(), user1.getSupertokensUserId(), user2.getSupertokensUserId());
@@ -102,14 +103,16 @@ public class EmailPasswordTests {
         AuthRecipeUserInfo user1 = EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
         Passwordless.CreateCodeResponse code = Passwordless.createCode(process.getProcess(), null, "+919876543210",
                 null, null);
-        AuthRecipeUserInfo user2 = Passwordless.consumeCode(process.getProcess(), code.deviceId, code.deviceIdHash, code.userInputCode, null).user;
+        AuthRecipeUserInfo user2 = Passwordless.consumeCode(process.getProcess(), code.deviceId, code.deviceIdHash,
+                code.userInputCode, null).user;
 
         AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId());
         AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), user1.getSupertokensUserId());
 
         Passwordless.CreateCodeResponse code1 = Passwordless.createCode(process.getProcess(), "test@example.com", null,
                 null, null);
-        AuthRecipeUserInfo user3 = Passwordless.consumeCode(process.getProcess(), code1.deviceId, code1.deviceIdHash, code1.userInputCode, null).user;
+        AuthRecipeUserInfo user3 = Passwordless.consumeCode(process.getProcess(), code1.deviceId, code1.deviceIdHash,
+                code1.userInputCode, null).user;
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -131,20 +134,23 @@ public class EmailPasswordTests {
 
         Passwordless.CreateCodeResponse code1 = Passwordless.createCode(process.getProcess(), "test@example.com", null,
                 null, null);
-        AuthRecipeUserInfo user1 = Passwordless.consumeCode(process.getProcess(), code1.deviceId, code1.deviceIdHash, code1.userInputCode, null).user;
+        AuthRecipeUserInfo user1 = Passwordless.consumeCode(process.getProcess(), code1.deviceId, code1.deviceIdHash,
+                code1.userInputCode, null).user;
 
         Thread.sleep(50);
 
         Passwordless.CreateCodeResponse code2 = Passwordless.createCode(process.getProcess(), null, "+919876543210",
                 null, null);
-        AuthRecipeUserInfo user2 = Passwordless.consumeCode(process.getProcess(), code2.deviceId, code2.deviceIdHash, code2.userInputCode, null).user;
+        AuthRecipeUserInfo user2 = Passwordless.consumeCode(process.getProcess(), code2.deviceId, code2.deviceIdHash,
+                code2.userInputCode, null).user;
 
         AuthRecipe.createPrimaryUser(process.getProcess(), user1.getSupertokensUserId());
         AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), user1.getSupertokensUserId());
 
         Passwordless.CreateCodeResponse code3 = Passwordless.createCode(process.getProcess(), null, "+919876543210",
                 null, null);
-        AuthRecipeUserInfo user3 = Passwordless.consumeCode(process.getProcess(), code3.deviceId, code3.deviceIdHash, code3.userInputCode, null).user;
+        AuthRecipeUserInfo user3 = Passwordless.consumeCode(process.getProcess(), code3.deviceId, code3.deviceIdHash,
+                code3.userInputCode, null).user;
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

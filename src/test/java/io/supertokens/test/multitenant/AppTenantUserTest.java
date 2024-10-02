@@ -27,6 +27,7 @@ import io.supertokens.pluginInterface.ActiveUsersStorage;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.bulkimport.BulkImportStorage;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.nonAuthRecipe.NonAuthRecipeStorage;
 import io.supertokens.storageLayer.StorageLayer;
@@ -77,7 +78,8 @@ public class AppTenantUserTest {
 
         // this list contains the package names for recipes which dont use UserIdMapping
         ArrayList<String> classesToSkip = new ArrayList<>(
-                List.of("io.supertokens.pluginInterface.jwt.JWTRecipeStorage", ActiveUsersStorage.class.getName()));
+                List.of("io.supertokens.pluginInterface.jwt.JWTRecipeStorage", ActiveUsersStorage.class.getName(),
+                        BulkImportStorage.class.getName()));
 
         Reflections reflections = new Reflections("io.supertokens.pluginInterface");
         Set<Class<? extends NonAuthRecipeStorage>> classes = reflections.getSubTypesOf(NonAuthRecipeStorage.class);
@@ -182,7 +184,8 @@ public class AppTenantUserTest {
 
         // this list contains the package names for recipes which dont use UserIdMapping
         ArrayList<String> classesToSkip = new ArrayList<>(
-                List.of("io.supertokens.pluginInterface.jwt.JWTRecipeStorage", ActiveUsersStorage.class.getName()));
+                List.of("io.supertokens.pluginInterface.jwt.JWTRecipeStorage", ActiveUsersStorage.class.getName(),
+                        BulkImportStorage.class.getName()));
 
         Reflections reflections = new Reflections("io.supertokens.pluginInterface");
         Set<Class<? extends NonAuthRecipeStorage>> classes = reflections.getSubTypesOf(NonAuthRecipeStorage.class);
@@ -224,7 +227,8 @@ public class AppTenantUserTest {
                 continue;
             }
 
-            AuthRecipeUserInfo user = EmailPassword.signUp(app, appStorage, process.getProcess(), "test@example.com", "password");
+            AuthRecipeUserInfo user = EmailPassword.signUp(app, appStorage, process.getProcess(), "test@example.com",
+                    "password");
             String userId = user.getSupertokensUserId();
 
             Multitenancy.addUserIdToTenant(process.getProcess(), tenant, tenantStorage, userId);
@@ -292,7 +296,8 @@ public class AppTenantUserTest {
         Storage tenantStorage = (
                 StorageLayer.getStorage(tenant, process.getProcess()));
 
-        AuthRecipeUserInfo user = EmailPassword.signUp(tenant, tenantStorage, process.getProcess(), "test@example.com", "password");
+        AuthRecipeUserInfo user = EmailPassword.signUp(tenant, tenantStorage, process.getProcess(), "test@example.com",
+                "password");
         String userId = user.getSupertokensUserId();
 
         Multitenancy.deleteTenant(tenant, process.getProcess());

@@ -76,8 +76,9 @@ public class ImportTotpDeviceAPI extends WebserverAPI {
 
             // Try to find the appIdentifier with right storage based on the userId
             try {
-                StorageAndUserIdMapping mappingAndStorage = enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
-                        req, userId, UserIdType.ANY, false);
+                StorageAndUserIdMapping mappingAndStorage =
+                        enforcePublicTenantAndGetStorageAndUserIdMappingForAppSpecificApi(
+                                req, userId, UserIdType.ANY, false);
                 storage = mappingAndStorage.storage;
             } catch (UnknownUserIdException e) {
                 throw new IllegalStateException("should never happen");
@@ -93,7 +94,7 @@ public class ImportTotpDeviceAPI extends WebserverAPI {
             result.addProperty("status", "DEVICE_ALREADY_EXISTS_ERROR");
             super.sendJsonResponse(200, result, resp);
         } catch (StorageQueryException | FeatureNotEnabledException |
-                TenantOrAppNotFoundException | BadPermissionException e) {
+                 TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
     }

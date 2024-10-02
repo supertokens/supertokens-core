@@ -41,7 +41,7 @@ public class PasswordlessUtility {
      * @throws Exception
      */
     public static Passwordless.ConsumeCodeResponse createUserWith(TestingProcessManager.TestingProcess process,
-            String email, String phoneNumber) throws Exception {
+                                                                  String email, String phoneNumber) throws Exception {
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), email,
                 phoneNumber, null, null);

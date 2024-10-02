@@ -264,7 +264,7 @@ public class BulkImportUserUtils {
             return null;
         }
 
-        if (externalUserId.length() > 255) {
+        if (externalUserId.length() > 128) {
             errors.add("externalUserId " + externalUserId + " is too long. Max length is 128.");
         }
 

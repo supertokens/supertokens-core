@@ -61,14 +61,15 @@ public class GenerateThirdPartyConfig_Provider {
         ConfigGenerator.Expectation[] expectations = new ConfigGenerator.Expectation[numClients];
 
         HashSet<String> clientTypeSet = new HashSet<>();
-        for (int i=0; i<numClients; i++) {
+        for (int i = 0; i < numClients; i++) {
             ConfigGenerator.GeneratedValueAndExpectation generated = ConfigGenerator.generate(
                     ThirdPartyConfig.ProviderClient.class, new Object[]{thirdPartyId});
             clients[i] = (ThirdPartyConfig.ProviderClient) generated.value;
             expectations[i] = generated.expectation;
             if (clientTypeSet.contains(clients[i].clientType)) {
-                expectations = Arrays.copyOf(expectations, expectations.length+1);
-                expectations[expectations.length-1] = new ConfigGenerator.Expectation("exception", "Duplicate clientType was specified in the clients list.");
+                expectations = Arrays.copyOf(expectations, expectations.length + 1);
+                expectations[expectations.length - 1] = new ConfigGenerator.Expectation("exception",
+                        "Duplicate clientType was specified in the clients list.");
             }
             clientTypeSet.add(clients[i].clientType);
         }
@@ -87,7 +88,8 @@ public class GenerateThirdPartyConfig_Provider {
         );
     }
 
-    public static ConfigGenerator.GeneratedValueAndExpectation generate_authorizationEndpointQueryParams(String thirdPartyId) {
+    public static ConfigGenerator.GeneratedValueAndExpectation generate_authorizationEndpointQueryParams(
+            String thirdPartyId) {
         JsonObject params = JsonObjectGenerator.generate();
         return new ConfigGenerator.GeneratedValueAndExpectation(
                 params,
@@ -119,7 +121,8 @@ public class GenerateThirdPartyConfig_Provider {
         );
     }
 
-    public static ConfigGenerator.GeneratedValueAndExpectation generate_userInfoEndpointQueryParams(String thirdPartyId) {
+    public static ConfigGenerator.GeneratedValueAndExpectation generate_userInfoEndpointQueryParams(
+            String thirdPartyId) {
         JsonObject params = JsonObjectGenerator.generate();
         return new ConfigGenerator.GeneratedValueAndExpectation(
                 params,

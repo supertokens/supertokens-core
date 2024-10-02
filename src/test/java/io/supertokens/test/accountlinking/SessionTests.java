@@ -36,7 +36,6 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.session.Session;
-import io.supertokens.session.info.SessionInfo;
 import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -161,7 +160,7 @@ public class SessionTests {
         t3 = new TenantIdentifier(null, "a1", "t2");
         t4 = new TenantIdentifier(null, "a1", "t3");
     }
-    
+
     @Test
     public void testCreateSessionWithRecipeUserIdReturnsSessionWithPrimaryUserId() throws Exception {
         String[] args = {"../"};
@@ -213,7 +212,8 @@ public class SessionTests {
 
         SessionInformationHolder session1 = Session.createNewSession(process.getProcess(),
                 user1.getSupertokensUserId(), new JsonObject(), new JsonObject());
-        SessionInformationHolder session2 = Session.createNewSession(process.getProcess(), "extid2", new JsonObject(), new JsonObject());
+        SessionInformationHolder session2 = Session.createNewSession(process.getProcess(), "extid2", new JsonObject(),
+                new JsonObject());
 
         AuthRecipe.linkAccounts(process.getProcess(), user2.getSupertokensUserId(), user1.getSupertokensUserId());
 
@@ -289,7 +289,7 @@ public class SessionTests {
 
         AuthRecipeUserInfo user1 = EmailPassword.signUp(t1, t1Storage, process.getProcess(), "test@example.com",
                 "password");
-        AuthRecipeUserInfo  user2 = EmailPassword.signUp(t1, t1Storage, process.getProcess(), "test1@example.com",
+        AuthRecipeUserInfo user2 = EmailPassword.signUp(t1, t1Storage, process.getProcess(), "test1@example.com",
                 "password");
 
         AuthRecipe.createPrimaryUser(process.getProcess(), t1.toAppIdentifier(),
@@ -333,9 +333,9 @@ public class SessionTests {
         Storage t1Storage = (StorageLayer.getStorage(t1, process.getProcess()));
         Storage t2Storage = (StorageLayer.getStorage(t2, process.getProcess()));
 
-        AuthRecipeUserInfo user1 = EmailPassword.signUp(t1, t1Storage, process.getProcess(), "test@example.com", 
+        AuthRecipeUserInfo user1 = EmailPassword.signUp(t1, t1Storage, process.getProcess(), "test@example.com",
                 "password");
-        AuthRecipeUserInfo  user2 = EmailPassword.signUp(t1, t1Storage, process.getProcess(), "test1@example.com", 
+        AuthRecipeUserInfo user2 = EmailPassword.signUp(t1, t1Storage, process.getProcess(), "test1@example.com",
                 "password");
 
         AuthRecipe.createPrimaryUser(process.getProcess(), t1.toAppIdentifier(),
@@ -379,9 +379,9 @@ public class SessionTests {
         Storage t1Storage = (StorageLayer.getStorage(t1, process.getProcess()));
         Storage t2Storage = (StorageLayer.getStorage(t2, process.getProcess()));
 
-        AuthRecipeUserInfo user1 = EmailPassword.signUp(t1, t1Storage, process.getProcess(), "test@example.com", 
+        AuthRecipeUserInfo user1 = EmailPassword.signUp(t1, t1Storage, process.getProcess(), "test@example.com",
                 "password");
-        AuthRecipeUserInfo  user2 = EmailPassword.signUp(t1, t1Storage, process.getProcess(), "test1@example.com", 
+        AuthRecipeUserInfo user2 = EmailPassword.signUp(t1, t1Storage, process.getProcess(), "test1@example.com",
                 "password");
 
         AuthRecipe.createPrimaryUser(process.getProcess(), t1.toAppIdentifier(), t1Storage,
@@ -422,7 +422,7 @@ public class SessionTests {
 
         AuthRecipeUserInfo user1 = EmailPassword.signUp(t1, t1Storage, process.getProcess(), "test@example.com",
                 "password");
-        AuthRecipeUserInfo  user2 = EmailPassword.signUp(t1, t1Storage, process.getProcess(), "test1@example.com",
+        AuthRecipeUserInfo user2 = EmailPassword.signUp(t1, t1Storage, process.getProcess(), "test1@example.com",
                 "password");
 
         AuthRecipe.createPrimaryUser(process.getProcess(), t1.toAppIdentifier(), t1Storage,
@@ -484,12 +484,14 @@ public class SessionTests {
         }
 
         {
-            String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(TenantIdentifier.BASE_TENANT, baseTenant, user1.getSupertokensUserId(),
+            String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(TenantIdentifier.BASE_TENANT, baseTenant,
+                    user1.getSupertokensUserId(),
                     true);
             assertEquals(2, sessions.length);
         }
         {
-            String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(TenantIdentifier.BASE_TENANT, baseTenant, user2.getSupertokensUserId(),
+            String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(TenantIdentifier.BASE_TENANT, baseTenant,
+                    user2.getSupertokensUserId(),
                     true);
             assertEquals(2, sessions.length);
         }
@@ -529,7 +531,8 @@ public class SessionTests {
 
             Storage baseTenant = (
                     StorageLayer.getBaseStorage(process.getProcess()));
-            Session.revokeAllSessionsForUser(process.getProcess(), TenantIdentifier.BASE_TENANT, baseTenant, user1.getSupertokensUserId(), true);
+            Session.revokeAllSessionsForUser(process.getProcess(), TenantIdentifier.BASE_TENANT, baseTenant,
+                    user1.getSupertokensUserId(), true);
 
             try {
                 Session.getSession(process.getProcess(), session1.session.handle);
@@ -555,7 +558,8 @@ public class SessionTests {
 
             Storage baseTenant = (
                     StorageLayer.getBaseStorage(process.getProcess()));
-            Session.revokeAllSessionsForUser(process.getProcess(), TenantIdentifier.BASE_TENANT, baseTenant, user2.getSupertokensUserId(), true);
+            Session.revokeAllSessionsForUser(process.getProcess(), TenantIdentifier.BASE_TENANT, baseTenant,
+                    user2.getSupertokensUserId(), true);
 
             try {
                 Session.getSession(process.getProcess(), session1.session.handle);
@@ -581,7 +585,8 @@ public class SessionTests {
 
             Storage baseTenant = (
                     StorageLayer.getBaseStorage(process.getProcess()));
-            Session.revokeAllSessionsForUser(process.getProcess(), TenantIdentifier.BASE_TENANT, baseTenant, user1.getSupertokensUserId(), false);
+            Session.revokeAllSessionsForUser(process.getProcess(), TenantIdentifier.BASE_TENANT, baseTenant,
+                    user1.getSupertokensUserId(), false);
 
             try {
                 Session.getSession(process.getProcess(), session1.session.handle);
@@ -603,7 +608,8 @@ public class SessionTests {
 
             Storage baseTenant = (
                     StorageLayer.getBaseStorage(process.getProcess()));
-            Session.revokeAllSessionsForUser(process.getProcess(), TenantIdentifier.BASE_TENANT, baseTenant, user2.getSupertokensUserId(), false);
+            Session.revokeAllSessionsForUser(process.getProcess(), TenantIdentifier.BASE_TENANT, baseTenant,
+                    user2.getSupertokensUserId(), false);
 
             Session.getSession(process.getProcess(), session1.session.handle);
 
@@ -641,10 +647,14 @@ public class SessionTests {
         UserIdMapping.createUserIdMapping(process.getProcess(), user1.getSupertokensUserId(), "extid1", null, false);
         UserIdMapping.createUserIdMapping(process.getProcess(), user2.getSupertokensUserId(), "extid2", null, false);
 
-        SessionInformationHolder session1 = Session.createNewSession(process.getProcess(), user1.getSupertokensUserId(), new JsonObject(), new JsonObject());
-        SessionInformationHolder session2 = Session.createNewSession(process.getProcess(), user2.getSupertokensUserId(), new JsonObject(), new JsonObject());
-        SessionInformationHolder session3 = Session.createNewSession(process.getProcess(), "extid1", new JsonObject(), new JsonObject());
-        SessionInformationHolder session4 = Session.createNewSession(process.getProcess(), "extid2", new JsonObject(), new JsonObject());
+        SessionInformationHolder session1 = Session.createNewSession(process.getProcess(), user1.getSupertokensUserId(),
+                new JsonObject(), new JsonObject());
+        SessionInformationHolder session2 = Session.createNewSession(process.getProcess(), user2.getSupertokensUserId(),
+                new JsonObject(), new JsonObject());
+        SessionInformationHolder session3 = Session.createNewSession(process.getProcess(), "extid1", new JsonObject(),
+                new JsonObject());
+        SessionInformationHolder session4 = Session.createNewSession(process.getProcess(), "extid2", new JsonObject(),
+                new JsonObject());
 
         assertEquals("extid1", session1.session.userId);
         assertEquals("extid1", session1.session.recipeUserId);

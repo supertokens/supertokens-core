@@ -55,7 +55,7 @@ public class RemoveUserIdMappingAPITest {
 
     @Test
     public void testBadInput() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -163,7 +163,7 @@ public class RemoveUserIdMappingAPITest {
 
     @Test
     public void testDeletingUserIdMappingsWithUnknownUserIds() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -220,7 +220,7 @@ public class RemoveUserIdMappingAPITest {
 
     @Test
     public void testDeletingUserIdMapping() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -231,7 +231,8 @@ public class RemoveUserIdMappingAPITest {
 
         // create a userId mapping
         AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        UserIdMapping userIdMapping = new UserIdMapping(userInfo.getSupertokensUserId(), "externalUserId", "externalUserIdInfo");
+        UserIdMapping userIdMapping = new UserIdMapping(userInfo.getSupertokensUserId(), "externalUserId",
+                "externalUserIdInfo");
         createUserIdMappingAndCheckThatItExists(process.main, userIdMapping);
 
         // delete userId mapping with userIdType as SUPERTOKENS
@@ -322,7 +323,7 @@ public class RemoveUserIdMappingAPITest {
 
     @Test
     public void testDeletingAUserIdMappingWithoutSendingUserIdType() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -333,7 +334,8 @@ public class RemoveUserIdMappingAPITest {
 
         // create a userId mapping
         AuthRecipeUserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        UserIdMapping userIdMapping = new UserIdMapping(userInfo.getSupertokensUserId(), "externalUserId", "externalUserIdInfo");
+        UserIdMapping userIdMapping = new UserIdMapping(userInfo.getSupertokensUserId(), "externalUserId",
+                "externalUserIdInfo");
         createUserIdMappingAndCheckThatItExists(process.main, userIdMapping);
 
         {
@@ -380,7 +382,7 @@ public class RemoveUserIdMappingAPITest {
 
     @Test
     public void deleteUserIdMappingWithAndWithoutForce() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

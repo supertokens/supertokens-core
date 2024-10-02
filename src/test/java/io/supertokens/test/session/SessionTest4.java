@@ -133,7 +133,8 @@ public class SessionTest4 {
         }
 
         try {
-            Session.updateSession(process.getProcess(), "random", new JsonObject(), null, AccessToken.getLatestVersion());
+            Session.updateSession(process.getProcess(), "random", new JsonObject(), null,
+                    AccessToken.getLatestVersion());
             fail();
         } catch (UnauthorisedException e) {
             assertEquals(e.getMessage(), "Session does not exist.");
@@ -234,7 +235,8 @@ public class SessionTest4 {
         assert refreshedSession.accessToken != null;
 
         SessionInformationHolder refreshedSession2 = Session.refreshSession(process.getProcess(),
-                refreshedSession.refreshToken.token, refreshedSession.antiCsrfToken, false, AccessToken.getLatestVersion());
+                refreshedSession.refreshToken.token, refreshedSession.antiCsrfToken, false,
+                AccessToken.getLatestVersion());
         assert refreshedSession2.refreshToken != null;
 
         Session.refreshSession(process.getProcess(), refreshedSession2.refreshToken.token,
@@ -318,13 +320,15 @@ public class SessionTest4 {
         }
 
         try {
-            Session.updateSession(process.getProcess(), expiredSession.session.handle, new JsonObject(), null, AccessToken.getLatestVersion());
+            Session.updateSession(process.getProcess(), expiredSession.session.handle, new JsonObject(), null,
+                    AccessToken.getLatestVersion());
             throw new Exception("Test failed");
         } catch (UnauthorisedException ignored) {
         }
 
         Session.getSession(process.getProcess(), nonExpiredSession.session.handle);
-        Session.updateSession(process.getProcess(), nonExpiredSession.session.handle, new JsonObject(), null, AccessToken.getLatestVersion());
+        Session.updateSession(process.getProcess(), nonExpiredSession.session.handle, new JsonObject(), null,
+                AccessToken.getLatestVersion());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -404,7 +408,8 @@ public class SessionTest4 {
         JsonObject jwtData = new JsonObject();
         jwtData.addProperty("test", "value");
 
-        Session.updateSession(process.main, sessionInfo.session.handle, sessionData, jwtData, AccessToken.getLatestVersion());
+        Session.updateSession(process.main, sessionInfo.session.handle, sessionData, jwtData,
+                AccessToken.getLatestVersion());
 
         io.supertokens.pluginInterface.session.SessionInfo sessionInfo2 = Session.getSession(process.main,
                 sessionInfo.session.handle);

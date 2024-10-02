@@ -55,7 +55,7 @@ public class VerifySessionAPITest3_0 {
 
     @Test
     public void successOutputCheckV3AccessToken() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -100,7 +100,7 @@ public class VerifySessionAPITest3_0 {
 
     @Test
     public void checkThattIdIsNotPresentInV3() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -150,7 +150,7 @@ public class VerifySessionAPITest3_0 {
         assert issued.isBefore(Instant.now().plusMillis(1500));
 
         Instant expires = decodedJWT.getExpiresAtAsInstant();
-        long validityInMS = Config.getConfig(process.getProcess()).getAccessTokenValidity();
+        long validityInMS = Config.getConfig(process.getProcess()).getAccessTokenValidityInMillis();
 
         assert expires.isAfter(Instant.now().plusMillis(validityInMS).minusMillis(1500));
         assert expires.isBefore(Instant.now().plusMillis(validityInMS).plusMillis(1500));
@@ -169,7 +169,7 @@ public class VerifySessionAPITest3_0 {
 
     @Test
     public void successOutputCheckNewAccessTokenUpgradeToV4() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -240,7 +240,7 @@ public class VerifySessionAPITest3_0 {
         assert issued.isBefore(Instant.now().plusMillis(1500));
 
         Instant expires = decodedJWT.getExpiresAtAsInstant();
-        long validityInMS = Config.getConfig(process.getProcess()).getAccessTokenValidity();
+        long validityInMS = Config.getConfig(process.getProcess()).getAccessTokenValidityInMillis();
 
         assert expires.isAfter(Instant.now().plusMillis(validityInMS).minusMillis(1500));
         assert expires.isBefore(Instant.now().plusMillis(validityInMS).plusMillis(1500));
@@ -259,7 +259,7 @@ public class VerifySessionAPITest3_0 {
 
     @Test
     public void testAccessTokenInfoOnV3AccessTokenPointsToPublicTenant() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -278,7 +278,8 @@ public class VerifySessionAPITest3_0 {
                 "http://localhost:3567/recipe/session", sessionRequest, 1000, 1000, null,
                 SemVer.v2_21.get(), "session");
 
-        AccessToken.AccessTokenInfo accessTokenInfo = AccessToken.getInfoFromAccessToken(new AppIdentifier(null, null), process.getProcess(), sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString(),
+        AccessToken.AccessTokenInfo accessTokenInfo = AccessToken.getInfoFromAccessToken(new AppIdentifier(null, null),
+                process.getProcess(), sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString(),
                 false);
 
         assertEquals(TenantIdentifier.DEFAULT_TENANT_ID, accessTokenInfo.tenantIdentifier.getTenantId());
@@ -289,7 +290,7 @@ public class VerifySessionAPITest3_0 {
 
     @Test
     public void testV4AccessTokenOnOlderCDIWorksFine() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -334,7 +335,7 @@ public class VerifySessionAPITest3_0 {
 
     @Test
     public void testV3AccessTokenWithCustomtIdPayload() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -354,7 +355,8 @@ public class VerifySessionAPITest3_0 {
                 "http://localhost:3567/recipe/session", sessionRequest, 1000, 1000, null,
                 SemVer.v2_21.get(), "session");
 
-        AccessToken.AccessTokenInfo accessTokenInfo = AccessToken.getInfoFromAccessToken(new AppIdentifier(null, null), process.getProcess(), sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString(),
+        AccessToken.AccessTokenInfo accessTokenInfo = AccessToken.getInfoFromAccessToken(new AppIdentifier(null, null),
+                process.getProcess(), sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString(),
                 false);
 
         assertEquals(TenantIdentifier.DEFAULT_TENANT_ID, accessTokenInfo.tenantIdentifier.getTenantId());
@@ -367,7 +369,8 @@ public class VerifySessionAPITest3_0 {
         }
 
         JsonObject sessionRefreshRequest = new JsonObject();
-        sessionRefreshRequest.addProperty("refreshToken", sessionInfo.get("refreshToken").getAsJsonObject().get("token").getAsString());
+        sessionRefreshRequest.addProperty("refreshToken",
+                sessionInfo.get("refreshToken").getAsJsonObject().get("token").getAsString());
         sessionRefreshRequest.addProperty("enableAntiCsrf", false);
 
         JsonObject sessionRefreshResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
@@ -388,7 +391,7 @@ public class VerifySessionAPITest3_0 {
 
     @Test
     public void testV3AccessTokenWithCustomtIdPayloadAfterRefreshInV4() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -408,13 +411,15 @@ public class VerifySessionAPITest3_0 {
                 "http://localhost:3567/recipe/session", sessionRequest, 1000, 1000, null,
                 SemVer.v2_21.get(), "session");
 
-        AccessToken.AccessTokenInfo accessTokenInfo = AccessToken.getInfoFromAccessToken(new AppIdentifier(null, null), process.getProcess(), sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString(),
+        AccessToken.AccessTokenInfo accessTokenInfo = AccessToken.getInfoFromAccessToken(new AppIdentifier(null, null),
+                process.getProcess(), sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString(),
                 false);
 
         assertEquals(TenantIdentifier.DEFAULT_TENANT_ID, accessTokenInfo.tenantIdentifier.getTenantId());
 
         JsonObject sessionRefreshRequest = new JsonObject();
-        sessionRefreshRequest.addProperty("refreshToken", sessionInfo.get("refreshToken").getAsJsonObject().get("token").getAsString());
+        sessionRefreshRequest.addProperty("refreshToken",
+                sessionInfo.get("refreshToken").getAsJsonObject().get("token").getAsString());
         sessionRefreshRequest.addProperty("enableAntiCsrf", false);
 
         JsonObject sessionRefreshResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",

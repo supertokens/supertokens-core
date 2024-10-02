@@ -87,19 +87,23 @@ public class CreateOrUpdateThirdPartyConfigAPI extends WebserverAPI {
 
             boolean found = false;
 
-            for (ThirdPartyConfig.Provider provider : tenantConfig.thirdPartyConfig.providers) {
-                // Loop through all the existing thirdParty providers in the db
+            if (tenantConfig.thirdPartyConfig.providers != null) {
+                for (ThirdPartyConfig.Provider provider : tenantConfig.thirdPartyConfig.providers) {
+                    // Loop through all the existing thirdParty providers in the db
 
-                if (!provider.thirdPartyId.equals(thirdPartyId)) {
-                    // if the thirdPartyId is not the same as the one we are trying to update, add it to the new list
-                    newProviders.add(provider);
-                } else {
-                    // if the thirdPartyId is the same as the one we are trying to update, add the one from json input
-                    // to the new list
-                    ThirdPartyConfig.Provider newProvider = new Gson().fromJson(config,
-                            ThirdPartyConfig.Provider.class);
-                    newProviders.add(normalize(newProvider));
-                    found = true;
+                    if (!provider.thirdPartyId.equals(thirdPartyId)) {
+                        // if the thirdPartyId is not the same as the one we are trying to update, add it to the new
+                        // list
+                        newProviders.add(provider);
+                    } else {
+                        // if the thirdPartyId is the same as the one we are trying to update, add the one from json
+                        // input
+                        // to the new list
+                        ThirdPartyConfig.Provider newProvider = new Gson().fromJson(config,
+                                ThirdPartyConfig.Provider.class);
+                        newProviders.add(normalize(newProvider));
+                        found = true;
+                    }
                 }
             }
             if (!found) {
@@ -114,7 +118,8 @@ public class CreateOrUpdateThirdPartyConfigAPI extends WebserverAPI {
                             tenantConfig.thirdPartyConfig.enabled,
                             newProviders.toArray(new ThirdPartyConfig.Provider[0])),
                     tenantConfig.passwordlessConfig,
-                    tenantConfig.firstFactors, tenantConfig.requiredSecondaryFactors, tenantConfig.coreConfig
+                    tenantConfig.firstFactors,
+                    tenantConfig.requiredSecondaryFactors, tenantConfig.coreConfig
             );
 
             Multitenancy.addNewOrUpdateAppOrTenant(main, updatedConfig, shouldProtectProtectedConfig(req),

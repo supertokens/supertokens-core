@@ -79,8 +79,10 @@ public class ResourceDistributorTest {
         process.getProcess().getResourceDistributor().setResource(a1, ResourceB.RESOURCE_ID, new ResourceB());
         process.getProcess().getResourceDistributor().setResource(t1, ResourceB.RESOURCE_ID, new ResourceB());
 
-        assertTrue(process.getProcess().getResourceDistributor().getResource(a1, ResourceA.RESOURCE_ID) instanceof ResourceA);
-        assertTrue(process.getProcess().getResourceDistributor().getResource(t1, ResourceA.RESOURCE_ID) instanceof ResourceA);
+        assertTrue(process.getProcess().getResourceDistributor()
+                .getResource(a1, ResourceA.RESOURCE_ID) instanceof ResourceA);
+        assertTrue(process.getProcess().getResourceDistributor()
+                .getResource(t1, ResourceA.RESOURCE_ID) instanceof ResourceA);
 
         process.getProcess().getResourceDistributor().clearAllResourcesWithResourceKey(ResourceA.RESOURCE_ID);
 
@@ -97,8 +99,10 @@ public class ResourceDistributorTest {
             // ignored
         }
 
-        assertTrue(process.getProcess().getResourceDistributor().getResource(a1, ResourceB.RESOURCE_ID) instanceof ResourceB);
-        assertTrue(process.getProcess().getResourceDistributor().getResource(t1, ResourceB.RESOURCE_ID) instanceof ResourceB);
+        assertTrue(process.getProcess().getResourceDistributor()
+                .getResource(a1, ResourceB.RESOURCE_ID) instanceof ResourceB);
+        assertTrue(process.getProcess().getResourceDistributor()
+                .getResource(t1, ResourceB.RESOURCE_ID) instanceof ResourceB);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

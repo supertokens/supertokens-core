@@ -28,6 +28,7 @@ import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.File;
 import java.io.IOException;
 
@@ -59,7 +60,8 @@ public class ConfigAPI extends WebserverAPI {
             throw new ServletException(e);
         }
         if (!tenantIdentifier.equals(new TenantIdentifier(null, null, null))) {
-            throw new ServletException(new BadPermissionException("you can call this only from the base connection uri domain, public app and tenant"));
+            throw new ServletException(new BadPermissionException(
+                    "you can call this only from the base connection uri domain, public app and tenant"));
         }
 
         if ((ProcessHandle.current().pid() + "").equals(pid)) {

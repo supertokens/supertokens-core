@@ -68,14 +68,16 @@ public class SessionTest6 {
                 userDataInDatabase, false, AccessToken.getLatestVersion(), false);
         checkIfUsingStaticKey(sessionInfo, false);
 
-        sessionInfo = Session.refreshSession(new AppIdentifier(null, null), process.getProcess(), sessionInfo.refreshToken.token,
+        sessionInfo = Session.refreshSession(new AppIdentifier(null, null), process.getProcess(),
+                sessionInfo.refreshToken.token,
                 sessionInfo.antiCsrfToken, false, AccessToken.getLatestVersion(), true);
         assert sessionInfo.refreshToken != null;
         assert sessionInfo.accessToken != null;
 
         checkIfUsingStaticKey(sessionInfo, true);
 
-        SessionInformationHolder verifiedSession = Session.getSession(process.getProcess(), sessionInfo.accessToken.token,
+        SessionInformationHolder verifiedSession = Session.getSession(process.getProcess(),
+                sessionInfo.accessToken.token,
                 sessionInfo.antiCsrfToken, false, true, false);
 
         checkIfUsingStaticKey(verifiedSession, true);
@@ -83,6 +85,7 @@ public class SessionTest6 {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
     @Test
     public void createRefreshSwitchRegen() throws Exception {
         String[] args = {"../"};
@@ -99,7 +102,8 @@ public class SessionTest6 {
                 userDataInDatabase, false, AccessToken.getLatestVersion(), false);
         checkIfUsingStaticKey(sessionInfo, false);
 
-        sessionInfo = Session.refreshSession(new AppIdentifier(null, null), process.getProcess(), sessionInfo.refreshToken.token,
+        sessionInfo = Session.refreshSession(new AppIdentifier(null, null), process.getProcess(),
+                sessionInfo.refreshToken.token,
                 sessionInfo.antiCsrfToken, false, AccessToken.getLatestVersion(), true);
         assert sessionInfo.refreshToken != null;
         assert sessionInfo.accessToken != null;
@@ -133,17 +137,20 @@ public class SessionTest6 {
                 userDataInDatabase, false, AccessToken.getLatestVersion(), false);
         checkIfUsingStaticKey(sessionInfo, false);
 
-        sessionInfo = Session.refreshSession(new AppIdentifier(null, null), process.getProcess(), sessionInfo.refreshToken.token,
+        sessionInfo = Session.refreshSession(new AppIdentifier(null, null), process.getProcess(),
+                sessionInfo.refreshToken.token,
                 sessionInfo.antiCsrfToken, false, AccessToken.getLatestVersion(), false);
 
-        sessionInfo = Session.refreshSession(new AppIdentifier(null, null), process.getProcess(), sessionInfo.refreshToken.token,
+        sessionInfo = Session.refreshSession(new AppIdentifier(null, null), process.getProcess(),
+                sessionInfo.refreshToken.token,
                 sessionInfo.antiCsrfToken, false, AccessToken.getLatestVersion(), true);
         assert sessionInfo.refreshToken != null;
         assert sessionInfo.accessToken != null;
 
         checkIfUsingStaticKey(sessionInfo, true);
 
-        SessionInformationHolder verifiedSession = Session.getSession(process.getProcess(), sessionInfo.accessToken.token,
+        SessionInformationHolder verifiedSession = Session.getSession(process.getProcess(),
+                sessionInfo.accessToken.token,
                 sessionInfo.antiCsrfToken, false, true, false);
 
         checkIfUsingStaticKey(verifiedSession, true);
@@ -151,6 +158,7 @@ public class SessionTest6 {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
     @Test
     public void createRefreshRefreshSwitchRegen() throws Exception {
         String[] args = {"../"};
@@ -167,10 +175,12 @@ public class SessionTest6 {
                 userDataInDatabase, false, AccessToken.getLatestVersion(), false);
         checkIfUsingStaticKey(sessionInfo, false);
 
-        sessionInfo = Session.refreshSession(new AppIdentifier(null, null), process.getProcess(), sessionInfo.refreshToken.token,
+        sessionInfo = Session.refreshSession(new AppIdentifier(null, null), process.getProcess(),
+                sessionInfo.refreshToken.token,
                 sessionInfo.antiCsrfToken, false, AccessToken.getLatestVersion(), false);
 
-        sessionInfo = Session.refreshSession(new AppIdentifier(null, null), process.getProcess(), sessionInfo.refreshToken.token,
+        sessionInfo = Session.refreshSession(new AppIdentifier(null, null), process.getProcess(),
+                sessionInfo.refreshToken.token,
                 sessionInfo.antiCsrfToken, false, AccessToken.getLatestVersion(), true);
         assert sessionInfo.refreshToken != null;
         assert sessionInfo.accessToken != null;
@@ -188,7 +198,8 @@ public class SessionTest6 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    private static void checkIfUsingStaticKey(SessionInformationHolder info, boolean shouldBeStatic) throws JWT.JWTException {
+    private static void checkIfUsingStaticKey(SessionInformationHolder info, boolean shouldBeStatic)
+            throws JWT.JWTException {
         assert info.accessToken != null;
         JWT.JWTPreParseInfo tokenInfo = JWT.preParseJWTInfo(info.accessToken.token);
         assert tokenInfo.kid != null;

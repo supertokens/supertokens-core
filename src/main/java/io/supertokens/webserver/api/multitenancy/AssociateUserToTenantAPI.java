@@ -113,7 +113,8 @@ public class AssociateUserToTenantAPI extends WebserverAPI {
             result.addProperty("status", "THIRD_PARTY_USER_ALREADY_EXISTS_ERROR");
             super.sendJsonResponse(200, result, resp);
 
-        } catch (AnotherPrimaryUserWithEmailAlreadyExistsException | AnotherPrimaryUserWithPhoneNumberAlreadyExistsException |
+        } catch (AnotherPrimaryUserWithEmailAlreadyExistsException |
+                 AnotherPrimaryUserWithPhoneNumberAlreadyExistsException |
                  AnotherPrimaryUserWithThirdPartyInfoAlreadyExistsException e) {
             JsonObject result = new JsonObject();
             result.addProperty("status", "ASSOCIATION_NOT_ALLOWED_ERROR");

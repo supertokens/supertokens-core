@@ -56,7 +56,8 @@ public class InputParser {
     }
 
     public static String[] getCommaSeparatedStringArrayQueryParamOrThrowError(HttpServletRequest request,
-            String fieldName, boolean nullable) throws ServletException {
+                                                                              String fieldName, boolean nullable)
+            throws ServletException {
         String[] value = null;
         // expect val1,val2,val3 and so on...
         String queryParamValue = getQueryParamOrThrowError(request, fieldName, nullable);
@@ -145,7 +146,7 @@ public class InputParser {
     }
 
     public static String parseStringFromElementOrThrowError(JsonElement element, String parentFieldName,
-            boolean nullable) throws ServletException {
+                                                            boolean nullable) throws ServletException {
         try {
             if (nullable && element == null) {
                 return null;

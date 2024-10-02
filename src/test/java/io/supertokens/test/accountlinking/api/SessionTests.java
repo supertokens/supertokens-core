@@ -80,7 +80,7 @@ public class SessionTests {
 
         return result;
     }
-    
+
     private void revokeSessionsForUser(Main main, String userId, Boolean includeAllLinkedAccounts)
             throws HttpResponseException, IOException {
         JsonObject params = new JsonObject();

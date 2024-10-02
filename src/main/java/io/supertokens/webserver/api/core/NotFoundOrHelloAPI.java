@@ -21,6 +21,7 @@ import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.RateLimiter;
@@ -79,11 +80,29 @@ public class NotFoundOrHelloAPI extends WebserverAPI {
             appIdentifier = getAppIdentifier(req);
             storages = StorageLayer.getStoragesForApp(main, appIdentifier);
         } catch (TenantOrAppNotFoundException e) {
-            // we send 500 status code
             throw new ServletException(e);
         }
 
-        if (req.getServletPath().equals("/")) {
+        String path = req.getServletPath();
+        TenantIdentifier tenantIdentifier = null;
+        try {
+            tenantIdentifier = getTenantIdentifier(req);
+        } catch (TenantOrAppNotFoundException e) {
+            super.sendTextResponse(404, "Not found", resp);
+            return;
+        }
+
+        if (path.startsWith("/appid-")) {
+            path = path.replace("/appid-"+tenantIdentifier.getAppId(), "");
+        }
+
+        if (!tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
+            path = path.replace("/" + tenantIdentifier.getTenantId(), "");
+        } else if (path.startsWith("/public") && tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
+            path = path.replace("/" + tenantIdentifier.getTenantId(), "");
+        }
+
+        if (path.equals("/") || path.isBlank()) {
             // API is app specific
             try {
                 RateLimiter rateLimiter = RateLimiter.getInstance(appIdentifier, super.main, 200);
@@ -110,7 +129,8 @@ public class NotFoundOrHelloAPI extends WebserverAPI {
         } else {
             super.sendTextResponse(404, "Not found", resp);
 
-            Logging.error(main, appIdentifier.getAsPublicTenantIdentifier(), "Unknown API called: " + req.getRequestURL(),
+            Logging.error(main, appIdentifier.getAsPublicTenantIdentifier(),
+                    "Unknown API called: " + req.getRequestURL(),
                     false);
         }
     }

@@ -228,7 +228,8 @@ public class StorageTest {
 
                             if (info.value.equals("Value")) {
                                 try {
-                                    sqlStorage.setKeyValue_Transaction(new TenantIdentifier(null, null, null), con, "Key",
+                                    sqlStorage.setKeyValue_Transaction(new TenantIdentifier(null, null, null), con,
+                                            "Key",
                                             new KeyValueInfo("Value1"));
                                 } catch (TenantOrAppNotFoundException e) {
                                     throw new IllegalStateException(e);
@@ -255,7 +256,8 @@ public class StorageTest {
 
                             if (info.value.equals("Value")) {
                                 try {
-                                    sqlStorage.setKeyValue_Transaction(new TenantIdentifier(null, null, null), con, "Key",
+                                    sqlStorage.setKeyValue_Transaction(new TenantIdentifier(null, null, null), con,
+                                            "Key",
                                             new KeyValueInfo("Value2"));
                                 } catch (TenantOrAppNotFoundException e) {
                                     throw new IllegalStateException(e);
@@ -738,13 +740,14 @@ public class StorageTest {
             fail();
         } catch (HttpResponseException ex) {
             assertEquals(ex.statusCode, 500);
-            assertEquals(ex.getMessage(), "Http error. Status Code: 500. Message: Internal Error");
+            assertTrue(ex.getMessage().contains("Storage layer disabled"));
         }
 
         storage.setStorageLayerEnabled(true);
 
         JsonObject sessionCreated = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null,
+                Utils.getCdiVersionStringLatestForTests(),
                 "session");
 
         JsonObject jsonBody = new JsonObject();
@@ -762,7 +765,7 @@ public class StorageTest {
             fail();
         } catch (HttpResponseException ex) {
             assertEquals(ex.statusCode, 500);
-            assertEquals(ex.getMessage(), "Http error. Status Code: 500. Message: Internal Error");
+            assertTrue(ex.getMessage().contains("Storage layer disabled"));
         }
 
         storage.setStorageLayerEnabled(true);
@@ -777,7 +780,7 @@ public class StorageTest {
 
     @Test
     public void multipleParallelTransactionTest() throws InterruptedException, IOException {
-        String[] args = { "../" };
+        String[] args = {"../"};
         Utils.setValueInConfig("access_token_dynamic_signing_key_update_interval", "0.00005");
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

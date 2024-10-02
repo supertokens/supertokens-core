@@ -31,7 +31,8 @@ public class RequestStats extends ResourceDistributor.SingletonResource {
     private final int MAX_MINUTES = 24 * 60;
 
     private long currentMinute; // current minute since epoch
-    private final int[] currentMinuteRequestCounts; // array of 60 items representing number of requests at each second in the current minute
+    private final int[] currentMinuteRequestCounts; // array of 60 items representing number of requests at each
+    // second in the current minute
 
     // The 2 arrays below contains stats for a day for every minute
     // the array is stored in such a way that array[currentMinute % MAX_MINUTES] contains the stats for a day ago
@@ -117,7 +118,9 @@ public class RequestStats extends ResourceDistributor.SingletonResource {
     synchronized private void updateRequestStats(boolean updateCounts) {
         long now = System.currentTimeMillis() / 1000;
         this.checkAndUpdateMinute(now);
-        if (updateCounts) { this.updateCounts(now); }
+        if (updateCounts) {
+            this.updateCounts(now);
+        }
     }
 
     public JsonObject getStats() {

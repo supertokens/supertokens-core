@@ -1,6 +1,6 @@
 {
   "_comment": "contains a list of plugin interfaces branch names that this core supports",
   "versions": [
-    "6.1"
+    "6.2"
   ]
 }
