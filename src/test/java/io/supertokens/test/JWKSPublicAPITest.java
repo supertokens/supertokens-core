@@ -16,26 +16,22 @@
 
 package io.supertokens.test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import io.supertokens.ProcessState;
+import io.supertokens.httpRequest.HttpRequest;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-import io.supertokens.ProcessState;
-import io.supertokens.httpRequest.HttpRequest;
+import static org.junit.Assert.*;
 
 public class JWKSPublicAPITest {
     @Rule
