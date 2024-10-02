@@ -28,11 +28,10 @@ public class CleanupOAuthRevokeListAndChallenges extends CronTask {
     }
 
     @Override
-    protected void doTaskPerApp(AppIdentifier app) throws Exception {
-        Storage storage = StorageLayer.getStorage(app.getAsPublicTenantIdentifier(), main);
+    protected void doTaskPerStorage(Storage storage) throws Exception {
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
-        oauthStorage.cleanUpExpiredAndRevokedTokens(app);
-        oauthStorage.deleteLogoutChallengesBefore(app, System.currentTimeMillis() - 1000 * 60 * 60 * 48);
+        oauthStorage.cleanUpExpiredAndRevokedOAuthTokensList();
+        oauthStorage.deleteOAuthLogoutChallengesBefore(System.currentTimeMillis() - 1000 * 60 * 60 * 48);
     }
 
     @Override

@@ -356,15 +356,15 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         OAuthStorage oAuthStorage = StorageUtils.getOAuthStorage(StorageLayer.getStorage(
             this.appIdentifier.getAsPublicTenantIdentifier(), main));
         
-        result.addProperty("totalNumberOfClients", oAuthStorage.countTotalNumberOfClientsForApp(appIdentifier));
-        result.addProperty("numberOfClientCredentialsOnlyClients", oAuthStorage.countTotalNumberOfClientCredentialsOnlyClientsForApp(appIdentifier));
-        result.addProperty("numberOfM2MTokensAlive", oAuthStorage.countTotalNumberOfM2MTokensAlive(appIdentifier));
+        result.addProperty("totalNumberOfClients", oAuthStorage.countTotalNumberOfOAuthClients(appIdentifier));
+        result.addProperty("numberOfClientCredentialsOnlyClients", oAuthStorage.countTotalNumberOfClientCredentialsOnlyOAuthClients(appIdentifier));
+        result.addProperty("numberOfM2MTokensAlive", oAuthStorage.countTotalNumberOfOAuthM2MTokensAlive(appIdentifier));
 
         long now = System.currentTimeMillis();
         JsonArray tokensCreatedArray = new JsonArray();
         for (int i = 1; i <= 31; i++) {
             long timestamp = now - (i * 24 * 60 * 60 * 1000L);
-            int numberOfTokensCreated = oAuthStorage.countTotalNumberOfM2MTokensCreatedSince(this.appIdentifier, timestamp);
+            int numberOfTokensCreated = oAuthStorage.countTotalNumberOfOAuthM2MTokensCreatedSince(this.appIdentifier, timestamp);
             tokensCreatedArray.add(new JsonPrimitive(numberOfTokensCreated));
         }
         result.add("numberOfM2MTokensCreated", tokensCreatedArray);

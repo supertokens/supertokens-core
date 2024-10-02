@@ -37,6 +37,7 @@ import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicExceptio
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.oauth.OAuthLogoutChallenge;
+import io.supertokens.pluginInterface.oauth.OAuthRevokeTargetType;
 import io.supertokens.pluginInterface.oauth.OAuthStorage;
 import io.supertokens.pluginInterface.oauth.exception.DuplicateOAuthLogoutChallengeException;
 import io.supertokens.session.jwt.JWT.JWTException;
@@ -75,7 +76,7 @@ public class OAuth {
         }
 
         if (clientIdToCheck != null) {
-            if (!oauthStorage.doesClientIdExistForApp(appIdentifier, clientIdToCheck)) {
+            if (!oauthStorage.doesOAuthClientIdExist(appIdentifier, clientIdToCheck)) {
                 throw new OAuthClientNotFoundException();
             }
         }
@@ -116,7 +117,7 @@ public class OAuth {
         }
 
         if (clientIdToCheck != null) {
-            if (!oauthStorage.doesClientIdExistForApp(appIdentifier, clientIdToCheck)) {
+            if (!oauthStorage.doesOAuthClientIdExist(appIdentifier, clientIdToCheck)) {
                 throw new OAuthClientNotFoundException();
             }
         }
@@ -157,7 +158,7 @@ public class OAuth {
         }
 
         if (clientIdToCheck != null) {
-            if (!oauthStorage.doesClientIdExistForApp(appIdentifier, clientIdToCheck)) {
+            if (!oauthStorage.doesOAuthClientIdExist(appIdentifier, clientIdToCheck)) {
                 throw new OAuthClientNotFoundException();
             }
         }
@@ -199,7 +200,7 @@ public class OAuth {
         }
 
         if (clientIdToCheck != null) {
-            if (!oauthStorage.doesClientIdExistForApp(appIdentifier, clientIdToCheck)) {
+            if (!oauthStorage.doesOAuthClientIdExist(appIdentifier, clientIdToCheck)) {
                 throw new OAuthClientNotFoundException();
             }
         }
@@ -240,7 +241,7 @@ public class OAuth {
         }
 
         if (clientIdToCheck != null) {
-            if (!oauthStorage.doesClientIdExistForApp(appIdentifier, clientIdToCheck)) {
+            if (!oauthStorage.doesOAuthClientIdExist(appIdentifier, clientIdToCheck)) {
                 throw new OAuthClientNotFoundException();
             }
         }
@@ -368,17 +369,17 @@ public class OAuth {
 
     public static void addOrUpdateClientId(Main main, AppIdentifier appIdentifier, Storage storage, String clientId, boolean isClientCredentialsOnly) throws StorageQueryException {
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
-        oauthStorage.addOrUpdateClientForApp(appIdentifier, clientId, isClientCredentialsOnly);
+        oauthStorage.addOrUpdateOauthClient(appIdentifier, clientId, isClientCredentialsOnly);
     }
 
     public static void removeClientId(Main main, AppIdentifier appIdentifier, Storage storage, String clientId) throws StorageQueryException {
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
-        oauthStorage.removeAppClientAssociation(appIdentifier, clientId);
+        oauthStorage.deleteOAuthClient(appIdentifier, clientId);
     }
 
     public static List<String> listClientIds(Main main, AppIdentifier appIdentifier, Storage storage) throws StorageQueryException {
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
-        return oauthStorage.listClientsForApp(appIdentifier);
+        return oauthStorage.listOAuthClients(appIdentifier);
     }
 
     private static Map<String, String> convertCamelToSnakeCase(Map<String, String> queryParams) {
@@ -466,28 +467,28 @@ public class OAuth {
 
     private static boolean isTokenRevokedBasedOnPayload(OAuthStorage oauthStorage, AppIdentifier appIdentifier, JsonObject payload) throws StorageQueryException {
         long issuedAt = payload.get("iat").getAsLong();
-        List<String> targetTypes = new ArrayList<>();
+        List<OAuthRevokeTargetType> targetTypes = new ArrayList<>();
         List<String> targetValues = new ArrayList<>();
 
-        targetTypes.add("client_id");
+        targetTypes.add(OAuthRevokeTargetType.CLIENT_ID);
         targetValues.add(payload.get("client_id").getAsString());
 
         if (payload.has("jti")) {
-            targetTypes.add("jti");
+            targetTypes.add(OAuthRevokeTargetType.JTI);
             targetValues.add(payload.get("jti").getAsString());
         }
 
         if (payload.has("gid")) {
-            targetTypes.add("gid");
+            targetTypes.add(OAuthRevokeTargetType.GID);
             targetValues.add(payload.get("gid").getAsString());
         }
 
         if (payload.has("sessionHandle")) {
-            targetTypes.add("session_handle");
+            targetTypes.add(OAuthRevokeTargetType.SESSION_HANDLE);
             targetValues.add(payload.get("sessionHandle").getAsString());
         }
 
-        return oauthStorage.isRevoked(appIdentifier, targetTypes.toArray(new String[0]), targetValues.toArray(new String[0]), issuedAt);
+        return oauthStorage.isOAuthTokenRevokedBasedOnTargetFields(appIdentifier, targetTypes.toArray(new OAuthRevokeTargetType[0]), targetValues.toArray(new String[0]), issuedAt);
     }
 
     public static JsonObject introspectAccessToken(Main main, AppIdentifier appIdentifier, Storage storage,
@@ -522,12 +523,12 @@ public class OAuth {
     public static void revokeTokensForClientId(Main main, AppIdentifier appIdentifier, Storage storage, String clientId) throws StorageQueryException {
         long exp = System.currentTimeMillis() / 1000 + 3600 * 24 * 183; // 6 month from now
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
-        oauthStorage.revoke(appIdentifier, "client_id", clientId, exp);
+        oauthStorage.revokeOAuthTokensBasedOnTargetFields(appIdentifier, OAuthRevokeTargetType.CLIENT_ID, clientId, exp);
     }
 
 	public static void revokeRefreshToken(Main main, AppIdentifier appIdentifier, Storage storage, String gid, long exp) throws StorageQueryException, NoSuchAlgorithmException {
 		OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
-		oauthStorage.revoke(appIdentifier, "gid", gid, exp);
+		oauthStorage.revokeOAuthTokensBasedOnTargetFields(appIdentifier, OAuthRevokeTargetType.GID, gid, exp);
 	}
 
     public static void revokeAccessToken(Main main, AppIdentifier appIdentifier,
@@ -540,7 +541,7 @@ public class OAuth {
 
             if (payload.has("stt") && payload.get("stt").getAsInt() == OAuthToken.TokenType.ACCESS_TOKEN.getValue()) {
                 String jti = payload.get("jti").getAsString();
-                oauthStorage.revoke(appIdentifier, "jti", jti, exp);
+                oauthStorage.revokeOAuthTokensBasedOnTargetFields(appIdentifier, OAuthRevokeTargetType.JTI, jti, exp);
             }
 
         } catch (TryRefreshTokenException e) {
@@ -552,7 +553,7 @@ public class OAuth {
 			String sessionHandle) throws StorageQueryException {
         long exp = System.currentTimeMillis() / 1000 + 3600 * 24 * 183; // 6 month from now
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
-        oauthStorage.revoke(appIdentifier, "session_handle", sessionHandle, exp);
+        oauthStorage.revokeOAuthTokensBasedOnTargetFields(appIdentifier, OAuthRevokeTargetType.SESSION_HANDLE, sessionHandle, exp);
 	}
 
     public static JsonObject verifyIdTokenAndGetPayload(Main main, AppIdentifier appIdentifier, Storage storage,
@@ -568,7 +569,7 @@ public class OAuth {
     public static void addM2MToken(Main main, AppIdentifier appIdentifier, Storage storage, String accessToken) throws StorageQueryException, TenantOrAppNotFoundException, TryRefreshTokenException, UnsupportedJWTSigningAlgorithmException, StorageTransactionLogicException {
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
         JsonObject payload = OAuthToken.getPayloadFromJWTToken(appIdentifier, main, accessToken);
-        oauthStorage.addM2MToken(appIdentifier, payload.get("client_id").getAsString(), payload.get("iat").getAsLong(), payload.get("exp").getAsLong());
+        oauthStorage.addOAuthM2MTokenForStats(appIdentifier, payload.get("client_id").getAsString(), payload.get("iat").getAsLong(), payload.get("exp").getAsLong());
     }
 
     public static String createLogoutRequestAndReturnRedirectUri(Main main, AppIdentifier appIdentifier, Storage storage, String clientId,
@@ -579,7 +580,7 @@ public class OAuth {
         while (true) {
             try {
                 String logoutChallenge = UUID.randomUUID().toString();
-                oauthStorage.addLogoutChallenge(appIdentifier, logoutChallenge, clientId, postLogoutRedirectionUri, sessionHandle, state, System.currentTimeMillis());
+                oauthStorage.addOAuthLogoutChallenge(appIdentifier, logoutChallenge, clientId, postLogoutRedirectionUri, sessionHandle, state, System.currentTimeMillis());
 
                 return "{apiDomain}/oauth/logout?logout_challenge=" + logoutChallenge;
             } catch (DuplicateOAuthLogoutChallengeException e) {
@@ -590,7 +591,7 @@ public class OAuth {
 
     public static String consumeLogoutChallengeAndGetRedirectUri(Main main, AppIdentifier appIdentifier, Storage storage, String challenge) throws StorageQueryException, OAuthAPIException {
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
-        OAuthLogoutChallenge logoutChallenge = oauthStorage.getLogoutChallenge(appIdentifier, challenge);
+        OAuthLogoutChallenge logoutChallenge = oauthStorage.getOAuthLogoutChallenge(appIdentifier, challenge);
 
         if (logoutChallenge == null) {
             throw new OAuthAPIException("invalid_request", "Logout request not found", 400);
@@ -612,6 +613,6 @@ public class OAuth {
 
     public static void deleteLogoutChallenge(Main main, AppIdentifier appIdentifier, Storage storage, String challenge) throws StorageQueryException {
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
-        oauthStorage.deleteLogoutChallenge(appIdentifier, challenge);
+        oauthStorage.deleteOAuthLogoutChallenge(appIdentifier, challenge);
     }
 }

@@ -56,6 +56,7 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateThirdPart
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.multitenancy.sqlStorage.MultitenancySQLStorage;
 import io.supertokens.pluginInterface.oauth.OAuthLogoutChallenge;
+import io.supertokens.pluginInterface.oauth.OAuthRevokeTargetType;
 import io.supertokens.pluginInterface.oauth.OAuthStorage;
 import io.supertokens.pluginInterface.oauth.exception.DuplicateOAuthLogoutChallengeException;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
@@ -3011,48 +3012,48 @@ public class Start
     }
 
     @Override
-    public boolean doesClientIdExistForApp(AppIdentifier appIdentifier, String clientId)
+    public boolean doesOAuthClientIdExist(AppIdentifier appIdentifier, String clientId)
             throws StorageQueryException {
         try {
-            return OAuthQueries.isClientIdForAppId(this, clientId, appIdentifier);
+            return OAuthQueries.doesOAuthClientIdExist(this, clientId, appIdentifier);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
     }
 
     @Override
-    public void addOrUpdateClientForApp(AppIdentifier appIdentifier, String clientId, boolean isClientCredentialsOnly)
+    public void addOrUpdateOauthClient(AppIdentifier appIdentifier, String clientId, boolean isClientCredentialsOnly)
             throws StorageQueryException {
         try {
-            OAuthQueries.insertOrUpdateClient(this, appIdentifier, clientId, isClientCredentialsOnly);
+            OAuthQueries.addOrUpdateOauthClient(this, appIdentifier, clientId, isClientCredentialsOnly);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
     }
 
     @Override
-    public boolean removeAppClientAssociation(AppIdentifier appIdentifier, String clientId) throws StorageQueryException {
+    public boolean deleteOAuthClient(AppIdentifier appIdentifier, String clientId) throws StorageQueryException {
         try {
-            return OAuthQueries.deleteClient(this, clientId, appIdentifier);
+            return OAuthQueries.deleteOAuthClient(this, clientId, appIdentifier);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
     }
 
     @Override
-    public List<String> listClientsForApp(AppIdentifier appIdentifier) throws StorageQueryException {
+    public List<String> listOAuthClients(AppIdentifier appIdentifier) throws StorageQueryException {
         try {
-            return OAuthQueries.listClientsForApp(this, appIdentifier);
+            return OAuthQueries.listOAuthClients(this, appIdentifier);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
     }
 
     @Override
-    public void revoke(AppIdentifier appIdentifier, String targetType, String targetValue, long exp)
+    public void revokeOAuthTokensBasedOnTargetFields(AppIdentifier appIdentifier, OAuthRevokeTargetType targetType, String targetValue, long exp)
             throws StorageQueryException {
         try {
-            OAuthQueries.revoke(this, appIdentifier, targetType, targetValue, exp);
+            OAuthQueries.revokeOAuthTokensBasedOnTargetFields(this, appIdentifier, targetType, targetValue, exp);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -3060,31 +3061,40 @@ public class Start
     }
 
     @Override
-    public boolean isRevoked(AppIdentifier appIdentifier, String[] targetTypes, String[] targetValues, long issuedAt)
+    public boolean isOAuthTokenRevokedBasedOnTargetFields(AppIdentifier appIdentifier, OAuthRevokeTargetType[] targetTypes, String[] targetValues, long issuedAt)
             throws StorageQueryException {
         try {
-            return OAuthQueries.isRevoked(this, appIdentifier, targetTypes, targetValues, issuedAt);
+            return OAuthQueries.isOAuthTokenRevokedBasedOnTargetFields(this, appIdentifier, targetTypes, targetValues, issuedAt);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
     }
 
     @Override
-    public void addM2MToken(AppIdentifier appIdentifier, String clientId, long iat, long exp)
+    public void addOAuthM2MTokenForStats(AppIdentifier appIdentifier, String clientId, long iat, long exp)
             throws StorageQueryException {
         try {
-            OAuthQueries.addM2MToken(this, appIdentifier, clientId, iat, exp);
+            OAuthQueries.addOAuthM2MTokenForStats(this, appIdentifier, clientId, iat, exp);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
     }
 
     @Override
-    public void addLogoutChallenge(AppIdentifier appIdentifier, String challenge, String clientId,
+    public void cleanUpExpiredAndRevokedOAuthTokensList() throws StorageQueryException {
+        try {
+            OAuthQueries.cleanUpExpiredAndRevokedOAuthTokensList(this);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void addOAuthLogoutChallenge(AppIdentifier appIdentifier, String challenge, String clientId,
             String postLogoutRedirectionUri, String sessionHandle, String state, long timeCreated)
             throws StorageQueryException, DuplicateOAuthLogoutChallengeException {
         try {
-            OAuthQueries.addLogoutChallenge(this, appIdentifier, challenge, clientId, postLogoutRedirectionUri, sessionHandle, state, timeCreated);
+            OAuthQueries.addOAuthLogoutChallenge(this, appIdentifier, challenge, clientId, postLogoutRedirectionUri, sessionHandle, state, timeCreated);
         } catch (SQLException e) {
             SQLiteConfig config = Config.getConfig(this);
             String serverMessage = e.getMessage();
@@ -3098,74 +3108,65 @@ public class Start
     }
 
     @Override
-    public OAuthLogoutChallenge getLogoutChallenge(AppIdentifier appIdentifier, String challenge) throws StorageQueryException {
+    public OAuthLogoutChallenge getOAuthLogoutChallenge(AppIdentifier appIdentifier, String challenge) throws StorageQueryException {
         try {
-            return OAuthQueries.getLogoutChallenge(this, appIdentifier, challenge);
+            return OAuthQueries.getOAuthLogoutChallenge(this, appIdentifier, challenge);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
     }
 
     @Override
-    public void deleteLogoutChallenge(AppIdentifier appIdentifier, String challenge) throws StorageQueryException {
+    public void deleteOAuthLogoutChallenge(AppIdentifier appIdentifier, String challenge) throws StorageQueryException {
         try {
-            OAuthQueries.deleteLogoutChallenge(this, appIdentifier, challenge);
+            OAuthQueries.deleteOAuthLogoutChallenge(this, appIdentifier, challenge);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
     }
 
     @Override
-    public void deleteLogoutChallengesBefore(AppIdentifier appIdentifier, long time) throws StorageQueryException {
+    public void deleteOAuthLogoutChallengesBefore(long time) throws StorageQueryException {
         try {
-            OAuthQueries.deleteLogoutChallengesBefore(this, appIdentifier, time);
+            OAuthQueries.deleteOAuthLogoutChallengesBefore(this, time);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
     }
 
     @Override
-    public void cleanUpExpiredAndRevokedTokens(AppIdentifier appIdentifier) throws StorageQueryException {
+    public int countTotalNumberOfOAuthClients(AppIdentifier appIdentifier) throws StorageQueryException {
         try {
-            OAuthQueries.cleanUpExpiredAndRevokedTokens(this, appIdentifier);
+            return OAuthQueries.countTotalNumberOfClients(this, appIdentifier, false);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
     }
 
     @Override
-    public int countTotalNumberOfClientCredentialsOnlyClientsForApp(AppIdentifier appIdentifier)
+    public int countTotalNumberOfClientCredentialsOnlyOAuthClients(AppIdentifier appIdentifier)
             throws StorageQueryException {
         try {
-            return OAuthQueries.countTotalNumberOfClientsForApp(this, appIdentifier, true);
+            return OAuthQueries.countTotalNumberOfClients(this, appIdentifier, true);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
     }
 
     @Override
-    public int countTotalNumberOfClientsForApp(AppIdentifier appIdentifier) throws StorageQueryException {
-        try {
-            return OAuthQueries.countTotalNumberOfClientsForApp(this, appIdentifier, false);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
-    public int countTotalNumberOfM2MTokensAlive(AppIdentifier appIdentifier) throws StorageQueryException {
-        try {
-            return OAuthQueries.countTotalNumberOfM2MTokensAlive(this, appIdentifier);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
-    public int countTotalNumberOfM2MTokensCreatedSince(AppIdentifier appIdentifier, long since)
+    public int countTotalNumberOfOAuthM2MTokensCreatedSince(AppIdentifier appIdentifier, long since)
             throws StorageQueryException {
         try {
-            return OAuthQueries.countTotalNumberOfM2MTokensCreatedSince(this, appIdentifier, since);
+            return OAuthQueries.countTotalNumberOfOAuthM2MTokensCreatedSince(this, appIdentifier, since);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public int countTotalNumberOfOAuthM2MTokensAlive(AppIdentifier appIdentifier) throws StorageQueryException {
+        try {
+            return OAuthQueries.countTotalNumberOfOAuthM2MTokensAlive(this, appIdentifier);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }

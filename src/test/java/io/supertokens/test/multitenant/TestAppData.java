@@ -179,7 +179,7 @@ public class TestAppData {
 
         OAuth.addOrUpdateClientId(process.getProcess(), app.toAppIdentifier(), appStorage, "test", false);
         OAuth.createLogoutRequestAndReturnRedirectUri(process.getProcess(), app.toAppIdentifier(), appStorage, "test", "http://localhost", "sessionHandle", "state");
-        ((OAuthStorage) appStorage).addM2MToken(app.toAppIdentifier(), "test", 1000, 2000);
+        ((OAuthStorage) appStorage).addOAuthM2MTokenForStats(app.toAppIdentifier(), "test", 1000, 2000);
         OAuth.revokeSessionHandle(process.getProcess(), app.toAppIdentifier(), appStorage, "sessionHandle");
 
         String[] tablesThatHaveData = appStorage
