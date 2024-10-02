@@ -259,7 +259,7 @@ public class ProcessBulkImportUsersCronJobTest {
 
     @Test
     public void shouldProcessBulkImportUsersInLargeNumberInMultipleTenantsWithDifferentStorages() throws Exception {
-        Utils.setValueInConfig("bulk_migration_parallelism", "8");
+        Utils.setValueInConfig("bulk_migration_parallelism", "12");
 
         TestingProcess process = startCronProcess();
         Main main = process.getProcess();
