@@ -21,11 +21,9 @@ public class HttpResponseException extends Exception {
     private static final long serialVersionUID = 1L;
 
     public final int statusCode;
-    public final String rawMessage;
 
     HttpResponseException(int statusCode, String message) {
         super("Http error. Status Code: " + statusCode + ". Message: " + message);
         this.statusCode = statusCode;
-        this.rawMessage = message;
     }
 }

@@ -16,22 +16,17 @@
 
 package io.supertokens.httpRequest;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+import io.supertokens.Main;
+
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
-
-import io.supertokens.Main;
 
 public class HttpRequest {
 
@@ -67,7 +62,7 @@ public class HttpRequest {
 
     @SuppressWarnings("unchecked")
     public static <T> T sendGETRequest(Main main, String requestID, String url, Map<String, String> params,
-                                       int connectionTimeoutMS, int readTimeoutMS, Integer version)
+                                    int connectionTimeoutMS, int readTimeoutMS, Integer version)
             throws IOException, HttpResponseException {
         StringBuilder paramBuilder = new StringBuilder();
 
@@ -129,9 +124,9 @@ public class HttpRequest {
 
     @SuppressWarnings("unchecked")
     public static <T> T sendGETRequestWithResponseHeaders(Main main, String requestID, String url,
-                                                          Map<String, String> params,
-                                                          int connectionTimeoutMS, int readTimeoutMS, Integer version,
-                                                          Map<String, String> responseHeaders)
+                                                        Map<String, String> params,
+                                                        int connectionTimeoutMS, int readTimeoutMS, Integer version,
+                                                        Map<String, String> responseHeaders)
             throws IOException, HttpResponseException {
         StringBuilder paramBuilder = new StringBuilder();
 
@@ -198,7 +193,7 @@ public class HttpRequest {
     }
 
     private static <T> T sendJsonRequest(Main main, String requestID, String url, JsonElement requestBody,
-                                         int connectionTimeoutMS, int readTimeoutMS, Integer version, String method)
+                                        int connectionTimeoutMS, int readTimeoutMS, Integer version, String method)
             throws IOException, HttpResponseException {
         URL obj = getURL(main, requestID, url);
         InputStream inputStream = null;
@@ -262,16 +257,17 @@ public class HttpRequest {
     }
 
     public static <T> T sendJsonPUTRequest(Main main, String requestID, String url, JsonElement requestBody,
-                                           int connectionTimeoutMS, int readTimeoutMS, Integer version)
+                                        int connectionTimeoutMS, int readTimeoutMS, Integer version)
             throws IOException, HttpResponseException {
         return sendJsonRequest(main, requestID, url, requestBody, connectionTimeoutMS, readTimeoutMS, version, "PUT");
     }
 
     public static <T> T sendJsonDELETERequest(Main main, String requestID, String url, JsonElement requestBody,
-                                              int connectionTimeoutMS, int readTimeoutMS, Integer version)
+                                            int connectionTimeoutMS, int readTimeoutMS, Integer version)
             throws IOException, HttpResponseException {
         return sendJsonRequest(main, requestID, url, requestBody, connectionTimeoutMS, readTimeoutMS, version,
                 "DELETE");
     }
 
 }
+ 
