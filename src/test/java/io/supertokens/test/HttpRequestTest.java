@@ -16,31 +16,27 @@
 
 package io.supertokens.test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.util.HashMap;
-
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import io.supertokens.ProcessState;
+import io.supertokens.httpRequest.HttpRequest;
+import io.supertokens.httpRequest.HttpResponseException;
+import io.supertokens.webserver.Webserver;
+import io.supertokens.webserver.WebserverAPI;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-
-import io.supertokens.ProcessState;
-import io.supertokens.httpRequest.HttpRequest;
-import io.supertokens.httpRequest.HttpResponseException;
-import io.supertokens.webserver.Webserver;
-import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.util.HashMap;
+
+import static org.junit.Assert.*;
 
 public class HttpRequestTest {
 
