@@ -7,25 +7,38 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [9.3.0]
+
 ### Changes
 
-- Added new feature in license key: `OAUTH`
-- Adds new core config:
-    - `oauth_provider_public_service_url`
-    - `oauth_provider_admin_service_url`
-    - `oauth_provider_consent_login_base_url`
-    - `oauth_provider_url_configured_in_oauth_provider`
-- Adds POST `/recipe/oauth/auth` for OAuth2 auth flow support
-- Adds POST `/recipe/oauth/clients` for OAuth2 client registration
-- Adds GET `/recipe/oauth/clients?clientId=example_id` for loading OAuth2 client
-- Adds DELETE `/recipe/oauth/clients` for deleting OAuth2 Clients
-- Creates new table `oauth_clients`
-- Introduces PATCH capabilities for core (receiving and sending PATCH requests)
-- Adds PATCH `/recipe/oauth/clients` for OAuth2 client update
-
-### Migration
-
-TODO: after plugin support
+- Adds support for OAuth2
+    - Added new feature in license key: `OAUTH`
+    - Adds new core config:
+        - `oauth_provider_public_service_url`
+        - `oauth_provider_admin_service_url`
+        - `oauth_provider_consent_login_base_url`
+        - `oauth_provider_url_configured_in_oauth_provider`
+    - Adds following APIs:
+        - POST `/recipe/oauth/clients`
+        - PUT `/recipe/oauth/clients`
+        - GET `/recipe/oauth/clients`
+        - GET `/recipe/oauth/clients/list`
+        - POST `/recipe/oauth/clients/remove`
+        - GET `/recipe/oauth/auth/requests/consent`
+        - PUT `/recipe/oauth/auth/requests/consent/accept`
+        - PUT `/recipe/oauth/auth/requests/consent/reject`
+        - GET `/recipe/oauth/auth/requests/login`
+        - PUT `/recipe/oauth/auth/requests/login/accept`
+        - PUT `/recipe/oauth/auth/requests/login/reject`
+        - GET `/recipe/oauth/auth/requests/logout`
+        - PUT `/recipe/oauth/auth/requests/logout/accept`
+        - PUT `/recipe/oauth/auth/requests/logout/reject`
+        - POST `/recipe/oauth/auth`
+        - POST `/recipe/oauth/token`
+        - POST `/recipe/oauth/introspect`
+        - POST `/recipe/oauth/session/revoke`
+        - POST `/recipe/oauth/token/revoke`
+        - POST `/recipe/oauth/tokens/revoke`
 
 ## [9.2.2] - 2024-09-04
 

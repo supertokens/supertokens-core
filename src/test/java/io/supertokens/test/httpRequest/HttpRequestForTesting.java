@@ -198,31 +198,6 @@ public class HttpRequestForTesting {
         }
     }
 
-    public static <T> T sendJsonPATCHRequest(Main main, String url, JsonElement requestBody)
-            throws IOException, InterruptedException,
-            HttpResponseException {
-
-        HttpClient client = null;
-
-        String body = requestBody.toString();
-        java.net.http.HttpRequest rawRequest = java.net.http.HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .method("PATCH", java.net.http.HttpRequest.BodyPublishers.ofString(body))
-                .build();
-        client = HttpClient.newHttpClient();
-        HttpResponse<String> response = client.send(rawRequest, HttpResponse.BodyHandlers.ofString());
-
-        int responseCode = response.statusCode();
-
-        if (responseCode < STATUS_CODE_ERROR_THRESHOLD) {
-            if (!isJsonValid(response.body().toString())) {
-                return (T) response.body().toString();
-            }
-            return (T) (new JsonParser().parse(response.body().toString()));
-        }
-        throw new io.supertokens.test.httpRequest.HttpResponseException(responseCode, response.body().toString());
-    }
-
     public static <T> T sendJsonPOSTRequest(Main main, String requestID, String url, JsonElement requestBody,
                                             int connectionTimeoutMS, int readTimeoutMS, Integer version,
                                             String cdiVersion, String rid)

@@ -67,6 +67,12 @@ public class OAuthQueries {
                 + oAuth2RevokeTable + "(timestamp DESC, app_id DESC);";
     }
 
+    public static String getQueryToCreateOAuthRevokeExpIndex(Start start) {
+        String oAuth2RevokeTable = Config.getConfig(start).getOAuthRevokeTable();
+        return "CREATE INDEX IF NOT EXISTS oauth_revoke_exp_index ON "
+                + oAuth2RevokeTable + "(exp DESC);";
+    }
+
     public static String getQueryToCreateOAuthM2MTokensTable(Start start) {
         String oAuth2M2MTokensTable = Config.getConfig(start).getOAuthM2MTokensTable();
         // @formatter:off
@@ -91,7 +97,7 @@ public class OAuthQueries {
     public static String getQueryToCreateOAuthM2MTokenExpIndex(Start start) {
         String oAuth2M2MTokensTable = Config.getConfig(start).getOAuthM2MTokensTable();
         return "CREATE INDEX IF NOT EXISTS oauth_m2m_token_exp_index ON "
-                + oAuth2M2MTokensTable + "(exp DESC, app_id DESC);";
+                + oAuth2M2MTokensTable + "(exp DESC);";
     }
 
     public static String getQueryToCreateOAuthLogoutChallengesTable(Start start) {
@@ -117,7 +123,7 @@ public class OAuthQueries {
     public static String getQueryToCreateOAuthLogoutChallengesTimeCreatedIndex(Start start) {
         String oAuth2LogoutChallengesTable = Config.getConfig(start).getOAuthLogoutChallengesTable();
         return "CREATE INDEX IF NOT EXISTS oauth_logout_challenges_time_created_index ON "
-                + oAuth2LogoutChallengesTable + "(time_created ASC, app_id ASC);";
+                + oAuth2LogoutChallengesTable + "(time_created DESC);";
     }
 
     public static boolean doesOAuthClientIdExist(Start start, String clientId, AppIdentifier appIdentifier)

@@ -160,7 +160,7 @@ core_config_version: 0
 # service.
 # oauth_provider_admin_service_url:
 
-# (OPTIONAL | Default: null) string value. If specified, the core uses this URL replace the default
+# (OPTIONAL | Default: null) string value. If specified, the core uses this URL to replace the default
 # consent and login URLs to {apiDomain}.
 # oauth_provider_consent_login_base_url:
 

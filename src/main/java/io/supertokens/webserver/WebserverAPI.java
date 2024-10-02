@@ -158,10 +158,6 @@ public abstract class WebserverAPI extends HttpServlet {
         this.sendTextResponse(405, "Method not supported", resp);
     }
 
-    protected void doPatch(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException{
-        this.sendTextResponse(405, "Method not supported", resp);
-    }
-
     private void assertThatVersionIsCompatible(SemVer version) throws ServletException {
         if (version == null) {
             throw new ServletException(new BadRequestException("cdi-version not provided"));
@@ -503,12 +499,7 @@ public abstract class WebserverAPI extends HttpServlet {
                 Logging.info(main, tenantIdentifier,
                         "API called: " + req.getRequestURI() + ". Method: " + req.getMethod(), false);
             }
-            String method = req.getMethod();
-            if(method.equals("PATCH")){
-                this.doPatch(req, resp);
-            } else {
-                super.service(req, resp);
-            }
+            super.service(req, resp);
 
         } catch (Exception e) {
             Logging.error(main, tenantIdentifier,

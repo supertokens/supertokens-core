@@ -2,7 +2,6 @@ package io.supertokens.webserver.api.oauth;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Map;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -119,16 +118,6 @@ public class OAuthLogoutAPI extends WebserverAPI {
             }
 
             // Validations are complete, time to respond
-
-            if (postLogoutRedirectionUri == null && state == null && idTokenHint == null) {
-                JsonObject response = new JsonObject();
-                response.addProperty("status", "OK");
-                response.addProperty("redirectTo", "{apiDomain}/fallbacks/logout/callback");
-                super.sendJsonResponse(200, response, resp);
-
-                return;
-            }
-
             String redirectTo = OAuth.createLogoutRequestAndReturnRedirectUri(main, appIdentifier, storage, clientId, postLogoutRedirectionUri, sessionHandle, state);
 
             JsonObject response = new JsonObject();
