@@ -38,6 +38,7 @@ import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.oauth.OAuthLogoutChallenge;
 import io.supertokens.pluginInterface.oauth.OAuthStorage;
+import io.supertokens.pluginInterface.oauth.exception.DuplicateOAuthLogoutChallengeException;
 import io.supertokens.session.jwt.JWT.JWTException;
 import io.supertokens.utils.Utils;
 
@@ -575,10 +576,16 @@ public class OAuth {
         
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
 
-        String logoutChallenge = UUID.randomUUID().toString();
-        oauthStorage.addLogoutChallenge(appIdentifier, logoutChallenge, clientId, postLogoutRedirectionUri, sessionHandle, state, System.currentTimeMillis());
+        while (true) {
+            try {
+                String logoutChallenge = UUID.randomUUID().toString();
+                oauthStorage.addLogoutChallenge(appIdentifier, logoutChallenge, clientId, postLogoutRedirectionUri, sessionHandle, state, System.currentTimeMillis());
 
-        return "{apiDomain}/oauth/logout?logout_challenge=" + logoutChallenge;
+                return "{apiDomain}/oauth/logout?logout_challenge=" + logoutChallenge;
+            } catch (DuplicateOAuthLogoutChallengeException e) {
+                // retry
+            }
+        }
     }
 
     public static String consumeLogoutChallengeAndGetRedirectUri(Main main, AppIdentifier appIdentifier, Storage storage, String challenge) throws StorageQueryException, OAuthAPIException {

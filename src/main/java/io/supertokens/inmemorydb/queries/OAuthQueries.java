@@ -145,8 +145,8 @@ public class OAuthQueries {
         });
     }
 
-    public static void insertClientIdForAppId(Start start, AppIdentifier appIdentifier, String clientId,
-            boolean isClientCredentialsOnly)
+    public static void insertOrUpdateClient(Start start, AppIdentifier appIdentifier, String clientId,
+                                            boolean isClientCredentialsOnly)
             throws SQLException, StorageQueryException {
         String INSERT = "INSERT INTO " + Config.getConfig(start).getOAuthClientsTable()
                 + "(app_id, client_id, is_client_credentials_only) VALUES(?, ?, ?) "
@@ -159,7 +159,7 @@ public class OAuthQueries {
         });
     }
 
-    public static boolean deleteClientIdForAppId(Start start, String clientId, AppIdentifier appIdentifier)
+    public static boolean deleteClient(Start start, String clientId, AppIdentifier appIdentifier)
             throws SQLException, StorageQueryException {
         String DELETE = "DELETE FROM " + Config.getConfig(start).getOAuthClientsTable()
                 + " WHERE app_id = ? AND client_id = ?";

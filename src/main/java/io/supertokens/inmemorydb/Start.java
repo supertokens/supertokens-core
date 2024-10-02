@@ -56,7 +56,8 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateThirdPart
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.multitenancy.sqlStorage.MultitenancySQLStorage;
 import io.supertokens.pluginInterface.oauth.OAuthLogoutChallenge;
-import io.supertokens.pluginInterface.oauth.sqlStorage.OAuthSQLStorage;
+import io.supertokens.pluginInterface.oauth.OAuthStorage;
+import io.supertokens.pluginInterface.oauth.exception.DuplicateOAuthLogoutChallengeException;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
 import io.supertokens.pluginInterface.passwordless.PasswordlessDevice;
 import io.supertokens.pluginInterface.passwordless.exception.*;
@@ -104,7 +105,7 @@ public class Start
         implements SessionSQLStorage, EmailPasswordSQLStorage, EmailVerificationSQLStorage, ThirdPartySQLStorage,
         JWTRecipeSQLStorage, PasswordlessSQLStorage, UserMetadataSQLStorage, UserRolesSQLStorage, UserIdMappingStorage,
         UserIdMappingSQLStorage, MultitenancyStorage, MultitenancySQLStorage, TOTPSQLStorage, ActiveUsersStorage,
-        ActiveUsersSQLStorage, DashboardSQLStorage, AuthRecipeSQLStorage, OAuthSQLStorage {
+        ActiveUsersSQLStorage, DashboardSQLStorage, AuthRecipeSQLStorage, OAuthStorage {
 
     private static final Object appenderLock = new Object();
     private static final String ACCESS_TOKEN_SIGNING_KEY_NAME = "access_token_signing_key";
@@ -3023,7 +3024,7 @@ public class Start
     public void addOrUpdateClientForApp(AppIdentifier appIdentifier, String clientId, boolean isClientCredentialsOnly)
             throws StorageQueryException {
         try {
-            OAuthQueries.insertClientIdForAppId(this, appIdentifier, clientId, isClientCredentialsOnly);
+            OAuthQueries.insertOrUpdateClient(this, appIdentifier, clientId, isClientCredentialsOnly);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -3032,7 +3033,7 @@ public class Start
     @Override
     public boolean removeAppClientAssociation(AppIdentifier appIdentifier, String clientId) throws StorageQueryException {
         try {
-            return OAuthQueries.deleteClientIdForAppId(this, clientId, appIdentifier);
+            return OAuthQueries.deleteClient(this, clientId, appIdentifier);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -3080,10 +3081,18 @@ public class Start
 
     @Override
     public void addLogoutChallenge(AppIdentifier appIdentifier, String challenge, String clientId,
-            String postLogoutRedirectionUri, String sessionHandle, String state, long timeCreated) throws StorageQueryException {
+            String postLogoutRedirectionUri, String sessionHandle, String state, long timeCreated)
+            throws StorageQueryException, DuplicateOAuthLogoutChallengeException {
         try {
             OAuthQueries.addLogoutChallenge(this, appIdentifier, challenge, clientId, postLogoutRedirectionUri, sessionHandle, state, timeCreated);
         } catch (SQLException e) {
+            SQLiteConfig config = Config.getConfig(this);
+            String serverMessage = e.getMessage();
+
+            if (isPrimaryKeyError(serverMessage, config.getOAuthLogoutChallengesTable(),
+                    new String[]{"app_id", "challenge"})) {
+                throw new DuplicateOAuthLogoutChallengeException();
+            }
             throw new StorageQueryException(e);
         }
     }
