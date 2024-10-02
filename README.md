@@ -81,7 +81,7 @@ We also believe in the principle of least vendor lock-in. Your having full contr
 can switch away from SuperTokens without forcing your existing users to logout, reset their passwords, or in the worst
 case, sign up again.
 
-### [Click here](https://thirdpartyemailpassword.demo.supertokens.io/) to see the demo app.
+### [Click here](https://thirdpartyemailpassword.demo.supertokens.com/) to see the demo app.
 
 - Please visit [our website](https://supertokens.io/pricing) to see the list of features.
 - We want to make features as decoupled as possible. This means you can use SuperTokens for just login, or just session
