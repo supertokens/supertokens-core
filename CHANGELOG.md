@@ -7,7 +7,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
-- Adds validation to firstFactors name while creating tenants/apps/etc. to not allow special chars.
+- Adds validation to firstFactors and requiredSecondaryFactors names while creating tenants/apps/etc. to not allow 
+  special chars.
 
 ## [9.2.2] - 2024-09-04
 
