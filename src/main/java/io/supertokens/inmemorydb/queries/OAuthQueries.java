@@ -113,9 +113,7 @@ public class OAuthQueries {
                 + "time_created BIGINT NOT NULL,"
                 + "PRIMARY KEY (app_id, challenge),"
                 + "FOREIGN KEY(app_id, client_id)"
-                + " REFERENCES " + Config.getConfig(start).getOAuthClientsTable() + "(app_id, client_id) ON DELETE CASCADE,"
-                + "FOREIGN KEY(app_id)"
-                + " REFERENCES " + Config.getConfig(start).getAppsTable() + "(app_id) ON DELETE CASCADE"
+                + " REFERENCES " + Config.getConfig(start).getOAuthClientsTable() + "(app_id, client_id) ON DELETE CASCADE"
                 + ");";
         // @formatter:on
     }
