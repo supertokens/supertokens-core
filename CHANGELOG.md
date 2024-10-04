@@ -40,6 +40,111 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
         - POST `/recipe/oauth/token/revoke`
         - POST `/recipe/oauth/tokens/revoke`
 
+### Migration
+
+If using PostgreSQL, run the following SQL script:
+
+```sql
+CREATE TABLE IF NOT EXISTS oauth_clients (
+    app_id VARCHAR(64),
+    client_id VARCHAR(128) NOT NULL,
+    is_client_credentials_only BOOLEAN NOT NULL,
+    PRIMARY KEY (app_id, client_id),
+    FOREIGN KEY(app_id) REFERENCES apps(app_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS oauth_revoke (
+    app_id VARCHAR(64) DEFAULT 'public',
+    target_type VARCHAR(16) NOT NULL,
+    target_value VARCHAR(128) NOT NULL,
+    timestamp BIGINT NOT NULL,
+    exp BIGINT NOT NULL,
+    PRIMARY KEY (app_id, target_type, target_value),
+    FOREIGN KEY(app_id) REFERENCES apps(app_id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS oauth_revoke_timestamp_index ON oauth_revoke(timestamp DESC, app_id DESC);
+CREATE INDEX IF NOT EXISTS oauth_revoke_exp_index ON oauth_revoke(exp DESC);
+
+CREATE TABLE IF NOT EXISTS oauth_m2m_tokens (
+    app_id VARCHAR(64) DEFAULT 'public',
+    client_id VARCHAR(128) NOT NULL,
+    iat BIGINT NOT NULL,
+    exp BIGINT NOT NULL,
+    PRIMARY KEY (app_id, client_id, iat),
+    FOREIGN KEY(app_id, client_id) REFERENCES oauth_clients(app_id, client_id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS oauth_m2m_token_iat_index ON oauth_m2m_tokens(iat DESC, app_id DESC);
+CREATE INDEX IF NOT EXISTS oauth_m2m_token_exp_index ON oauth_m2m_tokens(exp DESC);
+
+CREATE TABLE IF NOT EXISTS oauth_logout_challenges (
+    app_id VARCHAR(64) DEFAULT 'public',
+    challenge VARCHAR(128) NOT NULL,
+    client_id VARCHAR(128) NOT NULL,
+    post_logout_redirect_uri VARCHAR(1024),
+    session_handle VARCHAR(128),
+    state VARCHAR(128),
+    time_created BIGINT NOT NULL,
+    PRIMARY KEY (app_id, challenge),
+    FOREIGN KEY(app_id, client_id) REFERENCES oauth_clients(app_id, client_id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS oauth_logout_challenges_time_created_index ON oauth_logout_challenges(time_created DESC);
+```
+
+If using MySQL, run the following SQL script:
+
+```sql
+CREATE TABLE IF NOT EXISTS oauth_clients (
+  app_id VARCHAR(64),
+  client_id VARCHAR(128) NOT NULL,
+  is_client_credentials_only BOOLEAN NOT NULL,
+  PRIMARY KEY (app_id, client_id),
+  FOREIGN KEY(app_id) REFERENCES apps(app_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS oauth_revoke (
+  app_id VARCHAR(64) DEFAULT 'public',
+  target_type VARCHAR(16) NOT NULL,
+  target_value VARCHAR(128) NOT NULL,
+  timestamp BIGINT UNSIGNED NOT NULL,
+  exp BIGINT UNSIGNED NOT NULL,
+  PRIMARY KEY (app_id, target_type, target_value),
+  FOREIGN KEY(app_id) REFERENCES apps(app_id) ON DELETE CASCADE
+);
+
+CREATE INDEX oauth_revoke_timestamp_index ON oauth_revoke(timestamp DESC, app_id DESC);
+CREATE INDEX oauth_revoke_exp_index ON oauth_revoke(exp DESC);
+
+CREATE TABLE oauth_m2m_tokens (
+  app_id VARCHAR(64) DEFAULT 'public',
+  client_id VARCHAR(128) NOT NULL,
+  iat BIGINT UNSIGNED NOT NULL,
+  exp BIGINT UNSIGNED NOT NULL,
+  PRIMARY KEY (app_id, client_id, iat),
+  FOREIGN KEY(app_id, client_id) REFERENCES oauth_clients(app_id, client_id) ON DELETE CASCADE
+);
+
+CREATE INDEX oauth_m2m_token_iat_index ON oauth_m2m_tokens(iat DESC, app_id DESC);
+CREATE INDEX oauth_m2m_token_exp_index ON oauth_m2m_tokens(exp DESC);
+
+CREATE TABLE IF NOT EXISTS oauth_logout_challenges (
+  app_id VARCHAR(64) DEFAULT 'public',
+  challenge VARCHAR(128) NOT NULL,
+  client_id VARCHAR(128) NOT NULL,
+  post_logout_redirect_uri VARCHAR(1024),
+  session_handle VARCHAR(128),
+  state VARCHAR(128),
+  time_created BIGINT UNSIGNED NOT NULL,
+  PRIMARY KEY (app_id, challenge),
+  FOREIGN KEY(app_id, client_id) REFERENCES oauth_clients(app_id, client_id) ON DELETE CASCADE
+);
+
+CREATE INDEX oauth_logout_challenges_time_created_index ON oauth_logout_challenges(time_created ASC, app_id ASC);
+```
+
+
 ## [9.2.2] - 2024-09-04
 
 - Adds index on `last_active_time` for `user_last_active` table to improve the performance of MAU computation.
