@@ -3109,7 +3109,7 @@ public class Start
 
                 if (isForeignKeyConstraintError(
                         errorMessage,
-                        config.getOAuthRevokeTable(),
+                        config.getOAuthClientsTable(),
                         new String[]{"app_id", "client_id"},
                         new Object[]{appIdentifier.getAppId(), clientId})) {
                     throw new OAuthClientNotFoundException();
@@ -3143,7 +3143,7 @@ public class Start
                 throw new DuplicateOAuthLogoutChallengeException();
             } else if (isForeignKeyConstraintError(
                 serverMessage,
-                config.getOAuthRevokeTable(),
+                config.getOAuthClientsTable(),
                 new String[]{"app_id", "client_id"},
                 new Object[]{appIdentifier.getAppId(), clientId})) {
                     throw new OAuthClientNotFoundException();

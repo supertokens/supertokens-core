@@ -321,6 +321,12 @@ public class OAuthStorageTest {
         } catch (OAuthClientNotFoundException e) {
             // expected
         }
+        try {
+            storage.addOAuthM2MTokenForStats(appIdentifier, "clientidx", 0, 0);
+            fail();
+        } catch (OAuthClientNotFoundException e) {
+            // expected
+        }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
