@@ -5,12 +5,11 @@ import java.util.List;
 import io.supertokens.Main;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.StorageUtils;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.oauth.OAuthStorage;
-import io.supertokens.storageLayer.StorageLayer;
 
 public class CleanupOAuthRevokeListAndChallenges extends CronTask {
 
@@ -29,6 +28,10 @@ public class CleanupOAuthRevokeListAndChallenges extends CronTask {
 
     @Override
     protected void doTaskPerStorage(Storage storage) throws Exception {
+        if (storage.getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
         oauthStorage.cleanUpExpiredAndRevokedOAuthTokensList();
         oauthStorage.deleteOAuthLogoutChallengesBefore(System.currentTimeMillis() - 1000 * 60 * 60 * 48);
