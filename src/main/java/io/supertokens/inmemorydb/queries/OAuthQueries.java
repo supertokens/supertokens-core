@@ -82,8 +82,8 @@ public class OAuthQueries {
                 + "iat BIGINT NOT NULL,"
                 + "exp BIGINT NOT NULL,"
                 + "PRIMARY KEY (app_id, client_id, iat),"
-                + "FOREIGN KEY(app_id)"
-                + " REFERENCES " + Config.getConfig(start).getAppsTable() + "(app_id) ON DELETE CASCADE"
+                + "FOREIGN KEY(app_id, client_id)"
+                + " REFERENCES " + Config.getConfig(start).getOAuthClientsTable() + "(app_id, client_id) ON DELETE CASCADE"
                 + ");";
         // @formatter:on
     }
@@ -283,7 +283,7 @@ public class OAuthQueries {
     public static void addOAuthM2MTokenForStats(Start start, AppIdentifier appIdentifier, String clientId, long iat, long exp)
             throws SQLException, StorageQueryException {
         String QUERY = "INSERT INTO " + Config.getConfig(start).getOAuthM2MTokensTable() +
-                " (app_id, client_id, iat, exp) VALUES (?, ?, ?, ?)";
+                " (app_id, client_id, iat, exp) VALUES (?, ?, ?, ?) ON CONFLICT DO NOTHING";
         update(start, QUERY, pst -> {
             pst.setString(1, appIdentifier.getAppId());
             pst.setString(2, clientId);
