@@ -14,12 +14,12 @@ import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.oauth.HttpRequestForOry;
 import io.supertokens.oauth.OAuth;
 import io.supertokens.oauth.exceptions.OAuthAPIException;
-import io.supertokens.oauth.exceptions.OAuthClientNotFoundException;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.oauth.exception.OAuthClientNotFoundException;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -122,7 +122,7 @@ public class OAuthProxyHelper {
         return queryParams;
     }
 
-    private static void handleOAuthClientNotFoundException(HttpServletResponse resp) throws IOException {
+    public static void handleOAuthClientNotFoundException(HttpServletResponse resp) throws IOException {
         JsonObject response = new JsonObject();
         response.addProperty("status", "CLIENT_NOT_FOUND_ERROR");
 

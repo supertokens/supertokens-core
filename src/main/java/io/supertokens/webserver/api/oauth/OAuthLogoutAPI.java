@@ -18,6 +18,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.oauth.exception.OAuthClientNotFoundException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -127,6 +128,8 @@ public class OAuthLogoutAPI extends WebserverAPI {
 
         } catch (OAuthAPIException e) {
             OAuthProxyHelper.handleOAuthAPIException(resp, e);
+        } catch (OAuthClientNotFoundException e) {
+            OAuthProxyHelper.handleOAuthClientNotFoundException(resp);
         } catch (IOException | TenantOrAppNotFoundException | BadPermissionException | StorageQueryException | UnsupportedJWTSigningAlgorithmException | StorageTransactionLogicException e) {
             throw new ServletException(e);
         }

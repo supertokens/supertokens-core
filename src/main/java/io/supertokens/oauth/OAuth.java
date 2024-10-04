@@ -40,6 +40,7 @@ import io.supertokens.pluginInterface.oauth.OAuthLogoutChallenge;
 import io.supertokens.pluginInterface.oauth.OAuthRevokeTargetType;
 import io.supertokens.pluginInterface.oauth.OAuthStorage;
 import io.supertokens.pluginInterface.oauth.exception.DuplicateOAuthLogoutChallengeException;
+import io.supertokens.pluginInterface.oauth.exception.OAuthClientNotFoundException;
 import io.supertokens.session.jwt.JWT.JWTException;
 import io.supertokens.utils.Utils;
 
@@ -367,7 +368,8 @@ public class OAuth {
         return jsonBody;
     }
 
-    public static void addOrUpdateClientId(Main main, AppIdentifier appIdentifier, Storage storage, String clientId, boolean isClientCredentialsOnly) throws StorageQueryException {
+    public static void addOrUpdateClientId(Main main, AppIdentifier appIdentifier, Storage storage, String clientId, boolean isClientCredentialsOnly)
+            throws StorageQueryException, TenantOrAppNotFoundException {
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
         oauthStorage.addOrUpdateOauthClient(appIdentifier, clientId, isClientCredentialsOnly);
     }
@@ -520,13 +522,15 @@ public class OAuth {
         return result;
     }
 
-    public static void revokeTokensForClientId(Main main, AppIdentifier appIdentifier, Storage storage, String clientId) throws StorageQueryException {
+    public static void revokeTokensForClientId(Main main, AppIdentifier appIdentifier, Storage storage, String clientId)
+            throws StorageQueryException, TenantOrAppNotFoundException {
         long exp = System.currentTimeMillis() / 1000 + 3600 * 24 * 183; // 6 month from now
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
         oauthStorage.revokeOAuthTokensBasedOnTargetFields(appIdentifier, OAuthRevokeTargetType.CLIENT_ID, clientId, exp);
     }
 
-	public static void revokeRefreshToken(Main main, AppIdentifier appIdentifier, Storage storage, String gid, long exp) throws StorageQueryException, NoSuchAlgorithmException {
+	public static void revokeRefreshToken(Main main, AppIdentifier appIdentifier, Storage storage, String gid, long exp)
+            throws StorageQueryException, NoSuchAlgorithmException, TenantOrAppNotFoundException {
 		OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
 		oauthStorage.revokeOAuthTokensBasedOnTargetFields(appIdentifier, OAuthRevokeTargetType.GID, gid, exp);
 	}
@@ -550,7 +554,7 @@ public class OAuth {
     }
 
 	public static void revokeSessionHandle(Main main, AppIdentifier appIdentifier, Storage storage,
-			String sessionHandle) throws StorageQueryException {
+			String sessionHandle) throws StorageQueryException, TenantOrAppNotFoundException {
         long exp = System.currentTimeMillis() / 1000 + 3600 * 24 * 183; // 6 month from now
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
         oauthStorage.revokeOAuthTokensBasedOnTargetFields(appIdentifier, OAuthRevokeTargetType.SESSION_HANDLE, sessionHandle, exp);
@@ -566,14 +570,17 @@ public class OAuth {
         }
     }
 
-    public static void addM2MToken(Main main, AppIdentifier appIdentifier, Storage storage, String accessToken) throws StorageQueryException, TenantOrAppNotFoundException, TryRefreshTokenException, UnsupportedJWTSigningAlgorithmException, StorageTransactionLogicException {
+    public static void addM2MToken(Main main, AppIdentifier appIdentifier, Storage storage, String accessToken)
+            throws StorageQueryException, TenantOrAppNotFoundException, TryRefreshTokenException,
+            UnsupportedJWTSigningAlgorithmException, StorageTransactionLogicException, OAuthClientNotFoundException {
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
         JsonObject payload = OAuthToken.getPayloadFromJWTToken(appIdentifier, main, accessToken);
         oauthStorage.addOAuthM2MTokenForStats(appIdentifier, payload.get("client_id").getAsString(), payload.get("iat").getAsLong(), payload.get("exp").getAsLong());
     }
 
     public static String createLogoutRequestAndReturnRedirectUri(Main main, AppIdentifier appIdentifier, Storage storage, String clientId,
-            String postLogoutRedirectionUri, String sessionHandle, String state) throws StorageQueryException {
+            String postLogoutRedirectionUri, String sessionHandle, String state)
+            throws StorageQueryException, OAuthClientNotFoundException {
         
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
 
@@ -589,7 +596,8 @@ public class OAuth {
         }
     }
 
-    public static String consumeLogoutChallengeAndGetRedirectUri(Main main, AppIdentifier appIdentifier, Storage storage, String challenge) throws StorageQueryException, OAuthAPIException {
+    public static String consumeLogoutChallengeAndGetRedirectUri(Main main, AppIdentifier appIdentifier, Storage storage, String challenge)
+            throws StorageQueryException, OAuthAPIException, TenantOrAppNotFoundException {
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
         OAuthLogoutChallenge logoutChallenge = oauthStorage.getOAuthLogoutChallenge(appIdentifier, challenge);
 

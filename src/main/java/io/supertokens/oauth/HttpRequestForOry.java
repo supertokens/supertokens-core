@@ -3,7 +3,7 @@ package io.supertokens.oauth;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import io.supertokens.oauth.exceptions.OAuthClientNotFoundException;
+import io.supertokens.pluginInterface.oauth.exception.OAuthClientNotFoundException;
 
 import java.io.*;
 import java.net.HttpURLConnection;
