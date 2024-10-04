@@ -18,7 +18,7 @@ package io.supertokens.featureflag;
 
 public enum EE_FEATURES {
     ACCOUNT_LINKING("account_linking"), MULTI_TENANCY("multi_tenancy"), TEST("test"),
-    DASHBOARD_LOGIN("dashboard_login"), MFA("mfa"), SECURITY("security");
+    DASHBOARD_LOGIN("dashboard_login"), MFA("mfa"), SECURITY("security"), OAUTH("oauth");
 
     private final String name;
 

@@ -19,6 +19,7 @@ package io.supertokens.test;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.config.CoreConfig;
 import io.supertokens.pluginInterface.PluginInterfaceTesting;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.storageLayer.StorageLayer;
@@ -83,6 +84,7 @@ public abstract class Utils extends Mockito {
         PluginInterfaceTesting.isTesting = true;
         Main.makeConsolePrintSilent = true;
         String installDir = "../";
+        CoreConfig.setDisableOAuthValidationForTest(false);
         try {
 
             // if the default config is not the same as the current config, we must reset the storage layer

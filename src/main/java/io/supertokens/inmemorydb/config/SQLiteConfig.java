@@ -164,4 +164,20 @@ public class SQLiteConfig {
     public String getDashboardSessionsTable() {
         return "dashboard_user_sessions";
     }
+
+    public String getOAuthClientsTable() {
+        return "oauth_clients";
+    }
+
+    public String getOAuthRevokeTable() {
+        return "oauth_revoke";
+    }
+
+    public String getOAuthM2MTokensTable() {
+        return "oauth_m2m_tokens";
+    }
+
+    public String getOAuthLogoutChallengesTable() {
+        return "oauth_logout_challenges";
+    }
 }

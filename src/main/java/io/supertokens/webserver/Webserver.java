@@ -39,6 +39,7 @@ import io.supertokens.webserver.api.jwt.JWTSigningAPI;
 import io.supertokens.webserver.api.multitenancy.*;
 import io.supertokens.webserver.api.multitenancy.thirdparty.CreateOrUpdateThirdPartyConfigAPI;
 import io.supertokens.webserver.api.multitenancy.thirdparty.RemoveThirdPartyConfigAPI;
+import io.supertokens.webserver.api.oauth.*;
 import io.supertokens.webserver.api.passwordless.*;
 import io.supertokens.webserver.api.session.*;
 import io.supertokens.webserver.api.thirdparty.GetUsersByEmailAPI;
@@ -266,6 +267,27 @@ public class Webserver extends ResourceDistributor.SingletonResource {
 
         addAPI(new RequestStatsAPI(main));
         addAPI(new GetTenantCoreConfigForDashboardAPI(main));
+
+        addAPI(new OAuthAuthAPI(main));
+        addAPI(new OAuthTokenAPI(main));
+        addAPI(new CreateUpdateOrGetOAuthClientAPI(main));
+        addAPI(new OAuthClientListAPI(main));
+        addAPI(new RemoveOAuthClientAPI(main));
+
+        addAPI(new OAuthGetAuthConsentRequestAPI(main));
+        addAPI(new OAuthAcceptAuthConsentRequestAPI(main));
+        addAPI(new OAuthRejectAuthConsentRequestAPI(main));
+        addAPI(new OAuthGetAuthLoginRequestAPI(main));
+        addAPI(new OAuthAcceptAuthLoginRequestAPI(main));
+        addAPI(new OAuthRejectAuthLoginRequestAPI(main));
+        addAPI(new OAuthAcceptAuthLogoutRequestAPI(main));
+        addAPI(new OAuthRejectAuthLogoutRequestAPI(main));
+        addAPI(new OAuthTokenIntrospectAPI(main));
+
+        addAPI(new RevokeOAuthTokenAPI(main));
+        addAPI(new RevokeOAuthTokensAPI(main));
+        addAPI(new RevokeOAuthSessionAPI(main));
+        addAPI(new OAuthLogoutAPI(main));
 
         StandardContext context = tomcatReference.getContext();
         Tomcat tomcat = tomcatReference.getTomcat();

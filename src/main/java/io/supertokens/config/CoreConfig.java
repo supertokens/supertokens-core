@@ -41,6 +41,8 @@ import org.jetbrains.annotations.TestOnly;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.*;
 import java.util.regex.PatternSyntaxException;
 
@@ -62,6 +64,10 @@ public class CoreConfig {
     public static final String[] PROTECTED_CONFIGS = new String[]{
             "ip_allow_regex",
             "ip_deny_regex",
+            "oauth_provider_public_service_url",
+            "oauth_provider_admin_service_url",
+            "oauth_provider_consent_login_base_url",
+            "oauth_provider_url_configured_in_oauth_provider"
     };
 
     @IgnoreForAnnotationCheck
@@ -273,9 +279,36 @@ public class CoreConfig {
                     " address.")
     private String ip_deny_regex = null;
 
-    @ConfigYamlOnly
+    @NotConflictingInApp
     @JsonProperty
     @HideFromDashboard
+    @ConfigDescription(
+            "If specified, the core uses this URL to connect to the OAuth provider public service.")
+    private String oauth_provider_public_service_url = null;
+
+    @NotConflictingInApp
+    @JsonProperty
+    @HideFromDashboard
+    @ConfigDescription(
+            "If specified, the core uses this URL to connect to the OAuth provider admin service.")
+    private String oauth_provider_admin_service_url = null;
+
+    @NotConflictingInApp
+    @JsonProperty
+    @HideFromDashboard
+    @ConfigDescription(
+            "If specified, the core uses this URL to replace the default consent and login URLs to {apiDomain}.")
+    private String oauth_provider_consent_login_base_url = null;
+
+    @NotConflictingInApp
+    @JsonProperty
+    @HideFromDashboard
+    @ConfigDescription(
+            "If specified, the core uses this URL to parse responses from the oauth provider when the oauth provider's internal address differs from the known public provider address.")
+    private String oauth_provider_url_configured_in_oauth_provider = null;
+
+    @ConfigYamlOnly
+    @JsonProperty
     @ConfigDescription(
             "This is used when deploying the core in SuperTokens SaaS infrastructure. If set, limits what database " +
                     "information is shown to / modifiable by the dev when they query the core to get the information " +
@@ -305,6 +338,17 @@ public class CoreConfig {
     @IgnoreForAnnotationCheck
     private boolean isNormalizedAndValid = false;
 
+    @IgnoreForAnnotationCheck
+    private static boolean disableOAuthValidationForTest = false;
+
+    @TestOnly
+    public static void setDisableOAuthValidationForTest(boolean val) {
+        if (!Main.isTesting) {
+            throw new IllegalStateException("This method can only be called during testing");
+        }
+        disableOAuthValidationForTest = val;
+    }
+
     public static Set<String> getValidFields() {
         CoreConfig coreConfig = new CoreConfig();
         JsonObject coreConfigObj = new GsonBuilder().serializeNulls().create().toJsonTree(coreConfig).getAsJsonObject();
@@ -317,6 +361,34 @@ public class CoreConfig {
         // Adding the aliases
         validFields.add("access_token_signing_key_update_interval");
         return validFields;
+    }
+
+    public String getOAuthProviderPublicServiceUrl() throws InvalidConfigException {
+        if (oauth_provider_public_service_url == null) {
+            throw new InvalidConfigException("oauth_provider_public_service_url is not set");
+        }
+        return oauth_provider_public_service_url;
+    }
+
+    public String getOAuthProviderAdminServiceUrl() throws InvalidConfigException {
+        if (oauth_provider_admin_service_url == null) {
+            throw new InvalidConfigException("oauth_provider_public_service_url is not set");
+        }
+        return oauth_provider_admin_service_url;
+    }
+
+    public String getOauthProviderConsentLoginBaseUrl() throws InvalidConfigException {
+        if(oauth_provider_consent_login_base_url == null){
+            throw new InvalidConfigException("oauth_provider_consent_login_base_url is not set");
+        }
+        return oauth_provider_consent_login_base_url;
+    }
+
+    public String getOAuthProviderUrlConfiguredInOAuthProvider() throws InvalidConfigException {
+        if(oauth_provider_url_configured_in_oauth_provider == null) {
+            throw new InvalidConfigException("oauth_provider_url_configured_in_oauth_provider is not set");
+        }
+        return oauth_provider_url_configured_in_oauth_provider;
     }
 
     public String getIpAllowRegex() {
@@ -805,6 +877,48 @@ public class CoreConfig {
             }
         }
 
+        if(oauth_provider_public_service_url != null) {
+            try {
+                URL url = new URL(oauth_provider_public_service_url);
+            } catch (MalformedURLException malformedURLException){
+                throw new InvalidConfigException("oauth_provider_public_service_url is not a valid URL");
+            }
+        }
+
+        if(oauth_provider_admin_service_url != null) {
+            try {
+                URL url = new URL(oauth_provider_admin_service_url);
+            } catch (MalformedURLException malformedURLException){
+                throw new InvalidConfigException("oauth_provider_admin_service_url is not a valid URL");
+            }
+        }
+
+        if(oauth_provider_consent_login_base_url != null) {
+            try {
+                URL url = new URL(oauth_provider_consent_login_base_url);
+            } catch (MalformedURLException malformedURLException){
+                throw new InvalidConfigException("oauth_provider_consent_login_base_url is not a valid URL");
+            }
+        }
+
+
+        if(oauth_provider_url_configured_in_oauth_provider == null) {
+            oauth_provider_url_configured_in_oauth_provider = oauth_provider_public_service_url;
+        } else {
+            try {
+                URL url = new URL(oauth_provider_url_configured_in_oauth_provider);
+            } catch (MalformedURLException malformedURLException){
+                throw new InvalidConfigException("oauth_provider_url_configured_in_oauth_provider is not a valid URL");
+            }
+        }
+
+        if (!disableOAuthValidationForTest) {
+            List<String> configsTogetherSet = Arrays.asList(oauth_provider_public_service_url, oauth_provider_admin_service_url, oauth_provider_consent_login_base_url);
+            if(isAnySet(configsTogetherSet) && !isAllSet(configsTogetherSet)) {
+                throw new InvalidConfigException("If any of the following is set, all of them has to be set: oauth_provider_public_service_url, oauth_provider_admin_service_url, oauth_provider_consent_login_base_url");
+            }
+        }
+
         isNormalizedAndValid = true;
     }
 
@@ -934,5 +1048,25 @@ public class CoreConfig {
 
     public String getMaxCDIVersion() {
         return this.supertokens_max_cdi_version;
+    }
+
+    private boolean isAnySet(List<String> configs){
+        for (String config : configs){
+            if(config!=null){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isAllSet(List<String> configs) {
+        boolean foundNotSet = false;
+        for(String config: configs){
+            if(config == null){
+                foundNotSet = true;
+                break;
+            }
+        }
+        return !foundNotSet;
     }
 }

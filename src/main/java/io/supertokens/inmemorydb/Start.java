@@ -55,6 +55,11 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateTenantExc
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateThirdPartyIdException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.multitenancy.sqlStorage.MultitenancySQLStorage;
+import io.supertokens.pluginInterface.oauth.OAuthLogoutChallenge;
+import io.supertokens.pluginInterface.oauth.OAuthRevokeTargetType;
+import io.supertokens.pluginInterface.oauth.OAuthStorage;
+import io.supertokens.pluginInterface.oauth.exception.DuplicateOAuthLogoutChallengeException;
+import io.supertokens.pluginInterface.oauth.exception.OAuthClientNotFoundException;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
 import io.supertokens.pluginInterface.passwordless.PasswordlessDevice;
 import io.supertokens.pluginInterface.passwordless.exception.*;
@@ -102,10 +107,9 @@ public class Start
         implements SessionSQLStorage, EmailPasswordSQLStorage, EmailVerificationSQLStorage, ThirdPartySQLStorage,
         JWTRecipeSQLStorage, PasswordlessSQLStorage, UserMetadataSQLStorage, UserRolesSQLStorage, UserIdMappingStorage,
         UserIdMappingSQLStorage, MultitenancyStorage, MultitenancySQLStorage, TOTPSQLStorage, ActiveUsersStorage,
-        ActiveUsersSQLStorage, DashboardSQLStorage, AuthRecipeSQLStorage {
+        ActiveUsersSQLStorage, DashboardSQLStorage, AuthRecipeSQLStorage, OAuthStorage {
 
     private static final Object appenderLock = new Object();
-    private static final String APP_ID_KEY_NAME = "app_id";
     private static final String ACCESS_TOKEN_SIGNING_KEY_NAME = "access_token_signing_key";
     private static final String REFRESH_TOKEN_KEY_NAME = "refresh_token_key";
     public static boolean isTesting = false;
@@ -709,6 +713,8 @@ public class Start
             }
         } else if (className.equals(JWTRecipeStorage.class.getName())) {
             /* Since JWT recipe tables do not store userId we do not add any data to them */
+        } else if (className.equals(OAuthStorage.class.getName())) {
+            /* Since OAuth tables store client-related data, we don't add user-specific data here */
         } else if (className.equals(ActiveUsersStorage.class.getName())) {
             try {
                 ActiveUsersQueries.updateUserLastActive(this, tenantIdentifier.toAppIdentifier(), userId);
@@ -3003,6 +3009,209 @@ public class Start
         try {
             return ActiveUsersQueries.countUsersThatHaveMoreThanOneLoginMethodOrTOTPEnabledAndActiveSince(this,
                     appIdentifier, sinceTime);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public boolean doesOAuthClientIdExist(AppIdentifier appIdentifier, String clientId)
+            throws StorageQueryException {
+        try {
+            return OAuthQueries.doesOAuthClientIdExist(this, clientId, appIdentifier);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void addOrUpdateOauthClient(AppIdentifier appIdentifier, String clientId, boolean isClientCredentialsOnly)
+            throws StorageQueryException, TenantOrAppNotFoundException {
+        try {
+            OAuthQueries.addOrUpdateOauthClient(this, appIdentifier, clientId, isClientCredentialsOnly);
+        } catch (SQLException e) {
+            if (e instanceof SQLiteException) {
+                String errorMessage = e.getMessage();
+                SQLiteConfig config = Config.getConfig(this);
+
+                if (isForeignKeyConstraintError(
+                        errorMessage,
+                        config.getAppsTable(),
+                        new String[]{"app_id"},
+                        new Object[]{appIdentifier.getAppId()})) {
+                    throw new TenantOrAppNotFoundException(appIdentifier);
+                }
+            }
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public boolean deleteOAuthClient(AppIdentifier appIdentifier, String clientId) throws StorageQueryException {
+        try {
+            return OAuthQueries.deleteOAuthClient(this, clientId, appIdentifier);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public List<String> listOAuthClients(AppIdentifier appIdentifier) throws StorageQueryException {
+        try {
+            return OAuthQueries.listOAuthClients(this, appIdentifier);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void revokeOAuthTokensBasedOnTargetFields(AppIdentifier appIdentifier, OAuthRevokeTargetType targetType, String targetValue, long exp)
+            throws StorageQueryException, TenantOrAppNotFoundException {
+        try {
+            OAuthQueries.revokeOAuthTokensBasedOnTargetFields(this, appIdentifier, targetType, targetValue, exp);
+        } catch (SQLException e) {
+            if (e instanceof SQLiteException) {
+                String errorMessage = e.getMessage();
+                SQLiteConfig config = Config.getConfig(this);
+
+                if (isForeignKeyConstraintError(
+                        errorMessage,
+                        config.getOAuthRevokeTable(),
+                        new String[]{"app_id"},
+                        new Object[]{appIdentifier.getAppId()})) {
+                    throw new TenantOrAppNotFoundException(appIdentifier);
+                }
+            }
+            throw new StorageQueryException(e);
+        }
+        
+    }
+
+    @Override
+    public boolean isOAuthTokenRevokedBasedOnTargetFields(AppIdentifier appIdentifier, OAuthRevokeTargetType[] targetTypes, String[] targetValues, long issuedAt)
+            throws StorageQueryException {
+        try {
+            return OAuthQueries.isOAuthTokenRevokedBasedOnTargetFields(this, appIdentifier, targetTypes, targetValues, issuedAt);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void addOAuthM2MTokenForStats(AppIdentifier appIdentifier, String clientId, long iat, long exp)
+            throws StorageQueryException, OAuthClientNotFoundException {
+        try {
+            OAuthQueries.addOAuthM2MTokenForStats(this, appIdentifier, clientId, iat, exp);
+        } catch (SQLException e) {
+            if (e instanceof SQLiteException) {
+                String errorMessage = e.getMessage();
+                SQLiteConfig config = Config.getConfig(this);
+
+                if (isForeignKeyConstraintError(
+                        errorMessage,
+                        config.getOAuthClientsTable(),
+                        new String[]{"app_id", "client_id"},
+                        new Object[]{appIdentifier.getAppId(), clientId})) {
+                    throw new OAuthClientNotFoundException();
+                }
+            }
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void cleanUpExpiredAndRevokedOAuthTokensList() throws StorageQueryException {
+        try {
+            OAuthQueries.cleanUpExpiredAndRevokedOAuthTokensList(this);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void addOAuthLogoutChallenge(AppIdentifier appIdentifier, String challenge, String clientId,
+            String postLogoutRedirectionUri, String sessionHandle, String state, long timeCreated)
+            throws StorageQueryException, DuplicateOAuthLogoutChallengeException, OAuthClientNotFoundException {
+        try {
+            OAuthQueries.addOAuthLogoutChallenge(this, appIdentifier, challenge, clientId, postLogoutRedirectionUri, sessionHandle, state, timeCreated);
+        } catch (SQLException e) {
+            SQLiteConfig config = Config.getConfig(this);
+            String serverMessage = e.getMessage();
+
+            if (isPrimaryKeyError(serverMessage, config.getOAuthLogoutChallengesTable(),
+                    new String[]{"app_id", "challenge"})) {
+                throw new DuplicateOAuthLogoutChallengeException();
+            } else if (isForeignKeyConstraintError(
+                serverMessage,
+                config.getOAuthClientsTable(),
+                new String[]{"app_id", "client_id"},
+                new Object[]{appIdentifier.getAppId(), clientId})) {
+                    throw new OAuthClientNotFoundException();
+                }
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public OAuthLogoutChallenge getOAuthLogoutChallenge(AppIdentifier appIdentifier, String challenge) throws StorageQueryException {
+        try {
+            return OAuthQueries.getOAuthLogoutChallenge(this, appIdentifier, challenge);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void deleteOAuthLogoutChallenge(AppIdentifier appIdentifier, String challenge) throws StorageQueryException {
+        try {
+            OAuthQueries.deleteOAuthLogoutChallenge(this, appIdentifier, challenge);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void deleteOAuthLogoutChallengesBefore(long time) throws StorageQueryException {
+        try {
+            OAuthQueries.deleteOAuthLogoutChallengesBefore(this, time);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public int countTotalNumberOfOAuthClients(AppIdentifier appIdentifier) throws StorageQueryException {
+        try {
+            return OAuthQueries.countTotalNumberOfClients(this, appIdentifier, false);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public int countTotalNumberOfClientCredentialsOnlyOAuthClients(AppIdentifier appIdentifier)
+            throws StorageQueryException {
+        try {
+            return OAuthQueries.countTotalNumberOfClients(this, appIdentifier, true);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public int countTotalNumberOfOAuthM2MTokensCreatedSince(AppIdentifier appIdentifier, long since)
+            throws StorageQueryException {
+        try {
+            return OAuthQueries.countTotalNumberOfOAuthM2MTokensCreatedSince(this, appIdentifier, since);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public int countTotalNumberOfOAuthM2MTokensAlive(AppIdentifier appIdentifier) throws StorageQueryException {
+        try {
+            return OAuthQueries.countTotalNumberOfOAuthM2MTokensAlive(this, appIdentifier);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }

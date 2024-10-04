@@ -428,9 +428,22 @@ public class SuperTokensSaaSSecretTest {
         assertEquals(response.get("refreshToken").getAsJsonObject().entrySet().size(), 3);
     }
 
-    private static final String[] PROTECTED_CORE_CONFIG = new String[]{"ip_allow_regex", "ip_deny_regex"};
+    private static final String[] PROTECTED_CORE_CONFIG = new String[]{
+            "ip_allow_regex",
+            "ip_deny_regex",
+            "oauth_provider_public_service_url",
+            "oauth_provider_admin_service_url",
+            "oauth_provider_consent_login_base_url",
+            "oauth_provider_url_configured_in_oauth_provider"
+    };
     private static final Object[] PROTECTED_CORE_CONFIG_VALUES = new String[]{
-            "127\\\\.\\\\d+\\\\.\\\\d+\\\\.\\\\d+|::1|0:0:0:0:0:0:0:1", "192.0.0.1"};
+            "127\\\\.\\\\d+\\\\.\\\\d+\\\\.\\\\d+|::1|0:0:0:0:0:0:0:1",
+            "192.0.0.1",
+            "http://localhost:4444",
+            "http://localhost:4445",
+            "http://localhost:3001/auth/oauth",
+            "http://localhost:4444"
+    };
 
     @Test
     public void testThatTenantCannotSetProtectedConfigIfSuperTokensSaaSSecretIsSet()
@@ -540,6 +553,8 @@ public class SuperTokensSaaSSecretTest {
             return;
         }
 
+        CoreConfig.setDisableOAuthValidationForTest(true);
+
         for (int i = 0; i < PROTECTED_CORE_CONFIG.length; i++) {
             JsonObject j = new JsonObject();
             if (PROTECTED_CORE_CONFIG_VALUES[i] instanceof String) {
@@ -548,7 +563,7 @@ public class SuperTokensSaaSSecretTest {
                 j.addProperty(PROTECTED_CORE_CONFIG[i], (Integer) PROTECTED_CORE_CONFIG_VALUES[i]);
             }
             Multitenancy.addNewOrUpdateAppOrTenant(process.main, new TenantIdentifier(null, null, null),
-                    new TenantConfig(new TenantIdentifier(null, null, "t" + i), new EmailPasswordConfig(false),
+                    new TenantConfig(new TenantIdentifier(null, "a" + i, null), new EmailPasswordConfig(false),
                             new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                             new PasswordlessConfig(false),
                             null, null, j));
@@ -556,42 +571,49 @@ public class SuperTokensSaaSSecretTest {
             {
                 JsonObject response = HttpRequestForTesting.sendJsonRequest(process.getProcess(), "",
                         HttpRequestForTesting.getMultitenantUrl(TenantIdentifier.BASE_TENANT,
-                                "/recipe/multitenancy/tenant/list"),
+                                "/recipe/multitenancy/app/list"),
                         null, 1000, 1000, null,
                         SemVer.v3_0.get(), "GET", apiKey, "multitenancy");
 
                 Assert.assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
 
                 boolean found = false;
-                for (JsonElement tenant : response.get("tenants").getAsJsonArray()) {
-                    JsonObject tenantObj = tenant.getAsJsonObject();
-
-                    if (tenantObj.get("tenantId").getAsString().equals("t" + i)) {
+                for (JsonElement app : response.get("apps").getAsJsonArray()) {
+                    JsonObject appObj = app.getAsJsonObject();
+                    if (appObj.get("appId").getAsString().equals("a" + i)) {
                         found = true;
 
-                        assertFalse(tenantObj.get("coreConfig").getAsJsonObject().has(PROTECTED_CORE_CONFIG[i]));
+                        for (JsonElement tenant : appObj.get("tenants").getAsJsonArray()) {
+                            JsonObject tenantObj = tenant.getAsJsonObject();
+
+                            assertFalse(tenantObj.get("coreConfig").getAsJsonObject().has(PROTECTED_CORE_CONFIG[i]));
+                        }
                     }
                 }
+
                 Assert.assertTrue(found);
             }
 
             {
                 JsonObject response = HttpRequestForTesting.sendJsonRequest(process.getProcess(), "",
                         HttpRequestForTesting.getMultitenantUrl(TenantIdentifier.BASE_TENANT,
-                                "/recipe/multitenancy/tenant/list"),
+                                "/recipe/multitenancy/app/list"),
                         null, 1000, 1000, null,
                         SemVer.v3_0.get(), "GET", saasSecret, "multitenancy");
 
                 Assert.assertEquals("OK", response.getAsJsonPrimitive("status").getAsString());
 
                 boolean found = false;
-                for (JsonElement tenant : response.get("tenants").getAsJsonArray()) {
-                    JsonObject tenantObj = tenant.getAsJsonObject();
-
-                    if (tenantObj.get("tenantId").getAsString().equals("t" + i)) {
+                for (JsonElement app : response.get("apps").getAsJsonArray()) {
+                    JsonObject appObj = app.getAsJsonObject();
+                    if (appObj.get("appId").getAsString().equals("a" + i)) {
                         found = true;
 
-                        Assert.assertTrue(tenantObj.get("coreConfig").getAsJsonObject().has(PROTECTED_CORE_CONFIG[i]));
+                        for (JsonElement tenant : appObj.get("tenants").getAsJsonArray()) {
+                            JsonObject tenantObj = tenant.getAsJsonObject();
+
+                            assertTrue(tenantObj.get("coreConfig").getAsJsonObject().has(PROTECTED_CORE_CONFIG[i]));
+                        }
                     }
                 }
                 Assert.assertTrue(found);
