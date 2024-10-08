@@ -56,6 +56,7 @@ import org.apache.catalina.connector.Connector;
 import org.apache.catalina.core.StandardContext;
 import org.apache.catalina.startup.Tomcat;
 import org.apache.tomcat.util.http.fileupload.FileUtils;
+import org.jetbrains.annotations.TestOnly;
 
 import java.io.File;
 import java.util.UUID;
@@ -364,6 +365,11 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         }
     }
 
+    @TestOnly
+    public TomcatReference getTomcatReference(){
+        return tomcatReference;
+    }
+
     public static class TomcatReference {
         private Tomcat tomcat;
         private StandardContext context;
@@ -374,6 +380,11 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         }
 
         Tomcat getTomcat() {
+            return tomcat;
+        }
+
+        @TestOnly
+        public Tomcat getTomcatForTest(){
             return tomcat;
         }
 
