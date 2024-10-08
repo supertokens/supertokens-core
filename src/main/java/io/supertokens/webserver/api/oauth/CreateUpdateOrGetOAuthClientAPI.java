@@ -89,7 +89,10 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
         input.addProperty("accessTokenStrategy", "jwt");
         input.addProperty("skipConsent", true);
         input.addProperty("subjectType", "public");
-        input.addProperty("clientId", "stcl_" + UUID.randomUUID());
+
+        if (!input.has("clientId")) {
+            input.addProperty("clientId", "stcl_" + UUID.randomUUID());
+        }
 
         boolean isClientCredentialsOnly = input.has("grantTypes") &&
             input.get("grantTypes").isJsonArray() &&
