@@ -8,6 +8,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [9.2.3] - 2024-10-09
 
 - Adds support for `--with-temp-dir` in CLI and `tempDirLocation=` in Core
+- Adds validation to firstFactors and requiredSecondaryFactors names while creating tenants/apps/etc. to not allow 
+  special chars.
 
 ## [9.2.2] - 2024-09-04
 
