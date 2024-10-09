@@ -861,6 +861,45 @@ public class TestApp5_1 {
         }
     }
 
+    @Test
+    public void testInvalidValuesInFirstFactorsAndRequiredSecondaryFactors() throws Exception {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        JsonObject config = new JsonObject();
+        StorageLayer.getBaseStorage(process.getProcess()).modifyConfigToAddANewUserPoolForTesting(config, 1);
+
+        String[] factors = new String[]{"not!okay", "some-special-@charz", "i*dont*know", "custom//"};
+        try {
+            createApp(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    "a1", true, factors, false, null,
+                    config);
+            fail();
+        } catch (HttpResponseException e) {
+            assertEquals(400, e.statusCode);
+            assertEquals(
+                    "Http error. Status Code: 400. Message: firstFactors should contain only 0-9,a-z,A-Z,_,.,- characters",
+                    e.getMessage());
+        }
+
+        try {
+            createApp(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    "a1", false, null, true, factors,
+                    config);
+            fail();
+        } catch (HttpResponseException e) {
+            assertEquals(400, e.statusCode);
+            assertEquals(
+                    "Http error. Status Code: 400. Message: requiredSecondaryFactors should contain only 0-9,a-z,A-Z,_,.,- characters",
+                    e.getMessage());
+        }
+    }
+
     private static JsonObject createApp(Main main, TenantIdentifier sourceTenant, String appId,
                                         boolean setFirstFactors, String[] firstFactors,
                                         boolean setRequiredSecondaryFactors, String[] requiredSecondaryFactors,
