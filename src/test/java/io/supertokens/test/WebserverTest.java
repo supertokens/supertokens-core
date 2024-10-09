@@ -967,7 +967,7 @@ public class WebserverTest extends Mockito {
 
     @Test
     public void tempDirLocationWebserverStarts() throws InterruptedException, HttpResponseException, IOException {
-        String tempDirLocation = new File("../temp/").getCanonicalPath();
+        String tempDirLocation = new File("../tempDir/").getCanonicalPath();
         String[] args = {"../", "tempDirLocation=" + tempDirLocation};
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));

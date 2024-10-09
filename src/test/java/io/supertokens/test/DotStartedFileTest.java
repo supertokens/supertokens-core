@@ -188,7 +188,7 @@ public class DotStartedFileTest {
 
     @Test
     public void dotStartedFileAtTempDirLocation() throws Exception {
-        String tempDirLocation = new File("../temp/").getAbsolutePath();
+        String tempDirLocation = new File("../tempDir/").getAbsolutePath();
         String[] args = {"../", "tempDirLocation=" + tempDirLocation};
 
         String host = "localhost";
