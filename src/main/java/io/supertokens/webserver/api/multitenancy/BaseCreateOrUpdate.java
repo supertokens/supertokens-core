@@ -941,16 +941,16 @@ public abstract class BaseCreateOrUpdate extends WebserverAPI {
 
     private static void validateFactorsName(TenantConfig tenantConfig) throws ServletException{
         if(!areFactorNamesValid(tenantConfig.firstFactors)){
-            throw new ServletException(new BadRequestException("firstFactors should contain only 0-9,a-z,A-Z,_,- characters"));
+            throw new ServletException(new BadRequestException("firstFactors should contain only 0-9,a-z,A-Z,_,.,- characters"));
         }
         if(!areFactorNamesValid(tenantConfig.requiredSecondaryFactors)){
-            throw new ServletException(new BadRequestException("requiredSecondaryFactors should contain only 0-9,a-z,A-Z,_,- characters"));
+            throw new ServletException(new BadRequestException("requiredSecondaryFactors should contain only 0-9,a-z,A-Z,_,.,- characters"));
         }
     }
 
     private static boolean areFactorNamesValid(String[] factors) {
         if(factors != null && factors.length > 0) {
-            String allowedPattern = "^[0-9a-zA-Z_-]+$";
+            String allowedPattern = "^[0-9a-zA-Z_(\\.)-]+$";
             for(String factor: factors){
                 if(factor != null && !factor.matches(allowedPattern)){
                     return false;
