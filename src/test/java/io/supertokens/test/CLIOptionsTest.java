@@ -302,7 +302,7 @@ public class CLIOptionsTest {
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
 
         //process starts with tempDirLocation param too.
-        args = new String[]{"../", "tempDirLocation=" + new File("../temp/").getAbsolutePath()};
+        args = new String[]{"../", "tempDirLocation=" + new File("../tempDir/").getAbsolutePath()};
 
         process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
