@@ -32,10 +32,13 @@ public class CLIOptions extends ResourceDistributor.SingletonResource {
     private static final String HOST_FILE_KEY = "host=";
     private static final String TEST_MODE = "test_mode";
     private static final String FORCE_NO_IN_MEM_DB = "forceNoInMemDB=true";
+    private static final String TEMP_DIR_LOCATION_KEY = "tempDirLocation=";
     private final String installationPath;
     private final String configFilePath;
     private final Integer port;
     private final String host;
+    private final String tempDirLocation;
+
 
     // if this is true, then even in DEV mode, we will not use in memory db, even if there is an error in the plugin
     private final boolean forceNoInMemoryDB;
@@ -44,6 +47,7 @@ public class CLIOptions extends ResourceDistributor.SingletonResource {
         checkIfArgsIsCorrect(args);
         String installationPath = args[0];
         String configFilePathTemp = null;
+        String tempDirLocationPath = null;
         Integer portTemp = null;
         String hostTemp = null;
         boolean forceNoInMemoryDBTemp = false;
@@ -54,7 +58,16 @@ public class CLIOptions extends ResourceDistributor.SingletonResource {
                 if (!new File(configFilePathTemp).isAbsolute()) {
                     throw new QuitProgramException("configPath option must be an absolute path only");
                 }
-            } else if (curr.startsWith(PORT_FILE_KEY)) {
+            } else if (curr.startsWith(TEMP_DIR_LOCATION_KEY)) {
+                tempDirLocationPath = curr.split(TEMP_DIR_LOCATION_KEY)[1];
+                if (!new File(tempDirLocationPath).isAbsolute()) {
+                    throw new QuitProgramException("tempDirLocation option must be an absolute path only");
+                }
+                if(!tempDirLocationPath.isEmpty() && !tempDirLocationPath.endsWith(File.separator)){
+                    tempDirLocationPath = tempDirLocationPath + File.separator;
+                }
+            }
+            else if (curr.startsWith(PORT_FILE_KEY)) {
                 portTemp = Integer.parseInt(curr.split(PORT_FILE_KEY)[1]);
             } else if (curr.startsWith(HOST_FILE_KEY)) {
                 hostTemp = curr.split(HOST_FILE_KEY)[1];
@@ -69,6 +82,7 @@ public class CLIOptions extends ResourceDistributor.SingletonResource {
         this.port = portTemp;
         this.host = hostTemp;
         this.forceNoInMemoryDB = forceNoInMemoryDBTemp;
+        this.tempDirLocation = tempDirLocationPath;
     }
 
     private static CLIOptions getInstance(Main main) {
@@ -122,5 +136,9 @@ public class CLIOptions extends ResourceDistributor.SingletonResource {
 
     public boolean isForceNoInMemoryDB() {
         return this.forceNoInMemoryDB;
+    }
+
+    public String getTempDirLocation() {
+        return tempDirLocation;
     }
 }

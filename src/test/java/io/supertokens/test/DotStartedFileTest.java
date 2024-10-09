@@ -185,4 +185,36 @@ public class DotStartedFileTest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    @Test
+    public void dotStartedFileAtTempDirLocation() throws Exception {
+        String tempDirLocation = new File("../temp/").getAbsolutePath();
+        String[] args = {"../", "tempDirLocation=" + tempDirLocation};
+
+        String host = "localhost";
+        String port = "8081";
+        String hostPortNameCheck = host + "-" + port;
+
+        Utils.setValueInConfig("port", port);
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        File loc = new File(tempDirLocation + "/.started");
+
+        File[] dotStartedNameAndContent = loc.listFiles();
+        assert dotStartedNameAndContent != null;
+        assertEquals(1, dotStartedNameAndContent.length);
+        assertEquals(dotStartedNameAndContent[0].getName(), hostPortNameCheck);
+
+        String[] dotStartedContent = Files.readString(Paths.get(dotStartedNameAndContent[0].getPath())).split("\n");
+        String line = dotStartedContent[0];
+        assertEquals(line, Long.toString(ProcessHandle.current().pid()));
+        line = dotStartedContent.length > 1 ? dotStartedContent[1] : "";
+        assertEquals(line, Config.getConfig(process.main).getBasePath());
+        assertEquals(line, "");
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }

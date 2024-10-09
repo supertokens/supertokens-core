@@ -56,6 +56,7 @@ import org.apache.catalina.connector.Connector;
 import org.apache.catalina.core.StandardContext;
 import org.apache.catalina.startup.Tomcat;
 import org.apache.tomcat.util.http.fileupload.FileUtils;
+import org.jetbrains.annotations.TestOnly;
 
 import java.io.File;
 import java.util.UUID;
@@ -101,10 +102,12 @@ public class Webserver extends ResourceDistributor.SingletonResource {
             return;
         }
 
-        File webserverTemp = new File(CLIOptions.get(main).getInstallationPath() + "webserver-temp");
+        String tempDirLocation = decideTempDirLocation();
+        File webserverTemp = new File(tempDirLocation);
         if (!webserverTemp.exists()) {
-            webserverTemp.mkdir();
+            webserverTemp.mkdirs();
         }
+
 
         CONTEXT_PATH = Config.getBaseConfig(main).getBasePath();
 
@@ -117,7 +120,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         setupLogging();
 
         // baseDir is a place for Tomcat to store temporary files..
-        tomcat.setBaseDir(CLIOptions.get(main).getInstallationPath() + TEMP_FOLDER);
+        tomcat.setBaseDir(tempDirLocation);
 
         // set thread pool size and port
         Connector connector = new Connector();
@@ -131,7 +134,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         tomcat.getEngine().setName(main.getProcessId());
 
         // create docBase folder and get context
-        new File(CLIOptions.get(main).getInstallationPath() + TEMP_FOLDER + "webapps").mkdirs();
+        new File(decideTempDirLocation() + "webapps").mkdirs();
         StandardContext context = (StandardContext) tomcat.addContext(CONTEXT_PATH, "");
 
         // the amount of time for which we should wait for all requests to finish when
@@ -156,6 +159,15 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         tomcatReference = new TomcatReference(tomcat, context);
 
         setupRoutes();
+    }
+
+    private String decideTempDirLocation(){
+        String userSetTempDir = CLIOptions.get(main).getTempDirLocation();
+        if(userSetTempDir != null && !userSetTempDir.endsWith(File.separator)) {
+            userSetTempDir = userSetTempDir + File.separator;
+        }
+        String defaultTempDir = CLIOptions.get(main).getInstallationPath() + TEMP_FOLDER;
+        return userSetTempDir != null ? userSetTempDir : defaultTempDir;
     }
 
     private void setupRoutes() {
@@ -307,7 +319,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         try {
             // we want to clear just this process' folder and not all since other processes
             // might still be running.
-            FileUtils.deleteDirectory(new File(CLIOptions.get(main).getInstallationPath() + TEMP_FOLDER));
+            FileUtils.deleteDirectory(new File(decideTempDirLocation()));
         } catch (Exception ignored) {
         }
 
@@ -353,6 +365,11 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         }
     }
 
+    @TestOnly
+    public TomcatReference getTomcatReference(){
+        return tomcatReference;
+    }
+
     public static class TomcatReference {
         private Tomcat tomcat;
         private StandardContext context;
@@ -363,6 +380,11 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         }
 
         Tomcat getTomcat() {
+            return tomcat;
+        }
+
+        @TestOnly
+        public Tomcat getTomcatForTest(){
             return tomcat;
         }
 
