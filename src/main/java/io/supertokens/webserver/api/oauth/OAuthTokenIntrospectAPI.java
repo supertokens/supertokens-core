@@ -66,7 +66,7 @@ public class OAuthTokenIntrospectAPI extends WebserverAPI {
                 AppIdentifier appIdentifier = getAppIdentifier(req);
                 Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
 
-                token = OAuth.getOAuthProviderRefreshToken(main, null, null, token)
+                token = OAuth.getOAuthProviderRefreshToken(main, null, null, token);
                 formFields.put("token", token);
 
                 HttpRequestForOry.Response response = OAuthProxyHelper.proxyFormPOST(
@@ -94,7 +94,7 @@ public class OAuthTokenIntrospectAPI extends WebserverAPI {
                     finalResponse.addProperty("status", "OK");
                     super.sendJsonResponse(200, finalResponse, resp);
                 }
-            } catch (IOException | TenantOrAppNotFoundException | BadPermissionException e) {
+            } catch (IOException | StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
                 throw new ServletException(e);
             }
         } else {
