@@ -46,13 +46,15 @@ public class RevokeOAuthTokenAPI extends WebserverAPI {
             Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
 
             if (token.startsWith("st_rt_")) {
+                token = OAuth.getOAuthProviderRefreshToken(main, appIdentifier, storage, token);
+
                 String gid = null;
                 long exp = -1;
                 {
                     // introspect token to get gid
                     Map<String, String> formFields = new HashMap<>();
                     formFields.put("token", token);
-    
+
                     HttpRequestForOry.Response response = OAuthProxyHelper.proxyFormPOST(
                         main, req, resp,
                         appIdentifier,
