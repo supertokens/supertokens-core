@@ -34,6 +34,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -66,24 +67,29 @@ public class OAuthStorageTest {
         OAuthStorage storage = (OAuthStorage) StorageLayer.getStorage(process.getProcess());
 
         AppIdentifier appIdentifier = new AppIdentifier(null, null);
-        assertEquals(0, storage.listOAuthClients(appIdentifier).size());
+        assertEquals(0, storage.getOAuthClients(appIdentifier, new ArrayList<>()).size()); // TODO fix me
 
-        storage.addOrUpdateOauthClient(appIdentifier, "clientid1", false);
-        storage.addOrUpdateOauthClient(appIdentifier, "clientid2", true);
+        storage.addOrUpdateOauthClient(appIdentifier, "clientid1", "secret123", false, false);
+        storage.addOrUpdateOauthClient(appIdentifier, "clientid2", "secret123", true, false);
 
-        assertTrue(storage.doesOAuthClientIdExist(appIdentifier, "clientid1"));
-        assertFalse(storage.doesOAuthClientIdExist(appIdentifier, "clientid3"));
+        assertNotNull(storage.getOAuthClientById(appIdentifier, "clientid1"));
+        try {
+            storage.getOAuthClientById(appIdentifier, "clientid3");
+            fail();
+        } catch (OAuthClientNotFoundException e) {
+            // ignore
+        }
 
         assertEquals(2, storage.countTotalNumberOfOAuthClients(appIdentifier));
         assertEquals(1, storage.countTotalNumberOfClientCredentialsOnlyOAuthClients(appIdentifier));
 
-        assertEquals(List.of("clientid1", "clientid2"), storage.listOAuthClients(appIdentifier));
+        assertEquals(List.of("clientid1", "clientid2"), storage.getOAuthClients(appIdentifier, new ArrayList<>())); // TODO FIX ME
 
         storage.deleteOAuthClient(appIdentifier, "clientid1");
-        assertEquals(List.of("clientid2"), storage.listOAuthClients(appIdentifier));
+        assertEquals(List.of("clientid2"), storage.getOAuthClients(appIdentifier, new ArrayList<>())); // TODO FIX ME
 
         assertEquals(1, storage.countTotalNumberOfClientCredentialsOnlyOAuthClients(appIdentifier));
-        storage.addOrUpdateOauthClient(appIdentifier, "clientid2", false);
+        storage.addOrUpdateOauthClient(appIdentifier, "clientid2", "secret123", false, false);
         assertEquals(0, storage.countTotalNumberOfClientCredentialsOnlyOAuthClients(appIdentifier));
 
         process.kill();
@@ -105,7 +111,7 @@ public class OAuthStorageTest {
 
         AppIdentifier appIdentifier = new AppIdentifier(null, null);
 
-        storage.addOrUpdateOauthClient(appIdentifier, "clientid", false);
+        storage.addOrUpdateOauthClient(appIdentifier, "clientid", "secret123", false, false);
 
         // Test nulls
         storage.addOAuthLogoutChallenge(appIdentifier, "challengeid", "clientid", null, null, null, System.currentTimeMillis());
@@ -236,7 +242,7 @@ public class OAuthStorageTest {
 
         long now = System.currentTimeMillis() / 1000;
 
-        storage.addOrUpdateOauthClient(appIdentifier, "clientid", true);
+        storage.addOrUpdateOauthClient(appIdentifier, "clientid", "secret123", true, false);
 
         storage.addOAuthM2MTokenForStats(appIdentifier, "clientid", now - 3600 - 2, now + 2);
         storage.addOAuthM2MTokenForStats(appIdentifier, "clientid", now - 3600 * 24 - 2, now + 2);
@@ -266,7 +272,7 @@ public class OAuthStorageTest {
         OAuthStorage storage = (OAuthStorage) StorageLayer.getStorage(process.getProcess());
         AppIdentifier appIdentifier = new AppIdentifier(null, null);
 
-        storage.addOrUpdateOauthClient(appIdentifier, "clientid", false);
+        storage.addOrUpdateOauthClient(appIdentifier, "clientid", "secret123", false, false);
 
         // PK
         {
@@ -290,7 +296,7 @@ public class OAuthStorageTest {
         // App id FK
         AppIdentifier appIdentifier2 = new AppIdentifier(null,"a1");
         try {
-            storage.addOrUpdateOauthClient(appIdentifier2, "clientid", false);
+            storage.addOrUpdateOauthClient(appIdentifier2, "clientid", "secret123", false, false);
             fail();
         } catch (TenantOrAppNotFoundException e) {
             // expected

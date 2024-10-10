@@ -432,6 +432,14 @@ public class GeneralQueries {
             update(start, OAuthQueries.getQueryToCreateOAuthClientTable(start), NO_OP_SETTER);
         }
 
+        if (!doesTableExists(start, Config.getConfig(start).getOAuthRefreshTokenMappingTable())) {
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, OAuthQueries.getQueryToCreateOAuthRefreshTokenMappingTable(start), NO_OP_SETTER);
+
+            // index
+            update(start, OAuthQueries.getQueryToCreateOAuthRefreshTokenMappingExpIndex(start), NO_OP_SETTER);
+        }
+
         if (!doesTableExists(start, Config.getConfig(start).getOAuthRevokeTable())) {
             getInstance(main).addState(CREATING_NEW_TABLE, null);
             update(start, OAuthQueries.getQueryToCreateOAuthRevokeTable(start), NO_OP_SETTER);

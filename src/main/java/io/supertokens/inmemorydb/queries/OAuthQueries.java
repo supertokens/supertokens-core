@@ -17,9 +17,11 @@
 package io.supertokens.inmemorydb.queries;
 
 import io.supertokens.inmemorydb.Start;
+import io.supertokens.inmemorydb.Utils;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.oauth.OAuthClient;
 import io.supertokens.pluginInterface.oauth.OAuthLogoutChallenge;
 import io.supertokens.pluginInterface.oauth.OAuthRevokeTargetType;
 
@@ -38,11 +40,32 @@ public class OAuthQueries {
         // @formatter:off
         return "CREATE TABLE IF NOT EXISTS " + oAuth2ClientTable + " ("
                 + "app_id VARCHAR(64),"
-                + "client_id VARCHAR(128) NOT NULL,"
+                + "client_id VARCHAR(255) NOT NULL,"
+                + "client_secret TEXT,"
+                + "enable_refresh_token_rotation BOOLEAN NOT NULL,"
                 + "is_client_credentials_only BOOLEAN NOT NULL,"
                 + " PRIMARY KEY (app_id, client_id),"
                 + " FOREIGN KEY(app_id) REFERENCES " + Config.getConfig(start).getAppsTable() + "(app_id) ON DELETE CASCADE);";
         // @formatter:on
+    }
+
+    public static String getQueryToCreateOAuthRefreshTokenMappingTable(Start start) {
+        String oAuth2RefreshTokenMappingTable = Config.getConfig(start).getOAuthRefreshTokenMappingTable();
+        // @formatter:off
+        return "CREATE TABLE IF NOT EXISTS " + oAuth2RefreshTokenMappingTable + " ("
+                + "app_id VARCHAR(64) DEFAULT 'public',"
+                + "st_refresh_token VARCHAR(255) NOT NULL,"
+                + "op_refresh_token VARCHAR(255) NOT NULL,"
+                + "exp BIGINT NOT NULL,"
+                + "PRIMARY KEY (app_id, st_refresh_token),"
+                + "FOREIGN KEY(app_id) REFERENCES " + Config.getConfig(start).getAppsTable() + "(app_id) ON DELETE CASCADE);";
+        // @formatter:on
+    }
+
+    public static String getQueryToCreateOAuthRefreshTokenMappingExpIndex(Start start) {
+        String oAuth2RefreshTokenMappingTable = Config.getConfig(start).getOAuthRefreshTokenMappingTable();
+        return "CREATE INDEX IF NOT EXISTS oauth_refresh_token_mapping_exp_index ON "
+                + oAuth2RefreshTokenMappingTable + "(exp DESC);";
     }
 
     public static String getQueryToCreateOAuthRevokeTable(Start start) {
@@ -78,7 +101,7 @@ public class OAuthQueries {
         // @formatter:off
         return "CREATE TABLE IF NOT EXISTS " + oAuth2M2MTokensTable + " ("
                 + "app_id VARCHAR(64) DEFAULT 'public',"
-                + "client_id VARCHAR(128) NOT NULL,"
+                + "client_id VARCHAR(255) NOT NULL,"
                 + "iat BIGINT NOT NULL,"
                 + "exp BIGINT NOT NULL,"
                 + "PRIMARY KEY (app_id, client_id, iat),"
@@ -106,7 +129,7 @@ public class OAuthQueries {
         return "CREATE TABLE IF NOT EXISTS " + oAuth2LogoutChallengesTable + " ("
                 + "app_id VARCHAR(64) DEFAULT 'public',"
                 + "challenge VARCHAR(128) NOT NULL,"
-                + "client_id VARCHAR(128) NOT NULL,"
+                + "client_id VARCHAR(255) NOT NULL,"
                 + "post_logout_redirect_uri VARCHAR(1024),"
                 + "session_handle VARCHAR(128),"
                 + "state VARCHAR(128),"
@@ -124,43 +147,57 @@ public class OAuthQueries {
                 + oAuth2LogoutChallengesTable + "(time_created DESC);";
     }
 
-    public static boolean doesOAuthClientIdExist(Start start, String clientId, AppIdentifier appIdentifier)
+    public static OAuthClient getOAuthClientById(Start start, String clientId, AppIdentifier appIdentifier)
             throws SQLException, StorageQueryException {
-        String QUERY = "SELECT app_id FROM " + Config.getConfig(start).getOAuthClientsTable() +
+        String QUERY = "SELECT client_secret, is_client_credentials_only, enable_refresh_token_rotation FROM " + Config.getConfig(start).getOAuthClientsTable() +
             " WHERE client_id = ? AND app_id = ?";
 
         return execute(start, QUERY, pst -> {
             pst.setString(1, clientId);
             pst.setString(2, appIdentifier.getAppId());
-        }, ResultSet::next);
+        }, (result) -> {
+            if (result.next()) {
+                return new OAuthClient(clientId, result.getString("client_secret"), result.getBoolean("is_client_credentials_only"), result.getBoolean("enable_refresh_token_rotation"));
+            }
+            return null;
+        });
     }
 
-    public static List<String> listOAuthClients(Start start, AppIdentifier appIdentifier)
+    public static List<OAuthClient> getOAuthClients(Start start, AppIdentifier appIdentifier, List<String> clientIds)
             throws SQLException, StorageQueryException {
-        String QUERY = "SELECT client_id FROM " + Config.getConfig(start).getOAuthClientsTable() +
-                " WHERE app_id = ?";
+        String QUERY = "SELECT * FROM " + Config.getConfig(start).getOAuthClientsTable()
+                + " WHERE app_id = ? AND client_id IN ("
+                + Utils.generateCommaSeperatedQuestionMarks(clientIds.size())
+                + ")";
         return execute(start, QUERY, pst -> {
             pst.setString(1, appIdentifier.getAppId());
+            for (int i = 0; i < clientIds.size(); i++) {
+                pst.setString(i + 2, clientIds.get(i));
+            }
         }, (result) -> {
-            List<String> res = new ArrayList<>();
+            List<OAuthClient> res = new ArrayList<>();
             while (result.next()) {
-                res.add(result.getString("client_id"));
+                res.add(new OAuthClient(result.getString("client_id"), result.getString("client_secret"), result.getBoolean("is_client_credentials_only"), result.getBoolean("enable_refresh_token_rotation")));
             }
             return res;
         });
     }
 
-    public static void addOrUpdateOauthClient(Start start, AppIdentifier appIdentifier, String clientId,
-                                            boolean isClientCredentialsOnly)
+    public static void addOrUpdateOauthClient(Start start, AppIdentifier appIdentifier, String clientId, String clientSecret,
+                                            boolean isClientCredentialsOnly, boolean enableRefreshTokenRotation)
             throws SQLException, StorageQueryException {
         String INSERT = "INSERT INTO " + Config.getConfig(start).getOAuthClientsTable()
-                + "(app_id, client_id, is_client_credentials_only) VALUES(?, ?, ?) "
-                + "ON CONFLICT (app_id, client_id) DO UPDATE SET is_client_credentials_only = ?";
+                + "(app_id, client_id, client_secret, is_client_credentials_only, enable_refresh_token_rotation) VALUES(?, ?, ?, ?, ?) "
+                + "ON CONFLICT (app_id, client_id) DO UPDATE SET client_secret = ?, is_client_credentials_only = ?, enable_refresh_token_rotation = ?";
         update(start, INSERT, pst -> {
             pst.setString(1, appIdentifier.getAppId());
             pst.setString(2, clientId);
-            pst.setBoolean(3, isClientCredentialsOnly);
+            pst.setString(3, clientSecret);
             pst.setBoolean(4, isClientCredentialsOnly);
+            pst.setBoolean(5, enableRefreshTokenRotation);
+            pst.setString(6, clientSecret);
+            pst.setBoolean(7, isClientCredentialsOnly);
+            pst.setBoolean(8, enableRefreshTokenRotation);
         });
     }
 
@@ -368,6 +405,43 @@ public class OAuthQueries {
                 " WHERE time_created < ?";
         update(start, QUERY, pst -> {
             pst.setLong(1, time);
+        });
+    }
+
+    public static void createOrUpdateRefreshTokenMapping(Start start, AppIdentifier appIdentifier, String superTokensRefreshToken, String oauthProviderRefreshToken, long exp) throws SQLException, StorageQueryException {
+        String QUERY = "INSERT INTO " + Config.getConfig(start).getOAuthRefreshTokenMappingTable() +
+                " (app_id, st_refresh_token, op_refresh_token, exp) VALUES (?, ?, ?, ?) ON CONFLICT (app_id, st_refresh_token) DO UPDATE SET op_refresh_token = ?, exp = ?";
+        update(start, QUERY, pst -> {
+            pst.setString(1, appIdentifier.getAppId());
+            pst.setString(2, superTokensRefreshToken);
+            pst.setString(3, oauthProviderRefreshToken);
+            pst.setLong(4, exp);
+            pst.setString(5, oauthProviderRefreshToken);
+            pst.setLong(6, exp);
+        });
+    }
+
+    public static String getRefreshTokenMapping(Start start, AppIdentifier appIdentifier, String superTokensRefreshToken) throws SQLException, StorageQueryException {
+        String QUERY = "SELECT op_refresh_token FROM " + Config.getConfig(start).getOAuthRefreshTokenMappingTable() +
+                " WHERE app_id = ? AND st_refresh_token = ?";
+        return execute(start, QUERY, pst -> {
+            pst.setString(1, appIdentifier.getAppId());
+            pst.setString(2, superTokensRefreshToken);
+        }, result -> {
+            if (result.next()) {
+                return result.getString("op_refresh_token");
+            }
+            return null;
+        });
+    }
+
+    public static void deleteRefreshTokenMapping(Start start, AppIdentifier appIdentifier,
+            String superTokensRefreshToken) throws SQLException, StorageQueryException {
+        String QUERY = "DELETE FROM " + Config.getConfig(start).getOAuthRefreshTokenMappingTable() +
+                " WHERE app_id = ? AND st_refresh_token = ?";
+        update(start, QUERY, pst -> {
+            pst.setString(1, appIdentifier.getAppId());
+            pst.setString(2, superTokensRefreshToken);
         });
     }
 }

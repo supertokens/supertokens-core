@@ -36,6 +36,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.oauth.OAuthClient;
 import io.supertokens.pluginInterface.oauth.OAuthLogoutChallenge;
 import io.supertokens.pluginInterface.oauth.OAuthRevokeTargetType;
 import io.supertokens.pluginInterface.oauth.OAuthStorage;
@@ -46,12 +47,17 @@ import io.supertokens.utils.Utils;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.*;
 import java.util.Map.Entry;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 
 public class OAuth {
     private static void checkForOauthFeature(AppIdentifier appIdentifier, Main main)
@@ -77,9 +83,7 @@ public class OAuth {
         }
 
         if (clientIdToCheck != null) {
-            if (!oauthStorage.doesOAuthClientIdExist(appIdentifier, clientIdToCheck)) {
-                throw new OAuthClientNotFoundException();
-            }
+            oauthStorage.getOAuthClientById(appIdentifier, clientIdToCheck); // may throw OAuthClientNotFoundException
         }
 
         // Request transformations
@@ -118,9 +122,7 @@ public class OAuth {
         }
 
         if (clientIdToCheck != null) {
-            if (!oauthStorage.doesOAuthClientIdExist(appIdentifier, clientIdToCheck)) {
-                throw new OAuthClientNotFoundException();
-            }
+            oauthStorage.getOAuthClientById(appIdentifier, clientIdToCheck); // may throw OAuthClientNotFoundException
         }
 
         // Request transformations
@@ -159,9 +161,7 @@ public class OAuth {
         }
 
         if (clientIdToCheck != null) {
-            if (!oauthStorage.doesOAuthClientIdExist(appIdentifier, clientIdToCheck)) {
-                throw new OAuthClientNotFoundException();
-            }
+            oauthStorage.getOAuthClientById(appIdentifier, clientIdToCheck); // may throw OAuthClientNotFoundException
         }
 
         // Request transformations
@@ -201,9 +201,7 @@ public class OAuth {
         }
 
         if (clientIdToCheck != null) {
-            if (!oauthStorage.doesOAuthClientIdExist(appIdentifier, clientIdToCheck)) {
-                throw new OAuthClientNotFoundException();
-            }
+            oauthStorage.getOAuthClientById(appIdentifier, clientIdToCheck); // may throw OAuthClientNotFoundException
         }
 
         // Request transformations
@@ -242,9 +240,7 @@ public class OAuth {
         }
 
         if (clientIdToCheck != null) {
-            if (!oauthStorage.doesOAuthClientIdExist(appIdentifier, clientIdToCheck)) {
-                throw new OAuthClientNotFoundException();
-            }
+            oauthStorage.getOAuthClientById(appIdentifier, clientIdToCheck); // may throw OAuthClientNotFoundException
         }
 
         // Request transformations
@@ -334,8 +330,6 @@ public class OAuth {
     public static JsonObject transformTokens(Main main, AppIdentifier appIdentifier, Storage storage, JsonObject jsonBody, String iss, JsonObject accessTokenUpdate, JsonObject idTokenUpdate, boolean useDynamicKey) throws IOException, JWTException, InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException, InvalidKeySpecException, JWTCreationException, InvalidConfigException {
         String atHash = null;
 
-        System.out.println("transformTokens: " + jsonBody.toString());
-
         if (jsonBody.has("refresh_token")) {
             String refreshToken = jsonBody.get("refresh_token").getAsString();
             refreshToken = refreshToken.replace("ory_rt_", "st_rt_");
@@ -368,20 +362,38 @@ public class OAuth {
         return jsonBody;
     }
 
-    public static void addOrUpdateClientId(Main main, AppIdentifier appIdentifier, Storage storage, String clientId, boolean isClientCredentialsOnly)
-            throws StorageQueryException, TenantOrAppNotFoundException {
+    public static void addOrUpdateClient(Main main, AppIdentifier appIdentifier, Storage storage, String clientId, String clientSecret, boolean isClientCredentialsOnly, boolean enableRefreshTokenRotation)
+            throws StorageQueryException, TenantOrAppNotFoundException, InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException, InvalidConfigException {
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
-        oauthStorage.addOrUpdateOauthClient(appIdentifier, clientId, isClientCredentialsOnly);
+        clientSecret = encryptClientSecret(main, clientSecret);
+        oauthStorage.addOrUpdateOauthClient(appIdentifier, clientId, clientSecret, isClientCredentialsOnly, enableRefreshTokenRotation);
     }
 
-    public static void removeClientId(Main main, AppIdentifier appIdentifier, Storage storage, String clientId) throws StorageQueryException {
+    public static String encryptClientSecret(Main main, String clientSecret) throws InvalidConfigException, InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException {
+        String key = Config.getConfig(main).getOAuthClientSecretEncryptionKey();
+        clientSecret = Utils.encrypt(clientSecret, key);
+        return clientSecret;
+    }
+
+    public static String decryptClientSecret(Main main, String clientSecret) throws InvalidConfigException, InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException {
+        String key = Config.getConfig(main).getOAuthClientSecretEncryptionKey();
+        clientSecret = Utils.decrypt(clientSecret, key);
+        return clientSecret;
+    }
+
+    public static void removeClient(Main main, AppIdentifier appIdentifier, Storage storage, String clientId) throws StorageQueryException {
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
         oauthStorage.deleteOAuthClient(appIdentifier, clientId);
     }
 
-    public static List<String> listClientIds(Main main, AppIdentifier appIdentifier, Storage storage) throws StorageQueryException {
+    public static List<OAuthClient> getClients(Main main, AppIdentifier appIdentifier, Storage storage, List<String> clientIds) throws StorageQueryException, InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException, InvalidConfigException {
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
-        return oauthStorage.listOAuthClients(appIdentifier);
+        List<OAuthClient> finalResult = new ArrayList<>();
+        List<OAuthClient> clients = oauthStorage.getOAuthClients(appIdentifier, clientIds);
+        for (OAuthClient client : clients) {
+            finalResult.add(new OAuthClient(client.clientId, decryptClientSecret(main, client.clientSecret), client.isClientCredentialsOnly, client.enableRefreshTokenRotation));
+        }
+        return finalResult;
     }
 
     private static Map<String, String> convertCamelToSnakeCase(Map<String, String> queryParams) {
@@ -431,7 +443,7 @@ public class OAuth {
 
     public static void verifyAndUpdateIntrospectRefreshTokenPayload(Main main, AppIdentifier appIdentifier,
             Storage storage, JsonObject payload, String refreshToken) throws StorageQueryException, TenantOrAppNotFoundException, FeatureNotEnabledException, InvalidConfigException, IOException {
-        
+
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
 
         if (!payload.get("active").getAsBoolean()) {
@@ -622,5 +634,37 @@ public class OAuth {
     public static void deleteLogoutChallenge(Main main, AppIdentifier appIdentifier, Storage storage, String challenge) throws StorageQueryException {
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
         oauthStorage.deleteOAuthLogoutChallenge(appIdentifier, challenge);
+    }
+
+	public static OAuthClient getOAuthClientById(Main main, AppIdentifier appIdentifier, Storage storage,
+			String clientId) throws OAuthClientNotFoundException, StorageQueryException, InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException, InvalidConfigException {
+        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+        OAuthClient client = oauthStorage.getOAuthClientById(appIdentifier, clientId);
+        if (client.clientSecret != null) {
+            client = new OAuthClient(client.clientId, decryptClientSecret(main, client.clientSecret), client.isClientCredentialsOnly, client.enableRefreshTokenRotation);
+        }
+        return client;
+	}
+
+    public static String getOAuthProviderRefreshToken(Main main, AppIdentifier appIdentifier, Storage storage,
+            String refreshToken) throws StorageQueryException {
+        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+        String opRefreshToken = oauthStorage.getRefreshTokenMapping(appIdentifier, refreshToken);
+        if (opRefreshToken == null) {
+            return refreshToken;
+        }
+        return opRefreshToken;
+    }
+
+    public static void createOrUpdateRefreshTokenMapping(Main main, AppIdentifier appIdentifier, Storage storage,
+            String inputRefreshToken, String newRefreshToken) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'createOrUpdateRefreshTokenMapping'");
+    }
+
+    public static void deleteRefreshTokenMappingIfExists(Main main, AppIdentifier appIdentifier, Storage storage,
+            String inputRefreshToken) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'deleteRefreshTokenMappingIfExists'");
     }
 }

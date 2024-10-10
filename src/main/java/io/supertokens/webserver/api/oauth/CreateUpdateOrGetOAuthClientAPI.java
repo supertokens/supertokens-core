@@ -17,9 +17,17 @@
 package io.supertokens.webserver.api.oauth;
 
 import java.io.IOException;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -38,6 +46,7 @@ import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.oauth.OAuthClient;
 import io.supertokens.pluginInterface.oauth.exception.OAuthClientNotFoundException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -60,11 +69,13 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
         String clientId = InputParser.getQueryParamOrThrowError(req, "clientId", false);
 
         try {
+            AppIdentifier appIdentifier = getAppIdentifier(req);
+            Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
             HttpRequestForOry.Response response = OAuthProxyHelper.proxyGET(
                 main, req, resp,
-                getAppIdentifier(req),
-                enforcePublicTenantAndGetPublicTenantStorage(req),
-                clientId, // clientIdToCheck
+                appIdentifier,
+                storage,
+                null, // clientIdToCheck
                 "/admin/clients/" + clientId, // proxyPath
                 true, // proxyToAdmin
                 true, // camelToSnakeCaseConversion
@@ -72,13 +83,23 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
                 new HashMap<>()
             );
             if (response != null) {
+                OAuthClient client = OAuth.getOAuthClientById(main, appIdentifier, storage, clientId);
                 Transformations.applyClientPropsWhiteList(response.jsonResponse.getAsJsonObject());
+                if (client.clientSecret != null) {
+                    response.jsonResponse.getAsJsonObject().addProperty("clientSecret", client.clientSecret);
+                }
+                response.jsonResponse.getAsJsonObject().addProperty("enableRefreshTokenRotation", client.enableRefreshTokenRotation);
                 response.jsonResponse.getAsJsonObject().addProperty("status", "OK");
                 super.sendJsonResponse(200, response.jsonResponse, resp);
             }
-        } catch (IOException | TenantOrAppNotFoundException | BadPermissionException e) {
+        } catch (OAuthClientNotFoundException e) {
+            OAuthProxyHelper.handleOAuthClientNotFoundException(resp);
+        } catch (IOException | TenantOrAppNotFoundException | BadPermissionException | InvalidKeyException | 
+                NoSuchAlgorithmException | InvalidKeySpecException | InvalidAlgorithmParameterException | 
+                NoSuchPaddingException | IllegalBlockSizeException | BadPaddingException | 
+                StorageQueryException | InvalidConfigException e) {
             throw new ServletException(e);
-        }
+		}
     }
 
     @Override
@@ -92,6 +113,12 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
 
         if (!input.has("clientId")) {
             input.addProperty("clientId", "stcl_" + UUID.randomUUID());
+        }
+
+        boolean enableRefreshTokenRotation = false;
+        if (input.has("enableRefreshTokenRotation")) {
+            enableRefreshTokenRotation = InputParser.parseBooleanOrThrowError(input, "enableRefreshTokenRotation", false);
+            input.remove("enableRefreshTokenRotation");
         }
 
         boolean isClientCredentialsOnly = input.has("grantTypes") &&
@@ -118,14 +145,19 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
             );
             if (response != null) {
                 String clientId = response.jsonResponse.getAsJsonObject().get("clientId").getAsString();
+                String clientSecret = null;
+                if (response.jsonResponse.getAsJsonObject().has("clientSecret")) {
+                    clientSecret = response.jsonResponse.getAsJsonObject().get("clientSecret").getAsString();
+                }
+                Transformations.applyClientPropsWhiteList(response.jsonResponse.getAsJsonObject());
 
                 try {
-                    OAuth.addOrUpdateClientId(main, getAppIdentifier(req), enforcePublicTenantAndGetPublicTenantStorage(req), clientId, isClientCredentialsOnly);
-                } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
+                    OAuth.addOrUpdateClient(main, getAppIdentifier(req), enforcePublicTenantAndGetPublicTenantStorage(req), clientId, clientSecret, isClientCredentialsOnly, enableRefreshTokenRotation);
+                } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException | InvalidKeyException | NoSuchAlgorithmException | InvalidKeySpecException | NoSuchPaddingException | InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException | InvalidConfigException e) {
                     throw new ServletException(e);
                 }
+                response.jsonResponse.getAsJsonObject().addProperty("enableRefreshTokenRotation", enableRefreshTokenRotation);
 
-                Transformations.applyClientPropsWhiteList(response.jsonResponse.getAsJsonObject());
                 response.jsonResponse.getAsJsonObject().addProperty("status", "OK");
                 super.sendJsonResponse(200, response.jsonResponse, resp);
             }
@@ -138,10 +170,6 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String clientId = InputParser.parseStringOrThrowError(input, "clientId", false);
-        boolean isClientCredentialsOnly = input.has("grantTypes") &&
-            input.get("grantTypes").isJsonArray() &&
-            input.get("grantTypes").getAsJsonArray().size() == 1 &&
-            input.get("grantTypes").getAsJsonArray().get(0).getAsString().equals("client_credentials");
 
         // Apply existing client config on top of input
         try {
@@ -169,10 +197,32 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
         }
 
         try {
+            AppIdentifier appIdentifier = getAppIdentifier(req);
+            Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
+            OAuthClient client = OAuth.getOAuthClientById(main, appIdentifier, storage, clientId);
+
+            if (input.has("grantTypes")) {
+                boolean isClientCredentialsOnly = input.has("grantTypes") &&
+                    input.get("grantTypes").isJsonArray() &&
+                    input.get("grantTypes").getAsJsonArray().size() == 1 &&
+                    input.get("grantTypes").getAsJsonArray().get(0).getAsString().equals("client_credentials");
+                client = new OAuthClient(clientId, client.clientSecret, isClientCredentialsOnly, client.enableRefreshTokenRotation);
+            }
+
+            if (input.has("clientSecret")) {
+                String clientSecret = InputParser.parseStringOrThrowError(input, "clientSecret", false);
+                client = new OAuthClient(clientId, clientSecret, client.isClientCredentialsOnly, client.enableRefreshTokenRotation);
+            }
+
+            if (input.has("enableRefreshTokenRotation")) {
+                boolean enableRefreshTokenRotation = InputParser.parseBooleanOrThrowError(input, "enableRefreshTokenRotation", false);
+                client = new OAuthClient(clientId, client.clientSecret, client.isClientCredentialsOnly, enableRefreshTokenRotation);
+            }
+
             HttpRequestForOry.Response response = OAuthProxyHelper.proxyJsonPUT(
                 main, req, resp,
-                getAppIdentifier(req),
-                enforcePublicTenantAndGetPublicTenantStorage(req),
+                appIdentifier,
+                storage,
                 clientId, // clientIdToCheck
                 "/admin/clients/" + clientId,
                 true, // proxyToAdmin
@@ -184,17 +234,25 @@ public class CreateUpdateOrGetOAuthClientAPI extends WebserverAPI {
 
             if (response != null) {
                 try {
-                    OAuth.addOrUpdateClientId(main, getAppIdentifier(req), enforcePublicTenantAndGetPublicTenantStorage(req), clientId, isClientCredentialsOnly);
-                } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
+                    OAuth.addOrUpdateClient(main, appIdentifier, storage, clientId, client.clientSecret, client.isClientCredentialsOnly, client.enableRefreshTokenRotation);
+                } catch (StorageQueryException | TenantOrAppNotFoundException | InvalidKeyException | NoSuchAlgorithmException | InvalidKeySpecException | NoSuchPaddingException | InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException | InvalidConfigException e) {
                     throw new ServletException(e);
                 }
 
                 Transformations.applyClientPropsWhiteList(response.jsonResponse.getAsJsonObject());
+
+                if (!response.jsonResponse.getAsJsonObject().has("clientSecret")) {
+                    response.jsonResponse.getAsJsonObject().addProperty("clientSecret", client.clientSecret);
+                }
+                response.jsonResponse.getAsJsonObject().addProperty("enableRefreshTokenRotation", client.enableRefreshTokenRotation);
+
                 response.jsonResponse.getAsJsonObject().addProperty("status", "OK");
                 super.sendJsonResponse(200, response.jsonResponse, resp);
             }
-        } catch (IOException | TenantOrAppNotFoundException | BadPermissionException e) {
+        } catch (IOException | StorageQueryException | TenantOrAppNotFoundException | BadPermissionException | InvalidKeyException | NoSuchAlgorithmException | InvalidKeySpecException | NoSuchPaddingException | InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException | InvalidConfigException e) {
             throw new ServletException(e);
+        } catch (OAuthClientNotFoundException e) {
+            OAuthProxyHelper.handleOAuthClientNotFoundException(resp);
         }
     }
 }

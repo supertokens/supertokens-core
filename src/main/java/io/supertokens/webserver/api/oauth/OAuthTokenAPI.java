@@ -32,6 +32,8 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.oauth.OAuthClient;
+import io.supertokens.pluginInterface.oauth.exception.OAuthClientNotFoundException;
 import io.supertokens.session.jwt.JWT.JWTException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -39,7 +41,11 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import java.io.IOException;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
@@ -83,16 +89,24 @@ public class OAuthTokenAPI extends WebserverAPI {
             formFields.put(entry.getKey(), entry.getValue().getAsString());
         }
 
+        String clientId = formFields.get("client_id");
+
         try {
             AppIdentifier appIdentifier = getAppIdentifier(req);
             Storage storage = enforcePublicTenantAndGetPublicTenantStorage(req);
+            OAuthClient oauthClient = OAuth.getOAuthClientById(main, appIdentifier, storage, clientId);
+
+            String inputRefreshToken = null;
 
             // check if the refresh token is valid
             if (grantType.equals("refresh_token")) {
                 String refreshToken = InputParser.parseStringOrThrowError(bodyFromSDK, "refresh_token", false);
+                inputRefreshToken = refreshToken;
+
+                String oauthProviderRefreshToken = OAuth.getOAuthProviderRefreshToken(main, appIdentifier, storage, refreshToken);
 
                 Map<String, String> formFieldsForTokenIntrospect = new HashMap<>();
-                formFieldsForTokenIntrospect.put("token", refreshToken);
+                formFieldsForTokenIntrospect.put("token", oauthProviderRefreshToken);
 
                 HttpRequestForOry.Response response = OAuthProxyHelper.proxyFormPOST(
                     main, req, resp,
@@ -126,6 +140,8 @@ public class OAuthTokenAPI extends WebserverAPI {
                     ));
                     return;
                 }
+
+                formFields.put("refresh_token", oauthProviderRefreshToken);
             }
 
             HttpRequestForOry.Response response = OAuthProxyHelper.proxyFormPOST(
@@ -152,6 +168,25 @@ public class OAuthTokenAPI extends WebserverAPI {
                         }
                     }
 
+                    if (response.jsonResponse.getAsJsonObject().has("refresh_token")) {
+                        String newRefreshToken = response.jsonResponse.getAsJsonObject().get("refresh_token").getAsString();
+
+                        if (inputRefreshToken == null) {
+                            // Issuing a new refresh token
+                            if (!oauthClient.enableRefreshTokenRotation) {
+                                OAuth.createOrUpdateRefreshTokenMapping(main, appIdentifier, storage, newRefreshToken, newRefreshToken);
+                            } // else we don't need a mapping
+                        } else {
+                            // Refreshing a token
+                            if (!oauthClient.enableRefreshTokenRotation) {
+                                OAuth.createOrUpdateRefreshTokenMapping(main, appIdentifier, storage, inputRefreshToken, newRefreshToken);
+                                response.jsonResponse.getAsJsonObject().remove("refresh_token");
+                            } else {
+                                OAuth.deleteRefreshTokenMappingIfExists(main, appIdentifier, storage, inputRefreshToken);
+                            }
+                        }
+                    }
+
                 } catch (IOException | InvalidConfigException | TenantOrAppNotFoundException | StorageQueryException | InvalidKeyException | NoSuchAlgorithmException | InvalidKeySpecException | JWTCreationException | JWTException | StorageTransactionLogicException | UnsupportedJWTSigningAlgorithmException e) {
                     throw new ServletException(e);
                 }
@@ -159,8 +194,13 @@ public class OAuthTokenAPI extends WebserverAPI {
                 response.jsonResponse.getAsJsonObject().addProperty("status", "OK");
                 super.sendJsonResponse(200, response.jsonResponse, resp);
             }
-        } catch (IOException | TenantOrAppNotFoundException | BadPermissionException e) {
+        } catch (IOException | StorageQueryException | TenantOrAppNotFoundException | BadPermissionException |
+                 InvalidKeyException | NoSuchAlgorithmException | InvalidKeySpecException | NoSuchPaddingException |
+                 InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException |
+                 InvalidConfigException e) {
             throw new ServletException(e);
+        } catch (OAuthClientNotFoundException e) {
+            OAuthProxyHelper.handleOAuthClientNotFoundException(resp);
         }
     }
 }

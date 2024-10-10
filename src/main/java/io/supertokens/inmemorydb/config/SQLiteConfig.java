@@ -169,6 +169,10 @@ public class SQLiteConfig {
         return "oauth_clients";
     }
 
+    public String getOAuthRefreshTokenMappingTable() {
+        return "oauth_refresh_token_mapping";
+    }
+
     public String getOAuthRevokeTable() {
         return "oauth_revoke";
     }

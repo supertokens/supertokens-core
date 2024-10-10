@@ -67,7 +67,7 @@ public class RemoveOAuthClientAPI extends WebserverAPI {
 
             if (response != null) {
                 try {
-                    OAuth.removeClientId(main, getAppIdentifier(req), enforcePublicTenantAndGetPublicTenantStorage(req), clientId);
+                    OAuth.removeClient(main, getAppIdentifier(req), enforcePublicTenantAndGetPublicTenantStorage(req), clientId);
                 } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
                     throw new ServletException(e);
                 }
