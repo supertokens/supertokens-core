@@ -369,13 +369,13 @@ public class OAuth {
         oauthStorage.addOrUpdateOauthClient(appIdentifier, clientId, clientSecret, isClientCredentialsOnly, enableRefreshTokenRotation);
     }
 
-    public static String encryptClientSecret(Main main, String clientSecret) throws InvalidConfigException, InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException {
+    private static String encryptClientSecret(Main main, String clientSecret) throws InvalidConfigException, InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException {
         String key = Config.getConfig(main).getOAuthClientSecretEncryptionKey();
         clientSecret = Utils.encrypt(clientSecret, key);
         return clientSecret;
     }
 
-    public static String decryptClientSecret(Main main, String clientSecret) throws InvalidConfigException, InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException {
+    private static String decryptClientSecret(Main main, String clientSecret) throws InvalidConfigException, InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException {
         String key = Config.getConfig(main).getOAuthClientSecretEncryptionKey();
         clientSecret = Utils.decrypt(clientSecret, key);
         return clientSecret;
@@ -406,7 +406,7 @@ public class OAuth {
         return result;
     }
 
-    public static JsonObject convertCamelToSnakeCase(JsonObject queryParams) {
+    private static JsonObject convertCamelToSnakeCase(JsonObject queryParams) {
         JsonObject result = new JsonObject();
         for (Map.Entry<String, JsonElement> entry : queryParams.entrySet()) {
             result.add(Utils.camelCaseToSnakeCase(entry.getKey()), entry.getValue());
@@ -438,7 +438,6 @@ public class OAuth {
             return result;
         }
         return jsonResponse;
-
     }
 
     public static void verifyAndUpdateIntrospectRefreshTokenPayload(Main main, AppIdentifier appIdentifier,
@@ -657,14 +656,14 @@ public class OAuth {
     }
 
     public static void createOrUpdateRefreshTokenMapping(Main main, AppIdentifier appIdentifier, Storage storage,
-            String inputRefreshToken, String newRefreshToken) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'createOrUpdateRefreshTokenMapping'");
+            String inputRefreshToken, String newRefreshToken, long exp) throws StorageQueryException {
+        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+        oauthStorage.createOrUpdateRefreshTokenMapping(appIdentifier, inputRefreshToken, newRefreshToken, exp);
     }
 
     public static void deleteRefreshTokenMappingIfExists(Main main, AppIdentifier appIdentifier, Storage storage,
-            String inputRefreshToken) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'deleteRefreshTokenMappingIfExists'");
+            String inputRefreshToken) throws StorageQueryException {
+        OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
+        oauthStorage.deleteRefreshTokenMapping(appIdentifier, inputRefreshToken);
     }
 }

@@ -174,12 +174,12 @@ public class OAuthTokenAPI extends WebserverAPI {
                         if (inputRefreshToken == null) {
                             // Issuing a new refresh token
                             if (!oauthClient.enableRefreshTokenRotation) {
-                                OAuth.createOrUpdateRefreshTokenMapping(main, appIdentifier, storage, newRefreshToken, newRefreshToken);
+                                OAuth.createOrUpdateRefreshTokenMapping(main, appIdentifier, storage, newRefreshToken, newRefreshToken, 0); // TODO: add exp
                             } // else we don't need a mapping
                         } else {
                             // Refreshing a token
                             if (!oauthClient.enableRefreshTokenRotation) {
-                                OAuth.createOrUpdateRefreshTokenMapping(main, appIdentifier, storage, inputRefreshToken, newRefreshToken);
+                                OAuth.createOrUpdateRefreshTokenMapping(main, appIdentifier, storage, inputRefreshToken, newRefreshToken, 0); // TODO: add exp
                                 response.jsonResponse.getAsJsonObject().remove("refresh_token");
                             } else {
                                 OAuth.deleteRefreshTokenMappingIfExists(main, appIdentifier, storage, inputRefreshToken);
