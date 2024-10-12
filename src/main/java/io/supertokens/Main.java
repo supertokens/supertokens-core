@@ -259,8 +259,8 @@ public class Main {
         // starts DeleteExpiredAccessTokenSigningKeys cronjob if the access token signing keys can change
         Cronjobs.addCronjob(this, DeleteExpiredAccessTokenSigningKeys.init(this, uniqueUserPoolIdsTenants));
 
-        // starts ProcessBulkImportUsers cronjob to process bulk import users
-        Cronjobs.addCronjob(this, ProcessBulkImportUsers.init(this, uniqueUserPoolIdsTenants));
+        // initializes ProcessBulkImportUsers cronjob to process bulk import users - start happens via API call @see BulkImportBackgroundJobManager
+        ProcessBulkImportUsers.init(this, uniqueUserPoolIdsTenants);
 
         // this is to ensure tenantInfos are in sync for the new cron job as well
         MultitenancyHelper.getInstance(this).refreshCronjobs();

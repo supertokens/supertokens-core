@@ -19,11 +19,15 @@ package io.supertokens.test.bulkimport;
 
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
+import io.supertokens.ResourceDistributor;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.authRecipe.UserPaginationContainer;
 import io.supertokens.bulkimport.BulkImport;
+import io.supertokens.bulkimport.BulkImportBackgroundJobManager;
 import io.supertokens.config.Config;
+import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
+import io.supertokens.cronjobs.Cronjobs;
 import io.supertokens.cronjobs.bulkimport.ProcessBulkImportUsers;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
@@ -34,7 +38,9 @@ import io.supertokens.pluginInterface.bulkimport.BulkImportStorage.BULK_IMPORT_U
 import io.supertokens.pluginInterface.bulkimport.sqlStorage.BulkImportSQLStorage;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.test.CronjobTest;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.TestingProcessManager.TestingProcess;
 import io.supertokens.test.Utils;
@@ -519,7 +525,7 @@ public class ProcessBulkImportUsersCronJobTest {
                 usersAfterProcessing.get(0).errorMessage);
     }
 
-    private TestingProcess startCronProcess() throws InterruptedException {
+    private TestingProcess startCronProcess() throws InterruptedException, TenantOrAppNotFoundException {
         String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
@@ -533,9 +539,12 @@ public class ProcessBulkImportUsersCronJobTest {
         // We are setting a non-zero initial wait for tests to avoid race condition with the beforeTest process that deletes data in the storage layer
         CronTaskTest.getInstance(main).setInitialWaitTimeInSeconds(ProcessBulkImportUsers.RESOURCE_KEY, 5);
         CronTaskTest.getInstance(main).setIntervalInSeconds(ProcessBulkImportUsers.RESOURCE_KEY, 100000);
+
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        Cronjobs.addCronjob(main, (ProcessBulkImportUsers) main.getResourceDistributor().getResource(new TenantIdentifier(null, null, null), ProcessBulkImportUsers.RESOURCE_KEY));
+        BulkImportBackgroundJobManager.startBackgroundJob(main, 1000);
         if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL) {
             return null;
         }

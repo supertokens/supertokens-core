@@ -100,6 +100,17 @@ public class Cronjobs extends ResourceDistributor.SingletonResource {
         }
     }
 
+    // TODO test for this
+    public static boolean isCronjobLoaded(Main main, CronTask task) {
+        if (getInstance(main) == null) {
+            init(main);
+        }
+        Cronjobs instance = getInstance(main);
+        synchronized (instance.lock) {
+            return instance.tasks.contains(task);
+        }
+    }
+
     @TestOnly
     public List<CronTask> getTasks() {
         return this.tasks;

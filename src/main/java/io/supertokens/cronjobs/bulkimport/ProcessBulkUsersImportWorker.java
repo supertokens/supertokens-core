@@ -224,7 +224,7 @@ public class ProcessBulkUsersImportWorker implements Runnable {
             // of marking it as FAILED. We will return early in that case.
             if (exception.actualException instanceof StorageQueryException) {
                 Logging.error(main, null, "We got an StorageQueryException while processing a bulk import user entry. It will be retried again. Error Message: " + e.getMessage(), true);
-                return;
+                return; // TODO find out when it's a good idea..
             }
             errorMessage[0] = exception.actualException.getMessage();
         } else if (e instanceof InvalidBulkImportDataException) {

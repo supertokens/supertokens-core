@@ -17,6 +17,7 @@
 package io.supertokens.test.bulkimport;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
@@ -43,10 +44,10 @@ import org.junit.rules.TestRule;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 import java.util.UUID;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 public class BulkImportFlowTest {
 
@@ -77,7 +78,7 @@ public class BulkImportFlowTest {
         setFeatureFlags(main, new EE_FEATURES[] {
                         EE_FEATURES.ACCOUNT_LINKING, EE_FEATURES.MULTI_TENANCY, EE_FEATURES.MFA });
 
-        int NUMBER_OF_USERS_TO_UPLOAD = 1000000; //1000000;
+        int NUMBER_OF_USERS_TO_UPLOAD = 140000; //1000000;
         int parallelism_set_to = Config.getConfig(main).getBulkMigrationParallelism();
         System.out.println("Number of users to be imported with bulk import: " + NUMBER_OF_USERS_TO_UPLOAD);
         System.out.println("Worker threads: " + parallelism_set_to);
@@ -103,12 +104,10 @@ public class BulkImportFlowTest {
 
         }
 
-
         long processingStartedTime = System.currentTimeMillis();
 
-
         // Starting the processing cronjob here to be able to measure the runtime
-        startBulkImportCronjob(main);
+        startBulkImportCronjob(main, 100000);
         System.out.println("CronJob started");
 
         // wait for the cron job to process them
@@ -163,7 +162,7 @@ public class BulkImportFlowTest {
         String[] args = { "../" };
 
         // set processing thread number
-        Utils.setValueInConfig("bulk_migration_parallelism", "12");
+        Utils.setValueInConfig("bulk_migration_parallelism", "14");
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -214,7 +213,7 @@ public class BulkImportFlowTest {
 
 
         // Starting the processing cronjob here to be able to measure the runtime
-        startBulkImportCronjob(main);
+        startBulkImportCronjob(main, 10000);
         System.out.println("CronJob started");
 
         // wait for the cron job to process them
@@ -236,7 +235,7 @@ public class BulkImportFlowTest {
                 System.out.println("\t\tFAILED: \t" + failedUsersNumber);
                 System.out.println("\t\tPROCESSING: \t" + processingUsersNumber);
 
-                count = newUsersNumber;// + processingUsersNumber;
+                count = newUsersNumber + processingUsersNumber; // + processingUsersNumber;
 
                 Thread.sleep(60000); // one minute
             }
@@ -249,12 +248,21 @@ public class BulkImportFlowTest {
         // expect: not lazy imported users are imported successfully
         {
             int failedImportedUsersNumber = loadBulkImportUsersCountWithStatus(main, BulkImportStorage.BULK_IMPORT_USER_STATUS.FAILED).get("count").getAsInt();
-            assertEquals(NUMBER_OF_USERS_TO_UPLOAD - successfully_lazy_imported, failedImportedUsersNumber);
+            assertEquals(successfully_lazy_imported, failedImportedUsersNumber);
             int usersInCore = loadUsersCount(main).get("count").getAsInt();
             assertEquals(NUMBER_OF_USERS_TO_UPLOAD, usersInCore); // lazy + bulk = all users
         }
 
+        JsonObject failedUsers = loadBulkImportUsersWithStatus(main, BulkImportStorage.BULK_IMPORT_USER_STATUS.FAILED);
+        JsonArray faileds = failedUsers.getAsJsonArray("users");
+        for (JsonElement failedUser : faileds) {
+            String errorMessage = failedUser.getAsJsonObject().get("errorMessage").getAsString();
+            assertTrue(errorMessage.startsWith("E003:") || errorMessage.startsWith("E005:")
+                    || errorMessage.startsWith("E006:") || errorMessage.startsWith("E007:")); // duplicate email, phone, etc errors
+            System.out.println(errorMessage);
+        }
 
+        stopBulkImportCronjob(main);
     }
 
     private static JsonObject lazyImportUser(Main main, JsonObject user)
@@ -311,10 +319,32 @@ public class BulkImportFlowTest {
             JsonArray tenanatIds = parser.parse("[\"public\"]").getAsJsonArray();
             String email = " johndoe+" + (i + startIndex) + "@gmail.com ";
 
+            Random random = new Random();
+
             JsonArray loginMethodsArray = new JsonArray();
-            loginMethodsArray.add(createEmailLoginMethod(email, tenanatIds));
-            loginMethodsArray.add(createThirdPartyLoginMethod(email, tenanatIds));
-            loginMethodsArray.add(createPasswordlessLoginMethod(email, tenanatIds, "+910000" + (startIndex + i)));
+            if(random.nextInt(2) == 0){
+                loginMethodsArray.add(createEmailLoginMethod(email, tenanatIds));
+            }
+            if(random.nextInt(2) == 0){
+                loginMethodsArray.add(createThirdPartyLoginMethod(email, tenanatIds));
+            }
+            if(random.nextInt(2) == 0){
+                loginMethodsArray.add(createPasswordlessLoginMethod(email, tenanatIds, "+910000" + (startIndex + i)));
+            }
+            if(loginMethodsArray.size() == 0) {
+                int methodNumber = random.nextInt(3);
+                switch (methodNumber) {
+                    case 0:
+                        loginMethodsArray.add(createEmailLoginMethod(email, tenanatIds));
+                        break;
+                    case 1:
+                        loginMethodsArray.add(createThirdPartyLoginMethod(email, tenanatIds));
+                        break;
+                    case 2:
+                        loginMethodsArray.add(createPasswordlessLoginMethod(email, tenanatIds, "+911000" + (startIndex + i)));
+                        break;
+                }
+            }
             user.add("loginMethods", loginMethodsArray);
 
             usersArray.add(user);
@@ -367,10 +397,25 @@ public class BulkImportFlowTest {
         FeatureFlagTestContent.getInstance(main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, features);
     }
 
-    private static void startBulkImportCronjob(Main main) {
-        // We are setting a non-zero initial wait for tests to avoid race condition with the beforeTest process that deletes data in the storage layer
-        CronTaskTest.getInstance(main).setInitialWaitTimeInSeconds(ProcessBulkImportUsers.RESOURCE_KEY, 5);
-        CronTaskTest.getInstance(main).setIntervalInSeconds(ProcessBulkImportUsers.RESOURCE_KEY, 1);
+    private static void startBulkImportCronjob(Main main, int batchSize) throws HttpResponseException, IOException {
+        JsonObject request = new JsonObject();
+        request.addProperty("batchSize", batchSize);
+        request.addProperty("command", "START");
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                "http://localhost:3567/bulk-import/backgroundjob",
+                request, 1000, 10000, null, Utils.getCdiVersionStringLatestForTests(), null);
+        System.out.println(response);
+        assertEquals("ACTIVE", response.get("jobStatus").getAsString());
+    }
+
+    private static void stopBulkImportCronjob(Main main) throws HttpResponseException, IOException {
+        JsonObject request = new JsonObject();
+        request.addProperty("command", "STOP");
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                "http://localhost:3567/bulk-import/backgroundjob",
+                request, 1000, 10000, null, Utils.getCdiVersionStringLatestForTests(), null);
+        System.out.println(response);
+        assertEquals("INACTIVE", response.get("jobStatus").getAsString());
     }
 
     private static JsonObject uploadBulkImportUsersJson(Main main, JsonObject request) throws IOException, HttpResponseException {

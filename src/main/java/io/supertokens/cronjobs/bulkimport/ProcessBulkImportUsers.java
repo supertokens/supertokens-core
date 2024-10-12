@@ -47,6 +47,7 @@ public class ProcessBulkImportUsers extends CronTask {
 
     public static final String RESOURCE_KEY = "io.supertokens.ee.cronjobs.ProcessBulkImportUsers";
 
+    private Integer batchSize;
 
     private ProcessBulkImportUsers(Main main, List<List<TenantIdentifier>> tenantsInfo) {
         super("ProcessBulkImportUsers", main, tenantsInfo, true);
@@ -70,7 +71,7 @@ public class ProcessBulkImportUsers extends CronTask {
                 .getStorage(app.getAsPublicTenantIdentifier(), main);
 
         List<BulkImportUser> users = bulkImportSQLStorage.getBulkImportUsersAndChangeStatusToProcessing(app,
-                BulkImport.PROCESS_USERS_BATCH_SIZE);
+                this.batchSize);
 
         String[] allUserRoles = StorageUtils.getUserRolesStorage(bulkImportSQLStorage).getRoles(app);
         BulkImportUserUtils bulkImportUserUtils = new BulkImportUserUtils(allUserRoles);
@@ -121,6 +122,14 @@ public class ProcessBulkImportUsers extends CronTask {
             }
         }
         return 0;
+    }
+
+    public Integer getBatchSize() {
+        return batchSize;
+    }
+
+    public void setBatchSize(Integer batchSize) {
+        this.batchSize = batchSize;
     }
 
     private List<List<BulkImportUser>> makeChunksOf(List<BulkImportUser> users, int numberOfChunks) {
