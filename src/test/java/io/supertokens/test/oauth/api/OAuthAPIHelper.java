@@ -27,7 +27,6 @@ import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.webserver.WebserverAPI;
 
 public class OAuthAPIHelper {
-    // TODO WIP
     public static JsonObject createClient(Main main, JsonObject createClientBody) throws Exception {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 "http://localhost:3567/recipe/oauth/clients", createClientBody, 1000, 1000, null,
@@ -35,9 +34,23 @@ public class OAuthAPIHelper {
         return response;
     }
 
+    public static JsonObject updateClient(Main main, JsonObject updateClientBody) throws Exception {
+        JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(main, "",
+                "http://localhost:3567/recipe/oauth/clients", updateClientBody, 1000, 1000, null,
+                WebserverAPI.getLatestCDIVersion().get(), "");
+        return response;
+    }
+
     public static JsonObject auth(Main main, JsonObject authBody) throws Exception {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 "http://localhost:3567/recipe/oauth/auth", authBody, 1000, 1000, null,
+                WebserverAPI.getLatestCDIVersion().get(), "");
+        return response;
+    }
+
+    public static JsonObject token(Main main, JsonObject tokenBody) throws Exception {
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                "http://localhost:3567/recipe/oauth/token", tokenBody, 1000, 1000, null,
                 WebserverAPI.getLatestCDIVersion().get(), "");
         return response;
     }

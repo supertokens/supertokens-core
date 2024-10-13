@@ -44,7 +44,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class TestImplicitFlow {
+public class TestAuthCodeFlow {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
@@ -59,7 +59,7 @@ public class TestImplicitFlow {
     }
 
     @Test
-    public void testImplicitGrantFlow() throws Exception {
+    public void testAuthCodeGrantFlow() throws Exception {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
@@ -85,16 +85,18 @@ public class TestImplicitFlow {
 
         JsonObject clientBody = new JsonObject();
         JsonArray grantTypes = new JsonArray();
-        grantTypes.add(new JsonPrimitive("implicit"));
+        grantTypes.add(new JsonPrimitive("authorization_code"));
+        grantTypes.add(new JsonPrimitive("refresh_token"));
         clientBody.add("grantTypes", grantTypes);
         JsonArray responseTypes = new JsonArray();
-        responseTypes.add(new JsonPrimitive("token"));
+        responseTypes.add(new JsonPrimitive("code"));
         responseTypes.add(new JsonPrimitive("id_token"));
         clientBody.add("responseTypes", responseTypes);
         JsonArray redirectUris = new JsonArray();
         redirectUris.add(new JsonPrimitive("http://localhost.com:3000/auth/callback/supertokens"));
         clientBody.add("redirectUris", redirectUris);
-        clientBody.addProperty("scope", "openid profile email");
+        clientBody.addProperty("scope", "openid email offline_access");
+        clientBody.addProperty("tokenEndpointAuthMethod", "client_secret_post");
 
         JsonObject client = OAuthAPIHelper.createClient(process.getProcess(), clientBody);
 
@@ -102,14 +104,13 @@ public class TestImplicitFlow {
         JsonObject params = new JsonObject();
         params.addProperty("client_id", client.get("clientId").getAsString());
         params.addProperty("redirect_uri", "http://localhost.com:3000/auth/callback/supertokens");
-        params.addProperty("response_type", "token");
-        params.addProperty("scope", "openid profile email");
+        params.addProperty("response_type", "code");
+        params.addProperty("scope", "openid offline_access");
         params.addProperty("state", "test12345678");
 
         authRequestBody.add("params", params);
 
         JsonObject authResponse = OAuthAPIHelper.auth(process.getProcess(), authRequestBody);
-        System.out.println("AuthResponse: " + authResponse);
         String cookies = authResponse.get("cookies").getAsJsonArray().get(0).getAsString();
         cookies = cookies.split(";")[0];
 
@@ -127,9 +128,9 @@ public class TestImplicitFlow {
         acceptLoginRequestBody.addProperty("subject", "someuserid");
         acceptLoginRequestBody.addProperty("remember", true);
         acceptLoginRequestBody.addProperty("rememberFor", 3600);
+        acceptLoginRequestBody.addProperty("identityProviderSessionId", "session-handle");
 
         JsonObject acceptLoginRequestResponse = OAuthAPIHelper.acceptLoginRequest(process.getProcess(), acceptLoginRequestParams, acceptLoginRequestBody);
-        System.out.println("AcceptLoginRequest: " + acceptLoginRequestResponse);
 
         redirectTo = acceptLoginRequestResponse.get("redirectTo").getAsString();
         redirectTo = redirectTo.replace("{apiDomain}", "http://localhost:3001/auth");
@@ -145,7 +146,6 @@ public class TestImplicitFlow {
         authRequestBody.addProperty("cookies", cookies);
 
         authResponse = OAuthAPIHelper.auth(process.getProcess(), authRequestBody);
-        System.out.println(authResponse);
 
         redirectTo = authResponse.get("redirectTo").getAsString();
         redirectTo = redirectTo.replace("{apiDomain}", "http://localhost:3001/auth");
@@ -158,20 +158,27 @@ public class TestImplicitFlow {
         String consentChallenge = queryParams.get("consent_challenge");
 
         JsonObject acceptConsentRequestBody = new JsonObject();
-        acceptConsentRequestBody.addProperty("remember", true);
-        acceptConsentRequestBody.addProperty("rememberFor", 3600);
         acceptConsentRequestBody.addProperty("iss", "http://localhost:3001/auth");
         acceptConsentRequestBody.addProperty("tId", "public");
-        acceptConsentRequestBody.addProperty("rsub", "someuser");
+        acceptConsentRequestBody.addProperty("rsub", "someuserid");
         acceptConsentRequestBody.addProperty("sessionHandle", "session-handle");
         acceptConsentRequestBody.add("initialAccessTokenPayload", new JsonObject());
         acceptConsentRequestBody.add("initialIdTokenPayload", new JsonObject());
+        JsonArray grantScope = new JsonArray();
+        grantScope.add(new JsonPrimitive("openid"));
+        grantScope.add(new JsonPrimitive("offline_access"));
+        acceptConsentRequestBody.add("grantScope", grantScope);
+        JsonArray audience = new JsonArray();
+        acceptConsentRequestBody.add("grantAccessTokenAudience", audience);
+        JsonObject session = new JsonObject();
+        session.add("access_token", new JsonObject());
+        session.add("id_token", new JsonObject());
+        acceptConsentRequestBody.add("session", session);
 
         queryParams = new HashMap<>();
         queryParams.put("consentChallenge", consentChallenge);
 
         JsonObject acceptConsentRequestResponse = OAuthAPIHelper.acceptConsentRequest(process.getProcess(), queryParams, acceptConsentRequestBody);
-        System.out.println("AcceptConsentRequest: " + acceptConsentRequestResponse);
 
         redirectTo = acceptConsentRequestResponse.get("redirectTo").getAsString();
         redirectTo = redirectTo.replace("{apiDomain}", "http://localhost:3001/auth");
@@ -187,7 +194,31 @@ public class TestImplicitFlow {
         authRequestBody.addProperty("cookies", cookies);
 
         authResponse = OAuthAPIHelper.auth(process.getProcess(), authRequestBody);
-        System.out.println(authResponse);
+
+        redirectTo = authResponse.get("redirectTo").getAsString();
+        redirectTo = redirectTo.replace("{apiDomain}", "http://localhost:3001/auth");
+
+        url = new URL(redirectTo);
+        queryParams = splitQuery(url);
+
+        String authorizationCode = queryParams.get("code");
+
+        JsonObject tokenRequestBody = new JsonObject();
+        JsonObject inputBody = new JsonObject();
+        inputBody.addProperty("grant_type", "authorization_code");
+        inputBody.addProperty("code", authorizationCode);
+        inputBody.addProperty("redirect_uri", "http://localhost.com:3000/auth/callback/supertokens");
+        inputBody.addProperty("client_id", client.get("clientId").getAsString());
+        inputBody.addProperty("client_secret", client.get("clientSecret").getAsString());
+        tokenRequestBody.add("inputBody", inputBody);
+        tokenRequestBody.addProperty("iss", "http://localhost:3001/auth");
+
+        JsonObject tokenResponse = OAuthAPIHelper.token(process.getProcess(), tokenRequestBody);
+
+         assertNotNull(tokenResponse.get("access_token"));
+         assertNotNull(tokenResponse.get("id_token"));
+         assertNotNull(tokenResponse.get("refresh_token"));
+         assertNotNull(tokenResponse.get("expires_in"));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

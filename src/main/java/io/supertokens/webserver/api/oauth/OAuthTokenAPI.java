@@ -170,16 +170,42 @@ public class OAuthTokenAPI extends WebserverAPI {
 
                     if (response.jsonResponse.getAsJsonObject().has("refresh_token")) {
                         String newRefreshToken = response.jsonResponse.getAsJsonObject().get("refresh_token").getAsString();
+                        long exp = 0;
+
+                        {
+                            // Introspect the new refresh token to get the expiry
+                            Map<String, String> formFieldsForTokenIntrospect = new HashMap<>();
+                            formFieldsForTokenIntrospect.put("token", newRefreshToken);
+
+                            HttpRequestForOry.Response introspectResponse = OAuthProxyHelper.proxyFormPOST(
+                                main, req, resp,
+                                getAppIdentifier(req),
+                                enforcePublicTenantAndGetPublicTenantStorage(req),
+                                null, // clientIdToCheck
+                                "/admin/oauth2/introspect", // pathProxy
+                                true, // proxyToAdmin
+                                false, // camelToSnakeCaseConversion
+                                formFieldsForTokenIntrospect,
+                                new HashMap<>() // headers
+                            );
+
+                            if (introspectResponse != null) {
+                                JsonObject refreshTokenPayload = introspectResponse.jsonResponse.getAsJsonObject();
+                                exp = refreshTokenPayload.get("exp").getAsLong();
+                            } else {
+                                return;
+                            }
+                        }
 
                         if (inputRefreshToken == null) {
                             // Issuing a new refresh token
                             if (!oauthClient.enableRefreshTokenRotation) {
-                                OAuth.createOrUpdateRefreshTokenMapping(main, appIdentifier, storage, newRefreshToken, newRefreshToken, 0); // TODO: add exp
+                                OAuth.createOrUpdateRefreshTokenMapping(main, appIdentifier, storage, newRefreshToken, newRefreshToken, exp);
                             } // else we don't need a mapping
                         } else {
                             // Refreshing a token
                             if (!oauthClient.enableRefreshTokenRotation) {
-                                OAuth.createOrUpdateRefreshTokenMapping(main, appIdentifier, storage, inputRefreshToken, newRefreshToken, 0); // TODO: add exp
+                                OAuth.createOrUpdateRefreshTokenMapping(main, appIdentifier, storage, inputRefreshToken, newRefreshToken, exp);
                                 response.jsonResponse.getAsJsonObject().remove("refresh_token");
                             } else {
                                 OAuth.deleteRefreshTokenMappingIfExists(main, appIdentifier, storage, inputRefreshToken);
