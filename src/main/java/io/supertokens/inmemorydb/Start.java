@@ -3103,6 +3103,15 @@ public class Start
     }
 
     @Override
+    public void deleteExpiredRevokedOAuthTokens(long exp) throws StorageQueryException {
+        try {
+            OAuthQueries.deleteExpiredRevokedOAuthTokens(this, exp);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
     public void addOAuthM2MTokenForStats(AppIdentifier appIdentifier, String clientId, long iat, long exp)
             throws StorageQueryException, OAuthClientNotFoundException {
         try {
@@ -3125,9 +3134,9 @@ public class Start
     }
 
     @Override
-    public void cleanUpExpiredAndRevokedOAuthTokensList() throws StorageQueryException {
+    public void deleteExpiredOAuthM2MTokens(long exp) throws StorageQueryException {
         try {
-            OAuthQueries.cleanUpExpiredAndRevokedOAuthTokensList(this);
+            OAuthQueries.deleteExpiredOAuthM2MTokens(this, exp);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -3209,6 +3218,15 @@ public class Start
             throws StorageQueryException {
         try {
             OAuthQueries.deleteRefreshTokenMapping(this, appIdentifier, superTokensRefreshToken);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void deleteExpiredRefreshTokenMappings(long exp) throws StorageQueryException {
+        try {
+            OAuthQueries.deleteExpiredRefreshTokenMappings(this, exp);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }

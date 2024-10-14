@@ -329,28 +329,14 @@ public class OAuthQueries {
         });
     }
 
-    public static void cleanUpExpiredAndRevokedOAuthTokensList(Start start) throws SQLException, StorageQueryException {
-        {
-            // delete expired M2M tokens
-            String QUERY = "DELETE FROM " + Config.getConfig(start).getOAuthM2MTokensTable() +
-                    " WHERE exp < ?";
+    public static void deleteExpiredRevokedOAuthTokens(Start start, long exp) throws SQLException, StorageQueryException {
+        // delete expired revoked tokens
+        String QUERY = "DELETE FROM " + Config.getConfig(start).getOAuthRevokeTable() +
+                " WHERE exp < ?";
 
-            long timestamp = System.currentTimeMillis() / 1000 - 3600 * 24 * 31; // expired 31 days ago
-            update(start, QUERY, pst -> {
-                pst.setLong(1, timestamp);
-            });
-        }
-
-        {
-            // delete expired revoked tokens
-            String QUERY = "DELETE FROM " + Config.getConfig(start).getOAuthRevokeTable() +
-                    " WHERE exp < ?";
-
-            long timestamp = System.currentTimeMillis() / 1000 - 3600 * 24 * 31; // expired 31 days ago
-            update(start, QUERY, pst -> {
-                pst.setLong(1, timestamp);
-            });
-        }
+        update(start, QUERY, pst -> {
+            pst.setLong(1, exp);
+        });
     }
 
     public static void addOAuthLogoutChallenge(Start start, AppIdentifier appIdentifier, String challenge, String clientId,
@@ -442,6 +428,24 @@ public class OAuthQueries {
         update(start, QUERY, pst -> {
             pst.setString(1, appIdentifier.getAppId());
             pst.setString(2, superTokensRefreshToken);
+        });
+    }
+
+    public static void deleteExpiredOAuthM2MTokens(Start start, long exp) throws SQLException, StorageQueryException {
+        // delete expired M2M tokens
+        String QUERY = "DELETE FROM " + Config.getConfig(start).getOAuthM2MTokensTable() +
+                " WHERE exp < ?";
+
+        update(start, QUERY, pst -> {
+            pst.setLong(1, exp);
+        });
+    }
+
+    public static void deleteExpiredRefreshTokenMappings(Start start, long exp) throws SQLException, StorageQueryException {
+        String QUERY = "DELETE FROM " + Config.getConfig(start).getOAuthRefreshTokenMappingTable() +
+                " WHERE exp < ?";
+        update(start, QUERY, pst -> {
+            pst.setLong(1, exp);
         });
     }
 }

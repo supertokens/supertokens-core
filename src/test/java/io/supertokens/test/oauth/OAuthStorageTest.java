@@ -187,7 +187,7 @@ public class OAuthStorageTest {
 
         // test cleanup
         Thread.sleep(3000);
-        storage.cleanUpExpiredAndRevokedOAuthTokensList();
+        storage.deleteExpiredRevokedOAuthTokens(0); // TODO fixme
 
         assertFalse(storage.isOAuthTokenRevokedBasedOnTargetFields(
                 appIdentifier,

@@ -33,8 +33,11 @@ public class CleanupOAuthRevokeListAndChallenges extends CronTask {
         }
 
         OAuthStorage oauthStorage = StorageUtils.getOAuthStorage(storage);
-        oauthStorage.cleanUpExpiredAndRevokedOAuthTokensList();
-        oauthStorage.deleteOAuthLogoutChallengesBefore(System.currentTimeMillis() - 1000 * 60 * 60 * 48);
+        long monthAgo = System.currentTimeMillis() / 1000 - 31 * 24 * 3600;
+        oauthStorage.deleteExpiredRevokedOAuthTokens(monthAgo);
+        oauthStorage.deleteExpiredOAuthM2MTokens(monthAgo);
+
+        oauthStorage.deleteOAuthLogoutChallengesBefore(System.currentTimeMillis() - 1000 * 60 * 60 * 48); // 48 hours
     }
 
     @Override
