@@ -109,7 +109,6 @@ public class TestImplicitFlow {
         authRequestBody.add("params", params);
 
         JsonObject authResponse = OAuthAPIHelper.auth(process.getProcess(), authRequestBody);
-        System.out.println("AuthResponse: " + authResponse);
         String cookies = authResponse.get("cookies").getAsJsonArray().get(0).getAsString();
         cookies = cookies.split(";")[0];
 
@@ -129,7 +128,6 @@ public class TestImplicitFlow {
         acceptLoginRequestBody.addProperty("rememberFor", 3600);
 
         JsonObject acceptLoginRequestResponse = OAuthAPIHelper.acceptLoginRequest(process.getProcess(), acceptLoginRequestParams, acceptLoginRequestBody);
-        System.out.println("AcceptLoginRequest: " + acceptLoginRequestResponse);
 
         redirectTo = acceptLoginRequestResponse.get("redirectTo").getAsString();
         redirectTo = redirectTo.replace("{apiDomain}", "http://localhost:3001/auth");
@@ -145,7 +143,6 @@ public class TestImplicitFlow {
         authRequestBody.addProperty("cookies", cookies);
 
         authResponse = OAuthAPIHelper.auth(process.getProcess(), authRequestBody);
-        System.out.println(authResponse);
 
         redirectTo = authResponse.get("redirectTo").getAsString();
         redirectTo = redirectTo.replace("{apiDomain}", "http://localhost:3001/auth");
@@ -171,7 +168,6 @@ public class TestImplicitFlow {
         queryParams.put("consentChallenge", consentChallenge);
 
         JsonObject acceptConsentRequestResponse = OAuthAPIHelper.acceptConsentRequest(process.getProcess(), queryParams, acceptConsentRequestBody);
-        System.out.println("AcceptConsentRequest: " + acceptConsentRequestResponse);
 
         redirectTo = acceptConsentRequestResponse.get("redirectTo").getAsString();
         redirectTo = redirectTo.replace("{apiDomain}", "http://localhost:3001/auth");
@@ -187,7 +183,6 @@ public class TestImplicitFlow {
         authRequestBody.addProperty("cookies", cookies);
 
         authResponse = OAuthAPIHelper.auth(process.getProcess(), authRequestBody);
-        System.out.println(authResponse);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
