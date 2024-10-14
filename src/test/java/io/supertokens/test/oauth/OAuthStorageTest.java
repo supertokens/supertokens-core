@@ -20,6 +20,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.oauth.OAuthClient;
 import io.supertokens.pluginInterface.oauth.OAuthLogoutChallenge;
 import io.supertokens.pluginInterface.oauth.OAuthRevokeTargetType;
 import io.supertokens.pluginInterface.oauth.OAuthStorage;
@@ -72,7 +73,12 @@ public class OAuthStorageTest {
         storage.addOrUpdateOauthClient(appIdentifier, "clientid1", "secret123", false, false);
         storage.addOrUpdateOauthClient(appIdentifier, "clientid2", "secret123", true, false);
 
-        assertNotNull(storage.getOAuthClientById(appIdentifier, "clientid1"));
+        OAuthClient client = storage.getOAuthClientById(appIdentifier, "clientid1");
+        assertNotNull(client);
+        assertEquals("secret123", client.clientSecret);
+        assertFalse(client.isClientCredentialsOnly);
+        assertFalse(client.enableRefreshTokenRotation);
+
         try {
             storage.getOAuthClientById(appIdentifier, "clientid3");
             fail();
@@ -83,14 +89,23 @@ public class OAuthStorageTest {
         assertEquals(2, storage.countTotalNumberOfOAuthClients(appIdentifier));
         assertEquals(1, storage.countTotalNumberOfClientCredentialsOnlyOAuthClients(appIdentifier));
 
-        assertEquals(List.of("clientid1", "clientid2"), storage.getOAuthClients(appIdentifier, new ArrayList<>())); // TODO FIX ME
+        List<OAuthClient> clients = storage.getOAuthClients(appIdentifier, List.of("clientid1", "clientid2"));
+        assertEquals(2, clients.size());
 
         storage.deleteOAuthClient(appIdentifier, "clientid1");
-        assertEquals(List.of("clientid2"), storage.getOAuthClients(appIdentifier, new ArrayList<>())); // TODO FIX ME
+        clients = storage.getOAuthClients(appIdentifier, List.of("clientid1", "clientid2"));
+        assertEquals(1, clients.size());
 
         assertEquals(1, storage.countTotalNumberOfClientCredentialsOnlyOAuthClients(appIdentifier));
         storage.addOrUpdateOauthClient(appIdentifier, "clientid2", "secret123", false, false);
         assertEquals(0, storage.countTotalNumberOfClientCredentialsOnlyOAuthClients(appIdentifier));
+
+        // Test all field updates
+        storage.addOrUpdateOauthClient(appIdentifier, "clientid2", "newsecret", true, true);
+        client = storage.getOAuthClientById(appIdentifier, "clientid2");
+        assertEquals("newsecret", client.clientSecret);
+        assertTrue(client.isClientCredentialsOnly);
+        assertTrue(client.enableRefreshTokenRotation);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -187,7 +202,7 @@ public class OAuthStorageTest {
 
         // test cleanup
         Thread.sleep(3000);
-        storage.deleteExpiredRevokedOAuthTokens(0); // TODO fixme
+        storage.deleteExpiredRevokedOAuthTokens(System.currentTimeMillis() / 1000 - 3);
 
         assertFalse(storage.isOAuthTokenRevokedBasedOnTargetFields(
                 appIdentifier,
